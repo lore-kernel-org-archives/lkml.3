@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162646Ab3LFNrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:47:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44154 "EHLO
+	id S1162603Ab3LFNri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:47:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44156 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758141Ab3LFNCU (ORCPT
+	with ESMTP id S1758142Ab3LFNCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 08:02:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Shiva Krishna Merla <shivakrishna.merla@netapp.com>,
+        Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 126/272] blk-core: Fix memory corruption if blkcg_init_queue fails
-Date: Fri,  6 Dec 2013 12:56:55 +0000
-Message-Id: <1386334761-25517-127-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/272] dm mpath: fix race condition between multipath_dtr and pg_init_done
+Date: Fri,  6 Dec 2013 12:56:51 +0000
+Message-Id: <1386334761-25517-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
 
-commit fff4996b7db7955414ac74386efa5e07fd766b50 upstream.
+commit 954a73d5d3073df2231820c718fdd2f18b0fe4c9 upstream.
 
-If blkcg_init_queue fails, blk_alloc_queue_node doesn't call bdi_destroy
-to clean up structures allocated by the backing dev.
+Whenever multipath_dtr() is happening we must prevent queueing any
+further path activation work.  Implement this by adding a new
+'pg_init_disabled' flag to the multipath structure that denotes future
+path activation work should be skipped if it is set.  By disabling
+pg_init and then re-enabling in flush_multipath_work() we also avoid the
+potential for pg_init to be initiated while suspending an mpath device.
 
-------------[ cut here ]------------
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x85/0xa0()
-ODEBUG: free active (active state 0) object type: percpu_counter hint:           (null)
-Modules linked in: dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev ipt_MASQUERADE iptable_nat nf_nat_ipv4 msr nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack lm85 hwmon_vid snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq freq_table mperf sata_svw serverworks kvm_amd ide_core ehci_pci ohci_hcd libata ehci_hcd kvm usbcore tg3 usb_common libphy k10temp pcspkr ptp i2c_piix4 i2c_core evdev microcode hwmon rtc_cmos pps_core e100 skge floppy mii processor button unix
-CPU: 0 PID: 2739 Comm: lvchange Tainted: G        W
-3.10.15-devel #14
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
- 0000000000000009 ffff88023c3c1ae8 ffffffff813c8fd4 ffff88023c3c1b20
- ffffffff810399eb ffff88043d35cd58 ffffffff81651940 ffff88023c3c1bf8
- ffffffff82479d90 0000000000000005 ffff88023c3c1b80 ffffffff81039a67
-Call Trace:
- [<ffffffff813c8fd4>] dump_stack+0x19/0x1b
- [<ffffffff810399eb>] warn_slowpath_common+0x6b/0xa0
- [<ffffffff81039a67>] warn_slowpath_fmt+0x47/0x50
- [<ffffffff8122aaaf>] ? debug_check_no_obj_freed+0xcf/0x250
- [<ffffffff81229a15>] debug_print_object+0x85/0xa0
- [<ffffffff8122abe3>] debug_check_no_obj_freed+0x203/0x250
- [<ffffffff8113c4ac>] kmem_cache_free+0x20c/0x3a0
- [<ffffffff811f6709>] blk_alloc_queue_node+0x2a9/0x2c0
- [<ffffffff811f672e>] blk_alloc_queue+0xe/0x10
- [<ffffffffa04c0093>] dm_create+0x1a3/0x530 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6c07>] dev_create+0x57/0x2b0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6528>] ctl_ioctl+0x268/0x500 [dm_mod]
- [<ffffffff81097662>] ? get_lock_stats+0x22/0x70
- [<ffffffffa04c67ce>] dm_ctl_ioctl+0xe/0x20 [dm_mod]
- [<ffffffff81161aad>] do_vfs_ioctl+0x2ed/0x520
- [<ffffffff8116cfc7>] ? fget_light+0x377/0x4e0
- [<ffffffff81161d2b>] SyS_ioctl+0x4b/0x90
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
----[ end trace 4b5ff0d55673d986 ]---
-------------[ cut here ]------------
+Without this patch a race condition exists that may result in a kernel
+panic:
 
-This fix should be backported to stable kernels starting with 2.6.37. Note
-that in the kernels prior to 3.5 the affected code is different, but the
-bug is still there - bdi_init is called and bdi_destroy isn't.
+1) If after pg_init_done() decrements pg_init_in_progress to 0, a call
+   to wait_for_pg_init_completion() assumes there are no more pending path
+   management commands.
+2) If pg_init_required is set by pg_init_done(), due to retryable
+   mode_select errors, then process_queued_ios() will again queue the
+   path activation work.
+3) If free_multipath() completes before activate_path() work is called a
+   NULL pointer dereference like the following can be seen when
+   accessing members of the recently destructed multipath:
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+RIP: 0010:[<ffffffffa003db1b>]  [<ffffffffa003db1b>] activate_path+0x1b/0x30 [dm_multipath]
+[<ffffffff81090ac0>] worker_thread+0x170/0x2a0
+[<ffffffff81096c80>] ? autoremove_wake_function+0x0/0x40
+
+[switch to disabling pg_init in flush_multipath_work & header edits by Mike Snitzer]
+Signed-off-by: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
+Reviewed-by: Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>
+Tested-by: Speagle Andy <Andy.Speagle@netapp.com>
+Acked-by: Junichi Nomura <j-nomura@ce.jp.nec.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/blk-core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/dm-mpath.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 93a18d1..1ff47dd 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -645,10 +645,12 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	__set_bit(QUEUE_FLAG_BYPASS, &q->queue_flags);
+diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+index c5b7b3d..eb7ddb2 100644
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -86,6 +86,7 @@ struct multipath {
+ 	unsigned queue_if_no_path:1;	/* Queue I/O if last path fails? */
+ 	unsigned saved_queue_if_no_path:1; /* Saved state during suspension */
+ 	unsigned retain_attached_hw_handler:1; /* If there's already a hw_handler present, don't change it. */
++	unsigned pg_init_disabled:1;	/* pg_init is not currently allowed */
  
- 	if (blkcg_init_queue(q))
--		goto fail_id;
-+		goto fail_bdi;
+ 	unsigned pg_init_retries;	/* Number of times to retry pg_init */
+ 	unsigned pg_init_count;		/* Number of times pg_init called */
+@@ -497,7 +498,8 @@ static void process_queued_ios(struct work_struct *work)
+ 	    (!pgpath && !m->queue_if_no_path))
+ 		must_queue = 0;
  
- 	return q;
+-	if (m->pg_init_required && !m->pg_init_in_progress && pgpath)
++	if (m->pg_init_required && !m->pg_init_in_progress && pgpath &&
++	    !m->pg_init_disabled)
+ 		__pg_init_all_paths(m);
  
-+fail_bdi:
-+	bdi_destroy(&q->backing_dev_info);
- fail_id:
- 	ida_simple_remove(&blk_queue_ida, q->id);
- fail_q:
+ 	spin_unlock_irqrestore(&m->lock, flags);
+@@ -942,10 +944,20 @@ static void multipath_wait_for_pg_init_completion(struct multipath *m)
+ 
+ static void flush_multipath_work(struct multipath *m)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&m->lock, flags);
++	m->pg_init_disabled = 1;
++	spin_unlock_irqrestore(&m->lock, flags);
++
+ 	flush_workqueue(kmpath_handlerd);
+ 	multipath_wait_for_pg_init_completion(m);
+ 	flush_workqueue(kmultipathd);
+ 	flush_work(&m->trigger_event);
++
++	spin_lock_irqsave(&m->lock, flags);
++	m->pg_init_disabled = 0;
++	spin_unlock_irqrestore(&m->lock, flags);
+ }
+ 
+ static void multipath_dtr(struct dm_target *ti)
+@@ -1164,7 +1176,7 @@ static int pg_init_limit_reached(struct multipath *m, struct pgpath *pgpath)
+ 
+ 	spin_lock_irqsave(&m->lock, flags);
+ 
+-	if (m->pg_init_count <= m->pg_init_retries)
++	if (m->pg_init_count <= m->pg_init_retries && !m->pg_init_disabled)
+ 		m->pg_init_required = 1;
+ 	else
+ 		limit_reached = 1;
+@@ -1699,7 +1711,7 @@ out:
+  *---------------------------------------------------------------*/
+ static struct target_type multipath_target = {
+ 	.name = "multipath",
+-	.version = {1, 5, 1},
++	.version = {1, 6, 0},
+ 	.module = THIS_MODULE,
+ 	.ctr = multipath_ctr,
+ 	.dtr = multipath_dtr,
 -- 
 1.8.3.2
 
