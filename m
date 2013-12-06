@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab3LFVDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:03:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27206 "EHLO mx1.redhat.com"
+	id S1758781Ab3LFVEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:04:14 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28043 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156Ab3LFVDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:03:10 -0500
-Date: Fri, 6 Dec 2013 16:02:54 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org, kirill.shutemov@linux.intel.com
-Subject: oops in pgtable_trans_huge_withdraw
-Message-ID: <20131206210254.GA7962@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	kirill.shutemov@linux.intel.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758759Ab3LFVEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 16:04:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,842,1378882800"; 
+   d="scan'208";a="439941161"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] x86, microcode: Do Intel microcode revision check signed
+Date: Fri,  6 Dec 2013 13:04:02 -0800
+Message-Id: <1386363843-32530-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've spent a few days enhancing trinity's use of mmap's, trying to make it
-reproduce https://lkml.org/lkml/2013/12/4/499  
-Instead, I hit this.. related ?
+From: Andi Kleen <ak@linux.intel.com>
 
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: tun snd_seq_dummy rfcomm fuse hidp bnep can_raw caif_socket caif phonet af_rxrpc llc2 af_key rose netrom pppoe pppox ppp_generic slhc scsi_transport_iscsi bluetooth nfnetlink can_bcm can af_802154 ipt_ULOG nfc irda crc_ccitt rds x25 atm appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill xfs snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc libcrc32c snd_timer e1000e snd coretemp hwmon ptp x86_pkg_temp_thermal shpchp serio_raw pps_core kvm_intel pcspkr kvm crct10dif_pclmul crc32c_intel usb_debug ghash_clmulni_intel soundcore microcode
-CPU: 3 PID: 11758 Comm: trinity-child3 Not tainted 3.13.0-rc2+ #23
-task: ffff8800719415d0 ti: ffff8801cfa74000 task.ti: ffff8801cfa74000
-RIP: 0010:[<ffffffff8118e415>]  [<ffffffff8118e415>] pgtable_trans_huge_withdraw+0x55/0xc0
-RSP: 0000:ffff8801cfa75ac8  EFLAGS: 00010206
-RAX: 00000000060e4800 RBX: 0000000000000000 RCX: 0000000000000027
-RDX: 0000000000000000 RSI: ffff880183920000 RDI: ffff880183920000
-RBP: ffff8801cfa75ae8 R08: ffff880071941cd8 R09: 0000000000000001
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff880183920000
-R13: ffffea0000000000 R14: 0000000000000020 R15: 0000000040000000
-FS:  00007f6dd67aa740(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000020 CR3: 00000001ce03a000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 00000000018efae0 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000f5060a
-Stack:
- ffffea0000000000 ffff8801cfa75c40 80000001a82008e7 ffff8801cfa75c40
- ffff8801cfa75b20 ffffffff811b13e2 ffff8801e0a8e9f0 ffff8801aa3ab000
- ffffffffffffffff 0000000040200000 ffff8801cfa75c40 ffff8801cfa75bf0
-Call Trace:
- [<ffffffff811b13e2>] zap_huge_pmd+0x62/0x140
- [<ffffffff8117ac58>] unmap_single_vma+0x678/0x830
- [<ffffffff8117bea9>] unmap_vmas+0x49/0x90
- [<ffffffff81184da5>] exit_mmap+0xc5/0x170
- [<ffffffff8105104b>] mmput+0x6b/0x100
- [<ffffffff81055a18>] do_exit+0x298/0xce0
- [<ffffffff8105782c>] do_group_exit+0x4c/0xc0
- [<ffffffff8106a671>] get_signal_to_deliver+0x2d1/0x930
- [<ffffffff810024a8>] do_signal+0x48/0x610
- [<ffffffff810a9af9>] ? get_lock_stats+0x19/0x60
- [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
- [<ffffffff810aa7de>] ? lock_release_holdtime.part.29+0xee/0x170
- [<ffffffff8114f18e>] ? context_tracking_user_exit+0x4e/0x190
- [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
- [<ffffffff81002acc>] do_notify_resume+0x5c/0xa0
- [<ffffffff817587c6>] retint_signal+0x46/0x90
-Code: c1 e0 06 4a 8b 44 28 30 0f b7 00 38 c4 74 79 4c 89 e7 e8 af 03 eb ff 4c 89 e7 48 c1 e8 0c 48 c1 e0 06 49 8b 5c 05 20 4c 8d 73 20 <4c> 3b 73 20 74 35 e8 90 03 eb ff 4c 89 f7 48 89 c2 48 8b 43 20 
-RIP  [<ffffffff8118e415>] pgtable_trans_huge_withdraw+0x55/0xc0
- RSP <ffff8801cfa75ac8>
+The Intel SDM Vol 3 9.11.1 Microcode update states that
+the update revision field is signed. However we do the comparison
+unsigned, as the comparison gets promoted.
 
+Use a cast to really do a signed comparison of the microcode
+revision.
 
-        pgtable = pmd_huge_pte(mm, pmdp);
-        if (list_empty(&pgtable->lru))
- 231:   4c 8d 73 20             lea    0x20(%rbx),%r14
- 235:   4c 3b 73 20             cmp    0x20(%rbx),%r14		<--- faulting instruction.
- 239:   74 35                   je     270 <pgtable_trans_huge_withdraw+0x90>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/microcode_intel_lib.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/microcode_intel_lib.c b/arch/x86/kernel/microcode_intel_lib.c
+index ce69320..68503d1 100644
+--- a/arch/x86/kernel/microcode_intel_lib.c
++++ b/arch/x86/kernel/microcode_intel_lib.c
+@@ -41,7 +41,7 @@ update_match_cpu(unsigned int csig, unsigned int cpf,
+ int
+ update_match_revision(struct microcode_header_intel *mc_header, int rev)
+ {
+-	return (mc_header->rev <= rev) ? 0 : 1;
++	return ((int)mc_header->rev <= rev) ? 0 : 1;
+ }
+ 
+ int microcode_sanity_check(void *mc, int print_err)
+-- 
+1.8.3.1
 
