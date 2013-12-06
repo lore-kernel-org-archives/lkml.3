@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482Ab3LFXRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:17:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48700 "EHLO
+	id S1162195Ab3LFXSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:18:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48714 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758724Ab3LFXRw (ORCPT
+	with ESMTP id S1422922Ab3LFXSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:17:52 -0500
+	Fri, 6 Dec 2013 18:18:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, "Luck, Tony" <tony.luck@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 108/152] exec/ptrace: fix get_dumpable() incorrect tests
-Date: Fri,  6 Dec 2013 15:10:32 -0800
-Message-Id: <1386371476-2477-109-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 109/152] devpts: plug the memory leak in kill_sb
+Date: Fri,  6 Dec 2013 15:10:33 -0800
+Message-Id: <1386371476-2477-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -31,126 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-commit d049f74f2dbe71354d43d393ac3a188947811348 upstream.
+commit 66da0e1f9034140ae2f571ef96e254a25083906c upstream.
 
-The get_dumpable() return value is not boolean.  Most users of the
-function actually want to be testing for non-SUID_DUMP_USER(1) rather than
-SUID_DUMP_DISABLE(0).  The SUID_DUMP_ROOT(2) is also considered a
-protected state.  Almost all places did this correctly, excepting the two
-places fixed in this patch.
+When devpts is unmounted, there may be a no-longer-used IDR tree hanging
+off the superblock we are about to kill.  This needs to be cleaned up
+before destroying the SB.
 
-Wrong logic:
-    if (dumpable == SUID_DUMP_DISABLE) { /* be protective */ }
-        or
-    if (dumpable == 0) { /* be protective */ }
-        or
-    if (!dumpable) { /* be protective */ }
+The leak is usually not a big deal because unmounting devpts is typically
+done when shutting down the whole machine.  However, shutting down an LXC
+container instead of a physical machine exposes the problem (the garbage
+is detectable with kmemleak).
 
-Correct logic:
-    if (dumpable != SUID_DUMP_USER) { /* be protective */ }
-        or
-    if (dumpable != 1) { /* be protective */ }
-
-Without this patch, if the system had set the sysctl fs/suid_dumpable=2, a
-user was able to ptrace attach to processes that had dropped privileges to
-that user.  (This may have been partially mitigated if Yama was enabled.)
-
-The macros have been moved into the file that declares get/set_dumpable(),
-which means things like the ia64 code can see them too.
-
-CVE-2013-2929
-
-Reported-by: Vasily Kulikov <segoon@openwall.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/ia64/include/asm/processor.h | 2 +-
- fs/exec.c                         | 6 ++++++
- include/linux/binfmts.h           | 3 ---
- include/linux/sched.h             | 4 ++++
- kernel/ptrace.c                   | 3 ++-
- 5 files changed, 13 insertions(+), 5 deletions(-)
+ fs/devpts/inode.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/ia64/include/asm/processor.h b/arch/ia64/include/asm/processor.h
-index e0a899a..5a84b3a 100644
---- a/arch/ia64/include/asm/processor.h
-+++ b/arch/ia64/include/asm/processor.h
-@@ -319,7 +319,7 @@ struct thread_struct {
- 	regs->loadrs = 0;									\
- 	regs->r8 = get_dumpable(current->mm);	/* set "don't zap registers" flag */		\
- 	regs->r12 = new_sp - 16;	/* allocate 16 byte scratch area */			\
--	if (unlikely(!get_dumpable(current->mm))) {							\
-+	if (unlikely(get_dumpable(current->mm) != SUID_DUMP_USER)) {	\
- 		/*										\
- 		 * Zap scratch regs to avoid leaking bits between processes with different	\
- 		 * uid/privileges.								\
-diff --git a/fs/exec.c b/fs/exec.c
-index 40418c9..2902493 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1670,6 +1670,12 @@ int __get_dumpable(unsigned long mm_flags)
- 	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
- }
- 
-+/*
-+ * This returns the actual value of the suid_dumpable flag. For things
-+ * that are using this for checking for privilege transitions, it must
-+ * test against SUID_DUMP_USER rather than treating it as a boolean
-+ * value.
-+ */
- int get_dumpable(struct mm_struct *mm)
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 472e6be..1d24d57 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -483,6 +483,7 @@ static void devpts_kill_sb(struct super_block *sb)
  {
- 	return __get_dumpable(mm->flags);
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index 0530b98..c3a6276 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -99,9 +99,6 @@ extern void setup_new_exec(struct linux_binprm * bprm);
- extern void would_dump(struct linux_binprm *, struct file *);
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
  
- extern int suid_dumpable;
--#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
--#define SUID_DUMP_USER		1	/* Dump as user of process */
--#define SUID_DUMP_ROOT		2	/* Dump as root */
- 
- /* Stack area protections */
- #define EXSTACK_DEFAULT   0	/* Whatever the arch defaults to */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6019ecc..87f0503 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -378,6 +378,10 @@ static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
- extern void set_dumpable(struct mm_struct *mm, int value);
- extern int get_dumpable(struct mm_struct *mm);
- 
-+#define SUID_DUMP_DISABLE	0	/* No setuid dumping */
-+#define SUID_DUMP_USER		1	/* Dump as user of process */
-+#define SUID_DUMP_ROOT		2	/* Dump as root */
-+
- /* mm flags */
- /* dumpable bits */
- #define MMF_DUMPABLE      0  /* core dump is permitted */
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 6cbeaae..278e437 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -255,7 +255,8 @@ ok:
- 	if (task->mm)
- 		dumpable = get_dumpable(task->mm);
- 	rcu_read_lock();
--	if (!dumpable && !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
-+	if (dumpable != SUID_DUMP_USER &&
-+	    !ptrace_has_cap(__task_cred(task)->user_ns, mode)) {
- 		rcu_read_unlock();
- 		return -EPERM;
- 	}
++	ida_destroy(&fsi->allocated_ptys);
+ 	kfree(fsi);
+ 	kill_litter_super(sb);
+ }
 -- 
 1.8.3.2
 
