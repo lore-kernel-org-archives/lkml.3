@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab3LFN6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:58:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43962 "EHLO
+	id S1756105Ab3LFN7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:59:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43957 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161501Ab3LFNBb (ORCPT
+	with ESMTP id S1161500Ab3LFNBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:31 -0500
+	Fri, 6 Dec 2013 08:01:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ionut Nicu <ioan.nicu.ext@nsn.com>, Wolfram Sang <wsa@the-dreams.de>,
+Cc: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 090/272] i2c: mux: gpio: use reg value for i2c_add_mux_adapter
-Date: Fri,  6 Dec 2013 12:56:19 +0000
-Message-Id: <1386334761-25517-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 087/272] devpts: plug the memory leak in kill_sb
+Date: Fri,  6 Dec 2013 12:56:16 +0000
+Message-Id: <1386334761-25517-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,72 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-commit 8c0ec2500eeb89749341884a972860d7f9e56f9c upstream.
+commit 66da0e1f9034140ae2f571ef96e254a25083906c upstream.
 
-The i2c-mux driver requires that the chan_id parameter
-passed to the i2c_add_mux_adapter() function is equal
-to the reg value for that adapter:
+When devpts is unmounted, there may be a no-longer-used IDR tree hanging
+off the superblock we are about to kill.  This needs to be cleaned up
+before destroying the SB.
 
-for_each_child_of_node(mux_dev->of_node, child) {
-	ret = of_property_read_u32(child, "reg", &reg);
-	if (ret)
-		continue;
-	if (chan_id == reg) {
-		priv->adap.dev.of_node = child;
-		break;
-	}
-}
+The leak is usually not a big deal because unmounting devpts is typically
+done when shutting down the whole machine.  However, shutting down an LXC
+container instead of a physical machine exposes the problem (the garbage
+is detectable with kmemleak).
 
-The i2c-mux-gpio driver uses an internal logical index
-for chan_id when calling i2c_add_mux_adapter() instead
-of using the reg value.
-
-Because of this, there will problems in selecting the
-right adapter when the i2c-mux-gpio's index into
-mux->data.values doesn't match the reg value.
-
-An example of such a case:
-
-mux->data.values = { 1, 0 }
-
-For chan_id = 0, i2c-mux will bind the adapter to the
-of_node with reg = <0>, but when it will call the
-select() callback with chan_id set to 0, the i2c-mux-gpio
-will use it as an index into mux->data.values and it will
-actually select the bus with reg = <1>.
-
-Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
-Acked-by: Alexander Sverdlin <alexander.sverdlin@nsn.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/i2c/muxes/i2c-mux-gpio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/devpts/inode.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
-index 5a0ce00..4879796 100644
---- a/drivers/i2c/muxes/i2c-mux-gpio.c
-+++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-@@ -39,7 +39,7 @@ static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 073d30b..a726b9f 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -498,6 +498,7 @@ static void devpts_kill_sb(struct super_block *sb)
  {
- 	struct gpiomux *mux = data;
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
  
--	i2c_mux_gpio_set(mux, mux->data.values[chan]);
-+	i2c_mux_gpio_set(mux, chan);
- 
- 	return 0;
++	ida_destroy(&fsi->allocated_ptys);
+ 	kfree(fsi);
+ 	kill_litter_super(sb);
  }
-@@ -223,7 +223,7 @@ static int i2c_mux_gpio_probe(struct platform_device *pdev)
- 		unsigned int class = mux->data.classes ? mux->data.classes[i] : 0;
- 
- 		mux->adap[i] = i2c_add_mux_adapter(parent, &pdev->dev, mux, nr,
--						   i, class,
-+						   mux->data.values[i], class,
- 						   i2c_mux_gpio_select, deselect);
- 		if (!mux->adap[i]) {
- 			ret = -ENODEV;
 -- 
 1.8.3.2
 
