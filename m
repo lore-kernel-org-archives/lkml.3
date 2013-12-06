@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161907Ab3LFNxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:53:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44064 "EHLO
+	id S1758141Ab3LFNxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:53:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44050 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758047Ab3LFNBz (ORCPT
+	with ESMTP id S1758039Ab3LFNBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:55 -0500
+	Fri, 6 Dec 2013 08:01:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 107/272] loop: fix crash if blk_alloc_queue fails
-Date: Fri,  6 Dec 2013 12:56:36 +0000
-Message-Id: <1386334761-25517-108-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 105/272] IB/qib: Fix txselect regression
+Date: Fri,  6 Dec 2013 12:56:34 +0000
+Message-Id: <1386334761-25517-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,90 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
+commit 2fadd83184d58701f1116ca578465b5a75f9417c upstream.
 
-loop: fix crash if blk_alloc_queue fails
+Commit 7fac33014f54("IB/qib: checkpatch fixes") was overzealous in
+removing a simple_strtoul for a parse routine, setup_txselect().  That
+routine is required to handle a multi-value string.
 
-If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
-identifier allocated with idr_alloc. That causes crash on module unload in
-idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
-remove non-existed device with that id.
+Unwind that aspect of the fix.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
-IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-PGD 43d399067 PUD 43d0ad067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
- ton unix
-CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
-task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
-RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
-RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
-RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
-RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
-R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
-FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
- 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
- ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
-Call Trace:
- [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
- [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
- [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
- [<ffffffff81217b74>] idr_for_each+0x104/0x190
- [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
- [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
- [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
- [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
- [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
-Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
-00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
-RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
- RSP <ffff88043d21fe10>
-CR2: 0000000000000380
----[ end trace 64ec069ec70f1309 ]---
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/loop.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/qib/qib_iba7322.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 40e7155..de7f456 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1633,7 +1633,7 @@ static int loop_add(struct loop_device **l, int i)
- 	err = -ENOMEM;
- 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!lo->lo_queue)
--		goto out_free_dev;
-+		goto out_free_idr;
- 
- 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
- 	if (!disk)
-@@ -1678,6 +1678,8 @@ static int loop_add(struct loop_device **l, int i)
- 
- out_free_queue:
- 	blk_cleanup_queue(lo->lo_queue);
-+out_free_idr:
-+	idr_remove(&loop_index_idr, i);
- out_free_dev:
- 	kfree(lo);
- out:
+diff --git a/drivers/infiniband/hw/qib/qib_iba7322.c b/drivers/infiniband/hw/qib/qib_iba7322.c
+index 016e742..5bfc02f 100644
+--- a/drivers/infiniband/hw/qib/qib_iba7322.c
++++ b/drivers/infiniband/hw/qib/qib_iba7322.c
+@@ -6190,21 +6190,20 @@ static int setup_txselect(const char *str, struct kernel_param *kp)
+ {
+ 	struct qib_devdata *dd;
+ 	unsigned long val;
+-	int ret;
+-
++	char *n;
+ 	if (strlen(str) >= MAX_ATTEN_LEN) {
+ 		pr_info("txselect_values string too long\n");
+ 		return -ENOSPC;
+ 	}
+-	ret = kstrtoul(str, 0, &val);
+-	if (ret || val >= (TXDDS_TABLE_SZ + TXDDS_EXTRA_SZ +
++	val = simple_strtoul(str, &n, 0);
++	if (n == str || val >= (TXDDS_TABLE_SZ + TXDDS_EXTRA_SZ +
+ 				TXDDS_MFG_SZ)) {
+ 		pr_info("txselect_values must start with a number < %d\n",
+ 			TXDDS_TABLE_SZ + TXDDS_EXTRA_SZ + TXDDS_MFG_SZ);
+-		return ret ? ret : -EINVAL;
++		return -EINVAL;
+ 	}
+-
+ 	strcpy(txselect_list, str);
++
+ 	list_for_each_entry(dd, &qib_dev_list, list)
+ 		if (dd->deviceid == PCI_DEVICE_ID_QLOGIC_IB_7322)
+ 			set_no_qsfp_atten(dd, 1);
 -- 
 1.8.3.2
 
