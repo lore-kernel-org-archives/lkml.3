@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab3LFPMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:12:13 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:5855
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113Ab3LFPMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:12:10 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Fri, 6 Dec 2013 22:52:40 +0800
-From: Nicolin Chen <b42378@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <alsa-devel@alsa-project.org>, <tiwai@suse.de>,
-        <perex@perex.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <rob@landley.net>, <ijc+devicetree@hellion.org.uk>,
-        <swarren@wwwdotorg.org>, <mark.rutland@arm.com>, <pawel.moll@arm.com>,
-        <rob.herring@calxeda.com>
-Subject: Re: [PATCH 3/3] ASoC: fsl: imx-wm8962: Add headphone and microphone
- jack plugin/out detection
-Message-ID: <20131206145239.GA30024@MrMyself>
-References: <cover.1386322845.git.b42378@freescale.com>
- <82d3285b7efe1f98dbc3d9c0a423b2e5e454481f.1386322845.git.b42378@freescale.com>
- <20131206144256.GI29268@sirena.org.uk>
- <20131206143817.GB29975@MrMyself>
- <20131206150319.GJ29268@sirena.org.uk>
+	id S1753767Ab3LFPTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:19:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab3LFPTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 10:19:30 -0500
+Date: Fri, 6 Dec 2013 16:19:44 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        William Dauchy <wdauchy@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        gregkh@linuxfoundation.org, "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        azurIt <azurit@pobox.sk>, Sameer Nanda <snanda@chromium.org>
+Subject: Re: [PATCH] Fix race between oom kill and task exit
+Message-ID: <20131206151944.GC2674@redhat.com>
+References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com> <20131128063505.GN3556@cmpxchg.org> <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com> <20131128120018.GL2761@dhcp22.suse.cz> <20131128183830.GD20740@redhat.com> <20131202141203.GA31402@redhat.com> <alpine.DEB.2.02.1312041655370.13608@chino.kir.corp.google.com> <20131205172931.GA26018@redhat.com> <alpine.DEB.2.02.1312051531330.7717@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131206150319.GJ29268@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <alpine.DEB.2.02.1312051531330.7717@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 03:03:19PM +0000, Mark Brown wrote:
-> On Fri, Dec 06, 2013 at 10:38:17PM +0800, Nicolin Chen wrote:
-> > On Fri, Dec 06, 2013 at 02:42:56PM +0000, Mark Brown wrote:
-> 
-> > > What's this uevent trying to do and why is it open coded in the driver?
-> 
-> > That's a requirement from Android team of Freescale. By checking this
-> > event they can determine whether current output is speaker or headphone
-> > so as to place an icon on the notification area.
-> 
-> > Sir, if you think this patch is not common enough or non-community style,
-> > I can try to cut it down to an common one or entirely drop it.
-> 
-> This isn't mainline stuff, this is the Android standard switch class.
-> Someone should really contribute something to Android which backs it
-> onto the back of ALSA jacks.  The mainline equivalent is extcon which
-> does have switch class emulation but it's a bit broken in its generation
-> of uevents and is also not yet integrated into the ALSA jack stuff.
-> 
-> The thing to do is ideally integrate extcon with the ALSA jack code and
-> update the Android headset observer to work with extcon (or write a
-> separate extcon based observer).
+On 12/05, David Rientjes wrote:
+>
+> On Thu, 5 Dec 2013, Oleg Nesterov wrote:
+>
+> > > Your v2 series looks good and I suspect anybody trying them doesn't have
+> > > additional reports of the infinite loop?  Should they be marked for
+> > > stable?
+> >
+> > Unlikely...
+> >
+> > I think the patch from Sameer makes more sense for stable as a temporary
+> > (and obviously incomplete) fix.
+>
+> There's a problem because none of this is currently even in linux-next.  I
+> think we could make a case for getting Sameer's patch at
+> http://marc.info/?l=linux-kernel&m=138436313021133 to be merged for
+> stable,
 
-Thank you for the detailed explain. It looks more complicated to me with
-current code base. I think I should just extract the mainline-style part
-so it'll make things easy if there's gonna be some plausible integrations
-afterward.
+Probably.
 
-Thank you indeed,
-Nicolin Chen
+Ah, I just noticed that this change
 
+	-	if (p->flags & PF_EXITING) {
+	+	if (p->flags & PF_EXITING || !pid_alive(p)) {
+
+is not needed. !pid_alive(p) obviously implies PF_EXITING.
+
+> but then we'd have to revert it in linux-next
+
+Or perhaps Sameer can just send his fix to stable/gregkh.
+
+Just the changelog should clearly explain that this is the minimal
+workaround for stable. Once again it doesn't (and can't) fix all
+problems even in oom_kill_process() paths, but it helps anyway to
+avoid the easy-to-trigger hang.
+
+> before merging your
+> series at http://marc.info/?l=linux-kernel&m=138616217925981.
+
+Just in case, I won't mind to rediff my patches on top of Sameer's
+patch and then add git-revert patch.
+
+> All of the
+> issues you present in that series seem to be stable material, so why not
+> just go ahead with your series and mark it for stable for 3.13?
+
+OK... I can do this too.
+
+I do not really like this because it adds thread_head/node but doesn't
+remove the old ->thread_group. We will do this later, but obviously
+this is not the stable material.
+
+IOW, if we send this to stable, thread_head/node/for_each_thread will
+be only used by oom_kill.c.
+
+And this is risky. For example, 1/4 depends on (at least) another patch
+I sent in preparation for this change, commit 81907739851
+"kernel/fork.c:copy_process(): don't add the uninitialized
+child to thread/task/pid lists", perhaps on something else.
+
+So personally I'd prefer to simply send the workaround for stable.
+
+Oleg.
 
