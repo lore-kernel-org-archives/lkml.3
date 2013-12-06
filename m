@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab3LFVFa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:05:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47393 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3LFVF2 (ORCPT
+	id S1758815Ab3LFVFl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:05:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47636 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3LFVFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:05:28 -0500
-Message-ID: <52A23BDA.9000303@oracle.com>
-Date: Fri, 06 Dec 2013 16:04:26 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 6 Dec 2013 16:05:39 -0500
+Message-ID: <52A23BE0.2000207@ti.com>
+Date: Sat, 7 Dec 2013 02:34:32 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: samuel@sortiz.org, "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: net: irda: hang when doing anything to a socket in accept()
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>, <grygorii.strashko@ti.com>,
+        <pawel.moll@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
+        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>, <computersforpeace@gmail.com>,
+        <dwmw2@infradead.org>
+Subject: Re: [PATCH v3] ARM: davinci: aemif: get rid of davinci-nand driver
+ dependency on aemif
+References: <1386267092-18615-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1386267092-18615-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 12/5/2013 11:41 PM, Ivan Khoronzhuk wrote:
 
-I've noticed that once an IRDA socket is in accept(), any further action that requires locking the
-socket will result in a hang until accept() is completed (which may take a while). After a while
-hung task spew is printed out.
+> diff --git a/arch/arm/mach-davinci/board-mityomapl138.c b/arch/arm/mach-davinci/board-mityomapl138.c
+> index 7aa105b..98a66ff 100644
+> --- a/arch/arm/mach-davinci/board-mityomapl138.c
+> +++ b/arch/arm/mach-davinci/board-mityomapl138.c
+> @@ -432,6 +432,9 @@ static void __init mityomapl138_setup_nand(void)
+>  {
+>  	platform_add_devices(mityomapl138_devices,
+>  				 ARRAY_SIZE(mityomapl138_devices));
+> +
+> +	if (davinci_aemif_setup(&mityomapl138_nandflash_device))
+> +		pr_warn("%s: Cannot configure AEMIF.\n", __func__);
+>  }
 
-		thread 1		|		thread 2
-					|
-	listen(sock)			|	
-		bind(sock)		|
-			accept(sock)	|
-					|	setsockopt(sock)
-						*HANG*	
-
-I'm not sure I can provide a properly tested fix since I don't actually have IRDA hardware to test
-on.
-
+I must be missing something, but exactly why is this required for
+board-mityomapl138.c?
 
 Thanks,
-Sasha
+Sekhar
