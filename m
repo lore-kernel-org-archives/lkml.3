@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161643Ab3LFXb5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:31:57 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:56036 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161029Ab3LFXbz (ORCPT
+	id S1161507Ab3LFXbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:31:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48890 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758483Ab3LFXTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:31:55 -0500
-Message-ID: <52A25E66.6040403@free-electrons.com>
-Date: Sat, 07 Dec 2013 00:31:50 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: brian@crystalfontz.com, jimwall@q.com, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: dts: mxs: add #io-channel-cells to mx28 lradc
-References: <1386361231-20427-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1386361231-20427-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Dec 2013 18:19:55 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jan Beulich <JBeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Vegard Nossum <vegard.nossum@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 080/152] xen/blkback: fix reference counting
+Date: Fri,  6 Dec 2013 15:10:04 -0800
+Message-Id: <1386371476-2477-81-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit message should have been:
+3.8.13.14 -stable review patch.  If anyone has any objections, please let me know.
 
-Adding #io-channel-cells property to lradc allows us to use the lradc as
-an iio provider.
+------------------
 
-On 06/12/2013 21:20, Alexandre Belloni wrote:
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/boot/dts/imx28.dtsi | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-> index cda19c8b0a47..92d9f9e33bf1 100644
-> --- a/arch/arm/boot/dts/imx28.dtsi
-> +++ b/arch/arm/boot/dts/imx28.dtsi
-> @@ -945,6 +945,7 @@
->  						20 21 22 23 24 25>;
->  				status = "disabled";
->  				clocks = <&clks 41>;
-> +				#io-channel-cells = <1>;
->  			};
->  
->  			spdif: spdif@80054000 {
+From: Vegard Nossum <vegard.nossum@oracle.com>
 
+commit ea5ec76d76da9279d12027c1828544c5ccbe7932 upstream.
 
+If the permission check fails, we drop a reference to the blkif without
+having taken it in the first place. The bug was introduced in commit
+604c499cbbcc3d5fe5fb8d53306aa0fae1990109 (xen/blkback: Check device
+permissions before allowing OP_DISCARD).
+
+Cc: Jan Beulich <JBeulich@suse.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/block/xen-blkback/blkback.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index bdee5f8..088f012 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -658,6 +658,8 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+ 	unsigned long secure;
+ 	struct phys_req preq;
+ 
++	xen_blkif_get(blkif);
++
+ 	preq.sector_number = req->u.discard.sector_number;
+ 	preq.nr_sects      = req->u.discard.nr_sectors;
+ 
+@@ -670,7 +672,6 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+ 	}
+ 	blkif->st_ds_req++;
+ 
+-	xen_blkif_get(blkif);
+ 	secure = (blkif->vbd.discard_secure &&
+ 		 (req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
+ 		 BLKDEV_DISCARD_SECURE : 0;
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.8.3.2
 
