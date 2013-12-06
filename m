@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759471Ab3LFVxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32772 "EHLO
+	id S1759657Ab3LFVyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32957 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440Ab3LFVxw (ORCPT
+	with ESMTP id S1758136Ab3LFVyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:52 -0500
+	Fri, 6 Dec 2013 16:54:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Chang <dchang@suse.com>, Hayes Wang <hayeswang@realtek.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 34/58] r8169: check ALDPS bit and disable it if enabled for the 8168g
-Date: Fri,  6 Dec 2013 13:52:05 -0800
-Message-Id: <20131206214848.064183413@linuxfoundation.org>
+        Julian Stecklina <jsteckli@os.inf.tu-dresden.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH 3.4 29/32] iommu/vt-d: Fixed interaction of VFIO_IOMMU_MAP_DMA with IOMMU address limits
+Date: Fri,  6 Dec 2013 13:52:39 -0800
+Message-Id: <20131206214959.495148182@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
-References: <20131206214844.906193530@linuxfoundation.org>
+In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
+References: <20131206214956.830407026@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Chang <dchang@suse.com>
+From: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
 
-[ Upstream commit 1bac1072425c86f1ac85bd5967910706677ef8b3 ]
+commit f9423606ade08653dd8a43334f0a7fb45504c5cc upstream.
 
-Windows driver will enable ALDPS function, but linux driver and firmware
-do not have any configuration related to ALDPS function for 8168g.
-So restart system to linux and remove the NIC cable, LAN enter ALDPS,
-then LAN RX will be disabled.
+The BUG_ON in drivers/iommu/intel-iommu.c:785 can be triggered from userspace via
+VFIO by calling the VFIO_IOMMU_MAP_DMA ioctl on a vfio device with any address
+beyond the addressing capabilities of the IOMMU. The problem is that the ioctl code
+calls iommu_iova_to_phys before it calls iommu_map. iommu_map handles the case that
+it gets addresses beyond the addressing capabilities of its IOMMU.
+intel_iommu_iova_to_phys does not.
 
-This issue can be easily reproduced on dual boot windows and linux
-system with RTL_GIGA_MAC_VER_40 chip.
+This patch fixes iommu_iova_to_phys to return NULL for addresses beyond what the
+IOMMU can handle. This in turn causes the ioctl call to fail in iommu_map and
+(correctly) return EFAULT to the user with a helpful warning message in the kernel
+log.
 
-Realtek said, ALDPS function can be disabled by configuring to PHY,
-switch to page 0x0A43, reg0x10 bit2=0.
-
-Signed-off-by: David Chang <dchang@suse.com>
-Acked-by: Hayes Wang <hayeswang@realtek.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
+Acked-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/realtek/r8169.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3456,6 +3456,11 @@ static void rtl8168g_1_hw_phy_config(str
- 	rtl_writephy(tp, 0x14, 0x9065);
- 	rtl_writephy(tp, 0x14, 0x1065);
+---
+ drivers/iommu/intel-iommu.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -778,7 +778,11 @@ static struct dma_pte *pfn_to_dma_pte(st
+ 	int offset;
  
-+	/* Check ALDPS bit, disable it if enabled */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	if (rtl_readphy(tp, 0x10) & 0x0004)
-+		rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0004);
+ 	BUG_ON(!domain->pgd);
+-	BUG_ON(addr_width < BITS_PER_LONG && pfn >> addr_width);
 +
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
++	if (addr_width < BITS_PER_LONG && pfn >> addr_width)
++		/* Address beyond IOMMU's addressing capabilities. */
++		return NULL;
++
+ 	parent = domain->pgd;
  
+ 	while (level > 0) {
 
 
