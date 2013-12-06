@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab3LFSZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:25:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56932 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779Ab3LFSZ2 (ORCPT
+	id S1758691Ab3LFSZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:25:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59508 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779Ab3LFSZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:25:28 -0500
-Date: Fri, 6 Dec 2013 10:25:27 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.13-rc3
-Message-ID: <20131206182527.GA30287@kroah.com>
+	Fri, 6 Dec 2013 13:25:35 -0500
+Date: Fri, 6 Dec 2013 10:25:11 -0800
+From: tip-bot for Qiaowei Ren <tipbot@zytor.com>
+Message-ID: <tip-191f57c137bcce0e3e9313acb77b2f114d15afbb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, qiaowei.ren@intel.com, hpa@zytor.com,
+        mingo@kernel.org, jinsong.liu@intel.com, xudong.hao@intel.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, qiaowei.ren@intel.com,
+        linux-kernel@vger.kernel.org, jinsong.liu@intel.com,
+        xudong.hao@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1386375658-2191-2-git-send-email-qiaowei.ren@intel.com>
+References: <1386375658-2191-2-git-send-email-qiaowei.ren@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpufeature] x86, cpufeature:
+  Define the Intel MPX feature flag
+Git-Commit-ID: 191f57c137bcce0e3e9313acb77b2f114d15afbb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Fri, 06 Dec 2013 10:25:17 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
+Commit-ID:  191f57c137bcce0e3e9313acb77b2f114d15afbb
+Gitweb:     http://git.kernel.org/tip/191f57c137bcce0e3e9313acb77b2f114d15afbb
+Author:     Qiaowei Ren <qiaowei.ren@intel.com>
+AuthorDate: Sat, 7 Dec 2013 08:20:57 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 6 Dec 2013 10:21:44 -0800
 
-  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
+x86, cpufeature: Define the Intel MPX feature flag
 
-are available in the git repository at:
+Define the Intel MPX (Memory Protection Extensions) CPU feature flag
+in the cpufeature list.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.13-rc3
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Link: http://lkml.kernel.org/r/1386375658-2191-2-git-send-email-qiaowei.ren@intel.com
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/cpufeature.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-for you to fetch changes up to 55ef003e4ae684d5660f984eb2352df12572d9df:
-
-  Merge tag 'iio-fixes-for-3.13b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2013-12-03 13:24:58 -0800)
-
-----------------------------------------------------------------
-
-staging driver fixes for 3.13-rc3
-
-Here are some bugfixes for the staging and IIO drivers for 3.13-rc3.
-
-The resolve the vm memory issue in the tidspbridge driver, fix a much-reported
-build failure in an ARM driver, and some other IIO bugfixes that have been
-reported.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.13b' of git://git.kernel.org/.../jic23/iio into staging-linus
-
-Ivaylo Dimitrov (1):
-      Staging: TIDSPBRIDGE: Use vm_iomap_memory for mmap-ing instead of remap_pfn_range
-
-Russell King - ARM Linux (1):
-      Fix build failure for gp2ap020a00f.c
-
-Srinivas Pandruvada (2):
-      HID: hid-sensor-hub: Add logical min and max
-      iio: hid-sensors: Fix power and report state
-
- drivers/hid/hid-sensor-hub.c                        | 20 ++++++++------------
- drivers/iio/common/hid-sensors/Kconfig              |  9 ---------
- drivers/iio/common/hid-sensors/hid-sensor-trigger.c | 20 +++++++++++++++-----
- drivers/iio/light/Kconfig                           |  1 +
- drivers/staging/tidspbridge/rmgr/drv_interface.c    | 13 +++++--------
- include/linux/hid-sensor-hub.h                      |  2 ++
- include/linux/hid-sensor-ids.h                      | 12 ++++++++++++
- 7 files changed, 43 insertions(+), 34 deletions(-)
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 89270b4..e099f95 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -216,6 +216,7 @@
+ #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+ #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
+ #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
++#define X86_FEATURE_MPX		(9*32+14) /* Memory Protection Extension */
+ #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
+ #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
+ #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
