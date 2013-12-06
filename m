@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296Ab3LFO2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:28:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43526 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161017Ab3LFM7e (ORCPT
+	id S1753675Ab3LFOem (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:34:42 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58473 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab3LFOek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:34 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tyler Hicks <tyhicks@canonical.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        Richard Guy Briggs <rgb@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 003/272] audit: printk USER_AVC messages when audit isn't enabled
-Date: Fri,  6 Dec 2013 12:54:52 +0000
-Message-Id: <1386334761-25517-4-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 6 Dec 2013 09:34:40 -0500
+Date: Fri, 6 Dec 2013 14:34:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <b42378@freescale.com>
+Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org, tiwai@suse.de,
+        perex@perex.cz, linux-kernel@vger.kernel.org
+Message-ID: <20131206143433.GH29268@sirena.org.uk>
+References: <cover.1386322845.git.b42378@freescale.com>
+ <bed76b8bfd2d4ed9739269657cd55e4a81b65403.1386322845.git.b42378@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yuedfix5hmtMJRO4"
+Content-Disposition: inline
+In-Reply-To: <bed76b8bfd2d4ed9739269657cd55e4a81b65403.1386322845.git.b42378@freescale.com>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] ASoC: fsl: imx-wm8962: Grant hw_params/free()
+ permission to control FLL
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--yuedfix5hmtMJRO4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Tyler Hicks <tyhicks@canonical.com>
+On Fri, Dec 06, 2013 at 05:47:43PM +0800, Nicolin Chen wrote:
 
-commit 0868a5e150bc4c47e7a003367cd755811eb41e0b upstream.
+> +static int imx_wm8962_enable_fll(struct snd_soc_dai *codec_dai, u32 sample_rate,
+> +				snd_pcm_format_t sample_format)
+> +{
+> +	struct imx_priv *priv = &card_priv;
+> +	struct device *dev = &priv->pdev->dev;
+> +	struct imx_wm8962_data *data = platform_get_drvdata(priv->pdev);
+> +	u32 freq, ret;
+> +
+> +	if (data->fll_lock)
+> +		return 0;
 
-When the audit=1 kernel parameter is absent and auditd is not running,
-AUDIT_USER_AVC messages are being silently discarded.
+Don't we need an actual lock to protect this?
 
-AUDIT_USER_AVC messages should be sent to userspace using printk(), as
-mentioned in the commit message of 4a4cd633 ("AUDIT: Optimise the
-audit-disabled case for discarding user messages").
+--yuedfix5hmtMJRO4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-When audit_enabled is 0, audit_receive_msg() discards all user messages
-except for AUDIT_USER_AVC messages. However, audit_log_common_recv_msg()
-refuses to allocate an audit_buffer if audit_enabled is 0. The fix is to
-special case AUDIT_USER_AVC messages in both functions.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-It looks like commit 50397bd1 ("[AUDIT] clean up audit_receive_msg()")
-introduced this bug.
+iQIcBAEBAgAGBQJSoeB2AAoJELSic+t+oim9WLQP/39fJ6OQuo085aTYMfcFvCT8
+l2hRSP28s9lCYd+8OCPIOJgPkxu6NeSpdlSWrn+nl9g2/wbI7YixRsI9uAVVq7fy
+7NtSwvpgekUmvzWEFWS7EWSUOeiPIn1bZ8E5Rjc0NhGvLlkX2Acch7jLxek9xTsE
+Pc9hx9hPiz2ViXh/iVqC5H7w7R7WyBqyeDnlGLVagdUdc2Oa5xvMQuwJaM9LTLTw
+g6w1VBd3P9KLv8/jirYNjHScv48ZKnQLbkawEMb9bpLt7zL8lYNhGr7uxokf2A5j
+hiVsRMRBIknub8G8jK5FD8csIEccminYQhvFF5PaMHZ7IauZmDH0fEVw7zVoViN8
+CeVQhi4VUFzgbHqtChHS4FBv5VDyFsZ9MbizHQWtKrf3XRm5CNwLsCTBNLqNse2v
+0xX/NcEn5vgEboQNF6eaBP61JzQwVTTjsRCRT4HXLz200dS7+bjBuS3jDvTZQsm9
+8bNANqkgn6rOZGoOHWwB1HK2Hmv1xO/rnWSEUTNxI3MTzijMr6TKXnPDtoCJw/G2
+CHlc7pKxWNz4WBa5IsJi5pWZfSYixYBCkx77II5SRAopRuEvjXFb6K5rvBPnCCiV
+USvuMvatXPAPFrBRg0KJZbZ59KmSmnOqmvpJvxu1Q4dJjpJPRl4eEBQ+4zIMLRNw
+ReK0ASUxhh8yLB4MWhXj
+=ILGZ
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: linux-audit@redhat.com
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/audit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7b0e23a..f5dc4b5 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -613,7 +613,7 @@ static int audit_log_common_recv_msg(struct audit_buffer **ab, u16 msg_type)
- 	int rc = 0;
- 	uid_t uid = from_kuid(&init_user_ns, current_uid());
- 
--	if (!audit_enabled) {
-+	if (!audit_enabled && msg_type != AUDIT_USER_AVC) {
- 		*ab = NULL;
- 		return rc;
- 	}
--- 
-1.8.3.2
-
+--yuedfix5hmtMJRO4--
