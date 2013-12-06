@@ -1,180 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3LFMHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 07:07:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54226 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab3LFMGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:06:53 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <tony@atomide.com>, <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <kishon@ti.com>
-CC: <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: [PATCH v2 1/2] usb: musb: omap: remove using PLATFORM_DEVID_AUTO in omap2430.c
-Date: Fri, 6 Dec 2013 17:36:10 +0530
-Message-ID: <1386331571-30903-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1386331571-30903-1-git-send-email-kishon@ti.com>
-References: <1386331571-30903-1-git-send-email-kishon@ti.com>
+	id S1757761Ab3LFMJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:09:36 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53058 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757704Ab3LFMJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 07:09:34 -0500
+Date: Fri, 6 Dec 2013 12:09:07 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Jingoo Han <jg1.han@samsung.com>, "'Liam Girdwood'" <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, "'Axel Lin'" <axel.lin@ingics.com>
+Message-ID: <20131206120907.GE29268@sirena.org.uk>
+References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+ <000d01cef252$4680cf90$d3826eb0$%han@samsung.com>
+ <201312061012.05535.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fc4/uDQsB6b9dq2q"
+Content-Disposition: inline
+In-Reply-To: <201312061012.05535.heiko@sntech.de>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/6] regulator: gpio-regulator: use
+ devm_regulator_register()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the platform devices are created using PLATFORM_DEVID_AUTO, the
-device names given in usb_bind_phy (in board file) does not match with
-the actual device name causing the USB PHY library not to return the
-PHY reference when the MUSB controller request for the PHY in the non-dt boot
-case.
-So removed creating platform devices using PLATFORM_DEVID_AUTO in omap2430.c.
-This is also needed for the Generic PHY Framework.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/musb/musb_core.c |   31 ++++++++++++++++++++++++++++++-
- drivers/usb/musb/musb_core.h |    2 ++
- drivers/usb/musb/omap2430.c  |   19 +++++++++++++++++--
- 3 files changed, 49 insertions(+), 3 deletions(-)
+--Fc4/uDQsB6b9dq2q
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 0a43329..aaf734c 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -94,6 +94,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/init.h>
-+#include <linux/idr.h>
- #include <linux/list.h>
- #include <linux/kobject.h>
- #include <linux/prefetch.h>
-@@ -120,7 +121,7 @@ MODULE_DESCRIPTION(DRIVER_INFO);
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
--
-+static DEFINE_IDA(musb_ida);
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -131,6 +132,34 @@ static inline struct musb *dev_to_musb(struct device *dev)
- 
- /*-------------------------------------------------------------------------*/
- 
-+int musb_get_id(struct device *dev, gfp_t gfp_mask)
-+{
-+	int ret;
-+	int id;
-+
-+	ret = ida_pre_get(&musb_ida, gfp_mask);
-+	if (!ret) {
-+		dev_err(dev, "failed to reserve resource for id\n");
-+		return -ENOMEM;
-+	}
-+
-+	ret = ida_get_new(&musb_ida, &id);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to allocate a new id\n");
-+		return ret;
-+		}
-+
-+	return id;
-+}
-+EXPORT_SYMBOL_GPL(musb_get_id);
-+
-+void musb_put_id(struct device *dev, int id)
-+{
-+	dev_dbg(dev, "removing id %d\n", id);
-+	ida_remove(&musb_ida, id);
-+}
-+EXPORT_SYMBOL_GPL(musb_put_id);
-+
- #ifndef CONFIG_BLACKFIN
- static int musb_ulpi_read(struct usb_phy *phy, u32 offset)
- {
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 29f7cd7..63614283 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -506,6 +506,8 @@ extern const char musb_driver_name[];
- 
- extern void musb_stop(struct musb *musb);
- extern void musb_start(struct musb *musb);
-+int musb_get_id(struct device *dev, gfp_t gfp_mask);
-+void musb_put_id(struct device *dev, int id);
- 
- extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
- extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 2a408cd..14a612c 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -45,6 +45,7 @@
- 
- struct omap2430_glue {
- 	struct device		*dev;
-+	int			id;
- 	struct platform_device	*musb;
- 	enum omap_musb_vbus_id_status status;
- 	struct work_struct	omap_musb_mailbox_work;
-@@ -508,6 +509,7 @@ static int omap2430_probe(struct platform_device *pdev)
- 	struct device_node		*np = pdev->dev.of_node;
- 	struct musb_hdrc_config		*config;
- 	int				ret = -ENOMEM;
-+	int				musbid;
- 
- 	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
- 	if (!glue) {
-@@ -515,10 +517,18 @@ static int omap2430_probe(struct platform_device *pdev)
- 		goto err0;
- 	}
- 
--	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
-+	/* get the musb id */
-+	musbid = musb_get_id(&pdev->dev, GFP_KERNEL);
-+	if (musbid < 0) {
-+		dev_err(&pdev->dev, "failed to allocate musb id\n");
-+		ret = -ENOMEM;
-+		goto err0;
-+	}
-+
-+	musb = platform_device_alloc("musb-hdrc", musbid);
- 	if (!musb) {
- 		dev_err(&pdev->dev, "failed to allocate musb device\n");
--		goto err0;
-+		goto err1;
- 	}
- 
- 	musb->dev.parent		= &pdev->dev;
-@@ -528,6 +538,7 @@ static int omap2430_probe(struct platform_device *pdev)
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
- 	glue->status			= OMAP_MUSB_UNKNOWN;
-+	glue->id			= musbid;
- 	glue->control_otghs = ERR_PTR(-ENODEV);
- 
- 	if (np) {
-@@ -633,6 +644,9 @@ static int omap2430_probe(struct platform_device *pdev)
- err2:
- 	platform_device_put(musb);
- 
-+err1:
-+	musb_put_id(&pdev->dev, musbid);
-+
- err0:
- 	return ret;
- }
-@@ -643,6 +657,7 @@ static int omap2430_remove(struct platform_device *pdev)
- 
- 	cancel_work_sync(&glue->omap_musb_mailbox_work);
- 	platform_device_unregister(glue->musb);
-+	musb_put_id(&pdev->dev, glue->id);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+On Fri, Dec 06, 2013 at 10:12:05AM +0100, Heiko St=FCbner wrote:
 
+> I'm not this firm in the core driver/device behaviour, but when looking a=
+t=20
+> __device_release_driver I see that the remove callback runs before=20
+> devres_release_all, which would effectively free the gpios before the=20
+> regulator gets unregistered - is this racy with a regulator change at the=
+ same=20
+> time?
+
+Yes, the rest of the driver really needs to be converted to devm_ at the
+same time.
+
+--Fc4/uDQsB6b9dq2q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSob5gAAoJELSic+t+oim9hukP/jI2sMFd0wJsej+o/9ky+P5e
+26aQFiT7aVxqJO+cyhR0YLqXiMmNFg4rRkv0zH7SdqhOoliELg64mXkdVHjE/2k/
+9XI7Zd0a2bhs13sZKHTe7D87ARBOioTFRSKk1n473Rk08icQYJHCGwRGeq4m+31o
++FCaFr8F1+jTlW7UqWsiVx3s/MqL5UbIoOnm1iVlrNiYlsujkFRFt9ytkfdXXiAv
+M1TvghXnZmeifRlcgjQNFePzTh0nAhDMzsEaMXQBUJ9MUr/x82dJhz8AuN9zIDHm
+jZ419/YCNF7MgKSVPmZo+MQLL9H8L9lhhnasoMGmqEnQHB6+1/QI7un0txlIIT2G
+9aLwlG3prpyKvVmmP2jk+HvNxM5Dr0XeXHOYJNWn1rIEpAyKUpiMblVBmaqxoa+S
++cyK2UVWXvEdEkbAkNBipax0MmYYKuNtx/B4bNGFgxjFTlWFfQx+HxrQSLbpPkMP
+nD8DIm2g/8F1AHep1Yc3HbisKcjOxb3wlNldrxmm5MhSKNq3fRNsH+yd1d2sxfD8
+snkRXQ1IJjIVrIpuSBf0lesCz+2fHlUmkmYjNxw4izFaKbVpkppntM4ZaIGcQ8kE
+ZKwfqdoGhAD7Roor/axrLKZXEBagfwiwRz7qJLtE+4fHyDNFJBi1/kZ46eoIP+he
+t/7wkHa5mOtOYb0Be5Mc
+=aS24
+-----END PGP SIGNATURE-----
+
+--Fc4/uDQsB6b9dq2q--
