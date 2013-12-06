@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab3LFISQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:18:16 -0500
-Received: from smtprelay0196.hostedemail.com ([216.40.44.196]:55745 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751237Ab3LFISO (ORCPT
+	id S1754468Ab3LFIS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:18:26 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:34033
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753663Ab3LFISV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:18:14 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3865:3867:4419:5007:7652:7903:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rose03_81d9ec035b507
-X-Filterd-Recvd-Size: 1712
-Message-ID: <1386317890.31845.26.camel@joe-AO722>
-Subject: [PATCH -next] batadv: Slight optimization of batadv_compare_eth
-From: Joe Perches <joe@perches.com>
-To: Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        Antonio Quartulli <antonio@meshcoding.com>
-Cc: "David S. Miller" <davem@davemloft.net>, b.a.t.m.a.n@lists.open-mesh.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 06 Dec 2013 00:18:10 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Dec 2013 03:18:21 -0500
+X-IronPort-AV: E=Sophos;i="4.93,839,1378850400"; 
+   d="scan'208";a="39593222"
+Date: Fri, 6 Dec 2013 09:18:17 +0100
+From: Martin Quinson <martin.quinson@loria.fr>
+To: Christoph Lameter <cl@linux.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, Andreas Gruenbacher <agruen@linbit.com>
+Subject: Re: quilt 0.60 does not include CCed email without name
+Message-ID: <20131206081816.GQ9578@alphonse.loria.fr>
+References: <20131203233232.928771708@linux.com>
+ <20131203233250.717784556@linux.com>
+ <1386115809.2166.126.camel@dabdike.int.hansenpartnership.com>
+ <alpine.DEB.2.02.1312051244540.26098@gentwo.org>
+ <00000142c48e1f2a-fd398f0b-8726-4cec-a939-2c3a823bff39-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142c48e1f2a-fd398f0b-8726-4cec-a939-2c3a823bff39-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to check if
-this function can be optimized by using the generic
-ether_addr_equal.
+On Thu, Dec 05, 2013 at 08:58:37PM +0000, Christoph Lameter wrote:
+> > > You say this in the commit, but the linux-parisc list isn't cc'd on the
+> > > email ...
+> >
+> > Weird my testoutput before the patchset was sent out shows that it
+> > was included then :
+> 
+> Ok while the test output was done with quilt 0.50 the patch was actually
+> send with quilt 0.60 from another system. quilt 0.60 skips all Cc:s that
+> do not have a full name.
+> 
+> So Helge was included since it had a name
+> 
+> > Cc: Helge Deller <deller@gmx.de>
+> 
+> but
+> 
+> > Cc: linux-parisc@vger.kernel.org
+> 
+> did not because no name was available.
+> 
+> Martin?
 
-Remove the unnecessary ?: after the unoptimized memcmp.
+I'm sorry, I never use the quilt mail command myself. After a quick
+investiguation of the git history, this bug seems to be caused by:
+http://git.savannah.gnu.org/cgit/quilt.git/commit/?id=02f15444278eb3a854acae0192124153e0c6d9d4
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/batman-adv/main.h | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+I think that the last lines should be changed as follows (and same for
+the one before):
+- -e 's/^\('"$*"'\):\(.*<.*@.*>\)/Recipient-Cc:\2/Ip' \
++ -e 's/^\('"$*"'\):\(.*@.*\)/Recipient-Cc:\2/Ip' \
 
-diff --git a/net/batman-adv/main.h b/net/batman-adv/main.h
-index f94f287b..74a7a3f 100644
---- a/net/batman-adv/main.h
-+++ b/net/batman-adv/main.h
-@@ -266,7 +266,11 @@ static inline void batadv_dbg(int type __always_unused,
-  */
- static inline int batadv_compare_eth(const void *data1, const void *data2)
- {
--	return (memcmp(data1, data2, ETH_ALEN) == 0 ? 1 : 0);
-+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-+	return ether_addr_equal(data1, data2);
-+#else
-+	return memcmp(data1, data2, ETH_ALEN) == 0;
-+#endif
- }
- 
- /**
+I'm CCing Andreas so that he can comment, and if nobody complains I'll
+commit it to our git.
 
+Many thanks for the detailed bug report,
+Mt.
 
+-- 
+Simplicity does not precede complexity, but follows it.
+   -- "Epigrams in Programming", by Alan J. Perlis of Yale University.
