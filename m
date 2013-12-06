@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab3LFAQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:16:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab3LFAQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:16:39 -0500
-Date: Thu, 5 Dec 2013 22:15:54 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-Message-ID: <20131206001554.GA28698@amt.cnet>
-References: <20131122191429.GA13308@amt.cnet>
- <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
- <5292EE2F.5090305@linux.vnet.ibm.com>
- <20131125181254.GB21858@amt.cnet>
- <529413C1.60302@linux.vnet.ibm.com>
- <20131126193148.GA18071@amt.cnet>
- <5297049E.3020800@linux.vnet.ibm.com>
- <529D83F8.7050605@linux.vnet.ibm.com>
- <20131205135021.GA12996@amt.cnet>
- <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com>
+	id S1755003Ab3LFARR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:17:17 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:64251 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab3LFARN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 19:17:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52A031EE.1040301@ti.com>
+References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1386171888-28190-1-git-send-email-sebastian.hesselbarth@gmail.com> <52A031EE.1040301@ti.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 5 Dec 2013 16:16:32 -0800
+Message-ID: <CAGVrzcYjcXfbYR7uyL1fAc2bdNhCUA9wAjZk4nsF2K0FRL2_pA@mail.gmail.com>
+Subject: Re: [PATCH RFCv2 0/6] net: phy: Ethernet PHY powerdown optimization
+To: Mugunthan V N <mugunthanvnm@ti.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 11:30:27PM +0800, Xiao Guangrong wrote:
-> > Is it not the case that simply moving to the slow path once a maximum of
-> > rewalks has been reached enough? (looks a like a good solution).
-> 
-> In some cases, the lockless walker will do endless-walking on desc and
-> without rewalk, consider this case:
-> 
-> there are two descs: desc1 and desc2 who is pointed by desc1->next：
-> desc1->next = desc2.
-> 
-> CPU 0                                                                            CPU 1
-> 
-> lockless walk on desc1
->                                                                  deleting desc1 from the rmap
-> lockless walk on desc2 (desc1->next)
->                                                                 delete desc2 from the rmap
->                                                                 add desc1
->                                                                 add desc2, then desc2->next = desc1
-> 
-> lockless walk on desc1
->                                                                delete desc2
->                                                                delete desc1
->                                                                add desc2
->                                                                add desc1; the desc1->next = desc2
-> lockless walk on desc2
-> 
-> ……
-> 
-> Then, the walker is endlessly walking on desc1 and desc2 without any rewalk.
+2013/12/4 Mugunthan V N <mugunthanvnm@ti.com>:
+> On Wednesday 04 December 2013 09:14 PM, Sebastian Hesselbarth wrote:
+>> This is v2 of an RFC sent earlier [1] to reduce power consumption of network
+>> PHYs with link that are either unused or the corresponding netdev is down.
+>>
+>> In contrast to RFCv1, this now integrates phy_suspend/phy_resume transparent
+>> to the netdev drivers. Also, phy_suspend now only suspends the PHY if WOL is
+>> disabled. Moreover, the phy state machine calls phy_suspend on entering
+>> HALTED state.
+>>
+>> Again, a branch with RFCv2 applied to v3.13-rc2 can also be found at
+>> https://github.com/shesselba/linux-dove.git topic/ethphy-power-rfc-v2
+>>
+>> [1] http://lwn.net/Articles/574426/
+>>
+>> Sebastian Hesselbarth (6):
+>>   net: mv643xx_eth: properly start/stop phy device
+>>   net: phy: marvell: provide genphy suspend/resume
+>>   net: phy: provide phy_resume/phy_suspend helpers
+>>   net: phy: resume/suspend PHYs on attach/detach
+>>   net: phy: suspend unused PHYs on mdio_bus in late_initcall
+>>   net: phy: suspend phydev when going to HALTED
+>>
+>>  drivers/net/ethernet/marvell/mv643xx_eth.c |    4 +++-
+>>  drivers/net/phy/marvell.c                  |   22 ++++++++++++++++++++++
+>>  drivers/net/phy/mdio_bus.c                 |   25 +++++++++++++++++++++++++
+>>  drivers/net/phy/phy.c                      |    6 +++++-
+>>  drivers/net/phy/phy_device.c               |   27 +++++++++++++++++++++++++++
+>>  include/linux/phy.h                        |    2 ++
+>>  6 files changed, 84 insertions(+), 2 deletions(-)
+>>
+>> ---
+>> Cc: David Miller <davem@davemloft.net>
+>> Cc: Florian Fainelli <f.fainelli@gmail.com>
+>> Cc: Mugunthan V N <mugunthanvnm@ti.com>
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+> Apart form Sergei's comment the patch series looks good to me.
+>
+> Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
 
-Ouch, this is the sort of thing that is worrysome. Do you still think
-that having the benefit for shadow is important enough to justify this
-complexity?
+Looks good to me as well:
 
-Also, another separate possibility is to use the dirty bit (which recent
-Intel processors support). Then there are no faults at all to handle.
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
 
-
+Thanks Sebastian!
+-- 
+Florian
