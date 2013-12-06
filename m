@@ -1,94 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab3LFOYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:24:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43546 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757827Ab3LFM7i (ORCPT
+	id S932212Ab3LFOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:24:58 -0500
+Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.100]:11350
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751051Ab3LFOYz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:38 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 007/272] iscsi-target: Fix mutex_trylock usage in iscsit_increment_maxcmdsn
-Date: Fri,  6 Dec 2013 12:54:56 +0000
-Message-Id: <1386334761-25517-8-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 6 Dec 2013 09:24:55 -0500
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Sponsorship Funds
+To: Recipients <uni@JKInfo967.onmicrosoft.com>
+From: <uni@JKInfo967.onmicrosoft.com>
+Date: Fri, 6 Dec 2013 19:54:39 +0530
+Reply-To: <concordloan7@yahoo.com.au>
+Message-ID: <b4418099-78dc-4300-9f3a-02ba66da3fd9@HKXPR03MB149.apcprd03.prod.outlook.com>
+X-Originating-IP: [115.244.14.111]
+X-ClientProxiedBy: SIXPR02CA024.apcprd02.prod.outlook.com (10.141.119.19) To
+ HKXPR03MB149.apcprd03.prod.outlook.com (10.242.121.17)
+X-Forefront-PRVS: 0052308DC6
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(12864004)(46102001)(80022001)(66066001)(74706001)(83072001)(65816001)(74876001)(50466002)(74316001)(74366001)(4396001)(49866001)(47736001)(79102001)(47776003)(53256004)(59766001)(77982001)(561924002)(50986001)(47976001)(63696002)(42186004)(54356001)(51856001)(54316002)(56776001)(76482001)(85306002)(81686001)(76176001)(47446002)(74502001)(74662001)(81816001)(1496004)(81342001)(56816005)(85852002)(80976001)(221733001)(23756003)(64872005)(69226001)(89136003)(90146001)(81542001)(77096001)(76786001)(33646001)(76796001)(87266001)(76576001)(87976001)(31686002)(43066001)(83322001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR03MB149;H:[115.244.14.111];CLIP:115.244.14.111;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: JKInfo967.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-
-commit 5e8e6b4b3adebf01a9d97056cbbfd8c44330df99 upstream.
-
-This patch fixes a >= v3.10 regression bug with mutex_trylock() usage
-within iscsit_increment_maxcmdsn(), that was originally added to allow
-for a special case where ->cmdsn_mutex was already held from the
-iscsit_execute_cmd() exception path for ib_isert.
-
-When !mutex_trylock() was occuring under contention during normal RX/TX
-process context codepaths, the bug was manifesting itself as the following
-protocol error:
-
-  Received CmdSN: 0x000fcbb7 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
-  Received CmdSN: 0x000fcbb8 is greater than MaxCmdSN: 0x000fcbb6, protocol error.
-
-This patch simply avoids the direct ib_isert callback in lio_queue_status()
-for the special iscsi_execute_cmd() exception cases, that allows the problematic
-mutex_trylock() usage in iscsit_increment_maxcmdsn() to go away.
-
-Reported-by: Moussa Ba <moussaba@micron.com>
-Tested-by: Moussa Ba <moussaba@micron.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/target/iscsi/iscsi_target_configfs.c | 5 +++++
- drivers/target/iscsi/iscsi_target_device.c   | 6 +-----
- 2 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/target/iscsi/iscsi_target_configfs.c b/drivers/target/iscsi/iscsi_target_configfs.c
-index bbfd288..752ee53 100644
---- a/drivers/target/iscsi/iscsi_target_configfs.c
-+++ b/drivers/target/iscsi/iscsi_target_configfs.c
-@@ -1786,6 +1786,11 @@ static int lio_queue_status(struct se_cmd *se_cmd)
- 	struct iscsi_cmd *cmd = container_of(se_cmd, struct iscsi_cmd, se_cmd);
- 
- 	cmd->i_state = ISTATE_SEND_STATUS;
-+
-+	if (cmd->se_cmd.scsi_status || cmd->sense_reason) {
-+		iscsit_add_cmd_to_response_queue(cmd, cmd->conn, cmd->i_state);
-+		return 0;
-+	}
- 	cmd->conn->conn_transport->iscsit_queue_status(cmd->conn, cmd);
- 
- 	return 0;
-diff --git a/drivers/target/iscsi/iscsi_target_device.c b/drivers/target/iscsi/iscsi_target_device.c
-index 1b74033..4edcc47 100644
---- a/drivers/target/iscsi/iscsi_target_device.c
-+++ b/drivers/target/iscsi/iscsi_target_device.c
-@@ -60,11 +60,7 @@ void iscsit_increment_maxcmdsn(struct iscsi_cmd *cmd, struct iscsi_session *sess
- 
- 	cmd->maxcmdsn_inc = 1;
- 
--	if (!mutex_trylock(&sess->cmdsn_mutex)) {
--		sess->max_cmd_sn += 1;
--		pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
--		return;
--	}
-+	mutex_lock(&sess->cmdsn_mutex);
- 	sess->max_cmd_sn += 1;
- 	pr_debug("Updated MaxCmdSN to 0x%08x\n", sess->max_cmd_sn);
- 	mutex_unlock(&sess->cmdsn_mutex);
--- 
-1.8.3.2
-
+Hello, We are individual business sponsors. We sponsor business oriented individuals by providing them with financial sponsorship to setup new business, carry out their business projects or strengthen the old business that is facing financial difficulties. We can sponsor you with any amount ranging from $100,000.00usd to $80,000,000.00usd for a start provided we can rely on your ability to pay back our money within the stipulated period of 10years. For more details and to apply for our sponsorship click your reply button now to reply us.
