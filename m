@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162748Ab3LFXwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:52:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48386 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161297Ab3LFXMg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1161292Ab3LFXMg (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 18:12:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48312 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758958Ab3LFXMc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 18:12:32 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Josh Boyer <jwboyer@redhat.com>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 007/152] X.509: Remove certificate date checks
-Date: Fri,  6 Dec 2013 15:08:51 -0800
-Message-Id: <1386371476-2477-8-git-send-email-kamal@canonical.com>
+Cc: Paul Moore <pmoore@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 008/152] selinux: correct locking in selinux_netlbl_socket_connect)
+Date: Fri,  6 Dec 2013 15:08:52 -0800
+Message-Id: <1386371476-2477-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -29,83 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 124df926090b32a998483f6e43ebeccdbe5b5302 upstream.
+commit 42d64e1add3a1ce8a787116036163b8724362145 upstream.
 
-Remove the certificate date checks that are performed when a certificate is
-parsed.  There are two checks: a valid from and a valid to.  The first check is
-causing a lot of problems with system clocks that don't keep good time and the
-second places an implicit expiry date upon the kernel when used for module
-signing, so do we really need them?
+The SELinux/NetLabel glue code has a locking bug that affects systems
+with NetLabel enabled, see the kernel error message below.  This patch
+corrects this problem by converting the bottom half socket lock to a
+more conventional, and correct for this call-path, lock_sock() call.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: David Woodhouse <dwmw2@infradead.org>
-cc: Rusty Russell <rusty@rustcorp.com.au>
-cc: Josh Boyer <jwboyer@redhat.com>
-cc: Alexander Holler <holler@ahsoftware.de>
-[ kamal: backport to 3.8 (context) ]
+ ===============================
+ [ INFO: suspicious RCU usage. ]
+ 3.11.0-rc3+ #19 Not tainted
+ -------------------------------
+ net/ipv4/cipso_ipv4.c:1928 suspicious rcu_dereference_protected() usage!
+
+ other info that might help us debug this:
+
+ rcu_scheduler_active = 1, debug_locks = 0
+ 2 locks held by ping/731:
+  #0:  (slock-AF_INET/1){+.-...}, at: [...] selinux_netlbl_socket_connect
+  #1:  (rcu_read_lock){.+.+..}, at: [<...>] netlbl_conn_setattr
+
+ stack backtrace:
+ CPU: 1 PID: 731 Comm: ping Not tainted 3.11.0-rc3+ #19
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  0000000000000001 ffff88006f659d28 ffffffff81726b6a ffff88003732c500
+  ffff88006f659d58 ffffffff810e4457 ffff88006b845a00 0000000000000000
+  000000000000000c ffff880075aa2f50 ffff88006f659d90 ffffffff8169bec7
+ Call Trace:
+  [<ffffffff81726b6a>] dump_stack+0x54/0x74
+  [<ffffffff810e4457>] lockdep_rcu_suspicious+0xe7/0x120
+  [<ffffffff8169bec7>] cipso_v4_sock_setattr+0x187/0x1a0
+  [<ffffffff8170f317>] netlbl_conn_setattr+0x187/0x190
+  [<ffffffff8170f195>] ? netlbl_conn_setattr+0x5/0x190
+  [<ffffffff8131ac9e>] selinux_netlbl_socket_connect+0xae/0xc0
+  [<ffffffff81303025>] selinux_socket_connect+0x135/0x170
+  [<ffffffff8119d127>] ? might_fault+0x57/0xb0
+  [<ffffffff812fb146>] security_socket_connect+0x16/0x20
+  [<ffffffff815d3ad3>] SYSC_connect+0x73/0x130
+  [<ffffffff81739a85>] ? sysret_check+0x22/0x5d
+  [<ffffffff810e5e2d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+  [<ffffffff81373d4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff815d52be>] SyS_connect+0xe/0x10
+  [<ffffffff81739a59>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- crypto/asymmetric_keys/x509_public_key.c | 38 --------------------------------
- 1 file changed, 38 deletions(-)
+ security/selinux/netlabel.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 06007f0..52222a2 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -106,7 +106,6 @@ error_no_sig:
- static int x509_key_preparse(struct key_preparsed_payload *prep)
- {
- 	struct x509_certificate *cert;
--	struct tm now;
- 	size_t srlen, sulen;
- 	char *desc = NULL;
- 	int ret;
-@@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 		goto error_free_cert;
- 	}
+diff --git a/security/selinux/netlabel.c b/security/selinux/netlabel.c
+index da4b8b2..6235d05 100644
+--- a/security/selinux/netlabel.c
++++ b/security/selinux/netlabel.c
+@@ -442,8 +442,7 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
+ 	    sksec->nlbl_state != NLBL_CONNLABELED)
+ 		return 0;
  
--	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
--	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
--		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
--		 now.tm_hour, now.tm_min,  now.tm_sec);
--	if (now.tm_year < cert->valid_from.tm_year ||
--	    (now.tm_year == cert->valid_from.tm_year &&
--	     (now.tm_mon < cert->valid_from.tm_mon ||
--	      (now.tm_mon == cert->valid_from.tm_mon &&
--	       (now.tm_mday < cert->valid_from.tm_mday ||
--		(now.tm_mday == cert->valid_from.tm_mday &&
--		 (now.tm_hour < cert->valid_from.tm_hour ||
--		  (now.tm_hour == cert->valid_from.tm_hour &&
--		   (now.tm_min < cert->valid_from.tm_min ||
--		    (now.tm_min == cert->valid_from.tm_min &&
--		     (now.tm_sec < cert->valid_from.tm_sec
--		      ))))))))))) {
--		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
--		ret = -EKEYREJECTED;
--		goto error_free_cert;
--	}
--	if (now.tm_year > cert->valid_to.tm_year ||
--	    (now.tm_year == cert->valid_to.tm_year &&
--	     (now.tm_mon > cert->valid_to.tm_mon ||
--	      (now.tm_mon == cert->valid_to.tm_mon &&
--	       (now.tm_mday > cert->valid_to.tm_mday ||
--		(now.tm_mday == cert->valid_to.tm_mday &&
--		 (now.tm_hour > cert->valid_to.tm_hour ||
--		  (now.tm_hour == cert->valid_to.tm_hour &&
--		   (now.tm_min > cert->valid_to.tm_min ||
--		    (now.tm_min == cert->valid_to.tm_min &&
--		     (now.tm_sec > cert->valid_to.tm_sec
--		      ))))))))))) {
--		pr_warn("Cert %s has expired\n", cert->fingerprint);
--		ret = -EKEYEXPIRED;
--		goto error_free_cert;
--	}
--
- 	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
- 	cert->pub->id_type = PKEY_ID_X509;
+-	local_bh_disable();
+-	bh_lock_sock_nested(sk);
++	lock_sock(sk);
  
+ 	/* connected sockets are allowed to disconnect when the address family
+ 	 * is set to AF_UNSPEC, if that is what is happening we want to reset
+@@ -464,7 +463,6 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
+ 		sksec->nlbl_state = NLBL_CONNLABELED;
+ 
+ socket_connect_return:
+-	bh_unlock_sock(sk);
+-	local_bh_enable();
++	release_sock(sk);
+ 	return rc;
+ }
 -- 
 1.8.3.2
 
