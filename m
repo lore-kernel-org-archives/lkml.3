@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758192Ab3LFNC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44164 "EHLO
+	id S1162268Ab3LFNpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:45:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44188 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758160Ab3LFNCW (ORCPT
+	with ESMTP id S1758196Ab3LFNC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:22 -0500
+	Fri, 6 Dec 2013 08:02:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Jeff Layton <jlayton@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 128/272] PM / runtime: Use pm_runtime_put_sync() in __device_release_driver()
-Date: Fri,  6 Dec 2013 12:56:57 +0000
-Message-Id: <1386334761-25517-129-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 133/272] audit: log the audit_names record type
+Date: Fri,  6 Dec 2013 12:57:02 +0000
+Message-Id: <1386334761-25517-134-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit baab52ded242c35a2290e1fa82e0cc147d0d8c1a upstream.
+commit d3aea84a4ace5ff9ce7fb7714cee07bebef681c2 upstream.
 
-Commit fa180eb448fa (PM / Runtime: Idle devices asynchronously after
-probe|release) modified __device_release_driver() to call
-pm_runtime_put(dev) instead of pm_runtime_put_sync(dev) before
-detaching the driver from the device.  However, that was a mistake,
-because pm_runtime_put(dev) causes rpm_idle() to be queued up and
-the driver may be gone already when that function is executed.
-That breaks the assumptions the drivers have the right to make
-about the core's behavior on the basis of the existing documentation
-and actually causes problems to happen, so revert that part of
-commit fa180eb448fa and restore the previous behavior of
-__device_release_driver().
+...to make it clear what the intent behind each record's operation was.
 
-Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Fixes: fa180eb448fa (PM / Runtime: Idle devices asynchronously after probe|release)
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Kevin Hilman <khilman@linaro.org>
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+In many cases you can infer this, based on the context of the syscall
+and the result. In other cases it's not so obvious. For instance, in
+the case where you have a file being renamed over another, you'll have
+two different records with the same filename but different inode info.
+By logging this information we can clearly tell which one was created
+and which was deleted.
+
+This fixes what was broken in commit bfcec708.
+Commit 79f6530c should also be backported to stable v3.7+.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/base/dd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/audit.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 35fa368..0605176 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -499,7 +499,7 @@ static void __device_release_driver(struct device *dev)
- 						     BUS_NOTIFY_UNBIND_DRIVER,
- 						     dev);
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 34eeb48..7ddfd8a 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1537,6 +1537,26 @@ void audit_log_name(struct audit_context *context, struct audit_names *n,
+ 		}
+ 	}
  
--		pm_runtime_put(dev);
-+		pm_runtime_put_sync(dev);
- 
- 		if (dev->bus && dev->bus->remove)
- 			dev->bus->remove(dev);
++	/* log the audit_names record type */
++	audit_log_format(ab, " nametype=");
++	switch(n->type) {
++	case AUDIT_TYPE_NORMAL:
++		audit_log_format(ab, "NORMAL");
++		break;
++	case AUDIT_TYPE_PARENT:
++		audit_log_format(ab, "PARENT");
++		break;
++	case AUDIT_TYPE_CHILD_DELETE:
++		audit_log_format(ab, "DELETE");
++		break;
++	case AUDIT_TYPE_CHILD_CREATE:
++		audit_log_format(ab, "CREATE");
++		break;
++	default:
++		audit_log_format(ab, "UNKNOWN");
++		break;
++	}
++
+ 	audit_log_fcaps(ab, n);
+ 	audit_log_end(ab);
+ }
 -- 
 1.8.3.2
 
