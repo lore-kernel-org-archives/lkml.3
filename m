@@ -1,173 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697Ab3LFO1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:27:41 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:43712 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161019Ab3LFM7g (ORCPT
+	id S1759310Ab3LFO2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:28:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43516 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161016Ab3LFM7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:36 -0500
-From: Roberto Sassu <roberto.sassu@polito.it>
-To: jmorris@namei.org, zohar@linux.vnet.ibm.com
-Cc: d.kasatkin@samsung.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
-        Roberto Sassu <roberto.sassu@polito.it>
-Subject: [PATCH-v2 2/3] ima: display template format in meas. list if template name length is zero
-Date: Fri,  6 Dec 2013 13:57:16 +0100
-Message-Id: <1386334640-31393-3-git-send-email-roberto.sassu@polito.it>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1386334640-31393-1-git-send-email-roberto.sassu@polito.it>
-References: <1386334640-31393-1-git-send-email-roberto.sassu@polito.it>
-MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----D521EF265F3582127DC736DC140F1FE8"
+	Fri, 6 Dec 2013 07:59:31 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Paul Moore <pmoore@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 002/272] selinux: correct locking in selinux_netlbl_socket_connect)
+Date: Fri,  6 Dec 2013 12:54:51 +0000
+Message-Id: <1386334761-25517-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an S/MIME signed message
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-------D521EF265F3582127DC736DC140F1FE8
+------------------
 
-With the introduction of the 'ima_template_fmt' kernel cmdline parameter,
-an user can define a new template descriptor with custom format. However,
-in this case, userspace tools will be unable to parse the measurements
-list because the new template is unknown. For this reason, this patch
-modifies the current IMA behavior to display in the list the template
-format instead of the name (only if the length of the latter is zero)
-so that a tool can extract needed information if it can handle listed
-fields.
+From: Paul Moore <pmoore@redhat.com>
 
-Changelog:
- - fixed patch description (Roberto Sassu, suggested by Mimi Zohar)
- - set 'template_name' variable in ima_fs.c only once
-   (Roberto Sassu, suggested by Mimi Zohar)
+commit 42d64e1add3a1ce8a787116036163b8724362145 upstream.
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+The SELinux/NetLabel glue code has a locking bug that affects systems
+with NetLabel enabled, see the kernel error message below.  This patch
+corrects this problem by converting the bottom half socket lock to a
+more conventional, and correct for this call-path, lock_sock() call.
+
+ ===============================
+ [ INFO: suspicious RCU usage. ]
+ 3.11.0-rc3+ #19 Not tainted
+ -------------------------------
+ net/ipv4/cipso_ipv4.c:1928 suspicious rcu_dereference_protected() usage!
+
+ other info that might help us debug this:
+
+ rcu_scheduler_active = 1, debug_locks = 0
+ 2 locks held by ping/731:
+  #0:  (slock-AF_INET/1){+.-...}, at: [...] selinux_netlbl_socket_connect
+  #1:  (rcu_read_lock){.+.+..}, at: [<...>] netlbl_conn_setattr
+
+ stack backtrace:
+ CPU: 1 PID: 731 Comm: ping Not tainted 3.11.0-rc3+ #19
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  0000000000000001 ffff88006f659d28 ffffffff81726b6a ffff88003732c500
+  ffff88006f659d58 ffffffff810e4457 ffff88006b845a00 0000000000000000
+  000000000000000c ffff880075aa2f50 ffff88006f659d90 ffffffff8169bec7
+ Call Trace:
+  [<ffffffff81726b6a>] dump_stack+0x54/0x74
+  [<ffffffff810e4457>] lockdep_rcu_suspicious+0xe7/0x120
+  [<ffffffff8169bec7>] cipso_v4_sock_setattr+0x187/0x1a0
+  [<ffffffff8170f317>] netlbl_conn_setattr+0x187/0x190
+  [<ffffffff8170f195>] ? netlbl_conn_setattr+0x5/0x190
+  [<ffffffff8131ac9e>] selinux_netlbl_socket_connect+0xae/0xc0
+  [<ffffffff81303025>] selinux_socket_connect+0x135/0x170
+  [<ffffffff8119d127>] ? might_fault+0x57/0xb0
+  [<ffffffff812fb146>] security_socket_connect+0x16/0x20
+  [<ffffffff815d3ad3>] SYSC_connect+0x73/0x130
+  [<ffffffff81739a85>] ? sysret_check+0x22/0x5d
+  [<ffffffff810e5e2d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+  [<ffffffff81373d4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff815d52be>] SyS_connect+0xe/0x10
+  [<ffffffff81739a59>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/integrity/ima/ima_fs.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ security/selinux/netlabel.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index db01125..8b5c182 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -118,6 +118,7 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	/* the list never shrinks, so we don't need a lock here */
- 	struct ima_queue_entry *qe = v;
- 	struct ima_template_entry *e;
-+	char *template_name;
- 	int namelen;
- 	u32 pcr = CONFIG_IMA_MEASURE_PCR_IDX;
- 	bool is_ima_template = false;
-@@ -128,6 +129,9 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	if (e == NULL)
- 		return -1;
+diff --git a/security/selinux/netlabel.c b/security/selinux/netlabel.c
+index da4b8b2..6235d05 100644
+--- a/security/selinux/netlabel.c
++++ b/security/selinux/netlabel.c
+@@ -442,8 +442,7 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
+ 	    sksec->nlbl_state != NLBL_CONNLABELED)
+ 		return 0;
  
-+	template_name = (strlen(e->template_desc->name) != 0) ?
-+	    e->template_desc->name : e->template_desc->fmt;
-+
- 	/*
- 	 * 1st: PCRIndex
- 	 * PCR used is always the same (config option) in
-@@ -139,14 +143,14 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 	ima_putc(m, e->digest, TPM_DIGEST_SIZE);
+-	local_bh_disable();
+-	bh_lock_sock_nested(sk);
++	lock_sock(sk);
  
- 	/* 3rd: template name size */
--	namelen = strlen(e->template_desc->name);
-+	namelen = strlen(template_name);
- 	ima_putc(m, &namelen, sizeof namelen);
+ 	/* connected sockets are allowed to disconnect when the address family
+ 	 * is set to AF_UNSPEC, if that is what is happening we want to reset
+@@ -464,7 +463,6 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
+ 		sksec->nlbl_state = NLBL_CONNLABELED;
  
- 	/* 4th:  template name */
--	ima_putc(m, e->template_desc->name, namelen);
-+	ima_putc(m, template_name, namelen);
- 
- 	/* 5th:  template length (except for 'ima' template) */
--	if (strcmp(e->template_desc->name, IMA_TEMPLATE_IMA_NAME) == 0)
-+	if (strcmp(template_name, IMA_TEMPLATE_IMA_NAME) == 0)
- 		is_ima_template = true;
- 
- 	if (!is_ima_template)
-@@ -198,6 +202,7 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	/* the list never shrinks, so we don't need a lock here */
- 	struct ima_queue_entry *qe = v;
- 	struct ima_template_entry *e;
-+	char *template_name;
- 	int i;
- 
- 	/* get entry */
-@@ -205,6 +210,9 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	if (e == NULL)
- 		return -1;
- 
-+	template_name = (strlen(e->template_desc->name) != 0) ?
-+	    e->template_desc->name : e->template_desc->fmt;
-+
- 	/* 1st: PCR used (config option) */
- 	seq_printf(m, "%2d ", CONFIG_IMA_MEASURE_PCR_IDX);
- 
-@@ -212,7 +220,7 @@ static int ima_ascii_measurements_show(struct seq_file *m, void *v)
- 	ima_print_digest(m, e->digest, TPM_DIGEST_SIZE);
- 
- 	/* 3th:  template name */
--	seq_printf(m, " %s", e->template_desc->name);
-+	seq_printf(m, " %s", template_name);
- 
- 	/* 4th:  template specific data */
- 	for (i = 0; i < e->template_desc->num_fields; i++) {
+ socket_connect_return:
+-	bh_unlock_sock(sk);
+-	local_bh_enable();
++	release_sock(sk);
+ 	return rc;
+ }
 -- 
-1.8.1.4
-
-
-------D521EF265F3582127DC736DC140F1FE8
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
-DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
-VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
-Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
-HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
-MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
-ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
-AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
-NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
-TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
-XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
-da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
-yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
-BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
-BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
-HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
-GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
-qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
-cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
-CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
-BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
-AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
-NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
-X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
-LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
-S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
-oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
-JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
-YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
-MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
-aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
-Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzEyMDYxMjU3NDlaMCMGCSqG
-SIb3DQEJBDEWBBR0R0Yh4dHO3hltTPkIsGnnBeAbvzB5BgkqhkiG9w0BCQ8xbDBq
-MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
-DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCuQ6IBU4uw/Kf3vNL7CKZgOSYC
-qoFqLrwZ7+xTt8LXfu7zbavi5Fd197DIwpFhmcjvhWhnBk0TWfN/0p01JQKyUeOB
-TSO6dIO6SdC2AmviO6OO8q0C59+3DZwaVPHEB+xo98gY2IK+AXzmIYlufERQ0dPs
-9rr6LNQ1u8A5+225t4TW3BK3hrjA5P3dAMCMfMEk7lCXHGPm04Z5IZf7w55bPMY0
-sPSvhCMTdfvKKjsiXxXHIipW6Bdx4SIuyxJN/RFU4ggctwZjeM9F8xoiJ7PL2SO/
-rR4XxArMG8eKNqVBArt9jFh3rrhs1u1CgA3xs9qEnlW445WT/bdETgJORpKJ
-
-------D521EF265F3582127DC736DC140F1FE8--
-
+1.8.3.2
 
