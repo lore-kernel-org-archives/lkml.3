@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162351Ab3LFXzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:55:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48360 "EHLO
+	id S932395Ab3LFXzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:55:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48361 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759045Ab3LFXMd (ORCPT
+	with ESMTP id S1759049Ab3LFXMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:12:33 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 010/152] usb: musb: cancel work on removal
-Date: Fri,  6 Dec 2013 15:08:54 -0800
-Message-Id: <1386371476-2477-11-git-send-email-kamal@canonical.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 002/152] ipv6: reset dst.expires value when clearing expire flag
+Date: Fri,  6 Dec 2013 15:08:46 -0800
+Message-Id: <1386371476-2477-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,60 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit c5340bd14336b902604ab95212a8877de109d9ae upstream.
+[ Upstream commit 01ba16d6ec85a1ec4669c75513a76b61ec53ee50 ]
 
-So I captured this:
+On receiving a packet too big icmp error we update the expire value by
+calling rt6_update_expires. This function uses dst_set_expires which is
+implemented that it can only reduce the expiration value of the dst entry.
 
-|WARNING: CPU: 0 PID: 2078 at /home/bigeasy/work/new/TI/linux/lib/debugobjects.c:260 debug_print_object+0x94/0xc4()
-|ODEBUG: free active (active state 0) object type: work_struct hint: musb_irq_work+0x0/0x38 [musb_hdrc]
-|CPU: 0 PID: 2078 Comm: rmmod Not tainted 3.12.0-rc4+ #338
-|[<c0014d38>] (unwind_backtrace+0x0/0xf4) from [<c001249c>] (show_stack+0x14/0x1c)
-|[<c001249c>] (show_stack+0x14/0x1c) from [<c0037720>] (warn_slowpath_common+0x64/0x84)
-|[<c0037720>] (warn_slowpath_common+0x64/0x84) from [<c00377d4>] (warn_slowpath_fmt+0x30/0x40)
-|[<c00377d4>] (warn_slowpath_fmt+0x30/0x40) from [<c022ae90>] (debug_print_object+0x94/0xc4)
-|[<c022ae90>] (debug_print_object+0x94/0xc4) from [<c022b7e0>] (debug_check_no_obj_freed+0x1c0/0x228)
-|[<c022b7e0>] (debug_check_no_obj_freed+0x1c0/0x228) from [<c00f1f38>] (kfree+0xf8/0x228)
-|[<c00f1f38>] (kfree+0xf8/0x228) from [<c02921c4>] (release_nodes+0x1a8/0x248)
-|[<c02921c4>] (release_nodes+0x1a8/0x248) from [<c028f70c>] (__device_release_driver+0x98/0xf0)
-|[<c028f70c>] (__device_release_driver+0x98/0xf0) from [<c028f840>] (device_release_driver+0x24/0x34)
-|[<c028f840>] (device_release_driver+0x24/0x34) from [<c028ebe8>] (bus_remove_device+0x148/0x15c)
-|[<c028ebe8>] (bus_remove_device+0x148/0x15c) from [<c028d120>] (device_del+0x104/0x1c0)
-|[<c028d120>] (device_del+0x104/0x1c0) from [<c02911e4>] (platform_device_del+0x18/0xac)
-|[<c02911e4>] (platform_device_del+0x18/0xac) from [<c029179c>] (platform_device_unregister+0xc/0x18)
-|[<c029179c>] (platform_device_unregister+0xc/0x18) from [<bf1902fc>] (dsps_remove+0x20/0x4c [musb_dsps])
-|[<bf1902fc>] (dsps_remove+0x20/0x4c [musb_dsps]) from [<c0290d7c>] (platform_drv_remove+0x1c/0x24)
-|[<c0290d7c>] (platform_drv_remove+0x1c/0x24) from [<c028f704>] (__device_release_driver+0x90/0xf0)
-|[<c028f704>] (__device_release_driver+0x90/0xf0) from [<c028f818>] (driver_detach+0xb4/0xb8)
-|[<c028f818>] (driver_detach+0xb4/0xb8) from [<c028e6e8>] (bus_remove_driver+0x98/0xec)
-|[<c028e6e8>] (bus_remove_driver+0x98/0xec) from [<c008fc70>] (SyS_delete_module+0x1e0/0x24c)
-|[<c008fc70>] (SyS_delete_module+0x1e0/0x24c) from [<c000e680>] (ret_fast_syscall+0x0/0x48)
-|---[ end trace d79045419a3e51ec ]---
+If we insert new routing non-expiry information into the ipv6 fib where
+we already have a matching rt6_info we only clear the RTF_EXPIRES flag
+in rt6i_flags and leave the dst.expires value as is.
 
-The workqueue is only scheduled from the ep0 and never canceled in case
-the musb is removed before the work has a chance to run.
+When new mtu information arrives for that cached dst_entry we again
+call dst_set_expires. This time it won't update the dst.expire value
+because we left the dst.expire value intact from the last update. So
+dst_set_expires won't touch dst.expires.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ kamal: backport to 3.8 (context) ]
+Fix this by resetting dst.expires when clearing the RTF_EXPIRE flag.
+dst_set_expires checks for a zero expiration and updates the
+dst.expires.
+
+In the past this (not updating dst.expires) was necessary because
+dst.expire was placed in a union with the dst_entry *from reference
+and rt6_clean_expires did assign NULL to it. This split happend in
+ecd9883724b78cc72ed92c98bcb1a46c764fff21 ("ipv6: fix race condition
+regarding dst->expires and dst->from").
+
+Reported-by: Steinar H. Gunderson <sgunderson@bigfoot.com>
+Reported-by: Valentijn Sessink <valentyn@blub.net>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Valentijn Sessink <valentyn@blub.net>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/musb/musb_core.c | 1 +
+ include/net/ip6_fib.h | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 60b41cc..85b7a91 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1816,6 +1816,7 @@ static void musb_free(struct musb *musb)
- 			disable_irq_wake(musb->nIrq);
- 		free_irq(musb->nIrq, musb);
- 	}
-+	cancel_work_sync(&musb->irq_work);
- 	if (is_dma_capable() && musb->dma_controller) {
- 		struct dma_controller	*c = musb->dma_controller;
+diff --git a/include/net/ip6_fib.h b/include/net/ip6_fib.h
+index 28d27a6..90d7b4c 100644
+--- a/include/net/ip6_fib.h
++++ b/include/net/ip6_fib.h
+@@ -167,6 +167,7 @@ static inline struct inet6_dev *ip6_dst_idev(struct dst_entry *dst)
+ static inline void rt6_clean_expires(struct rt6_info *rt)
+ {
+ 	rt->rt6i_flags &= ~RTF_EXPIRES;
++	rt->dst.expires = 0;
+ }
  
+ static inline void rt6_set_expires(struct rt6_info *rt, unsigned long expires)
 -- 
 1.8.3.2
 
