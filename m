@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3LFHls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:41:48 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:37811 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab3LFHlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:41:46 -0500
-Message-ID: <52A17FB4.9000301@gmail.com>
-Date: Fri, 06 Dec 2013 09:41:40 +0200
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+	id S1755685Ab3LFHnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:43:00 -0500
+Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:29522
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753897Ab3LFHm5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 02:42:57 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(z579ehz1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh109h2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2184h21a6h2216h22d0h2336hbe9i1155h)
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
 CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ivaylo Dimitrov <freemangordon@abv.bg>, pavel@ucw.cz,
-        pali.rohar@gmail.com
-Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
-References: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com> <52A16932.8020909@gmail.com> <20131206073225.GD28413@mwanda>
-In-Reply-To: <20131206073225.GD28413@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3 v5] usb: chipidea: put hw_phymode_configure before
+  ci_usb_phy_init
+Thread-Topic: [PATCH 3/3 v5] usb: chipidea: put hw_phymode_configure before
+  ci_usb_phy_init
+Thread-Index: AQHO8Z5nbgEy96NBU0+7QxU+/tyRE5pGyi9A
+Date: Fri, 6 Dec 2013 07:42:44 +0000
+Message-ID: <F281D0F91ED19E4D8E63A7504E8A649804145AFC@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <1386122179-4158-1-git-send-email-chris.ruehl@gtsys.com.hk>
+ <1386122179-4158-3-git-send-email-chris.ruehl@gtsys.com.hk>
+In-Reply-To: <1386122179-4158-3-git-send-email-chris.ruehl@gtsys.com.hk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.15]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My other patch (the one that fixes the security issue) was already 
-applied, albeit it was sent after this one, see 
-https://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/commit/?h=staging-linus&id=559c71fe5dc3bf2ecc55afb336145db7f0abf810 
-, that is why I think there is some problem  with the mail itself.
+ 
+> 
+> usb: chipidea: put hw_phymode_configure before ci_usb_phy_init
+> 
+> hw_phymode_configure configures the PORTSC registers and allow the
+> following phy_inits to operate on the right parameters. This fix a
+> problem
+> where the UPLI (ISP1504) could not be detected, because the Viewport was
+> not
+> available and read the viewport return 0's only.
+> 
+> Signed-off-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+> Acked-by: Peter Chen <peter.chen@freescale.com>
+> ---
+>  drivers/usb/chipidea/core.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index 2834801..43897dd 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -564,6 +564,8 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  		return -ENODEV;
+>  	}
+> 
+> +	hw_phymode_configure(ci);
+> +
+>  	ret = ci_usb_phy_init(ci);
+>  	if (ret) {
+>  		dev_err(dev, "unable to init phy: %d\n", ret);
+> @@ -581,8 +583,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+> 
+>  	ci_get_otg_capable(ci);
+> 
+> -	hw_phymode_configure(ci);
+> -
+>  	dr_mode = ci->platdata->dr_mode;
+>  	/* initialize role(s) before the interrupt is requested */
+>  	if (dr_mode == USB_DR_MODE_OTG || dr_mode == USB_DR_MODE_HOST) {
+> --
+> 1.7.10.4
+> 
 
-Sure I will wait :)
+Applied, Thanks.
 
-regards,
-Ivo
+Peter
 
-On 06.12.2013 09:32, Dan Carpenter wrote:
-> On Fri, Dec 06, 2013 at 08:05:38AM +0200, Ivajlo Dimitrov wrote:
->> Hi Greg,
->>
->> On 01.12.2013 19:07, Ivaylo DImitrov wrote:
->>> From: Ivaylo Dimitrov <freemangordon@abv.bg>
->>>
->>> Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
->>> need to be exported. It can also be made way simpler by using sscanf.
->>>
->>> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
->>> ---
->>>   drivers/staging/tidspbridge/Makefile               |    2 +-
->>>   drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
->>>   .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
->>>   drivers/staging/tidspbridge/rmgr/dbdcd.c           |   42 +++++++++-
->>>   4 files changed, 39 insertions(+), 108 deletions(-)
->>>   delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
->>>
->> I guess the initial mail somehow didn't make it through your spam filter:
->> https://lkml.org/lkml/2013/12/1/70
->>
-> It's too early to start resending.  Wait for another week at least.
->
-> regards,
-> dan carpenter
->
 
