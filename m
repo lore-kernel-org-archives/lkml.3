@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759057Ab3LFVwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:52:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60466 "EHLO
+	id S1162347Ab3LFWgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:36:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60533 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3LFVwc (ORCPT
+	with ESMTP id S1759053Ab3LFVwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:32 -0500
+	Fri, 6 Dec 2013 16:52:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willem de Bruijn <willemb@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Eric Wong <normalperson@yhbt.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 22/83] ip6tnl: fix use after free of fb_tnl_dev
-Date: Fri,  6 Dec 2013 13:51:12 -0800
-Message-Id: <20131206214642.135915718@linuxfoundation.org>
+Subject: [PATCH 3.12 33/83] net: clamp ->msg_namelen instead of returning an error
+Date: Fri,  6 Dec 2013 13:51:23 -0800
+Message-Id: <20131206214643.133128921@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -29,81 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 1e9f3d6f1c403dd2b6270f654b4747147aa2306f ]
+[ Upstream commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 ]
 
-Bug has been introduced by commit bb8140947a24 ("ip6tnl: allow to use rtnl ops
-on fb tunnel").
+If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
+original code that would lead to memory corruption in the kernel if you
+had audit configured.  If you didn't have audit configured it was
+harmless.
 
-When ip6_tunnel.ko is unloaded, FB device is delete by rtnl_link_unregister()
-and then we try to use the pointer in ip6_tnl_destroy_tunnels().
+There are some programs such as beta versions of Ruby which use too
+large of a buffer and returning an error code breaks them.  We should
+clamp the ->msg_namelen value instead.
 
-Let's add an handler for dellink, which will never remove the FB tunnel. With
-this patch it will no more be possible to remove it via 'ip link del ip6tnl0',
-but it's safer.
-
-The same fix was already proposed by Willem de Bruijn <willemb@google.com> for
-sit interfaces.
-
-CC: Willem de Bruijn <willemb@google.com>
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Willem de Bruijn <willemb@google.com>
+Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
+Reported-by: Eric Wong <normalperson@yhbt.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Tested-by: Eric Wong <normalperson@yhbt.net>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_tunnel.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ net/compat.c |    2 +-
+ net/socket.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1635,6 +1635,15 @@ static int ip6_tnl_changelink(struct net
- 	return ip6_tnl_update(t, &p);
- }
- 
-+static void ip6_tnl_dellink(struct net_device *dev, struct list_head *head)
-+{
-+	struct net *net = dev_net(dev);
-+	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
-+
-+	if (dev != ip6n->fb_tnl_dev)
-+		unregister_netdevice_queue(dev, head);
-+}
-+
- static size_t ip6_tnl_get_size(const struct net_device *dev)
- {
- 	return
-@@ -1699,6 +1708,7 @@ static struct rtnl_link_ops ip6_link_ops
- 	.validate	= ip6_tnl_validate,
- 	.newlink	= ip6_tnl_newlink,
- 	.changelink	= ip6_tnl_changelink,
-+	.dellink	= ip6_tnl_dellink,
- 	.get_size	= ip6_tnl_get_size,
- 	.fill_info	= ip6_tnl_fill_info,
- };
-@@ -1715,9 +1725,9 @@ static struct xfrm6_tunnel ip6ip6_handle
- 	.priority	=	1,
- };
- 
--static void __net_exit ip6_tnl_destroy_tunnels(struct ip6_tnl_net *ip6n)
-+static void __net_exit ip6_tnl_destroy_tunnels(struct net *net)
- {
--	struct net *net = dev_net(ip6n->fb_tnl_dev);
-+	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
- 	struct net_device *dev, *aux;
- 	int h;
- 	struct ip6_tnl *t;
-@@ -1785,10 +1795,8 @@ err_alloc_dev:
- 
- static void __net_exit ip6_tnl_exit_net(struct net *net)
- {
--	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
--
- 	rtnl_lock();
--	ip6_tnl_destroy_tunnels(ip6n);
-+	ip6_tnl_destroy_tunnels(net);
- 	rtnl_unlock();
+--- a/net/compat.c
++++ b/net/compat.c
+@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kms
+ 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	kmsg->msg_name = compat_ptr(tmp1);
+ 	kmsg->msg_iov = compat_ptr(tmp2);
+ 	kmsg->msg_control = compat_ptr(tmp3);
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1973,7 +1973,7 @@ static int copy_msghdr_from_user(struct
+ 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
+ 		return -EFAULT;
+ 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
+-		return -EINVAL;
++		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
+ 	return 0;
  }
  
 
