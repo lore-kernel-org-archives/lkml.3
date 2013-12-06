@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921Ab3LFOVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:21:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50481 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3LFOVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 09:21:06 -0500
-Message-ID: <52A1DD4B.7020003@suse.cz>
-Date: Fri, 06 Dec 2013 15:20:59 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] mm/compaction: respect ignore_skip_hint in update_pageblock_skip
-References: <1386319310-28016-1-git-send-email-iamjoonsoo.kim@lge.com> <1386319310-28016-4-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1386319310-28016-4-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758930Ab3LFOVb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:21:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43613 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161096Ab3LFM75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 07:59:57 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 021/272] nfsd: make sure to balance get/put_write_access
+Date: Fri,  6 Dec 2013 12:55:10 +0000
+Message-Id: <1386334761-25517-22-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 09:41 AM, Joonsoo Kim wrote:
-> update_pageblock_skip() only fits to compaction which tries to isolate by
-> pageblock unit. If isolate_migratepages_range() is called by CMA, it try to
-> isolate regardless of pageblock unit and it don't reference
-> get_pageblock_skip() by ignore_skip_hint. We should also respect it on
-> update_pageblock_skip() to prevent from setting the wrong information.
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Yeah, this will also prevent updating cached migrate scanner pfn, which 
-makes perfect sense, as cma doesn't read them.
+------------------
 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 805165b..f58bcd0 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -134,6 +134,10 @@ static void update_pageblock_skip(struct compact_control *cc,
->   			bool migrate_scanner)
->   {
->   	struct zone *zone = cc->zone;
-> +
-> +	if (cc->ignore_skip_hint)
-> +		return;
-> +
->   	if (!page)
->   		return;
->
->
+Use a straight goto error label style in nfsd_setattr to make sure
+we always do the put_write_access call after we got it earlier.
+
+Note that the we have been failing to do that in the case
+nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
+6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
+setattr".
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[ luis: backported to 3.11:
+  - dropped 3rd parameter to notify_change() ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/nfsd/vfs.c | 29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 2e27c0c..72cb28e 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -444,27 +444,28 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 
+ 	iap->ia_valid |= ATTR_CTIME;
+ 
+-	err = nfserr_notsync;
+-	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
+-		host_err = nfsd_break_lease(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-		fh_lock(fhp);
+-
+-		host_err = notify_change(dentry, iap);
+-		err = nfserrno(host_err);
+-		fh_unlock(fhp);
++	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
++		err = nfserr_notsync;
++		goto out_put_write_access;
+ 	}
++
++	host_err = nfsd_break_lease(inode);
++	if (host_err)
++		goto out_put_write_access_nfserror;
++
++	fh_lock(fhp);
++	host_err = notify_change(dentry, iap);
++	fh_unlock(fhp);
++
++out_put_write_access_nfserror:
++	err = nfserrno(host_err);
++out_put_write_access:
+ 	if (size_change)
+ 		put_write_access(inode);
+ 	if (!err)
+ 		commit_metadata(fhp);
+ out:
+ 	return err;
+-
+-out_nfserr:
+-	err = nfserrno(host_err);
+-	goto out;
+ }
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || \
+-- 
+1.8.3.2
 
