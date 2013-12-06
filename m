@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162309Ab3LFXST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:18:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48741 "EHLO
+	id S1162187Ab3LFXiU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:38:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48745 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162243Ab3LFXSQ (ORCPT
+	with ESMTP id S1162249Ab3LFXSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:18:16 -0500
+	Fri, 6 Dec 2013 18:18:17 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 117/152] ASoC: blackfin: Fix missing break
-Date: Fri,  6 Dec 2013 15:10:41 -0800
-Message-Id: <1386371476-2477-118-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 133/152] drm/radeon: add semaphore trace point
+Date: Fri,  6 Dec 2013 15:10:57 -0800
+Message-Id: <1386371476-2477-134-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +31,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
 
-commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
+commit bd80c8ba995c1dbdddee14acc55c541c499e0442 upstream.
 
-Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
-Reported-by: David Binderman
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/blackfin/bf5xx-i2s.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/radeon_semaphore.c |  6 +++++-
+ drivers/gpu/drm/radeon/radeon_trace.h     | 36 +++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/blackfin/bf5xx-i2s.c b/sound/soc/blackfin/bf5xx-i2s.c
-index 168d88b..822bb97 100644
---- a/sound/soc/blackfin/bf5xx-i2s.c
-+++ b/sound/soc/blackfin/bf5xx-i2s.c
-@@ -111,6 +111,7 @@ static int bf5xx_i2s_hw_params(struct snd_pcm_substream *substream,
- 		bf5xx_i2s->tcr2 |= 7;
- 		bf5xx_i2s->rcr2 |= 7;
- 		sport_handle->wdsize = 1;
-+		break;
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		bf5xx_i2s->tcr2 |= 15;
- 		bf5xx_i2s->rcr2 |= 15;
+diff --git a/drivers/gpu/drm/radeon/radeon_semaphore.c b/drivers/gpu/drm/radeon/radeon_semaphore.c
+index 8dcc20f..97d73bf 100644
+--- a/drivers/gpu/drm/radeon/radeon_semaphore.c
++++ b/drivers/gpu/drm/radeon/radeon_semaphore.c
+@@ -29,7 +29,7 @@
+  */
+ #include <drm/drmP.h>
+ #include "radeon.h"
+-
++#include "radeon_trace.h"
+ 
+ int radeon_semaphore_create(struct radeon_device *rdev,
+ 			    struct radeon_semaphore **semaphore)
+@@ -56,6 +56,8 @@ int radeon_semaphore_create(struct radeon_device *rdev,
+ void radeon_semaphore_emit_signal(struct radeon_device *rdev, int ring,
+ 			          struct radeon_semaphore *semaphore)
+ {
++	trace_radeon_semaphore_signale(ring, semaphore);
++
+ 	--semaphore->waiters;
+ 	radeon_semaphore_ring_emit(rdev, ring, &rdev->ring[ring], semaphore, false);
+ }
+@@ -63,6 +65,8 @@ void radeon_semaphore_emit_signal(struct radeon_device *rdev, int ring,
+ void radeon_semaphore_emit_wait(struct radeon_device *rdev, int ring,
+ 			        struct radeon_semaphore *semaphore)
+ {
++	trace_radeon_semaphore_wait(ring, semaphore);
++
+ 	++semaphore->waiters;
+ 	radeon_semaphore_ring_emit(rdev, ring, &rdev->ring[ring], semaphore, true);
+ }
+diff --git a/drivers/gpu/drm/radeon/radeon_trace.h b/drivers/gpu/drm/radeon/radeon_trace.h
+index eafd816..a20bc7e 100644
+--- a/drivers/gpu/drm/radeon/radeon_trace.h
++++ b/drivers/gpu/drm/radeon/radeon_trace.h
+@@ -74,6 +74,42 @@ DEFINE_EVENT(radeon_fence_request, radeon_fence_wait_end,
+ 	    TP_ARGS(dev, seqno)
+ );
+ 
++DECLARE_EVENT_CLASS(radeon_semaphore_request,
++
++	    TP_PROTO(int ring, struct radeon_semaphore *sem),
++
++	    TP_ARGS(ring, sem),
++
++	    TP_STRUCT__entry(
++			     __field(int, ring)
++			     __field(signed, waiters)
++			     __field(uint64_t, gpu_addr)
++			     ),
++
++	    TP_fast_assign(
++			   __entry->ring = ring;
++			   __entry->waiters = sem->waiters;
++			   __entry->gpu_addr = sem->gpu_addr;
++			   ),
++
++	    TP_printk("ring=%u, waiters=%d, addr=%010Lx", __entry->ring,
++		      __entry->waiters, __entry->gpu_addr)
++);
++
++DEFINE_EVENT(radeon_semaphore_request, radeon_semaphore_signale,
++
++	    TP_PROTO(int ring, struct radeon_semaphore *sem),
++
++	    TP_ARGS(ring, sem)
++);
++
++DEFINE_EVENT(radeon_semaphore_request, radeon_semaphore_wait,
++
++	    TP_PROTO(int ring, struct radeon_semaphore *sem),
++
++	    TP_ARGS(ring, sem)
++);
++
+ #endif
+ 
+ /* This part must be outside protection */
 -- 
 1.8.3.2
 
