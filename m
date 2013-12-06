@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161265Ab3LFNAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:00:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43729 "EHLO
+	id S1161295Ab3LFNAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:00:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43731 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161243Ab3LFNAa (ORCPT
+	with ESMTP id S1161244Ab3LFNAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:30 -0500
+	Fri, 6 Dec 2013 08:00:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 045/272] powerpc/signals: Improved mark VSX not saved with small contexts fix
-Date: Fri,  6 Dec 2013 12:55:34 +0000
-Message-Id: <1386334761-25517-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 046/272] gpio: mvebu: make mvchip->irqbase signed for error handling
+Date: Fri,  6 Dec 2013 12:55:35 +0000
+Message-Id: <1386334761-25517-47-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,89 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ec67ad82814bee92251fd963bf01c7a173856555 upstream.
+commit d535922691fc026479fcc03e78ac3d931a54e75a upstream.
 
-In a recent patch:
-  commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42
-  Author: Michael Neuling <mikey@neuling.org>
-  powerpc/signals: Mark VSX not saved with small contexts
+There is a bug in mvebu_gpio_probe() where we do:
 
-We fixed an issue but an improved solution was later discussed after the patch
-was merged.
+	mvchip->irqbase = irq_alloc_descs(-1, 0, ngpios, -1);
+	if (mvchip->irqbase < 0) {
 
-Firstly, this patch doesn't handle the 64bit signals case, which could also hit
-this issue (but has never been reported).
+The problem is that mvchip->irqbase is unsigned so the error handling
+doesn't work.  I have changed it to be a regular int.
 
-Secondly, the original patch isn't clear what MSR VSX should be set to.  The
-new approach below always clears the MSR VSX bit (to indicate no VSX is in the
-context) and sets it only in the specific case where VSX is available (ie. when
-VSX has been used and the signal context passed has space to provide the
-state).
-
-This reverts the original patch and replaces it with the improved solution.  It
-also adds a 64 bit version.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/signal_32.c | 16 +++++++---------
- arch/powerpc/kernel/signal_64.c |  6 ++++++
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ drivers/gpio/gpio-mvebu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-index 3233099..7e9dff8 100644
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -442,6 +442,12 @@ static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
- #endif /* CONFIG_ALTIVEC */
- 	if (copy_fpr_to_user(&frame->mc_fregs, current))
- 		return 1;
-+
-+	/*
-+	 * Clear the MSR VSX bit to indicate there is no valid state attached
-+	 * to this context, except in the specific case below where we set it.
-+	 */
-+	msr &= ~MSR_VSX;
- #ifdef CONFIG_VSX
- 	/*
- 	 * Copy VSR 0-31 upper half from thread_struct to local
-@@ -454,15 +460,7 @@ static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
- 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
- 			return 1;
- 		msr |= MSR_VSX;
--	} else if (!ctx_has_vsx_region)
--		/*
--		 * With a small context structure we can't hold the VSX
--		 * registers, hence clear the MSR value to indicate the state
--		 * was not saved.
--		 */
--		msr &= ~MSR_VSX;
--
--
-+	}
- #endif /* CONFIG_VSX */
- #ifdef CONFIG_SPE
- 	/* save spe registers */
-diff --git a/arch/powerpc/kernel/signal_64.c b/arch/powerpc/kernel/signal_64.c
-index 887e99d..35c20a1 100644
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -121,6 +121,12 @@ static long setup_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs,
- 	flush_fp_to_thread(current);
- 	/* copy fpr regs and fpscr */
- 	err |= copy_fpr_to_user(&sc->fp_regs, current);
-+
-+	/*
-+	 * Clear the MSR VSX bit to indicate there is no valid state attached
-+	 * to this context, except in the specific case below where we set it.
-+	 */
-+	msr &= ~MSR_VSX;
- #ifdef CONFIG_VSX
- 	/*
- 	 * Copy VSX low doubleword to local buffer for formatting,
+diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
+index 80ad35e..57bcf03 100644
+--- a/drivers/gpio/gpio-mvebu.c
++++ b/drivers/gpio/gpio-mvebu.c
+@@ -79,7 +79,7 @@ struct mvebu_gpio_chip {
+ 	spinlock_t	   lock;
+ 	void __iomem	  *membase;
+ 	void __iomem	  *percpu_membase;
+-	unsigned int       irqbase;
++	int		   irqbase;
+ 	struct irq_domain *domain;
+ 	int                soc_variant;
+ };
 -- 
 1.8.3.2
 
