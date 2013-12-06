@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162184Ab3LFNGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:06:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44793 "EHLO
+	id S1162305Ab3LFNJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:09:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44805 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161381Ab3LFNF7 (ORCPT
+	with ESMTP id S1162179Ab3LFNGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:05:59 -0500
+	Fri, 6 Dec 2013 08:06:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 259/272] block: properly stack underlying max_segment_size to DM device
-Date: Fri,  6 Dec 2013 12:59:08 +0000
-Message-Id: <1386334761-25517-260-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 262/272] ALSA: hda - Fix Line Out automute on Realtek multifunction jacks
+Date: Fri,  6 Dec 2013 12:59:11 +0000
+Message-Id: <1386334761-25517-263-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit d82ae52e68892338068e7559a0c0657193341ce4 upstream.
+commit 5959a6bc1124211a359525d209005abc07b0197b upstream.
 
-Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
-(65536) even if the underlying device(s) have a larger value -- this is
-due to blk_stack_limits() using min_not_zero() when stacking the
-max_segment_size limit.
+In case there is both a multifunction headset jack and a Line Out
+jack, automuting was not working properly from the Line Out jack.
+This patch fixes that issue.
 
-1073741824
-
-before patch:
-65536
-
-after patch:
-1073741824
-
-Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+BugLink: https://bugs.launchpad.net/bugs/1250377
+Tested-by: Cyrus Lien <cyrus.lien@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/blk-settings.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index c50ecf0..5330933 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -144,6 +144,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
- 	lim->discard_zeroes_data = 1;
- 	lim->max_segments = USHRT_MAX;
- 	lim->max_hw_sectors = UINT_MAX;
-+	lim->max_segment_size = UINT_MAX;
- 	lim->max_sectors = UINT_MAX;
- 	lim->max_write_same_sectors = UINT_MAX;
- }
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index a67015a..69d784f 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3231,8 +3231,10 @@ static void alc_update_headset_mode(struct hda_codec *codec)
+ 	else
+ 		new_headset_mode = ALC_HEADSET_MODE_HEADPHONE;
+ 
+-	if (new_headset_mode == spec->current_headset_mode)
++	if (new_headset_mode == spec->current_headset_mode) {
++		snd_hda_gen_update_outputs(codec);
+ 		return;
++	}
+ 
+ 	switch (new_headset_mode) {
+ 	case ALC_HEADSET_MODE_UNPLUGGED:
 -- 
 1.8.3.2
 
