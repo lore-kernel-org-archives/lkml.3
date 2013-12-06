@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab3LFMEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 07:04:07 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:57497 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab3LFMED (ORCPT
+	id S1757981Ab3LFMEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:04:11 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:62701 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757958Ab3LFMEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:04:03 -0500
-X-AuditID: cbfee61a-b7f796d000004313-0e-52a1bd327227
+	Fri, 6 Dec 2013 07:04:07 -0500
+X-AuditID: cbfee61b-b7f006d000003e1f-4d-52a1bd351de4
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
@@ -15,60 +15,55 @@ Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         m.szyprowski@samsung.com, andrzej.p@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 1/2] USB: gadget: s3c-hsotg: fix maxpacket size in
- s3c_hsotg_irq_enumdone
-Date: Fri, 06 Dec 2013 13:03:44 +0100
-Message-id: <1386331425-16594-2-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 2/2] USB: gadget: s3c-hsotg: add flush TX FIFO when kill all
+ requests
+Date: Fri, 06 Dec 2013 13:03:45 +0100
+Message-id: <1386331425-16594-3-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1386331425-16594-1-git-send-email-r.baldyga@samsung.com>
 References: <1386331425-16594-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jAV2jvQuDDCY1yFrMetnOYrFxxnpW
-	i4P36y2aF69nszjb9Ibd4vKuOWwWi5a1MlusPXKX3eLB4Z3sDpwe++euYffo27KK0eP4je1M
-	Hp83yQWwRHHZpKTmZJalFunbJXBl3J/2mbFgNUdFT+cq5gbGJ2xdjJwcEgImEk8+fGWFsMUk
-	LtxbDxTn4hASWMQosWbRFlYIp51JYte29UwgVWwCOhJbvk9gBLFFBAQk1r+4xA5SxCzwl1Hi
-	9sNOsLHCAtES7XdPsIDYLAKqEtfPLAVbwSvgKvF/214gmwNonYLEnEk2ICangJvEueVyIBVC
-	QBXHpm5gmsDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcHA9k9rBuLLB4hCjAAej
-	Eg8vx6oFQUKsiWXFlbmHGCU4mJVEeG2WLwwS4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQ
-	SCA9sSQ1OzW1ILUIJsvEwSnVwFgSYJ9oz7XV5OyDNfeeuJkebtRKkBS6qTn5jwT7NsZqBssV
-	qe3iN+s/rPzx0Pf5pdXvC3MtuTg3zOwyefVHbM8i01OfQi7FHleVbTdWbBeXm/VX5bvB2n1h
-	MtLy1lKN5v08upWcK5lClcL9PqV7Nc0T28xvb/DmwJLiB+9Mf5Vwb7y9OpH3rhJLcUaioRZz
-	UXEiADGCMM8qAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t9jAV3TvQuDDA5/trKY9bKdxWLjjPWs
+	Fgfv11s0L17PZnG26Q27xeVdc9gsFi1rZbZYe+Quu8WDwzvZHTg99s9dw+7Rt2UVo8fxG9uZ
+	PD5vkgtgieKySUnNySxLLdK3S+DKmDzzOHPBKY6Kj/8usjcwTmLvYuTkkBAwkTj8fBYjhC0m
+	ceHeerYuRi4OIYFFjBJ7p+5kh3DamSR+th4D62AT0JHY8n0CWIeIgIDE+heXwIqYBf4yStx+
+	2MkGkhAWCJf4fOQcC4jNIqAqMXHbKuYuRg4OXgFXic93s0FMCQEFiTmTbEBMTgE3iXPL5UCK
+	hYAKjk3dwDSBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODQeia9g3FVg8UhRgEO
+	RiUeXo5VC4KEWBPLiitzDzFKcDArifDaLF8YJMSbklhZlVqUH19UmpNafIhRmoNFSZz3YKt1
+	oJBAemJJanZqakFqEUyWiYNTqoGx5saRVDn5VcviTe/KqT4M+eib7nmv8YklS++CFv43IYcs
+	fxS4LFtm3Ma0jLv5QN3lM7Lv3OfVTnOR2/6yRUoyKn1Hvv2VIxf572l3Jf3+1n1j6fzrCrdN
+	rr96MyuW+ZHG1vszjfx7tSJWTb1of4zNc83UPlvRjnqGTYFOW328X1yT3CcXfsFWiaU4I9FQ
+	i7moOBEAb1cyGykCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set maximum possible maxpacket value for each speed. Previous
-values didn't allow to use maxpacket sizes greater than 64 in full speed
-and 512 in high speed, although hardware is able to handle up to 1023 in fs
-and 1024 in hs.
+This patch adds flushing TX FIFO in kill_all_requests() function in
+dedicated-fifo mode. It's because when requests are killed (when endpoint is
+disabled or in case of device reset/disconnection) in FIFO can stay some
+unsent data. In the worst case FIFO can stay full, and then if endpoint will
+be back enabled, sending new data will be impossible.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
 ---
- drivers/usb/gadget/s3c-hsotg.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/s3c-hsotg.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index e20bc10..ad9a4ed 100644
+index ad9a4ed..4a085e6 100644
 --- a/drivers/usb/gadget/s3c-hsotg.c
 +++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -2086,13 +2086,13 @@ static void s3c_hsotg_irq_enumdone(struct s3c_hsotg *hsotg)
- 	case DSTS_EnumSpd_FS48:
- 		hsotg->gadget.speed = USB_SPEED_FULL;
- 		ep0_mps = EP0_MPS_LIMIT;
--		ep_mps = 64;
-+		ep_mps = 1023;
- 		break;
+@@ -2156,6 +2156,9 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
+ 		s3c_hsotg_complete_request(hsotg, ep, req,
+ 					   result);
+ 	}
++	if(hsotg->dedicated_fifos)
++		if ((readl(hsotg->regs + DTXFSTS(ep->index)) & 0xffff) * 4 < 3072)
++			s3c_hsotg_txfifo_flush(hsotg, ep->index);
+ }
  
- 	case DSTS_EnumSpd_HS:
- 		hsotg->gadget.speed = USB_SPEED_HIGH;
- 		ep0_mps = EP0_MPS_LIMIT;
--		ep_mps = 512;
-+		ep_mps = 1024;
- 		break;
- 
- 	case DSTS_EnumSpd_LS:
+ #define call_gadget(_hs, _entry) \
 -- 
 1.7.9.5
 
