@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161332Ab3LFNAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:00:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43762 "EHLO
+	id S1161388Ab3LFNBB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:01:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43804 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161244Ab3LFNAj (ORCPT
+	with ESMTP id S1161334Ab3LFNAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:39 -0500
+	Fri, 6 Dec 2013 08:00:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olav Haugan <ohaugan@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 052/272] staging: zsmalloc: Ensure handle is never 0 on success
-Date: Fri,  6 Dec 2013 12:55:41 +0000
-Message-Id: <1386334761-25517-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 060/272] ALSA: hda - Create Headhpone Mic Jack Mode when really needed
+Date: Fri,  6 Dec 2013 12:55:49 +0000
+Message-Id: <1386334761-25517-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,72 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olav Haugan <ohaugan@codeaurora.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 67296874eb1cc80317bf2a8fba22b494e21eb29b upstream.
+commit ced4cefc75fdb8be95eaee325ad0f6b2fc0a484b upstream.
 
-zsmalloc encodes a handle using the pfn and an object
-index. On hardware platforms with physical memory starting
-at 0x0 the pfn can be 0. This causes the encoded handle to be
-0 and is incorrectly interpreted as an allocation failure.
+When a headphone jack is configurable as input, the generic parser
+tries to make it retaskable as Headphone Mic.  The switching can be
+done smoothly if Capture Source control exists (i.e. there is another
+input source).  Or when user explicitly enables the creation of jack
+mode controls, "Headhpone Mic Jack Mode" will be created accordingly.
 
-This issue affects all current and future SoCs with physical
-memory starting at 0x0. All MSM8974 SoCs which includes
-Google Nexus 5 devices are affected.
+However, if the headphone mic is the only input source, we have to
+create "Headphone Mic Jack Mode" control because there is no capture
+source selection.  Otherwise, the generic parser assumes that the
+input is constantly enabled, thus the headphone is permanently set
+as input.  This situation happens on the old MacBook Airs where no
+input is supported properly, for example.
 
-To prevent this false error we ensure that the encoded handle
-will not be 0 when allocation succeeds.
+This patch fixes the problem: now "Headphone Mic Jack Mode" is created
+when such an input selection isn't possible.
 
-Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65681
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zsmalloc/zsmalloc-main.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ sound/pci/hda/hda_generic.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-index 4bb275b..cdc118f 100644
---- a/drivers/staging/zsmalloc/zsmalloc-main.c
-+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-@@ -430,7 +430,12 @@ static struct page *get_next_page(struct page *page)
- 	return next;
- }
+diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
+index 9e44e4a..c443451 100644
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -2476,12 +2476,8 @@ static int create_out_jack_modes(struct hda_codec *codec, int num_pins,
  
--/* Encode <page, obj_idx> as a single handle value */
-+/*
-+ * Encode <page, obj_idx> as a single handle value.
-+ * On hardware platforms with physical memory starting at 0x0 the pfn
-+ * could be 0 so we ensure that the handle will never be 0 by adjusting the
-+ * encoded obj_idx value before encoding.
-+ */
- static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- {
- 	unsigned long handle;
-@@ -441,17 +446,21 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
- 	}
+ 	for (i = 0; i < num_pins; i++) {
+ 		hda_nid_t pin = pins[i];
+-		if (pin == spec->hp_mic_pin) {
+-			int ret = create_hp_mic_jack_mode(codec, pin);
+-			if (ret < 0)
+-				return ret;
++		if (pin == spec->hp_mic_pin)
+ 			continue;
+-		}
+ 		if (get_out_jack_num_items(codec, pin) > 1) {
+ 			struct snd_kcontrol_new *knew;
+ 			char name[SNDRV_CTL_ELEM_ID_NAME_MAXLEN];
+@@ -2754,9 +2750,6 @@ static int create_hp_mic_jack_mode(struct hda_codec *codec, hda_nid_t pin)
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	struct snd_kcontrol_new *knew;
  
- 	handle = page_to_pfn(page) << OBJ_INDEX_BITS;
--	handle |= (obj_idx & OBJ_INDEX_MASK);
-+	handle |= ((obj_idx + 1) & OBJ_INDEX_MASK);
+-	if (get_out_jack_num_items(codec, pin) <= 1 &&
+-	    get_in_jack_num_items(codec, pin) <= 1)
+-		return 0; /* no need */
+ 	knew = snd_hda_gen_add_kctl(spec, "Headphone Mic Jack Mode",
+ 				    &hp_mic_jack_mode_enum);
+ 	if (!knew)
+@@ -4332,6 +4325,17 @@ int snd_hda_gen_parse_auto_config(struct hda_codec *codec,
+ 	if (err < 0)
+ 		return err;
  
- 	return (void *)handle;
- }
- 
--/* Decode <page, obj_idx> pair from the given object handle */
-+/*
-+ * Decode <page, obj_idx> pair from the given object handle. We adjust the
-+ * decoded obj_idx back to its original value since it was adjusted in
-+ * obj_location_to_handle().
-+ */
- static void obj_handle_to_location(unsigned long handle, struct page **page,
- 				unsigned long *obj_idx)
- {
- 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
--	*obj_idx = handle & OBJ_INDEX_MASK;
-+	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
- }
- 
- static unsigned long obj_idx_to_offset(struct page *page,
++	/* create "Headphone Mic Jack Mode" if no input selection is
++	 * available (or user specifies add_jack_modes hint)
++	 */
++	if (spec->hp_mic_pin &&
++	    (spec->auto_mic || spec->input_mux.num_items == 1 ||
++	     spec->add_jack_modes)) {
++		err = create_hp_mic_jack_mode(codec, spec->hp_mic_pin);
++		if (err < 0)
++			return err;
++	}
++
+ 	if (spec->add_jack_modes) {
+ 		if (cfg->line_out_type != AUTO_PIN_SPEAKER_OUT) {
+ 			err = create_out_jack_modes(codec, cfg->line_outs,
 -- 
 1.8.3.2
 
