@@ -1,142 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab3LFMCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 07:02:24 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:54921 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757741Ab3LFMCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:02:22 -0500
-Message-ID: <52A1BCEF.30505@mm-sol.com>
-Date: Fri, 06 Dec 2013 14:02:55 +0200
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "subhashj@codeaurora.org" <subhashj@codeaurora.org>
-Subject: Re: [PATCH v7 2/2] mmc: sdhci-msm: Initial support for MSM chipsets
-References: <1383753405-23631-1-git-send-email-gdjakov@mm-sol.com> <1383753405-23631-3-git-send-email-gdjakov@mm-sol.com> <20131205102740.GI29200@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131205102740.GI29200@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757934Ab3LFMED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:04:03 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:62686 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757670Ab3LFMEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 07:04:00 -0500
+X-AuditID: cbfee61a-b7f796d000004313-0a-52a1bd2e6501
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
+        m.szyprowski@samsung.com, andrzej.p@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 0/2] usb: s3c-hsotg: fixes for maxpacket and TX FIFO handling
+Date: Fri, 06 Dec 2013 13:03:43 +0100
+Message-id: <1386331425-16594-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFJMWRmVeSWpSXmKPExsVy+t9jAV29vQuDDK702VjMetnOYrFxxnpW
+	i4P36y2aF69ns7i8aw6bxaJlrcwWa4/cZbd4cHgnuwOHx/65a9g9+rasYvQ4fmM7k8fnTXIB
+	LFFcNimpOZllqUX6dglcGT1TXzAWHGapeLhgKVMD42XmLkZODgkBE4nT/zYyQthiEhfurWcD
+	sYUEFjFK/LwW0cXIBWS3M0n8bj0IVsQmoCOx5fsEMFtEQEBi/YtL7CBFzAIXGCXeL1jHDpIQ
+	FvCVuDRhKQuIzSKgKvHu/EtWEJtXwFVi09rzTF2MHEDbFCTmTLKZwMi9gJFhFaNoakFyQXFS
+	eq6hXnFibnFpXrpecn7uJkZwiDyT2sG4ssHiEKMAB6MSDy/HqgVBQqyJZcWVuYcYJTiYlUR4
+	bZYvDBLiTUmsrEotyo8vKs1JLT7EKM3BoiTOe6DVOlBIID2xJDU7NbUgtQgmy8TBKdXAWPOw
+	rdepcJP4tnn2m99dtg+Yc2fHI5FFvz/Pipp/+9TVhF9Xthff+SadxWFXsp79hn0Tw04XYbvD
+	Csuqjnu726o8r1rJwxpwUILnVEB+kuTZL2lWCnM7GwOyKmu+XPqmXrFC/UxRzaPbf2w823/d
+	dmV0F92/fPMbM7Nf93p3Fi0wvW/B9/LPPiWW4oxEQy3mouJEACGy31UNAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 12:27 PM, Mark Rutland wrote:
-> On Wed, Nov 06, 2013 at 03:56:45PM +0000, Georgi Djakov wrote:
->> This platform driver adds the initial support of Secure
->> Digital Host Controller Interface compliant controller
->> found in Qualcomm MSM chipsets.
->>
->> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
->> ---
->>   drivers/mmc/host/Kconfig     |   13 +
->>   drivers/mmc/host/Makefile    |    1 +
->>   drivers/mmc/host/sdhci-msm.c |  651 ++++++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 665 insertions(+)
->>   create mode 100644 drivers/mmc/host/sdhci-msm.c
->
-> [...]
->
->> +static int sdhci_msm_dt_parse_vreg_info(struct device *dev,
->> +                                       struct sdhci_msm_reg_data *vreg,
->> +                                       const char *vreg_name)
->> +{
->> +       int len;
->> +       const __be32 *prop;
->
-> Seeing raw property handling in drivers worries me. If there's a reason
-> to touch the raw DTB we should add helpers to do it rather than leaking
-> binary format issues into drivers.
->
->> +       char prop_name[MAX_PROP_SIZE];
->> +       struct device_node *np = dev->of_node;
->> +
->> +       snprintf(prop_name, MAX_PROP_SIZE, "%s-supply", vreg_name);
->> +       if (!of_parse_phandle(np, prop_name, 0)) {
->> +               dev_info(dev, "No vreg data found for %s\n", vreg_name);
->> +               return -EINVAL;
->> +       }
->> +
->> +       vreg->name = vreg_name;
->> +
->> +       snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-lpm-sup", vreg_name);
->> +       if (of_get_property(np, prop_name, NULL))
->> +               vreg->lpm_sup = true;
->> +
->> +       snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-voltage-level", vreg_name);
->> +       prop = of_get_property(np, prop_name, &len);
->> +       if (!prop || (len != (2 * sizeof(__be32)))) {
->> +               dev_warn(dev, "%s %s property\n",
->> +               prop ? "invalid format" : "no", prop_name);
->> +       } else {
->> +               vreg->low_vol_level = be32_to_cpup(&prop[0]);
->> +               vreg->high_vol_level = be32_to_cpup(&prop[1]);
->> +       }
->
-> You can use of_property_read_u32_array here.
->
->> +
->> +       snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-current-level", vreg_name);
->> +       prop = of_get_property(np, prop_name, &len);
->> +       if (!prop || (len != (2 * sizeof(__be32)))) {
->> +               dev_warn(dev, "%s %s property\n",
->> +                        prop ? "invalid format" : "no", prop_name);
->> +       } else {
->> +               vreg->lpm_uA = be32_to_cpup(&prop[0]);
->> +               vreg->hpm_uA = be32_to_cpup(&prop[1]);
->> +       }
->
-> Likewise.
->
+Hello,
 
-I will clean this up use only of_property_read_u32_array() and 
-of_property_read_bool() for DT parsing. Thanks!
+This patches contains fixes for s3c-hsotg driver. They fix maxpacket sizes set
+in s3c_hsotg_irq_enumdone() function, and adds flushing TX FIFO when killing all
+requests in dedicated-fifo mode. More info in commit messages.
 
+Best regards
+Robert Baldyga
+Samsung R&D Institute Poland
 
-> [...]
->
->> +       /*
->> +        * CORE_SW_RST above may trigger power irq if previous status of PWRCTL
->> +        * was either BUS_ON or IO_HIGH_V. So before we enable the power irq
->> +        * interrupt in GIC (by registering the interrupt handler), we need to
->> +        * ensure that any pending power irq interrupt status is acknowledged
->> +        * otherwise power irq interrupt handler would be fired prematurely.
->> +        */
->> +       irq_status = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_STATUS);
->> +       writel_relaxed(irq_status, (msm_host->core_mem + CORE_PWRCTL_CLEAR));
->> +       irq_ctl = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_CTL);
->> +       if (irq_status & (CORE_PWRCTL_BUS_ON | CORE_PWRCTL_BUS_OFF))
->> +               irq_ctl |= CORE_PWRCTL_BUS_SUCCESS;
->> +       if (irq_status & (CORE_PWRCTL_IO_HIGH | CORE_PWRCTL_IO_LOW))
->> +               irq_ctl |= CORE_PWRCTL_IO_SUCCESS;
->> +       writel_relaxed(irq_ctl, (msm_host->core_mem + CORE_PWRCTL_CTL));
->> +       /*
->> +        * Ensure that above writes are propogated before interrupt enablement
->> +        * in GIC.
->> +        */
->> +       mb();
->
-> Does this guarantee that the device has finished responding to the write
-> and deasserted the interrupt line (i.e. does the device only acknowledge
-> the write once that is true)?
->
+Robert Baldyga (2):
+  USB: gadget: s3c-hsotg: fix maxpacket size in s3c_hsotg_irq_enumdone
+  USB: gadget: s3c-hsotg: add flush TX FIFO when kill all requests
 
-I am not sure that i understand your concern. The write to 
-CORE_PWRCTL_CTL should acknowledge and deassert the interrupt.
+ drivers/usb/gadget/s3c-hsotg.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-Thanks,
-Georgi
+-- 
+1.7.9.5
+
