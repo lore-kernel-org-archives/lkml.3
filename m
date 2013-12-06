@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab3LFVxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60883 "EHLO
+	id S1162002Ab3LFWPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:15:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab3LFVxe (ORCPT
+	with ESMTP id S1759351Ab3LFVxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:34 -0500
+	Fri, 6 Dec 2013 16:53:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        mpb <mpb.mail@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Jiri Pirko <jiri@resnulli.us>, Julian Anastasov <ja@ssi.bg>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 18/58] inet: prevent leakage of uninitialized memory to user in recv syscalls
-Date: Fri,  6 Dec 2013 13:51:49 -0800
-Message-Id: <20131206214846.610730603@linuxfoundation.org>
+Subject: [PATCH 3.10 25/58] netfilter: push reasm skb through instead of original frag skbs
+Date: Fri,  6 Dec 2013 13:51:56 -0800
+Message-Id: <20131206214847.245086614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -28,212 +28,473 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jiri Pirko <jiri@resnulli.us>
 
-[ Upstream commit bceaa90240b6019ed73b49965eac7d167610be69 ]
+[ Upstream commit 6aafeef03b9d9ecf255f3a80ed85ee070260e1ae ]
 
-Only update *addr_len when we actually fill in sockaddr, otherwise we
-can return uninitialized memory from the stack to the caller in the
-recvfrom, recvmmsg and recvmsg syscalls. Drop the the (addr_len == NULL)
-checks because we only get called with a valid addr_len pointer either
-from sock_common_recvmsg or inet_recvmsg.
+Pushing original fragments through causes several problems. For example
+for matching, frags may not be matched correctly. Take following
+example:
 
-If a blocking read waits on a socket which is concurrently shut down we
-now return zero and set msg_msgnamelen to 0.
+<example>
+On HOSTA do:
+ip6tables -I INPUT -p icmpv6 -j DROP
+ip6tables -I INPUT -p icmpv6 -m icmp6 --icmpv6-type 128 -j ACCEPT
 
-Reported-by: mpb <mpb.mail@gmail.com>
-Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+and on HOSTB you do:
+ping6 HOSTA -s2000    (MTU is 1500)
+
+Incoming echo requests will be filtered out on HOSTA. This issue does
+not occur with smaller packets than MTU (where fragmentation does not happen)
+</example>
+
+As was discussed previously, the only correct solution seems to be to use
+reassembled skb instead of separete frags. Doing this has positive side
+effects in reducing sk_buff by one pointer (nfct_reasm) and also the reams
+dances in ipvs and conntrack can be removed.
+
+Future plan is to remove net/ipv6/netfilter/nf_conntrack_reasm.c
+entirely and use code in net/ipv6/reassembly.c instead.
+
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ieee802154/dgram.c |    3 +--
- net/ipv4/ping.c        |    9 ++++-----
- net/ipv4/raw.c         |    4 +---
- net/ipv4/udp.c         |    7 +------
- net/ipv6/raw.c         |    4 +---
- net/ipv6/udp.c         |    5 +----
- net/l2tp/l2tp_ip.c     |    4 +---
- net/phonet/datagram.c  |    9 ++++-----
- 8 files changed, 14 insertions(+), 31 deletions(-)
+ include/linux/skbuff.h                         |   32 --------------
+ include/net/ip_vs.h                            |   32 --------------
+ include/net/netfilter/ipv6/nf_defrag_ipv6.h    |    5 --
+ net/core/skbuff.c                              |    3 -
+ net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c |   54 ------------------------
+ net/ipv6/netfilter/nf_conntrack_reasm.c        |   19 --------
+ net/ipv6/netfilter/nf_defrag_ipv6_hooks.c      |    7 ++-
+ net/netfilter/ipvs/ip_vs_core.c                |   55 -------------------------
+ net/netfilter/ipvs/ip_vs_pe_sip.c              |    8 ---
+ 9 files changed, 13 insertions(+), 202 deletions(-)
 
---- a/net/ieee802154/dgram.c
-+++ b/net/ieee802154/dgram.c
-@@ -315,9 +315,8 @@ static int dgram_recvmsg(struct kiocb *i
- 	if (saddr) {
- 		saddr->family = AF_IEEE802154;
- 		saddr->addr = mac_cb(skb)->sa;
--	}
--	if (addr_len)
- 		*addr_len = sizeof(*saddr);
-+	}
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -331,11 +331,6 @@ typedef unsigned int sk_buff_data_t;
+ typedef unsigned char *sk_buff_data_t;
+ #endif
  
- 	if (flags & MSG_TRUNC)
- 		copied = skb->len;
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -626,7 +626,6 @@ static int ping_recvmsg(struct kiocb *io
- 			size_t len, int noblock, int flags, int *addr_len)
+-#if defined(CONFIG_NF_DEFRAG_IPV4) || defined(CONFIG_NF_DEFRAG_IPV4_MODULE) || \
+-    defined(CONFIG_NF_DEFRAG_IPV6) || defined(CONFIG_NF_DEFRAG_IPV6_MODULE)
+-#define NET_SKBUFF_NF_DEFRAG_NEEDED 1
+-#endif
+-
+ /** 
+  *	struct sk_buff - socket buffer
+  *	@next: Next buffer in list
+@@ -368,7 +363,6 @@ typedef unsigned char *sk_buff_data_t;
+  *	@protocol: Packet protocol from driver
+  *	@destructor: Destruct function
+  *	@nfct: Associated connection, if any
+- *	@nfct_reasm: netfilter conntrack re-assembly pointer
+  *	@nf_bridge: Saved data about a bridged frame - see br_netfilter.c
+  *	@skb_iif: ifindex of device we arrived on
+  *	@tc_index: Traffic control index
+@@ -455,9 +449,6 @@ struct sk_buff {
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	struct nf_conntrack	*nfct;
+ #endif
+-#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
+-	struct sk_buff		*nfct_reasm;
+-#endif
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ 	struct nf_bridge_info	*nf_bridge;
+ #endif
+@@ -2700,18 +2691,6 @@ static inline void nf_conntrack_get(stru
+ 		atomic_inc(&nfct->use);
+ }
+ #endif
+-#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
+-static inline void nf_conntrack_get_reasm(struct sk_buff *skb)
+-{
+-	if (skb)
+-		atomic_inc(&skb->users);
+-}
+-static inline void nf_conntrack_put_reasm(struct sk_buff *skb)
+-{
+-	if (skb)
+-		kfree_skb(skb);
+-}
+-#endif
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ static inline void nf_bridge_put(struct nf_bridge_info *nf_bridge)
  {
- 	struct inet_sock *isk = inet_sk(sk);
--	struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
- 	struct sk_buff *skb;
- 	int copied, err;
+@@ -2730,10 +2709,6 @@ static inline void nf_reset(struct sk_bu
+ 	nf_conntrack_put(skb->nfct);
+ 	skb->nfct = NULL;
+ #endif
+-#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
+-	nf_conntrack_put_reasm(skb->nfct_reasm);
+-	skb->nfct_reasm = NULL;
+-#endif
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ 	nf_bridge_put(skb->nf_bridge);
+ 	skb->nf_bridge = NULL;
+@@ -2755,10 +2730,6 @@ static inline void __nf_copy(struct sk_b
+ 	nf_conntrack_get(src->nfct);
+ 	dst->nfctinfo = src->nfctinfo;
+ #endif
+-#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
+-	dst->nfct_reasm = src->nfct_reasm;
+-	nf_conntrack_get_reasm(src->nfct_reasm);
+-#endif
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ 	dst->nf_bridge  = src->nf_bridge;
+ 	nf_bridge_get(src->nf_bridge);
+@@ -2770,9 +2741,6 @@ static inline void nf_copy(struct sk_buf
+ #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
+ 	nf_conntrack_put(dst->nfct);
+ #endif
+-#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
+-	nf_conntrack_put_reasm(dst->nfct_reasm);
+-#endif
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ 	nf_bridge_put(dst->nf_bridge);
+ #endif
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -109,7 +109,6 @@ extern int ip_vs_conn_tab_size;
+ struct ip_vs_iphdr {
+ 	__u32 len;	/* IPv4 simply where L4 starts
+ 			   IPv6 where L4 Transport Header starts */
+-	__u32 thoff_reasm; /* Transport Header Offset in nfct_reasm skb */
+ 	__u16 fragoffs; /* IPv6 fragment offset, 0 if first frag (or not frag)*/
+ 	__s16 protocol;
+ 	__s32 flags;
+@@ -117,34 +116,12 @@ struct ip_vs_iphdr {
+ 	union nf_inet_addr daddr;
+ };
  
-@@ -636,9 +635,6 @@ static int ping_recvmsg(struct kiocb *io
- 	if (flags & MSG_OOB)
- 		goto out;
- 
--	if (addr_len)
--		*addr_len = sizeof(*sin);
+-/* Dependency to module: nf_defrag_ipv6 */
+-#if defined(CONFIG_NF_DEFRAG_IPV6) || defined(CONFIG_NF_DEFRAG_IPV6_MODULE)
+-static inline struct sk_buff *skb_nfct_reasm(const struct sk_buff *skb)
+-{
+-	return skb->nfct_reasm;
+-}
+ static inline void *frag_safe_skb_hp(const struct sk_buff *skb, int offset,
+ 				      int len, void *buffer,
+ 				      const struct ip_vs_iphdr *ipvsh)
+ {
+-	if (unlikely(ipvsh->fragoffs && skb_nfct_reasm(skb)))
+-		return skb_header_pointer(skb_nfct_reasm(skb),
+-					  ipvsh->thoff_reasm, len, buffer);
 -
- 	if (flags & MSG_ERRQUEUE)
- 		return ip_recv_error(sk, msg, len);
+ 	return skb_header_pointer(skb, offset, len, buffer);
+ }
+-#else
+-static inline struct sk_buff *skb_nfct_reasm(const struct sk_buff *skb)
+-{
+-	return NULL;
+-}
+-static inline void *frag_safe_skb_hp(const struct sk_buff *skb, int offset,
+-				      int len, void *buffer,
+-				      const struct ip_vs_iphdr *ipvsh)
+-{
+-	return skb_header_pointer(skb, offset, len, buffer);
+-}
+-#endif
  
-@@ -660,11 +656,14 @@ static int ping_recvmsg(struct kiocb *io
- 	sock_recv_timestamp(msg, sk, skb);
+ static inline void
+ ip_vs_fill_ip4hdr(const void *nh, struct ip_vs_iphdr *iphdr)
+@@ -171,19 +148,12 @@ ip_vs_fill_iph_skb(int af, const struct
+ 			(struct ipv6hdr *)skb_network_header(skb);
+ 		iphdr->saddr.in6 = iph->saddr;
+ 		iphdr->daddr.in6 = iph->daddr;
+-		/* ipv6_find_hdr() updates len, flags, thoff_reasm */
+-		iphdr->thoff_reasm = 0;
++		/* ipv6_find_hdr() updates len, flags */
+ 		iphdr->len	 = 0;
+ 		iphdr->flags	 = 0;
+ 		iphdr->protocol  = ipv6_find_hdr(skb, &iphdr->len, -1,
+ 						 &iphdr->fragoffs,
+ 						 &iphdr->flags);
+-		/* get proto from re-assembled packet and it's offset */
+-		if (skb_nfct_reasm(skb))
+-			iphdr->protocol = ipv6_find_hdr(skb_nfct_reasm(skb),
+-							&iphdr->thoff_reasm,
+-							-1, NULL, NULL);
+-
+ 	} else
+ #endif
+ 	{
+--- a/include/net/netfilter/ipv6/nf_defrag_ipv6.h
++++ b/include/net/netfilter/ipv6/nf_defrag_ipv6.h
+@@ -6,10 +6,7 @@ extern void nf_defrag_ipv6_enable(void);
+ extern int nf_ct_frag6_init(void);
+ extern void nf_ct_frag6_cleanup(void);
+ extern struct sk_buff *nf_ct_frag6_gather(struct sk_buff *skb, u32 user);
+-extern void nf_ct_frag6_output(unsigned int hooknum, struct sk_buff *skb,
+-			       struct net_device *in,
+-			       struct net_device *out,
+-			       int (*okfn)(struct sk_buff *));
++extern void nf_ct_frag6_consume_orig(struct sk_buff *skb);
  
- 	/* Copy the address. */
--	if (sin) {
-+	if (msg->msg_name) {
-+		struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
+ struct inet_frags_ctl;
+ 
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -585,9 +585,6 @@ static void skb_release_head_state(struc
+ #if IS_ENABLED(CONFIG_NF_CONNTRACK)
+ 	nf_conntrack_put(skb->nfct);
+ #endif
+-#ifdef NET_SKBUFF_NF_DEFRAG_NEEDED
+-	nf_conntrack_put_reasm(skb->nfct_reasm);
+-#endif
+ #ifdef CONFIG_BRIDGE_NETFILTER
+ 	nf_bridge_put(skb->nf_bridge);
+ #endif
+--- a/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
++++ b/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
+@@ -172,63 +172,13 @@ out:
+ 	return nf_conntrack_confirm(skb);
+ }
+ 
+-static unsigned int __ipv6_conntrack_in(struct net *net,
+-					unsigned int hooknum,
+-					struct sk_buff *skb,
+-					const struct net_device *in,
+-					const struct net_device *out,
+-					int (*okfn)(struct sk_buff *))
+-{
+-	struct sk_buff *reasm = skb->nfct_reasm;
+-	const struct nf_conn_help *help;
+-	struct nf_conn *ct;
+-	enum ip_conntrack_info ctinfo;
+-
+-	/* This packet is fragmented and has reassembled packet. */
+-	if (reasm) {
+-		/* Reassembled packet isn't parsed yet ? */
+-		if (!reasm->nfct) {
+-			unsigned int ret;
+-
+-			ret = nf_conntrack_in(net, PF_INET6, hooknum, reasm);
+-			if (ret != NF_ACCEPT)
+-				return ret;
+-		}
+-
+-		/* Conntrack helpers need the entire reassembled packet in the
+-		 * POST_ROUTING hook. In case of unconfirmed connections NAT
+-		 * might reassign a helper, so the entire packet is also
+-		 * required.
+-		 */
+-		ct = nf_ct_get(reasm, &ctinfo);
+-		if (ct != NULL && !nf_ct_is_untracked(ct)) {
+-			help = nfct_help(ct);
+-			if ((help && help->helper) || !nf_ct_is_confirmed(ct)) {
+-				nf_conntrack_get_reasm(reasm);
+-				NF_HOOK_THRESH(NFPROTO_IPV6, hooknum, reasm,
+-					       (struct net_device *)in,
+-					       (struct net_device *)out,
+-					       okfn, NF_IP6_PRI_CONNTRACK + 1);
+-				return NF_DROP_ERR(-ECANCELED);
+-			}
+-		}
+-
+-		nf_conntrack_get(reasm->nfct);
+-		skb->nfct = reasm->nfct;
+-		skb->nfctinfo = reasm->nfctinfo;
+-		return NF_ACCEPT;
+-	}
+-
+-	return nf_conntrack_in(net, PF_INET6, hooknum, skb);
+-}
+-
+ static unsigned int ipv6_conntrack_in(unsigned int hooknum,
+ 				      struct sk_buff *skb,
+ 				      const struct net_device *in,
+ 				      const struct net_device *out,
+ 				      int (*okfn)(struct sk_buff *))
+ {
+-	return __ipv6_conntrack_in(dev_net(in), hooknum, skb, in, out, okfn);
++	return nf_conntrack_in(dev_net(in), PF_INET6, hooknum, skb);
+ }
+ 
+ static unsigned int ipv6_conntrack_local(unsigned int hooknum,
+@@ -242,7 +192,7 @@ static unsigned int ipv6_conntrack_local
+ 		net_notice_ratelimited("ipv6_conntrack_local: packet too short\n");
+ 		return NF_ACCEPT;
+ 	}
+-	return __ipv6_conntrack_in(dev_net(out), hooknum, skb, in, out, okfn);
++	return nf_conntrack_in(dev_net(out), PF_INET6, hooknum, skb);
+ }
+ 
+ static struct nf_hook_ops ipv6_conntrack_ops[] __read_mostly = {
+--- a/net/ipv6/netfilter/nf_conntrack_reasm.c
++++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
+@@ -621,31 +621,16 @@ ret_orig:
+ 	return skb;
+ }
+ 
+-void nf_ct_frag6_output(unsigned int hooknum, struct sk_buff *skb,
+-			struct net_device *in, struct net_device *out,
+-			int (*okfn)(struct sk_buff *))
++void nf_ct_frag6_consume_orig(struct sk_buff *skb)
+ {
+ 	struct sk_buff *s, *s2;
+-	unsigned int ret = 0;
+ 
+ 	for (s = NFCT_FRAG6_CB(skb)->orig; s;) {
+-		nf_conntrack_put_reasm(s->nfct_reasm);
+-		nf_conntrack_get_reasm(skb);
+-		s->nfct_reasm = skb;
+-
+ 		s2 = s->next;
+ 		s->next = NULL;
+-
+-		if (ret != -ECANCELED)
+-			ret = NF_HOOK_THRESH(NFPROTO_IPV6, hooknum, s,
+-					     in, out, okfn,
+-					     NF_IP6_PRI_CONNTRACK_DEFRAG + 1);
+-		else
+-			kfree_skb(s);
+-
++		consume_skb(s);
+ 		s = s2;
+ 	}
+-	nf_conntrack_put_reasm(skb);
+ }
+ 
+ static int nf_ct_net_init(struct net *net)
+--- a/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c
++++ b/net/ipv6/netfilter/nf_defrag_ipv6_hooks.c
+@@ -75,8 +75,11 @@ static unsigned int ipv6_defrag(unsigned
+ 	if (reasm == skb)
+ 		return NF_ACCEPT;
+ 
+-	nf_ct_frag6_output(hooknum, reasm, (struct net_device *)in,
+-			   (struct net_device *)out, okfn);
++	nf_ct_frag6_consume_orig(reasm);
 +
- 		sin->sin_family = AF_INET;
- 		sin->sin_port = 0 /* skb->h.uh->source */;
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (isk->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -692,9 +692,6 @@ static int raw_recvmsg(struct kiocb *ioc
- 	if (flags & MSG_OOB)
- 		goto out;
++	NF_HOOK_THRESH(NFPROTO_IPV6, hooknum, reasm,
++		       (struct net_device *) in, (struct net_device *) out,
++		       okfn, NF_IP6_PRI_CONNTRACK_DEFRAG + 1);
  
--	if (addr_len)
--		*addr_len = sizeof(*sin);
+ 	return NF_STOLEN;
+ }
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -1131,12 +1131,6 @@ ip_vs_out(unsigned int hooknum, struct s
+ 	ip_vs_fill_iph_skb(af, skb, &iph);
+ #ifdef CONFIG_IP_VS_IPV6
+ 	if (af == AF_INET6) {
+-		if (!iph.fragoffs && skb_nfct_reasm(skb)) {
+-			struct sk_buff *reasm = skb_nfct_reasm(skb);
+-			/* Save fw mark for coming frags */
+-			reasm->ipvs_property = 1;
+-			reasm->mark = skb->mark;
+-		}
+ 		if (unlikely(iph.protocol == IPPROTO_ICMPV6)) {
+ 			int related;
+ 			int verdict = ip_vs_out_icmp_v6(skb, &related,
+@@ -1606,12 +1600,6 @@ ip_vs_in(unsigned int hooknum, struct sk
+ 
+ #ifdef CONFIG_IP_VS_IPV6
+ 	if (af == AF_INET6) {
+-		if (!iph.fragoffs && skb_nfct_reasm(skb)) {
+-			struct sk_buff *reasm = skb_nfct_reasm(skb);
+-			/* Save fw mark for coming frags. */
+-			reasm->ipvs_property = 1;
+-			reasm->mark = skb->mark;
+-		}
+ 		if (unlikely(iph.protocol == IPPROTO_ICMPV6)) {
+ 			int related;
+ 			int verdict = ip_vs_in_icmp_v6(skb, &related, hooknum,
+@@ -1663,9 +1651,8 @@ ip_vs_in(unsigned int hooknum, struct sk
+ 		/* sorry, all this trouble for a no-hit :) */
+ 		IP_VS_DBG_PKT(12, af, pp, skb, 0,
+ 			      "ip_vs_in: packet continues traversal as normal");
+-		if (iph.fragoffs && !skb_nfct_reasm(skb)) {
++		if (iph.fragoffs) {
+ 			/* Fragment that couldn't be mapped to a conn entry
+-			 * and don't have any pointer to a reasm skb
+ 			 * is missing module nf_defrag_ipv6
+ 			 */
+ 			IP_VS_DBG_RL("Unhandled frag, load nf_defrag_ipv6\n");
+@@ -1748,38 +1735,6 @@ ip_vs_local_request4(unsigned int hooknu
+ #ifdef CONFIG_IP_VS_IPV6
+ 
+ /*
+- * AF_INET6 fragment handling
+- * Copy info from first fragment, to the rest of them.
+- */
+-static unsigned int
+-ip_vs_preroute_frag6(unsigned int hooknum, struct sk_buff *skb,
+-		     const struct net_device *in,
+-		     const struct net_device *out,
+-		     int (*okfn)(struct sk_buff *))
+-{
+-	struct sk_buff *reasm = skb_nfct_reasm(skb);
+-	struct net *net;
 -
- 	if (flags & MSG_ERRQUEUE) {
- 		err = ip_recv_error(sk, msg, len);
- 		goto out;
-@@ -722,6 +719,7 @@ static int raw_recvmsg(struct kiocb *ioc
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		sin->sin_port = 0;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1207,12 +1207,6 @@ int udp_recvmsg(struct kiocb *iocb, stru
- 	int is_udplite = IS_UDPLITE(sk);
- 	bool slow;
- 
--	/*
--	 *	Check any passed addresses
+-	/* Skip if not a "replay" from nf_ct_frag6_output or first fragment.
+-	 * ipvs_property is set when checking first fragment
+-	 * in ip_vs_in() and ip_vs_out().
 -	 */
--	if (addr_len)
--		*addr_len = sizeof(*sin);
+-	if (reasm)
+-		IP_VS_DBG(2, "Fragment recv prop:%d\n", reasm->ipvs_property);
+-	if (!reasm || !reasm->ipvs_property)
+-		return NF_ACCEPT;
 -
- 	if (flags & MSG_ERRQUEUE)
- 		return ip_recv_error(sk, msg, len);
- 
-@@ -1274,6 +1268,7 @@ try_again:
- 		sin->sin_port = udp_hdr(skb)->source;
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -459,9 +459,6 @@ static int rawv6_recvmsg(struct kiocb *i
- 	if (flags & MSG_OOB)
- 		return -EOPNOTSUPP;
- 
--	if (addr_len)
--		*addr_len=sizeof(*sin6);
+-	net = skb_net(skb);
+-	if (!net_ipvs(net)->enable)
+-		return NF_ACCEPT;
 -
- 	if (flags & MSG_ERRQUEUE)
- 		return ipv6_recv_error(sk, msg, len);
- 
-@@ -500,6 +497,7 @@ static int rawv6_recvmsg(struct kiocb *i
- 		sin6->sin6_flowinfo = 0;
- 		sin6->sin6_scope_id = ipv6_iface_scope_id(&sin6->sin6_addr,
- 							  IP6CB(skb)->iif);
-+		*addr_len = sizeof(*sin6);
- 	}
- 
- 	sock_recv_ts_and_drops(msg, sk, skb);
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -373,9 +373,6 @@ int udpv6_recvmsg(struct kiocb *iocb, st
- 	int is_udp4;
- 	bool slow;
- 
--	if (addr_len)
--		*addr_len = sizeof(struct sockaddr_in6);
+-	/* Copy stored fw mark, saved in ip_vs_{in,out} */
+-	skb->mark = reasm->mark;
 -
- 	if (flags & MSG_ERRQUEUE)
- 		return ipv6_recv_error(sk, msg, len);
- 
-@@ -461,7 +458,7 @@ try_again:
- 				ipv6_iface_scope_id(&sin6->sin6_addr,
- 						    IP6CB(skb)->iif);
- 		}
+-	return NF_ACCEPT;
+-}
 -
-+		*addr_len = sizeof(*sin6);
- 	}
- 	if (is_udp4) {
- 		if (inet->cmsg_flags)
---- a/net/l2tp/l2tp_ip.c
-+++ b/net/l2tp/l2tp_ip.c
-@@ -518,9 +518,6 @@ static int l2tp_ip_recvmsg(struct kiocb
- 	if (flags & MSG_OOB)
- 		goto out;
+-/*
+  *	AF_INET6 handler in NF_INET_LOCAL_IN chain
+  *	Schedule and forward packets from remote clients
+  */
+@@ -1916,14 +1871,6 @@ static struct nf_hook_ops ip_vs_ops[] __
+ 		.priority	= 100,
+ 	},
+ #ifdef CONFIG_IP_VS_IPV6
+-	/* After mangle & nat fetch 2:nd fragment and following */
+-	{
+-		.hook		= ip_vs_preroute_frag6,
+-		.owner		= THIS_MODULE,
+-		.pf		= NFPROTO_IPV6,
+-		.hooknum	= NF_INET_PRE_ROUTING,
+-		.priority	= NF_IP6_PRI_NAT_DST + 1,
+-	},
+ 	/* After packet filtering, change source only for VS/NAT */
+ 	{
+ 		.hook		= ip_vs_reply6,
+--- a/net/netfilter/ipvs/ip_vs_pe_sip.c
++++ b/net/netfilter/ipvs/ip_vs_pe_sip.c
+@@ -65,7 +65,6 @@ static int get_callid(const char *dptr,
+ static int
+ ip_vs_sip_fill_param(struct ip_vs_conn_param *p, struct sk_buff *skb)
+ {
+-	struct sk_buff *reasm = skb_nfct_reasm(skb);
+ 	struct ip_vs_iphdr iph;
+ 	unsigned int dataoff, datalen, matchoff, matchlen;
+ 	const char *dptr;
+@@ -79,15 +78,10 @@ ip_vs_sip_fill_param(struct ip_vs_conn_p
+ 	/* todo: IPv6 fragments:
+ 	 *       I think this only should be done for the first fragment. /HS
+ 	 */
+-	if (reasm) {
+-		skb = reasm;
+-		dataoff = iph.thoff_reasm + sizeof(struct udphdr);
+-	} else
+-		dataoff = iph.len + sizeof(struct udphdr);
++	dataoff = iph.len + sizeof(struct udphdr);
  
--	if (addr_len)
--		*addr_len = sizeof(*sin);
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb)
- 		goto out;
-@@ -543,6 +540,7 @@ static int l2tp_ip_recvmsg(struct kiocb
- 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
- 		sin->sin_port = 0;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 	if (inet->cmsg_flags)
- 		ip_cmsg_recv(msg, skb);
---- a/net/phonet/datagram.c
-+++ b/net/phonet/datagram.c
-@@ -139,9 +139,6 @@ static int pn_recvmsg(struct kiocb *iocb
- 			MSG_CMSG_COMPAT))
- 		goto out_nofree;
- 
--	if (addr_len)
--		*addr_len = sizeof(sa);
--
- 	skb = skb_recv_datagram(sk, flags, noblock, &rval);
- 	if (skb == NULL)
- 		goto out_nofree;
-@@ -162,8 +159,10 @@ static int pn_recvmsg(struct kiocb *iocb
- 
- 	rval = (flags & MSG_TRUNC) ? skb->len : copylen;
- 
--	if (msg->msg_name != NULL)
--		memcpy(msg->msg_name, &sa, sizeof(struct sockaddr_pn));
-+	if (msg->msg_name != NULL) {
-+		memcpy(msg->msg_name, &sa, sizeof(sa));
-+		*addr_len = sizeof(sa);
-+	}
- 
- out:
- 	skb_free_datagram(sk, skb);
+ 	if (dataoff >= skb->len)
+ 		return -EINVAL;
+-	/* todo: Check if this will mess-up the reasm skb !!! /HS */
+ 	retc = skb_linearize(skb);
+ 	if (retc < 0)
+ 		return retc;
 
 
