@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162154Ab3LFOIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:08:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43793 "EHLO
+	id S1162285Ab3LFOJi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:09:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43787 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161325Ab3LFNAq (ORCPT
+	with ESMTP id S1161297Ab3LFNAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:46 -0500
+	Fri, 6 Dec 2013 08:00:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 058/272] ftrace: Fix function graph with loading of modules
-Date: Fri,  6 Dec 2013 12:55:47 +0000
-Message-Id: <1386334761-25517-59-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 057/272] tracing: Allow events to have NULL strings
+Date: Fri,  6 Dec 2013 12:55:46 +0000
+Message-Id: <1386334761-25517-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,244 +29,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 8a56d7761d2d041ae5e8215d20b4167d8aa93f51 upstream.
+commit 4e58e54754dc1fec21c3a9e824bc108b05fdf46e upstream.
 
-Commit 8c4f3c3fa9681 "ftrace: Check module functions being traced on reload"
-fixed module loading and unloading with respect to function tracing, but
-it missed the function graph tracer. If you perform the following
+If an TRACE_EVENT() uses __assign_str() or __get_str on a NULL pointer
+then the following oops will happen:
 
- # cd /sys/kernel/debug/tracing
- # echo function_graph > current_tracer
- # modprobe nfsd
- # echo nop > current_tracer
+BUG: unable to handle kernel NULL pointer dereference at   (null)
+IP: [<c127a17b>] strlen+0x10/0x1a
+*pde = 00000000 ^M
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in:
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-rc1-test+ #2
+Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006^M
+task: f5cde9f0 ti: f5e5e000 task.ti: f5e5e000
+EIP: 0060:[<c127a17b>] EFLAGS: 00210046 CPU: 1
+EIP is at strlen+0x10/0x1a
+EAX: 00000000 EBX: c2472da8 ECX: ffffffff EDX: c2472da8
+ESI: c1c5e5fc EDI: 00000000 EBP: f5e5fe84 ESP: f5e5fe80
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 00000000 CR3: 01f32000 CR4: 000007d0
+Stack:
+ f5f18b90 f5e5feb8 c10687a8 0759004f 00000005 00000005 00000005 00200046
+ 00000002 00000000 c1082a93 f56c7e28 c2472da8 c1082a93 f5e5fee4 c106bc61^M
+ 00000000 c1082a93 00000000 00000000 00000001 00200046 00200082 00000000
+Call Trace:
+ [<c10687a8>] ftrace_raw_event_lock+0x39/0xc0
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c106bc61>] lock_release+0x57/0x1a5
+ [<c1082a93>] ? ktime_get+0x29/0x69
+ [<c10824dd>] read_seqcount_begin.constprop.7+0x4d/0x75
+ [<c1082a93>] ? ktime_get+0x29/0x69^M
+ [<c1082a93>] ktime_get+0x29/0x69
+ [<c108a46a>] __tick_nohz_idle_enter+0x1e/0x426
+ [<c10690e8>] ? lock_release_holdtime.part.19+0x48/0x4d
+ [<c10bc184>] ? time_hardirqs_off+0xe/0x28
+ [<c1068c82>] ? trace_hardirqs_off_caller+0x3f/0xaf
+ [<c108a8cb>] tick_nohz_idle_enter+0x59/0x62
+ [<c1079242>] cpu_startup_entry+0x64/0x192
+ [<c102299c>] start_secondary+0x277/0x27c
+Code: 90 89 c6 89 d0 88 c4 ac 38 e0 74 09 84 c0 75 f7 be 01 00 00 00 89 f0 48 5e 5d c3 55 89 e5 57 66 66 66 66 90 83 c9 ff 89 c7 31 c0 <f2> ae f7 d1 8d 41 ff 5f 5d c3 55 89 e5 57 66 66 66 66 90 31 ff
+EIP: [<c127a17b>] strlen+0x10/0x1a SS:ESP 0068:f5e5fe80
+CR2: 0000000000000000
+---[ end trace 01bc47bf519ec1b2 ]---
 
-You'll get the following oops message:
+New tracepoints have been added that have allowed for NULL pointers
+being assigned to strings. To fix this, change the TRACE_EVENT() code
+to check for NULL and if it is, it will assign "(null)" to it instead
+(similar to what glibc printf does).
 
- ------------[ cut here ]------------
- WARNING: CPU: 2 PID: 2910 at /linux.git/kernel/trace/ftrace.c:1640 __ftrace_hash_rec_update.part.35+0x168/0x1b9()
- Modules linked in: nfsd exportfs nfs_acl lockd ipt_MASQUERADE sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables uinput snd_hda_codec_idt
- CPU: 2 PID: 2910 Comm: bash Not tainted 3.13.0-rc1-test #7
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-  0000000000000668 ffff8800787efcf8 ffffffff814fe193 ffff88007d500000
-  0000000000000000 ffff8800787efd38 ffffffff8103b80a 0000000000000668
-  ffffffff810b2b9a ffffffff81a48370 0000000000000001 ffff880037aea000
- Call Trace:
-  [<ffffffff814fe193>] dump_stack+0x4f/0x7c
-  [<ffffffff8103b80a>] warn_slowpath_common+0x81/0x9b
-  [<ffffffff810b2b9a>] ? __ftrace_hash_rec_update.part.35+0x168/0x1b9
-  [<ffffffff8103b83e>] warn_slowpath_null+0x1a/0x1c
-  [<ffffffff810b2b9a>] __ftrace_hash_rec_update.part.35+0x168/0x1b9
-  [<ffffffff81502f89>] ? __mutex_lock_slowpath+0x364/0x364
-  [<ffffffff810b2cc2>] ftrace_shutdown+0xd7/0x12b
-  [<ffffffff810b47f0>] unregister_ftrace_graph+0x49/0x78
-  [<ffffffff810c4b30>] graph_trace_reset+0xe/0x10
-  [<ffffffff810bf393>] tracing_set_tracer+0xa7/0x26a
-  [<ffffffff810bf5e1>] tracing_set_trace_write+0x8b/0xbd
-  [<ffffffff810c501c>] ? ftrace_return_to_handler+0xb2/0xde
-  [<ffffffff811240a8>] ? __sb_end_write+0x5e/0x5e
-  [<ffffffff81122aed>] vfs_write+0xab/0xf6
-  [<ffffffff8150a185>] ftrace_graph_caller+0x85/0x85
-  [<ffffffff81122dbd>] SyS_write+0x59/0x82
-  [<ffffffff8150a185>] ftrace_graph_caller+0x85/0x85
-  [<ffffffff8150a2d2>] system_call_fastpath+0x16/0x1b
- ---[ end trace 940358030751eafb ]---
-
-The above mentioned commit didn't go far enough. Well, it covered the
-function tracer by adding checks in __register_ftrace_function(). The
-problem is that the function graph tracer circumvents that (for a slight
-efficiency gain when function graph trace is running with a function
-tracer. The gain was not worth this).
-
-The problem came with ftrace_startup() which should always be called after
-__register_ftrace_function(), if you want this bug to be completely fixed.
-
-Anyway, this solution moves __register_ftrace_function() inside of
-ftrace_startup() and removes the need to call them both.
-
-Reported-by: Dave Wysochanski <dwysocha@redhat.com>
-Fixes: ed926f9b35cd ("ftrace: Use counters to enable functions to trace")
+Reported-by: Shuah Khan <shuah.kh@samsung.com>
+Reported-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Link: http://lkml.kernel.org/r/CAGdX0WFeEuy+DtpsJzyzn0343qEEjLX97+o1VREFkUEhndC+5Q@mail.gmail.com
+Link: http://lkml.kernel.org/r/528D6972.9010702@samsung.com
+Fixes: 9cbf117662e2 ("tracing/events: provide string with undefined size support")
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 64 ++++++++++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 29 deletions(-)
+ include/trace/ftrace.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index a6d098c..859c6d9 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -367,9 +367,6 @@ static int remove_ftrace_list_ops(struct ftrace_ops **list,
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 41a6643..ef0a427 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -372,7 +372,8 @@ ftrace_define_fields_##call(struct ftrace_event_call *event_call)	\
+ 	__data_size += (len) * sizeof(type);
  
- static int __register_ftrace_function(struct ftrace_ops *ops)
- {
--	if (unlikely(ftrace_disabled))
--		return -ENODEV;
--
- 	if (FTRACE_WARN_ON(ops == &global_ops))
- 		return -EINVAL;
+ #undef __string
+-#define __string(item, src) __dynamic_array(char, item, strlen(src) + 1)
++#define __string(item, src) __dynamic_array(char, item,			\
++		    strlen((src) ? (const char *)(src) : "(null)") + 1)
  
-@@ -428,9 +425,6 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
- {
- 	int ret;
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+@@ -502,7 +503,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
  
--	if (ftrace_disabled)
--		return -ENODEV;
--
- 	if (WARN_ON(!(ops->flags & FTRACE_OPS_FL_ENABLED)))
- 		return -EBUSY;
+ #undef __assign_str
+ #define __assign_str(dst, src)						\
+-	strcpy(__get_str(dst), src);
++	strcpy(__get_str(dst), (src) ? (const char *)(src) : "(null)");
  
-@@ -2073,10 +2067,15 @@ static void ftrace_startup_enable(int command)
- static int ftrace_startup(struct ftrace_ops *ops, int command)
- {
- 	bool hash_enable = true;
-+	int ret;
- 
- 	if (unlikely(ftrace_disabled))
- 		return -ENODEV;
- 
-+	ret = __register_ftrace_function(ops);
-+	if (ret)
-+		return ret;
-+
- 	ftrace_start_up++;
- 	command |= FTRACE_UPDATE_CALLS;
- 
-@@ -2098,12 +2097,17 @@ static int ftrace_startup(struct ftrace_ops *ops, int command)
- 	return 0;
- }
- 
--static void ftrace_shutdown(struct ftrace_ops *ops, int command)
-+static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- {
- 	bool hash_disable = true;
-+	int ret;
- 
- 	if (unlikely(ftrace_disabled))
--		return;
-+		return -ENODEV;
-+
-+	ret = __unregister_ftrace_function(ops);
-+	if (ret)
-+		return ret;
- 
- 	ftrace_start_up--;
- 	/*
-@@ -2138,9 +2142,10 @@ static void ftrace_shutdown(struct ftrace_ops *ops, int command)
- 	}
- 
- 	if (!command || !ftrace_enabled)
--		return;
-+		return 0;
- 
- 	ftrace_run_update_code(command);
-+	return 0;
- }
- 
- static void ftrace_startup_sysctl(void)
-@@ -3045,16 +3050,13 @@ static void __enable_ftrace_function_probe(void)
- 	if (i == FTRACE_FUNC_HASHSIZE)
- 		return;
- 
--	ret = __register_ftrace_function(&trace_probe_ops);
--	if (!ret)
--		ret = ftrace_startup(&trace_probe_ops, 0);
-+	ret = ftrace_startup(&trace_probe_ops, 0);
- 
- 	ftrace_probe_registered = 1;
- }
- 
- static void __disable_ftrace_function_probe(void)
- {
--	int ret;
- 	int i;
- 
- 	if (!ftrace_probe_registered)
-@@ -3067,9 +3069,7 @@ static void __disable_ftrace_function_probe(void)
- 	}
- 
- 	/* no more funcs left */
--	ret = __unregister_ftrace_function(&trace_probe_ops);
--	if (!ret)
--		ftrace_shutdown(&trace_probe_ops, 0);
-+	ftrace_shutdown(&trace_probe_ops, 0);
- 
- 	ftrace_probe_registered = 0;
- }
-@@ -4275,12 +4275,15 @@ core_initcall(ftrace_nodyn_init);
- static inline int ftrace_init_dyn_debugfs(struct dentry *d_tracer) { return 0; }
- static inline void ftrace_startup_enable(int command) { }
- /* Keep as macros so we do not need to define the commands */
--# define ftrace_startup(ops, command)			\
--	({						\
--		(ops)->flags |= FTRACE_OPS_FL_ENABLED;	\
--		0;					\
-+# define ftrace_startup(ops, command)					\
-+	({								\
-+		int ___ret = __register_ftrace_function(ops);		\
-+		if (!___ret)						\
-+			(ops)->flags |= FTRACE_OPS_FL_ENABLED;		\
-+		___ret;							\
- 	})
--# define ftrace_shutdown(ops, command)	do { } while (0)
-+# define ftrace_shutdown(ops, command) __unregister_ftrace_function(ops)
-+
- # define ftrace_startup_sysctl()	do { } while (0)
- # define ftrace_shutdown_sysctl()	do { } while (0)
- 
-@@ -4680,9 +4683,7 @@ int register_ftrace_function(struct ftrace_ops *ops)
- 
- 	mutex_lock(&ftrace_lock);
- 
--	ret = __register_ftrace_function(ops);
--	if (!ret)
--		ret = ftrace_startup(ops, 0);
-+	ret = ftrace_startup(ops, 0);
- 
- 	mutex_unlock(&ftrace_lock);
- 
-@@ -4701,9 +4702,7 @@ int unregister_ftrace_function(struct ftrace_ops *ops)
- 	int ret;
- 
- 	mutex_lock(&ftrace_lock);
--	ret = __unregister_ftrace_function(ops);
--	if (!ret)
--		ftrace_shutdown(ops, 0);
-+	ret = ftrace_shutdown(ops, 0);
- 	mutex_unlock(&ftrace_lock);
- 
- 	return ret;
-@@ -4897,6 +4896,13 @@ ftrace_suspend_notifier_call(struct notifier_block *bl, unsigned long state,
- 	return NOTIFY_DONE;
- }
- 
-+/* Just a place holder for function graph */
-+static struct ftrace_ops fgraph_ops __read_mostly = {
-+	.func		= ftrace_stub,
-+	.flags		= FTRACE_OPS_FL_STUB | FTRACE_OPS_FL_GLOBAL |
-+				FTRACE_OPS_FL_RECURSION_SAFE,
-+};
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -4923,7 +4929,7 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 	ftrace_graph_return = retfunc;
- 	ftrace_graph_entry = entryfunc;
- 
--	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
-+	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
- 
- out:
- 	mutex_unlock(&ftrace_lock);
-@@ -4940,7 +4946,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_active--;
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
--	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
-+	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
- 
+ #undef TP_fast_assign
+ #define TP_fast_assign(args...) args
 -- 
 1.8.3.2
 
