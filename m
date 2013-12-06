@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423060Ab3LFXU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:20:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49008 "EHLO
+	id S1759896Ab3LFXXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:23:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49050 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161101Ab3LFXUs (ORCPT
+	with ESMTP id S1423052Ab3LFXU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:20:48 -0500
+	Fri, 6 Dec 2013 18:20:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Jakob Bornecrantz <jakob@vmware.com>,
+        =?UTF-8?q?Thomas=20Hellstr=C3=B6m?= <thellstrom@vmware.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 057/152] powerpc/powernv: Add PE to its own PELTV
-Date: Fri,  6 Dec 2013 15:09:41 -0800
-Message-Id: <1386371476-2477-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 058/152] drm/ttm: Handle in-memory region copies
+Date: Fri,  6 Dec 2013 15:09:42 -0800
+Message-Id: <1386371476-2477-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,52 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit 631ad691b5818291d89af9be607d2fe40be0886e upstream.
+commit 9a0599ddeae012a771bba5e23393fc52d8a59d89 upstream.
 
-We need add PE to its own PELTV. Otherwise, the errors originated
-from the PE might contribute to other PEs. In the result, we can't
-clear up the error successfully even we're checking and clearing
-errors during access to PCI config space.
+Fix the case where the ttm pointer may be NULL causing
+a NULL pointer dereference.
 
-Reported-by: kalshett@in.ibm.com
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Thomas Hellström <thellstrom@vmware.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/platforms/powernv/pci-ioda.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/ttm/ttm_bo_util.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index 8e90e89..7e18662 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -158,13 +158,23 @@ static int pnv_ioda_configure_pe(struct pnv_phb *phb, struct pnv_ioda_pe *pe)
- 		rid_end = pe->rid + 1;
- 	}
+diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
+index 8be35c8..037f101 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -342,7 +342,9 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
+ 	if (old_iomap == NULL && ttm == NULL)
+ 		goto out2;
  
--	/* Associate PE in PELT */
-+	/*
-+	 * Associate PE in PELT. We need add the PE into the
-+	 * corresponding PELT-V as well. Otherwise, the error
-+	 * originated from the PE might contribute to other
-+	 * PEs.
+-	if (ttm->state == tt_unpopulated) {
++	/* TTM might be null for moves within the same region.
 +	 */
- 	rc = opal_pci_set_pe(phb->opal_id, pe->pe_number, pe->rid,
- 			     bcomp, dcomp, fcomp, OPAL_MAP_PE);
- 	if (rc) {
- 		pe_err(pe, "OPAL error %ld trying to setup PELT table\n", rc);
- 		return -ENXIO;
- 	}
-+
-+	rc = opal_pci_set_peltv(phb->opal_id, pe->pe_number,
-+				pe->pe_number, OPAL_ADD_PE_TO_DOMAIN);
-+	if (rc)
-+		pe_warn(pe, "OPAL error %d adding self to PELTV\n", rc);
- 	opal_pci_eeh_freeze_clear(phb->opal_id, pe->pe_number,
- 				  OPAL_EEH_ACTION_CLEAR_FREEZE_ALL);
- 
++	if (ttm && ttm->state == tt_unpopulated) {
+ 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
+ 		if (ret) {
+ 			/* if we fail here don't nuke the mm node
 -- 
 1.8.3.2
 
