@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422748Ab3LFWYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:24:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60744 "EHLO
+	id S1161854Ab3LFWZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:25:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60739 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161205Ab3LFVxN (ORCPT
+	with ESMTP id S1161196Ab3LFVxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:13 -0500
+	Fri, 6 Dec 2013 16:53:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.12 74/83] ntp: Make periodic RTC update more reliable
-Date: Fri,  6 Dec 2013 13:52:04 -0800
-Message-Id: <20131206214646.929147648@linuxfoundation.org>
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
+        Jens Axboe <axboe@kernel.dk>, Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.12 73/83] elevator: acquire q->sysfs_lock in elevator_change()
+Date: Fri,  6 Dec 2013 13:52:03 -0800
+Message-Id: <20131206214646.837772100@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -28,46 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miroslav Lichvar <mlichvar@redhat.com>
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 
-commit a97ad0c4b447a132a322cedc3a5f7fa4cab4b304 upstream.
+commit 7c8a3679e3d8e9d92d58f282161760a0e247df97 upstream.
 
-The current code requires that the scheduled update of the RTC happens
-in the closest tick to the half of the second. This seems to be
-difficult to achieve reliably. The scheduled work may be missing the
-target time by a tick or two and be constantly rescheduled every second.
+Add locking of q->sysfs_lock into elevator_change() (an exported function)
+to ensure it is held to protect q->elevator from elevator_init(), even if
+elevator_change() is called from non-sysfs paths.
+sysfs path (elv_iosched_store) uses __elevator_change(), non-locking
+version, as the lock is already taken by elv_iosched_store().
 
-Relax the limit to 10 ticks. As a typical RTC drifts in the 11-minute
-update interval by several milliseconds, this shouldn't affect the
-overall accuracy of the RTC much.
-
-Signed-off-by: Miroslav Lichvar <mlichvar@redhat.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/ntp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ block/elevator.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -475,6 +475,7 @@ static void sync_cmos_clock(struct work_
- 	 * called as close as possible to 500 ms before the new second starts.
- 	 * This code is run on a timer.  If the clock is set, that timer
- 	 * may not expire at the correct time.  Thus, we adjust...
-+	 * We want the clock to be within a couple of ticks from the target.
- 	 */
- 	if (!ntp_synced()) {
- 		/*
-@@ -485,7 +486,7 @@ static void sync_cmos_clock(struct work_
- 	}
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -965,7 +965,7 @@ fail_init:
+ /*
+  * Switch this queue to the given IO scheduler.
+  */
+-int elevator_change(struct request_queue *q, const char *name)
++static int __elevator_change(struct request_queue *q, const char *name)
+ {
+ 	char elevator_name[ELV_NAME_MAX];
+ 	struct elevator_type *e;
+@@ -987,6 +987,18 @@ int elevator_change(struct request_queue
  
- 	getnstimeofday(&now);
--	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec / 2) {
-+	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec * 5) {
- 		struct timespec adjust = now;
+ 	return elevator_switch(q, e);
+ }
++
++int elevator_change(struct request_queue *q, const char *name)
++{
++	int ret;
++
++	/* Protect q->elevator from elevator_init() */
++	mutex_lock(&q->sysfs_lock);
++	ret = __elevator_change(q, name);
++	mutex_unlock(&q->sysfs_lock);
++
++	return ret;
++}
+ EXPORT_SYMBOL(elevator_change);
  
- 		fail = -ENODEV;
+ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
+@@ -997,7 +1009,7 @@ ssize_t elv_iosched_store(struct request
+ 	if (!q->elevator)
+ 		return count;
+ 
+-	ret = elevator_change(q, name);
++	ret = __elevator_change(q, name);
+ 	if (!ret)
+ 		return count;
+ 
 
 
