@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266Ab3LFO0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:26:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43536 "EHLO
+	id S1759275Ab3LFO1D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:27:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43534 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161031Ab3LFM7g (ORCPT
+	with ESMTP id S1161028Ab3LFM7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 07:59:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Josh Boyer <jwboyer@redhat.com>,
-        Alexander Holler <holler@ahsoftware.de>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 001/272] X.509: Remove certificate date checks
-Date: Fri,  6 Dec 2013 12:54:50 +0000
-Message-Id: <1386334761-25517-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 004/272] audit: fix info leak in AUDIT_GET requests
+Date: Fri,  6 Dec 2013 12:54:53 +0000
+Message-Id: <1386334761-25517-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,83 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 124df926090b32a998483f6e43ebeccdbe5b5302 upstream.
+commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
 
-Remove the certificate date checks that are performed when a certificate is
-parsed.  There are two checks: a valid from and a valid to.  The first check is
-causing a lot of problems with system clocks that don't keep good time and the
-second places an implicit expiry date upon the kernel when used for module
-signing, so do we really need them?
+We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
+we miss to initialize the mask member of status_set. Fix that.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: David Woodhouse <dwmw2@infradead.org>
-cc: Rusty Russell <rusty@rustcorp.com.au>
-cc: Josh Boyer <jwboyer@redhat.com>
-cc: Alexander Holler <holler@ahsoftware.de>
-[ luis: backported to 3.11: adjusted context ]
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- crypto/asymmetric_keys/x509_public_key.c | 38 --------------------------------
- 1 file changed, 38 deletions(-)
+ kernel/audit.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index 06007f0..52222a2 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -106,7 +106,6 @@ error_no_sig:
- static int x509_key_preparse(struct key_preparsed_payload *prep)
- {
- 	struct x509_certificate *cert;
--	struct tm now;
- 	size_t srlen, sulen;
- 	char *desc = NULL;
- 	int ret;
-@@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 		goto error_free_cert;
- 	}
+diff --git a/kernel/audit.c b/kernel/audit.c
+index f5dc4b5..d397a61 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -659,6 +659,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
  
--	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
--	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
--		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
--		 now.tm_hour, now.tm_min,  now.tm_sec);
--	if (now.tm_year < cert->valid_from.tm_year ||
--	    (now.tm_year == cert->valid_from.tm_year &&
--	     (now.tm_mon < cert->valid_from.tm_mon ||
--	      (now.tm_mon == cert->valid_from.tm_mon &&
--	       (now.tm_mday < cert->valid_from.tm_mday ||
--		(now.tm_mday == cert->valid_from.tm_mday &&
--		 (now.tm_hour < cert->valid_from.tm_hour ||
--		  (now.tm_hour == cert->valid_from.tm_hour &&
--		   (now.tm_min < cert->valid_from.tm_min ||
--		    (now.tm_min == cert->valid_from.tm_min &&
--		     (now.tm_sec < cert->valid_from.tm_sec
--		      ))))))))))) {
--		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
--		ret = -EKEYREJECTED;
--		goto error_free_cert;
--	}
--	if (now.tm_year > cert->valid_to.tm_year ||
--	    (now.tm_year == cert->valid_to.tm_year &&
--	     (now.tm_mon > cert->valid_to.tm_mon ||
--	      (now.tm_mon == cert->valid_to.tm_mon &&
--	       (now.tm_mday > cert->valid_to.tm_mday ||
--		(now.tm_mday == cert->valid_to.tm_mday &&
--		 (now.tm_hour > cert->valid_to.tm_hour ||
--		  (now.tm_hour == cert->valid_to.tm_hour &&
--		   (now.tm_min > cert->valid_to.tm_min ||
--		    (now.tm_min == cert->valid_to.tm_min &&
--		     (now.tm_sec > cert->valid_to.tm_sec
--		      ))))))))))) {
--		pr_warn("Cert %s has expired\n", cert->fingerprint);
--		ret = -EKEYEXPIRED;
--		goto error_free_cert;
--	}
--
- 	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
- 	cert->pub->id_type = PKEY_ID_X509;
- 
+ 	switch (msg_type) {
+ 	case AUDIT_GET:
++		status_set.mask		 = 0;
+ 		status_set.enabled	 = audit_enabled;
+ 		status_set.failure	 = audit_failure;
+ 		status_set.pid		 = audit_pid;
 -- 
 1.8.3.2
 
