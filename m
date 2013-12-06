@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab3LFNgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:36:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44331 "EHLO
+	id S1758456Ab3LFNgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:36:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44332 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161668Ab3LFNDI (ORCPT
+	with ESMTP id S1161670Ab3LFNDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 08:03:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Rob Herring <robherring2@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Baruch Siach <baruch@tkos.co.il>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 162/272] cfg80211: fix scheduled scan pointer access
-Date: Fri,  6 Dec 2013 12:57:31 +0000
-Message-Id: <1386334761-25517-163-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 161/272] gpio: pl061: move irqdomain initialization
+Date: Fri,  6 Dec 2013 12:57:30 +0000
+Message-Id: <1386334761-25517-162-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 79845c662eeb95c9a180b9bd0d3ad848ee65b94c upstream.
+commit 2ba3154d9cb13697b97723cce75633b48adfe826 upstream.
 
-Since rdev->sched_scan_req is dereferenced outside the
-lock protecting it, this might be done at the wrong
-time, causing crashes. Move the dereference to where
-it should be - inside the RTNL locked section.
+The PL061 driver had the irqdomain initialization in an unfortunate
+place: when used with device tree (and thus passing the base IRQ
+0) the driver would work, as this registers an irqdomain and waits
+for mappings to be done dynamically as the devices request their
+IRQs, whereas when booting using platform data the irqdomain core
+would attempt to allocate IRQ descriptors dynamically (which works
+fine) but also to associate the irq_domain_associate_many() on all
+IRQs, which in turn will call the mapping function which at this
+point will try to set the type of the IRQ and then tries to acquire
+a non-initialized spinlock yielding a backtrace like this:
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.13.0-rc1+ #652
+Backtrace:
+[<c0016f0c>] (dump_backtrace) from [<c00172ac>] (show_stack+0x18/0x1c)
+ r6:c798ace0 r5:00000000 r4:c78257e0 r3:00200140
+[<c0017294>] (show_stack) from [<c0329ea0>] (dump_stack+0x20/0x28)
+[<c0329e80>] (dump_stack) from [<c004fa80>] (__lock_acquire+0x1c0/0x1b80)
+[<c004f8c0>] (__lock_acquire) from [<c0051970>] (lock_acquire+0x6c/0x80)
+ r10:00000000 r9:c0455234 r8:00000060 r7:c047d798 r6:600000d3 r5:00000000
+ r4:c782c000
+[<c0051904>] (lock_acquire) from [<c032e484>] (_raw_spin_lock_irqsave+0x60/0x74)
+ r6:c01a1100 r5:800000d3 r4:c798acd0
+[<c032e424>] (_raw_spin_lock_irqsave) from [<c01a1100>] (pl061_irq_type+0x28/0x)
+ r6:00000000 r5:00000000 r4:c798acd0
+[<c01a10d8>] (pl061_irq_type) from [<c0059ef4>] (__irq_set_trigger+0x70/0x104)
+ r6:00000000 r5:c01a10d8 r4:c046da1c r3:c01a10d8
+[<c0059e84>] (__irq_set_trigger) from [<c005b348>] (irq_set_irq_type+0x40/0x60)
+ r10:c043240c r8:00000060 r7:00000000 r6:c046da1c r5:00000060 r4:00000000
+[<c005b308>] (irq_set_irq_type) from [<c01a1208>] (pl061_irq_map+0x40/0x54)
+ r6:c79693c0 r5:c798acd0 r4:00000060
+[<c01a11c8>] (pl061_irq_map) from [<c005d27c>] (irq_domain_associate+0xc0/0x190)
+ r5:00000060 r4:c046da1c
+[<c005d1bc>] (irq_domain_associate) from [<c005d604>] (irq_domain_associate_man)
+ r8:00000008 r7:00000000 r6:c79693c0 r5:00000060 r4:00000000
+[<c005d5d0>] (irq_domain_associate_many) from [<c005d864>] (irq_domain_add_simp)
+ r8:c046578c r7:c035b72c r6:c79693c0 r5:00000060 r4:00000008 r3:00000008
+[<c005d814>] (irq_domain_add_simple) from [<c01a1380>] (pl061_probe+0xc4/0x22c)
+ r6:00000060 r5:c0464380 r4:c798acd0
+[<c01a12bc>] (pl061_probe) from [<c01c0450>] (amba_probe+0x74/0xe0)
+ r10:c043240c r9:c0455234 r8:00000000 r7:c047d7f8 r6:c047d744 r5:00000000
+ r4:c0464380
+
+This moves the irqdomain initialization to a point where the spinlock
+and GPIO chip are both fully propulated, so the callbacks can be used
+without crashes.
+
+I had some problem reproducing the crash, as the devm_kzalloc():ed
+zeroed memory would seemingly mask the spinlock as something OK,
+but by poisoning the lock like this:
+
+u32 *dum;
+dum = (u32 *) &chip->lock;
+*dum = 0xaaaaaaaaU;
+
+I could reproduce, fix and test the patch.
+
+Reported-by: Russell King <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/wireless/scan.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpio/gpio-pl061.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/wireless/scan.c b/net/wireless/scan.c
-index ae8c186..7811f81 100644
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -254,10 +254,10 @@ void __cfg80211_sched_scan_results(struct work_struct *wk)
- 	rdev = container_of(wk, struct cfg80211_registered_device,
- 			    sched_scan_results_wk);
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index 6a4bd0d..4fbe12d 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -286,11 +286,6 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ 	if (!chip->base)
+ 		return -ENOMEM;
  
--	request = rdev->sched_scan_req;
+-	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
+-					     irq_base, &pl061_domain_ops, chip);
+-	if (!chip->domain)
+-		return -ENODEV;
 -
- 	rtnl_lock();
+ 	spin_lock_init(&chip->lock);
  
-+	request = rdev->sched_scan_req;
+ 	chip->gc.request = pl061_gpio_request;
+@@ -320,6 +315,11 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ 	irq_set_chained_handler(irq, pl061_irq_handler);
+ 	irq_set_handler_data(irq, chip);
+ 
++	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
++					     irq_base, &pl061_domain_ops, chip);
++	if (!chip->domain)
++		return -ENODEV;
 +
- 	/* we don't have sched_scan_req anymore if the scan is stopping */
- 	if (request) {
- 		if (request->flags & NL80211_SCAN_FLAG_FLUSH) {
+ 	for (i = 0; i < PL061_GPIO_NR; i++) {
+ 		if (pdata) {
+ 			if (pdata->directions & (1 << i))
 -- 
 1.8.3.2
 
