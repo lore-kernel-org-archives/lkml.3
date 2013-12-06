@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161804Ab3LFWMI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:12:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60941 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759379Ab3LFVxm (ORCPT
+	id S1161300Ab3LFWMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:12:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:26893 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161319Ab3LFWMm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>, Phil Sutter <phil@nwl.cc>,
-        Eric Dumazet <edumazet@google.com>, Jan Stancek <jstancek@redhat.com>,
-        Veaceslav Falico <vfalico@redhat.com>
-Subject: [PATCH 3.10 33/58] af_packet: block BH in prb_shutdown_retire_blk_timer()
-Date: Fri,  6 Dec 2013 13:52:04 -0800
-Message-Id: <20131206214847.968551194@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
-References: <20131206214844.906193530@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Fri, 6 Dec 2013 17:12:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,842,1378882800"; 
+   d="scan'208";a="420690376"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Xudong Hao <xudong.hao@intel.com>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "Thomas Gleixner" <tglx@linutronix.de>
+Subject: RE: [Qemu-devel] [PATCH v2 3/3] X86,	mpx: Intel MPX xstate feature
+ definition
+Thread-Topic: [Qemu-devel] [PATCH v2 3/3] X86,	mpx: Intel MPX xstate feature
+ definition
+Thread-Index: AQHO8sraYnj+nqsDeUCT31iTRUZtSppHuTFQ
+Date: Fri, 6 Dec 2013 22:12:30 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923350140BB62@SHSMSX101.ccr.corp.intel.com>
+References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>
+	<1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
+ <52A20AD6.8080706@redhat.com>
+ <DE8DF0795D48FD4CA783C40EC82923350140B3B6@SHSMSX101.ccr.corp.intel.com>
+ <52A242BE.3010701@zytor.com>
+In-Reply-To: <52A242BE.3010701@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+H. Peter Anvin wrote:
+> On 12/06/2013 12:05 PM, Liu, Jinsong wrote:
+>>> 
+>>> Since Peter already said the same, please undo these changes.
+>>> 
+>>> Also, how is XSTATE_EAGER used?  Should MPX be disabled when
+>>> xsaveopt is disabled on the kernel command line?  (Liu, how would
+>>> this affect the KVM patches, too?) 
+>>> 
+>>> Paolo
+>> 
+>> Currently seems no, and if needed we can add a new patch at kvm side
+>> accordingly when native mpx patches checked in. 
+>> 
+> 
+> We need to either disable these features in lazy mode, or we need to
+> force eager mode if these features are to be supported.  The problem
+> with the latter is that it means forcing eager mode regardless of if
+> anything actually *uses* these features.
+> 
+> A third option would be to require applications to use a prctl() or
+> similar to enable eager-save features.
+> 
+> Thoughts?
+> 
+> 	-hpa
 
-------------------
+The third option seems better -- how does native mpx patches work, force eager?
 
-From: Veaceslav Falico <vfalico@redhat.com>
-
-[ Upstream commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 ]
-
-Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
-however the timer might fire right in the middle and thus try to re-aquire
-the same spinlock, leaving us in a endless loop.
-
-To fix that, use the spin_lock_bh() to block it.
-
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Daniel Borkmann <dborkman@redhat.com>
-CC: Willem de Bruijn <willemb@google.com>
-CC: Phil Sutter <phil@nwl.cc>
-CC: Eric Dumazet <edumazet@google.com>
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Tested-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/packet/af_packet.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -439,9 +439,9 @@ static void prb_shutdown_retire_blk_time
- 
- 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
- 
--	spin_lock(&rb_queue->lock);
-+	spin_lock_bh(&rb_queue->lock);
- 	pkc->delete_blk_timer = 1;
--	spin_unlock(&rb_queue->lock);
-+	spin_unlock_bh(&rb_queue->lock);
- 
- 	prb_del_retire_blk_timer(pkc);
- }
-
-
+Thanks,
+Jinsong
