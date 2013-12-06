@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab3LFWmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:42:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60436 "EHLO
+	id S1758877Ab3LFVwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:52:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60389 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758894Ab3LFVw1 (ORCPT
+	with ESMTP id S1758693Ab3LFVwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:27 -0500
+	Fri, 6 Dec 2013 16:52:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Isaku Yamahata <yamahatanetdev@gmail.com>,
-        Maciej Zenczykowski <zenczykowski@gmail.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 13/83] core/dev: do not ignore dmac in dev_forward_skb()
-Date: Fri,  6 Dec 2013 13:51:03 -0800
-Message-Id: <20131206214641.300582962@linuxfoundation.org>
+Subject: [PATCH 3.12 15/83] tuntap: limit head length of skb allocated
+Date: Fri,  6 Dec 2013 13:51:05 -0800
+Message-Id: <20131206214641.492577833@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -30,71 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 81b9eab5ebbf0d5d54da4fc168cfb02c2adc76b8 ]
+[ Upstream commit 96f8d9ecf227638c89f98ccdcdd50b569891976c ]
 
-commit 06a23fe31ca3
-("core/dev: set pkt_type after eth_type_trans() in dev_forward_skb()")
-and refactoring 64261f230a91
-("dev: move skb_scrub_packet() after eth_type_trans()")
+We currently use hdr_len as a hint of head length which is advertised by
+guest. But when guest advertise a very big value, it can lead to an 64K+
+allocating of kmalloc() which has a very high possibility of failure when host
+memory is fragmented or under heavy stress. The huge hdr_len also reduce the
+effect of zerocopy or even disable if a gso skb is linearized in guest.
 
-are forcing pkt_type to be PACKET_HOST when skb traverses veth.
+To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
+head, which guarantees an order 0 allocation each time.
 
-which means that ip forwarding will kick in inside netns
-even if skb->eth->h_dest != dev->dev_addr
-
-Fix order of eth_type_trans() and skb_scrub_packet() in dev_forward_skb()
-and in ip_tunnel_rcv()
-
-Fixes: 06a23fe31ca3 ("core/dev: set pkt_type after eth_type_trans() in dev_forward_skb()")
-CC: Isaku Yamahata <yamahatanetdev@gmail.com>
-CC: Maciej Zenczykowski <zenczykowski@gmail.com>
-CC: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c       |    6 +-----
- net/ipv4/ip_tunnel.c |    4 ++--
- 2 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/net/tun.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1691,13 +1691,9 @@ int dev_forward_skb(struct net_device *d
- 		kfree_skb(skb);
- 		return NET_RX_DROP;
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -981,6 +981,7 @@ static ssize_t tun_get_user(struct tun_s
+ 	struct sk_buff *skb;
+ 	size_t len = total_len, align = NET_SKB_PAD, linear;
+ 	struct virtio_net_hdr gso = { 0 };
++	int good_linear;
+ 	int offset = 0;
+ 	int copylen;
+ 	bool zerocopy = false;
+@@ -1021,12 +1022,16 @@ static ssize_t tun_get_user(struct tun_s
+ 			return -EINVAL;
  	}
--	skb->protocol = eth_type_trans(skb, dev);
  
--	/* eth_type_trans() can set pkt_type.
--	 * call skb_scrub_packet() after it to clear pkt_type _after_ calling
--	 * eth_type_trans().
--	 */
- 	skb_scrub_packet(skb, true);
-+	skb->protocol = eth_type_trans(skb, dev);
- 
- 	return netif_rx(skb);
- }
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -454,6 +454,8 @@ int ip_tunnel_rcv(struct ip_tunnel *tunn
- 	tstats->rx_bytes += skb->len;
- 	u64_stats_update_end(&tstats->syncp);
- 
-+	skb_scrub_packet(skb, !net_eq(tunnel->net, dev_net(tunnel->dev)));
++	good_linear = SKB_MAX_HEAD(align);
 +
- 	if (tunnel->dev->type == ARPHRD_ETHER) {
- 		skb->protocol = eth_type_trans(skb, tunnel->dev);
- 		skb_postpull_rcsum(skb, eth_hdr(skb), ETH_HLEN);
-@@ -461,8 +463,6 @@ int ip_tunnel_rcv(struct ip_tunnel *tunn
- 		skb->dev = tunnel->dev;
+ 	if (msg_control) {
+ 		/* There are 256 bytes to be copied in skb, so there is
+ 		 * enough room for skb expand head in case it is used.
+ 		 * The rest of the buffer is mapped from userspace.
+ 		 */
+ 		copylen = gso.hdr_len ? gso.hdr_len : GOODCOPY_LEN;
++		if (copylen > good_linear)
++			copylen = good_linear;
+ 		linear = copylen;
+ 		if (iov_pages(iv, offset + copylen, count) <= MAX_SKB_FRAGS)
+ 			zerocopy = true;
+@@ -1034,7 +1039,10 @@ static ssize_t tun_get_user(struct tun_s
+ 
+ 	if (!zerocopy) {
+ 		copylen = len;
+-		linear = gso.hdr_len;
++		if (gso.hdr_len > good_linear)
++			linear = good_linear;
++		else
++			linear = gso.hdr_len;
  	}
  
--	skb_scrub_packet(skb, !net_eq(tunnel->net, dev_net(tunnel->dev)));
--
- 	gro_cells_receive(&tunnel->gro_cells, skb);
- 	return 0;
- 
+ 	skb = tun_alloc_skb(tfile, align, copylen, linear, noblock);
 
 
