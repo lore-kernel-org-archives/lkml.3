@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab3LFAW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:22:29 -0500
-Received: from ring0.de ([91.143.88.219]:39832 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab3LFAWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:22:25 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Luciano Coelho <luca@coelho.fi>,
-        Tony Lindgren <tony@atomide.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-omap@vger.kernel.org,
-        netdev@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2 0/5] wl1251 device tree support
-Date: Fri,  6 Dec 2013 01:22:11 +0100
-Message-Id: <1386289336-26704-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1382890469-25286-1-git-send-email-sre@debian.org>
-References: <1382890469-25286-1-git-send-email-sre@debian.org>
+	id S1756902Ab3LFAZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:25:13 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44034 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab3LFAZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 19:25:10 -0500
+Date: Fri, 6 Dec 2013 00:23:45 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Adrien =?iso-8859-1?Q?Verg=E9?= <adrienverge@gmail.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: Re: [PATCH 0/3] ARM Coresight: Enhance ETM tracing control
+Message-ID: <20131206002345.GK4360@n2100.arm.linux.org.uk>
+References: <20131204170703.GA14859@kroah.com> <CANsc=4X7ThCvgz9bfu1ZZg9FCti5SMdbXL5tA584z-oZ_HEByg@mail.gmail.com> <20131204230239.GB9205@kroah.com> <CANsc=4UGi5sMdUW5qQDzEJx4h8NDU+-b=xOLBAZtzbV5ugz3Fg@mail.gmail.com> <20131205040104.GA14641@kroah.com> <52A0DE42.3080602@codeaurora.org> <20131205201659.GA14539@kroah.com> <52A101F8.3060104@codeaurora.org> <CANsc=4Vb-2br+K51NWsyQV25R3eJo_=YfpnXsh1G1ecRVDYc3w@mail.gmail.com> <20131206000610.GA30344@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131206000610.GA30344@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Dec 05, 2013 at 04:06:10PM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Dec 05, 2013 at 06:54:49PM -0500, Adrien Vergé wrote:
+> > > Well, these patches were incorrect, so that's not really a valid
+> > > question :)
+> > 
+> > Should I correct the pid size and send them again?
+> 
+> I'm not the ARM maintainer, so I can't say if I would reject them or
+> not.
 
-The following patchset adds device tree support to
-the spi variant of the wl1251 driver.
+Neither am I someone who knows this code; it was contributed by TI, and
+I assume TI had I use for it.  I've no idea what that was or how it's
+even used - it's not something I particularly care about.
 
-Changes since v1 [0]:
- * Added some Reviewed-By: Pavel Machek
- * Splitted DT binding documentation into its own patch
- * Added ti, prefix to power-gpio
- * Renamed ti,use-eeprom to ti,wl1251-has-eeprom
- * Updated description for ti,wl1251-has-eeprom
- * Removed boardcode update from regulator patch to avoid
-   useless merge conflicts (all relevant boardcode will be
-   removed in 3.14).
-
-[0] https://lkml.org/lkml/2013/10/27/112
-
--- Sebastian
-
-Luciano Coelho (1):
-  wl1251: split wl251 platform data to a separate structure
-
-Sebastian Reichel (4):
-  wl1251: move power GPIO handling into the driver
-  wl1251: spi: add vio regulator support
-  wl1251: spi: add device tree support
-  Documentation: dt: wireless: Add wl1251
-
- .../devicetree/bindings/net/wireless/ti,wl1251.txt | 39 ++++++++++++
- arch/arm/mach-omap2/board-omap3pandora.c           |  6 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c       | 13 +---
- drivers/net/wireless/ti/wilink_platform_data.c     | 37 +++++++++--
- drivers/net/wireless/ti/wl1251/sdio.c              | 31 +++++++---
- drivers/net/wireless/ti/wl1251/spi.c               | 71 ++++++++++++++++------
- drivers/net/wireless/ti/wl1251/wl1251.h            |  4 +-
- include/linux/wl12xx.h                             | 24 +++++++-
- 8 files changed, 176 insertions(+), 49 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/wireless/ti,wl1251.txt
-
--- 
-1.8.4.3
-
+I'd much rather someone else who has a use for ETM (and thus knows what
+it should/can do) look after it.
