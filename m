@@ -1,65 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab3LFD7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 22:59:40 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:32830 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab3LFD7h (ORCPT
+	id S1752463Ab3LFEMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 23:12:46 -0500
+Received: from [213.199.154.253] ([213.199.154.253]:44308 "EHLO
+	db9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751145Ab3LFEMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 22:59:37 -0500
-From: learc83 <learc83@gmail.com>
-To: duncan.sands@free.fr
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, learc83 <learc83@gmail.com>
-Subject: [PATCH] Usb: atm: usbatm: fixed a pointer variable format issue
-Date: Thu,  5 Dec 2013 22:59:23 -0500
-Message-Id: <1386302363-10975-1-git-send-email-learc83@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 5 Dec 2013 23:12:43 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zz98dI9371I936eI542I1432Id799h4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh109h2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0h2336hbe9i1155h)
+From: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+Thread-Topic: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+Thread-Index: AQHO5OdyKeXB/EytyUeVGr+Ok97IOJoueBeAgAENqwCAAKUSgIAAARWAgAADyQCABUQ/0IAAu7eAgAMaEYCAAR6mUIAMACkAgAA/BTA=
+Date: Fri, 6 Dec 2013 04:11:13 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D07251EE4@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385066603.2879.414.camel@ul30vt.home>
+	 <1385066835.1403.489.camel@snotra.buserror.net>
+	 <1385067648.2879.421.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385397493.2879.557.camel@ul30vt.home>
+	  <6A3DF150A5B70D4F9B66A25E3F7C888D0723624C@039-SN2MPN1-012.039d.mgd.msft.net>
+ <1386289316.7375.107.camel@snotra.buserror.net>
+In-Reply-To: <1386289316.7375.107.camel@snotra.buserror.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.134.82]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB64DLkv014779
 
-Fixed a pointer variable format issue.
 
-Signed-off-by: Seth Archer Brown <learc83@gmail.com>
----
- drivers/usb/atm/usbatm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/atm/usbatm.c b/drivers/usb/atm/usbatm.c
-index 25a7bfc..dada014 100644
---- a/drivers/usb/atm/usbatm.c
-+++ b/drivers/usb/atm/usbatm.c
-@@ -170,9 +170,9 @@ struct usbatm_control {
- static void usbatm_atm_dev_close(struct atm_dev *atm_dev);
- static int usbatm_atm_open(struct atm_vcc *vcc);
- static void usbatm_atm_close(struct atm_vcc *vcc);
--static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd, void __user * arg);
-+static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd, void __user *arg);
- static int usbatm_atm_send(struct atm_vcc *vcc, struct sk_buff *skb);
--static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t * pos, char *page);
-+static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t *pos, char *page);
- 
- static struct atmdev_ops usbatm_atm_devops = {
- 	.dev_close	= usbatm_atm_dev_close,
-@@ -739,7 +739,7 @@ static void usbatm_atm_dev_close(struct atm_dev *atm_dev)
- 	usbatm_put_instance(instance);	/* taken in usbatm_atm_init */
- }
- 
--static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t * pos, char *page)
-+static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t *pos, char *page)
- {
- 	struct usbatm_data *instance = atm_dev->dev_data;
- 	int left = *pos;
-@@ -895,7 +895,7 @@ static void usbatm_atm_close(struct atm_vcc *vcc)
- }
- 
- static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd,
--			  void __user * arg)
-+			  void __user *arg)
- {
- 	struct usbatm_data *instance = atm_dev->dev_data;
- 
--- 
-1.7.10.4
+> -----Original Message-----
+> From: Wood Scott-B07421
+> Sent: Friday, December 06, 2013 5:52 AM
+> To: Bhushan Bharat-R65777
+> Cc: Alex Williamson; linux-pci@vger.kernel.org; agraf@suse.de; Yoder Stuart-
+> B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> 
+> On Thu, 2013-11-28 at 03:19 -0600, Bharat Bhushan wrote:
+> >
+> > > -----Original Message-----
+> > > From: Bhushan Bharat-R65777
+> > > Sent: Wednesday, November 27, 2013 9:39 PM
+> > > To: 'Alex Williamson'
+> > > Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de;
+> > > Yoder Stuart- B08248; iommu@lists.linux-foundation.org;
+> > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
+> > > linux-kernel@vger.kernel.org
+> > > Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale
+> > > IOMMU (PAMU)
+> > >
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > Sent: Monday, November 25, 2013 10:08 PM
+> > > > To: Bhushan Bharat-R65777
+> > > > Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de;
+> > > > Yoder
+> > > > Stuart- B08248; iommu@lists.linux-foundation.org;
+> > > > bhelgaas@google.com;
+> > > > linuxppc- dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
+> > > > IOMMU
+> > > > (PAMU)
+> > > >
+> > > > On Mon, 2013-11-25 at 05:33 +0000, Bharat Bhushan wrote:
+> > > > >
+> > > > > > -----Original Message-----
+> > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > > > Sent: Friday, November 22, 2013 2:31 AM
+> > > > > > To: Wood Scott-B07421
+> > > > > > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org;
+> > > > > > agraf@suse.de; Yoder Stuart-B08248;
+> > > > > > iommu@lists.linux-foundation.org; bhelgaas@google.com;
+> > > > > > linuxppc- dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for
+> > > > > > Freescale IOMMU (PAMU)
+> > > > > >
+> > > > > > On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
+> > > > > > > On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
+> > > > > > > > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
+> > > > > > > > >
+> > > > > > > > > > -----Original Message-----
+> > > > > > > > > > From: Alex Williamson
+> > > > > > > > > > [mailto:alex.williamson@redhat.com]
+> > > > > > > > > > Sent: Thursday, November 21, 2013 12:17 AM
+> > > > > > > > > > To: Bhushan Bharat-R65777
+> > > > > > > > > > Cc: joro@8bytes.org; bhelgaas@google.com;
+> > > > > > > > > > agraf@suse.de; Wood Scott-B07421; Yoder Stuart-B08248;
+> > > > > > > > > > iommu@lists.linux-foundation.org; linux-
+> > > > > > > > > > pci@vger.kernel.org; linuxppc-dev@lists.ozlabs.org;
+> > > > > > > > > > linux- kernel@vger.kernel.org; Bhushan Bharat-R65777
+> > > > > > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for
+> > > > > > > > > > Freescale IOMMU (PAMU)
+> > > > > > > > > >
+> > > > > > > > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie.
+> > > > > > > > > > each vfio user has $COUNT regions at their disposal
+> exclusively)?
+> > > > > > > > >
+> > > > > > > > > Number of msi-bank count is system wide and not per
+> > > > > > > > > aperture, But will be
+> > > > > > setting windows for banks in the device aperture.
+> > > > > > > > > So say if we are direct assigning 2 pci device (both
+> > > > > > > > > have different iommu
+> > > > > > group, so 2 aperture in iommu) to VM.
+> > > > > > > > > Now qemu can make only one call to know how many
+> > > > > > > > > msi-banks are there but
+> > > > > > it must set sub-windows for all banks for both pci device in
+> > > > > > its respective aperture.
+> > > > > > > >
+> > > > > > > > I'm still confused.  What I want to make sure of is that
+> > > > > > > > the banks are independent per aperture.  For instance, if
+> > > > > > > > we have two separate userspace processes operating
+> > > > > > > > independently and they both chose to use msi bank zero for
+> > > > > > > > their device, that's bank zero within each aperture and
+> > > > > > > > doesn't interfere.  Or another way to ask is can a
+> > > > > > > > malicious user interfere with other users by
+> > > > using the wrong bank.
+> > > > > > > > Thanks,
+> > > > > > >
+> > > > > > > They can interfere.
+> > > > >
+> > > > > Want to be sure of how they can interfere?
+> > > >
+> > > > What happens if more than one user selects the same MSI bank?
+> > > > Minimally, wouldn't that result in the IOMMU blocking transactions
+> > > > from the previous user once the new user activates their mapping?
+> > >
+> > > Yes and no; With current implementation yes but with a minor change
+> > > no. Later in this response I will explain how.
+> > >
+> > > >
+> > > > > >>  With this hardware, the only way to prevent that
+> > > > > > > is to make sure that a bank is not shared by multiple
+> > > > > > > protection
+> > > contexts.
+> > > > > > > For some of our users, though, I believe preventing this is
+> > > > > > > less important than the performance benefit.
+> > > > >
+> > > > > So should we let this patch series in without protection?
+> > > >
+> > > > No.
+> > > >
+> > > > > >
+> > > > > > I think we need some sort of ownership model around the msi banks
+> then.
+> > > > > > Otherwise there's nothing preventing another userspace from
+> > > > > > attempting an MSI based attack on other users, or perhaps even
+> > > > > > on the host.  VFIO can't allow that.  Thanks,
+> > > > >
+> > > > > We have very few (3 MSI bank on most of chips), so we can not
+> > > > > assign one to each userspace. What we can do is host and
+> > > > > userspace does not share a MSI bank while userspace will share a MSI
+> bank.
+> > > >
+> > > > Then you probably need VFIO to "own" the MSI bank and program
+> > > > devices into it rather than exposing the MSI banks to userspace to
+> > > > let them have
+> > > direct access.
+> > >
+> > > Overall idea of exposing the details of msi regions to userspace are
+> > >  1) User space can define the aperture size to fit MSI mapping in IOMMU.
+> > >  2) setup iova for a MSI banks; which is just after guest memory.
+> > >
+> > > But currently we expose the "size" and "address" of MSI banks,
+> > > passing address is of no use and can be problematic.
+> >
+> > I am sorry, above information is not correct. Currently neither we expose
+> "address" nor "size" to user space. We only expose number of MSI BANK count and
+> userspace adds one sub-window for each bank.
+> >
+> > > If we just provide the size of MSI bank to userspace then userspace
+> > > cannot do anything wrong.
+> >
+> > So userspace does not know address, so it cannot mmap and cause any
+> interference by directly reading/writing.
+> 
+> That's security through obscurity...  Couldn't the malicious user find out the
+> address via other means, such as experimentation on another system over which
+> they have full control?  What would happen if the user reads from their device's
+> PCI config space?  Or gets the information via some back door in the PCI device
+> they own?  Or pokes throughout the address space looking for something that
+> generates an interrupt to its own device?
 
+So how to solve this problem, Any suggestion ?
+
+We have to map one window in PAMU for MSIs and a malicious user can ask its device to do DMA to MSI window region with any pair of address and data, which can lead to unexpected MSIs in system?
+
+Thanks
+-Bharat
+
+> 
+> -Scott
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
