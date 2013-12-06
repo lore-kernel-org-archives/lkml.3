@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab3LFJOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 04:14:18 -0500
-Received: from 7of9.schinagl.nl ([88.159.158.68]:38795 "EHLO 7of9.schinagl.nl"
+	id S1757653Ab3LFJPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:15:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48694 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757395Ab3LFJOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 04:14:08 -0500
-Message-ID: <52A19502.1090409@schinagl.nl>
-Date: Fri, 06 Dec 2013 10:12:34 +0100
-From: Oliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752656Ab3LFJPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 04:15:21 -0500
+Message-ID: <52A1957C.5090801@ti.com>
+Date: Fri, 6 Dec 2013 11:14:36 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Tejun Heo <tj@kernel.org>, Olliver Schinagl <oliver+list@schinagl.nl>,
-        grant.likely@linaro.org,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, dev@linux-sunxi.org,
-        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
-        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
- driver for the Allwinner SUNXi series of SoCs
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-3-git-send-email-oliver@schinagl.nl> <20131204123708.GD3158@htj.dyndns.org> <529F2677.3070208@schinagl.nl> <20131204131402.GG3158@htj.dyndns.org> <529F2B41.8090009@schinagl.nl> <20131204132312.GH3158@htj.dyndns.org> <20131206100117.59609a8a@skate>
-In-Reply-To: <20131206100117.59609a8a@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tony Lindgren <tony@atomide.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: <bcousson@baylibre.com>, <paul@pwsan.com>, <balbi@ti.com>, <sr@denx.de>,
+        <David.Laight@ACULAB.COM>, <michael@amarulasolutions.com>,
+        <bigeasy@linutronix.de>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] ARM: OMAP2+: USB Host bug fixes for 3.13 rc
+References: <1386080748-17005-1-git-send-email-rogerq@ti.com> <529EFD42.9070507@ti.com> <20131205184832.GG26766@atomide.com>
+In-Reply-To: <20131205184832.GG26766@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tony,
 
-On 06-12-13 10:01, Thomas Petazzoni wrote:
-> Dear Tejun Heo,
->
-> On Wed, 4 Dec 2013 08:23:12 -0500, Tejun Heo wrote:
->
->>> But again, point me (for dummies ;) in the right direction and I'll
->>> work on it with some help.
->> Richard and Shawn recently worked on ahci_imx.  Can you guys please
->> talk with each other and figure out what can be done to share as much
->> as possible among these new platform-specific drivers?  I'd really
->> like to see the common things factored out as much as possible with
->> only the actual hardware differences described for each device.
-> Also, please Cc me on such discussions. I have a pending AHCI platform
-> driver for another ARM SoC family. It is very similar to ahci_platform,
-> but needs to do a few more things that are SoC specific (map an
-> additional register area, and do some SoC-specific stuff with them).
->
-> For the moment, we're left with two approaches:
->
->   * Do what Oliver did, where the ahci_<foo> driver will do its own
->     SoC-specific stuff, and then will register an additional
->     platform_device to trigger the ->probe() of the generic
->     ahci_platform driver. I must say I don't really like this solution,
->     since it involves having two platform_device registered for the same
->     piece of hardware (one platform_device to trigger the ->probe of
->     ahci_<foo>, and another one to trigger the ->probe of ahci_platform).
->
->   * Duplicate in ahci_<foo> the (relatively small) amount of code that
->     is present in ahci_platform.
->
->  From my point of view, ahci_platform should be turned into a small
-> "library", that provides an API for ahci_<foo> drivers to 1/ do their
-> own custom stuff and 2/ do the common ahci_platform stuff.
->
-> This way we avoid the registration of two platform_device for the same
-> piece of hardware, and we avoid the duplication of code.
->
-> Want me to propose a RFC for this idea?
-I've started to do what sdhci does with their pltfrm driver, assuming 
-that's the right approach. Since i'm only dabbling and not always 100% 
-sure what should or shouldn't be done, it may take a little while, but 
-looks promising from my end ;)
+On 12/05/2013 08:48 PM, Tony Lindgren wrote:
+> * Tomi Valkeinen <tomi.valkeinen@ti.com> [131204 02:01]:
+>> On 2013-12-03 16:25, Roger Quadros wrote:
+>>> Hi,
+>>>
+>>> This is a follow up solution to the original series in [1]
+>>>
+>>> The first patch fixes the OMAP4 Panda USB detection problems on 3.13-rc1
+>>> with u-boot v2013.10.
+>>>
+>>> The remaining 2 patches are required if SOFTRESET needs to be done for the
+>>> USB Host module on OMAP3 platforms.
+>>>
+>>> Patch 2 fixes the hwmod RESET logic to prevent multiple SOFTRESETs
+>>> being issued to the modules. This multiple SOFTRESET was causing problems
+>>> with OMAP3 USB Host module. On Beagleboard C4 this is seen as failure to
+>>> mount NFS root over external USB to Ethernet device.
+>>>
+>>> This might be the reason why HWMOD_INIT_NO_RESET was used for the OMAP
+>>> USB host module in OMAP3 hwmod data and just carried forward in OMAP4
+>>> and OMAP5 hwmod data as well.
+>>>
+>>> cheers,
+>>> -roger
+>>
+>> Tested on Panda and Beagle xM. Works fine for me.
+> 
+> Looks like we should merge these as regression fixes during the -rc
+> cycle. Paul should take a look at these first though.
 
-So is the sdhci-pltfrm approach the correct one? We still have ahci_* 
-drivers, but ahci_platform.c won't be a driver in the sense that it is 
-now anymore.
+At least the first one must be taken ASAP. The other two would be nice to have though.
 
-Oliver
->
-> Best regards,
->
-> Thomas
-
+cheers,
+-roger
