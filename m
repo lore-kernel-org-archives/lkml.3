@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161495Ab3LFNB1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:01:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43926 "EHLO
+	id S1161520Ab3LFNBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:01:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43954 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161478Ab3LFNBW (ORCPT
+	with ESMTP id S1161498Ab3LFNB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:22 -0500
+	Fri, 6 Dec 2013 08:01:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oskar Schirmer <oskar@scara.com>, Mark Brown <broonie@linaro.org>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/272] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
-Date: Fri,  6 Dec 2013 12:56:12 +0000
-Message-Id: <1386334761-25517-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 089/272] can: flexcan: fix flexcan_chip_start() on imx6
+Date: Fri,  6 Dec 2013 12:56:18 +0000
+Message-Id: <1386334761-25517-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,110 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oskar Schirmer <oskar@scara.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit fc7dc61d9a87011aaf8a6eb3144ebf9552adf5d2 upstream.
+commit 0d1862ea1a5bb876cf05555a7307080cb75bf379 upstream.
 
-Unbalanced calls to snd_imx_pcm_trigger() may result in endless
-FIQ activity and thus provoke eternal sound. While on the first glance,
-the switch statement looks pretty symmetric, the SUSPEND/RESUME
-pair is not: the suspend case comes along snd_pcm_suspend_all(),
-which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
-but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
-This way userland may provoke an unbalanced resume, which might cause
-the fiq_enable counter to increase and never return to zero again,
-so eventually imx_pcm_fiq is never disabled.
+In the flexcan_chip_start() function first the flexcan core is going through
+the soft reset sequence, then the RX FIFO is enabled.
 
-Simply removing the fiq_enable will solve the problem, as long as
-one never goes play and capture game simultaneously, but beware
-trying both at once, the early TRIGGER_STOP will cut off the other
-activity prematurely. So now playing and capturing is scrutinized
-separately, instead of by counting.
+With the hardware is put into FIFO mode, message buffers 1...7 are reserved by
+the FIFO engine. The remaining message buffers are in reset default values.
+This patch removes the bogus initialization of the message buffers, as it
+causes an imprecise external abort on imx6.
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
+Tested-by: Lothar Waßmann <LW@KARO-electronics.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/fsl/imx-pcm-fiq.c | 29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ drivers/net/can/flexcan.c | 12 ------------
+ 1 file changed, 12 deletions(-)
 
-diff --git a/sound/soc/fsl/imx-pcm-fiq.c b/sound/soc/fsl/imx-pcm-fiq.c
-index 310d902..b71f943 100644
---- a/sound/soc/fsl/imx-pcm-fiq.c
-+++ b/sound/soc/fsl/imx-pcm-fiq.c
-@@ -42,7 +42,8 @@ struct imx_pcm_runtime_data {
- 	struct hrtimer hrt;
- 	int poll_time_ns;
- 	struct snd_pcm_substream *substream;
--	atomic_t running;
-+	atomic_t playing;
-+	atomic_t capturing;
- };
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index d1968c8..cf3c93f 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -702,7 +702,6 @@ static int flexcan_chip_start(struct net_device *dev)
+ {
+ 	struct flexcan_priv *priv = netdev_priv(dev);
+ 	struct flexcan_regs __iomem *regs = priv->base;
+-	unsigned int i;
+ 	int err;
+ 	u32 reg_mcr, reg_ctrl;
  
- static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
-@@ -54,7 +55,7 @@ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
- 	struct pt_regs regs;
- 	unsigned long delta;
+@@ -774,17 +773,6 @@ static int flexcan_chip_start(struct net_device *dev)
+ 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
+ 	flexcan_write(reg_ctrl, &regs->ctrl);
  
--	if (!atomic_read(&iprtd->running))
-+	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
- 		return HRTIMER_NORESTART;
- 
- 	get_fiq_regs(&regs);
-@@ -122,7 +123,6 @@ static int snd_imx_pcm_prepare(struct snd_pcm_substream *substream)
- 	return 0;
- }
- 
--static int fiq_enable;
- static int imx_pcm_fiq;
- 
- static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
-@@ -134,23 +134,27 @@ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
- 	case SNDRV_PCM_TRIGGER_START:
- 	case SNDRV_PCM_TRIGGER_RESUME:
- 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
--		atomic_set(&iprtd->running, 1);
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 1);
-+		else
-+			atomic_set(&iprtd->capturing, 1);
- 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
- 		      HRTIMER_MODE_REL);
--		if (++fiq_enable == 1)
--			enable_fiq(imx_pcm_fiq);
+-	for (i = 0; i < ARRAY_SIZE(regs->cantxfg); i++) {
+-		flexcan_write(0, &regs->cantxfg[i].can_ctrl);
+-		flexcan_write(0, &regs->cantxfg[i].can_id);
+-		flexcan_write(0, &regs->cantxfg[i].data[0]);
+-		flexcan_write(0, &regs->cantxfg[i].data[1]);
 -
-+		enable_fiq(imx_pcm_fiq);
- 		break;
- 
- 	case SNDRV_PCM_TRIGGER_STOP:
- 	case SNDRV_PCM_TRIGGER_SUSPEND:
- 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
--		atomic_set(&iprtd->running, 0);
+-		/* put MB into rx queue */
+-		flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+-			&regs->cantxfg[i].can_ctrl);
+-	}
 -
--		if (--fiq_enable == 0)
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			atomic_set(&iprtd->playing, 0);
-+		else
-+			atomic_set(&iprtd->capturing, 0);
-+		if (!atomic_read(&iprtd->playing) &&
-+				!atomic_read(&iprtd->capturing))
- 			disable_fiq(imx_pcm_fiq);
--
- 		break;
-+
- 	default:
- 		return -EINVAL;
- 	}
-@@ -198,7 +202,8 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
- 
- 	iprtd->substream = substream;
- 
--	atomic_set(&iprtd->running, 0);
-+	atomic_set(&iprtd->playing, 0);
-+	atomic_set(&iprtd->capturing, 0);
- 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	iprtd->hrt.function = snd_hrtimer_callback;
- 
+ 	/* Abort any pending TX, mark Mailbox as INACTIVE */
+ 	flexcan_write(FLEXCAN_MB_CNT_CODE(0x4),
+ 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
 -- 
 1.8.3.2
 
