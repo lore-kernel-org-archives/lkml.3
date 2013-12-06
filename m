@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab3LFNCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44087 "EHLO
+	id S1758138Ab3LFNCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:02:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44132 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758075Ab3LFNCB (ORCPT
+	with ESMTP id S1758075Ab3LFNCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:01 -0500
+	Fri, 6 Dec 2013 08:02:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Rodolfo Giometti <giometti@enneenne.com>, Chris Ball <cjb@laptop.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 112/272] ext4: avoid bh leak in retry path of ext4_expand_extra_isize_ea()
-Date: Fri,  6 Dec 2013 12:56:41 +0000
-Message-Id: <1386334761-25517-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 121/272] mmc: atmel-mci: fix oops in atmci_tasklet_func
+Date: Fri,  6 Dec 2013 12:56:50 +0000
+Message-Id: <1386334761-25517-122-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,29 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Rodolfo Giometti <giometti@enneenne.com>
 
-commit dcb9917ba041866686fe152850364826c4622a36 upstream.
+commit fbd986cd420d1deeabf1039ec4e74075a5639db5 upstream.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+In some cases, a NULL pointer dereference happens because data is NULL when
+STATE_END_REQUEST case is reached in atmci_tasklet_func.
+
+Signed-off-by: Rodolfo Giometti <giometti@enneenne.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/xattr.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/mmc/host/atmel-mci.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 03e9beb..1423c48 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -1352,6 +1352,7 @@ retry:
- 					new_extra_isize = s_min_extra_isize;
- 					kfree(is); is = NULL;
- 					kfree(bs); bs = NULL;
-+					brelse(bh);
- 					goto retry;
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index e9ea2fc..78d7e47 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1792,12 +1792,14 @@ static void atmci_tasklet_func(unsigned long priv)
+ 			if (unlikely(status)) {
+ 				host->stop_transfer(host);
+ 				host->data = NULL;
+-				if (status & ATMCI_DTOE) {
+-					data->error = -ETIMEDOUT;
+-				} else if (status & ATMCI_DCRCE) {
+-					data->error = -EILSEQ;
+-				} else {
+-					data->error = -EIO;
++				if (data) {
++					if (status & ATMCI_DTOE) {
++						data->error = -ETIMEDOUT;
++					} else if (status & ATMCI_DCRCE) {
++						data->error = -EILSEQ;
++					} else {
++						data->error = -EIO;
++					}
  				}
- 				error = -1;
+ 			}
+ 
 -- 
 1.8.3.2
 
