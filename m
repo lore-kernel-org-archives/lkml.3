@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161582Ab3LFWIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:08:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60995 "EHLO
+	id S1161559Ab3LFWIo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:08:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:61000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759427Ab3LFVxu (ORCPT
+	with ESMTP id S1759431Ab3LFVxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:53:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 41/58] tcp: gso: fix truesize tracking
-Date: Fri,  6 Dec 2013 13:52:12 -0800
-Message-Id: <20131206214848.704943738@linuxfoundation.org>
+        Brian Foster <bfoster@redhat.com>, Dave Chinner <dchinner@redhat.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Dwight Engen <dwight.engen@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Kees Cook <keescook@google.com>
+Subject: [PATCH 3.10 42/58] xfs: add capability check to free eofblocks ioctl
+Date: Fri,  6 Dec 2013 13:52:13 -0800
+Message-Id: <20131206214848.794009398@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -28,70 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-[ Upstream commit 0d08c42cf9a71530fef5ebcfe368f38f2dd0476f ]
+commit 8c567a7fab6e086a0284eee2db82348521e7120c upstream.
 
-commit 6ff50cd55545 ("tcp: gso: do not generate out of order packets")
-had an heuristic that can trigger a warning in skb_try_coalesce(),
-because skb->truesize of the gso segments were exactly set to mss.
+Check for CAP_SYS_ADMIN since the caller can truncate preallocated
+blocks from files they do not own nor have write access to. A more
+fine grained access check was considered: require the caller to
+specify their own uid/gid and to use inode_permission to check for
+write, but this would not catch the case of an inode not reachable
+via path traversal from the callers mount namespace.
 
-This breaks the requirement that
+Add check for read-only filesystem to free eofblocks ioctl.
 
-skb->truesize >= skb->len + truesizeof(struct sk_buff);
-
-It can trivially be reproduced by :
-
-ifconfig lo mtu 1500
-ethtool -K lo tso off
-netperf
-
-As the skbs are looped into the TCP networking stack, skb_try_coalesce()
-warns us of these skb under-estimating their truesize.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Alexei Starovoitov <ast@plumgrid.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Cc: Kees Cook <keescook@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2899,6 +2899,7 @@ struct sk_buff *tcp_tso_segment(struct s
- 	netdev_features_t features)
- {
- 	struct sk_buff *segs = ERR_PTR(-EINVAL);
-+	unsigned int sum_truesize = 0;
- 	struct tcphdr *th;
- 	unsigned int thlen;
- 	unsigned int seq;
-@@ -2982,13 +2983,7 @@ struct sk_buff *tcp_tso_segment(struct s
- 		if (copy_destructor) {
- 			skb->destructor = gso_skb->destructor;
- 			skb->sk = gso_skb->sk;
--			/* {tcp|sock}_wfree() use exact truesize accounting :
--			 * sum(skb->truesize) MUST be exactly be gso_skb->truesize
--			 * So we account mss bytes of 'true size' for each segment.
--			 * The last segment will contain the remaining.
--			 */
--			skb->truesize = mss;
--			gso_skb->truesize -= mss;
-+			sum_truesize += skb->truesize;
- 		}
- 		skb = skb->next;
- 		th = tcp_hdr(skb);
-@@ -3005,7 +3000,9 @@ struct sk_buff *tcp_tso_segment(struct s
- 	if (copy_destructor) {
- 		swap(gso_skb->sk, skb->sk);
- 		swap(gso_skb->destructor, skb->destructor);
--		swap(gso_skb->truesize, skb->truesize);
-+		sum_truesize += skb->truesize;
-+		atomic_add(sum_truesize - gso_skb->truesize,
-+			   &skb->sk->sk_wmem_alloc);
- 	}
+---
+ fs/xfs/xfs_ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -1612,6 +1612,12 @@ xfs_file_ioctl(
+ 	case XFS_IOC_FREE_EOFBLOCKS: {
+ 		struct xfs_eofblocks eofb;
  
- 	delta = htonl(oldlen + (skb->tail - skb->transport_header) +
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++
++		if (mp->m_flags & XFS_MOUNT_RDONLY)
++			return -XFS_ERROR(EROFS);
++
+ 		if (copy_from_user(&eofb, arg, sizeof(eofb)))
+ 			return -XFS_ERROR(EFAULT);
+ 
 
 
