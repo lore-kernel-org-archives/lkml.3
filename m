@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422746Ab3LFXPd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:15:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48548 "EHLO
+	id S1162147Ab3LFXPa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:15:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48553 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161346Ab3LFXPY (ORCPT
+	with ESMTP id S1161504Ab3LFXP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:15:24 -0500
+	Fri, 6 Dec 2013 18:15:26 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Seppanen <eric@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 147/152] iscsi-target: chap auth shouldn't match username with trailing garbage
-Date: Fri,  6 Dec 2013 15:11:11 -0800
-Message-Id: <1386371476-2477-148-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 136/152] nfsd: split up nfsd_setattr
+Date: Fri,  6 Dec 2013 15:11:00 -0800
+Message-Id: <1386371476-2477-137-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,48 +27,199 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Seppanen <eric@purestorage.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 86784c6bdeeef78eed94d298be7a8879f6a97ee2 upstream.
+commit 818e5a22e907fbae75e9c1fd78233baec9fa64b6 upstream.
 
-In iSCSI negotiations with initiator CHAP enabled, usernames with
-trailing garbage are permitted, because the string comparison only
-checks the strlen of the configured username.
+Split out two helpers to make the code more readable and easier to verify
+for correctness.
 
-e.g. "usernameXXXXX" will be permitted to match "username".
-
-Just check one more byte so the trailing null char is also matched.
-
-Signed-off-by: Eric Seppanen <eric@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target_auth.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/nfsd/vfs.c | 144 ++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 84 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
-index a0fc7b9..b54f6ec 100644
---- a/drivers/target/iscsi/iscsi_target_auth.c
-+++ b/drivers/target/iscsi/iscsi_target_auth.c
-@@ -174,6 +174,7 @@ static int chap_server_compute_md5(
- 	unsigned char client_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char server_digest[MD5_SIGNATURE_SIZE];
- 	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
-+	size_t compare_len;
- 	struct iscsi_chap *chap = conn->auth_protocol;
- 	struct crypto_hash *tfm;
- 	struct hash_desc desc;
-@@ -212,7 +213,9 @@ static int chap_server_compute_md5(
- 		goto out;
- 	}
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 10f950f..4fc2843 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -297,41 +297,12 @@ commit_metadata(struct svc_fh *fhp)
+ }
  
--	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
-+	/* Include the terminating NULL in the compare */
-+	compare_len = strlen(auth->userid) + 1;
-+	if (strncmp(chap_n, auth->userid, compare_len) != 0) {
- 		pr_err("CHAP_N values do not match!\n");
- 		goto out;
+ /*
+- * Set various file attributes.
+- * N.B. After this call fhp needs an fh_put
++ * Go over the attributes and take care of the small differences between
++ * NFS semantics and what Linux expects.
+  */
+-__be32
+-nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+-	     int check_guard, time_t guardtime)
++static void
++nfsd_sanitize_attrs(struct inode *inode, struct iattr *iap)
+ {
+-	struct dentry	*dentry;
+-	struct inode	*inode;
+-	int		accmode = NFSD_MAY_SATTR;
+-	umode_t		ftype = 0;
+-	__be32		err;
+-	int		host_err;
+-	int		size_change = 0;
+-
+-	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
+-		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
+-	if (iap->ia_valid & ATTR_SIZE)
+-		ftype = S_IFREG;
+-
+-	/* Get inode */
+-	err = fh_verify(rqstp, fhp, ftype, accmode);
+-	if (err)
+-		goto out;
+-
+-	dentry = fhp->fh_dentry;
+-	inode = dentry->d_inode;
+-
+-	/* Ignore any mode updates on symlinks */
+-	if (S_ISLNK(inode->i_mode))
+-		iap->ia_valid &= ~ATTR_MODE;
+-
+-	if (!iap->ia_valid)
+-		goto out;
+-
+ 	/*
+ 	 * NFSv2 does not differentiate between "set-[ac]time-to-now"
+ 	 * which only requires access, and "set-[ac]time-to-X" which
+@@ -341,8 +312,7 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 	 * convert to "set to now" instead of "set to explicit time"
+ 	 *
+ 	 * We only call inode_change_ok as the last test as technically
+-	 * it is not an interface that we should be using.  It is only
+-	 * valid if the filesystem does not define it's own i_op->setattr.
++	 * it is not an interface that we should be using.
+ 	 */
+ #define BOTH_TIME_SET (ATTR_ATIME_SET | ATTR_MTIME_SET)
+ #define	MAX_TOUCH_TIME_ERROR (30*60)
+@@ -368,30 +338,6 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 			iap->ia_valid &= ~BOTH_TIME_SET;
+ 		}
  	}
+-	    
+-	/*
+-	 * The size case is special.
+-	 * It changes the file as well as the attributes.
+-	 */
+-	if (iap->ia_valid & ATTR_SIZE) {
+-		if (iap->ia_size < inode->i_size) {
+-			err = nfsd_permission(rqstp, fhp->fh_export, dentry,
+-					NFSD_MAY_TRUNC|NFSD_MAY_OWNER_OVERRIDE);
+-			if (err)
+-				goto out;
+-		}
+-
+-		host_err = get_write_access(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-
+-		size_change = 1;
+-		host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
+-		if (host_err) {
+-			put_write_access(inode);
+-			goto out_nfserr;
+-		}
+-	}
+ 
+ 	/* sanitize the mode change */
+ 	if (iap->ia_valid & ATTR_MODE) {
+@@ -414,8 +360,86 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 			iap->ia_valid |= (ATTR_KILL_SUID | ATTR_KILL_SGID);
+ 		}
+ 	}
++}
+ 
+-	/* Change the attributes. */
++static __be32
++nfsd_get_write_access(struct svc_rqst *rqstp, struct svc_fh *fhp,
++		struct iattr *iap)
++{
++	struct inode *inode = fhp->fh_dentry->d_inode;
++	int host_err;
++
++	if (iap->ia_size < inode->i_size) {
++		__be32 err;
++
++		err = nfsd_permission(rqstp, fhp->fh_export, fhp->fh_dentry,
++				NFSD_MAY_TRUNC | NFSD_MAY_OWNER_OVERRIDE);
++		if (err)
++			return err;
++	}
++
++	host_err = get_write_access(inode);
++	if (host_err)
++		goto out_nfserrno;
++
++	host_err = locks_verify_truncate(inode, NULL, iap->ia_size);
++	if (host_err)
++		goto out_put_write_access;
++	return 0;
++
++out_put_write_access:
++	put_write_access(inode);
++out_nfserrno:
++	return nfserrno(host_err);
++}
++
++/*
++ * Set various file attributes.  After this call fhp needs an fh_put.
++ */
++__be32
++nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
++	     int check_guard, time_t guardtime)
++{
++	struct dentry	*dentry;
++	struct inode	*inode;
++	int		accmode = NFSD_MAY_SATTR;
++	umode_t		ftype = 0;
++	__be32		err;
++	int		host_err;
++	int		size_change = 0;
++
++	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
++		accmode |= NFSD_MAY_WRITE|NFSD_MAY_OWNER_OVERRIDE;
++	if (iap->ia_valid & ATTR_SIZE)
++		ftype = S_IFREG;
++
++	/* Get inode */
++	err = fh_verify(rqstp, fhp, ftype, accmode);
++	if (err)
++		goto out;
++
++	dentry = fhp->fh_dentry;
++	inode = dentry->d_inode;
++
++	/* Ignore any mode updates on symlinks */
++	if (S_ISLNK(inode->i_mode))
++		iap->ia_valid &= ~ATTR_MODE;
++
++	if (!iap->ia_valid)
++		goto out;
++
++	nfsd_sanitize_attrs(inode, iap);
++
++	/*
++	 * The size case is special, it changes the file in addition to the
++	 * attributes.
++	 */
++	if (iap->ia_valid & ATTR_SIZE) {
++		err = nfsd_get_write_access(rqstp, fhp, iap);
++		if (err)
++			goto out;
++		size_change = 1;
++	}
+ 
+ 	iap->ia_valid |= ATTR_CTIME;
+ 
 -- 
 1.8.3.2
 
