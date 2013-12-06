@@ -1,125 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161287Ab3LFWDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:03:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32841 "EHLO
+	id S1161354Ab3LFWDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:03:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759503Ab3LFVyE (ORCPT
+	with ESMTP id S1759474Ab3LFVyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:04 -0500
+	Fri, 6 Dec 2013 16:54:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Florian Weimer <fweimer@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 03/32] random32: fix off-by-one in seeding requirement
-Date: Fri,  6 Dec 2013 13:52:13 -0800
-Message-Id: <20131206214957.152714658@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kim Phillips <kim.phillips@linaro.org>
+Subject: [PATCH 3.10 46/58] clockevents: Add module refcount
+Date: Fri,  6 Dec 2013 13:52:17 -0800
+Message-Id: <20131206214849.158812163@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
-References: <20131206214956.830407026@linuxfoundation.org>
+In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
+References: <20131206214844.906193530@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[ Upstream commit 51c37a70aaa3f95773af560e6db3073520513912 ]
+commit ccf33d6880f39a35158fff66db13000ae4943fac upstream.
 
-For properly initialising the Tausworthe generator [1], we have
-a strict seeding requirement, that is, s1 > 1, s2 > 7, s3 > 15.
+We want to be able to remove clockevent modules as well. Add a
+refcount so we don't remove a module with an active clock event
+device.
 
-Commit 697f8d0348 ("random32: seeding improvement") introduced
-a __seed() function that imposes boundary checks proposed by the
-errata paper [2] to properly ensure above conditions.
-
-However, we're off by one, as the function is implemented as:
-"return (x < m) ? x + m : x;", and called with __seed(X, 1),
-__seed(X, 7), __seed(X, 15). Thus, an unwanted seed of 1, 7, 15
-would be possible, whereas the lower boundary should actually
-be of at least 2, 8, 16, just as GSL does. Fix this, as otherwise
-an initialization with an unwanted seed could have the effect
-that Tausworthe's PRNG properties cannot not be ensured.
-
-Note that this PRNG is *not* used for cryptography in the kernel.
-
- [1] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
- [2] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
-
-Joint work with Hannes Frederic Sowa.
-
-Fixes: 697f8d0348a6 ("random32: seeding improvement")
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Florian Weimer <fweimer@redhat.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Link: http://lkml.kernel.org/r/20130425143436.307435149@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kim Phillips <kim.phillips@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/random.h |    6 +++---
- lib/random32.c         |   14 +++++++-------
- 2 files changed, 10 insertions(+), 10 deletions(-)
 
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -87,9 +87,9 @@ static inline void prandom32_seed(struct
- {
- 	u32 i = (seed >> 32) ^ (seed << 10) ^ seed;
+---
+ include/linux/clockchips.h   |    3 +++
+ kernel/time/clockevents.c    |    1 +
+ kernel/time/tick-broadcast.c |    3 +++
+ kernel/time/tick-common.c    |    4 ++++
+ 4 files changed, 11 insertions(+)
+
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -30,6 +30,7 @@ enum clock_event_nofitiers {
+ #include <linux/notifier.h>
  
--	state->s1 = __seed(i, 1);
--	state->s2 = __seed(i, 7);
--	state->s3 = __seed(i, 15);
-+	state->s1 = __seed(i, 2);
-+	state->s2 = __seed(i, 8);
-+	state->s3 = __seed(i, 16);
- }
+ struct clock_event_device;
++struct module;
  
- #ifdef CONFIG_ARCH_RANDOM
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -92,7 +92,7 @@ void srandom32(u32 entropy)
+ /* Clock event mode commands */
+ enum clock_event_mode {
+@@ -83,6 +84,7 @@ enum clock_event_mode {
+  * @irq:		IRQ number (only for non CPU local devices)
+  * @cpumask:		cpumask to indicate for which CPUs this device works
+  * @list:		list head for the management code
++ * @owner:		module reference
+  */
+ struct clock_event_device {
+ 	void			(*event_handler)(struct clock_event_device *);
+@@ -112,6 +114,7 @@ struct clock_event_device {
+ 	int			irq;
+ 	const struct cpumask	*cpumask;
+ 	struct list_head	list;
++	struct module		*owner;
+ } ____cacheline_aligned;
+ 
+ /*
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -392,6 +392,7 @@ void clockevents_exchange_device(struct
+ 	 * released list and do a notify add later.
  	 */
- 	for_each_possible_cpu (i) {
- 		struct rnd_state *state = &per_cpu(net_rand_state, i);
--		state->s1 = __seed(state->s1 ^ entropy, 1);
-+		state->s1 = __seed(state->s1 ^ entropy, 2);
+ 	if (old) {
++		module_put(old->owner);
+ 		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
+ 		list_del(&old->list);
+ 		list_add(&old->list, &clockevents_released);
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -19,6 +19,7 @@
+ #include <linux/profile.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
++#include <linux/module.h>
+ 
+ #include "tick-internal.h"
+ 
+@@ -74,6 +75,8 @@ void tick_install_broadcast_device(struc
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return;
++	if (!try_module_get(dev->owner))
++		return;
+ 
+ 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
+ 	if (cur)
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -18,6 +18,7 @@
+ #include <linux/percpu.h>
+ #include <linux/profile.h>
+ #include <linux/sched.h>
++#include <linux/module.h>
+ 
+ #include <asm/irq_regs.h>
+ 
+@@ -261,6 +262,9 @@ void tick_check_new_device(struct clock_
+ 			goto out_bc;
  	}
- }
- EXPORT_SYMBOL(srandom32);
-@@ -109,9 +109,9 @@ static int __init random32_init(void)
- 		struct rnd_state *state = &per_cpu(net_rand_state,i);
  
- #define LCG(x)	((x) * 69069)	/* super-duper LCG */
--		state->s1 = __seed(LCG(i + jiffies), 1);
--		state->s2 = __seed(LCG(state->s1), 7);
--		state->s3 = __seed(LCG(state->s2), 15);
-+		state->s1 = __seed(LCG(i + jiffies), 2);
-+		state->s2 = __seed(LCG(state->s1), 8);
-+		state->s3 = __seed(LCG(state->s2), 16);
- 
- 		/* "warm it up" */
- 		prandom32(state);
-@@ -138,9 +138,9 @@ static int __init random32_reseed(void)
- 		u32 seeds[3];
- 
- 		get_random_bytes(&seeds, sizeof(seeds));
--		state->s1 = __seed(seeds[0], 1);
--		state->s2 = __seed(seeds[1], 7);
--		state->s3 = __seed(seeds[2], 15);
-+		state->s1 = __seed(seeds[0], 2);
-+		state->s2 = __seed(seeds[1], 8);
-+		state->s3 = __seed(seeds[2], 16);
- 
- 		/* mix it in */
- 		prandom32(state);
++	if (!try_module_get(newdev->owner))
++		return;
++
+ 	/*
+ 	 * Replace the eventually existing device by the new
+ 	 * device. If the current device is the broadcast device, do
 
 
