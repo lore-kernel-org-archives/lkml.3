@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759979Ab3LFWBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:01:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32879 "EHLO
+	id S1759989Ab3LFWBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:01:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32876 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759538Ab3LFVyK (ORCPT
+	with ESMTP id S1759531Ab3LFVyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:10 -0500
+	Fri, 6 Dec 2013 16:54:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Dave Jones <davej@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 09/32] ipv4: fix possible seqlock deadlock
-Date: Fri,  6 Dec 2013 13:52:19 -0800
-Message-Id: <20131206214957.701216556@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Willem de Bruijn <willemb@google.com>, Phil Sutter <phil@nwl.cc>,
+        Eric Dumazet <edumazet@google.com>, Jan Stancek <jstancek@redhat.com>,
+        Veaceslav Falico <vfalico@redhat.com>
+Subject: [PATCH 3.4 20/32] af_packet: block BH in prb_shutdown_retire_blk_timer()
+Date: Fri,  6 Dec 2013 13:52:30 -0800
+Message-Id: <20131206214958.679705231@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -27,34 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf ]
+[ Upstream commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 ]
 
-ip4_datagram_connect() being called from process context,
-it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
-otherwise we can deadlock on 32bit arches, or get corruptions of
-SNMP counters.
+Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
+however the timer might fire right in the middle and thus try to re-aquire
+the same spinlock, leaving us in a endless loop.
 
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
+To fix that, use the spin_lock_bh() to block it.
+
+Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Daniel Borkmann <dborkman@redhat.com>
+CC: Willem de Bruijn <willemb@google.com>
+CC: Phil Sutter <phil@nwl.cc>
+CC: Eric Dumazet <edumazet@google.com>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Tested-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/datagram.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/packet/af_packet.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -57,7 +57,7 @@ int ip4_datagram_connect(struct sock *sk
- 	if (IS_ERR(rt)) {
- 		err = PTR_ERR(rt);
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		goto out;
- 	}
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -504,9 +504,9 @@ static void prb_shutdown_retire_blk_time
  
+ 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
+ 
+-	spin_lock(&rb_queue->lock);
++	spin_lock_bh(&rb_queue->lock);
+ 	pkc->delete_blk_timer = 1;
+-	spin_unlock(&rb_queue->lock);
++	spin_unlock_bh(&rb_queue->lock);
+ 
+ 	prb_del_retire_blk_timer(pkc);
+ }
 
 
