@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab3LFUwu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:52:50 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48841 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661Ab3LFUws (ORCPT
+	id S1758639Ab3LFUzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:55:14 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44308 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab3LFUzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:52:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386350983-13281-1-git-send-email-wens@csie.org>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
-From: Michal Suchanek <hramrach@gmail.com>
-Date: Fri, 6 Dec 2013 21:52:06 +0100
-Message-ID: <CAOMqctQLnky=K+uhJNVPTGq+MJVNFoG1OW5Zxo7P2MvrRf_Cug@mail.gmail.com>
-Subject: Re: [linux-sunxi] [PATCH 00/10] net: stmmac: Add sun7i GMAC glue layer
-To: linux-sunxi <linux-sunxi@googlegroups.com>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Chen-Yu Tsai <wens@csie.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 Dec 2013 15:55:12 -0500
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] macvtap: remove useless codes in macvtap_aio_read() and macvtap_recvmsg()
+Date: Sat,  7 Dec 2013 04:54:59 +0800
+Message-Id: <1386363300-19040-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.6.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120620-1542-0000-0000-000003FC89C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 December 2013 18:29, Chen-Yu Tsai <wens@csie.org> wrote:
-> Hi,
->
-> This patch series adds Allwinner sun7i support to stmmac.
-> The Allwinner sun7i SoC A20 integrates an early version of
-> dwmac IP from Synopsys. On top of that is a hardware glue
-> layer. This layer needs to be configured before the dwmac
-> can be used.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-...
+By checking related codes, it is impossible that ret > len or total_len,
+so we should remove some useless coeds in both above functions.
 
-> Comments?
->
-> Thanks,
->
-> wens
->
->
-> Chen-Yu Tsai (10):
->   net: stmmac: Enable stmmac main clock when probing hardware
->   net: stmmac: Honor DT parameter to force DMA store and forward mode
->   net: stmmac: Use platform data tied with compatible strings
->   net: stmmac: sunxi platfrom extensions for GMAC in Allwinner A20 SoC's
->   ARM: dts: sun7i: Add GMAC controller node to sun7i DTSI
->   ARM: dts: sun7i: Add pin muxing options for the GMAC
->   ARM: dts: sun7i: cubietruck: Enable the GMAC
->   ARM: dts: sun7i: cubieboard2: Enable GMAC instead of EMAC
->   ARM: dts: sun7i: olinuxino-micro: Enable GMAC instead of EMAC
->   ARM: dts: sun7i: Add ethernet alias for GMAC
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ drivers/net/macvtap.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-Tested-By: Michal Suchanek <hramrach@gmail.com>
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 4c6f84c..7f4ccdd 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -871,7 +871,6 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 	}
+ 
+ 	ret = macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
+-	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
+ out:
+ 	return ret;
+ }
+@@ -1104,10 +1103,6 @@ static int macvtap_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		return -EINVAL;
+ 	ret = macvtap_do_read(q, m->msg_iov, total_len,
+ 			  flags & MSG_DONTWAIT);
+-	if (ret > total_len) {
+-		m->msg_flags |= MSG_TRUNC;
+-		ret = flags & MSG_TRUNC ? ret : total_len;
+-	}
+ 	return ret;
+ }
+ 
+-- 
+1.7.6.5
 
-Works for me with RGMII and MII phy on top of 3.13rc3.
-
-Thanks
-
-Michal
