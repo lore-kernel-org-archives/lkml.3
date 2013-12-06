@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760042Ab3LFXYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:24:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49026 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161247Ab3LFXUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1423026Ab3LFXUv (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 18:20:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48984 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161145Ab3LFXUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 18:20:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+Cc: Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 059/152] drm/ttm: Fix ttm_bo_move_memcpy
-Date: Fri,  6 Dec 2013 15:09:43 -0800
-Message-Id: <1386371476-2477-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 027/152] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
+Date: Fri,  6 Dec 2013 15:09:11 -0800
+Message-Id: <1386371476-2477-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,84 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit da95c788ef0c645378ffccb7060a0df1a33aee38 upstream.
+commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
 
-All error paths will want to keep the mm node, so handle this at the
-function exit. This fixes an ioremap failure error path.
-Also add some comments to make the function a bit easier to understand.
+The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
+the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
+the max sector to 65535 bytes.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+INFO: task flush-11:0:663 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
+ ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
+ ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
+ ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
+Call Trace:
+ [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
+ [<ffffffff81604338>] schedule+0x18/0x30
+ [<ffffffff81604392>] io_schedule+0x42/0x60
+ [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
+ [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff812eb382>] ? elv_merge+0x42/0x210
+ [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
+ [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
+ [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
+ [<ffffffff81141422>] submit_bh+0xf2/0x130
+ [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
+ [<ffffffff81144a20>] block_write_full_page+0x10/0x20
+ [<ffffffff81148703>] blkdev_writepage+0x13/0x20
+ [<ffffffff810d7525>] __writepage+0x15/0x40
+ [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
+ [<ffffffff810d7510>] ? __writepage+0x0/0x40
+ [<ffffffff810d7e42>] generic_writepages+0x22/0x30
+ [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
+ [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
+ [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
+ [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
+ [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
+ [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
+ [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff8106522e>] kthread+0x8e/0xa0
+ [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
+ [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810651a0>] ? kthread+0x0/0xa0
+ [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
+
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/ttm/ttm_bo_util.c | 28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ drivers/ata/libata-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index 037f101..2a90955 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -337,21 +337,25 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
- 	if (ret)
- 		goto out;
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 5866bf5..d32d6bb 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4108,6 +4108,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
+ 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
++	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
  
-+	/*
-+	 * Single TTM move. NOP.
-+	 */
- 	if (old_iomap == NULL && new_iomap == NULL)
- 		goto out2;
-+
-+	/*
-+	 * Move nonexistent data. NOP.
-+	 */
- 	if (old_iomap == NULL && ttm == NULL)
- 		goto out2;
+ 	/* Devices we expect to fail diagnostics */
  
--	/* TTM might be null for moves within the same region.
-+	/*
-+	 * TTM might be null for moves within the same region.
- 	 */
- 	if (ttm && ttm->state == tt_unpopulated) {
- 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
--		if (ret) {
--			/* if we fail here don't nuke the mm node
--			 * as the bo still owns it */
--			old_copy.mm_node = NULL;
-+		if (ret)
- 			goto out1;
--		}
- 	}
- 
- 	add = 0;
-@@ -377,11 +381,8 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
- 						   prot);
- 		} else
- 			ret = ttm_copy_io_page(new_iomap, old_iomap, page);
--		if (ret) {
--			/* failing here, means keep old copy as-is */
--			old_copy.mm_node = NULL;
-+		if (ret)
- 			goto out1;
--		}
- 	}
- 	mb();
- out2:
-@@ -399,7 +400,12 @@ out1:
- 	ttm_mem_reg_iounmap(bdev, old_mem, new_iomap);
- out:
- 	ttm_mem_reg_iounmap(bdev, &old_copy, old_iomap);
--	ttm_bo_mem_put(bo, &old_copy);
-+
-+	/*
-+	 * On error, keep the mm node!
-+	 */
-+	if (!ret)
-+		ttm_bo_mem_put(bo, &old_copy);
- 	return ret;
- }
- EXPORT_SYMBOL(ttm_bo_move_memcpy);
 -- 
 1.8.3.2
 
