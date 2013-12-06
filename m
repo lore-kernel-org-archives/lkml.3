@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab3LFAiG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:38:06 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:54975 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab3LFAiE (ORCPT
+	id S1757250Ab3LFAkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:40:47 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:63754 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757215Ab3LFAkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:38:04 -0500
-Subject: [PATCH v2 2/2] kobject: remove kset from sysfs immediately in
- kset_unregister()
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>,
+	Thu, 5 Dec 2013 19:40:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 02/11] arm: pxa27x: support ICP DAS LP-8x4x
+Date: Fri, 6 Dec 2013 01:40:10 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>
-Date: Thu, 05 Dec 2013 17:38:00 -0700
-Message-ID: <20131206003759.28684.63772.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20131206003508.28684.1337.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20131206003508.28684.1337.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+References: <1385879185-22455-1-git-send-email-ynvich@gmail.com> <1385879185-22455-3-git-send-email-ynvich@gmail.com>
+In-Reply-To: <1385879185-22455-3-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201312060140.10376.arnd@arndb.de>
+X-Provags-ID: V02:K0:2BuEc558Ch0z3IzryjKJ041gBMMcirZkPwkeVtmN/6u
+ q1yGxaRA8A7oIGi+jF1hY9694/EuTL8qzRBnoncaFyh2Y+HGdA
+ 97axm2Q8SKZLihyo54N5TrgSZEda/EfLq+eWf6NUx3e+a6Jag5
+ QnImoQLz4SB7sEK+6X2yAbTPf1A80NTQVVIPBgpF4usGZBm1iB
+ Z81oEI6jaKueH1sbmwzPQbWAyZlCzAiNuSCJKzZyJ8vpGgBLJD
+ xFap7RaIej5+z0dEGJb/4EMMCzVX08DDch9JNWGe9A9AGqFFai
+ nSvRFKSuAJwoWKR4XMx7L7vseHH2ETRmpBv7OaMxEZuTdVszg4
+ P+Ti+eENQwuKuLioU7jE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no "unlink from sysfs" interface for ksets, so I think callers of
-kset_unregister() expect the kset to be removed from sysfs immediately,
-without waiting for the last reference to be released.
+On Sunday 01 December 2013, Sergei Ianovich wrote:
+> 
+> diff --git a/arch/arm/configs/lp8x4x_defconfig b/arch/arm/configs/lp8x4x_defconfig
+> new file mode 100644
+> index 0000000..5cd6d38
+> --- /dev/null
+> +++ b/arch/arm/configs/lp8x4x_defconfig
+> @@ -0,0 +1,2320 @@
+> +#
+> +# Automatically generated file; DO NOT EDIT.
+> +# Linux/arm 3.13.0-rc1 Kernel Configuration
+> +#
 
-This patch makes the sysfs removal happen immediately, so the caller may
-create a new kset with the same name as soon as kset_unregister() returns.
-Without this, every caller has to call "kobject_del(&kset->kobj)" first
-unless it knows it will never create a new kset with the same name.
+Please use 'make savedefconfig' to generate a smaller version of this file.
 
-This sometimes shows up on module unload and reload, where the reload fails
-because it tries to create a kobject with the same name as one from the
-original load that still exists.  CONFIG_DEBUG_KOBJECT_RELEASE=y makes this
-problem easier to hit.
+Ideally we want shared defconfigs where you enable multiple (or all) pxa boards
+at once and end up with a kernel that works on all of them.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- Documentation/kobject.txt |    5 ++++-
- lib/kobject.c             |    1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
+For most other platforms the goal is even to have a shared defconfig across
+SoC families, but PXA is one of the exceptions that I would make because
+it is both old and rather different from even the ARM9 or Marvell Feroceon
+based SoCs.
 
-diff --git a/Documentation/kobject.txt b/Documentation/kobject.txt
-index c5182bb2c16c..f87241dfed87 100644
---- a/Documentation/kobject.txt
-+++ b/Documentation/kobject.txt
-@@ -342,7 +342,10 @@ kset use:
- 
- When you are finished with the kset, call:
-   void kset_unregister(struct kset *kset);
--to destroy it.
-+to destroy it.  This removes the kset from sysfs and decrements its reference
-+count.  When the reference count goes to zero, the kset will be released.
-+Because other references to the kset may still exist, the release may happen
-+after kset_unregister() returns.
- 
- An example of using a kset can be seen in the
- samples/kobject/kset-example.c file in the kernel tree.
-diff --git a/lib/kobject.c b/lib/kobject.c
-index bc73312ac797..40e3b2c0abae 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -757,6 +757,7 @@ void kset_unregister(struct kset *k)
- {
- 	if (!k)
- 		return;
-+	kobject_del(&k->kobj);
- 	kobject_put(&k->kobj);
- }
- 
+> +#define LP8X4X_FPGA_PHYS	0x17000000
+> +#define LP8X4X_FPGA_VIRT	0xf1000000
+> +#define LP8X4X_P2V(x)		IOMEM((x) - LP8X4X_FPGA_PHYS + LP8X4X_FPGA_VIRT)
+> +#define LP8X4X_V2P(x)		((x) - LP8X4X_FPGA_VIRT + LP8X4X_FPGA_PHYS)
 
+I would recommend defining LP8X4X_FPGA_VIRT as "(void *)0xf1000000". Ideally
+we try to avoid hardwired virtual addresses entirely and instead use platform
+device resources, but I realize that there are limits to how far you get with
+that. Please make an effort to convert as many parts of the FPGA into platform
+devices with regular resources, but know that we would not enforce this as
+strictly as we do for new platforms.
+
+> +
+> +static struct irq_chip lp8x4x_irq_chip = {
+> +	.name			= "FPGA",
+> +	.irq_ack		= lp8x4x_ack_irq,
+> +	.irq_mask		= lp8x4x_mask_irq,
+> +	.irq_unmask		= lp8x4x_unmask_irq,
+> +};
+
+Please try to move the irqchip code to drivers/irqchip/.
+
+> +static struct platform_device lp8x4x_flash_device[] = {
+
+static platform_device definitions are no longer the way to do this. For
+modern platforms, you'd use a device tree, but here I think it is acceptable
+(because of the PXA exception) to use a hardcoded board file.
+
+The correct way to create the devices is using platform_device_register_data()
+or a related function that returns a dynamically allocated platform device.
+
+	Arnd
