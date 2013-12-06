@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162787Ab3LFXwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:52:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48381 "EHLO
+	id S1161664Ab3LFXwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:52:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48383 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759204Ab3LFXMf (ORCPT
+	with ESMTP id S1161257Ab3LFXMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:12:35 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 016/152] rt2x00: check if device is still available on rt2x00mac_flush()
-Date: Fri,  6 Dec 2013 15:09:00 -0800
-Message-Id: <1386371476-2477-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 005/152] virtio-net: correctly handle cpu hotplug notifier during resuming
+Date: Fri,  6 Dec 2013 15:08:49 -0800
+Message-Id: <1386371476-2477-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,106 +31,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 5671ab05cf2a579218985ef56595387932d78ee4 upstream.
+[ Upstream commit ec9debbd9a88d8ea86c488d6ffcac419ee7d46d9 ]
 
-Fix random kernel panic with below messages when remove dongle.
+commit 3ab098df35f8b98b6553edc2e40234af512ba877 (virtio-net: don't respond to
+cpu hotplug notifier if we're not ready) tries to bypass the cpu hotplug
+notifier by checking the config_enable and does nothing is it was false. So it
+need to try to hold the config_lock mutex which may happen in atomic
+environment which leads the following warnings:
 
-[ 2212.355447] BUG: unable to handle kernel NULL pointer dereference at 0000000000000250
-[ 2212.355527] IP: [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.355599] PGD 0
-[ 2212.355626] Oops: 0000 [#1] SMP
-[ 2212.355664] Modules linked in: rt2800usb rt2x00usb rt2800lib crc_ccitt rt2x00lib mac80211 cfg80211 tun arc4 fuse rfcomm bnep snd_hda_codec_realtek snd_hda_intel snd_hda_codec btusb uvcvideo bluetooth snd_hwdep x86_pkg_temp_thermal snd_seq coretemp aesni_intel aes_x86_64 snd_seq_device glue_helper snd_pcm ablk_helper videobuf2_vmalloc sdhci_pci videobuf2_memops videobuf2_core sdhci videodev mmc_core serio_raw snd_page_alloc microcode i2c_i801 snd_timer hid_multitouch thinkpad_acpi lpc_ich mfd_core snd tpm_tis wmi tpm tpm_bios soundcore acpi_cpufreq i915 i2c_algo_bit drm_kms_helper drm i2c_core video [last unloaded: cfg80211]
-[ 2212.356224] CPU: 0 PID: 34 Comm: khubd Not tainted 3.12.0-rc3-wl+ #3
-[ 2212.356268] Hardware name: LENOVO 3444CUU/3444CUU, BIOS G6ET93WW (2.53 ) 02/04/2013
-[ 2212.356319] task: ffff880212f687c0 ti: ffff880212f66000 task.ti: ffff880212f66000
-[ 2212.356392] RIP: 0010:[<ffffffffa02667f2>]  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.356481] RSP: 0018:ffff880212f67750  EFLAGS: 00010202
-[ 2212.356519] RAX: 000000000000000c RBX: 000000000000000c RCX: 0000000000000293
-[ 2212.356568] RDX: ffff8801f4dc219a RSI: 0000000000000000 RDI: 0000000000000240
-[ 2212.356617] RBP: ffff880212f67778 R08: ffffffffa02667e0 R09: 0000000000000002
-[ 2212.356665] R10: 0001f95254ab4b40 R11: ffff880212f675be R12: ffff8801f4dc2150
-[ 2212.356712] R13: 0000000000000000 R14: ffffffffa02667e0 R15: 000000000000000d
-[ 2212.356761] FS:  0000000000000000(0000) GS:ffff88021e200000(0000) knlGS:0000000000000000
-[ 2212.356813] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2212.356852] CR2: 0000000000000250 CR3: 0000000001a0c000 CR4: 00000000001407f0
-[ 2212.356899] Stack:
-[ 2212.356917]  000000000000000c ffff8801f4dc2150 0000000000000000 ffffffffa02667e0
-[ 2212.356980]  000000000000000d ffff880212f677b8 ffffffffa03a31ad ffff8801f4dc219a
-[ 2212.357038]  ffff8801f4dc2150 0000000000000000 ffff8800b93217a0 ffff8801f49bc800
-[ 2212.357099] Call Trace:
-[ 2212.357122]  [<ffffffffa02667e0>] ? rt2x00usb_interrupt_txdone+0x90/0x90 [rt2x00usb]
-[ 2212.357174]  [<ffffffffa03a31ad>] rt2x00queue_for_each_entry+0xed/0x170 [rt2x00lib]
-[ 2212.357244]  [<ffffffffa026701c>] rt2x00usb_kick_queue+0x5c/0x60 [rt2x00usb]
-[ 2212.357314]  [<ffffffffa03a3682>] rt2x00queue_flush_queue+0x62/0xa0 [rt2x00lib]
-[ 2212.357386]  [<ffffffffa03a2930>] rt2x00mac_flush+0x30/0x70 [rt2x00lib]
-[ 2212.357470]  [<ffffffffa04edded>] ieee80211_flush_queues+0xbd/0x140 [mac80211]
-[ 2212.357555]  [<ffffffffa0502e52>] ieee80211_set_disassoc+0x2d2/0x3d0 [mac80211]
-[ 2212.357645]  [<ffffffffa0506da3>] ieee80211_mgd_deauth+0x1d3/0x240 [mac80211]
-[ 2212.357718]  [<ffffffff8108b17c>] ? try_to_wake_up+0xec/0x290
-[ 2212.357788]  [<ffffffffa04dbd18>] ieee80211_deauth+0x18/0x20 [mac80211]
-[ 2212.357872]  [<ffffffffa0418ddc>] cfg80211_mlme_deauth+0x9c/0x140 [cfg80211]
-[ 2212.357913]  [<ffffffffa041907c>] cfg80211_mlme_down+0x5c/0x60 [cfg80211]
-[ 2212.357962]  [<ffffffffa041cd18>] cfg80211_disconnect+0x188/0x1a0 [cfg80211]
-[ 2212.358014]  [<ffffffffa04013bc>] ? __cfg80211_stop_sched_scan+0x1c/0x130 [cfg80211]
-[ 2212.358067]  [<ffffffffa03f8954>] cfg80211_leave+0xc4/0xe0 [cfg80211]
-[ 2212.358124]  [<ffffffffa03f8d1b>] cfg80211_netdev_notifier_call+0x3ab/0x5e0 [cfg80211]
-[ 2212.358177]  [<ffffffff815140f8>] ? inetdev_event+0x38/0x510
-[ 2212.358217]  [<ffffffff81085a94>] ? __wake_up+0x44/0x50
-[ 2212.358254]  [<ffffffff8155995c>] notifier_call_chain+0x4c/0x70
-[ 2212.358293]  [<ffffffff81081156>] raw_notifier_call_chain+0x16/0x20
-[ 2212.358361]  [<ffffffff814b6dd5>] call_netdevice_notifiers_info+0x35/0x60
-[ 2212.358429]  [<ffffffff814b6ec9>] __dev_close_many+0x49/0xd0
-[ 2212.358487]  [<ffffffff814b7028>] dev_close_many+0x88/0x100
-[ 2212.358546]  [<ffffffff814b8150>] rollback_registered_many+0xb0/0x220
-[ 2212.358612]  [<ffffffff814b8319>] unregister_netdevice_many+0x19/0x60
-[ 2212.358694]  [<ffffffffa04d8eb2>] ieee80211_remove_interfaces+0x112/0x190 [mac80211]
-[ 2212.358791]  [<ffffffffa04c585f>] ieee80211_unregister_hw+0x4f/0x100 [mac80211]
-[ 2212.361994]  [<ffffffffa03a1221>] rt2x00lib_remove_dev+0x161/0x1a0 [rt2x00lib]
-[ 2212.365240]  [<ffffffffa0266e2e>] rt2x00usb_disconnect+0x2e/0x70 [rt2x00usb]
-[ 2212.368470]  [<ffffffff81419ce4>] usb_unbind_interface+0x64/0x1c0
-[ 2212.371734]  [<ffffffff813b446f>] __device_release_driver+0x7f/0xf0
-[ 2212.374999]  [<ffffffff813b4503>] device_release_driver+0x23/0x30
-[ 2212.378131]  [<ffffffff813b3c98>] bus_remove_device+0x108/0x180
-[ 2212.381358]  [<ffffffff813b0565>] device_del+0x135/0x1d0
-[ 2212.384454]  [<ffffffff81417760>] usb_disable_device+0xb0/0x270
-[ 2212.387451]  [<ffffffff8140d9cd>] usb_disconnect+0xad/0x1d0
-[ 2212.390294]  [<ffffffff8140f6cd>] hub_thread+0x63d/0x1660
-[ 2212.393034]  [<ffffffff8107c860>] ? wake_up_atomic_t+0x30/0x30
-[ 2212.395728]  [<ffffffff8140f090>] ? hub_port_debounce+0x130/0x130
-[ 2212.398412]  [<ffffffff8107baa0>] kthread+0xc0/0xd0
-[ 2212.401058]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
-[ 2212.403639]  [<ffffffff8155de3c>] ret_from_fork+0x7c/0xb0
-[ 2212.406193]  [<ffffffff8107b9e0>] ? insert_kthread_work+0x40/0x40
-[ 2212.408732] Code: 24 58 08 00 00 bf 80 00 00 00 e8 3a c3 e0 e0 5b 41 5c 5d c3 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 41 55 41 54 53 <48> 8b 47 10 48 89 fb 4c 8b 6f 28 4c 8b 20 49 8b 04 24 4c 8b 30
-[ 2212.414671] RIP  [<ffffffffa02667f2>] rt2x00usb_kick_tx_entry+0x12/0x160 [rt2x00usb]
-[ 2212.417646]  RSP <ffff880212f67750>
-[ 2212.420547] CR2: 0000000000000250
-[ 2212.441024] ---[ end trace 5442918f33832bce ]---
+[  622.944441] CPU0 attaching NULL sched-domain.
+[  622.944446] CPU1 attaching NULL sched-domain.
+[  622.944485] CPU0 attaching NULL sched-domain.
+[  622.950795] BUG: sleeping function called from invalid context at kernel/mutex.c:616
+[  622.950796] in_atomic(): 1, irqs_disabled(): 1, pid: 10, name: migration/1
+[  622.950796] no locks held by migration/1/10.
+[  622.950798] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.12.0-rc5-wl-01249-gb91e82d #317
+[  622.950799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  622.950802]  0000000000000000 ffff88001d42dba0 ffffffff81a32f22 ffff88001bfb9c70
+[  622.950803]  ffff88001d42dbb0 ffffffff810edb02 ffff88001d42dc38 ffffffff81a396ed
+[  622.950805]  0000000000000046 ffff88001d42dbe8 ffffffff810e861d 0000000000000000
+[  622.950805] Call Trace:
+[  622.950810]  [<ffffffff81a32f22>] dump_stack+0x54/0x74
+[  622.950815]  [<ffffffff810edb02>] __might_sleep+0x112/0x114
+[  622.950817]  [<ffffffff81a396ed>] mutex_lock_nested+0x3c/0x3c6
+[  622.950818]  [<ffffffff810e861d>] ? up+0x39/0x3e
+[  622.950821]  [<ffffffff8153ea7c>] ? acpi_os_signal_semaphore+0x21/0x2d
+[  622.950824]  [<ffffffff81565ed1>] ? acpi_ut_release_mutex+0x5e/0x62
+[  622.950828]  [<ffffffff816d04ec>] virtnet_cpu_callback+0x33/0x87
+[  622.950830]  [<ffffffff81a42576>] notifier_call_chain+0x3c/0x5e
+[  622.950832]  [<ffffffff810e86a8>] __raw_notifier_call_chain+0xe/0x10
+[  622.950835]  [<ffffffff810c5556>] __cpu_notify+0x20/0x37
+[  622.950836]  [<ffffffff810c5580>] cpu_notify+0x13/0x15
+[  622.950838]  [<ffffffff81a237cd>] take_cpu_down+0x27/0x3a
+[  622.950841]  [<ffffffff81136289>] stop_machine_cpu_stop+0x93/0xf1
+[  622.950842]  [<ffffffff81136167>] cpu_stopper_thread+0xa0/0x12f
+[  622.950844]  [<ffffffff811361f6>] ? cpu_stopper_thread+0x12f/0x12f
+[  622.950847]  [<ffffffff81119710>] ? lock_release_holdtime.part.7+0xa3/0xa8
+[  622.950848]  [<ffffffff81135e4b>] ? cpu_stop_should_run+0x3f/0x47
+[  622.950850]  [<ffffffff810ea9b0>] smpboot_thread_fn+0x1c5/0x1e3
+[  622.950852]  [<ffffffff810ea7eb>] ? lg_global_unlock+0x67/0x67
+[  622.950854]  [<ffffffff810e36b7>] kthread+0xd8/0xe0
+[  622.950857]  [<ffffffff81a3bfad>] ? wait_for_common+0x12f/0x164
+[  622.950859]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
+[  622.950861]  [<ffffffff81a45ffc>] ret_from_fork+0x7c/0xb0
+[  622.950862]  [<ffffffff810e35df>] ? kthread_create_on_node+0x124/0x124
+[  622.950876] smpboot: CPU 1 is now offline
+[  623.194556] SMP alternatives: lockdep: fixing up alternatives
+[  623.194559] smpboot: Booting Node 0 Processor 1 APIC 0x1
+...
 
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+A correct fix is to unregister the hotcpu notifier during restore and register a
+new one in resume.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00mac.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/virtio_net.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
-index ed7a1bb..509c3f1 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -753,6 +753,9 @@ void rt2x00mac_flush(struct ieee80211_hw *hw, bool drop)
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
- 	struct data_queue *queue;
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 848d26c..c3bcb4a 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1076,11 +1076,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+ {
+ 	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
  
-+	if (!test_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags))
-+		return;
-+
- 	tx_queue_for_each(rt2x00dev, queue)
- 		rt2x00queue_flush_queue(queue, drop);
+-	mutex_lock(&vi->config_lock);
+-
+-	if (!vi->config_enable)
+-		goto done;
+-
+ 	switch(action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+@@ -1094,8 +1089,6 @@ static int virtnet_cpu_callback(struct notifier_block *nfb,
+ 		break;
+ 	}
+ 
+-done:
+-	mutex_unlock(&vi->config_lock);
+ 	return NOTIFY_OK;
  }
+ 
+@@ -1650,6 +1643,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
+ 	struct virtnet_info *vi = vdev->priv;
+ 	int i;
+ 
++	unregister_hotcpu_notifier(&vi->nb);
++
+ 	/* Prevent config work handler from accessing the device */
+ 	mutex_lock(&vi->config_lock);
+ 	vi->config_enable = false;
+@@ -1696,6 +1691,10 @@ static int virtnet_restore(struct virtio_device *vdev)
+ 
+ 	virtnet_set_queues(vi, vi->curr_queue_pairs);
+ 
++	err = register_hotcpu_notifier(&vi->nb);
++	if (err)
++		return err;
++
+ 	return 0;
+ }
+ #endif
 -- 
 1.8.3.2
 
