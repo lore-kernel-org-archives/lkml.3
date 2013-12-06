@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549Ab3LFVyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:54:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32864 "EHLO
+	id S1759681Ab3LFWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:00:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32884 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759488Ab3LFVyI (ORCPT
+	with ESMTP id S1759547Ab3LFVyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:08 -0500
+	Fri, 6 Dec 2013 16:54:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshiaki Makita <toshiaki.makita1@gmail.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Ding Tianhong <dingtianhong@huawei.com>,
+        mpb <mpb.mail@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 18/32] bridge: flush brs address entry in fdb when remove the bridge dev
-Date: Fri,  6 Dec 2013 13:52:28 -0800
-Message-Id: <20131206214958.499579903@linuxfoundation.org>
+Subject: [PATCH 3.4 10/32] inet: prevent leakage of uninitialized memory to user in recv syscalls
+Date: Fri,  6 Dec 2013 13:52:20 -0800
+Message-Id: <20131206214957.786762958@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -29,67 +28,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ding Tianhong <dingtianhong@huawei.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit f873042093c0b418d2351fe142222b625c740149 ]
+[ Upstream commit bceaa90240b6019ed73b49965eac7d167610be69 ]
 
-When the following commands are executed:
+Only update *addr_len when we actually fill in sockaddr, otherwise we
+can return uninitialized memory from the stack to the caller in the
+recvfrom, recvmmsg and recvmsg syscalls. Drop the the (addr_len == NULL)
+checks because we only get called with a valid addr_len pointer either
+from sock_common_recvmsg or inet_recvmsg.
 
-brctl addbr br0
-ifconfig br0 hw ether <addr>
-rmmod bridge
+If a blocking read waits on a socket which is concurrently shut down we
+now return zero and set msg_msgnamelen to 0.
 
-The calltrace will occur:
-
-[  563.312114] device eth1 left promiscuous mode
-[  563.312188] br0: port 1(eth1) entered disabled state
-[  563.468190] kmem_cache_destroy bridge_fdb_cache: Slab cache still has objects
-[  563.468197] CPU: 6 PID: 6982 Comm: rmmod Tainted: G           O 3.12.0-0.7-default+ #9
-[  563.468199] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  563.468200]  0000000000000880 ffff88010f111e98 ffffffff814d1c92 ffff88010f111eb8
-[  563.468204]  ffffffff81148efd ffff88010f111eb8 0000000000000000 ffff88010f111ec8
-[  563.468206]  ffffffffa062a270 ffff88010f111ed8 ffffffffa063ac76 ffff88010f111f78
-[  563.468209] Call Trace:
-[  563.468218]  [<ffffffff814d1c92>] dump_stack+0x6a/0x78
-[  563.468234]  [<ffffffff81148efd>] kmem_cache_destroy+0xfd/0x100
-[  563.468242]  [<ffffffffa062a270>] br_fdb_fini+0x10/0x20 [bridge]
-[  563.468247]  [<ffffffffa063ac76>] br_deinit+0x4e/0x50 [bridge]
-[  563.468254]  [<ffffffff810c7dc9>] SyS_delete_module+0x199/0x2b0
-[  563.468259]  [<ffffffff814e0922>] system_call_fastpath+0x16/0x1b
-[  570.377958] Bridge firewalling registered
-
---------------------------- cut here -------------------------------
-
-The reason is that when the bridge dev's address is changed, the
-br_fdb_change_mac_address() will add new address in fdb, but when
-the bridge was removed, the address entry in the fdb did not free,
-the bridge_fdb_cache still has objects when destroy the cache, Fix
-this by flushing the bridge address entry when removing the bridge.
-
-v2: according to the Toshiaki Makita and Vlad's suggestion, I only
-    delete the vlan0 entry, it still have a leak here if the vlan id
-    is other number, so I need to call fdb_delete_by_port(br, NULL, 1)
-    to flush all entries whose dst is NULL for the bridge.
-
-Suggested-by: Toshiaki Makita <toshiaki.makita1@gmail.com>
-Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Reported-by: mpb <mpb.mail@gmail.com>
+Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_if.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/ping.c       |    9 ++++-----
+ net/ipv4/raw.c        |    4 +---
+ net/ipv4/udp.c        |    7 +------
+ net/ipv6/raw.c        |    4 +---
+ net/ipv6/udp.c        |    5 +----
+ net/l2tp/l2tp_ip.c    |    4 +---
+ net/phonet/datagram.c |    9 ++++-----
+ 7 files changed, 13 insertions(+), 29 deletions(-)
 
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -170,6 +170,8 @@ void br_dev_delete(struct net_device *de
- 		del_nbp(p);
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -624,7 +624,6 @@ static int ping_recvmsg(struct kiocb *io
+ 			size_t len, int noblock, int flags, int *addr_len)
+ {
+ 	struct inet_sock *isk = inet_sk(sk);
+-	struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
+ 	struct sk_buff *skb;
+ 	int copied, err;
+ 
+@@ -634,9 +633,6 @@ static int ping_recvmsg(struct kiocb *io
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ip_recv_error(sk, msg, len);
+ 
+@@ -658,11 +654,14 @@ static int ping_recvmsg(struct kiocb *io
+ 	sock_recv_timestamp(msg, sk, skb);
+ 
+ 	/* Copy the address. */
+-	if (sin) {
++	if (msg->msg_name) {
++		struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
++
+ 		sin->sin_family = AF_INET;
+ 		sin->sin_port = 0 /* skb->h.uh->source */;
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (isk->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -688,9 +688,6 @@ static int raw_recvmsg(struct kiocb *ioc
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	if (flags & MSG_ERRQUEUE) {
+ 		err = ip_recv_error(sk, msg, len);
+ 		goto out;
+@@ -718,6 +715,7 @@ static int raw_recvmsg(struct kiocb *ioc
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		sin->sin_port = 0;
+ 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (inet->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1174,12 +1174,6 @@ int udp_recvmsg(struct kiocb *iocb, stru
+ 	int is_udplite = IS_UDPLITE(sk);
+ 	bool slow;
+ 
+-	/*
+-	 *	Check any passed addresses
+-	 */
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ip_recv_error(sk, msg, len);
+ 
+@@ -1234,6 +1228,7 @@ try_again:
+ 		sin->sin_port = udp_hdr(skb)->source;
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (inet->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -457,9 +457,6 @@ static int rawv6_recvmsg(struct kiocb *i
+ 	if (flags & MSG_OOB)
+ 		return -EOPNOTSUPP;
+ 
+-	if (addr_len)
+-		*addr_len=sizeof(*sin6);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ipv6_recv_error(sk, msg, len);
+ 
+@@ -499,6 +496,7 @@ static int rawv6_recvmsg(struct kiocb *i
+ 		sin6->sin6_scope_id = 0;
+ 		if (ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+ 			sin6->sin6_scope_id = IP6CB(skb)->iif;
++		*addr_len = sizeof(*sin6);
  	}
  
-+	br_fdb_delete_by_port(br, NULL, 1);
-+
- 	del_timer_sync(&br->gc_timer);
+ 	sock_recv_ts_and_drops(msg, sk, skb);
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -348,9 +348,6 @@ int udpv6_recvmsg(struct kiocb *iocb, st
+ 	int is_udp4;
+ 	bool slow;
  
- 	br_sysfs_delbr(br->dev);
+-	if (addr_len)
+-		*addr_len=sizeof(struct sockaddr_in6);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ipv6_recv_error(sk, msg, len);
+ 
+@@ -423,7 +420,7 @@ try_again:
+ 			if (ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+ 				sin6->sin6_scope_id = IP6CB(skb)->iif;
+ 		}
+-
++		*addr_len = sizeof(*sin6);
+ 	}
+ 	if (is_udp4) {
+ 		if (inet->cmsg_flags)
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -569,9 +569,6 @@ static int l2tp_ip_recvmsg(struct kiocb
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb)
+ 		goto out;
+@@ -594,6 +591,7 @@ static int l2tp_ip_recvmsg(struct kiocb
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		sin->sin_port = 0;
+ 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (inet->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/phonet/datagram.c
++++ b/net/phonet/datagram.c
+@@ -139,9 +139,6 @@ static int pn_recvmsg(struct kiocb *iocb
+ 			MSG_CMSG_COMPAT))
+ 		goto out_nofree;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(sa);
+-
+ 	skb = skb_recv_datagram(sk, flags, noblock, &rval);
+ 	if (skb == NULL)
+ 		goto out_nofree;
+@@ -162,8 +159,10 @@ static int pn_recvmsg(struct kiocb *iocb
+ 
+ 	rval = (flags & MSG_TRUNC) ? skb->len : copylen;
+ 
+-	if (msg->msg_name != NULL)
+-		memcpy(msg->msg_name, &sa, sizeof(struct sockaddr_pn));
++	if (msg->msg_name != NULL) {
++		memcpy(msg->msg_name, &sa, sizeof(sa));
++		*addr_len = sizeof(sa);
++	}
+ 
+ out:
+ 	skb_free_datagram(sk, skb);
 
 
