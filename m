@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758547Ab3LFNiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:38:17 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:59657 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758530Ab3LFNiO (ORCPT
+	id S1758613Ab3LFNjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:39:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44279 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161648Ab3LFNCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:38:14 -0500
-Date: Fri, 6 Dec 2013 14:38:27 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>
-Subject: Re: [PATCH 1/3] arm64: add EFI stub
-Message-ID: <20131206133827.GB24997@rocoto.smurfnet.nu>
-References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
- <1385762712-17043-2-git-send-email-msalter@redhat.com>
- <20131205141853.GA974@darko.cambridge.arm.com>
- <1386254603.1861.120.camel@deneb.redhat.com>
- <20131205152806.GC974@darko.cambridge.arm.com>
- <20131206122511.301D6C40757@trevor.secretlab.ca>
- <1386336870.1861.155.camel@deneb.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386336870.1861.155.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Dec 2013 08:02:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Michael Marineau <michael.marineau@coreos.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 152/272] 9p: send uevent after adding/removing mount_tag attribute
+Date: Fri,  6 Dec 2013 12:57:21 +0000
+Message-Id: <1386334761-25517-153-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 08:34:30AM -0500, Mark Salter wrote:
-> > Or just disable runtime services on the switch to big ending. Big endian
-> > should not disable the stub (but getting it to work could be a follow-up
-> > patch)
-> > 
-> The other problem with BE is that the PE/COFF masquerading is built into
-> head.S so the same Image can be used for EFI and non-EFI. I don't see
-> a BE opcode which we could us to provide the magic "MZ" at the start
-> of a BE kernel Image.
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-That's actually not an issue.
-Instructions are always LE - endinaness affects only data.
+------------------
 
-/
-    Leif
+From: Michael Marineau <michael.marineau@coreos.com>
+
+commit e0d6cb9cd3a3ac8a3b8e5b22b83c4f8619786f22 upstream.
+
+This driver adds an attribute to the existing virtio device so a CHANGE
+event is required in order udev rules to make use of it. The ADD event
+happens before this driver is probed and unlike a more typical driver
+like a block device there isn't a higher level device to watch for.
+
+Signed-off-by: Michael Marineau <michael.marineau@coreos.com>
+Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/9p/trans_virtio.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index e1c26b1..990afab 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -577,6 +577,10 @@ static int p9_virtio_probe(struct virtio_device *vdev)
+ 	mutex_lock(&virtio_9p_lock);
+ 	list_add_tail(&chan->chan_list, &virtio_chan_list);
+ 	mutex_unlock(&virtio_9p_lock);
++
++	/* Let udev rules use the new mount_tag attribute. */
++	kobject_uevent(&(vdev->dev.kobj), KOBJ_CHANGE);
++
+ 	return 0;
+ 
+ out_free_tag:
+@@ -654,6 +658,7 @@ static void p9_virtio_remove(struct virtio_device *vdev)
+ 	list_del(&chan->chan_list);
+ 	mutex_unlock(&virtio_9p_lock);
+ 	sysfs_remove_file(&(vdev->dev.kobj), &dev_attr_mount_tag.attr);
++	kobject_uevent(&(vdev->dev.kobj), KOBJ_CHANGE);
+ 	kfree(chan->tag);
+ 	kfree(chan->vc_wq);
+ 	kfree(chan);
+-- 
+1.8.3.2
+
