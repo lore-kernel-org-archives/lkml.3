@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162057Ab3LFWRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:17:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60869 "EHLO
+	id S1759108Ab3LFWRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:17:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60865 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758780Ab3LFVxc (ORCPT
+	with ESMTP id S1759309Ab3LFVxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:32 -0500
+	Fri, 6 Dec 2013 16:53:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Dumazet <edumazet@google.com>, Dave Jones <davej@redhat.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Dave Jones <davej@fedoraproject.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 15/58] isdnloop: use strlcpy() instead of strcpy()
-Date: Fri,  6 Dec 2013 13:51:46 -0800
-Message-Id: <20131206214846.333547233@linuxfoundation.org>
+Subject: [PATCH 3.10 14/58] net-tcp: fix panic in tcp_fastopen_cache_set()
+Date: Fri,  6 Dec 2013 13:51:45 -0800
+Message-Id: <20131206214846.244555713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -27,43 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit f9a23c84486ed350cce7bb1b2828abd1f6658796 ]
+[ Upstream commit dccf76ca6b626c0c4a4e09bb221adee3270ab0ef ]
 
-These strings come from a copy_from_user() and there is no way to be
-sure they are NUL terminated.
+We had some reports of crashes using TCP fastopen, and Dave Jones
+gave a nice stack trace pointing to the error.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Issue is that tcp_get_metrics() should not be called with a NULL dst
+
+Fixes: 1fe4c481ba637 ("net-tcp: Fast Open client - cookie cache")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
+Tested-by: Dave Jones <davej@fedoraproject.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/isdn/isdnloop/isdnloop.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv4/tcp_metrics.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card *card, isdn
- 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 			return -ENOMEM;
- 		}
--		for (i = 0; i < 3; i++)
--			strcpy(card->s0num[i], sdef.num[i]);
-+		for (i = 0; i < 3; i++) {
-+			strlcpy(card->s0num[i], sdef.num[i],
-+				sizeof(card->s0num[0]));
-+		}
- 		break;
- 	case ISDN_PTYPE_1TR6:
- 		if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
-@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card *card, isdn
- 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
- 			return -ENOMEM;
- 		}
--		strcpy(card->s0num[0], sdef.num[0]);
-+		strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
- 		card->s0num[1][0] = '\0';
- 		card->s0num[2][0] = '\0';
- 		break;
+--- a/net/ipv4/tcp_metrics.c
++++ b/net/ipv4/tcp_metrics.c
+@@ -665,10 +665,13 @@ void tcp_fastopen_cache_get(struct sock
+ void tcp_fastopen_cache_set(struct sock *sk, u16 mss,
+ 			    struct tcp_fastopen_cookie *cookie, bool syn_lost)
+ {
++	struct dst_entry *dst = __sk_dst_get(sk);
+ 	struct tcp_metrics_block *tm;
+ 
++	if (!dst)
++		return;
+ 	rcu_read_lock();
+-	tm = tcp_get_metrics(sk, __sk_dst_get(sk), true);
++	tm = tcp_get_metrics(sk, dst, true);
+ 	if (tm) {
+ 		struct tcp_fastopen_metrics *tfom = &tm->tcpm_fastopen;
+ 
 
 
