@@ -1,114 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab3LFRzV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:55:21 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:62888 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758615Ab3LFRzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:55:18 -0500
+	id S1758665Ab3LFRzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:55:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59201 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754412Ab3LFRz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:55:28 -0500
+Message-ID: <52A20F80.9000601@zytor.com>
+Date: Fri, 06 Dec 2013 09:55:12 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131206151944.GC2674@redhat.com>
-References: <3917C05D9F83184EAA45CE249FF1B1DD0253093A@SHSMSX103.ccr.corp.intel.com>
- <20131128063505.GN3556@cmpxchg.org> <CAJ75kXZXxCMgf8=pghUWf=W9EKf3Z4nzKKy=CAn+7keVF_DCRA@mail.gmail.com>
- <20131128120018.GL2761@dhcp22.suse.cz> <20131128183830.GD20740@redhat.com>
- <20131202141203.GA31402@redhat.com> <alpine.DEB.2.02.1312041655370.13608@chino.kir.corp.google.com>
- <20131205172931.GA26018@redhat.com> <alpine.DEB.2.02.1312051531330.7717@chino.kir.corp.google.com>
- <20131206151944.GC2674@redhat.com>
-From: Sameer Nanda <snanda@chromium.org>
-Date: Fri, 6 Dec 2013 09:54:56 -0800
-X-Google-Sender-Auth: 7LEpdJtlt9IIw4FEkmb99EdHdkI
-Message-ID: <CANMivWYe8sAvDRiS=K_UJQXC83P43uZTSFFc3zpDK823v2-Z2A@mail.gmail.com>
-Subject: Re: [PATCH] Fix race between oom kill and task exit
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, William Dauchy <wdauchy@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>, azurIt <azurit@pobox.sk>
-Content-Type: text/plain; charset=UTF-8
+To: Paolo Bonzini <pbonzini@redhat.com>, Qiaowei Ren <qiaowei.ren@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
+        Liu Jinsong <jinsong.liu@intel.com>
+Subject: Re: [PATCH v2 3/3] X86, mpx: Intel MPX xstate feature definition
+References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com> <1386375658-2191-3-git-send-email-qiaowei.ren@intel.com> <52A20AD6.8080706@redhat.com>
+In-Reply-To: <52A20AD6.8080706@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 7:19 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 12/05, David Rientjes wrote:
->>
->> On Thu, 5 Dec 2013, Oleg Nesterov wrote:
->>
->> > > Your v2 series looks good and I suspect anybody trying them doesn't have
->> > > additional reports of the infinite loop?  Should they be marked for
->> > > stable?
->> >
->> > Unlikely...
->> >
->> > I think the patch from Sameer makes more sense for stable as a temporary
->> > (and obviously incomplete) fix.
->>
->> There's a problem because none of this is currently even in linux-next.  I
->> think we could make a case for getting Sameer's patch at
->> http://marc.info/?l=linux-kernel&m=138436313021133 to be merged for
->> stable,
->
-> Probably.
->
-> Ah, I just noticed that this change
->
->         -       if (p->flags & PF_EXITING) {
->         +       if (p->flags & PF_EXITING || !pid_alive(p)) {
->
-> is not needed. !pid_alive(p) obviously implies PF_EXITING.
+On 12/06/2013 09:35 AM, Paolo Bonzini wrote:
+> 
+> Sorry for the back-and-forth, but I think this and the removal of
+> XSTATE_FLEXIBLE (perhaps XSTATE_LAZY?) makes your v2 worse than v1.
+> 
+> Since Peter already said the same, please undo these changes.
+> 
+> Also, how is XSTATE_EAGER used?  Should MPX be disabled when xsaveopt is
+> disabled on the kernel command line?  (Liu, how would this affect the
+> KVM patches, too?)
+> 
 
-Ah right.
+There are two options: we could disable MPX etc. or we could force eager
+saving (using xsave) even if xsaveopt is disabled.  It is a hard call to
+make, but I guess I'm leaning towards the latter; we could add an
+"lazyxsave" option to explicitly disable all eager features if there is
+use for that.
 
->
->> but then we'd have to revert it in linux-next
->
-> Or perhaps Sameer can just send his fix to stable/gregkh.
->
-> Just the changelog should clearly explain that this is the minimal
-> workaround for stable. Once again it doesn't (and can't) fix all
-> problems even in oom_kill_process() paths, but it helps anyway to
-> avoid the easy-to-trigger hang.
-
-I don't mind doing that if that seems to be the consensus.  FWIW, I've
-already added my patch to the Chrome OS kernel repo.
-
->
->> before merging your
->> series at http://marc.info/?l=linux-kernel&m=138616217925981.
->
-> Just in case, I won't mind to rediff my patches on top of Sameer's
-> patch and then add git-revert patch.
->
->> All of the
->> issues you present in that series seem to be stable material, so why not
->> just go ahead with your series and mark it for stable for 3.13?
->
-> OK... I can do this too.
->
-> I do not really like this because it adds thread_head/node but doesn't
-> remove the old ->thread_group. We will do this later, but obviously
-> this is not the stable material.
->
-> IOW, if we send this to stable, thread_head/node/for_each_thread will
-> be only used by oom_kill.c.
->
-> And this is risky. For example, 1/4 depends on (at least) another patch
-> I sent in preparation for this change, commit 81907739851
-> "kernel/fork.c:copy_process(): don't add the uninitialized
-> child to thread/task/pid lists", perhaps on something else.
->
-> So personally I'd prefer to simply send the workaround for stable.
->
-> Oleg.
->
+	-hpa
 
 
-
--- 
-Sameer
