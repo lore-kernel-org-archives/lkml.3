@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab3LFOWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:22:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43585 "EHLO
+	id S1758986Ab3LFOWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:22:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43586 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757970Ab3LFM7u (ORCPT
+	with ESMTP id S1757973Ab3LFM7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 07:59:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 015/272] radeon: workaround pinning failure on low ram gpu
-Date: Fri,  6 Dec 2013 12:55:04 +0000
-Message-Id: <1386334761-25517-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 016/272] drm/radeon/vm: don't attempt to update ptes if ib allocation fails
+Date: Fri,  6 Dec 2013 12:55:05 +0000
+Message-Id: <1386334761-25517-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,68 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 97b6ff6be9da7675aab339334fda996d6c5077d9 upstream.
+commit 4cc948b94a222c310ae089c36718aac7a03aec90 upstream.
 
-GPU with low amount of ram can fails at pinning new framebuffer before
-unpinning old one. On such failure, retry with unpinning old one before
-pinning new one allowing to work around the issue. This is somewhat
-ugly but only affect those old GPU we care about.
+If we fail to allocate an indirect buffer (ib) when updating
+the ptes, return an error instead of trying to use the ib.
+Avoids a null pointer dereference.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=58621
+
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/gpu/drm/radeon/radeon_gart.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-index 7cb178a..bc73021 100644
---- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
-@@ -422,6 +422,7 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
- 	/* Pin framebuffer & get tilling informations */
- 	obj = radeon_fb->obj;
- 	rbo = gem_to_radeon_bo(obj);
-+retry:
- 	r = radeon_bo_reserve(rbo, false);
- 	if (unlikely(r != 0))
- 		return r;
-@@ -430,6 +431,33 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
- 				     &base);
- 	if (unlikely(r != 0)) {
- 		radeon_bo_unreserve(rbo);
-+
-+		/* On old GPU like RN50 with little vram pining can fails because
-+		 * current fb is taking all space needed. So instead of unpining
-+		 * the old buffer after pining the new one, first unpin old one
-+		 * and then retry pining new one.
-+		 *
-+		 * As only master can set mode only master can pin and it is
-+		 * unlikely the master client will race with itself especialy
-+		 * on those old gpu with single crtc.
-+		 *
-+		 * We don't shutdown the display controller because new buffer
-+		 * will end up in same spot.
-+		 */
-+		if (!atomic && fb && fb != crtc->fb) {
-+			struct radeon_bo *old_rbo;
-+			unsigned long nsize, osize;
-+
-+			old_rbo = gem_to_radeon_bo(to_radeon_framebuffer(fb)->obj);
-+			osize = radeon_bo_size(old_rbo);
-+			nsize = radeon_bo_size(rbo);
-+			if (nsize <= osize && !radeon_bo_reserve(old_rbo, false)) {
-+				radeon_bo_unpin(old_rbo);
-+				radeon_bo_unreserve(old_rbo);
-+				fb = NULL;
-+				goto retry;
-+			}
-+		}
- 		return -EINVAL;
- 	}
- 	radeon_bo_get_tiling_flags(rbo, &tiling_flags, NULL);
+diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+index b990b1a..3b1de72 100644
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -1156,6 +1156,8 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
+ 		return -ENOMEM;
+ 
+ 	r = radeon_ib_get(rdev, ridx, &ib, NULL, ndw * 4);
++	if (r)
++		return r;
+ 	ib.length_dw = 0;
+ 
+ 	r = radeon_vm_update_pdes(rdev, vm, &ib, bo_va->soffset, bo_va->eoffset);
 -- 
 1.8.3.2
 
