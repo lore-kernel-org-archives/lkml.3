@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab3LFHJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:09:35 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:15623 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab3LFHJd (ORCPT
+	id S1754706Ab3LFHKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:10:50 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:63634 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab3LFHKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:09:33 -0500
-X-AuditID: cbfee68f-b7f256d000003c1b-96-52a1782a433e
+	Fri, 6 Dec 2013 02:10:49 -0500
+X-AuditID: cbfee68d-b7f5c6d000004aff-8d-52a17872c493
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
+        "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Heiko Stuebner'" <heiko@sntech.de>,
+        "'Axel Lin'" <axel.lin@ingics.com>
 References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
 In-reply-to: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
-Subject: [PATCH 3/6] regulator: fixed: use devm_regulator_register()
-Date: Fri, 06 Dec 2013 16:09:29 +0900
-Message-id: <000c01cef252$1b341040$519c30c0$%han@samsung.com>
+Subject: [PATCH 4/6] regulator: gpio-regulator: use devm_regulator_register()
+Date: Fri, 06 Dec 2013 16:10:42 +0900
+Message-id: <000d01cef252$4680cf90$d3826eb0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9gAAD2hQ
+Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9gAAFiPQ
 Content-language: ko
-x-cr-hashedpuzzle: A9I+ BbPS C5Dx FwHM LbmZ M8vX Tq6L VmmJ a7fW fJPM ffPR id68
- i/WT nJvb pmzO
- rHX8;4;YgByAG8AbwBuAGkAZQBAAGsAZQByAG4AZQBsAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABnAGkAcgBkAHcAbwBvAGQAQABnAG0AYQBpAGwALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{179D4714-B600-4A38-AF57-1147BDF09400};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Fri,
- 06 Dec 2013 07:09:23
- GMT;WwBQAEEAVABDAEgAIAAzAC8ANgBdACAAcgBlAGcAdQBsAGEAdABvAHIAOgAgAGYAaQB4AGUAZAA6ACAAdQBzAGUAIABkAGUAdgBtAF8AcgBlAGcAdQBsAGEAdABvAHIAXwByAGUAZwBpAHMAdABlAHIAKAApAA==
-x-cr-puzzleid: {179D4714-B600-4A38-AF57-1147BDF09400}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t8zI12tioVBBtf/iFlMffiEzeLywkus
-	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8a6lU/Z
-	C05xVLxatom5gXERexcjJ4eEgInEgvNdULaYxIV769m6GLk4hASWMUr0X1jNDFO0++p+qMR0
-	Rone51+hnF+MEst2bAOrYhNQk/jy5TDQKA4OEQFVif+v3EFMZoFcie5t6SCmkICtxKr71SDF
-	nAJ2En+OvgFrFBZwkbi++wwbiM0C1Di1ezFYnBeovGvRVSYIW1Dix+R7LCA2s4CWxPqdx5kg
-	bHmJzWveMoOMlxBQl3j0VxckLCJgJPH/+A1GiBIRiX0v3jFCfPKHRWLlnnoI21Si78ENVpBH
-	JAQesUu8f3OTCeIGAYlvkw+xQMyUldh0ABoKkhIHV9xgmcAoNQvJRbOQXDQLyUWzkKxewMiy
-	ilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMkgvt3MN49YH2IMRlo/URmKdHkfGACyCuJNzQ2
-	M7IwNTE1NjK3NCNNWEmc9/7DpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjL6OJx/M3N0m
-	sHS3WYOwYJzIbr9ThxodH65+deHZ4muKQl8PLL9kcE7K/ffGKVUx3OfvdT5euUggwm6FlP4i
-	5cjwBe7/pAQa3xwXvbn2lPZ3xwVsFZtk7yvs6tzzOeaP4aX8xPzMgwqXDwRdm2ZVvzW964vw
-	kw6n8xd07jnaXEt9Mcns05wqySNKLMUZiYZazEXFiQB8WtnT9gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAKsWRmVeSWpSXmKPExsVy+t9jQV2tioVBBnvnCFtMffiEzeLywkus
-	Ft+udDBZXN41h82BxWPnrLvsHptWdbJ59G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhHWPGupVP2QtOcVS8WraJuYFxEXsXIyeHhICJxO6r+9kgbDGJC/fW
-	A9lcHEIC0xklep9/hXJ+MUos27GNGaSKTUBN4suXw0DdHBwiAqoS/1+5g5jMArkS3dvSQUwh
-	AVuJVferQYo5Bewk/hx9A9YoLOAicX33GbBVLECNU7sXg8V5gcq7Fl1lgrAFJX5MvscCYjML
-	aEms33mcCcKWl9i85i0zyHgJAXWJR391QcIiAkYS/4/fYIQoEZHY9+IdI8Qnf1gkVu6ph7BN
-	Jfoe3GCdwCgyC8mGWUg2zEKyYRaSUQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeH
-	Z1I7GFc2WBxiFOBgVOLh5Vi1IEiINbGsuDL3EKMEB7OSCG+P+MIgId6UxMqq1KL8+KLSnNTi
-	Q4zJwACYyCwlmpwPTF15JfGGxiZmRpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnC
-	xMEp1cDoeE5lvtXbDS/1l4fMd/5cd22m8PVtie/euumcmOty9VWfaWHAuV3Fp7xOSq5eb8ll
-	KXzzlr5ERiO3UGrH6Z9Orl5dIt/O7P4r1Tu3aV7MoWKtwNMyLl8aw0L68ri27284JWRkerPK
-	a/4CzzffGCynPVKe9HCZ8hzLi64fH/X7P828eV9oReonJZbijERDLeai4kQAiNt20VMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t8zQ92iioVBBhc+aVgcmfOV2WLqwyds
+	Fv8fvWa1uLzwEqvFtysdTBaXd81hc2Dz2DnrLrtH288yj02rOtk8+rasYvTYfm0es8fnTXIB
+	bFFcNimpOZllqUX6dglcGQ8OP2Ar+M5RcWC9dQPjGfYuRk4OCQETiVdrGtkgbDGJC/fWg9lC
+	AssYJV694Iap+T/9N3MXIxdQfDqjxPObu9ghnF+MEtO3fmEGqWITUJP48uUwUIKDQ0RAVeL/
+	K3eQGmaBrYwSWyadBIsLCdhKrLpfDVLOKWAn8efoG7BWYQFfia1z7oAdxALUeuXTN7AjeIHK
+	Jx/bwQxhC0r8mHyPBcRmFtCSWL/zOBOELS+xec1bZpDxEgLqEo/+6oKERQSMJFbO+QtVIiKx
+	78U7RpBzJATeskss+/CXFWKXgMS3yYdYIHplJTYdYIb4V1Li4IobLBMYJWYh2TwLyeZZSDbP
+	QrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYyQuO3dwXj7gPUhxmSg9ROZpUST84Fx
+	n1cSb2hsZmRhamJqbGRuaUaasJI4b9LDpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjLFi
+	kTZHU5ks7mxfEX6sqml7+Pl7cjH7pgqvDVVoPsGk93H3xZe8P2MN8tp/V5xL2+giyPV7ktQs
+	OQbFJ8fcElaplXALHtXNeyKy6uu880vXs066Y3g37/Se5Tez5UQk5jKfumGQv0U1yD2BWa1t
+	5r8cl0s1wUbiiy7zJjqEZ7G3GjlwPdn7S4mlOCPRUIu5qDgRAKYMSbDxAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDKsWRmVeSWpSXmKPExsVy+t9jQd2iioVBBp8+qFgcmfOV2WLqwyds
+	Fv8fvWa1uLzwEqvFtysdTBaXd81hc2Dz2DnrLrtH288yj02rOtk8+rasYvTYfm0es8fnTXIB
+	bFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGco
+	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDMeHH7AVvCdo+LAeusGxjPs
+	XYycHBICJhL/p/9mhrDFJC7cW8/WxcjFISQwnVHi+c1d7BDOL0aJ6Vu/gFWxCahJfPlyGCjB
+	wSEioCrx/5U7SA2zwFZGiS2TToLFhQRsJVbdrwYp5xSwk/hz9A1Yq7CAr8TWOXfAFrMAtV75
+	9I0NxOYFKp98bAczhC0o8WPyPRYQm1lAS2L9zuNMELa8xOY1b5lBxksIqEs8+qsLEhYRMJJY
+	OecvVImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT8
+	3E2M4LTwTGoH48oGi0OMAhyMSjy8HKsWBAmxJpYVV+YeYpTgYFYS4e0RXxgkxJuSWFmVWpQf
+	X1Sak1p8iDEZ6NGJzFKiyfnAlJVXEm9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTU
+	gtQimC1MHJxSDYwWpVWnFQOYeSK8HA6+87mjlXr6YWFeuHv9UuZMLtmNMsW2AovPGPrFli0U
+	ap+dyDu/9nbvrt36jpGXgjtEP1aKlF49lDmt4My0NSsXvMjKjdn1dNestbkl3+7sKFh3r3PK
+	MdEvXHsVp29b3jG5O2wSZ+9us193ba0+ZL8RzvqnsuDfjN6L28yUWIozEg21mIuKEwG02ZdD
+	TwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,16 +62,16 @@ Use devm_regulator_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/fixed.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/regulator/gpio-regulator.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 5ea64b9..f45cc1ac 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -186,7 +186,8 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
- 	cfg.driver_data = drvdata;
- 	cfg.of_node = pdev->dev.of_node;
+diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
+index 13ec94d..fb4120b 100644
+--- a/drivers/regulator/gpio-regulator.c
++++ b/drivers/regulator/gpio-regulator.c
+@@ -324,7 +324,8 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 			cfg.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+ 	}
  
 -	drvdata->dev = regulator_register(&drvdata->desc, &cfg);
 +	drvdata->dev = devm_regulator_register(&pdev->dev, &drvdata->desc,
@@ -82,14 +79,15 @@ index 5ea64b9..f45cc1ac 100644
  	if (IS_ERR(drvdata->dev)) {
  		ret = PTR_ERR(drvdata->dev);
  		dev_err(&pdev->dev, "Failed to register regulator: %d\n", ret);
-@@ -212,7 +213,6 @@ static int reg_fixed_voltage_remove(struct platform_device *pdev)
+@@ -351,8 +352,6 @@ static int gpio_regulator_remove(struct platform_device *pdev)
  {
- 	struct fixed_voltage_data *drvdata = platform_get_drvdata(pdev);
+ 	struct gpio_regulator_data *drvdata = platform_get_drvdata(pdev);
  
 -	regulator_unregister(drvdata->dev);
- 	kfree(drvdata->desc.supply_name);
- 	kfree(drvdata->desc.name);
+-
+ 	gpio_free_array(drvdata->gpios, drvdata->nr_gpios);
  
+ 	kfree(drvdata->states);
 -- 
 1.7.10.4
 
