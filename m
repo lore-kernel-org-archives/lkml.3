@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161841Ab3LFNl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:41:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44240 "EHLO
+	id S1162174Ab3LFNlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:41:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44236 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161604Ab3LFNCp (ORCPT
+	with ESMTP id S1161599Ab3LFNCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:45 -0500
+	Fri, 6 Dec 2013 08:02:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+Cc: Daniel Stone <daniels@collabora.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 145/272] Input: cypress_ps2 - do not consider data bad if palm is detected
-Date: Fri,  6 Dec 2013 12:57:14 +0000
-Message-Id: <1386334761-25517-146-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 144/272] Input: evdev - fall back to vmalloc for client event buffer
+Date: Fri,  6 Dec 2013 12:57:13 +0000
+Message-Id: <1386334761-25517-145-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,81 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
+From: Daniel Stone <daniel@fooishbar.org>
 
-commit 5df682b297f6b23ec35615ed7bb50cbb25d25869 upstream.
+commit 92eb77d0ffbaa71b501a0a8dabf09a351bf4267f upstream.
 
-If hardware (or firmware) detects palm on the surface of the device it does
-not mean that the data packet is bad from the protocol standpoint. Instead
-of reporting PSMOUSE_BAD_DATA in this case simply threat it as if nothing
-touches the surface.
+evdev always tries to allocate the event buffer for clients using
+kzalloc rather than vmalloc, presumably to avoid mapping overhead where
+possible.  However, drivers like bcm5974, which claims support for
+reporting 16 fingers simultaneously, can have an extraordinarily large
+buffer.  The resultant contiguous order-4 allocation attempt fails due
+to fragmentation, and the device is thus unusable until reboot.
 
-BugLink: http://bugs.launchpad.net/bugs/1229361
+Try kzalloc if we can to avoid the mapping overhead, but if that fails,
+fall back to vzalloc.
 
-Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-Tested-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Daniel Stone <daniels@collabora.com>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/mouse/cypress_ps2.c | 19 +++----------------
- 1 file changed, 3 insertions(+), 16 deletions(-)
+ drivers/input/evdev.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-index f51765f..888a81a 100644
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -439,7 +439,7 @@ static int cypress_get_finger_count(unsigned char header_byte)
- 			case 2: return 5;
- 			default:
- 				/* Invalid contact (e.g. palm). Ignore it. */
--				return -1;
-+				return 0;
- 		}
- 	}
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index d2b34fb..9bb8075 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -18,6 +18,8 @@
+ #include <linux/poll.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
++#include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/input/mt.h>
+@@ -365,7 +367,11 @@ static int evdev_release(struct inode *inode, struct file *file)
+ 	mutex_unlock(&evdev->mutex);
  
-@@ -452,17 +452,10 @@ static int cypress_parse_packet(struct psmouse *psmouse,
+ 	evdev_detach_client(evdev, client);
+-	kfree(client);
++
++	if (is_vmalloc_addr(client))
++		vfree(client);
++	else
++		kfree(client);
+ 
+ 	evdev_close_device(evdev);
+ 
+@@ -385,12 +391,14 @@ static int evdev_open(struct inode *inode, struct file *file)
  {
- 	unsigned char *packet = psmouse->packet;
- 	unsigned char header_byte = packet[0];
--	int contact_cnt;
+ 	struct evdev *evdev = container_of(inode->i_cdev, struct evdev, cdev);
+ 	unsigned int bufsize = evdev_compute_buffer_size(evdev->handle.dev);
++	unsigned int size = sizeof(struct evdev_client) +
++					bufsize * sizeof(struct input_event);
+ 	struct evdev_client *client;
+ 	int error;
  
- 	memset(report_data, 0, sizeof(struct cytp_report_data));
+-	client = kzalloc(sizeof(struct evdev_client) +
+-				bufsize * sizeof(struct input_event),
+-			 GFP_KERNEL);
++	client = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
++	if (!client)
++		client = vzalloc(size);
+ 	if (!client)
+ 		return -ENOMEM;
  
--	contact_cnt = cypress_get_finger_count(header_byte);
--
--	if (contact_cnt < 0) /* e.g. palm detect */
--		return -EINVAL;
--
--	report_data->contact_cnt = contact_cnt;
--
-+	report_data->contact_cnt = cypress_get_finger_count(header_byte);
- 	report_data->tap = (header_byte & ABS_MULTIFINGER_TAP) ? 1 : 0;
- 
- 	if (report_data->contact_cnt == 1) {
-@@ -535,11 +528,9 @@ static void cypress_process_packet(struct psmouse *psmouse, bool zero_pkt)
- 	int slots[CYTP_MAX_MT_SLOTS];
- 	int n;
- 
--	if (cypress_parse_packet(psmouse, cytp, &report_data))
--		return;
-+	cypress_parse_packet(psmouse, cytp, &report_data);
- 
- 	n = report_data.contact_cnt;
--
- 	if (n > CYTP_MAX_MT_SLOTS)
- 		n = CYTP_MAX_MT_SLOTS;
- 
-@@ -605,10 +596,6 @@ static psmouse_ret_t cypress_validate_byte(struct psmouse *psmouse)
- 		return PSMOUSE_BAD_DATA;
- 
- 	contact_cnt = cypress_get_finger_count(packet[0]);
--
--	if (contact_cnt < 0)
--		return PSMOUSE_BAD_DATA;
--
- 	if (cytp->mode & CYTP_BIT_ABS_NO_PRESSURE)
- 		cypress_set_packet_size(psmouse, contact_cnt == 2 ? 7 : 4);
- 	else
 -- 
 1.8.3.2
 
