@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab3LFQPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 11:15:19 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36258 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911Ab3LFQPQ (ORCPT
+	id S1757857Ab3LFQR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 11:17:57 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51578 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425Ab3LFQR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 11:15:16 -0500
-Date: Fri, 6 Dec 2013 11:12:58 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Eugene Krasnikov <k.eugene.e@gmail.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>, Peter Stuge <peter@stuge.se>,
-        ath9k-devel <ath9k-devel@venema.h4ckr.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] net: wireless: wcn36xx: fix potential NULL pointer
- dereference
-Message-ID: <20131206161258.GC13285@tuxdriver.com>
-References: <1385744870-10164-1-git-send-email-mpn@google.com>
- <20131201004715.11125.qmail@stuge.se>
- <xa1tiov78kmp.fsf@mina86.com>
- <CAFSJ42YckTDO=UV=fWG9mmVXSBYep1x6xiHahzGDcrB4dy0oOQ@mail.gmail.com>
+	Fri, 6 Dec 2013 11:17:56 -0500
+Date: Fri, 6 Dec 2013 09:17:48 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: fix memory leaks on unplugging block device
+Message-ID: <20131206161748.GB5051@kernel.dk>
+References: <1386306401-17405-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFSJ42YckTDO=UV=fWG9mmVXSBYep1x6xiHahzGDcrB4dy0oOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386306401-17405-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FWIW, I merged the earlier version.  Please send any changes as a
-follow-up patch, probably against wireless-next.
+On Fri, Dec 06 2013, Andrey Vagin wrote:
+> All objects, which are allocated in blk_mq_register_disk, must be
+> released in blk_mq_unregister_disk.
+> 
+> I use a KVM virtual machine and virtio disk to reproduce this issue.
+> 
+> kmemleak: 18 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+> $ cat /sys/kernel/debug/kmemleak | head -n 30
+> unreferenced object 0xffff8800b6636150 (size 8):
+>   comm "kworker/0:2", pid 65, jiffies 4294809903 (age 86.358s)
+>   hex dump (first 8 bytes):
+>     76 69 72 74 69 6f 34 00                          virtio4.
+>   backtrace:
+>     [<ffffffff8165d41e>] kmemleak_alloc+0x4e/0xb0
+>     [<ffffffff8118cfc5>] __kmalloc_track_caller+0xf5/0x260
+>     [<ffffffff81155b11>] kstrdup+0x31/0x60
+>     [<ffffffff812242be>] sysfs_new_dirent+0x2e/0x140
+>     [<ffffffff81224678>] create_dir+0x38/0xe0
+>     [<ffffffff812249e3>] sysfs_create_dir_ns+0x73/0xc0
+>     [<ffffffff8130dfa9>] kobject_add_internal+0xc9/0x340
+>     [<ffffffff8130e535>] kobject_add+0x65/0xb0
+>     [<ffffffff813f34f8>] device_add+0x128/0x660
+>     [<ffffffff813f3a4a>] device_register+0x1a/0x20
+>     [<ffffffff813ae6f8>] register_virtio_device+0x98/0xe0
+>     [<ffffffff813b0cce>] virtio_pci_probe+0x12e/0x1c0
+>     [<ffffffff81340675>] local_pci_probe+0x45/0xa0
+>     [<ffffffff81341a51>] pci_device_probe+0x121/0x130
+>     [<ffffffff813f67f7>] driver_probe_device+0x87/0x390
+>     [<ffffffff813f6b3b>] __device_attach+0x3b/0x40
+> unreferenced object 0xffff8800b65aa1d8 (size 144):
 
-John
-
-On Thu, Dec 05, 2013 at 08:41:29AM +0000, Eugene Krasnikov wrote:
-> > +               if (msg_ind)
-> > +                       break;
-> > +               /* FIXME: Do something smarter then just printing an error. */
-> > +               wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
-> 
-> I think code will look neater if error case will be handled in "else"
-> statement something like:
-> if (msg_ind) {
-> ...
-> } else {
-> /*print message*/
-> }
-> /*unlock and break;*/
-> 
-> How about that?
-> 
-> 
-> On Mon, Dec 2, 2013 at 1:09 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
-> >
-> > If kmalloc fails wcn36xx_smd_rsp_process will attempt to dereference
-> > a NULL pointer.  There might be a better error recovery then just
-> > printing an error, but printing an error message is better then the
-> > current behaviour.
-> >
-> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> > ---
-> >  drivers/net/wireless/ath/wcn36xx/smd.c | 19 +++++++++++++------
-> >  1 file changed, 13 insertions(+), 6 deletions(-)
-> >
-> > On Sun, Dec 01 2013, Peter Stuge wrote:
-> >> Michal Nazarewicz wrote:
-> >>> +                    wcn36xx_err("Run out of memory while hnadling SMD_EVENT (%d)\n",
-> >>> +                                msg_header->msg_type);
-> >>
-> >> Typo hnadling.
-> >
-> > Fixed.
-> >
-> > diff --git a/drivers/net/wireless/ath/wcn36xx/smd.c b/drivers/net/wireless/ath/wcn36xx/smd.c
-> > index de9eb2c..3663394 100644
-> > --- a/drivers/net/wireless/ath/wcn36xx/smd.c
-> > +++ b/drivers/net/wireless/ath/wcn36xx/smd.c
-> > @@ -2041,13 +2041,20 @@ static void wcn36xx_smd_rsp_process(struct wcn36xx *wcn, void *buf, size_t len)
-> >         case WCN36XX_HAL_DELETE_STA_CONTEXT_IND:
-> >                 mutex_lock(&wcn->hal_ind_mutex);
-> >                 msg_ind = kmalloc(sizeof(*msg_ind), GFP_KERNEL);
-> > -               msg_ind->msg_len = len;
-> > -               msg_ind->msg = kmalloc(len, GFP_KERNEL);
-> > -               memcpy(msg_ind->msg, buf, len);
-> > -               list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
-> > -               queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
-> > -               wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
-> > +               if (msg_ind) {
-> > +                       msg_ind->msg_len = len;
-> > +                       msg_ind->msg = kmalloc(len, GFP_KERNEL);
-> > +                       memcpy(msg_ind->msg, buf, len);
-> > +                       list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
-> > +                       queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
-> > +                       wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
-> > +               }
-> >                 mutex_unlock(&wcn->hal_ind_mutex);
-> > +               if (msg_ind)
-> > +                       break;
-> > +               /* FIXME: Do something smarter then just printing an error. */
-> > +               wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
-> > +                           msg_header->msg_type);
-> >                 break;
-> >         default:
-> >                 wcn36xx_err("SMD_EVENT (%d) not supported\n",
-> > --
-> > 1.8.4.1
-> >
-> > --
-> > Best regards,                                         _     _
-> > .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> > ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> > ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
-> 
-> 
-> 
-> -- 
-> Best regards,
-> Eugene
-> 
+Huh, I thought they would recursively kill items. I guess not! Thanks
+for the patch.
 
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Jens Axboe
+
