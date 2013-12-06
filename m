@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422776Ab3LFW3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:29:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60680 "EHLO
+	id S1161077Ab3LFVxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161090Ab3LFVxE (ORCPT
+	with ESMTP id S1759186Ab3LFVw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:04 -0500
+	Fri, 6 Dec 2013 16:52:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Foster <bfoster@redhat.com>, Dave Chinner <dchinner@redhat.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Dwight Engen <dwight.engen@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Kees Cook <keescook@google.com>
-Subject: [PATCH 3.12 61/83] xfs: add capability check to free eofblocks ioctl
-Date: Fri,  6 Dec 2013 13:51:51 -0800
-Message-Id: <20131206214645.723864669@linuxfoundation.org>
+        Thomas Pugliese <thomas.pugliese@gmail.com>
+Subject: [PATCH 3.12 65/83] usb: wusbcore: change WA_SEGS_MAX to a legal value
+Date: Fri,  6 Dec 2013 13:51:55 -0800
+Message-Id: <20131206214646.096552358@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -29,45 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit 8c567a7fab6e086a0284eee2db82348521e7120c upstream.
+commit f74b75e7f920c700636cccca669c7d16d12e9202 upstream.
 
-Check for CAP_SYS_ADMIN since the caller can truncate preallocated
-blocks from files they do not own nor have write access to. A more
-fine grained access check was considered: require the caller to
-specify their own uid/gid and to use inode_permission to check for
-write, but this would not catch the case of an inode not reachable
-via path traversal from the callers mount namespace.
+change WA_SEGS_MAX to a number that is legal according to the WUSB
+spec.
 
-Add check for read-only filesystem to free eofblocks ioctl.
-
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Cc: Kees Cook <keescook@google.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/xfs/xfs_ioctl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -1717,6 +1717,12 @@ xfs_file_ioctl(
- 		if (mp->m_flags & XFS_MOUNT_RDONLY)
- 			return -XFS_ERROR(EROFS);
+---
+ drivers/usb/wusbcore/wa-xfer.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/wusbcore/wa-xfer.c
++++ b/drivers/usb/wusbcore/wa-xfer.c
+@@ -91,7 +91,8 @@
+ #include "wusbhc.h"
  
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if (mp->m_flags & XFS_MOUNT_RDONLY)
-+			return -XFS_ERROR(EROFS);
-+
- 		if (copy_from_user(&eofb, arg, sizeof(eofb)))
- 			return -XFS_ERROR(EFAULT);
+ enum {
+-	WA_SEGS_MAX = 255,
++	/* [WUSB] section 8.3.3 allocates 7 bits for the segment index. */
++	WA_SEGS_MAX = 128,
+ };
  
+ enum wa_seg_status {
+@@ -446,7 +447,7 @@ static ssize_t __wa_xfer_setup_sizes(str
+ 	}
+ 	xfer->seg_size = (xfer->seg_size / maxpktsize) * maxpktsize;
+ 	xfer->segs = DIV_ROUND_UP(urb->transfer_buffer_length, xfer->seg_size);
+-	if (xfer->segs >= WA_SEGS_MAX) {
++	if (xfer->segs > WA_SEGS_MAX) {
+ 		dev_err(dev, "BUG? ops, number of segments %d bigger than %d\n",
+ 			(int)(urb->transfer_buffer_length / xfer->seg_size),
+ 			WA_SEGS_MAX);
 
 
