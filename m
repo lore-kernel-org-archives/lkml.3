@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab3LFMwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 07:52:39 -0500
-Received: from mail.kmu-office.ch ([178.209.48.102]:51415 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab3LFMwD (ORCPT
+	id S1757993Ab3LFMzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:55:18 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38055 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab3LFMzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:52:03 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
-        lee.jones@linaro.org, lgirdwood@gmail.com, broonie@kernel.org
-Cc: kai.poggensee@avionic-design.de, sameo@linux.intel.com,
+	Fri, 6 Dec 2013 07:55:16 -0500
+Date: Fri, 6 Dec 2013 12:55:02 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stefan Agner <stefan@agner.ch>
+Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, dev@lynxeye.de,
+        lee.jones@linaro.org, lgirdwood@gmail.com,
+        kai.poggensee@avionic-design.de, sameo@linux.intel.com,
         linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stefan Agner <stefan@agner.ch>
-Subject: [PATCH v5 0/3] regulator: tps6586x: add version detection and voltage tables
-Date: Fri,  6 Dec 2013 13:51:44 +0100
-Message-Id: <cover.1386333697.git.stefan@agner.ch>
-X-Mailer: git-send-email 1.8.4.2
+        linux-kernel@vger.kernel.org
+Message-ID: <20131206125502.GF29268@sirena.org.uk>
+References: <cover.1386333697.git.stefan@agner.ch>
+ <7c948660cda4684d28fa97f82295ab84f6ef658e.1386333697.git.stefan@agner.ch>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xugVLPVe/nLWwmIL"
+Content-Disposition: inline
+In-Reply-To: <7c948660cda4684d28fa97f82295ab84f6ef658e.1386333697.git.stefan@agner.ch>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5 2/3] regulator: tps6586x: add and use correct voltage
+ table
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the 5th version of this patchset which adds version detection
-for the tps6586x mfd family. Just discovered a missing null reference
-check which did not triggered in my tests, sorry about that.
 
-This is required because some regulator versions use different voltage
-tables. The regulator driver now uses the right voltage table according
-to the version.
+--xugVLPVe/nLWwmIL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-While at it, there are a few other incorrect regulator entries in the
-device tree, change them accordingly (this patch is new and grew out
-of a patch with the same name which Lucas Stach posted in July).
+On Fri, Dec 06, 2013 at 01:51:46PM +0100, Stefan Agner wrote:
+> Depending on the regulator version, the voltage table might be
+> different. Use version specific regulator tables in order to select
+> correct voltage table. For the following regulator versions different
+> voltage tables are now used:
 
-Tested on Colibri T20 V1.1 and V1.2 which makes use of diffent version
-of that regulator.
+I think this is the same as the last patch I reviewed but I don't see my
+ack on it?
 
-Changes since v4:
-  - Use variable named version instead of ret
+--xugVLPVe/nLWwmIL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Changes since v3:
-  - Check if version specific table is necessary
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Changes since v2:
-  - Avoid moving devm_kzalloc
-  - Removed reg_ from reg_version
-  - Moved walk through version dependent tables to find_regulator_info,
-    removed the inline definition. This reduces .o size and encapsulates
-    the logic of finding the right regulator into one function. It comes
-    with a slight code duplication, the table search now appears twice.
+iQIcBAEBAgAGBQJSockjAAoJELSic+t+oim9sRQQAIuMIK4jteEQOBORNmVx7u+a
+CRsMw+aZCoRF7NL/BiE8AfTZiMKLJSQrhoy8Q3IeNAYktWsWApXhpIG7+fXWDAJ9
+OwDXGIkE4zGjrZnwvIW/N/b6h4lvR+y8DRaoWhJYfhd2JxghXarxllECCbofywyh
+OeTwf68kVzWQsVeD+Kf7LrYDxRuPRs4i2tA7OruKOvXdyvLdfTuwWPcYeelNPwxV
+ePrC+cUX58NnmG+GfM0o64hT7InYa4GhBVRxAmBt8j8xPQMrUVKl8i5M+kJdxTpw
+QXFkYdl1uwQyAxz/Ma5+McXfo6ePd7EuGK2e2761PBdMYHE8ZDJk2RkKUgn6sAid
+G85hg2lkhL/0zDnXAozfzVu8enPmYwWX7EDe0DHmdPO+6D7A51n2IMABpmt2DzOe
+YX/VQ/lwAVENl5DTQz0lgTlXfytYXx2rN4cM2gUVMF16in+JYr1HNDSkbPwR3qSo
+3ctr07aPnyRa8yF3Gqc3s/QbOnL/9NohY/N36AbyZakOg9oh2wuS/t8S/ygnsjV3
+u1RdxQUWM3uO61DGfRqFURBLxDfl+dud3JC6aiMrMVYOfsXbaqiUReobCeJx9mPj
+IJaRH8F2Oqerzg087I+9zyxrL/uUkO0mnSR/5arjYstFZrJWW3YiFbckIJ+oZ+94
+SxXJGhlcBzg+pw+aW1ss
+=lXOl
+-----END PGP SIGNATURE-----
 
-Changes since v1:
-  - Merged DT and driver change (preserves bisectability)
-  - Use different regulator tables for different regulator version
-    * This also makes the TPS6586X_ANY version needless
-  - Replaced enum with defines
-  - Move version message in a sperate function
-  - Include regulator bugfix, use correct supply voltage
-  - Checked all voltages, fix SM0/SM1 (Core/CPU) and LDO6 voltage (VDAC/VI)
-    in another commit
-  - Rebased on top of v3.13-rc2
-
-
-Stefan Agner (3):
-  mfd: tps6586x: add version detection
-  regulator: tps6586x: add and use correct voltage table
-  ARM: tegra: correct Colibri T20 regulator settings
-
- arch/arm/boot/dts/tegra20-colibri-512.dtsi | 34 +++++------
- drivers/mfd/tps6586x.c                     | 50 +++++++++++++---
- drivers/regulator/tps6586x-regulator.c     | 93 ++++++++++++++++++++++++------
- include/linux/mfd/tps6586x.h               |  7 +++
- 4 files changed, 140 insertions(+), 44 deletions(-)
-
--- 
-1.8.4.2
-
+--xugVLPVe/nLWwmIL--
