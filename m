@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab3LFApg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:45:36 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:61574 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755522Ab3LFApd (ORCPT
+	id S1756686Ab3LFApw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:45:52 -0500
+Received: from zimbra.real-time.com ([63.170.91.9]:41986 "EHLO
+	zimbra.real-time.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755652Ab3LFApe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:45:33 -0500
-Date: Thu, 5 Dec 2013 19:45:30 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] make migrate disable/enable conditioned on
- softirq_nestcnt transition
-Message-ID: <20131205194530.1c086844@gandalf.local.home>
-In-Reply-To: <20131205234222.GE15603@opentech.at>
-References: <20131205234222.GE15603@opentech.at>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 5 Dec 2013 19:45:34 -0500
+X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Dec 2013 19:45:34 EST
+Date: Fri, 6 Dec 2013 11:38:51 +1100
+From: James Cameron <quozl@laptop.org>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Crispin <blogic@openwrt.org>, Jiri Slaby <jslaby@suse.cz>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        Zhou Zhu <zzhu3@marvell.com>
+Subject: Re: [PATCH] serial: rewrite pxa2xx-uart to use 8250_core
+Message-ID: <20131206003851.GI16425@us.netrek.org>
+References: <20131205043544.GA28580@kroah.com>
+ <1386286149-2855-1-git-send-email-ynvich@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386286149-2855-1-git-send-email-ynvich@gmail.com>
+Organization: Netrek Vanilla Server Dictator
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW, Please Cc LKML when sending patches. It is the kernel you are
-modifying, not userspace.
-
-On Fri, 6 Dec 2013 00:42:22 +0100
-Nicholas Mc Guire <der.herr@hofr.at> wrote:
-
+On Fri, Dec 06, 2013 at 03:28:37AM +0400, Sergei Ianovich wrote:
+> pxa2xx-uart was a separate uart platform driver. It was declaring
+> the same device names and numbers as 8250 driver. As a result,
+> it was impossible to use 8250 driver on PXA SoCs.
 > 
->  This patch removes the recursive calls to migrate_disable/enable in 
->  local_bh_disable/enable
-> 
->  the softirq-local-lock.patch introduces local_bh_disable/enable wich 
->  decrements/increments the current->softirq_nestcnt and disable/enables
->  migration as well. as softirq_nestcnt (include/linux/sched.h conditioned
->  on CONFIG_PREEMPT_RT_BASE) already is tracking the nesting level of the
->  recursive calls to local_bh_disable/enable (all in kernel/softirq.c) - no 
->  need to do it twice.
-> 
->  migrate_disable/enable thus can be conditionsed on softirq_nestcnt making
->  a transition from 0-1 to disable migration and 1-0 to re-enable it.
-> 
->  patch on top of 3.12.1-rt4
-> 
->  No change of functional behavior, this does noticably reduce the observed 
->  nesting level of migrate_disable/enable 
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> ---
->  kernel/softirq.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 9a7268f..16ebbd9 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -569,8 +569,8 @@ static void do_current_softirqs(int need_rcu_bh_qs)
->  
->  void local_bh_disable(void)
->  {
-> -	migrate_disable();
-> -	current->softirq_nestcnt++;
-> +	if (++current->softirq_nestcnt == 1)
-> +		migrate_disable();
->  }
->  EXPORT_SYMBOL(local_bh_disable);
->  
-> @@ -584,8 +584,8 @@ void local_bh_enable(void)
->  		do_current_softirqs(1);
->  	local_irq_enable();
->  
-> -	current->softirq_nestcnt--;
-> -	migrate_enable();
-> +	if (--current->softirq_nestcnt == 0)
-> +		migrate_enable();
+> Upon closer examination pxa2xx-uart turned out to be a clone of
+> 8250_core driver.
 
-I wonder if we should add a:
+I'm testing this backported to 3.5 on the OLPC XO-4 [1] [2].
 
-	BUG_ON(current->softirq_nestcnt < 0);
+As Russell says, the getty had to change, but after that the shell
+worked fine; no more or no less responsive.
 
-As for the patch, I haven't found anything wrong with it.
+What hasn't worked yet is the console; no kernel messages appear.  I
+have tried changing command line to console=ttyS0,115200.
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+1.  http://dev.laptop.org/~quozl/y/1VojGn.txt (diff relative to
+olpc-kernel/arm-3.5)
 
--- Steve
+2.  http://dev.laptop.org/~quozl/z/1VojLz.txt (dmesg)
 
->  }
->  EXPORT_SYMBOL(local_bh_enable);
->  
-> @@ -597,8 +597,10 @@ EXPORT_SYMBOL(local_bh_enable_ip);
->  
->  void _local_bh_enable(void)
->  {
-> -	current->softirq_nestcnt--;
-> -	migrate_enable();
-> +	if (WARN_ON(current->softirq_nestcnt == 0))
-> +		return;
-> +	if (--current->softirq_nestcnt == 0)
-> +		migrate_enable();
->  }
->  EXPORT_SYMBOL(_local_bh_enable);
->  
-
+-- 
+James Cameron
+http://quozl.linux.org.au/
