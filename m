@@ -1,172 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab3LFTba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 14:31:30 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:54937 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757998Ab3LFTb2 (ORCPT
+	id S1758328Ab3LFTf0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 14:35:26 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:10834
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753900Ab3LFTfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 14:31:28 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2] iio: mxs-lradc: compute temperature from channel 8 and 9
-Date: Fri,  6 Dec 2013 20:31:19 +0100
-Message-Id: <1386358279-25474-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 6 Dec 2013 14:35:24 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zcb8kzbb2dI98dI9371I936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz8275ch1de098h1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+Message-ID: <1386358508.7375.133.camel@snotra.buserror.net>
+Subject: Re: [PATCH] watchdog: mpc8xxx_wdt: MPC8xx is HW enabled
+From: Scott Wood <scottwood@freescale.com>
+To: Wolfgang Denk <wd@denx.de>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        Christophe Leroy <christophe.leroy@c-s.fr>,
+        Wim Van Sebroeck <wim@iguana.be>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
+Date: Fri, 6 Dec 2013 13:35:08 -0600
+In-Reply-To: <20131202061418.05A11380BFE@gemini.denx.de>
+References: <20131130154540.E83D743E15@localhost.localdomain>
+	 <529B9152.9090106@roeck-us.net> <20131202061418.05A11380BFE@gemini.denx.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mxs LRADC is able to read an internal die temperature sensor. The
-temperature has to be calculated from the value read on channel 8 and channel 9.
-To be able to expose the result to hwmon, implement iio channel 8 as
-(channel 9 - channel 8). Then, implement IIO_CHAN_INFO_SCALE and
-IIO_CHAN_INFO_OFFSET so that it can be processed by hwmon through the in kernel
-provider/consumer mechanism.
+On Mon, 2013-12-02 at 07:14 +0100, Wolfgang Denk wrote:
+> Dear Guenter,
+> 
+> In message <529B9152.9090106@roeck-us.net> you wrote:
+> > On 11/30/2013 07:45 AM, Christophe Leroy wrote:
+> > > MPC8xx watchdog is enabled at startup by HW.
+> > > If the bootloader disables it, it cannot be reenabled.
+> > 
+> > Is that true for all variants of 8xx, especially for 823 ? I am a bit concerned
+> > about breaking compatibility with some chips ... assuming there was a reason
+> > for not setting this flag originally.
+> 
+> This is correct, and applies for all variants of the MPC8xx, including
+> the MPC823 / MPC823E.  From the UM:
+> 
+> 	"The software watchdog timer can be disabled or its timeout
+> 	period can be changed in the SYPCR. Once the SYPCR is written,
+> 	it cannot be written again until a system reset."
+> 
+> Actually this is the only correct behaviour.  Any watchdog that can be
+> disabled by software is not worth it's name, and unsuitable for any
+> kind of aplications where security / reliability are required.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
----
-Changes in v2:
-  - rebased on v3.13.0-rc3
+An optional locked state is a good thing, but making that the only way
+the watchdog can function can render the watchdog unusable in systems
+that need to go into low power states (unless the low power state
+supresses the watchdog).  And then there's broken hybrid things like the
+booke watchdog, where you can't disable the watchdog reset action once
+configured, but you can change the timeout to be effectively infinite
+(which we've used as a workaround when entering low power states).
 
- drivers/staging/iio/adc/mxs-lradc.c | 91 +++++++++++++++++++++++++++++++------
- 1 file changed, 78 insertions(+), 13 deletions(-)
+-Scott
 
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index e2dd7830b320..5a4499c3d22a 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -759,20 +759,11 @@ static void mxs_lradc_handle_touch(struct mxs_lradc *lradc)
- /*
-  * Raw I/O operations
-  */
--static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
--			const struct iio_chan_spec *chan,
--			int *val, int *val2, long m)
-+static int mxs_lradc_read_single(struct iio_dev *iio_dev, int chan, int *val)
- {
- 	struct mxs_lradc *lradc = iio_priv(iio_dev);
- 	int ret;
- 
--	if (m != IIO_CHAN_INFO_RAW)
--		return -EINVAL;
--
--	/* Check for invalid channel */
--	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
--		return -EINVAL;
--
- 	/*
- 	 * See if there is no buffered operation in progess. If there is, simply
- 	 * bail out. This can be improved to support both buffered and raw IO at
-@@ -797,7 +788,7 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 
- 	/* Clean the slot's previous content, then set new one. */
- 	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0), LRADC_CTRL4);
--	mxs_lradc_reg_set(lradc, chan->channel, LRADC_CTRL4);
-+	mxs_lradc_reg_set(lradc, chan, LRADC_CTRL4);
- 
- 	mxs_lradc_reg_wrt(lradc, 0, LRADC_CH(0));
- 
-@@ -824,6 +815,71 @@ err:
- 	return ret;
- }
- 
-+static int mxs_lradc_read_temp(struct iio_dev *iio_dev, int *val)
-+{
-+	int ret, min, max;
-+
-+	ret = mxs_lradc_read_single(iio_dev, 8, &min);
-+	if (ret != IIO_VAL_INT)
-+		return ret;
-+
-+	ret = mxs_lradc_read_single(iio_dev, 9, &max);
-+	if (ret != IIO_VAL_INT)
-+		return ret;
-+
-+	*val = max - min;
-+
-+	return IIO_VAL_INT;
-+}
-+
-+static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
-+			const struct iio_chan_spec *chan,
-+			int *val, int *val2, long m)
-+{
-+	/* Check for invalid channel */
-+	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
-+		return -EINVAL;
-+
-+	switch (m) {
-+	case IIO_CHAN_INFO_RAW:
-+		if (chan->type == IIO_TEMP)
-+			return mxs_lradc_read_temp(iio_dev, val);
-+
-+		return mxs_lradc_read_single(iio_dev, chan->channel, val);
-+
-+	case IIO_CHAN_INFO_SCALE:
-+		if (chan->type == IIO_TEMP) {
-+			/* From the datasheet, we have to multiply by 1.012 and
-+			 * divide by 4
-+			 */
-+			*val = 0;
-+			*val2 = 253000;
-+			return IIO_VAL_INT_PLUS_MICRO;
-+		}
-+
-+		return -EINVAL;
-+
-+	case IIO_CHAN_INFO_OFFSET:
-+		if (chan->type == IIO_TEMP) {
-+			/* The calculated value from the ADC is in Kelvin, we
-+			 * want Celsius for hwmon so the offset is
-+			 * -272.15 * scale
-+			 */
-+			*val = -1075;
-+			*val2 = 691699;
-+
-+			return IIO_VAL_INT_PLUS_MICRO;
-+		}
-+
-+		return -EINVAL;
-+
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
-+}
-+
- static const struct iio_info mxs_lradc_iio_info = {
- 	.driver_module		= THIS_MODULE,
- 	.read_raw		= mxs_lradc_read_raw,
-@@ -1151,8 +1207,17 @@ static const struct iio_chan_spec mxs_lradc_chan_spec[] = {
- 	MXS_ADC_CHAN(5, IIO_VOLTAGE),
- 	MXS_ADC_CHAN(6, IIO_VOLTAGE),
- 	MXS_ADC_CHAN(7, IIO_VOLTAGE),	/* VBATT */
--	MXS_ADC_CHAN(8, IIO_TEMP),	/* Temp sense 0 */
--	MXS_ADC_CHAN(9, IIO_TEMP),	/* Temp sense 1 */
-+	/* Combined Temperature sensors */
-+	{
-+		.type = IIO_TEMP,
-+		.indexed = 1,
-+		.scan_index = 8,
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
-+				      BIT(IIO_CHAN_INFO_OFFSET) |
-+				      BIT(IIO_CHAN_INFO_SCALE),
-+		.channel = 8,
-+		.scan_type = {.sign = 'u', .realbits = 18, .storagebits = 32,},
-+	},
- 	MXS_ADC_CHAN(10, IIO_VOLTAGE),	/* VDDIO */
- 	MXS_ADC_CHAN(11, IIO_VOLTAGE),	/* VTH */
- 	MXS_ADC_CHAN(12, IIO_VOLTAGE),	/* VDDA */
--- 
-1.8.3.2
+
 
