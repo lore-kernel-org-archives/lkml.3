@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162348Ab3LFNLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:11:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44763 "EHLO
+	id S1162280Ab3LFNMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:12:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44743 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162124Ab3LFNFu (ORCPT
+	with ESMTP id S1162108Ab3LFNFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:05:50 -0500
+	Fri, 6 Dec 2013 08:05:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Greg Edwards <gedwards@ddn.com>, Gleb Natapov <gleb@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 253/272] ALSA: hda - Make sure mute LEDs stay on during runtime suspend (Realtek)
-Date: Fri,  6 Dec 2013 12:59:02 +0000
-Message-Id: <1386334761-25517-254-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 248/272] KVM: IOMMU: hva align mapping page size
+Date: Fri,  6 Dec 2013 12:58:57 +0000
+Message-Id: <1386334761-25517-249-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,78 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Greg Edwards <gedwards@ddn.com>
 
-commit d5b6b65e75ce607c2734227524e11574317a1c1a upstream.
+commit 27ef63c7e97d1e5dddd85051c03f8d44cc887f34 upstream.
 
-Some HP machines with Realtek codecs have mute LEDs connected to VREF pins.
-However when these go into runtime suspend, the pin powers down and its
-pin control is disabled, thus disabling the LED too.
+When determining the page size we could use to map with the IOMMU, the
+page size should also be aligned with the hva, not just the gfn.  The
+gfn may not reflect the real alignment within the hugetlbfs file.
 
-This patch fixes that issue by making sure that the pin stays in D0 with
-correct pin control.
+Most of the time, this works fine.  However, if the hugetlbfs file is
+backed by non-contiguous huge pages, a multi-huge page memslot starts at
+an unaligned offset within the hugetlbfs file, and the gfn is aligned
+with respect to the huge page size, kvm_host_page_size() will return the
+huge page size and we will use that to map with the IOMMU.
 
-BugLink: https://bugs.launchpad.net/bugs/1248465
-Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+When we later unpin that same memslot, the IOMMU returns the unmap size
+as the huge page size, and we happily unpin that many pfns in
+monotonically increasing order, not realizing we are spanning
+non-contiguous huge pages and partially unpin the wrong huge page.
+
+Ensure the IOMMU mapping page size is aligned with the hva corresponding
+to the gfn, which does reflect the alignment within the hugetlbfs file.
+
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Greg Edwards <gedwards@ddn.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ virt/kvm/iommu.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 4869049..cfa6340 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2903,6 +2903,23 @@ static void alc269_fixup_mic_mute_hook(void *private_data, int enabled)
- 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
- }
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 72a130b..c329c8f 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -103,6 +103,10 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 		while ((gfn << PAGE_SHIFT) & (page_size - 1))
+ 			page_size >>= 1;
  
-+/* Make sure the led works even in runtime suspend */
-+static unsigned int led_power_filter(struct hda_codec *codec,
-+						  hda_nid_t nid,
-+						  unsigned int power_state)
-+{
-+	struct alc_spec *spec = codec->spec;
++		/* Make sure hva is aligned to the page size we want to map */
++		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
++			page_size >>= 1;
 +
-+	if (power_state != AC_PWRST_D3 || nid != spec->mute_led_nid)
-+		return power_state;
-+
-+	/* Set pin ctl again, it might have just been set to 0 */
-+	snd_hda_set_pin_ctl(codec, nid,
-+			    snd_hda_codec_get_pin_target(codec, nid));
-+
-+	return AC_PWRST_D0;
-+}
-+
- static void alc269_fixup_hp_mute_led(struct hda_codec *codec,
- 				     const struct hda_fixup *fix, int action)
- {
-@@ -2922,6 +2939,7 @@ static void alc269_fixup_hp_mute_led(struct hda_codec *codec,
- 		spec->mute_led_nid = pin - 0x0a + 0x18;
- 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
- 		spec->gen.vmaster_mute_enum = 1;
-+		codec->power_filter = led_power_filter;
- 		snd_printd("Detected mute LED for %x:%d\n", spec->mute_led_nid,
- 			   spec->mute_led_polarity);
- 		break;
-@@ -2937,6 +2955,7 @@ static void alc269_fixup_hp_mute_led_mic1(struct hda_codec *codec,
- 		spec->mute_led_nid = 0x18;
- 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
- 		spec->gen.vmaster_mute_enum = 1;
-+		codec->power_filter = led_power_filter;
- 	}
- }
- 
-@@ -2949,6 +2968,7 @@ static void alc269_fixup_hp_mute_led_mic2(struct hda_codec *codec,
- 		spec->mute_led_nid = 0x19;
- 		spec->gen.vmaster_mute.hook = alc269_fixup_mic_mute_hook;
- 		spec->gen.vmaster_mute_enum = 1;
-+		codec->power_filter = led_power_filter;
- 	}
- }
- 
+ 		/*
+ 		 * Pin all pages we are about to map in memory. This is
+ 		 * important because we unmap and unpin in 4kb steps later.
 -- 
 1.8.3.2
 
