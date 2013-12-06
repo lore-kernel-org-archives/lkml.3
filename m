@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab3LFPkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:40:24 -0500
-Received: from exchange10.columbia.tresys.com ([216.30.191.171]:38195 "EHLO
-	exchange10.columbia.tresys.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753768Ab3LFPkV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:40:21 -0500
-X-Greylist: delayed 323 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Dec 2013 10:40:21 EST
-From: William Roberts <WRoberts@tresys.com>
-To: William Roberts <bill.c.roberts@gmail.com>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rgb@redhat.com" <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>
-CC: "sds@tycho.nsa.gov" <sds@tycho.nsa.gov>
-Subject: RE: [PATCH] - auditing cmdline
-Thread-Topic: [PATCH] - auditing cmdline
-Thread-Index: AQHO76L60+nsjxXq70yCKV3N/pPBR5pHUWxQ
-Date: Fri, 6 Dec 2013 15:34:32 +0000
-Message-ID: <A8856C6323EFE0459533E910625AB930347FDF@Exchange10.columbia.tresys.com>
-References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
-In-Reply-To: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.143.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755412Ab3LFPmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:42:32 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:56018 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632Ab3LFPmb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 10:42:31 -0500
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] dma: fix vchan_cookie_complete() debug print
+Date: Fri,  6 Dec 2013 16:42:09 +0100
+Message-Id: <1386344529-25617-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I sent out 3 patches on 12/2/2013. I didn't get any response. I thought I added the right people based on get_maintainers script.
+vd->tx.cookie is set zero on dma_cookie_complete(),
+save to local before printing it.
 
-Can anyone comment on these or point me in the right direction?
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-RGB, Can you at least ACK the audit subsystem patch " audit: Audit proc cmdline value"?
+Notes:
+    dev_vdbg() could also be moved to happen earlier, what do you prefer?
+    
+    Applies to next-20131206
 
-Thank you,
-Bill
+ drivers/dma/virt-dma.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
------Original Message-----
-From: owner-linux-mm@kvack.org [mailto:owner-linux-mm@kvack.org] On Behalf Of William Roberts
-Sent: Monday, December 02, 2013 1:11 PM
-To: linux-audit@redhat.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; rgb@redhat.com; viro@zeniv.linux.org.uk
-Cc: sds@tycho.nsa.gov
-Subject: [PATCH] - auditing cmdline
+diff --git a/drivers/dma/virt-dma.h b/drivers/dma/virt-dma.h
+index 85c19d6..181b9526 100644
+--- a/drivers/dma/virt-dma.h
++++ b/drivers/dma/virt-dma.h
+@@ -84,10 +84,12 @@ static inline bool vchan_issue_pending(struct virt_dma_chan *vc)
+ static inline void vchan_cookie_complete(struct virt_dma_desc *vd)
+ {
+ 	struct virt_dma_chan *vc = to_virt_chan(vd->tx.chan);
++	dma_cookie_t cookie;
+ 
++	cookie = vd->tx.cookie;
+ 	dma_cookie_complete(&vd->tx);
+ 	dev_vdbg(vc->chan.device->dev, "txd %p[%x]: marked complete\n",
+-		vd, vd->tx.cookie);
++		 vd, cookie);
+ 	list_add_tail(&vd->node, &vc->desc_completed);
+ 
+ 	tasklet_schedule(&vc->task);
+-- 
+1.8.2.1
 
-This patch series relates to work started on the audit mailing list.
-It eventually involved touching other modules, so I am trying to pull in those owners as well. In a nutshell I add new utility functions for accessing a processes cmdline value as displayed in proc/<self>/cmdline, and then refactor procfs to use the utility functions, and then add the ability to the audit subsystem to record this value.
-
-Thanks for any feedback and help.
-
-[PATCH 1/3] mm: Create utility functions for accessing a tasks
-[PATCH 2/3] proc: Update get proc_pid_cmdline() to use mm.h helpers
-[PATCH 3/3] audit: Audit proc cmdline value
-
---
-To unsubscribe, send a message with 'unsubscribe linux-mm' in the body to majordomo@kvack.org.  For more info on Linux MM,
-see: http://www.linux-mm.org/ .
-Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
