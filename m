@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab3LFOA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:00:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43918 "EHLO
+	id S1757610Ab3LFOBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:01:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43908 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161463Ab3LFNBU (ORCPT
+	with ESMTP id S1161458Ab3LFNBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:20 -0500
+	Fri, 6 Dec 2013 08:01:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/272] ASoC: blackfin: Fix missing break
-Date: Fri,  6 Dec 2013 12:56:11 +0000
-Message-Id: <1386334761-25517-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 080/272] ASoC: cs42l52: Correct MIC CTL mask
+Date: Fri,  6 Dec 2013 12:56:09 +0000
+Message-Id: <1386334761-25517-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,31 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit afed4dbe3a043dbd833a53b6b4951e155708afd2 upstream.
+commit 3d800c6d75b8c92fa928a0bcaf95cd7ac5fd1ce5 upstream.
 
-Fixes: 4b2ffc205cb9 ('ASoC: Blackfin I2S: add 8-bit sample support')
-Reported-by: David Binderman
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The mask for CS42L52_MIC_CTL_TYPE_MASK was wrong keeping the mic config
+from being set correctly.
+
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/blackfin/bf5xx-i2s.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/cs42l52.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/soc/blackfin/bf5xx-i2s.c b/sound/soc/blackfin/bf5xx-i2s.c
-index 9a174fc..39d7748 100644
---- a/sound/soc/blackfin/bf5xx-i2s.c
-+++ b/sound/soc/blackfin/bf5xx-i2s.c
-@@ -121,6 +121,7 @@ static int bf5xx_i2s_hw_params(struct snd_pcm_substream *substream,
- 		bf5xx_i2s->tcr2 |= 7;
- 		bf5xx_i2s->rcr2 |= 7;
- 		sport_handle->wdsize = 1;
-+		break;
- 	case SNDRV_PCM_FORMAT_S16_LE:
- 		bf5xx_i2s->tcr2 |= 15;
- 		bf5xx_i2s->rcr2 |= 15;
+diff --git a/sound/soc/codecs/cs42l52.h b/sound/soc/codecs/cs42l52.h
+index 4277012..a935d73 100644
+--- a/sound/soc/codecs/cs42l52.h
++++ b/sound/soc/codecs/cs42l52.h
+@@ -179,7 +179,7 @@
+ #define CS42L52_MICB_CTL			0x11
+ #define	CS42L52_MIC_CTL_MIC_SEL_MASK		0xBF
+ #define	CS42L52_MIC_CTL_MIC_SEL_SHIFT		6
+-#define CS42L52_MIC_CTL_TYPE_MASK		0xDF
++#define CS42L52_MIC_CTL_TYPE_MASK		0x20
+ #define CS42L52_MIC_CTL_TYPE_SHIFT		5
+ 
+ 
 -- 
 1.8.3.2
 
