@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760108Ab3LFX0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:26:07 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45170 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760093Ab3LFX0D (ORCPT
+	id S1162444Ab3LFXUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:20:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48982 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162428Ab3LFXUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:26:03 -0500
-Message-ID: <52A25CF0.9030706@hitachi.com>
-Date: Sat, 07 Dec 2013 08:25:36 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
- fixes crash bugs
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <CA+b37P1ejFn4YJekJFOCe701mLTprqQi4KSyGV4S7QiVaC1=qA@mail.gmail.com> <52A16D49.9050105@hitachi.com> <CA+b37P3BywWsuNgjVfvxxK2acAbV7qd6R5UJd1UEYdHHuQ56ag@mail.gmail.com>
-In-Reply-To: <CA+b37P3BywWsuNgjVfvxxK2acAbV7qd6R5UJd1UEYdHHuQ56ag@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Dec 2013 18:20:39 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 096/152] ALSA: msnd: Avoid duplicated driver name
+Date: Fri,  6 Dec 2013 15:10:20 -0800
+Message-Id: <1386371476-2477-97-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/06 15:54), Sandeepa Prabhu wrote:
->>> I am not sure if this question is related, uprobes or ftrace code does
->>> not  define __kprobes, so is it safe to place kprobe on uprobes or
->>> ftrace code?
->>
->> Yes, it is "safe" in qualitative meaning. But for ftrace code, it could
->> give a performance impact by miss-hitting. Since uprobe is independent
->> from kprobe, it should work.
->>
->>> Is it expected from arch code to support such cases?
->>
->> Yes, the arch dependent implementation is the key. If it shares some
->> code which can be called from miss-hit path, it should be blacklisted.
-> well, isn't the blacklist only for those routines that can not be
-> handled or may crash kernel, like the code sections called from
-> exception kprobes exception handlers etc?
+3.8.13.14 -stable review patch.  If anyone has any objections, please let me know.
 
-Yes, that's why the blacklist is needed.
+------------------
 
-> suppose if the probe on routine can miss-hit (probes re-cursing) but
-> can be handled, it's only a quantitative issue (i.e. performance
-> impact) so it should be *user's* problem right? I mean, as you said
-> earlier about having white-list or a performance gatekeeper
-> (systemtap), one can avoid such cases by white list or removing
-> miss-hit probes dynamically.  But a blacklisting a symbol means
-> placing a probe on that *can not be handled* and can crash the system,
-> is it correct?
+From: Takashi Iwai <tiwai@suse.de>
 
-Yes, exactly that is what I meant. :)
-The blacklist is only for avoiding such fundamental issue, therefore,
-it strongly depends on the architecture code.
+commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
 
-Thank you,
+msnd_pinnacle.c is used for both snd-msnd-pinnacle and
+snd-msnd-classic drivers, and both should have different driver
+names.  Using the same driver name results in the sysfs warning for
+duplicated entries like
+ kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
+ kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
+ sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
+ ......
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/isa/msnd/msnd_pinnacle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/isa/msnd/msnd_pinnacle.c b/sound/isa/msnd/msnd_pinnacle.c
+index ddabb40..3a7946e 100644
+--- a/sound/isa/msnd/msnd_pinnacle.c
++++ b/sound/isa/msnd/msnd_pinnacle.c
+@@ -73,9 +73,11 @@
+ #ifdef MSND_CLASSIC
+ #  include "msnd_classic.h"
+ #  define LOGNAME			"msnd_classic"
++#  define DEV_NAME			"msnd-classic"
+ #else
+ #  include "msnd_pinnacle.h"
+ #  define LOGNAME			"snd_msnd_pinnacle"
++#  define DEV_NAME			"msnd-pinnacle"
+ #endif
+ 
+ static void set_default_audio_parameters(struct snd_msnd *chip)
+@@ -1068,8 +1070,6 @@ static int snd_msnd_isa_remove(struct device *pdev, unsigned int dev)
+ 	return 0;
+ }
+ 
+-#define DEV_NAME "msnd-pinnacle"
+-
+ static struct isa_driver snd_msnd_driver = {
+ 	.match		= snd_msnd_isa_match,
+ 	.probe		= snd_msnd_isa_probe,
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.3.2
 
