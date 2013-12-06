@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759919Ab3LFV6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:58:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32911 "EHLO
+	id S1759925Ab3LFV6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:58:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32905 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759576Ab3LFVyQ (ORCPT
+	with ESMTP id S1758300Ab3LFVyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:16 -0500
+	Fri, 6 Dec 2013 16:54:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Priebe <s.priebe@profihost.ag>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Ying Xue <ying.xue@windriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 17/32] net: core: Always propagate flag changes to interfaces
-Date: Fri,  6 Dec 2013 13:52:27 -0800
-Message-Id: <20131206214958.408711131@linuxfoundation.org>
+Subject: [PATCH 3.4 16/32] atm: idt77252: fix dev refcnt leak
+Date: Fri,  6 Dec 2013 13:52:26 -0800
+Message-Id: <20131206214958.323483190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -29,66 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Ying Xue <ying.xue@windriver.com>
 
-[ Upstream commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 ]
+[ Upstream commit b5de4a22f157ca345cdb3575207bf46402414bc1 ]
 
-The following commit:
-    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
-    net: only invoke dev->change_rx_flags when device is UP
+init_card() calls dev_get_by_name() to get a network deceive. But it
+doesn't decrease network device reference count after the device is
+used.
 
-tried to fix a problem with VLAN devices and promiscuouse flag setting.
-The issue was that VLAN device was setting a flag on an interface that
-was down, thus resulting in bad promiscuity count.
-This commit blocked flag propagation to any device that is currently
-down.
-
-A later commit:
-    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
-    vlan: Don't propagate flag changes on down interfaces
-
-fixed VLAN code to only propagate flags when the VLAN interface is up,
-thus fixing the same issue as above, only localized to VLAN.
-
-The problem we have now is that if we have create a complex stack
-involving multiple software devices like bridges, bonds, and vlans,
-then it is possible that the flags would not propagate properly to
-the physical devices.  A simple examle of the scenario is the
-following:
-
-  eth0----> bond0 ----> bridge0 ---> vlan50
-
-If bond0 or eth0 happen to be down at the time bond0 is added to
-the bridge, then eth0 will never have promisc mode set which is
-currently required for operation as part of the bridge.  As a
-result, packets with vlan50 will be dropped by the interface.
-
-The only 2 devices that implement the special flag handling are
-VLAN and DSA and they both have required code to prevent incorrect
-flag propagation.  As a result we can remove the generic solution
-introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
-it to the individual devices to decide whether they will block
-flag propagation or not.
-
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
-Suggested-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    2 +-
+ drivers/atm/idt77252.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4443,7 +4443,7 @@ static void dev_change_rx_flags(struct n
- {
- 	const struct net_device_ops *ops = dev->netdev_ops;
- 
--	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
-+	if (ops->ndo_change_rx_flags)
- 		ops->ndo_change_rx_flags(dev, flags);
- }
- 
+--- a/drivers/atm/idt77252.c
++++ b/drivers/atm/idt77252.c
+@@ -3513,7 +3513,7 @@ init_card(struct atm_dev *dev)
+ 	tmp = dev_get_by_name(&init_net, tname);	/* jhs: was "tmp = dev_get(tname);" */
+ 	if (tmp) {
+ 		memcpy(card->atmdev->esi, tmp->dev_addr, 6);
+-
++		dev_put(tmp);
+ 		printk("%s: ESI %pM\n", card->name, card->atmdev->esi);
+ 	}
+ 	/*
 
 
