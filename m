@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750865Ab3LFFLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 00:11:00 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:47611 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab3LFFK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 00:10:59 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Vagin <avagin@openvz.org>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] block: fix memory leaks on unplugging block device
-Date: Fri,  6 Dec 2013 09:06:41 +0400
-Message-Id: <1386306401-17405-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751079Ab3LFFQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 00:16:48 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:53937 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab3LFFQp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 00:16:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <871u1qwzae.fsf@tassilo.jf.intel.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
+	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	<20131206001454.GB21717@two.firstfloor.org>
+	<52A12421.2040208@zytor.com>
+	<871u1qwzae.fsf@tassilo.jf.intel.com>
+Date: Thu, 5 Dec 2013 21:16:43 -0800
+Message-ID: <CAMEtUuz93gN3vQ7K8yVFquSabLXjW=OXj8RFjAkAO9vgY26Hrg@mail.gmail.com>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All objects, which are allocated in blk_mq_register_disk, must be
-released in blk_mq_unregister_disk.
+On Thu, Dec 5, 2013 at 5:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> the difference is bigger now: 484-145 vs 185-145
+>
+> This is a obvious improvement, but imho not big enough to be extremely
+> compelling (< cost 1-2 cache misses, no orders of magnitude improvements
+> that would justify a lot of code)
 
-I use a KVM virtual machine and virtio disk to reproduce this issue.
+hmm. we're comparing against ktap here…
+which has 5x more kernel code and 8x slower in this test...
 
-kmemleak: 18 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
-$ cat /sys/kernel/debug/kmemleak | head -n 30
-unreferenced object 0xffff8800b6636150 (size 8):
-  comm "kworker/0:2", pid 65, jiffies 4294809903 (age 86.358s)
-  hex dump (first 8 bytes):
-    76 69 72 74 69 6f 34 00                          virtio4.
-  backtrace:
-    [<ffffffff8165d41e>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff8118cfc5>] __kmalloc_track_caller+0xf5/0x260
-    [<ffffffff81155b11>] kstrdup+0x31/0x60
-    [<ffffffff812242be>] sysfs_new_dirent+0x2e/0x140
-    [<ffffffff81224678>] create_dir+0x38/0xe0
-    [<ffffffff812249e3>] sysfs_create_dir_ns+0x73/0xc0
-    [<ffffffff8130dfa9>] kobject_add_internal+0xc9/0x340
-    [<ffffffff8130e535>] kobject_add+0x65/0xb0
-    [<ffffffff813f34f8>] device_add+0x128/0x660
-    [<ffffffff813f3a4a>] device_register+0x1a/0x20
-    [<ffffffff813ae6f8>] register_virtio_device+0x98/0xe0
-    [<ffffffff813b0cce>] virtio_pci_probe+0x12e/0x1c0
-    [<ffffffff81340675>] local_pci_probe+0x45/0xa0
-    [<ffffffff81341a51>] pci_device_probe+0x121/0x130
-    [<ffffffff813f67f7>] driver_probe_device+0x87/0x390
-    [<ffffffff813f6b3b>] __device_attach+0x3b/0x40
-unreferenced object 0xffff8800b65aa1d8 (size 144):
+> Your code requires a compiler, so from my perspective it
+> wouldn't be a lot easier or faster to use than just changing
+> the code directly and recompile.
+>
+> The users want something simple too that shields them from
+> having to learn all the internals. They don't want to recompile.
+> As far as I can tell your code is a bit too low level for that,
+> and the requirement for the compiler may also scare them.
+>
+> Where exactly does it fit?
 
-Fixes: 320ae51feed5 (blk-mq: new multi-queue block IO queueing mechanism)
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- block/blk-mq-sysfs.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+the goal is to have llvm compiler next to perf, wrapped in a user friendly way.
 
-diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
-index ba6cf8e..b91ce75 100644
---- a/block/blk-mq-sysfs.c
-+++ b/block/blk-mq-sysfs.c
-@@ -335,9 +335,22 @@ static struct kobj_type blk_mq_hw_ktype = {
- void blk_mq_unregister_disk(struct gendisk *disk)
- {
- 	struct request_queue *q = disk->queue;
-+	struct blk_mq_hw_ctx *hctx;
-+	struct blk_mq_ctx *ctx;
-+	int i, j;
-+
-+	queue_for_each_hw_ctx(q, hctx, i) {
-+		hctx_for_each_ctx(hctx, ctx, j) {
-+			kobject_del(&ctx->kobj);
-+			kobject_put(&ctx->kobj);
-+		}
-+		kobject_del(&hctx->kobj);
-+		kobject_put(&hctx->kobj);
-+	}
- 
- 	kobject_uevent(&q->mq_kobj, KOBJ_REMOVE);
- 	kobject_del(&q->mq_kobj);
-+	kobject_put(&q->mq_kobj);
- 
- 	kobject_put(&disk_to_dev(disk)->kobj);
- }
--- 
-1.8.3.1
+compiling small filter vs recompiling full kernel…
+inserting into live kernel vs rebooting …
+not sure how you're saying it's equivalent.
 
+In my kernel debugging experience current tools (tracing, systemtap)
+were rarely enough.
+I always had to add my own printks through the code, recompile and reboot.
+Often just to see that it's not the place where I want to print things
+or it's too verbose.
+Then I would adjust printks, recompile and reboot again.
+That was slow and tedious, since I would be crashing things from time to time
+just because skb doesn't always have a valid dev or I made a typo.
+For debugging I do really need something quick and dirty that lets me
+add my own printk
+of whatever structs I want anywhere in the kernel without crashing it.
+That's exactly what bpf tracing filters do.
