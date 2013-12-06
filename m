@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab3LFOPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:15:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43703 "EHLO
+	id S1758767Ab3LFOPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:15:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43695 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161201Ab3LFNAW (ORCPT
+	with ESMTP id S1161195Ab3LFNAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:22 -0500
+	Fri, 6 Dec 2013 08:00:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Eric Seppanen <eric@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 040/272] ALSA: hda - Add headset quirk for Dell Inspiron 3135
-Date: Fri,  6 Dec 2013 12:55:29 +0000
-Message-Id: <1386334761-25517-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 038/272] iscsi-target: chap auth shouldn't match username with trailing garbage
+Date: Fri,  6 Dec 2013 12:55:27 +0000
+Message-Id: <1386334761-25517-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,30 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Eric Seppanen <eric@purestorage.com>
 
-commit b8362e70cbbb397db50939bc4c7c78dc3246c3eb upstream.
+commit 86784c6bdeeef78eed94d298be7a8879f6a97ee2 upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/1253636
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+In iSCSI negotiations with initiator CHAP enabled, usernames with
+trailing garbage are permitted, because the string comparison only
+checks the strlen of the configured username.
+
+e.g. "usernameXXXXX" will be permitted to match "username".
+
+Just check one more byte so the trailing null char is also matched.
+
+Signed-off-by: Eric Seppanen <eric@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target_auth.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index ecbfbfd..3e133e7 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3666,6 +3666,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
- 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
+index cee1754..130a1e4 100644
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -148,6 +148,7 @@ static int chap_server_compute_md5(
+ 	unsigned char client_digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char server_digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char chap_n[MAX_CHAP_N_SIZE], chap_r[MAX_RESPONSE_LENGTH];
++	size_t compare_len;
+ 	struct iscsi_chap *chap = conn->auth_protocol;
+ 	struct crypto_hash *tfm;
+ 	struct hash_desc desc;
+@@ -186,7 +187,9 @@ static int chap_server_compute_md5(
+ 		goto out;
+ 	}
+ 
+-	if (memcmp(chap_n, auth->userid, strlen(auth->userid)) != 0) {
++	/* Include the terminating NULL in the compare */
++	compare_len = strlen(auth->userid) + 1;
++	if (strncmp(chap_n, auth->userid, compare_len) != 0) {
+ 		pr_err("CHAP_N values do not match!\n");
+ 		goto out;
+ 	}
 -- 
 1.8.3.2
 
