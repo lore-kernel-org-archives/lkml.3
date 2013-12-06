@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161935Ab3LFNE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44526 "EHLO
+	id S1162489Ab3LFNUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:20:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44596 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161860Ab3LFNEG (ORCPT
+	with ESMTP id S1161934Ab3LFNE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:06 -0500
+	Fri, 6 Dec 2013 08:04:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>,
-        Benjamin Vahl <bvahl@net.t-labs.tu-berlin.de>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 203/272] ath5k: fix regression in tx status processing
-Date: Fri,  6 Dec 2013 12:58:12 +0000
-Message-Id: <1386334761-25517-204-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 219/272] xhci: Enable LPM support only for hardwired or BESL devices
+Date: Fri,  6 Dec 2013 12:58:28 +0000
+Message-Id: <1386334761-25517-220-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -30,60 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 7ede612fd615abcda0cc30e5bef2a70f4cf4f75c upstream.
+commit 890dae88672175f1d39f6105444d9bdc71c89258 upstream.
 
-The regression was introduced in the following commit:
+Some usb3 devices falsely claim they support usb2 hardware Link PM
+when connected to a usb2 port. We only trust hardwired devices
+or devices with the later BESL LPM support to be LPM enabled as default.
 
-0967e01e8e713ed2982fb4eba8ba13794e9a6e89
-"ath5k: make use of the new rate control API"
+[Note: Sarah re-worked the original patch to move the code into the USB
+core, and updated it to check whether the USB device supports BESL,
+instead of checking if the xHCI port it's connected to supports BESL
+encoding.]
 
-ath5k_tx_frame_completed saves the intended per-rate retry counts before
-they are cleared by ieee80211_tx_info_clear_status, however at this
-point the information in info->status.rates is incomplete.
+This patch should be backported to kernels as old as 3.11, that
+contain the commit a558ccdcc71c7770c5e80c926a31cfe8a3892a09 "usb: xhci:
+add USB2 Link power management BESL support".  Without this fix, some
+USB 3.0 devices will not enumerate or work properly under USB 2.0 ports
+on Haswell-ULT systems.
 
-This causes significant throughput degradation and excessive packet loss
-on links where high bit rates don't work properly.
-
-Move the copy from bf->rates a few lines up to ensure that the saved
-retry counts are updated, and that they are really cleared in
-info->status.rates after the call to ieee80211_tx_info_clear_status.
-
-Cc: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
-Cc: Benjamin Vahl <bvahl@net.t-labs.tu-berlin.de>
-Reported-by: Ben West <ben@gowasabi.net>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Acked-by: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath5k/base.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/core/hub.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index ce67ab7..644f40a 100644
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1628,15 +1628,15 @@ ath5k_tx_frame_completed(struct ath5k_hw *ah, struct sk_buff *skb,
- 	ah->stats.tx_bytes_count += skb->len;
- 	info = IEEE80211_SKB_CB(skb);
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 666dbe3..ef15a22 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3952,6 +3952,32 @@ static int hub_set_address(struct usb_device *udev, int devnum)
+ 	return retval;
+ }
  
-+	size = min_t(int, sizeof(info->status.rates), sizeof(bf->rates));
-+	memcpy(info->status.rates, bf->rates, size);
++/*
++ * There are reports of USB 3.0 devices that say they support USB 2.0 Link PM
++ * when they're plugged into a USB 2.0 port, but they don't work when LPM is
++ * enabled.
++ *
++ * Only enable USB 2.0 Link PM if the port is internal (hardwired), or the
++ * device says it supports the new USB 2.0 Link PM errata by setting the BESL
++ * support bit in the BOS descriptor.
++ */
++static void hub_set_initial_usb2_lpm_policy(struct usb_device *udev)
++{
++	int connect_type;
 +
- 	tries[0] = info->status.rates[0].count;
- 	tries[1] = info->status.rates[1].count;
- 	tries[2] = info->status.rates[2].count;
- 
- 	ieee80211_tx_info_clear_status(info);
- 
--	size = min_t(int, sizeof(info->status.rates), sizeof(bf->rates));
--	memcpy(info->status.rates, bf->rates, size);
--
- 	for (i = 0; i < ts->ts_final_idx; i++) {
- 		struct ieee80211_tx_rate *r =
- 			&info->status.rates[i];
++	if (!udev->usb2_hw_lpm_capable)
++		return;
++
++	connect_type = usb_get_hub_port_connect_type(udev->parent,
++			udev->portnum);
++
++	if ((udev->bos->ext_cap->bmAttributes & USB_BESL_SUPPORT) ||
++			connect_type == USB_PORT_CONNECT_TYPE_HARD_WIRED) {
++		udev->usb2_hw_lpm_allowed = 1;
++		usb_set_usb2_hardware_lpm(udev, 1);
++	}
++}
++
+ /* Reset device, (re)assign address, get device descriptor.
+  * Device connection must be stable, no more debouncing needed.
+  * Returns device in USB_STATE_ADDRESS, except on error.
+@@ -4245,6 +4271,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
+ 	/* notify HCD that we have a device connected and addressed */
+ 	if (hcd->driver->update_device)
+ 		hcd->driver->update_device(hcd, udev);
++	hub_set_initial_usb2_lpm_policy(udev);
+ fail:
+ 	if (retval) {
+ 		hub_port_disable(hub, port1, 0);
 -- 
 1.8.3.2
 
