@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162301Ab3LFWcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:32:41 -0500
+	id S1162262Ab3LFWck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:32:40 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:60573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759129Ab3LFVwu (ORCPT
+	with ESMTP id S1759145Ab3LFVwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:50 -0500
+	Fri, 6 Dec 2013 16:52:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 44/83] packet: fix use after free race in send path when dev is released
-Date: Fri,  6 Dec 2013 13:51:34 -0800
-Message-Id: <20131206214644.153988522@linuxfoundation.org>
+Subject: [PATCH 3.12 48/83] gro: Clean up tcpX_gro_receive checksum verification
+Date: Fri,  6 Dec 2013 13:51:38 -0800
+Message-Id: <20131206214644.526955792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -30,223 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-[ Upstream commit e40526cb20b5ee53419452e1f03d97092f144418 ]
+[ Upstream commit b8ee93ba80b5a0b6c3c06b65c34dd1276f16c047 ]
 
-Salam reported a use after free bug in PF_PACKET that occurs when
-we're sending out frames on a socket bound device and suddenly the
-net device is being unregistered. It appears that commit 827d9780
-introduced a possible race condition between {t,}packet_snd() and
-packet_notifier(). In the case of a bound socket, packet_notifier()
-can drop the last reference to the net_device and {t,}packet_snd()
-might end up suddenly sending a packet over a freed net_device.
+This patch simplifies the checksum verification in tcpX_gro_receive
+by reusing the CHECKSUM_COMPLETE code for CHECKSUM_NONE.  All it
+does for CHECKSUM_NONE is compute the partial checksum and then
+treat it as if it came from the hardware (CHECKSUM_COMPLETE).
 
-To avoid reverting 827d9780 and thus introducing a performance
-regression compared to the current state of things, we decided to
-hold a cached RCU protected pointer to the net device and maintain
-it on write side via bind spin_lock protected register_prot_hook()
-and __unregister_prot_hook() calls.
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-In {t,}packet_snd() path, we access this pointer under rcu_read_lock
-through packet_cached_dev_get() that holds reference to the device
-to prevent it from being freed through packet_notifier() while
-we're in send path. This is okay to do as dev_put()/dev_hold() are
-per-cpu counters, so this should not be a performance issue. Also,
-the code simplifies a bit as we don't need need_rls_dev anymore.
-
-Fixes: 827d978037d7 ("af-packet: Use existing netdev reference for bound sockets.")
-Reported-by: Salam Noureddine <noureddine@aristanetworks.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
-Cc: Ben Greear <greearb@candelatech.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cheers,
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   59 +++++++++++++++++++++++++++++--------------------
- net/packet/internal.h  |    1 
- 2 files changed, 37 insertions(+), 23 deletions(-)
+ net/ipv4/tcp_offload.c   |   26 ++++++++++----------------
+ net/ipv6/tcpv6_offload.c |   27 ++++++++++-----------------
+ 2 files changed, 20 insertions(+), 33 deletions(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -244,11 +244,15 @@ static void __fanout_link(struct sock *s
- static void register_prot_hook(struct sock *sk)
+--- a/net/ipv4/tcp_offload.c
++++ b/net/ipv4/tcp_offload.c
+@@ -272,35 +272,29 @@ static struct sk_buff **tcp4_gro_receive
  {
- 	struct packet_sock *po = pkt_sk(sk);
+ 	const struct iphdr *iph = skb_gro_network_header(skb);
+ 	__wsum wsum;
+-	__sum16 sum;
+ 
+ 	/* Don't bother verifying checksum if we're going to flush anyway. */
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip_csum;
+ 
++	wsum = skb->csum;
 +
- 	if (!po->running) {
--		if (po->fanout)
-+		if (po->fanout) {
- 			__fanout_link(sk, po);
--		else
-+		} else {
- 			dev_add_pack(&po->prot_hook);
-+			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
-+		}
+ 	switch (skb->ip_summed) {
++	case CHECKSUM_NONE:
++		wsum = skb_checksum(skb, skb_gro_offset(skb), skb_gro_len(skb),
++				    0);
 +
- 		sock_hold(sk);
- 		po->running = 1;
++		/* fall through */
++
+ 	case CHECKSUM_COMPLETE:
+ 		if (!tcp_v4_check(skb_gro_len(skb), iph->saddr, iph->daddr,
+-				  skb->csum)) {
++				  wsum)) {
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			break;
+ 		}
+-flush:
++
+ 		NAPI_GRO_CB(skb)->flush = 1;
+ 		return NULL;
+-
+-	case CHECKSUM_NONE:
+-		wsum = csum_tcpudp_nofold(iph->saddr, iph->daddr,
+-					  skb_gro_len(skb), IPPROTO_TCP, 0);
+-		sum = csum_fold(skb_checksum(skb,
+-					     skb_gro_offset(skb),
+-					     skb_gro_len(skb),
+-					     wsum));
+-		if (sum)
+-			goto flush;
+-
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+-		break;
  	}
-@@ -266,10 +270,13 @@ static void __unregister_prot_hook(struc
- 	struct packet_sock *po = pkt_sk(sk);
  
- 	po->running = 0;
--	if (po->fanout)
-+	if (po->fanout) {
- 		__fanout_unlink(sk, po);
--	else
-+	} else {
- 		__dev_remove_pack(&po->prot_hook);
-+		RCU_INIT_POINTER(po->cached_dev, NULL);
-+	}
-+
- 	__sock_put(sk);
- 
- 	if (sync) {
-@@ -2052,12 +2059,24 @@ static int tpacket_fill_skb(struct packe
- 	return tp_len;
- }
- 
-+static struct net_device *packet_cached_dev_get(struct packet_sock *po)
-+{
-+	struct net_device *dev;
-+
-+	rcu_read_lock();
-+	dev = rcu_dereference(po->cached_dev);
-+	if (dev)
-+		dev_hold(dev);
-+	rcu_read_unlock();
-+
-+	return dev;
-+}
-+
- static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ skip_csum:
+--- a/net/ipv6/tcpv6_offload.c
++++ b/net/ipv6/tcpv6_offload.c
+@@ -37,36 +37,29 @@ static struct sk_buff **tcp6_gro_receive
  {
- 	struct sk_buff *skb;
- 	struct net_device *dev;
- 	__be16 proto;
--	bool need_rls_dev = false;
- 	int err, reserve = 0;
- 	void *ph;
- 	struct sockaddr_ll *saddr = (struct sockaddr_ll *)msg->msg_name;
-@@ -2070,7 +2089,7 @@ static int tpacket_snd(struct packet_soc
- 	mutex_lock(&po->pg_vec_lock);
+ 	const struct ipv6hdr *iph = skb_gro_network_header(skb);
+ 	__wsum wsum;
+-	__sum16 sum;
  
- 	if (saddr == NULL) {
--		dev = po->prot_hook.dev;
-+		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
- 	} else {
-@@ -2084,19 +2103,17 @@ static int tpacket_snd(struct packet_soc
- 		proto	= saddr->sll_protocol;
- 		addr	= saddr->sll_addr;
- 		dev = dev_get_by_index(sock_net(&po->sk), saddr->sll_ifindex);
--		need_rls_dev = true;
- 	}
+ 	/* Don't bother verifying checksum if we're going to flush anyway. */
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip_csum;
  
- 	err = -ENXIO;
- 	if (unlikely(dev == NULL))
- 		goto out;
--
--	reserve = dev->hard_header_len;
--
- 	err = -ENETDOWN;
- 	if (unlikely(!(dev->flags & IFF_UP)))
- 		goto out_put;
- 
-+	reserve = dev->hard_header_len;
++	wsum = skb->csum;
 +
- 	size_max = po->tx_ring.frame_size
- 		- (po->tp_hdrlen - sizeof(struct sockaddr_ll));
- 
-@@ -2173,8 +2190,7 @@ out_status:
- 	__packet_set_status(po, ph, status);
- 	kfree_skb(skb);
- out_put:
--	if (need_rls_dev)
--		dev_put(dev);
-+	dev_put(dev);
- out:
- 	mutex_unlock(&po->pg_vec_lock);
- 	return err;
-@@ -2212,7 +2228,6 @@ static int packet_snd(struct socket *soc
- 	struct sk_buff *skb;
- 	struct net_device *dev;
- 	__be16 proto;
--	bool need_rls_dev = false;
- 	unsigned char *addr;
- 	int err, reserve = 0;
- 	struct virtio_net_hdr vnet_hdr = { 0 };
-@@ -2228,7 +2243,7 @@ static int packet_snd(struct socket *soc
- 	 */
- 
- 	if (saddr == NULL) {
--		dev = po->prot_hook.dev;
-+		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
- 	} else {
-@@ -2240,19 +2255,17 @@ static int packet_snd(struct socket *soc
- 		proto	= saddr->sll_protocol;
- 		addr	= saddr->sll_addr;
- 		dev = dev_get_by_index(sock_net(sk), saddr->sll_ifindex);
--		need_rls_dev = true;
+ 	switch (skb->ip_summed) {
++	case CHECKSUM_NONE:
++		wsum = skb_checksum(skb, skb_gro_offset(skb), skb_gro_len(skb),
++				    wsum);
++
++		/* fall through */
++
+ 	case CHECKSUM_COMPLETE:
+ 		if (!tcp_v6_check(skb_gro_len(skb), &iph->saddr, &iph->daddr,
+-				  skb->csum)) {
++				  wsum)) {
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 			break;
+ 		}
+-flush:
++
+ 		NAPI_GRO_CB(skb)->flush = 1;
+ 		return NULL;
+-
+-	case CHECKSUM_NONE:
+-		wsum = ~csum_unfold(csum_ipv6_magic(&iph->saddr, &iph->daddr,
+-						    skb_gro_len(skb),
+-						    IPPROTO_TCP, 0));
+-		sum = csum_fold(skb_checksum(skb,
+-					     skb_gro_offset(skb),
+-					     skb_gro_len(skb),
+-					     wsum));
+-		if (sum)
+-			goto flush;
+-
+-		skb->ip_summed = CHECKSUM_UNNECESSARY;
+-		break;
  	}
  
- 	err = -ENXIO;
--	if (dev == NULL)
-+	if (unlikely(dev == NULL))
- 		goto out_unlock;
--	if (sock->type == SOCK_RAW)
--		reserve = dev->hard_header_len;
--
- 	err = -ENETDOWN;
--	if (!(dev->flags & IFF_UP))
-+	if (unlikely(!(dev->flags & IFF_UP)))
- 		goto out_unlock;
- 
-+	if (sock->type == SOCK_RAW)
-+		reserve = dev->hard_header_len;
- 	if (po->has_vnet_hdr) {
- 		vnet_hdr_len = sizeof(vnet_hdr);
- 
-@@ -2386,15 +2399,14 @@ static int packet_snd(struct socket *soc
- 	if (err > 0 && (err = net_xmit_errno(err)) != 0)
- 		goto out_unlock;
- 
--	if (need_rls_dev)
--		dev_put(dev);
-+	dev_put(dev);
- 
- 	return len;
- 
- out_free:
- 	kfree_skb(skb);
- out_unlock:
--	if (dev && need_rls_dev)
-+	if (dev)
- 		dev_put(dev);
- out:
- 	return err;
-@@ -2614,6 +2626,7 @@ static int packet_create(struct net *net
- 	po = pkt_sk(sk);
- 	sk->sk_family = PF_PACKET;
- 	po->num = proto;
-+	RCU_INIT_POINTER(po->cached_dev, NULL);
- 
- 	sk->sk_destruct = packet_sock_destruct;
- 	sk_refcnt_debug_inc(sk);
---- a/net/packet/internal.h
-+++ b/net/packet/internal.h
-@@ -113,6 +113,7 @@ struct packet_sock {
- 	unsigned int		tp_loss:1;
- 	unsigned int		tp_tx_has_off:1;
- 	unsigned int		tp_tstamp;
-+	struct net_device __rcu	*cached_dev;
- 	struct packet_type	prot_hook ____cacheline_aligned_in_smp;
- };
- 
+ skip_csum:
 
 
