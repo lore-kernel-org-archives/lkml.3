@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab3LFN5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:57:06 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:57467 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab3LFN5A (ORCPT
+	id S1161534Ab3LFNBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:01:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43947 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161497Ab3LFNB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:57:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Fri, 6 Dec 2013 14:56:59 +0100
-Message-ID: <CACRpkdaYPSJbL80tbFaNP9aTFc+_AKsT=rd-yxc0R6K-M_Tz9A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] pinctrl: Qualcomm 8x74 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Dec 2013 08:01:29 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/272] alarmtimer: return EINVAL instead of ENOTSUPP if rtcdev doesn't exist
+Date: Fri,  6 Dec 2013 12:56:14 +0000
+Message-Id: <1386334761-25517-86-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 3:10 AM, Bjorn Andersson
-<bjorn.andersson@sonymobile.com> wrote:
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-> This series adds a pinctrl, pinmux, pinconf and gpiolib driver for the
-> Qualcomm TLMM block found in recent Qualcomm SoCs (8x60 and newer).
-> It designed with both v2 and v3 of the block in mind and comes with initial
-> definitions for the 8x74 SoCs.
-> This should be filled in with more data and definitions for more SoCs.
->
-> Regards,
-> Bjorn
->
-> v2
-> --
-> * Replaced subnode dt parsing with generic pinctrl function
-> * Installing irq_handler as chained irq handler
-> * Added call to handle_bad_irq() when no irqs are pending in irq handler
-> * Creating irq mapping at probe() and cleaned up the code accordingly
-> * Replaced pinctrl_add_gpio_range with gpiochip_add_pin_range
-> * Other minor updates based on review comments
+------------------
 
-I can't see any problem with these patches, and they only use standard
-bindings, so I've applied all three so we get some linux-next rotation
-and build coverage. Any remaining problems can certainly be fixed
-with incremental patches.
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Thanks!
-Linus Walleij
+commit 98d6f4dd84a134d942827584a3c5f67ffd8ec35f upstream.
+
+Fedora Ruby maintainer reported latest Ruby doesn't work on Fedora Rawhide
+on ARM. (http://bugs.ruby-lang.org/issues/9008)
+
+Because of, commit 1c6b39ad3f (alarmtimers: Return -ENOTSUPP if no
+RTC device is present) intruduced to return ENOTSUPP when
+clock_get{time,res} can't find a RTC device. However this is incorrect.
+
+First, ENOTSUPP isn't exported to userland (ENOTSUP or EOPNOTSUP are the
+closest userland equivlents).
+
+Second, Posix and Linux man pages agree that clock_gettime and
+clock_getres should return EINVAL if clk_id argument is invalid.
+While the arugment that the clockid is valid, but just not supported
+on this hardware could be made, this is just a technicality that
+doesn't help userspace applicaitons, and only complicates error
+handling.
+
+Thus, this patch changes the code to use EINVAL.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: Vit Ondruch <v.ondruch@tiscali.cz>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+[jstultz: Tweaks to commit message to include full rational]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/time/alarmtimer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index eec50fc..88c9c65 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -490,7 +490,7 @@ static int alarm_clock_getres(const clockid_t which_clock, struct timespec *tp)
+ 	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
+ 
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	return hrtimer_get_res(baseid, tp);
+ }
+@@ -507,7 +507,7 @@ static int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
+ 	struct alarm_base *base = &alarm_bases[clock2alarm(which_clock)];
+ 
+ 	if (!alarmtimer_get_rtcdev())
+-		return -ENOTSUPP;
++		return -EINVAL;
+ 
+ 	*tp = ktime_to_timespec(base->gettime());
+ 	return 0;
+-- 
+1.8.3.2
+
