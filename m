@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162503Ab3LFNVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:21:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44583 "EHLO
+	id S1161902Ab3LFNES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:04:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44531 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161908Ab3LFNEV (ORCPT
+	with ESMTP id S1161861Ab3LFNEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:21 -0500
+	Fri, 6 Dec 2013 08:04:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 216/272] usb: Disable USB 2.0 Link PM before device reset.
-Date: Fri,  6 Dec 2013 12:58:25 +0000
-Message-Id: <1386334761-25517-217-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 204/272] mm/zswap: bugfix: memory leak when invalidate and reclaim occur concurrently
+Date: Fri,  6 Dec 2013 12:58:13 +0000
+Message-Id: <1386334761-25517-205-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,51 +29,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Weijie Yang <weijie.yang@samsung.com>
 
-commit dcc01c0864823f91c3bf3ffca6613e2351702b87 upstream.
+commit 67d13fe846c57a54d12578e7a4518f68c5c86ad7 upstream.
 
-Before the USB core resets a device, we need to disable the L1 timeout
-for the roothub, if USB 2.0 Link PM is enabled.  Otherwise the port may
-transition into L1 in between descriptor fetches, before we know if the
-USB device descriptors changed.  LPM will be re-enabled after the
-full device descriptors are fetched, and we can confirm the device still
-supports USB 2.0 LPM after the reset.
+Consider the following scenario:
 
-We don't need to wait for the USB device to exit L1 before resetting the
-device, since the xHCI roothub port diagrams show a transition to the
-Reset state from any of the Ux states (see Figure 34 in the 2012-08-14
-xHCI specification update).
+thread 0: reclaim entry x (get refcount, but not call zswap_get_swap_cache_page)
+thread 1: call zswap_frontswap_invalidate_page to invalidate entry x.
+	finished, entry x and its zbud is not freed as its refcount != 0
+	now, the swap_map[x] = 0
+thread 0: now call zswap_get_swap_cache_page
+	swapcache_prepare return -ENOENT because entry x is not used any more
+	zswap_get_swap_cache_page return ZSWAP_SWAPCACHE_NOMEM
+	zswap_writeback_entry do nothing except put refcount
 
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set USB2
-hardware LPM".  That was the first commit to enable USB 2.0
-hardware-driven Link Power Management.
+Now, the memory of zswap_entry x and its zpage leak.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[ luis: backported to 3.11: adjusted context ]
+Modify:
+ - check the refcount in fail path, free memory if it is not referenced.
+
+ - use ZSWAP_SWAPCACHE_FAIL instead of ZSWAP_SWAPCACHE_NOMEM as the fail path
+   can be not only caused by nomem but also by invalidate.
+
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/hub.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/zswap.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 1c11089..cf98052 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -5079,6 +5079,12 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
- 	}
- 	parent_hub = usb_hub_to_struct_hub(parent_hdev);
+diff --git a/mm/zswap.c b/mm/zswap.c
+index cbd9578..37d189c 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -387,7 +387,7 @@ static void zswap_free_entry(struct zswap_tree *tree, struct zswap_entry *entry)
+ enum zswap_get_swap_ret {
+ 	ZSWAP_SWAPCACHE_NEW,
+ 	ZSWAP_SWAPCACHE_EXIST,
+-	ZSWAP_SWAPCACHE_NOMEM
++	ZSWAP_SWAPCACHE_FAIL,
+ };
  
-+	/* Disable USB2 hardware LPM.
-+	 * It will be re-enabled by the enumeration process.
-+	 */
-+	if (udev->usb2_hw_lpm_enabled == 1)
-+		usb_set_usb2_hardware_lpm(udev, 0);
-+
- 	/* Disable LPM and LTM while we reset the device and reinstall the alt
- 	 * settings.  Device-initiated LPM settings, and system exit latency
- 	 * settings are cleared when the device is reset, so we have to set
+ /*
+@@ -401,9 +401,10 @@ enum zswap_get_swap_ret {
+  * added to the swap cache, and returned in retpage.
+  *
+  * If success, the swap cache page is returned in retpage
+- * Returns 0 if page was already in the swap cache, page is not locked
+- * Returns 1 if the new page needs to be populated, page is locked
+- * Returns <0 on error
++ * Returns ZSWAP_SWAPCACHE_EXIST if page was already in the swap cache
++ * Returns ZSWAP_SWAPCACHE_NEW if the new page needs to be populated,
++ *     the new page is added to swapcache and locked
++ * Returns ZSWAP_SWAPCACHE_FAIL on error
+  */
+ static int zswap_get_swap_cache_page(swp_entry_t entry,
+ 				struct page **retpage)
+@@ -475,7 +476,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
+ 	if (new_page)
+ 		page_cache_release(new_page);
+ 	if (!found_page)
+-		return ZSWAP_SWAPCACHE_NOMEM;
++		return ZSWAP_SWAPCACHE_FAIL;
+ 	*retpage = found_page;
+ 	return ZSWAP_SWAPCACHE_EXIST;
+ }
+@@ -529,11 +530,11 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 
+ 	/* try to allocate swap cache page */
+ 	switch (zswap_get_swap_cache_page(swpentry, &page)) {
+-	case ZSWAP_SWAPCACHE_NOMEM: /* no memory */
++	case ZSWAP_SWAPCACHE_FAIL: /* no memory or invalidate happened */
+ 		ret = -ENOMEM;
+ 		goto fail;
+ 
+-	case ZSWAP_SWAPCACHE_EXIST: /* page is unlocked */
++	case ZSWAP_SWAPCACHE_EXIST:
+ 		/* page is already in the swap cache, ignore for now */
+ 		page_cache_release(page);
+ 		ret = -EEXIST;
+@@ -591,7 +592,12 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 
+ fail:
+ 	spin_lock(&tree->lock);
+-	zswap_entry_put(entry);
++	refcount = zswap_entry_put(entry);
++	if (refcount <= 0) {
++		/* invalidate happened, consider writeback as success */
++		zswap_free_entry(tree, entry);
++		ret = 0;
++	}
+ 	spin_unlock(&tree->lock);
+ 	return ret;
+ }
 -- 
 1.8.3.2
 
