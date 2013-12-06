@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423041Ab3LFXUy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:20:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48989 "EHLO
+	id S1760029Ab3LFXYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:24:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49034 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161188Ab3LFXUl (ORCPT
+	with ESMTP id S1423031Ab3LFXUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:20:41 -0500
+	Fri, 6 Dec 2013 18:20:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 101/152] mm: ensure get_unmapped_area() returns higher address than mmap_min_addr
-Date: Fri,  6 Dec 2013 15:10:25 -0800
-Message-Id: <1386371476-2477-102-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 063/152] ARM: entry: move disable_irq_notrace into svc_exit
+Date: Fri,  6 Dec 2013 15:09:47 -0800
+Message-Id: <1386371476-2477-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -30,126 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
+commit f8f02ec25ce3eafb049feeb3abf34fcd6e338241 upstream.
 
-This patch fixes the problem that get_unmapped_area() can return illegal
-address and result in failing mmap(2) etc.
+All svc exit paths need IRQs off.  Rather than placing this before
+every user of svc_exit, combine it into this macro.
 
-In case that the address higher than PAGE_SIZE is set to
-/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
-returned by get_unmapped_area(), even if you do not pass any virtual
-address hint (i.e.  the second argument).
-
-This is because the current get_unmapped_area() code does not take into
-account mmap_min_addr.
-
-This leads to two actual problems as follows:
-
-1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
-   although any illegal parameter is not passed.
-
-2. The bottom-up search path after the top-down search might not work in
-   arch_get_unmapped_area_topdown().
-
-Note: The first and third chunk of my patch, which changes "len" check,
-are for more precise check using mmap_min_addr, and not for solving the
-above problem.
-
-[How to reproduce]
-
-	--- test.c -------------------------------------------------
-	#include <stdio.h>
-	#include <unistd.h>
-	#include <sys/mman.h>
-	#include <sys/errno.h>
-
-	int main(int argc, char *argv[])
-	{
-		void *ret = NULL, *last_map;
-		size_t pagesize = sysconf(_SC_PAGESIZE);
-
-		do {
-			last_map = ret;
-			ret = mmap(0, pagesize, PROT_NONE,
-				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	//		printf("ret=%p\n", ret);
-		} while (ret != MAP_FAILED);
-
-		if (errno != ENOMEM) {
-			printf("ERR: unexpected errno: %d (last map=%p)\n",
-			errno, last_map);
-		}
-
-		return 0;
-	}
-	---------------------------------------------------------------
-
-	$ gcc -m32 -o test test.c
-	$ sudo sysctl -w vm.mmap_min_addr=65536
-	vm.mmap_min_addr = 65536
-	$ ./test  (run as non-priviledge user)
-	ERR: unexpected errno: 1 (last map=0x10000)
-
-Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[ kamal: 3.8 stable prereq for
+  e16b31b ARM: 7876/1: clear Thumb-2 IT state on exception handling ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/mmap.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/kernel/entry-armv.S   | 18 ------------------
+ arch/arm/kernel/entry-header.S |  6 ++++++
+ 2 files changed, 6 insertions(+), 18 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 82fbbab..44ec3e6 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1786,7 +1786,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	struct vm_area_struct *vma;
- 	struct vm_unmapped_area_info info;
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index a716ea9..a7de792 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -192,11 +192,6 @@ __dabt_svc:
+ 	svc_entry
+ 	mov	r2, sp
+ 	dabt_helper
+-
+-	@
+-	@ IRQs off again before pulling preserved data off the stack
+-	@
+-	disable_irq_notrace
+ 	svc_exit r5				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__dabt_svc)
+@@ -283,15 +278,7 @@ __und_svc_fault:
+ 	mov	r0, sp				@ struct pt_regs *regs
+ 	bl	__und_fault
  
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
- 
- 	if (flags & MAP_FIXED)
-@@ -1795,7 +1795,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 		    (!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
-@@ -1834,7 +1834,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	struct vm_unmapped_area_info info;
- 
- 	/* requested length too big for entire address space */
--	if (len > TASK_SIZE)
-+	if (len > TASK_SIZE - mmap_min_addr)
- 		return -ENOMEM;
- 
- 	if (flags & MAP_FIXED)
-@@ -1844,14 +1844,14 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
--		if (TASK_SIZE - len >= addr &&
-+		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
- 				(!vma || addr + len <= vma->vm_start))
- 			return addr;
- 	}
- 
- 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
- 	info.length = len;
--	info.low_limit = PAGE_SIZE;
-+	info.low_limit = max(PAGE_SIZE, mmap_min_addr);
- 	info.high_limit = mm->mmap_base;
- 	info.align_mask = 0;
- 	addr = vm_unmapped_area(&info);
+-	@
+-	@ IRQs off again before pulling preserved data off the stack
+-	@
+ __und_svc_finish:
+-	disable_irq_notrace
+-
+-	@
+-	@ restore SPSR and restart the instruction
+-	@
+ 	ldr	r5, [sp, #S_PSR]		@ Get SVC cpsr
+ 	svc_exit r5				@ return from exception
+  UNWIND(.fnend		)
+@@ -302,11 +289,6 @@ __pabt_svc:
+ 	svc_entry
+ 	mov	r2, sp				@ regs
+ 	pabt_helper
+-
+-	@
+-	@ IRQs off again before pulling preserved data off the stack
+-	@
+-	disable_irq_notrace
+ 	svc_exit r5				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__pabt_svc)
+diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+index 0bf15e5..57a1631 100644
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -76,12 +76,15 @@
+ #ifndef CONFIG_THUMB2_KERNEL
+ 	.macro	svc_exit, rpsr, irq = 0
+ 	.if	\irq != 0
++	@ IRQs already off
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	@ The parent context IRQs must have been enabled to get here in
+ 	@ the first place, so there's no point checking the PSR I bit.
+ 	bl	trace_hardirqs_on
+ #endif
+ 	.else
++	@ IRQs off again before pulling preserved data off the stack
++	disable_irq_notrace
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	tst	\rpsr, #PSR_I_BIT
+ 	bleq	trace_hardirqs_on
+@@ -136,12 +139,15 @@
+ #else	/* CONFIG_THUMB2_KERNEL */
+ 	.macro	svc_exit, rpsr, irq = 0
+ 	.if	\irq != 0
++	@ IRQs already off
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	@ The parent context IRQs must have been enabled to get here in
+ 	@ the first place, so there's no point checking the PSR I bit.
+ 	bl	trace_hardirqs_on
+ #endif
+ 	.else
++	@ IRQs off again before pulling preserved data off the stack
++	disable_irq_notrace
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	tst	\rpsr, #PSR_I_BIT
+ 	bleq	trace_hardirqs_on
 -- 
 1.8.3.2
 
