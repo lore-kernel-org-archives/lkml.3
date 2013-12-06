@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab3LFXOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:14:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48466 "EHLO
+	id S1161573Ab3LFXsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:48:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48420 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161433Ab3LFXMj (ORCPT
+	with ESMTP id S1161367Ab3LFXMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:12:39 -0500
+	Fri, 6 Dec 2013 18:12:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ionut Nicu <ioan.nicu.ext@nsn.com>, Wolfram Sang <wsa@the-dreams.de>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 034/152] i2c: mux: gpio: use gpio_set_value_cansleep()
-Date: Fri,  6 Dec 2013 15:09:18 -0800
-Message-Id: <1386371476-2477-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 043/152] drm/radeon/si: fix define for MC_SEQ_TRAIN_WAKEUP_CNTL
+Date: Fri,  6 Dec 2013 15:09:27 -0800
+Message-Id: <1386371476-2477-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,40 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ionut Nicu <ioan.nicu.ext@nsn.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 250ad590d6f12d93f4d85be305b0a598d609232e upstream.
+commit d5693761b2b4ff530c8af8af9ec55b6eae76e617 upstream.
 
-Some gpio chips may have get/set operations that
-can sleep. gpio_set_value() only works for chips
-which do not sleep, for the others we will get a
-kernel warning. Using gpio_set_value_cansleep()
-will work for both chips that do sleep and those
-who don't.
+Typo in the register offset.
 
-Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
-Acked-by: Peter Korsgaard <peter.korsgaard@barco.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Noticed-by: Sylvain BERTRAND <sylware@legeek.net>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/muxes/i2c-mux-gpio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/sid.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/muxes/i2c-mux-gpio.c b/drivers/i2c/muxes/i2c-mux-gpio.c
-index 9f50ef0..61da6b4 100644
---- a/drivers/i2c/muxes/i2c-mux-gpio.c
-+++ b/drivers/i2c/muxes/i2c-mux-gpio.c
-@@ -31,8 +31,8 @@ static void i2c_mux_gpio_set(const struct gpiomux *mux, unsigned val)
- 	int i;
+diff --git a/drivers/gpu/drm/radeon/sid.h b/drivers/gpu/drm/radeon/sid.h
+index 4767968..c394695 100644
+--- a/drivers/gpu/drm/radeon/sid.h
++++ b/drivers/gpu/drm/radeon/sid.h
+@@ -200,7 +200,7 @@
+ #define		NOOFGROUPS_SHIFT				12
+ #define		NOOFGROUPS_MASK					0x00001000
  
- 	for (i = 0; i < mux->data.n_gpios; i++)
--		gpio_set_value(mux->gpio_base + mux->data.gpios[i],
--			       val & (1 << i));
-+		gpio_set_value_cansleep(mux->gpio_base + mux->data.gpios[i],
-+					val & (1 << i));
- }
+-#define	MC_SEQ_TRAIN_WAKEUP_CNTL			0x2808
++#define	MC_SEQ_TRAIN_WAKEUP_CNTL			0x28e8
+ #define		TRAIN_DONE_D0      			(1 << 30)
+ #define		TRAIN_DONE_D1      			(1 << 31)
  
- static int i2c_mux_gpio_select(struct i2c_adapter *adap, void *data, u32 chan)
 -- 
 1.8.3.2
 
