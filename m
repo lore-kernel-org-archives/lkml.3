@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162381Ab3LFNnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:43:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44213 "EHLO
+	id S1162427Ab3LFNn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:43:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44209 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161570Ab3LFNCh (ORCPT
+	with ESMTP id S1161564Ab3LFNCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:37 -0500
+	Fri, 6 Dec 2013 08:02:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Ben Skeggs <bskeggs@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 139/272] drm/radeon/si: fix define for MC_SEQ_TRAIN_WAKEUP_CNTL
-Date: Fri,  6 Dec 2013 12:57:08 +0000
-Message-Id: <1386334761-25517-140-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 138/272] drm/nouveau: when bailing out of a pushbuf ioctl, do not remove previous fence
+Date: Fri,  6 Dec 2013 12:57:07 +0000
+Message-Id: <1386334761-25517-139-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,32 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit d5693761b2b4ff530c8af8af9ec55b6eae76e617 upstream.
+commit 9360bd1112d8874d21942e2ae74f5416b00a8db6 upstream.
 
-Typo in the register offset.
-
-Noticed-by: Sylvain BERTRAND <sylware@legeek.net>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/sid.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_gem.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/sid.h b/drivers/gpu/drm/radeon/sid.h
-index a75d25a..60e6ad7 100644
---- a/drivers/gpu/drm/radeon/sid.h
-+++ b/drivers/gpu/drm/radeon/sid.h
-@@ -478,7 +478,7 @@
- #define		STATE3_MASK				(0x1f << 15)
- #define		STATE3_SHIFT				15
+diff --git a/drivers/gpu/drm/nouveau/nouveau_gem.c b/drivers/gpu/drm/nouveau/nouveau_gem.c
+index 830cb7b..5a69853 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_gem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_gem.c
+@@ -317,7 +317,8 @@ validate_fini_list(struct list_head *list, struct nouveau_fence *fence,
+ 	list_for_each_safe(entry, tmp, list) {
+ 		nvbo = list_entry(entry, struct nouveau_bo, entry);
  
--#define	MC_SEQ_TRAIN_WAKEUP_CNTL			0x2808
-+#define	MC_SEQ_TRAIN_WAKEUP_CNTL			0x28e8
- #define		TRAIN_DONE_D0      			(1 << 30)
- #define		TRAIN_DONE_D1      			(1 << 31)
+-		nouveau_bo_fence(nvbo, fence);
++		if (likely(fence))
++			nouveau_bo_fence(nvbo, fence);
  
+ 		if (unlikely(nvbo->validate_mapped)) {
+ 			ttm_bo_kunmap(&nvbo->kmap);
 -- 
 1.8.3.2
 
