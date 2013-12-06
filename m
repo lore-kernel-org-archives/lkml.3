@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161858Ab3LFNEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44494 "EHLO
+	id S1758280Ab3LFNDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44462 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758301Ab3LFND6 (ORCPT
+	with ESMTP id S1161753Ab3LFNDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:58 -0500
+	Fri, 6 Dec 2013 08:03:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nishanth Menon <nm@ti.com>, Mark Brown <broonie@linaro.org>,
+Cc: Johannes Koch <johannes@ortsraum.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 198/272] regulator: ti-abb: Fix operator precedence typo
-Date: Fri,  6 Dec 2013 12:58:07 +0000
-Message-Id: <1386334761-25517-199-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 192/272] [media] cx23885: Fix TeVii S471 regression since introduction of ts2020
+Date: Fri,  6 Dec 2013 12:58:01 +0000
+Message-Id: <1386334761-25517-193-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Johannes Koch <johannes@ortsraum.de>
 
-commit 9a633a2bced158c57b73cf4d8e87be60473de1d2 upstream.
+commit b43ea8068d2090cb1e44632c8a938ab40d2c7419 upstream.
 
-commit 40b1936e (regulator: Introduce TI Adaptive Body Bias(ABB) on-chip
-LDO driver) missed a pair of brackets which cause the wrong vset data to be
-picked up from efuse, resulting in bad VBB voltage values.
+Patch to make TeVii S471 cards use the ts2020 tuner, since ds3000 driver no
+longer contains tuning code.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Johannes Koch <johannes@ortsraum.de>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/regulator/ti-abb-regulator.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/pci/cx23885/cx23885-dvb.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
-index bec4ff9..c4a2ca4 100644
---- a/drivers/regulator/ti-abb-regulator.c
-+++ b/drivers/regulator/ti-abb-regulator.c
-@@ -615,7 +615,7 @@ static int ti_abb_init_table(struct device *dev, struct ti_abb *abb,
- 					pname, *volt_table, vset_mask);
- 			continue;
- 		}
--		info->vset = efuse_val & vset_mask >> __ffs(vset_mask);
-+		info->vset = (efuse_val & vset_mask) >> __ffs(vset_mask);
- 		dev_dbg(dev, "[%d]v=%d vset=%x\n", i, *volt_table, info->vset);
- check_abb:
- 		switch (info->opp_sel) {
+diff --git a/drivers/media/pci/cx23885/cx23885-dvb.c b/drivers/media/pci/cx23885/cx23885-dvb.c
+index 9c5ed10..bb291c6 100644
+--- a/drivers/media/pci/cx23885/cx23885-dvb.c
++++ b/drivers/media/pci/cx23885/cx23885-dvb.c
+@@ -1249,6 +1249,10 @@ static int dvb_register(struct cx23885_tsport *port)
+ 		fe0->dvb.frontend = dvb_attach(ds3000_attach,
+ 					&tevii_ds3000_config,
+ 					&i2c_bus->i2c_adap);
++		if (fe0->dvb.frontend != NULL) {
++			dvb_attach(ts2020_attach, fe0->dvb.frontend,
++				&tevii_ts2020_config, &i2c_bus->i2c_adap);
++		}
+ 		break;
+ 	case CX23885_BOARD_PROF_8000:
+ 		i2c_bus = &dev->i2c_bus[0];
 -- 
 1.8.3.2
 
