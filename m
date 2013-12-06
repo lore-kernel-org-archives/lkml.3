@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab3LFRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:08:09 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51615 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675Ab3LFRIG (ORCPT
+	id S1754922Ab3LFRON (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:14:13 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40269 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab3LFROM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:08:06 -0500
-Message-ID: <52A20470.3040700@wwwdotorg.org>
-Date: Fri, 06 Dec 2013 10:08:00 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Thierry Reding <treding@nvidia.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ashwini Ghuge <aghuge@nvidia.com>
-Subject: Re: [PATCH 4/4] pinctrl: tegra: add pinmux controller driver for
- Tegra124
-References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-5-git-send-email-ldewangan@nvidia.com> <52A10C7B.8070406@wwwdotorg.org> <52A16E65.70908@nvidia.com>
-In-Reply-To: <52A16E65.70908@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Dec 2013 12:14:12 -0500
+Date: Fri, 06 Dec 2013 12:14:11 -0500 (EST)
+Message-Id: <20131206.121411.2205219888474731457.davem@davemloft.net>
+To: viro@ZenIV.linux.org.uk
+Cc: ydroneaud@opteya.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] net: handle error more gracefully in socketpair()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131206104805.GM10323@ZenIV.linux.org.uk>
+References: <1386285331.18074.47.camel@localhost.localdomain>
+	<20131205.194355.1677309681391704143.davem@davemloft.net>
+	<20131206104805.GM10323@ZenIV.linux.org.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 06 Dec 2013 09:14:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 11:27 PM, Laxman Dewangan wrote:
-> On Friday 06 December 2013 05:00 AM, Stephen Warren wrote:
->> On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
->>> From: Ashwini Ghuge <aghuge@nvidia.com>
->>>
->>> This adds a driver for the Tegra124 pinmux, and required
->>> parameterization data for Tegra124.
->>>
->>> The driver uses the common Tegra pincontrol driver utility
->>> functions to implement the majority of the driver.
->>>
->>> This driver is not compatible with the earlier NVIDIA's SoCs,
->>> hence add new compatibile as "nvidia,tegra124-pinmux".
->>>
->>> Originally written by Ashwini Gguhe.
->>> ldewangan:
->>>          - cleanup the patches,
->>>          - Fix address issue.
-...
->> (BTW, those 2 patches would go through the pinctrl tree, and patches 2/4
->> and 3/4 would go through the Tegra tree. You generally shouldn't posted
->> patches that will be applied to different trees in the same series,
->> since there aren't dependencies).
->
-> Fine.
-> Should I sent the diff or full change? I think full change as this need
-> to go on pincontrol subsystem, not in Tegra.
+From: Al Viro <viro@ZenIV.linux.org.uk>
+Date: Fri, 6 Dec 2013 10:48:05 +0000
 
-Please send complete patches for the new driver. The patch I have in my
-local tree isn't going anywhere; I just have the early version that
-Ashwini posted applied locally for testing. A final complete patch
-should be sent to the pinctrl maintainer in the normal way.
+> On Thu, Dec 05, 2013 at 07:43:55PM -0500, David Miller wrote:
+>> From: Yann Droneaud <ydroneaud@opteya.com>
+>> Date: Fri, 06 Dec 2013 00:15:31 +0100
+>> 
+>> > AFAIK, using sys_close() seems to be the exception, and writing the file
+>> > descriptor before installing it is the more or less the norm.
+>> 
+>> What other system call in the kernel writes a file descriptor's value
+>> into the address space of a user process before the file descriptor
+>> is actually usable?
+>> 
+>> That's really terrible semantically.
+> 
+> What's the problem with that?  If nothing else, shared descriptor table is
+> a lot more visible to other threads than two-element array, most likely
+> in stack frame of whoever makes that syscall...
+> 
+> As for your question, how about pipe(2)?
+
+Fair enough, Yann please resubmit your patch.
+
+Thanks.
