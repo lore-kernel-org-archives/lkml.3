@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162038Ab3LFXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:43:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48585 "EHLO
+	id S1759208Ab3LFXP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:15:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48571 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759238Ab3LFXQD (ORCPT
+	with ESMTP id S1422756Ab3LFXPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:16:03 -0500
+	Fri, 6 Dec 2013 18:15:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 076/152] blk-core: Fix memory corruption if blkcg_init_queue fails
-Date: Fri,  6 Dec 2013 15:10:00 -0800
-Message-Id: <1386371476-2477-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 149/152] configfs: fix race between dentry put and lookup
+Date: Fri,  6 Dec 2013 15:11:13 -0800
+Message-Id: <1386371476-2477-150-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,78 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit fff4996b7db7955414ac74386efa5e07fd766b50 upstream.
+commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
 
-If blkcg_init_queue fails, blk_alloc_queue_node doesn't call bdi_destroy
-to clean up structures allocated by the backing dev.
+A race window in configfs, it starts from one dentry is UNHASHED and end
+before configfs_d_iput is called.  In this window, if a lookup happen,
+since the original dentry was UNHASHED, so a new dentry will be
+allocated, and then in configfs_attach_attr(), sd->s_dentry will be
+updated to the new dentry.  Then in configfs_d_iput(),
+BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
 
-------------[ cut here ]------------
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x85/0xa0()
-ODEBUG: free active (active state 0) object type: percpu_counter hint:           (null)
-Modules linked in: dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev ipt_MASQUERADE iptable_nat nf_nat_ipv4 msr nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack lm85 hwmon_vid snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq freq_table mperf sata_svw serverworks kvm_amd ide_core ehci_pci ohci_hcd libata ehci_hcd kvm usbcore tg3 usb_common libphy k10temp pcspkr ptp i2c_piix4 i2c_core evdev microcode hwmon rtc_cmos pps_core e100 skge floppy mii processor button unix
-CPU: 0 PID: 2739 Comm: lvchange Tainted: G        W
-3.10.15-devel #14
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
- 0000000000000009 ffff88023c3c1ae8 ffffffff813c8fd4 ffff88023c3c1b20
- ffffffff810399eb ffff88043d35cd58 ffffffff81651940 ffff88023c3c1bf8
- ffffffff82479d90 0000000000000005 ffff88023c3c1b80 ffffffff81039a67
-Call Trace:
- [<ffffffff813c8fd4>] dump_stack+0x19/0x1b
- [<ffffffff810399eb>] warn_slowpath_common+0x6b/0xa0
- [<ffffffff81039a67>] warn_slowpath_fmt+0x47/0x50
- [<ffffffff8122aaaf>] ? debug_check_no_obj_freed+0xcf/0x250
- [<ffffffff81229a15>] debug_print_object+0x85/0xa0
- [<ffffffff8122abe3>] debug_check_no_obj_freed+0x203/0x250
- [<ffffffff8113c4ac>] kmem_cache_free+0x20c/0x3a0
- [<ffffffff811f6709>] blk_alloc_queue_node+0x2a9/0x2c0
- [<ffffffff811f672e>] blk_alloc_queue+0xe/0x10
- [<ffffffffa04c0093>] dm_create+0x1a3/0x530 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6c07>] dev_create+0x57/0x2b0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6528>] ctl_ioctl+0x268/0x500 [dm_mod]
- [<ffffffff81097662>] ? get_lock_stats+0x22/0x70
- [<ffffffffa04c67ce>] dm_ctl_ioctl+0xe/0x20 [dm_mod]
- [<ffffffff81161aad>] do_vfs_ioctl+0x2ed/0x520
- [<ffffffff8116cfc7>] ? fget_light+0x377/0x4e0
- [<ffffffff81161d2b>] SyS_ioctl+0x4b/0x90
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
----[ end trace 4b5ff0d55673d986 ]---
-------------[ cut here ]------------
+sys_open:                     sys_close:
+ ...                           fput
+                                dput
+                                 dentry_kill
+                                  __d_drop <--- dentry unhashed here,
+                                           but sd->dentry still point
+                                           to this dentry.
 
-This fix should be backported to stable kernels starting with 2.6.37. Note
-that in the kernels prior to 3.5 the affected code is different, but the
-bug is still there - bdi_init is called and bdi_destroy isn't.
+ lookup_real
+  configfs_lookup
+   configfs_attach_attr---> update sd->s_dentry
+                            to new allocated dentry here.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+                                   d_kill
+                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
+                                                     triggered here.
+
+To fix it, change configfs_d_iput to not update sd->s_dentry if
+sd->s_count > 2, that means there are another dentry is using the sd
+beside the one that is going to be put.  Use configfs_dirent_lock in
+configfs_attach_attr to sync with configfs_d_iput.
+
+With the following steps, you can reproduce the bug.
+
+1. enable ocfs2, this will mount configfs at /sys/kernel/config and
+   fill configure in it.
+
+2. run the following script.
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- block/blk-core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/configfs/dir.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 6ec83eb..5176e78 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -654,10 +654,12 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	__set_bit(QUEUE_FLAG_BYPASS, &q->queue_flags);
+diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
+index 712b10f..76bb46a 100644
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentry * dentry,
+ 	struct configfs_dirent *sd = dentry->d_fsdata;
  
- 	if (blkcg_init_queue(q))
--		goto fail_id;
-+		goto fail_bdi;
+ 	if (sd) {
+-		BUG_ON(sd->s_dentry != dentry);
+ 		/* Coordinate with configfs_readdir */
+ 		spin_lock(&configfs_dirent_lock);
+-		sd->s_dentry = NULL;
++		/* Coordinate with configfs_attach_attr where will increase
++		 * sd->s_count and update sd->s_dentry to new allocated one.
++		 * Only set sd->dentry to null when this dentry is the only
++		 * sd owner.
++		 * If not do so, configfs_d_iput may run just after
++		 * configfs_attach_attr and set sd->s_dentry to null
++		 * even it's still in use.
++		 */
++		if (atomic_read(&sd->s_count) <= 2)
++			sd->s_dentry = NULL;
++
+ 		spin_unlock(&configfs_dirent_lock);
+ 		configfs_put(sd);
+ 	}
+@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct configfs_dirent * sd, struct dentry * den
+ 	struct configfs_attribute * attr = sd->s_element;
+ 	int error;
  
- 	return q;
- 
-+fail_bdi:
-+	bdi_destroy(&q->backing_dev_info);
- fail_id:
- 	ida_simple_remove(&blk_queue_ida, q->id);
- fail_q:
++	spin_lock(&configfs_dirent_lock);
+ 	dentry->d_fsdata = configfs_get(sd);
+ 	sd->s_dentry = dentry;
++	spin_unlock(&configfs_dirent_lock);
++
+ 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
+ 				configfs_init_file);
+ 	if (error) {
 -- 
 1.8.3.2
 
