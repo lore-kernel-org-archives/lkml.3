@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759657Ab3LFVyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:54:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32957 "EHLO
+	id S1759643Ab3LFVy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab3LFVyY (ORCPT
+	with ESMTP id S1759593Ab3LFVyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:24 -0500
+	Fri, 6 Dec 2013 16:54:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julian Stecklina <jsteckli@os.inf.tu-dresden.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 3.4 29/32] iommu/vt-d: Fixed interaction of VFIO_IOMMU_MAP_DMA with IOMMU address limits
-Date: Fri,  6 Dec 2013 13:52:39 -0800
-Message-Id: <20131206214959.495148182@linuxfoundation.org>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 23/32] ipv6: fix possible seqlock deadlock in ip6_finish_output2
+Date: Fri,  6 Dec 2013 13:52:33 -0800
+Message-Id: <20131206214958.951566945@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -28,45 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit f9423606ade08653dd8a43334f0a7fb45504c5cc upstream.
+[ Upstream commit 7f88c6b23afbd31545c676dea77ba9593a1a14bf ]
 
-The BUG_ON in drivers/iommu/intel-iommu.c:785 can be triggered from userspace via
-VFIO by calling the VFIO_IOMMU_MAP_DMA ioctl on a vfio device with any address
-beyond the addressing capabilities of the IOMMU. The problem is that the ioctl code
-calls iommu_iova_to_phys before it calls iommu_map. iommu_map handles the case that
-it gets addresses beyond the addressing capabilities of its IOMMU.
-intel_iommu_iova_to_phys does not.
+IPv6 stats are 64 bits and thus are protected with a seqlock. By not
+disabling bottom-half we could deadlock here if we don't disable bh and
+a softirq reentrantly updates the same mib.
 
-This patch fixes iommu_iova_to_phys to return NULL for addresses beyond what the
-IOMMU can handle. This in turn causes the ioctl call to fail in iommu_map and
-(correctly) return EFAULT to the user with a helpful warning message in the kernel
-log.
-
-Signed-off-by: Julian Stecklina <jsteckli@os.inf.tu-dresden.de>
-Acked-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/iommu/intel-iommu.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/ipv6/ip6_output.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -778,7 +778,11 @@ static struct dma_pte *pfn_to_dma_pte(st
- 	int offset;
- 
- 	BUG_ON(!domain->pgd);
--	BUG_ON(addr_width < BITS_PER_LONG && pfn >> addr_width);
-+
-+	if (addr_width < BITS_PER_LONG && pfn >> addr_width)
-+		/* Address beyond IOMMU's addressing capabilities. */
-+		return NULL;
-+
- 	parent = domain->pgd;
- 
- 	while (level > 0) {
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -144,8 +144,8 @@ static int ip6_finish_output2(struct sk_
+ 		return res;
+ 	}
+ 	rcu_read_unlock();
+-	IP6_INC_STATS_BH(dev_net(dst->dev),
+-			 ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
++	IP6_INC_STATS(dev_net(dst->dev),
++		      ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
+ 	kfree_skb(skb);
+ 	return -EINVAL;
+ }
 
 
