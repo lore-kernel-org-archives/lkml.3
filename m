@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422911Ab3LFXQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:16:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48652 "EHLO
+	id S1759281Ab3LFXRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:17:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48660 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422840Ab3LFXQx (ORCPT
+	with ESMTP id S1422840Ab3LFXQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:16:53 -0500
+	Fri, 6 Dec 2013 18:16:59 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Mathias Krause <minipli@googlemail.com>, Pax Team <pageexec@freemail.hu>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 078/152] block: fix a probe argument to blk_register_region
-Date: Fri,  6 Dec 2013 15:10:02 -0800
-Message-Id: <1386371476-2477-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 114/152] ipc, msg: fix message length check for negative values
+Date: Fri,  6 Dec 2013 15:10:38 -0800
+Message-Id: <1386371476-2477-115-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,105 +32,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit a207f5937630dd35bd2550620bef416937a1365e upstream.
+commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
 
-The probe function is supposed to return NULL on failure (as we can see in
-kobj_lookup: kobj = probe(dev, index, data); ... if (kobj) return kobj;
+On 64 bit systems the test for negative message sizes is bogus as the
+size, which may be positive when evaluated as a long, will get truncated
+to an int when passed to load_msg().  So a long might very well contain a
+positive value but when truncated to an int it would become negative.
 
-However, in loop and brd, it returns negative error from ERR_PTR.
+That in combination with a small negative value of msg_ctlmax (which will
+be promoted to an unsigned type for the comparison against msgsz, making
+it a big positive value and therefore make it pass the check) will lead to
+two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
+small buffer as the addition of alen is effectively a subtraction.  2/ The
+copy_from_user() call in load_msg() will first overflow the buffer with
+userland data and then, when the userland access generates an access
+violation, the fixup handler copy_user_handle_tail() will try to fill the
+remainder with zeros -- roughly 4GB.  That almost instantly results in a
+system crash or reset.
 
-This causes a crash if we simulate disk allocation failure and run
-less -f /dev/loop0 because the negative number is interpreted as a pointer:
+  ,-[ Reproducer (needs to be run as root) ]--
+  | #include <sys/stat.h>
+  | #include <sys/msg.h>
+  | #include <unistd.h>
+  | #include <fcntl.h>
+  |
+  | int main(void) {
+  |     long msg = 1;
+  |     int fd;
+  |
+  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
+  |     write(fd, "-1", 2);
+  |     close(fd);
+  |
+  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
+  |
+  |     return 0;
+  | }
+  '---
 
-BUG: unable to handle kernel NULL pointer dereference at 00000000000002b4
-IP: [<ffffffff8118b188>] __blkdev_get+0x28/0x450
-PGD 23c677067 PUD 23d6d1067 PMD 0
-Oops: 0000 [#1] PREEMPT SMP
-Modules linked in: loop hpfs nvidia(PO) ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_stats cpufreq_ondemand cpufreq_userspace cpufreq_powersave cpufreq_conservative hid_generic spadfs usbhid hid fuse raid0 snd_usb_audio snd_pcm_oss snd_mixer_oss md_mod snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib dmi_sysfs snd_rawmidi nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd soundcore lm85 hwmon_vid ohci_hcd ehci_pci ehci_hcd serverworks sata_svw libata acpi_cpufreq freq_table mperf ide_core usbcore kvm_amd kvm tg3 i2c_piix4 libphy microcode e100 usb_common ptp skge i2c_core pcspkr k10temp evdev floppy hwmon pps_core mii rtc_cmos button processor unix [last unloaded: nvidia]
-CPU: 1 PID: 6831 Comm: less Tainted: P        W  O 3.10.15-devel #18
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
-task: ffff880203cc6bc0 ti: ffff88023e47c000 task.ti: ffff88023e47c000
-RIP: 0010:[<ffffffff8118b188>]  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
-RSP: 0018:ffff88023e47dbd8  EFLAGS: 00010286
-RAX: ffffffffffffff74 RBX: ffffffffffffff74 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000001
-RBP: ffff88023e47dc18 R08: 0000000000000002 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff88023f519658
-R13: ffffffff8118c300 R14: 0000000000000000 R15: ffff88023f519640
-FS:  00007f2070bf7700(0000) GS:ffff880247400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000000000002b4 CR3: 000000023da1d000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Stack:
- 0000000000000002 0000001d00000000 000000003e47dc50 ffff88023f519640
- ffff88043d5bb668 ffffffff8118c300 ffff88023d683550 ffff88023e47de60
- ffff88023e47dc98 ffffffff8118c10d 0000001d81605698 0000000000000292
-Call Trace:
- [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
- [<ffffffff8118c10d>] blkdev_get+0x1dd/0x370
- [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
- [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
- [<ffffffff8118c300>] ? blkdev_get_by_dev+0x60/0x60
- [<ffffffff8118c365>] blkdev_open+0x65/0x80
- [<ffffffff8114d12e>] do_dentry_open.isra.18+0x23e/0x2f0
- [<ffffffff8114d214>] finish_open+0x34/0x50
- [<ffffffff8115e122>] do_last.isra.62+0x2d2/0xc50
- [<ffffffff8115eb58>] path_openat.isra.63+0xb8/0x4d0
- [<ffffffff81115a8e>] ? might_fault+0x4e/0xa0
- [<ffffffff8115f4f0>] do_filp_open+0x40/0x90
- [<ffffffff813cea6c>] ? _raw_spin_unlock+0x2c/0x50
- [<ffffffff8116db85>] ? __alloc_fd+0xa5/0x1f0
- [<ffffffff8114e45f>] do_sys_open+0xef/0x1d0
- [<ffffffff8114e559>] SyS_open+0x19/0x20
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
-Code: 44 00 00 55 48 89 e5 41 57 49 89 ff 41 56 41 89 d6 41 55 41 54 4c 8d 67 18 53 48 83 ec 18 89 75 cc e9 f2 00 00 00 0f 1f 44 00 00 <48> 8b 80 40 03 00 00 48 89 df 4c 8b 68 58 e8 d5
-a4 07 00 44 89
-RIP  [<ffffffff8118b188>] __blkdev_get+0x28/0x450
- RSP <ffff88023e47dbd8>
-CR2: 00000000000002b4
----[ end trace bb7f32dbf02398dc ]---
+Fix the issue by preventing msgsz from getting truncated by consistently
+using size_t for the message length.  This way the size checks in
+do_msgsnd() could still be passed with a negative value for msg_ctlmax but
+we would fail on the buffer allocation in that case and error out.
 
-The brd change should be backported to stable kernels starting with 2.6.25.
-The loop change should be backported to stable kernels starting with 2.6.22.
+Also change the type of m_ts from int to size_t to avoid similar nastiness
+in other code paths -- it is used in similar constructs, i.e.  signed vs.
+unsigned checks.  It should never become negative under normal
+circumstances, though.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Setting msg_ctlmax to a negative value is an odd configuration and should
+be prevented.  As that might break existing userland, it will be handled
+in a separate commit so it could easily be reverted and reworked without
+reintroducing the above described bug.
+
+Hardening mechanisms for user copy operations would have catched that bug
+early -- e.g.  checking slab object sizes on user copy operations as the
+usercopy feature of the PaX patch does.  Or, for that matter, detect the
+long vs.  int sign change due to truncation, as the size overflow plugin
+of the very same patch does.
+
+[akpm@linux-foundation.org: fix i386 min() warnings]
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Pax Team <pageexec@freemail.hu>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/brd.c  | 2 +-
- drivers/block/loop.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/msg.h |  6 +++---
+ ipc/msgutil.c       | 20 ++++++++++----------
+ ipc/util.h          |  4 ++--
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 4e8213a..a7d70e2 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -546,7 +546,7 @@ static struct kobject *brd_probe(dev_t dev, int *part, void *data)
+diff --git a/include/linux/msg.h b/include/linux/msg.h
+index 391af8d..e21f9d4 100644
+--- a/include/linux/msg.h
++++ b/include/linux/msg.h
+@@ -6,9 +6,9 @@
  
- 	mutex_lock(&brd_devices_mutex);
- 	brd = brd_init_one(MINOR(dev) >> part_shift);
--	kobj = brd ? get_disk(brd->brd_disk) : ERR_PTR(-ENOMEM);
-+	kobj = brd ? get_disk(brd->brd_disk) : NULL;
- 	mutex_unlock(&brd_devices_mutex);
+ /* one msg_msg structure for each message */
+ struct msg_msg {
+-	struct list_head m_list; 
+-	long  m_type;          
+-	int m_ts;           /* message text size */
++	struct list_head m_list;
++	long m_type;
++	size_t m_ts;		/* message text size */
+ 	struct msg_msgseg* next;
+ 	void *security;
+ 	/* the actual message follows immediately */
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index d33fbb2..3c75850 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -41,15 +41,15 @@ struct msg_msgseg {
+ 	/* the next part of the message follows immediately */
+ };
  
- 	*part = 0;
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index f18df48..735e77f 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1766,7 +1766,7 @@ static struct kobject *loop_probe(dev_t dev, int *part, void *data)
- 	if (err < 0)
- 		err = loop_add(&lo, MINOR(dev) >> part_shift);
- 	if (err < 0)
--		kobj = ERR_PTR(err);
-+		kobj = NULL;
- 	else
- 		kobj = get_disk(lo->lo_disk);
- 	mutex_unlock(&loop_index_mutex);
+-#define DATALEN_MSG	(int)(PAGE_SIZE-sizeof(struct msg_msg))
+-#define DATALEN_SEG	(int)(PAGE_SIZE-sizeof(struct msg_msgseg))
++#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
++#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
+ 
+ 
+-static struct msg_msg *alloc_msg(int len)
++static struct msg_msg *alloc_msg(size_t len)
+ {
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg **pseg;
+-	int alen;
++	size_t alen;
+ 
+ 	alen = min(len, DATALEN_MSG);
+ 	msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
+@@ -80,12 +80,12 @@ out_err:
+ 	return NULL;
+ }
+ 
+-struct msg_msg *load_msg(const void __user *src, int len)
++struct msg_msg *load_msg(const void __user *src, size_t len)
+ {
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg *seg;
+ 	int err = -EFAULT;
+-	int alen;
++	size_t alen;
+ 
+ 	msg = alloc_msg(len);
+ 	if (msg == NULL)
+@@ -117,8 +117,8 @@ out_err:
+ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+ {
+ 	struct msg_msgseg *dst_pseg, *src_pseg;
+-	int len = src->m_ts;
+-	int alen;
++	size_t len = src->m_ts;
++	size_t alen;
+ 
+ 	BUG_ON(dst == NULL);
+ 	if (src->m_ts > dst->m_ts)
+@@ -147,9 +147,9 @@ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+ 	return ERR_PTR(-ENOSYS);
+ }
+ #endif
+-int store_msg(void __user *dest, struct msg_msg *msg, int len)
++int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
+ {
+-	int alen;
++	size_t alen;
+ 	struct msg_msgseg *seg;
+ 
+ 	alen = min(len, DATALEN_MSG);
+diff --git a/ipc/util.h b/ipc/util.h
+index eeb79a1..099f28a 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -139,9 +139,9 @@ int ipc_parse_version (int *cmd);
+ #endif
+ 
+ extern void free_msg(struct msg_msg *msg);
+-extern struct msg_msg *load_msg(const void __user *src, int len);
++extern struct msg_msg *load_msg(const void __user *src, size_t len);
+ extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
+-extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
++extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
+ 
+ extern void recompute_msgmni(struct ipc_namespace *);
+ 
 -- 
 1.8.3.2
 
