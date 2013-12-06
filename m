@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226Ab3LFU2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:28:07 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:61372 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab3LFU2A (ORCPT
+	id S1758363Ab3LFU2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:28:20 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:48140 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3LFU2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:28:00 -0500
+	Fri, 6 Dec 2013 15:28:06 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, vdavydov@parallels.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/7] cgroup: reorder operations in cgroup_create()
-Date: Fri,  6 Dec 2013 15:27:48 -0500
-Message-Id: <1386361672-27791-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 6/7] cgroup: implement for_each_css()
+Date: Fri,  6 Dec 2013 15:27:51 -0500
+Message-Id: <1386361672-27791-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1386361672-27791-1-git-send-email-tj@kernel.org>
 References: <1386361672-27791-1-git-send-email-tj@kernel.org>
@@ -22,146 +22,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_create() currently does the followings.
+There are enough places where css's of a cgroup are iterated, which
+currently uses for_each_root_subsys() + explicit cgroup_css().  This
+patch implements for_each_css() and replaces the above combination
+with it.
 
-1. alloc cgroup
-2. alloc css's
-3. create the directory and commit to cgroup creation
-4. online css's
-5. create cgroup and css files
+This patch doesn't introduce any behavior changes.
 
-The sequence performs allocations before other operations but it
-doesn't buy anything because each of the above steps may fail and
-should be unrollable.  Reorganize the sequence such that cgroup
-operations are done before css operations.
-
-1. alloc cgroup
-2. create the directory and files and commit to cgroup creation
-3. alloc css's
-4. create files for and online css's
-
-This simplifies the code a bit and enables further simplification and
-separating out css creation from cgroup creation which is necessary
-for the planned unified hierarchy where css's will be created and
-destroyed dynamically across the lifetime of a cgroup.
+v2: Updated to apply cleanly on top of v2 of "cgroup: fix css leaks on
+    online_css() failure"
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/cgroup.c | 70 +++++++++++++++++++++++++++------------------------------
- 1 file changed, 33 insertions(+), 37 deletions(-)
+ kernel/cgroup.c | 57 +++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 31 insertions(+), 26 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4a7fb40..30a2670 100644
+index d12c29f..329fde8 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -4144,23 +4144,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	if (test_bit(CGRP_CPUSET_CLONE_CHILDREN, &parent->flags))
- 		set_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags);
+@@ -243,6 +243,21 @@ static int notify_on_release(const struct cgroup *cgrp)
+ }
  
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css;
--
--		css = ss->css_alloc(cgroup_css(parent, ss));
--		if (IS_ERR(css)) {
--			err = PTR_ERR(css);
--			goto err_free_all;
--		}
--		css_ar[ss->subsys_id] = css;
--
--		err = percpu_ref_init(&css->refcnt, css_release);
--		if (err)
--			goto err_free_all;
--
--		init_css(css, ss, cgrp);
--	}
--
+ /**
++ * for_each_css - iterate all css's of a cgroup
++ * @css: the iteration cursor
++ * @ssid: the index of the subsystem, CGROUP_SUBSYS_COUNT after reaching the end
++ * @cgrp: the target cgroup to iterate css's of
++ *
++ * Should be called under cgroup_mutex.
++ */
++#define for_each_css(css, ssid, cgrp)					\
++	for ((ssid) = 0; (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)	\
++		if (!((css) = rcu_dereference_check(			\
++				(cgrp)->subsys[(ssid)],			\
++				lockdep_is_held(&cgroup_mutex)))) { }	\
++		else
++
++/**
+  * for_each_subsys - iterate all loaded cgroup subsystems
+  * @ss: the iteration cursor
+  * @ssid: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
+@@ -1942,8 +1957,8 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
+ 			      bool threadgroup)
+ {
+ 	int retval, i, group_size;
+-	struct cgroup_subsys *ss, *failed_ss = NULL;
+ 	struct cgroupfs_root *root = cgrp->root;
++	struct cgroup_subsys_state *css, *failed_css = NULL;
+ 	/* threadgroup list cursor and array */
+ 	struct task_struct *leader = tsk;
+ 	struct task_and_cgroup *tc;
+@@ -2016,13 +2031,11 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
  	/*
- 	 * Create directory.  cgroup_create_file() returns with the new
- 	 * directory locked on success so that it can be populated without
-@@ -4168,7 +4151,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	 * step 1: check that we can legitimately attach to the cgroup.
  	 */
- 	err = cgroup_create_file(dentry, S_IFDIR | mode, sb);
- 	if (err < 0)
--		goto err_free_all;
-+		goto err_unlock;
- 	lockdep_assert_held(&dentry->d_inode->i_mutex);
+-	for_each_root_subsys(root, ss) {
+-		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
+-
+-		if (ss->can_attach) {
+-			retval = ss->can_attach(css, &tset);
++	for_each_css(css, i, cgrp) {
++		if (css->ss->can_attach) {
++			retval = css->ss->can_attach(css, &tset);
+ 			if (retval) {
+-				failed_ss = ss;
++				failed_css = css;
+ 				goto out_cancel_attach;
+ 			}
+ 		}
+@@ -2058,12 +2071,9 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
+ 	/*
+ 	 * step 4: do subsystem attach callbacks.
+ 	 */
+-	for_each_root_subsys(root, ss) {
+-		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
+-
+-		if (ss->attach)
+-			ss->attach(css, &tset);
+-	}
++	for_each_css(css, i, cgrp)
++		if (css->ss->attach)
++			css->ss->attach(css, &tset);
  
- 	cgrp->serial_nr = cgroup_serial_nr_next++;
-@@ -4180,10 +4163,41 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	/* hold a ref to the parent's dentry */
- 	dget(parent->dentry);
- 
-+	/*
-+	 * @cgrp is now fully operational.  If something fails after this
-+	 * point, it'll be released via the normal destruction path.
-+	 */
-+	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
-+
-+	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
-+	if (err)
-+		goto err_destroy;
-+
-+	for_each_root_subsys(root, ss) {
-+		struct cgroup_subsys_state *css;
-+
-+		css = ss->css_alloc(cgroup_css(parent, ss));
-+		if (IS_ERR(css)) {
-+			err = PTR_ERR(css);
-+			goto err_destroy;
-+		}
-+		css_ar[ss->subsys_id] = css;
-+
-+		err = percpu_ref_init(&css->refcnt, css_release);
-+		if (err)
-+			goto err_destroy;
-+
-+		init_css(css, ss, cgrp);
-+	}
-+
- 	/* creation succeeded, notify subsystems */
- 	for_each_root_subsys(root, ss) {
- 		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
- 
-+		err = cgroup_populate_dir(cgrp, 1 << ss->subsys_id);
-+		if (err)
-+			goto err_destroy;
-+
- 		err = online_css(css);
- 		if (err)
- 			goto err_destroy;
-@@ -4205,30 +4219,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	/*
+ 	 * step 5: success! and cleanup
+@@ -2080,13 +2090,11 @@ out_put_css_set_refs:
+ 	}
+ out_cancel_attach:
+ 	if (retval) {
+-		for_each_root_subsys(root, ss) {
+-			struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
+-
+-			if (ss == failed_ss)
++		for_each_css(css, i, cgrp) {
++			if (css == failed_css)
+ 				break;
+-			if (ss->cancel_attach)
+-				ss->cancel_attach(css, &tset);
++			if (css->ss->cancel_attach)
++				css->ss->cancel_attach(css, &tset);
  		}
  	}
+ out_free_group_list:
+@@ -4375,9 +4383,10 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	__releases(&cgroup_mutex) __acquires(&cgroup_mutex)
+ {
+ 	struct dentry *d = cgrp->dentry;
+-	struct cgroup_subsys *ss;
++	struct cgroup_subsys_state *css;
+ 	struct cgroup *child;
+ 	bool empty;
++	int ssid;
  
--	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
+ 	lockdep_assert_held(&d->d_inode->i_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+@@ -4413,12 +4422,8 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	 * will be invoked to perform the rest of destruction once the
+ 	 * percpu refs of all css's are confirmed to be killed.
+ 	 */
+-	for_each_root_subsys(cgrp->root, ss) {
+-		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss);
 -
--	err = cgroup_addrm_files(cgrp, cgroup_base_files, true);
--	if (err)
--		goto err_destroy;
--
--	err = cgroup_populate_dir(cgrp, root->subsys_mask);
--	if (err)
--		goto err_destroy;
--
- 	mutex_unlock(&cgroup_mutex);
- 	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
- 
- 	return 0;
- 
--err_free_all:
--	for_each_root_subsys(root, ss) {
--		struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
--
--		if (css) {
--			percpu_ref_cancel_init(&css->refcnt);
--			ss->css_free(css);
--		}
+-		if (css)
+-			kill_css(css);
 -	}
-+err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- 	/* Release the reference count that we took on the superblock */
- 	deactivate_super(sb);
++	for_each_css(css, ssid, cgrp)
++		kill_css(css);
+ 
+ 	/*
+ 	 * Mark @cgrp dead.  This prevents further task migration and child
 -- 
 1.8.4.2
 
