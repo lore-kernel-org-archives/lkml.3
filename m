@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759944Ab3LFV7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:59:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32897 "EHLO
+	id S1759952Ab3LFV7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:59:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32890 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759567Ab3LFVyN (ORCPT
+	with ESMTP id S1759562Ab3LFVyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:54:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Wong <normalperson@yhbt.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 14/32] net: clamp ->msg_namelen instead of returning an error
-Date: Fri,  6 Dec 2013 13:52:24 -0800
-Message-Id: <20131206214958.145673777@linuxfoundation.org>
+Subject: [PATCH 3.4 12/32] net: add BUG_ON if kernel advertises msg_namelen > sizeof(struct sockaddr_storage)
+Date: Fri,  6 Dec 2013 13:52:22 -0800
+Message-Id: <20131206214957.972280229@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -29,52 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 ]
+[ Upstream commit 68c6beb373955da0886d8f4f5995b3922ceda4be ]
 
-If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
-original code that would lead to memory corruption in the kernel if you
-had audit configured.  If you didn't have audit configured it was
-harmless.
+In that case it is probable that kernel code overwrote part of the
+stack. So we should bail out loudly here.
 
-There are some programs such as beta versions of Ruby which use too
-large of a buffer and returning an error code breaks them.  We should
-clamp the ->msg_namelen value instead.
+The BUG_ON may be removed in future if we are sure all protocols are
+conformant.
 
-Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
-Reported-by: Eric Wong <normalperson@yhbt.net>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Tested-by: Eric Wong <normalperson@yhbt.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/compat.c |    2 +-
- net/socket.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/socket.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kms
- 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
- 		return -EFAULT;
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
--		return -EINVAL;
-+		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	kmsg->msg_name = compat_ptr(tmp1);
- 	kmsg->msg_iov = compat_ptr(tmp2);
- 	kmsg->msg_control = compat_ptr(tmp3);
 --- a/net/socket.c
 +++ b/net/socket.c
-@@ -1908,7 +1908,7 @@ static int copy_msghdr_from_user(struct
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
--		return -EINVAL;
-+		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	return 0;
- }
+@@ -215,12 +215,13 @@ static int move_addr_to_user(struct sock
+ 	int err;
+ 	int len;
  
++	BUG_ON(klen > sizeof(struct sockaddr_storage));
+ 	err = get_user(len, ulen);
+ 	if (err)
+ 		return err;
+ 	if (len > klen)
+ 		len = klen;
+-	if (len < 0 || len > sizeof(struct sockaddr_storage))
++	if (len < 0)
+ 		return -EINVAL;
+ 	if (len) {
+ 		if (audit_sockaddr(klen, kaddr))
 
 
