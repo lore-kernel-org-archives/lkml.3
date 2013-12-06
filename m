@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab3LFOLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:11:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43772 "EHLO
+	id S1758635Ab3LFOLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:11:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43757 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161298Ab3LFNAm (ORCPT
+	with ESMTP id S1161282Ab3LFNAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:42 -0500
+	Fri, 6 Dec 2013 08:00:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>,
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 054/272] ARM: bcm2835: add missing #xxx-cells to I2C nodes
-Date: Fri,  6 Dec 2013 12:55:43 +0000
-Message-Id: <1386334761-25517-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 051/272] Staging: zram: Fix memory leak by refcount mismatch
+Date: Fri,  6 Dec 2013 12:55:40 +0000
+Message-Id: <1386334761-25517-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@wwwdotorg.org>
+From: Rashika Kheria <rashika.kheria@gmail.com>
 
-commit a31ab44ef5d07c6707df4a9ad2c8affd2d62ff4b upstream.
+commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
 
-The I2C controller node needs #address-cells and #size-cells properties,
-but these are currently missing. Add them. This allows child nodes to be
-parsed correctly.
+As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
+get the block device (bdget_disk()) but it does not put it (bdput()) when
+it's done using it. The usage count is therefore incremented but never
+decremented."
 
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+This patch also puts bdput() for all error cases.
+
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/bcm2835.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/zram/zram_drv.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
-index 1e12aef..aa537ed 100644
---- a/arch/arm/boot/dts/bcm2835.dtsi
-+++ b/arch/arm/boot/dts/bcm2835.dtsi
-@@ -85,6 +85,8 @@
- 			reg = <0x7e205000 0x1000>;
- 			interrupts = <2 21>;
- 			clocks = <&clk_i2c>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
- 			status = "disabled";
- 		};
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index ee6b435..dda8771 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -651,21 +651,30 @@ static ssize_t reset_store(struct device *dev,
+ 		return -ENOMEM;
  
-@@ -93,6 +95,8 @@
- 			reg = <0x7e804000 0x1000>;
- 			interrupts = <2 21>;
- 			clocks = <&clk_i2c>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
- 			status = "disabled";
- 		};
+ 	/* Do not reset an active device! */
+-	if (bdev->bd_holders)
+-		return -EBUSY;
++	if (bdev->bd_holders) {
++		ret = -EBUSY;
++		goto out;
++	}
  
+ 	ret = kstrtou16(buf, 10, &do_reset);
+ 	if (ret)
+-		return ret;
++		goto out;
+ 
+-	if (!do_reset)
+-		return -EINVAL;
++	if (!do_reset) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	/* Make sure all pending I/O is finished */
+ 	fsync_bdev(bdev);
++	bdput(bdev);
+ 
+ 	zram_reset_device(zram, true);
+ 	return len;
++
++out:
++	bdput(bdev);
++	return ret;
+ }
+ 
+ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
 -- 
 1.8.3.2
 
