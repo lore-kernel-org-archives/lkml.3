@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760029Ab3LFXYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:24:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49034 "EHLO
+	id S1760010Ab3LFXYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:24:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49036 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423031Ab3LFXUx (ORCPT
+	with ESMTP id S1423032Ab3LFXUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:20:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 063/152] ARM: entry: move disable_irq_notrace into svc_exit
-Date: Fri,  6 Dec 2013 15:09:47 -0800
-Message-Id: <1386371476-2477-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 023/152] [SCSI] sd: Reduce buffer size for vpd request
+Date: Fri,  6 Dec 2013 15:09:07 -0800
+Message-Id: <1386371476-2477-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,102 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit f8f02ec25ce3eafb049feeb3abf34fcd6e338241 upstream.
+commit af73623f5f10eb3832c87a169b28f7df040a875b upstream.
 
-All svc exit paths need IRQs off.  Rather than placing this before
-every user of svc_exit, combine it into this macro.
+Somehow older areca firmware versions have issues with
+scsi_get_vpd_page() and a large buffer, the firmware
+seems to crash and the scsi error-handler will start endless
+recovery retries.
+Limiting the buf-size to 64-bytes fixes this issue with older
+firmware versions (<1.49 for my controller).
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[ kamal: 3.8 stable prereq for
-  e16b31b ARM: 7876/1: clear Thumb-2 IT state on exception handling ]
+Fixes a regression with areca controllers and older firmware versions
+introduced by commit: 66c28f97120e8a621afd5aa7a31c4b85c547d33d
+
+Reported-by: Nix <nix@esperi.org.uk>
+Tested-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/entry-armv.S   | 18 ------------------
- arch/arm/kernel/entry-header.S |  6 ++++++
- 2 files changed, 6 insertions(+), 18 deletions(-)
+ drivers/scsi/sd.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index a716ea9..a7de792 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -192,11 +192,6 @@ __dabt_svc:
- 	svc_entry
- 	mov	r2, sp
- 	dabt_helper
--
--	@
--	@ IRQs off again before pulling preserved data off the stack
--	@
--	disable_irq_notrace
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__dabt_svc)
-@@ -283,15 +278,7 @@ __und_svc_fault:
- 	mov	r0, sp				@ struct pt_regs *regs
- 	bl	__und_fault
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index bc108d2..a4dc067 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2640,13 +2640,16 @@ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
+ 	struct scsi_device *sdev = sdkp->device;
  
--	@
--	@ IRQs off again before pulling preserved data off the stack
--	@
- __und_svc_finish:
--	disable_irq_notrace
--
--	@
--	@ restore SPSR and restart the instruction
--	@
- 	ldr	r5, [sp, #S_PSR]		@ Get SVC cpsr
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
-@@ -302,11 +289,6 @@ __pabt_svc:
- 	svc_entry
- 	mov	r2, sp				@ regs
- 	pabt_helper
--
--	@
--	@ IRQs off again before pulling preserved data off the stack
--	@
--	disable_irq_notrace
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__pabt_svc)
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 0bf15e5..57a1631 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -76,12 +76,15 @@
- #ifndef CONFIG_THUMB2_KERNEL
- 	.macro	svc_exit, rpsr, irq = 0
- 	.if	\irq != 0
-+	@ IRQs already off
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	@ The parent context IRQs must have been enabled to get here in
- 	@ the first place, so there's no point checking the PSR I bit.
- 	bl	trace_hardirqs_on
- #endif
- 	.else
-+	@ IRQs off again before pulling preserved data off the stack
-+	disable_irq_notrace
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	tst	\rpsr, #PSR_I_BIT
- 	bleq	trace_hardirqs_on
-@@ -136,12 +139,15 @@
- #else	/* CONFIG_THUMB2_KERNEL */
- 	.macro	svc_exit, rpsr, irq = 0
- 	.if	\irq != 0
-+	@ IRQs already off
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	@ The parent context IRQs must have been enabled to get here in
- 	@ the first place, so there's no point checking the PSR I bit.
- 	bl	trace_hardirqs_on
- #endif
- 	.else
-+	@ IRQs off again before pulling preserved data off the stack
-+	disable_irq_notrace
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	tst	\rpsr, #PSR_I_BIT
- 	bleq	trace_hardirqs_on
+ 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
++		/* too large values might cause issues with arcmsr */
++		int vpd_buf_len = 64;
++
+ 		sdev->no_report_opcodes = 1;
+ 
+ 		/* Disable WRITE SAME if REPORT SUPPORTED OPERATION
+ 		 * CODES is unsupported and the device has an ATA
+ 		 * Information VPD page (SAT).
+ 		 */
+-		if (!scsi_get_vpd_page(sdev, 0x89, buffer, SD_BUF_SIZE))
++		if (!scsi_get_vpd_page(sdev, 0x89, buffer, vpd_buf_len))
+ 			sdev->no_write_same = 1;
+ 	}
+ 
 -- 
 1.8.3.2
 
