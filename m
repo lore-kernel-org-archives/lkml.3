@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab3LFOWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:22:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43592 "EHLO
+	id S1758998Ab3LFOWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:22:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43585 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757976Ab3LFM7v (ORCPT
+	with ESMTP id S1757970Ab3LFM7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:51 -0500
+	Fri, 6 Dec 2013 07:59:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 017/272] drm/radeon: adjust TN dpm parameters for stability (v2)
-Date: Fri,  6 Dec 2013 12:55:06 +0000
-Message-Id: <1386334761-25517-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 015/272] radeon: workaround pinning failure on low ram gpu
+Date: Fri,  6 Dec 2013 12:55:04 +0000
+Message-Id: <1386334761-25517-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 958b84fb3bef193198538b5c5902fa687cc8363f upstream.
+commit 97b6ff6be9da7675aab339334fda996d6c5077d9 upstream.
 
-Adjust some of the TN dpm settings for stability.  Enabling
-these features causes hangs and other stability problems
-on certain boards.
+GPU with low amount of ram can fails at pinning new framebuffer before
+unpinning old one. On such failure, retry with unpinning old one before
+pinning new one allowing to work around the issue. This is somewhat
+ugly but only affect those old GPU we care about.
 
-v2: leave uvd dpm enabled
-
-Bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=63101
-
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/trinity_dpm.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_legacy_crtc.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/trinity_dpm.c b/drivers/gpu/drm/radeon/trinity_dpm.c
-index 28f4380..ec99d86 100644
---- a/drivers/gpu/drm/radeon/trinity_dpm.c
-+++ b/drivers/gpu/drm/radeon/trinity_dpm.c
-@@ -1857,9 +1857,9 @@ int trinity_dpm_init(struct radeon_device *rdev)
- 	pi->enable_sclk_ds = true;
- 	pi->enable_gfx_power_gating = true;
- 	pi->enable_gfx_clock_gating = true;
--	pi->enable_mg_clock_gating = true;
--	pi->enable_gfx_dynamic_mgpg = true; /* ??? */
--	pi->override_dynamic_mgpg = true;
-+	pi->enable_mg_clock_gating = false;
-+	pi->enable_gfx_dynamic_mgpg = false;
-+	pi->override_dynamic_mgpg = false;
- 	pi->enable_auto_thermal_throttling = true;
- 	pi->voltage_drop_in_dce = false; /* need to restructure dpm/modeset interaction */
- 	pi->uvd_dpm = true; /* ??? */
+diff --git a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
+index 7cb178a..bc73021 100644
+--- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
+@@ -422,6 +422,7 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
+ 	/* Pin framebuffer & get tilling informations */
+ 	obj = radeon_fb->obj;
+ 	rbo = gem_to_radeon_bo(obj);
++retry:
+ 	r = radeon_bo_reserve(rbo, false);
+ 	if (unlikely(r != 0))
+ 		return r;
+@@ -430,6 +431,33 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
+ 				     &base);
+ 	if (unlikely(r != 0)) {
+ 		radeon_bo_unreserve(rbo);
++
++		/* On old GPU like RN50 with little vram pining can fails because
++		 * current fb is taking all space needed. So instead of unpining
++		 * the old buffer after pining the new one, first unpin old one
++		 * and then retry pining new one.
++		 *
++		 * As only master can set mode only master can pin and it is
++		 * unlikely the master client will race with itself especialy
++		 * on those old gpu with single crtc.
++		 *
++		 * We don't shutdown the display controller because new buffer
++		 * will end up in same spot.
++		 */
++		if (!atomic && fb && fb != crtc->fb) {
++			struct radeon_bo *old_rbo;
++			unsigned long nsize, osize;
++
++			old_rbo = gem_to_radeon_bo(to_radeon_framebuffer(fb)->obj);
++			osize = radeon_bo_size(old_rbo);
++			nsize = radeon_bo_size(rbo);
++			if (nsize <= osize && !radeon_bo_reserve(old_rbo, false)) {
++				radeon_bo_unpin(old_rbo);
++				radeon_bo_unreserve(old_rbo);
++				fb = NULL;
++				goto retry;
++			}
++		}
+ 		return -EINVAL;
+ 	}
+ 	radeon_bo_get_tiling_flags(rbo, &tiling_flags, NULL);
 -- 
 1.8.3.2
 
