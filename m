@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759747Ab3LFVz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:55:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32951 "EHLO
+	id S1759775Ab3LFV4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:56:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759614Ab3LFVyX (ORCPT
+	with ESMTP id S1759603Ab3LFVyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:54:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.4 28/32] video: kyro: fix incorrect sizes when copying to userspace
-Date: Fri,  6 Dec 2013 13:52:38 -0800
-Message-Id: <20131206214959.404383115@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 27/32] nfsd: use "init_net" for portmapper
+Date: Fri,  6 Dec 2013 13:52:37 -0800
+Message-Id: <20131206214959.303285625@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -27,43 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 2ab68ec927310dc488f3403bb48f9e4ad00a9491 upstream.
+commit f7fb86c6e639360ad9c253cec534819ef928a674 upstream.
 
-kyro would copy u32s and specify sizeof(unsigned long) as the size to copy.
+There could be a situation, when NFSd was started in one network namespace, but
+stopped in another one.
+This will trigger kernel panic, because RPCBIND client is stored on per-net
+NFSd data, and will be NULL on NFSd shutdown.
 
-This would copy more data than intended and cause memory corruption and might
-leak kernel memory.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/kyro/fbdev.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nfsd/nfssvc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/video/kyro/fbdev.c
-+++ b/drivers/video/kyro/fbdev.c
-@@ -625,15 +625,15 @@ static int kyrofb_ioctl(struct fb_info *
- 		}
- 		break;
- 	case KYRO_IOCTL_UVSTRIDE:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(deviceInfo.ulOverlayUVStride)))
- 			return -EFAULT;
- 		break;
- 	case KYRO_IOCTL_STRIDE:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(deviceInfo.ulOverlayStride)))
- 			return -EFAULT;
- 		break;
- 	case KYRO_IOCTL_OVERLAY_OFFSET:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(deviceInfo.ulOverlayOffset)))
- 			return -EFAULT;
- 		break;
- 	}
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -11,7 +11,6 @@
+ #include <linux/module.h>
+ #include <linux/fs_struct.h>
+ #include <linux/swap.h>
+-#include <linux/nsproxy.h>
+ 
+ #include <linux/sunrpc/stats.h>
+ #include <linux/sunrpc/svcsock.h>
+@@ -330,7 +329,7 @@ static int nfsd_get_default_max_blksize(
+ int nfsd_create_serv(void)
+ {
+ 	int error;
+-	struct net *net = current->nsproxy->net_ns;
++	struct net *net = &init_net;
+ 
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
 
 
