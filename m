@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab3LFNEu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44664 "EHLO
+	id S1162043Ab3LFNFc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:05:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161855Ab3LFNEp (ORCPT
+	with ESMTP id S1162015Ab3LFNEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:45 -0500
+	Fri, 6 Dec 2013 08:04:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 232/272] nfsd: return better errors to exportfs
-Date: Fri,  6 Dec 2013 12:58:41 +0000
-Message-Id: <1386334761-25517-233-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 234/272] usb: wusbcore: set the RPIPE wMaxPacketSize value correctly
+Date: Fri,  6 Dec 2013 12:58:43 +0000
+Message-Id: <1386334761-25517-235-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-commit 427d6c6646d868fbd3094e7e2e1644d480cd9204 upstream.
+commit 7b6bc07ab554e929c85d51b3d5b26cf7f12c6a3b upstream.
 
-Someone noticed exportfs happily accepted exports that would later be
-rejected when mountd tried to give them to the kernel.  Fix this.
+For isochronous endpoints, set the RPIPE wMaxPacketSize value using
+wOverTheAirPacketSize from the endpoint companion descriptor instead of
+wMaxPacketSize from the normal endpoint descriptor.
 
-This is a regression from 4c1e1b34d5c800ad3ac9a7e2805b0bea70ad2278
-"nfsd: Store ex_anon_uid and ex_anon_gid as kuids and kgids".
-
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Reported-by: Yin.JianHong <jiyin@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/export.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/usb/wusbcore/wa-rpipe.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 5f38ea3..af51cf9 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -536,16 +536,12 @@ static int svc_export_parse(struct cache_detail *cd, char *mesg, int mlen)
- 		if (err)
- 			goto out3;
- 		exp.ex_anon_uid= make_kuid(&init_user_ns, an_int);
--		if (!uid_valid(exp.ex_anon_uid))
--			goto out3;
+diff --git a/drivers/usb/wusbcore/wa-rpipe.c b/drivers/usb/wusbcore/wa-rpipe.c
+index 9a595c1..fdf731b 100644
+--- a/drivers/usb/wusbcore/wa-rpipe.c
++++ b/drivers/usb/wusbcore/wa-rpipe.c
+@@ -333,7 +333,10 @@ static int rpipe_aim(struct wa_rpipe *rpipe, struct wahc *wa,
+ 	/* FIXME: compute so seg_size > ep->maxpktsize */
+ 	rpipe->descr.wBlocks = cpu_to_le16(16);		/* given */
+ 	/* ep0 maxpktsize is 0x200 (WUSB1.0[4.8.1]) */
+-	rpipe->descr.wMaxPacketSize = cpu_to_le16(ep->desc.wMaxPacketSize);
++	if (usb_endpoint_xfer_isoc(&ep->desc))
++		rpipe->descr.wMaxPacketSize = epcd->wOverTheAirPacketSize;
++	else
++		rpipe->descr.wMaxPacketSize = ep->desc.wMaxPacketSize;
  
- 		/* anon gid */
- 		err = get_int(&mesg, &an_int);
- 		if (err)
- 			goto out3;
- 		exp.ex_anon_gid= make_kgid(&init_user_ns, an_int);
--		if (!gid_valid(exp.ex_anon_gid))
--			goto out3;
- 
- 		/* fsid */
- 		err = get_int(&mesg, &an_int);
-@@ -583,6 +579,17 @@ static int svc_export_parse(struct cache_detail *cd, char *mesg, int mlen)
- 				   exp.ex_uuid);
- 		if (err)
- 			goto out4;
-+		/*
-+		 * For some reason exportfs has been passing down an
-+		 * invalid (-1) uid & gid on the "dummy" export which it
-+		 * uses to test export support.  To make sure exportfs
-+		 * sees errors from check_export we therefore need to
-+		 * delay these checks till after check_export:
-+		 */
-+		if (!uid_valid(exp.ex_anon_uid))
-+			goto out4;
-+		if (!gid_valid(exp.ex_anon_gid))
-+			goto out4;
- 	}
- 
- 	expp = svc_export_lookup(&exp);
+ 	rpipe->descr.hwa_bMaxBurst = max(min_t(unsigned int,
+ 				epcd->bMaxBurst, 16U), 1U);
 -- 
 1.8.3.2
 
