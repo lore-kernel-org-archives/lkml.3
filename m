@@ -1,215 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab3LFCUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 21:20:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:58387 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754758Ab3LFCT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 21:19:57 -0500
-Date: Thu, 5 Dec 2013 21:19:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] read_lock migrate_disable pushdown to rt_read_lock
-Message-ID: <20131205211951.5c2eaa0f@gandalf.local.home>
-In-Reply-To: <20131205234449.GF15603@opentech.at>
-References: <20131205234449.GF15603@opentech.at>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1753635Ab3LFCTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 21:19:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38574 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752855Ab3LFCTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 21:19:02 -0500
+From: Milo Kim <milo.kim@ti.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-pwm@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Milo Kim <milo.kim@ti.com>
+Subject: [PATCH RESEND v5 2/4] gpio: add LP3943 I2C GPIO expander driver
+Date: Fri, 6 Dec 2013 11:18:42 +0900
+Message-ID: <1386296324-23039-3-git-send-email-milo.kim@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386296324-23039-1-git-send-email-milo.kim@ti.com>
+References: <1386296324-23039-1-git-send-email-milo.kim@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Dec 2013 00:44:49 +0100
-Nicholas Mc Guire <der.herr@hofr.at> wrote:
+This is one of LP3943 MFD driver.
+LP3943 is configurable as a GPIO expander, up to 16 GPIOs.
 
-> 
-> 
->  pushdown of migrate_disable/enable from read_*lock* to the rt_read_*lock*
->  api level
-> 
-> general mapping to mutexes:
-> 
-> read_*lock* 
->   `-> rt_read_*lock* 
->           `-> __spin_lock (the sleeping spin locks)
->                  `-> rt_mutex 
-> 
-> The real read_lock* mapping:
-> 
->           read_lock_irqsave -.
-> read_lock_irq                `-> rt_read_lock_irqsave()  
->        `->read_lock ---------.       \
->           read_lock_bh ------+        \ 
->                              `--> rt_read_lock() 
->                                    if (rt_mutex_owner(lock) != current){
->                                            `-> __rt_spin_lock()
->                                                 rt_spin_lock_fastlock()
->                                                        `->rt_mutex_cmpxchg()
->                                     migrate_disable()
->                                    }
->                                    rwlock->read_depth++;
-> read_trylock mapping:
-> 
-> read_trylock 
->           `-> rt_read_trylock 
->                if (rt_mutex_owner(lock) != current){
->                                               `-> rt_mutex_trylock()
->                                                    rt_mutex_fasttrylock()
->                                                     rt_mutex_cmpxchg()
->                 migrate_disable()
->                }
->                rwlock->read_depth++;
-> 
-> read_unlock* mapping:
-> 
-> read_unlock_bh --------+
-> read_unlock_irq -------+
-> read_unlock_irqrestore +
-> read_unlock -----------+
->                        `-> rt_read_unlock() 
->                             if(--rwlock->read_depth==0){
->                                       `-> __rt_spin_unlock()
->                                            rt_spin_lock_fastunlock()
->                                                         `-> rt_mutex_cmpxchg()
->                              migrate_disable()
->                             }
-> 
->  So calls to migrate_disable/enable() are better placed at the rt_read_*
->  level of lock/trylock/unlock as all of the read_*lock* API has this as a
->  common path. In the rt_read* API of lock/trylock/unlock the nesting level
->  is already being recorded in rwlock->read_depth, so we can push down the
->  migrate disable/enable to that level and condition it on the read_depth 
->  going from 0 to 1 -> migrate_disable and 1 to 0 -> migrate_enable. This 
->  eliminates the recursive calls that were needed when migrate_disable/enable
->  was done at the read_*lock* level.
-> 
->  The approach to read_*_bh also eliminates the concerns raised with the 
->  regards to api inbalances (read_lock_bh -> read_unlock+local_bh_enable) 
-> 
->  this is on top of 3.12.1-rt4 with the first batch of migration_cleanup 
->  patches applied.
-> 
->  No change of functional behavior 
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> ---
->  include/linux/rwlock_rt.h |    6 ------
->  kernel/rt.c               |    9 +++++----
->  2 files changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/rwlock_rt.h b/include/linux/rwlock_rt.h
-> index 853ee36..6d86c33 100644
-> --- a/include/linux/rwlock_rt.h
-> +++ b/include/linux/rwlock_rt.h
-> @@ -33,7 +33,6 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
->  #define read_lock_irqsave(lock, flags)			\
->  	do {						\
->  		typecheck(unsigned long, flags);	\
-> -		migrate_disable();			\
->  		flags = rt_read_lock_irqsave(lock);	\
->  	} while (0)
->  
-> @@ -46,14 +45,12 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
->  
->  #define read_lock(lock)					\
->  	do {						\
-> -		migrate_disable();			\
->  		rt_read_lock(lock);			\
->  	} while (0)
->  
->  #define read_lock_bh(lock)				\
->  	do {						\
->  		local_bh_disable();			\
-> -		migrate_disable();			\
->  		rt_read_lock(lock);			\
->  	} while (0)
->  
-> @@ -77,13 +74,11 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
->  #define read_unlock(lock)				\
->  	do {						\
->  		rt_read_unlock(lock);			\
-> -		migrate_enable();			\
->  	} while (0)
->  
->  #define read_unlock_bh(lock)				\
->  	do {						\
->  		rt_read_unlock(lock);			\
-> -		migrate_enable();			\
->  		local_bh_enable();			\
->  	} while (0)
->  
-> @@ -109,7 +104,6 @@ extern void __rt_rwlock_init(rwlock_t *rwlock, char *name, struct lock_class_key
->  		typecheck(unsigned long, flags);	\
->  		(void) flags;				\
->  		rt_read_unlock(lock);			\
-> -		migrate_enable();			\
->  	} while (0)
->  
->  #define write_unlock_irqrestore(lock, flags) \
-> diff --git a/kernel/rt.c b/kernel/rt.c
-> index 29771e2..3403000 100644
-> --- a/kernel/rt.c
-> +++ b/kernel/rt.c
-> @@ -213,19 +213,18 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
->  	 * but not when read_depth == 0 which means that the lock is
->  	 * write locked.
->  	 */
-> -	migrate_disable();
->  	if (rt_mutex_owner(lock) != current) {
->  		ret = rt_mutex_trylock(lock);
-> -		if (ret)
-> +		if (ret) {
-> +			migrate_disable();
->  			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
-> +		}
+* Application note: how to configure LP3943 as a GPIO expander
+  http://www.ti.com/lit/an/snva287a/snva287a.pdf
 
-I like this patch in general, but I'm nervous about this part.
+* Supported GPIO controller operations
+  request, free, direction_input, direction_output, get and set
 
-What was the original reason to disable migration before checking the
-mutex owner? Seems like we should have only disabled it on success. I'm
-assuming there was some subtle reason not to.
+* GPIO direction register not supported
+  LP3943 doesn't have the GPIO direction register. It only provides input and
+  output status registers.
+  So, private data for the direction should be handled manually.
+  This variable is updated whenever the direction is changed and
+  used in 'get' operation.
 
-If there was some strange reason, I'm not convinced that your change
-makes that reason go away.
+* Pin assignment
+  A driver data, 'pin_used' is checked when a GPIO is requested.
+  If the GPIO is already assigned, then returns as failure.
+  If the GPIO is available, 'pin_used' is set.
+  When the GPIO is not used anymore, then it is cleared.
+  It is defined as unsigned long type for atomic bit operation APIs,
+  but only LSB 16bits are used because LP3943 has 16 outputs.
 
--- Steve
+Signed-off-by: Milo Kim <milo.kim@ti.com>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+---
+* Patch v5 and v4
+  No update, same as v3
 
+* Patch v3
+  Use inline function instead of macro(), to_lp3943_gpio().
+  Add 'lp3943_gpio_set_mode()' and use it in lp3943_gpio_direction_input() and
+  lp3943_gpio_set().
+  Few code cosmetic applied - indentations.
 
->  	} else if (!rwlock->read_depth) {
->  		ret = 0;
->  	}
->  
->  	if (ret)
->  		rwlock->read_depth++;
-> -	else
-> -		migrate_enable();
->  
->  	return ret;
->  }
-> @@ -248,6 +247,7 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
->  	if (rt_mutex_owner(lock) != current) {
->  		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
->  		__rt_spin_lock(lock);
-> +		migrate_disable();
->  	}
->  	rwlock->read_depth++;
->  }
-> @@ -268,6 +268,7 @@ void __lockfunc rt_read_unlock(rwlock_t *rwlock)
->  	if (--rwlock->read_depth == 0) {
->  		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
->  		__rt_spin_unlock(&rwlock->lock);
-> +		migrate_enable();
->  	}
->  }
->  EXPORT_SYMBOL(rt_read_unlock);
+* Patch v2
+  Use bitops macros for bit manipulations.
+  Support device tree structure for the GPIO controller.
+  Add request() and free() for the pin assignment.
+
+ drivers/gpio/Kconfig       |    8 ++
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-lp3943.c |  242 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 251 insertions(+)
+ create mode 100644 drivers/gpio/gpio-lp3943.c
+
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index b6ed304..e8ee076 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -368,6 +368,14 @@ config GPIO_ARIZONA
+ 	help
+ 	  Support for GPIOs on Wolfson Arizona class devices.
+ 
++config GPIO_LP3943
++	tristate "TI/National Semiconductor LP3943 GPIO expander"
++	depends on MFD_LP3943
++	help
++	  GPIO driver for LP3943 MFD.
++	  LP3943 can be used as a GPIO expander which provides up to 16 GPIOs.
++	  Open drain outputs are required for this usage.
++
+ config GPIO_MAX7300
+ 	tristate "Maxim MAX7300 GPIO expander"
+ 	depends on I2C
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 98e23eb..e246962 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+ obj-$(CONFIG_GPIO_KEMPLD)	+= gpio-kempld.o
+ obj-$(CONFIG_ARCH_KS8695)	+= gpio-ks8695.o
+ obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
++obj-$(CONFIG_GPIO_LP3943)	+= gpio-lp3943.o
+ obj-$(CONFIG_ARCH_LPC32XX)	+= gpio-lpc32xx.o
+ obj-$(CONFIG_GPIO_LYNXPOINT)	+= gpio-lynxpoint.o
+ obj-$(CONFIG_GPIO_MAX730X)	+= gpio-max730x.o
+diff --git a/drivers/gpio/gpio-lp3943.c b/drivers/gpio/gpio-lp3943.c
+new file mode 100644
+index 0000000..7b8db88
+--- /dev/null
++++ b/drivers/gpio/gpio-lp3943.c
+@@ -0,0 +1,242 @@
++/*
++ * TI/National Semiconductor LP3943 GPIO driver
++ *
++ * Copyright 2013 Texas Instruments
++ *
++ * Author: Milo Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2.
++ */
++
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++#include <linux/mfd/lp3943.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++enum lp3943_gpios {
++	LP3943_GPIO1,
++	LP3943_GPIO2,
++	LP3943_GPIO3,
++	LP3943_GPIO4,
++	LP3943_GPIO5,
++	LP3943_GPIO6,
++	LP3943_GPIO7,
++	LP3943_GPIO8,
++	LP3943_GPIO9,
++	LP3943_GPIO10,
++	LP3943_GPIO11,
++	LP3943_GPIO12,
++	LP3943_GPIO13,
++	LP3943_GPIO14,
++	LP3943_GPIO15,
++	LP3943_GPIO16,
++	LP3943_MAX_GPIO,
++};
++
++struct lp3943_gpio {
++	struct gpio_chip chip;
++	struct lp3943 *lp3943;
++	u16 input_mask;		/* 1 = GPIO is input direction, 0 = output */
++};
++
++static inline struct lp3943_gpio *to_lp3943_gpio(struct gpio_chip *_chip)
++{
++	return container_of(_chip, struct lp3943_gpio, chip);
++}
++
++static int lp3943_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++
++	/* Return an error if the pin is already assigned */
++	if (test_and_set_bit(offset, &lp3943->pin_used))
++		return -EBUSY;
++
++	return 0;
++}
++
++static void lp3943_gpio_free(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++
++	clear_bit(offset, &lp3943->pin_used);
++}
++
++static int lp3943_gpio_set_mode(struct lp3943_gpio *lp3943_gpio, u8 offset,
++				u8 val)
++{
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++	const struct lp3943_reg_cfg *mux = lp3943->mux_cfg;
++
++	return lp3943_update_bits(lp3943, mux[offset].reg, mux[offset].mask,
++				  val << mux[offset].shift);
++}
++
++static int lp3943_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++
++	lp3943_gpio->input_mask |= BIT(offset);
++
++	return lp3943_gpio_set_mode(lp3943_gpio, offset, LP3943_GPIO_IN);
++}
++
++static int lp3943_get_gpio_in_status(struct lp3943_gpio *lp3943_gpio,
++				     struct gpio_chip *chip, unsigned offset)
++{
++	u8 addr, read;
++	int err;
++
++	switch (offset) {
++	case LP3943_GPIO1 ... LP3943_GPIO8:
++		addr = LP3943_REG_GPIO_A;
++		break;
++	case LP3943_GPIO9 ... LP3943_GPIO16:
++		addr = LP3943_REG_GPIO_B;
++		offset = offset - 8;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	err = lp3943_read_byte(lp3943_gpio->lp3943, addr, &read);
++	if (err)
++		return err;
++
++	return !!(read & BIT(offset));
++}
++
++static int lp3943_get_gpio_out_status(struct lp3943_gpio *lp3943_gpio,
++				      struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943 *lp3943 = lp3943_gpio->lp3943;
++	const struct lp3943_reg_cfg *mux = lp3943->mux_cfg;
++	u8 read;
++	int err;
++
++	err = lp3943_read_byte(lp3943, mux[offset].reg, &read);
++	if (err)
++		return err;
++
++	read = (read & mux[offset].mask) >> mux[offset].shift;
++
++	if (read == LP3943_GPIO_OUT_HIGH)
++		return 1;
++	else if (read == LP3943_GPIO_OUT_LOW)
++		return 0;
++	else
++		return -EINVAL;
++}
++
++static int lp3943_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++
++	/*
++	 * Limitation:
++	 *   LP3943 doesn't have the GPIO direction register. It provides
++	 *   only input and output status registers.
++	 *   So, direction info is required to handle the 'get' operation.
++	 *   This variable is updated whenever the direction is changed and
++	 *   it is used here.
++	 */
++
++	if (lp3943_gpio->input_mask & BIT(offset))
++		return lp3943_get_gpio_in_status(lp3943_gpio, chip, offset);
++	else
++		return lp3943_get_gpio_out_status(lp3943_gpio, chip, offset);
++}
++
++static void lp3943_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++	u8 data;
++
++	if (value)
++		data = LP3943_GPIO_OUT_HIGH;
++	else
++		data = LP3943_GPIO_OUT_LOW;
++
++	lp3943_gpio_set_mode(lp3943_gpio, offset, data);
++}
++
++static int lp3943_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++					int value)
++{
++	struct lp3943_gpio *lp3943_gpio = to_lp3943_gpio(chip);
++
++	lp3943_gpio_set(chip, offset, value);
++	lp3943_gpio->input_mask &= ~BIT(offset);
++
++	return 0;
++}
++
++static const struct gpio_chip lp3943_gpio_chip = {
++	.label			= "lp3943",
++	.owner			= THIS_MODULE,
++	.request		= lp3943_gpio_request,
++	.free			= lp3943_gpio_free,
++	.direction_input	= lp3943_gpio_direction_input,
++	.get			= lp3943_gpio_get,
++	.direction_output	= lp3943_gpio_direction_output,
++	.set			= lp3943_gpio_set,
++	.base			= -1,
++	.ngpio			= LP3943_MAX_GPIO,
++	.can_sleep		= 1,
++};
++
++static int lp3943_gpio_probe(struct platform_device *pdev)
++{
++	struct lp3943 *lp3943 = dev_get_drvdata(pdev->dev.parent);
++	struct lp3943_gpio *lp3943_gpio;
++
++	lp3943_gpio = devm_kzalloc(&pdev->dev, sizeof(*lp3943_gpio),
++				GFP_KERNEL);
++	if (!lp3943_gpio)
++		return -ENOMEM;
++
++	lp3943_gpio->lp3943 = lp3943;
++	lp3943_gpio->chip = lp3943_gpio_chip;
++	lp3943_gpio->chip.dev = &pdev->dev;
++
++	platform_set_drvdata(pdev, lp3943_gpio);
++
++	return gpiochip_add(&lp3943_gpio->chip);
++}
++
++static int lp3943_gpio_remove(struct platform_device *pdev)
++{
++	struct lp3943_gpio *lp3943_gpio = platform_get_drvdata(pdev);
++
++	return gpiochip_remove(&lp3943_gpio->chip);
++}
++
++static const struct of_device_id lp3943_gpio_of_match[] = {
++	{ .compatible = "ti,lp3943-gpio", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, lp3943_gpio_of_match);
++
++static struct platform_driver lp3943_gpio_driver = {
++	.probe = lp3943_gpio_probe,
++	.remove = lp3943_gpio_remove,
++	.driver = {
++		.name = "lp3943-gpio",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(lp3943_gpio_of_match),
++	},
++};
++module_platform_driver(lp3943_gpio_driver);
++
++MODULE_DESCRIPTION("LP3943 GPIO driver");
++MODULE_ALIAS("platform:lp3943-gpio");
++MODULE_AUTHOR("Milo Kim");
++MODULE_LICENSE("GPL");
+-- 
+1.7.10.4
 
