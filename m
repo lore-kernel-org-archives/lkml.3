@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab3LFBUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 20:20:08 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6900 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab3LFBUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 20:20:03 -0500
-Message-ID: <52A1260B.2050007@huawei.com>
-Date: Fri, 6 Dec 2013 09:19:07 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1752115Ab3LFBUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 20:20:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:40894 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751910Ab3LFBUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 20:20:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,837,1378882800"; 
+   d="scan'208";a="447715108"
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
+	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	<20131206001454.GB21717@two.firstfloor.org>
+	<52A12421.2040208@zytor.com>
+Date: Thu, 05 Dec 2013 17:20:25 -0800
+In-Reply-To: <52A12421.2040208@zytor.com> (H. Peter Anvin's message of "Thu,
+	05 Dec 2013 17:10:57 -0800")
+Message-ID: <871u1qwzae.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, qiuxishi <qiuxishi@huawei.com>
-Subject: Re: [PATCH] mm: do_mincore() cleanup
-References: <52A03EE4.6030609@huawei.com> <1386254370-ui1ehq60-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1386254370-ui1ehq60-mutt-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/5 22:39, Naoya Horiguchi wrote:
+"H. Peter Anvin" <hpa@zytor.com> writes:
+>
+> Not to mention that in that case we might as well -- since we need a
+> compiler anyway -- generate the machine code in user space; the JIT
+> solution really only is useful if it can provide something that we can't
+> do otherwise, e.g. enable it in secure boot environments.
 
-> On Thu, Dec 05, 2013 at 04:52:52PM +0800, Jianguo Wu wrote:
->> Two cleanups:
->> 1. remove redundant codes for hugetlb pages.
->> 2. end = pmd_addr_end(addr, end) restricts [addr, end) within PMD_SIZE,
->>    this may increase do_mincore() calls, remove it.
->>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> 
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+I can see there may be some setups which don't have a compiler
+(e.g. I know some people don't use systemtap because of that)
+But this needs a custom gcc install too as far as I understand.
 
-Hi Naoya, thanks for your review!
+-Andi
 
-Jianguo Wu
-
-> 
-> Thanks!
-> 
-> Naoya
-> 
->> ---
->>  mm/mincore.c |    7 -------
->>  1 files changed, 0 insertions(+), 7 deletions(-)
->>
->> diff --git a/mm/mincore.c b/mm/mincore.c
->> index da2be56..1016233 100644
->> --- a/mm/mincore.c
->> +++ b/mm/mincore.c
->> @@ -225,13 +225,6 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
->>  
->>  	end = min(vma->vm_end, addr + (pages << PAGE_SHIFT));
->>  
->> -	if (is_vm_hugetlb_page(vma)) {
->> -		mincore_hugetlb_page_range(vma, addr, end, vec);
->> -		return (end - addr) >> PAGE_SHIFT;
->> -	}
->> -
->> -	end = pmd_addr_end(addr, end);
->> -
->>  	if (is_vm_hugetlb_page(vma))
->>  		mincore_hugetlb_page_range(vma, addr, end, vec);
->>  	else
->> -- 
->> 1.7.1
->>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
-> 
-> .
-> 
-
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
