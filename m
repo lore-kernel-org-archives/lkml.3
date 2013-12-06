@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759108Ab3LFWRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:17:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60865 "EHLO
+	id S1759453Ab3LFWRi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:17:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759309Ab3LFVxb (ORCPT
+	with ESMTP id S1759300Ab3LFVxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:31 -0500
+	Fri, 6 Dec 2013 16:53:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Dave Jones <davej@redhat.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Dave Jones <davej@fedoraproject.org>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/58] net-tcp: fix panic in tcp_fastopen_cache_set()
-Date: Fri,  6 Dec 2013 13:51:45 -0800
-Message-Id: <20131206214846.244555713@linuxfoundation.org>
+Subject: [PATCH 3.10 13/58] bonding: fix two race conditions in bond_store_updelay/downdelay
+Date: Fri,  6 Dec 2013 13:51:44 -0800
+Message-Id: <20131206214846.158265950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,43 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-[ Upstream commit dccf76ca6b626c0c4a4e09bb221adee3270ab0ef ]
+[ Upstream commit b869ccfab1e324507fa3596e3e1308444fb68227 ]
 
-We had some reports of crashes using TCP fastopen, and Dave Jones
-gave a nice stack trace pointing to the error.
+This patch fixes two race conditions between bond_store_updelay/downdelay
+and bond_store_miimon which could lead to division by zero as miimon can
+be set to 0 while either updelay/downdelay are being set and thus miss the
+zero check in the beginning, the zero div happens because updelay/downdelay
+are stored as new_value / bond->params.miimon. Use rtnl to synchronize with
+miimon setting.
 
-Issue is that tcp_get_metrics() should not be called with a NULL dst
-
-Fixes: 1fe4c481ba637 ("net-tcp: Fast Open client - cookie cache")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Acked-by: Yuchung Cheng <ycheng@google.com>
-Tested-by: Dave Jones <davej@fedoraproject.org>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_metrics.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_sysfs.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/ipv4/tcp_metrics.c
-+++ b/net/ipv4/tcp_metrics.c
-@@ -665,10 +665,13 @@ void tcp_fastopen_cache_get(struct sock
- void tcp_fastopen_cache_set(struct sock *sk, u16 mss,
- 			    struct tcp_fastopen_cookie *cookie, bool syn_lost)
- {
-+	struct dst_entry *dst = __sk_dst_get(sk);
- 	struct tcp_metrics_block *tm;
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -697,6 +697,8 @@ static ssize_t bonding_store_downdelay(s
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
  
-+	if (!dst)
-+		return;
- 	rcu_read_lock();
--	tm = tcp_get_metrics(sk, __sk_dst_get(sk), true);
-+	tm = tcp_get_metrics(sk, dst, true);
- 	if (tm) {
- 		struct tcp_fastopen_metrics *tfom = &tm->tcpm_fastopen;
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (!(bond->params.miimon)) {
+ 		pr_err("%s: Unable to set down delay as MII monitoring is disabled\n",
+ 		       bond->dev->name);
+@@ -730,6 +732,7 @@ static ssize_t bonding_store_downdelay(s
+ 	}
  
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(downdelay, S_IRUGO | S_IWUSR,
+@@ -752,6 +755,8 @@ static ssize_t bonding_store_updelay(str
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
+ 
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (!(bond->params.miimon)) {
+ 		pr_err("%s: Unable to set up delay as MII monitoring is disabled\n",
+ 		       bond->dev->name);
+@@ -785,6 +790,7 @@ static ssize_t bonding_store_updelay(str
+ 	}
+ 
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(updelay, S_IRUGO | S_IWUSR,
 
 
