@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161511Ab3LFWHx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:07:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32777 "EHLO
+	id S1759436Ab3LFVxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759446Ab3LFVxx (ORCPT
+	with ESMTP id S1759396Ab3LFVxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:53 -0500
+	Fri, 6 Dec 2013 16:53:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.10 56/58] ntp: Make periodic RTC update more reliable
-Date: Fri,  6 Dec 2013 13:52:27 -0800
-Message-Id: <20131206214850.071902802@linuxfoundation.org>
+        Mateusz Guzik <mguzik@redhat.com>, Eryu Guan <eguan@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.10 44/58] aio: restore locking of ioctx list on removal
+Date: Fri,  6 Dec 2013 13:52:15 -0800
+Message-Id: <20131206214848.976371883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -28,46 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miroslav Lichvar <mlichvar@redhat.com>
+From: Mateusz Guzik <mguzik@redhat.com>
 
-commit a97ad0c4b447a132a322cedc3a5f7fa4cab4b304 upstream.
+Commit 36f5588905c10a8c4568a210d601fe8c3c27e0f0
+"aio: refcounting cleanup" resulted in ioctx_lock not being held
+during ctx removal, leaving the list susceptible to corruptions.
 
-The current code requires that the scheduled update of the RTC happens
-in the closest tick to the half of the second. This seems to be
-difficult to achieve reliably. The scheduled work may be missing the
-target time by a tick or two and be constantly rescheduled every second.
+In mainline kernel the issue went away as a side effect of
+db446a08c23d5475e6b08c87acca79ebb20f283c "aio: convert the ioctx list to
+table lookup v3".
 
-Relax the limit to 10 ticks. As a typical RTC drifts in the 11-minute
-update interval by several milliseconds, this shouldn't affect the
-overall accuracy of the RTC much.
+Fix the problem by restoring appropriate locking.
 
-Signed-off-by: Miroslav Lichvar <mlichvar@redhat.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Reported-by: Eryu Guan <eguan@redhat.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Acked-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/ntp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/aio.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -475,6 +475,7 @@ static void sync_cmos_clock(struct work_
- 	 * called as close as possible to 500 ms before the new second starts.
- 	 * This code is run on a timer.  If the clock is set, that timer
- 	 * may not expire at the correct time.  Thus, we adjust...
-+	 * We want the clock to be within a couple of ticks from the target.
- 	 */
- 	if (!ntp_synced()) {
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -423,10 +423,12 @@ static void kill_ioctx_rcu(struct rcu_he
+  *	when the processes owning a context have all exited to encourage
+  *	the rapid destruction of the kioctx.
+  */
+-static void kill_ioctx(struct kioctx *ctx)
++static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
+ {
+ 	if (!atomic_xchg(&ctx->dead, 1)) {
++		spin_lock(&mm->ioctx_lock);
+ 		hlist_del_rcu(&ctx->list);
++		spin_unlock(&mm->ioctx_lock);
+ 
  		/*
-@@ -485,7 +486,7 @@ static void sync_cmos_clock(struct work_
+ 		 * It'd be more correct to do this in free_ioctx(), after all
+@@ -494,7 +496,7 @@ void exit_aio(struct mm_struct *mm)
+ 		 */
+ 		ctx->mmap_size = 0;
+ 
+-		kill_ioctx(ctx);
++		kill_ioctx(mm, ctx);
+ 	}
+ }
+ 
+@@ -852,7 +854,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_e
+ 	if (!IS_ERR(ioctx)) {
+ 		ret = put_user(ioctx->user_id, ctxp);
+ 		if (ret)
+-			kill_ioctx(ioctx);
++			kill_ioctx(current->mm, ioctx);
+ 		put_ioctx(ioctx);
  	}
  
- 	getnstimeofday(&now);
--	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec / 2) {
-+	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec * 5) {
- 		struct timespec adjust = now;
- 
- 		fail = -ENODEV;
+@@ -870,7 +872,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_
+ {
+ 	struct kioctx *ioctx = lookup_ioctx(ctx);
+ 	if (likely(NULL != ioctx)) {
+-		kill_ioctx(ioctx);
++		kill_ioctx(current->mm, ioctx);
+ 		put_ioctx(ioctx);
+ 		return 0;
+ 	}
 
 
