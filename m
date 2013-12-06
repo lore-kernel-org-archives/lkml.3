@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759854Ab3LFV5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:57:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32919 "EHLO
+	id S1759581Ab3LFVyR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32870 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759583Ab3LFVyS (ORCPT
+	with ESMTP id S1758541Ab3LFVyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:18 -0500
+	Fri, 6 Dec 2013 16:54:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.4 32/32] blk-core: Fix memory corruption if blkcg_init_queue fails
-Date: Fri,  6 Dec 2013 13:52:42 -0800
-Message-Id: <20131206214959.780839224@linuxfoundation.org>
+        Salam Noureddine <noureddine@aristanetworks.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Ben Greear <greearb@candelatech.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 19/32] packet: fix use after free race in send path when dev is released
+Date: Fri,  6 Dec 2013 13:52:29 -0800
+Message-Id: <20131206214958.593556171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -27,80 +30,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit fff4996b7db7955414ac74386efa5e07fd766b50 upstream.
+[ Upstream commit e40526cb20b5ee53419452e1f03d97092f144418 ]
 
-If blkcg_init_queue fails, blk_alloc_queue_node doesn't call bdi_destroy
-to clean up structures allocated by the backing dev.
+Salam reported a use after free bug in PF_PACKET that occurs when
+we're sending out frames on a socket bound device and suddenly the
+net device is being unregistered. It appears that commit 827d9780
+introduced a possible race condition between {t,}packet_snd() and
+packet_notifier(). In the case of a bound socket, packet_notifier()
+can drop the last reference to the net_device and {t,}packet_snd()
+might end up suddenly sending a packet over a freed net_device.
 
-------------[ cut here ]------------
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x85/0xa0()
-ODEBUG: free active (active state 0) object type: percpu_counter hint:           (null)
-Modules linked in: dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev ipt_MASQUERADE iptable_nat nf_nat_ipv4 msr nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack lm85 hwmon_vid snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq freq_table mperf sata_svw serverworks kvm_amd ide_core ehci_pci ohci_hcd libata ehci_hcd kvm usbcore tg3 usb_common libphy k10temp pcspkr ptp i2c_piix4 i2c_core evdev microcode hwmon rtc_cmos pps_core e100 skge floppy mii processor button unix
-CPU: 0 PID: 2739 Comm: lvchange Tainted: G        W
-3.10.15-devel #14
-Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
- 0000000000000009 ffff88023c3c1ae8 ffffffff813c8fd4 ffff88023c3c1b20
- ffffffff810399eb ffff88043d35cd58 ffffffff81651940 ffff88023c3c1bf8
- ffffffff82479d90 0000000000000005 ffff88023c3c1b80 ffffffff81039a67
-Call Trace:
- [<ffffffff813c8fd4>] dump_stack+0x19/0x1b
- [<ffffffff810399eb>] warn_slowpath_common+0x6b/0xa0
- [<ffffffff81039a67>] warn_slowpath_fmt+0x47/0x50
- [<ffffffff8122aaaf>] ? debug_check_no_obj_freed+0xcf/0x250
- [<ffffffff81229a15>] debug_print_object+0x85/0xa0
- [<ffffffff8122abe3>] debug_check_no_obj_freed+0x203/0x250
- [<ffffffff8113c4ac>] kmem_cache_free+0x20c/0x3a0
- [<ffffffff811f6709>] blk_alloc_queue_node+0x2a9/0x2c0
- [<ffffffff811f672e>] blk_alloc_queue+0xe/0x10
- [<ffffffffa04c0093>] dm_create+0x1a3/0x530 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6c07>] dev_create+0x57/0x2b0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6bb0>] ? list_version_get_info+0xe0/0xe0 [dm_mod]
- [<ffffffffa04c6528>] ctl_ioctl+0x268/0x500 [dm_mod]
- [<ffffffff81097662>] ? get_lock_stats+0x22/0x70
- [<ffffffffa04c67ce>] dm_ctl_ioctl+0xe/0x20 [dm_mod]
- [<ffffffff81161aad>] do_vfs_ioctl+0x2ed/0x520
- [<ffffffff8116cfc7>] ? fget_light+0x377/0x4e0
- [<ffffffff81161d2b>] SyS_ioctl+0x4b/0x90
- [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
----[ end trace 4b5ff0d55673d986 ]---
-------------[ cut here ]------------
+To avoid reverting 827d9780 and thus introducing a performance
+regression compared to the current state of things, we decided to
+hold a cached RCU protected pointer to the net device and maintain
+it on write side via bind spin_lock protected register_prot_hook()
+and __unregister_prot_hook() calls.
 
-This fix should be backported to stable kernels starting with 2.6.37. Note
-that in the kernels prior to 3.5 the affected code is different, but the
-bug is still there - bdi_init is called and bdi_destroy isn't.
+In {t,}packet_snd() path, we access this pointer under rcu_read_lock
+through packet_cached_dev_get() that holds reference to the device
+to prevent it from being freed through packet_notifier() while
+we're in send path. This is okay to do as dev_put()/dev_hold() are
+per-cpu counters, so this should not be a performance issue. Also,
+the code simplifies a bit as we don't need need_rls_dev anymore.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Fixes: 827d978037d7 ("af-packet: Use existing netdev reference for bound sockets.")
+Reported-by: Salam Noureddine <noureddine@aristanetworks.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
+Cc: Ben Greear <greearb@candelatech.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- block/blk-core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/packet/af_packet.c |   60 ++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -499,7 +499,7 @@ struct request_queue *blk_alloc_queue_no
- 		goto fail_id;
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -294,6 +294,7 @@ struct packet_sock {
+ 	unsigned int		tp_reserve;
+ 	unsigned int		tp_loss:1;
+ 	unsigned int		tp_tstamp;
++	struct net_device __rcu	*cached_dev;
+ 	struct packet_type	prot_hook ____cacheline_aligned_in_smp;
+ };
  
- 	if (blk_throtl_init(q))
--		goto fail_id;
-+		goto fail_bdi;
+@@ -349,11 +350,15 @@ static void __fanout_link(struct sock *s
+ static void register_prot_hook(struct sock *sk)
+ {
+ 	struct packet_sock *po = pkt_sk(sk);
++
+ 	if (!po->running) {
+-		if (po->fanout)
++		if (po->fanout) {
+ 			__fanout_link(sk, po);
+-		else
++		} else {
+ 			dev_add_pack(&po->prot_hook);
++			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
++		}
++
+ 		sock_hold(sk);
+ 		po->running = 1;
+ 	}
+@@ -371,10 +376,13 @@ static void __unregister_prot_hook(struc
+ 	struct packet_sock *po = pkt_sk(sk);
  
- 	setup_timer(&q->backing_dev_info.laptop_mode_wb_timer,
- 		    laptop_mode_timer_fn, (unsigned long) q);
-@@ -524,6 +524,8 @@ struct request_queue *blk_alloc_queue_no
+ 	po->running = 0;
+-	if (po->fanout)
++	if (po->fanout) {
+ 		__fanout_unlink(sk, po);
+-	else
++	} else {
+ 		__dev_remove_pack(&po->prot_hook);
++		RCU_INIT_POINTER(po->cached_dev, NULL);
++	}
++
+ 	__sock_put(sk);
  
- 	return q;
+ 	if (sync) {
+@@ -2044,12 +2052,24 @@ static int tpacket_fill_skb(struct packe
+ 	return tp_len;
+ }
  
-+fail_bdi:
-+	bdi_destroy(&q->backing_dev_info);
- fail_id:
- 	ida_simple_remove(&blk_queue_ida, q->id);
- fail_q:
++static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++{
++	struct net_device *dev;
++
++	rcu_read_lock();
++	dev = rcu_dereference(po->cached_dev);
++	if (dev)
++		dev_hold(dev);
++	rcu_read_unlock();
++
++	return dev;
++}
++
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+ 	struct sk_buff *skb;
+ 	struct net_device *dev;
+ 	__be16 proto;
+-	bool need_rls_dev = false;
+ 	int err, reserve = 0;
+ 	void *ph;
+ 	struct sockaddr_ll *saddr = (struct sockaddr_ll *)msg->msg_name;
+@@ -2063,7 +2083,7 @@ static int tpacket_snd(struct packet_soc
+ 
+ 	err = -EBUSY;
+ 	if (saddr == NULL) {
+-		dev = po->prot_hook.dev;
++		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+ 	} else {
+@@ -2077,19 +2097,17 @@ static int tpacket_snd(struct packet_soc
+ 		proto	= saddr->sll_protocol;
+ 		addr	= saddr->sll_addr;
+ 		dev = dev_get_by_index(sock_net(&po->sk), saddr->sll_ifindex);
+-		need_rls_dev = true;
+ 	}
+ 
+ 	err = -ENXIO;
+ 	if (unlikely(dev == NULL))
+ 		goto out;
+-
+-	reserve = dev->hard_header_len;
+-
+ 	err = -ENETDOWN;
+ 	if (unlikely(!(dev->flags & IFF_UP)))
+ 		goto out_put;
+ 
++	reserve = dev->hard_header_len;
++
+ 	size_max = po->tx_ring.frame_size
+ 		- (po->tp_hdrlen - sizeof(struct sockaddr_ll));
+ 
+@@ -2166,8 +2184,7 @@ out_status:
+ 	__packet_set_status(po, ph, status);
+ 	kfree_skb(skb);
+ out_put:
+-	if (need_rls_dev)
+-		dev_put(dev);
++	dev_put(dev);
+ out:
+ 	mutex_unlock(&po->pg_vec_lock);
+ 	return err;
+@@ -2205,7 +2222,6 @@ static int packet_snd(struct socket *soc
+ 	struct sk_buff *skb;
+ 	struct net_device *dev;
+ 	__be16 proto;
+-	bool need_rls_dev = false;
+ 	unsigned char *addr;
+ 	int err, reserve = 0;
+ 	struct virtio_net_hdr vnet_hdr = { 0 };
+@@ -2221,7 +2237,7 @@ static int packet_snd(struct socket *soc
+ 	 */
+ 
+ 	if (saddr == NULL) {
+-		dev = po->prot_hook.dev;
++		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+ 	} else {
+@@ -2233,19 +2249,17 @@ static int packet_snd(struct socket *soc
+ 		proto	= saddr->sll_protocol;
+ 		addr	= saddr->sll_addr;
+ 		dev = dev_get_by_index(sock_net(sk), saddr->sll_ifindex);
+-		need_rls_dev = true;
+ 	}
+ 
+ 	err = -ENXIO;
+-	if (dev == NULL)
++	if (unlikely(dev == NULL))
+ 		goto out_unlock;
+-	if (sock->type == SOCK_RAW)
+-		reserve = dev->hard_header_len;
+-
+ 	err = -ENETDOWN;
+-	if (!(dev->flags & IFF_UP))
++	if (unlikely(!(dev->flags & IFF_UP)))
+ 		goto out_unlock;
+ 
++	if (sock->type == SOCK_RAW)
++		reserve = dev->hard_header_len;
+ 	if (po->has_vnet_hdr) {
+ 		vnet_hdr_len = sizeof(vnet_hdr);
+ 
+@@ -2378,15 +2392,14 @@ static int packet_snd(struct socket *soc
+ 	if (err > 0 && (err = net_xmit_errno(err)) != 0)
+ 		goto out_unlock;
+ 
+-	if (need_rls_dev)
+-		dev_put(dev);
++	dev_put(dev);
+ 
+ 	return len;
+ 
+ out_free:
+ 	kfree_skb(skb);
+ out_unlock:
+-	if (dev && need_rls_dev)
++	if (dev)
+ 		dev_put(dev);
+ out:
+ 	return err;
+@@ -2603,6 +2616,7 @@ static int packet_create(struct net *net
+ 	po = pkt_sk(sk);
+ 	sk->sk_family = PF_PACKET;
+ 	po->num = proto;
++	RCU_INIT_POINTER(po->cached_dev, NULL);
+ 
+ 	sk->sk_destruct = packet_sock_destruct;
+ 	sk_refcnt_debug_inc(sk);
 
 
