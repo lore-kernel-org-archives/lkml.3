@@ -1,108 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab3LFJLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 04:11:37 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:42294 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757267Ab3LFJLO (ORCPT
+	id S1757311Ab3LFJMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:12:36 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42454 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891Ab3LFJMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 04:11:14 -0500
-X-AuditID: cbfee61a-b7f796d000004313-84-52a194b02dfd
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'???'" <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [f2fs-dev] [PATCH 3/3 V2] f2fs: introduce f2fs_cache_node_page() to
- add page into node_inode cache
-Date: Fri, 06 Dec 2013 17:10:00 +0800
-Message-id: <000501cef263$1c57e710$5507b530$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac7yYhkuSGXUx+39SR6MpXPzUAYfbA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd0NUxYGGexpNrW4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+PUrbPMBYf5Khbf
-	6WVvYHzE3cXIySEhYCLx9PBBJghbTOLCvfVsXYxcHEICixglnhzfwA6SEBL4wShxbEEJiM0m
-	oCKxvOM/WIOIgLLEqo52NhCbWSBTYs7ryawgtrBArsTkhy/AalgEVCUmTTkFNodXwFLiza31
-	bBC2oMSPyfdYIHrVJSbNW8QMYctLbF7zlhniIAWJHWdfM0Ls0pNYdewGVL24xMYjt1gmMArM
-	QjJqFpJRs5CMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4EB+JrWDcWWDxSFG
-	AQ5GJR5ejlULgoRYE8uKK3MPMUpwMCuJ8PaILwwS4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug
-	1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwGifk3D8bFRG+/H5HE/L41N9p2/Z5uo8z+dcwvy5uo+F
-	y3Ysl/bnX8KszTddI+vtOoFjTyQ3TG2+m3RjmTHfV/kbidd/Nvi/m5uj3hI4Z1f+bZUtR6d2
-	aczztl39VY717jvDkDKGBb//K/gJHciWv2H3Z1vtN8/en+tmSxWc8Wuten/EfiU7F6MSS3FG
-	oqEWc1FxIgCRWISQYAIAAA==
+	Fri, 6 Dec 2013 04:12:31 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 3/6] sched/numa: drop sysctl_numa_balancing_settle_count sysctl
+Date: Fri,  6 Dec 2013 17:12:13 +0800
+Message-Id: <1386321136-27538-3-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1386321136-27538-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386321136-27538-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120609-5490-0000-0000-0000049C009C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces f2fs_cache_node_page(), in this function, page which is
-readed ahead will be copy to node_inode's mapping cache.
-It will avoid rereading these node pages.
+commit 887c290e (sched/numa: Decide whether to favour task or group weights 
+based on swap candidate relationships) drop the check against 
+sysctl_numa_balancing_settle_count, this patch remove the sysctl.
 
-change log:
- o check validity of grabbed page suggested by Jaegeuk Kim.
-
-Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- fs/f2fs/node.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ include/linux/sched/sysctl.h |    1 -
+ kernel/sched/fair.c          |    9 ---------
+ kernel/sysctl.c              |    7 -------
+ 3 files changed, 0 insertions(+), 17 deletions(-)
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 099f06f..3ff98fa 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1600,6 +1600,39 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
- 	return 0;
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index 41467f8..31e0193 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -48,7 +48,6 @@ extern unsigned int sysctl_numa_balancing_scan_delay;
+ extern unsigned int sysctl_numa_balancing_scan_period_min;
+ extern unsigned int sysctl_numa_balancing_scan_period_max;
+ extern unsigned int sysctl_numa_balancing_scan_size;
+-extern unsigned int sysctl_numa_balancing_settle_count;
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+ extern unsigned int sysctl_sched_migration_cost;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ea3fd1e..56bcc0c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -886,15 +886,6 @@ static unsigned int task_scan_max(struct task_struct *p)
+ 	return max(smin, smax);
  }
  
-+/*
-+ * f2fs_cache_node_page() copy updated page data to node_inode cache page.
-+ */
-+void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
-+						nid_t nid)
-+{
-+	struct address_space *mapping = sbi->node_inode->i_mapping;
-+	struct page *npage;
-+
-+	npage = find_get_page(mapping, nid);
-+	if (unlikely(npage && PageUptodate(npage))) {
-+		f2fs_put_page(npage, 0);
-+		return;
-+	}
-+	f2fs_put_page(npage, 0);
-+
-+	npage = grab_cache_page(mapping, nid);
-+	if (unlikely(!npage))
-+		return;
-+
-+	if (unlikely(PageUptodate(npage))) {
-+		f2fs_put_page(npage, 1);
-+		return;
-+	}
-+
-+	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
-+
-+	SetPageUptodate(npage);
-+	f2fs_put_page(npage, 1);
-+
-+	return;
-+}
-+
- int restore_node_summary(struct f2fs_sb_info *sbi,
- 			unsigned int segno, struct f2fs_summary_block *sum)
+-/*
+- * Once a preferred node is selected the scheduler balancer will prefer moving
+- * a task to that node for sysctl_numa_balancing_settle_count number of PTE
+- * scans. This will give the process the chance to accumulate more faults on
+- * the preferred node but still allow the scheduler to move the task again if
+- * the nodes CPUs are overloaded.
+- */
+-unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
+-
+ static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
  {
-@@ -1633,6 +1666,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
- 				sum_entry->version = 0;
- 				sum_entry->ofs_in_node = 0;
- 				sum_entry++;
-+				f2fs_cache_node_page(sbi, page,
-+					le32_to_cpu(rn->footer.nid));
- 			} else {
- 				err = -EIO;
- 			}
+ 	rq->nr_numa_running += (p->numa_preferred_nid != -1);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 34a6047..c8da99f 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -385,13 +385,6 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+-		.procname       = "numa_balancing_settle_count",
+-		.data           = &sysctl_numa_balancing_settle_count,
+-		.maxlen         = sizeof(unsigned int),
+-		.mode           = 0644,
+-		.proc_handler   = proc_dointvec,
+-	},
+-	{
+ 		.procname       = "numa_balancing_migrate_deferred",
+ 		.data           = &sysctl_numa_balancing_migrate_deferred,
+ 		.maxlen         = sizeof(unsigned int),
 -- 
-1.7.9.5
+1.7.7.6
 
