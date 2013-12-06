@@ -1,30 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422853Ab3LFXQj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:16:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48622 "EHLO
+	id S1422878Ab3LFXQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:16:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48627 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161327Ab3LFXQe (ORCPT
+	with ESMTP id S1422840Ab3LFXQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:16:34 -0500
+	Fri, 6 Dec 2013 18:16:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Andi Kleen <ak@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 072/152] x86/ioapic/kcrash: Prevent crash_kexec() from deadlocking on ioapic_lock
-Date: Fri,  6 Dec 2013 15:09:56 -0800
-Message-Id: <1386371476-2477-73-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 077/152] loop: fix crash if blk_alloc_queue fails
+Date: Fri,  6 Dec 2013 15:10:01 -0800
+Message-Id: <1386371476-2477-78-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -37,112 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 17405453f4ad0220721a29978692081be6392b8f upstream.
+commit 3ec981e30fae1f3c8728a05c730acaa1f627bcfb upstream.
 
-Prevent crash_kexec() from deadlocking on ioapic_lock. When
-crash_kexec() is executed on a CPU, the CPU will take ioapic_lock
-in disable_IO_APIC(). So if the cpu gets an NMI while locking
-ioapic_lock, a deadlock will happen.
+loop: fix crash if blk_alloc_queue fails
 
-In this patch, ioapic_lock is zapped/initialized before disable_IO_APIC().
+If blk_alloc_queue fails, loop_add cleans up, but it doesn't clean up the
+identifier allocated with idr_alloc. That causes crash on module unload in
+idr_for_each(&loop_index_idr, &loop_exit_cb, NULL); where we attempt to
+remove non-existed device with that id.
 
-You can reproduce this deadlock the following way:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000380
+IP: [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+PGD 43d399067 PUD 43d0ad067 PMD 0
+Oops: 0000 [#1] PREEMPT SMP
+Modules linked in: loop(-) dm_snapshot dm_zero dm_mirror dm_region_hash dm_log dm_loop dm_mod ip6table_filter ip6_tables uvesafb cfbcopyarea cfbimgblt cfbfillrect fbcon font bitblit fbcon_rotate fbcon_cw fbcon_ud fbcon_ccw softcursor fb fbdev msr ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc tun ipv6 cpufreq_userspace cpufreq_stats cpufreq_ondemand cpufreq_conservative cpufreq_powersave spadfs fuse hid_generic usbhid hid raid0 md_mod dmi_sysfs nf_nat_ftp nf_nat nf_conntrack_ftp nf_conntrack snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd_page_alloc lm85 hwmon_vid snd_hwdep snd_usbmidi_lib snd_rawmidi snd soundcore acpi_cpufreq ohci_hcd freq_table tg3 ehci_pci mperf ehci_hcd kvm_amd kvm sata_svw serverworks libphy libata ide_core k10temp usbcore hwmon microcode ptp pcspkr pps_core e100 skge mii usb_common i2c_piix4 floppy evdev rtc_cmos i2c_core processor but!
+ ton unix
+CPU: 7 PID: 2735 Comm: rmmod Tainted: G        W    3.10.15-devel #15
+Hardware name: empty empty/S3992-E, BIOS 'V1.06   ' 06/09/2009
+task: ffff88043d38e780 ti: ffff88043d21e000 task.ti: ffff88043d21e000
+RIP: 0010:[<ffffffff812057c9>]  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+RSP: 0018:ffff88043d21fe10  EFLAGS: 00010282
+RAX: ffffffffa05102e0 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff88043ea82800 RDI: 0000000000000000
+RBP: ffff88043d21fe48 R08: 0000000000000000 R09: 0000000000000001
+R10: 0000000000000001 R11: 0000000000000000 R12: 00000000000000ff
+R13: 0000000000000080 R14: 0000000000000000 R15: ffff88043ea82800
+FS:  00007ff646534700(0000) GS:ffff880447000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000380 CR3: 000000043e9bf000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffffffff8100aba4 0000000000000092 ffff88043d21fe48 ffff88043ea82800
+ 00000000000000ff ffff88043d21fe98 0000000000000000 ffff88043d21fe60
+ ffffffffa05102b4 0000000000000000 ffff88043d21fe70 ffffffffa05102ec
+Call Trace:
+ [<ffffffff8100aba4>] ? native_sched_clock+0x24/0x80
+ [<ffffffffa05102b4>] loop_remove+0x14/0x40 [loop]
+ [<ffffffffa05102ec>] loop_exit_cb+0xc/0x10 [loop]
+ [<ffffffff81217b74>] idr_for_each+0x104/0x190
+ [<ffffffffa05102e0>] ? loop_remove+0x40/0x40 [loop]
+ [<ffffffff8109adc5>] ? trace_hardirqs_on_caller+0x105/0x1d0
+ [<ffffffffa05135dc>] loop_exit+0x34/0xa58 [loop]
+ [<ffffffff810a98ea>] SyS_delete_module+0x13a/0x260
+ [<ffffffff81221d5e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff813cff16>] system_call_fastpath+0x1a/0x1f
+Code: f0 4c 8b 6d f8 c9 c3 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 41 56 41 55 4c 8d af 80 00 00 00 41 54 53 48 89 fb 48 83 ec 18 <48> 83 bf 80 03 00
+00 00 74 4d e8 98 fe ff ff 31 f6 48 c7 c7 20
+RIP  [<ffffffff812057c9>] del_gendisk+0x19/0x2d0
+ RSP <ffff88043d21fe10>
+CR2: 0000000000000380
+---[ end trace 64ec069ec70f1309 ]---
 
-1. Add mdelay(1000) after raw_spin_lock_irqsave() in
-   native_ioapic_set_affinity()@arch/x86/kernel/apic/io_apic.c
-
-   Although the deadlock can occur without this modification, it will increase
-   the potential of the deadlock problem.
-
-2. Build and install the kernel
-
-3. Set up the OS which will run panic() and kexec when NMI is injected
-    # echo "kernel.unknown_nmi_panic=1" >> /etc/sysctl.conf
-    # vim /etc/default/grub
-      add "nmi_watchdog=0 crashkernel=256M" in GRUB_CMDLINE_LINUX line
-    # grub2-mkconfig
-
-4. Reboot the OS
-
-5. Run following command for each vcpu on the guest
-    # while true; do echo <CPU num> > /proc/irq/<IO-APIC-edge or IO-APIC-fasteoi>/smp_affinitity; done;
-   By running this command, cpus will get ioapic_lock for setting affinity.
-
-6. Inject NMI (push a dump button or execute 'virsh inject-nmi <domain>' if you
-   use VM). After injecting NMI, panic() is called in an nmi-handler context.
-   Then, kexec will normally run in panic(), but the operation will be stopped
-   by deadlock on ioapic_lock in crash_kexec()->machine_crash_shutdown()->
-   native_machine_crash_shutdown()->disable_IO_APIC()->clear_IO_APIC()->
-   clear_IO_APIC_pin()->ioapic_read_entry().
-
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: yrl.pp-manager.tt@hitachi.com
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Link: http://lkml.kernel.org/r/20130820070107.28245.83806.stgit@yunodevel
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[ kamal: 3.8 stable prereq for
-  522e664 x86/apic: Disable I/O APIC before shutdown of the local APIC ]
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/apic.h    | 2 ++
- arch/x86/kernel/apic/io_apic.c | 5 +++++
- arch/x86/kernel/crash.c        | 4 +++-
- 3 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/block/loop.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 3388034..cb8bc81 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -688,4 +688,6 @@ extern int default_check_phys_apicid_present(int phys_apicid);
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index f74f2c0..f18df48 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1656,7 +1656,7 @@ static int loop_add(struct loop_device **l, int i)
  
- #endif /* CONFIG_X86_LOCAL_APIC */
+ 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
+ 	if (!lo->lo_queue)
+-		goto out_free_dev;
++		goto out_free_idr;
  
-+extern void ioapic_zap_locks(void);
-+
- #endif /* _ASM_X86_APIC_H */
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index b739d39..c605173 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1513,6 +1513,11 @@ static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
- 	ioapic_write_entry(ioapic_idx, pin, entry);
- }
+ 	disk = lo->lo_disk = alloc_disk(1 << part_shift);
+ 	if (!disk)
+@@ -1701,6 +1701,8 @@ static int loop_add(struct loop_device **l, int i)
  
-+void ioapic_zap_locks(void)
-+{
-+	raw_spin_lock_init(&ioapic_lock);
-+}
-+
- __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
- {
- 	int i;
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 74467fe..e0e0841 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -128,7 +128,9 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 	cpu_emergency_svm_disable();
- 
- 	lapic_shutdown();
--#if defined(CONFIG_X86_IO_APIC)
-+#ifdef CONFIG_X86_IO_APIC
-+	/* Prevent crash_kexec() from deadlocking on ioapic_lock. */
-+	ioapic_zap_locks();
- 	disable_IO_APIC();
- #endif
- #ifdef CONFIG_HPET_TIMER
+ out_free_queue:
+ 	blk_cleanup_queue(lo->lo_queue);
++out_free_idr:
++	idr_remove(&loop_index_idr, i);
+ out_free_dev:
+ 	kfree(lo);
+ out:
 -- 
 1.8.3.2
 
