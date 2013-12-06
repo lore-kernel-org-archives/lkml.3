@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161833Ab3LFNDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44443 "EHLO
+	id S1161858Ab3LFNEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:04:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44494 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161753Ab3LFNDn (ORCPT
+	with ESMTP id S1758301Ab3LFND6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:43 -0500
+	Fri, 6 Dec 2013 08:03:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Nishanth Menon <nm@ti.com>, Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 188/272] drm/radeon: use hw generated CTS/N values for audio
-Date: Fri,  6 Dec 2013 12:57:57 +0000
-Message-Id: <1386334761-25517-189-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 198/272] regulator: ti-abb: Fix operator precedence typo
+Date: Fri,  6 Dec 2013 12:58:07 +0000
+Message-Id: <1386334761-25517-199-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit ee0fec312a1c4e26f255955da942562cd8908a4b upstream.
+commit 9a633a2bced158c57b73cf4d8e87be60473de1d2 upstream.
 
-Use the hw generated values rather than calculating
-them in the driver.  There may be some older r6xx
-asics where this doesn't work correctly.  This remains
-to be seen.
+commit 40b1936e (regulator: Introduce TI Adaptive Body Bias(ABB) on-chip
+LDO driver) missed a pair of brackets which cause the wrong vset data to be
+picked up from efuse, resulting in bad VBB voltage values.
 
-See bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=69675
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 3 +--
- drivers/gpu/drm/radeon/r600_hdmi.c      | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/regulator/ti-abb-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-index b0e2800..869b4d6 100644
---- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-+++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-@@ -241,8 +241,7 @@ void evergreen_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode
- 	/* fglrx clears sth in AFMT_AUDIO_PACKET_CONTROL2 here */
- 
- 	WREG32(HDMI_ACR_PACKET_CONTROL + offset,
--	       HDMI_ACR_AUTO_SEND | /* allow hw to sent ACR packets when required */
--	       HDMI_ACR_SOURCE); /* select SW CTS value */
-+	       HDMI_ACR_AUTO_SEND); /* allow hw to sent ACR packets when required */
- 
- 	evergreen_hdmi_update_ACR(encoder, mode->clock);
- 
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index 7fafcab..ffd02da 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -345,8 +345,7 @@ void r600_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode *mod
- 	}
- 
- 	WREG32(HDMI0_ACR_PACKET_CONTROL + offset,
--	       HDMI0_ACR_AUTO_SEND | /* allow hw to sent ACR packets when required */
--	       HDMI0_ACR_SOURCE); /* select SW CTS value */
-+	       HDMI0_ACR_AUTO_SEND); /* allow hw to sent ACR packets when required */
- 
- 	WREG32(HDMI0_VBI_PACKET_CONTROL + offset,
- 	       HDMI0_NULL_SEND | /* send null packets when required */
+diff --git a/drivers/regulator/ti-abb-regulator.c b/drivers/regulator/ti-abb-regulator.c
+index bec4ff9..c4a2ca4 100644
+--- a/drivers/regulator/ti-abb-regulator.c
++++ b/drivers/regulator/ti-abb-regulator.c
+@@ -615,7 +615,7 @@ static int ti_abb_init_table(struct device *dev, struct ti_abb *abb,
+ 					pname, *volt_table, vset_mask);
+ 			continue;
+ 		}
+-		info->vset = efuse_val & vset_mask >> __ffs(vset_mask);
++		info->vset = (efuse_val & vset_mask) >> __ffs(vset_mask);
+ 		dev_dbg(dev, "[%d]v=%d vset=%x\n", i, *volt_table, info->vset);
+ check_abb:
+ 		switch (info->opp_sel) {
 -- 
 1.8.3.2
 
