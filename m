@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3LFQYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 11:24:40 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:44491 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab3LFQYh (ORCPT
+	id S1758007Ab3LFQZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 11:25:10 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:52833 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab3LFQZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 11:24:37 -0500
-Date: Fri, 6 Dec 2013 16:24:32 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Milo Kim <milo.kim@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4 0/4] LP3943 MFD driver for a GPIO expander and a PWM
- generator
-Message-ID: <20131206162432.GA11060@lee--X1>
-References: <1380082975-6022-1-git-send-email-milo.kim@ti.com>
- <20131204103431.GC26589@ulmo.nvidia.com>
- <20131205214341.GC29268@sirena.org.uk>
- <20131206132405.GC30960@ulmo.nvidia.com>
+	Fri, 6 Dec 2013 11:25:07 -0500
+Date: Fri, 6 Dec 2013 11:25:03 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH cgroup/for-3.13-fixes] cgroup: fix oops in cgroup init
+ failure path
+Message-ID: <20131206162503.GD13373@htj.dyndns.org>
+References: <1386234006-1633-1-git-send-email-vdavydov@parallels.com>
+ <20131205211814.GA29598@mtj.dyndns.org>
+ <52A1766F.5090808@parallels.com>
+ <20131206161312.GC13373@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131206132405.GC30960@ulmo.nvidia.com>
+In-Reply-To: <20131206161312.GC13373@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Dec 2013, Thierry Reding wrote:
-
-> On Thu, Dec 05, 2013 at 09:43:41PM +0000, Mark Brown wrote:
-> > On Wed, Dec 04, 2013 at 11:34:32AM +0100, Thierry Reding wrote:
-> > > On Wed, Sep 25, 2013 at 01:22:55PM +0900, Milo Kim wrote:
-> > 
-> > > >   mfd: add LP3943 MFD driver
-> > > >   gpio: add LP3943 I2C GPIO expander driver
-> > > >   pwm: add LP3943 PWM driver
-> > > >   Documentation: add LP3943 DT bindings and document
-> > 
-> > > I suspect that given the build-time dependencies Lee may want to take
-> > > all four patches through the MFD tree, so I've acked the PWM parts.
-> > 
-> > FWIW this isn't an issue with new MFDs - since the function drivers will
-> > depend on the core driver it's not possible to enable them in Kconfig
-> > until the core driver is also merged and you don't get bisect issues.
+On Fri, Dec 06, 2013 at 11:13:12AM -0500, Tejun Heo wrote:
+> > Second, it's not clear to me why we need the CSS_ONLINE flag at all if
+> > we never assign css's that we fail to online to a cgroup. AFAIU we will
+> > never see such css's, because in all places we call offline_css(),
+> > namely cgroup_destroy_locked() (via kill_css()) and
+> > cgroup_unload_subsys(), we use cgroup_css() which will return NULL for them.
 > 
-> Right. I hadn't thought about that. Thanks for mentioning it.
+> The whole thing is in flux and will look very different in near
+> future.  I actually had patches queued which deal with the issue you
+> spotted but they are being blocked on other changes ATM.  So, yeah,
+> there are some spurious stuff now.
 
-I have applied them all with the relevant Acks in any case.
+LOL, I found the patch.  It was posted and acked I just forgot to
+apply the whole series.  I'm a moron.
+
+  http://permalink.gmane.org/gmane.linux.kernel.containers/26804
+
+This should do it, right?  I'll update the patch description and
+repost the series.
+
+Thanks!
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
