@@ -1,196 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161705Ab3LFOUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:20:05 -0500
-Received: from tundra.namei.org ([65.99.196.166]:49209 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161088Ab3LFOT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 09:19:59 -0500
-Date: Sat, 7 Dec 2013 01:34:05 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] IMA fixes
-Message-ID: <alpine.LRH.2.02.1312070133100.5584@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1161102Ab3LFM75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:59:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43598 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161082Ab3LFM7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 07:59:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Marc Zyngier <marc.zyngier@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 018/272] arm/arm64: KVM: Fix hyp mappings of vmalloc regions
+Date: Fri,  6 Dec 2013 12:55:07 +0000
+Message-Id: <1386334761-25517-19-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Here are two more fixes for IMA, for your current tree.  Please pull.
+------------------
 
-The following changes since commit 002acf1fc16cf60e60345bd68e03734628505b83:
+From: Christoffer Dall <christoffer.dall@linaro.org>
 
-  Merge tag 'pm-3.13-rc3' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm (2013-12-05 18:26:40 -0800)
+commit 40c2729bab48e2832b17c1fa8af9db60e776131b upstream.
 
-are available in the git repository at:
+Using virt_to_phys on percpu mappings is horribly wrong as it may be
+backed by vmalloc.  Introduce kvm_kaddr_to_phys which translates both
+types of valid kernel addresses to the corresponding physical address.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+At the same time resolves a typing issue where we were storing the
+physical address as a 32 bit unsigned long (on arm), truncating the
+physical address for addresses above the 4GB limit.  This caused
+breakage on Keystone.
 
-Christoph Paasch (1):
-      ima: Do not free 'entry' before it is initialized
-
-James Morris (1):
-      Merge branch 'free-memory' of git://git.kernel.org/.../zohar/linux-integrity into for-linus
-
-Roberto Sassu (1):
-      ima: properly free ima_template_entry structures
-
- security/integrity/ima/ima.h      |    1 +
- security/integrity/ima/ima_api.c  |   21 +++++++++++++++++----
- security/integrity/ima/ima_init.c |    3 +--
- 3 files changed, 19 insertions(+), 6 deletions(-)
-
-
+Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
+ arch/arm/kvm/mmu.c | 34 ++++++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 6 deletions(-)
 
-commit a7ed7c60e14df5b986f93549717235b882643e7e
-Author: Roberto Sassu <roberto.sassu@polito.it>
-Date:   Mon Dec 2 19:40:34 2013 +0100
-
-    ima: properly free ima_template_entry structures
-    
-    The new templates management mechanism records information associated
-    to an event into an array of 'ima_field_data' structures and makes it
-    available through the 'template_data' field of the 'ima_template_entry'
-    structure (the element of the measurements list created by IMA).
-    
-    Since 'ima_field_data' contains dynamically allocated data (which length
-    varies depending on the data associated to a selected template field),
-    it is not enough to just free the memory reserved for a
-    'ima_template_entry' structure if something goes wrong.
-    
-    This patch creates the new function ima_free_template_entry() which
-    walks the array of 'ima_field_data' structures, frees the memory
-    referenced by the 'data' pointer and finally the space reserved for
-    the 'ima_template_entry' structure. Further, it replaces existing kfree()
-    that have a pointer to an 'ima_template_entry' structure as argument
-    with calls to the new function.
-    
-    Fixes: a71dc65: ima: switch to new template management mechanism
-    Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-    Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 9636e17..0356e1d 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -148,6 +148,7 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 			    int xattr_len, struct ima_template_entry **entry);
- int ima_store_template(struct ima_template_entry *entry, int violation,
- 		       struct inode *inode, const unsigned char *filename);
-+void ima_free_template_entry(struct ima_template_entry *entry);
- const char *ima_d_path(struct path *path, char **pathbuf);
+diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
+index 0988d9e..b91a68b 100644
+--- a/arch/arm/kvm/mmu.c
++++ b/arch/arm/kvm/mmu.c
+@@ -307,6 +307,17 @@ out:
+ 	return err;
+ }
  
- /* rbtree tree calls to lookup, insert, delete
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 8037484..c38bbce 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -22,6 +22,19 @@
- #include "ima.h"
- 
- /*
-+ * ima_free_template_entry - free an existing template entry
-+ */
-+void ima_free_template_entry(struct ima_template_entry *entry)
++static phys_addr_t kvm_kaddr_to_phys(void *kaddr)
 +{
-+	int i;
-+
-+	for (i = 0; i < entry->template_desc->num_fields; i++)
-+		kfree(entry->template_data[i].data);
-+
-+	kfree(entry);
++	if (!is_vmalloc_addr(kaddr)) {
++		BUG_ON(!virt_addr_valid(kaddr));
++		return __pa(kaddr);
++	} else {
++		return page_to_phys(vmalloc_to_page(kaddr)) +
++		       offset_in_page(kaddr);
++	}
 +}
 +
-+/*
-  * ima_alloc_init_template - create and initialize a new template entry
+ /**
+  * create_hyp_mappings - duplicate a kernel virtual address range in Hyp mode
+  * @from:	The virtual kernel start address of the range
+@@ -318,16 +329,27 @@ out:
   */
- int ima_alloc_init_template(struct integrity_iint_cache *iint,
-@@ -37,6 +50,7 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 	if (!*entry)
- 		return -ENOMEM;
+ int create_hyp_mappings(void *from, void *to)
+ {
+-	unsigned long phys_addr = virt_to_phys(from);
++	phys_addr_t phys_addr;
++	unsigned long virt_addr;
+ 	unsigned long start = KERN_TO_HYP((unsigned long)from);
+ 	unsigned long end = KERN_TO_HYP((unsigned long)to);
  
-+	(*entry)->template_desc = template_desc;
- 	for (i = 0; i < template_desc->num_fields; i++) {
- 		struct ima_template_field *field = template_desc->fields[i];
- 		u32 len;
-@@ -51,10 +65,9 @@ int ima_alloc_init_template(struct integrity_iint_cache *iint,
- 		(*entry)->template_data_len += sizeof(len);
- 		(*entry)->template_data_len += len;
- 	}
--	(*entry)->template_desc = template_desc;
- 	return 0;
- out:
--	kfree(*entry);
-+	ima_free_template_entry(*entry);
- 	*entry = NULL;
- 	return result;
- }
-@@ -134,7 +147,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
- 	}
- 	result = ima_store_template(entry, violation, inode, filename);
- 	if (result < 0)
--		kfree(entry);
-+		ima_free_template_entry(entry);
- err_out:
- 	integrity_audit_msg(AUDIT_INTEGRITY_PCR, inode, filename,
- 			    op, cause, result, 0);
-@@ -269,7 +282,7 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
- 	if (!result || result == -EEXIST)
- 		iint->flags |= IMA_MEASURED;
- 	if (result < 0)
--		kfree(entry);
-+		ima_free_template_entry(entry);
+-	/* Check for a valid kernel memory mapping */
+-	if (!virt_addr_valid(from) || !virt_addr_valid(to - 1))
+-		return -EINVAL;
++	start = start & PAGE_MASK;
++	end = PAGE_ALIGN(end);
+ 
+-	return __create_hyp_mappings(hyp_pgd, start, end,
+-				     __phys_to_pfn(phys_addr), PAGE_HYP);
++	for (virt_addr = start; virt_addr < end; virt_addr += PAGE_SIZE) {
++		int err;
++
++		phys_addr = kvm_kaddr_to_phys(from + virt_addr - start);
++		err = __create_hyp_mappings(hyp_pgd, virt_addr,
++					    virt_addr + PAGE_SIZE,
++					    __phys_to_pfn(phys_addr),
++					    PAGE_HYP);
++		if (err)
++			return err;
++	}
++
++	return 0;
  }
  
- void ima_audit_measurement(struct integrity_iint_cache *iint,
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 76b8e2c..3712276 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -75,7 +75,7 @@ static void __init ima_add_boot_aggregate(void)
- 	result = ima_store_template(entry, violation, NULL,
- 				    boot_aggregate_name);
- 	if (result < 0)
--		kfree(entry);
-+		ima_free_template_entry(entry);
- 	return;
- err_out:
- 	integrity_audit_msg(AUDIT_INTEGRITY_PCR, NULL, boot_aggregate_name, op,
+ /**
+-- 
+1.8.3.2
 
-commit 09ae6345721afbb7cf3e0920209b140cbe7bff0d
-Author: Christoph Paasch <christoph.paasch@uclouvain.be>
-Date:   Mon Dec 2 00:05:20 2013 +0100
-
-    ima: Do not free 'entry' before it is initialized
-    
-    7bc5f447ce9d0 (ima: define new function ima_alloc_init_template() to
-    API) moved the initialization of 'entry' in ima_add_boot_aggregate() a
-    bit more below, after the if (ima_used_chip).
-    
-    So, 'entry' is not initialized while being inside this if-block. So, we
-    should not attempt to free it.
-    
-    Found by Coverity (CID: 1131971)
-    
-    Fixes: 7bc5f447ce9d0 (ima: define new function ima_alloc_init_template() to API)
-    Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-    Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index 15f34bd..76b8e2c 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -63,7 +63,6 @@ static void __init ima_add_boot_aggregate(void)
- 		result = ima_calc_boot_aggregate(&hash.hdr);
- 		if (result < 0) {
- 			audit_cause = "hashing_error";
--			kfree(entry);
- 			goto err_out;
- 		}
- 	}
