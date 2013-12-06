@@ -1,120 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3LFHMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:12:16 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:63972 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3LFHMF (ORCPT
+	id S1755830Ab3LFHM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:12:28 -0500
+Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:45334
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755516Ab3LFHMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:12:05 -0500
-X-AuditID: cbfee691-b7fd26d000003f7b-d6-52a178bfa330
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Robin Gong'" <b38343@freescale.com>,
-        "'Axel Lin'" <axel.lin@ingics.com>,
-        "'Tim Harvey'" <tharvey@gateworks.com>
-References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
-In-reply-to: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
-Subject: [PATCH 5/6] regulator: pfuze100: use devm_regulator_register()
-Date: Fri, 06 Dec 2013 16:11:58 +0900
-Message-id: <000e01cef252$7423b3e0$5c6b1ba0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9gAAId0A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zY939FQuDDL7c47M4Mucrs0Xn5mOs
-	FlMfPmGzuLzwEqvFtysdTBaXd81hs7h44hOzA7vHv8P9TB7neu6yeeycdZfdo+1nmcemVZ1s
-	Hn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJVx+uVGloK/vBWnP81ib2C8wt3FyMkhIWAi0d03
-	hRXCFpO4cG89WxcjF4eQwDJGibkTF7HBFC1oe8QEkVjEKLGtvZcdJCEk8ItR4tY3GxCbTUBN
-	4suXw0BxDg4RAVWJ/6/cQeqZBe4wSqz8/gIsLiRgK7HqfjVIOaeAncSfo2+YQWxhAXeJv7uP
-	gY1kAWp9P2cFE4jNC1T+cOFMNghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yg4yXEFCXePRX
-	FyQsImAkcX3PJahyEYl9L94xQrzyl11ic6cHxCoBiW+TD7FAtMpKbDrADFEiKXFwxQ2WCYwS
-	s5AsnoVk8Swki2ch2bCAkWUVo2hqQXJBcVJ6kalecWJucWleul5yfu4mRkgsT9zBeP+A9SHG
-	ZKD1E5mlRJPzgakgryTe0NjMyMLUxNTYyNzSjDRhJXHe9EdJQUIC6YklqdmpqQWpRfFFpTmp
-	xYcYmTg4pRoY41xcdp88qJGRd7NQI1XgU51JsOTvS3PcTnZsn/xk5tpHPZw3Ds2te3lAYXvu
-	74ZL1rsj3zL0WUwoZ26415Eu+PfbR45Ns7dLXOJuuTGdo23uzgaHFw5tj/28DpzK/R95+oVY
-	EnPfFie+v65r1n2U+/127sfPxyQ1NU4/ayiKYU5UCtSztwnaosRSnJFoqMVcVJwIADWaG4L7	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jAd39FQuDDF5c4rI4Mucrs0Xn5mOs
-	FlMfPmGzuLzwEqvFtysdTBaXd81hs7h44hOzA7vHv8P9TB7neu6yeeycdZfdo+1nmcemVZ1s
-	Hn1bVjF6fN4kF8Ae1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr
-	5OIToOuWmQN0kJJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/TLjSwF
-	f3krTn+axd7AeIW7i5GTQ0LARGJB2yMmCFtM4sK99WxdjFwcQgKLGCW2tfeygySEBH4xStz6
-	ZgNiswmoSXz5chgozsEhIqAq8f+VO0g9s8AdRomV31+AxYUEbCVW3a8GKecUsJP4c/QNM4gt
-	LOAu8Xf3MbCRLECt7+esANvLC1T+cOFMNghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yg4yX
-	EFCXePRXFyQsImAkcX3PJahyEYl9L94xTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnp
-	uUZ6xYm5xaV56XrJ+bmbGMGp4pn0DsZVDRaHGAU4GJV4eDlWLQgSYk0sK67MPcQowcGsJMLb
-	I74wSIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgWksryTe0NjEzMjSyMzCyMTcnDRhJXHe
-	g63WgUIC6YklqdmpqQWpRTBbmDg4pRoY04VunPy7KGfaPJ4Jk/73GdqLA80QdnYqc3nPM2PB
-	NJ6lAhr7X/hkac/teHhrt/Aey2/3mgJy+2ssbsjWV9rqvTopdWjGLsvtWvPTQtcWX/Fv+nH5
-	4GtTv7xHZX4mydc8eFtUBLw4ew5+nJPyr+TAiwxve1/LBxvvMQQ856jQjxCYGNjGz6PEUpyR
-	aKjFXFScCAD0h7inWQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 6 Dec 2013 02:12:21 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dI9371I103dK542I1432Id799hzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh109h2a8h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h21a6h2216h22d0h2336hbe9i1155h)
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lars@metafoo.de" <lars@metafoo.de>
+Subject: RE: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
+Thread-Topic: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
+Thread-Index: AQHOtFY1IowHKOMYeU+9K682+M69vpok5NUAgADznpCABV2tgIAN9YpwgAFsHQCADJYz4A==
+Date: Fri, 6 Dec 2013 07:12:08 +0000
+Message-ID: <B56CDBE15CE27145A4B77D2D24263E8524AC79@039-SN1MPN1-003.039d.mgd.msft.net>
+References: <1379498279-16096-1-git-send-email-b35083@freescale.com>
+ <20131114104620.GB16396@e106331-lin.cambridge.arm.com>
+ <B56CDBE15CE27145A4B77D2D24263E852409CE@039-SN1MPN1-003.039d.mgd.msft.net>
+ <20131118111451.GA30853@e106331-lin.cambridge.arm.com>
+ <B56CDBE15CE27145A4B77D2D24263E852497D5@039-SN1MPN1-003.039d.mgd.msft.net>
+ <20131128060816.GQ8834@intel.com>
+In-Reply-To: <20131128060816.GQ8834@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.98]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Use devm_regulator_register() to make cleanup paths simpler,
-and remove unnecessary remove().
-
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/regulator/pfuze100-regulator.c |   20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index 032df37..50c1bf8 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -408,31 +408,18 @@ static int pfuze100_regulator_probe(struct i2c_client *client,
- 		config.driver_data = pfuze_chip;
- 		config.of_node = match_of_node(i);
- 
--		pfuze_chip->regulators[i] = regulator_register(desc, &config);
-+		pfuze_chip->regulators[i] =
-+			devm_regulator_register(&client->dev, desc, &config);
- 		if (IS_ERR(pfuze_chip->regulators[i])) {
- 			dev_err(&client->dev, "register regulator%s failed\n",
- 				pfuze100_regulators[i].desc.name);
--			ret = PTR_ERR(pfuze_chip->regulators[i]);
--			while (--i >= 0)
--				regulator_unregister(pfuze_chip->regulators[i]);
--			return ret;
-+			return PTR_ERR(pfuze_chip->regulators[i]);
- 		}
- 	}
- 
- 	return 0;
- }
- 
--static int pfuze100_regulator_remove(struct i2c_client *client)
--{
--	int i;
--	struct pfuze_chip *pfuze_chip = i2c_get_clientdata(client);
--
--	for (i = 0; i < PFUZE100_MAX_REGULATOR; i++)
--		regulator_unregister(pfuze_chip->regulators[i]);
--
--	return 0;
--}
--
- static struct i2c_driver pfuze_driver = {
- 	.id_table = pfuze_device_id,
- 	.driver = {
-@@ -441,7 +428,6 @@ static struct i2c_driver pfuze_driver = {
- 		.of_match_table = pfuze_dt_ids,
- 	},
- 	.probe = pfuze100_regulator_probe,
--	.remove = pfuze100_regulator_remove,
- };
- module_i2c_driver(pfuze_driver);
- 
--- 
-1.7.10.4
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB67CXZA015442
 
 
+
+> -----Original Message-----
+> From: Vinod Koul [mailto:vinod.koul@intel.com]
+> Sent: Thursday, November 28, 2013 2:08 PM
+> To: Lu Jingchang-B35083
+> Cc: Mark Rutland; devicetree@vger.kernel.org; Wang Huan-B18965; linux-
+> kernel@vger.kernel.org; shawn.guo@linaro.org; linux-arm-
+> kernel@lists.infradead.org
+> Subject: Re: [PATCH v6 3/3] dma: Add Freescale eDMA engine driver support
+> 
+> On Wed, Nov 27, 2013 at 09:38:02AM +0000, Jingchang Lu wrote:
+> > > > > > +* DMAMUX
+> > > > > > +Required properties:
+> > > > >
+> > > > > No compatible?
+> > > > >
+> > > > > Where are DMAMUX nodes expected to live?
+> > > > >
+> > > > > How to they relate to the eDMA controller in HW? Are they a
+> > > > > subcomponent, or a logically separate unit that happens to be
+> > > connected?
+> > > > [Lu Jingchang-b35083]
+> > > > DMAMUX is a multiplexer between dma controller channels and
+> peripheral
+> > > deivces,
+> > > > each DMAMUX provides 16 independently selectable DMA channel
+> routers,
+> > > and each
+> > > > channel router can be assigned to one of the possible peripheral
+> DMA
+> > > slots.
+> > > > So it's not a standalone device, it's just required by the DMA
+> > > controller to
+> > > > connect the channels and slaves, So it's got by DMA controller's
+> > > "fsl,dma-mux" property.
+> > > > Thanks!
+> > >
+> > > Ok.
+> > >
+> > > I'm not so sure on the way this is described, from the point of view
+> of
+> > > the device, its DMA channel is wired to the MUX, not to the DMA
+> engine
+> > > directly:
+> > >
+> > >                        +-------+
+> > >              /---------|DEVICE0|
+> > >              |         +-------+
+> > > +-----+   +------+
+> > > | DMA |===|DMAMUX|
+> > > +-----+   +------+
+> > >              |         +-------+
+> > >              \---------|DEVICE1|
+> > >                        +-------+
+> > >
+> > > If that's the case, I'd expect the DMAMUX to have a #dma-cells and
+> > > describe each device as being wired to the mux, and then the mux as
+> > > being wired to the DMA. If the MUXes are sub-blocks of the DMA, then
+> I'm
+> > > not sure why they need to be described at all.
+> > >
+> > > Currently, the DMA code is handling information that's specific to
+> the
+> > > MUX (i.e. the channel ID that's specific to the MUX), and that feels
+> odd
+> > > unless the MUX is a component of the DMA (which if true I'd expect it
+> to
+> > > be described differently).
+> > >
+> > Yes, the connection is as your imagination, except for each DMA has two
+> MUX.
+> > The DMA helper looks the registered DMA engineer for DMA channel
+> binding,
+> > and the registered DMA engineer is the eDMA node, if binding to DMAMUX,
+> > the helper will not find out the dma engineer.
+> > The only DMAMUX configuration is programming the slave id into its
+> > corresponding register, so its code is handled by the eDMA driver,
+> > the DMAMUX is not optional.
+> This is fairly common representation of how DMA engines interact with
+> slave
+> clients via a programmable mux. Now the slave id value in this case
+> (which we
+> program to mux) needs to be for the client and _not_ for the dmanegine.
+> DMA
+> engine would have a register to configure the mux value required for the
+> transaction.
+> 
+> The dma engine API provides a way to program the slave id (ie mux value)
+> and IMO
+> this should be a property of slave device (perhaps part of its dma
+> resource) and
+> used while programming channel. Making it dma driver property makes no
+> sense
+> here
+Since the DMAMUX node in DTS is not a standalone device but tightly-coupled to the eDMA controller,
+Would it be better integrated the DMAMUX info into the eDMA node? Just like the GIC has an dist and
+an cpu interface.
+
+edma0: dma-controller@40018000 {
+	#dma-cells = <2>;
+	compatible = "fsl,vf610-edma";
+	reg = <0x40018000 0x2000>,
+		<0x40024000 0x1000>,
+		<0x40025000 0x1000>;
+	interrupts = <0 8 0x04>, <0 9 0x04>;
+	interrupt-names = "edma-txrx", "edma-err";
+	dma-channels = <32>; 
+	clocks = <&clks VF610_CLK_DMAMUX0>,
+		<&clks VF610_CLK_DMAMUX1>;
+};
+
+And Vinod, I notice that there has been some discussion on the slave_id handling for the SAI audio driver
+, which uses the eDMA doing data transfer. Since the driver core infrastructure would automatically call
+the DMA engine help function requesting the channel which be done by the driver itself, reducing the work
+of individual device driver. So for DMA controller like our eDMA which has slave_id parameter, how about
+doing the slave_id configuration during the help call, this can also frees the driver configuring it, and
+make the driver compatible with those who has no slave_id. 
+Thanks!
+
+
+
+Best Regards,
+Jingchang
+
+
+
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
