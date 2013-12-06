@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab3LFIY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:24:57 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58118 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3LFIYy (ORCPT
+	id S1755924Ab3LFI0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:26:47 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:49461 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab3LFI0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:24:54 -0500
-Message-ID: <52A189D2.3030500@free.fr>
-Date: Fri, 06 Dec 2013 09:24:50 +0100
-From: Duncan Sands <duncan.sands@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 6 Dec 2013 03:26:45 -0500
+Date: Fri, 6 Dec 2013 08:26:40 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Mark Brown'" <broonie@kernel.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>,
+        "'Axel Lin'" <axel.lin@ingics.com>
+Subject: Re: [PATCH 1/6] regulator: ab8500: use devm_regulator_register()
+Message-ID: <20131206082640.GA13093@lee--X1>
+References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
 MIME-Version: 1.0
-To: learc83 <learc83@gmail.com>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Usb: atm: usbatm: fixed a pointer variable format issue
-References: <1386302363-10975-1-git-send-email-learc83@gmail.com>
-In-Reply-To: <1386302363-10975-1-git-send-email-learc83@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/13 04:59, learc83 wrote:
-> Fixed a pointer variable format issue.
+On Fri, 06 Dec 2013, Jingoo Han wrote:
 
-This is obviously OK.
-
-Ciao, Duncan.
-
->
-> Signed-off-by: Seth Archer Brown <learc83@gmail.com>
+> Use devm_regulator_register() to make cleanup paths simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 > ---
->   drivers/usb/atm/usbatm.c |    8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/usb/atm/usbatm.c b/drivers/usb/atm/usbatm.c
-> index 25a7bfc..dada014 100644
-> --- a/drivers/usb/atm/usbatm.c
-> +++ b/drivers/usb/atm/usbatm.c
-> @@ -170,9 +170,9 @@ struct usbatm_control {
->   static void usbatm_atm_dev_close(struct atm_dev *atm_dev);
->   static int usbatm_atm_open(struct atm_vcc *vcc);
->   static void usbatm_atm_close(struct atm_vcc *vcc);
-> -static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd, void __user * arg);
-> +static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd, void __user *arg);
->   static int usbatm_atm_send(struct atm_vcc *vcc, struct sk_buff *skb);
-> -static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t * pos, char *page);
-> +static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t *pos, char *page);
->
->   static struct atmdev_ops usbatm_atm_devops = {
->   	.dev_close	= usbatm_atm_dev_close,
-> @@ -739,7 +739,7 @@ static void usbatm_atm_dev_close(struct atm_dev *atm_dev)
->   	usbatm_put_instance(instance);	/* taken in usbatm_atm_init */
->   }
->
-> -static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t * pos, char *page)
-> +static int usbatm_atm_proc_read(struct atm_dev *atm_dev, loff_t *pos, char *page)
->   {
->   	struct usbatm_data *instance = atm_dev->dev_data;
->   	int left = *pos;
-> @@ -895,7 +895,7 @@ static void usbatm_atm_close(struct atm_vcc *vcc)
->   }
->
->   static int usbatm_atm_ioctl(struct atm_dev *atm_dev, unsigned int cmd,
-> -			  void __user * arg)
-> +			  void __user *arg)
->   {
->   	struct usbatm_data *instance = atm_dev->dev_data;
->
->
+>  drivers/regulator/ab8500.c |   24 ++++--------------------
+>  1 file changed, 4 insertions(+), 20 deletions(-)
 
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
