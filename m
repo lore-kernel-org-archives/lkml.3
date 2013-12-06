@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162043Ab3LFNFc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:05:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44672 "EHLO
+	id S1162080Ab3LFNFk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:05:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44699 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162015Ab3LFNEr (ORCPT
+	with ESMTP id S1162015Ab3LFNFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:47 -0500
+	Fri, 6 Dec 2013 08:05:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Pugliese <thomas.pugliese@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 234/272] usb: wusbcore: set the RPIPE wMaxPacketSize value correctly
-Date: Fri,  6 Dec 2013 12:58:43 +0000
-Message-Id: <1386334761-25517-235-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 240/272] s390/vtime: correct idle time calculation
+Date: Fri,  6 Dec 2013 12:58:49 +0000
+Message-Id: <1386334761-25517-241-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 7b6bc07ab554e929c85d51b3d5b26cf7f12c6a3b upstream.
+commit 4560e7c3317c7a2b370e36dadd3a3bac2ed70818 upstream.
 
-For isochronous endpoints, set the RPIPE wMaxPacketSize value using
-wOverTheAirPacketSize from the endpoint companion descriptor instead of
-wMaxPacketSize from the normal endpoint descriptor.
+Use the ACCESS_ONCE macro for both accesses to idle->sequence in the
+loops to calculate the idle time. If only one access uses the macro,
+the compiler is free to cache the value for the second access which
+can cause endless loops.
 
-Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/wusbcore/wa-rpipe.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/s390/kernel/smp.c   | 4 ++--
+ arch/s390/kernel/vtime.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/wusbcore/wa-rpipe.c b/drivers/usb/wusbcore/wa-rpipe.c
-index 9a595c1..fdf731b 100644
---- a/drivers/usb/wusbcore/wa-rpipe.c
-+++ b/drivers/usb/wusbcore/wa-rpipe.c
-@@ -333,7 +333,10 @@ static int rpipe_aim(struct wa_rpipe *rpipe, struct wahc *wa,
- 	/* FIXME: compute so seg_size > ep->maxpktsize */
- 	rpipe->descr.wBlocks = cpu_to_le16(16);		/* given */
- 	/* ep0 maxpktsize is 0x200 (WUSB1.0[4.8.1]) */
--	rpipe->descr.wMaxPacketSize = cpu_to_le16(ep->desc.wMaxPacketSize);
-+	if (usb_endpoint_xfer_isoc(&ep->desc))
-+		rpipe->descr.wMaxPacketSize = epcd->wOverTheAirPacketSize;
-+	else
-+		rpipe->descr.wMaxPacketSize = ep->desc.wMaxPacketSize;
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index d386c4e..dcd2ac1 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -929,7 +929,7 @@ static ssize_t show_idle_count(struct device *dev,
+ 		idle_count = ACCESS_ONCE(idle->idle_count);
+ 		if (ACCESS_ONCE(idle->clock_idle_enter))
+ 			idle_count++;
+-	} while ((sequence & 1) || (idle->sequence != sequence));
++	} while ((sequence & 1) || (ACCESS_ONCE(idle->sequence) != sequence));
+ 	return sprintf(buf, "%llu\n", idle_count);
+ }
+ static DEVICE_ATTR(idle_count, 0444, show_idle_count, NULL);
+@@ -947,7 +947,7 @@ static ssize_t show_idle_time(struct device *dev,
+ 		idle_time = ACCESS_ONCE(idle->idle_time);
+ 		idle_enter = ACCESS_ONCE(idle->clock_idle_enter);
+ 		idle_exit = ACCESS_ONCE(idle->clock_idle_exit);
+-	} while ((sequence & 1) || (idle->sequence != sequence));
++	} while ((sequence & 1) || (ACCESS_ONCE(idle->sequence) != sequence));
+ 	idle_time += idle_enter ? ((idle_exit ? : now) - idle_enter) : 0;
+ 	return sprintf(buf, "%llu\n", idle_time >> 12);
+ }
+diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
+index 9b9c1b7..6d1f7bb 100644
+--- a/arch/s390/kernel/vtime.c
++++ b/arch/s390/kernel/vtime.c
+@@ -190,7 +190,7 @@ cputime64_t s390_get_idle_time(int cpu)
+ 		sequence = ACCESS_ONCE(idle->sequence);
+ 		idle_enter = ACCESS_ONCE(idle->clock_idle_enter);
+ 		idle_exit = ACCESS_ONCE(idle->clock_idle_exit);
+-	} while ((sequence & 1) || (idle->sequence != sequence));
++	} while ((sequence & 1) || (ACCESS_ONCE(idle->sequence) != sequence));
+ 	return idle_enter ? ((idle_exit ?: now) - idle_enter) : 0;
+ }
  
- 	rpipe->descr.hwa_bMaxBurst = max(min_t(unsigned int,
- 				epcd->bMaxBurst, 16U), 1U);
 -- 
 1.8.3.2
 
