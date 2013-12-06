@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758659Ab3LFOMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:12:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43747 "EHLO
+	id S1758667Ab3LFOMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:12:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43743 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161243Ab3LFNAf (ORCPT
+	with ESMTP id S1161264Ab3LFNAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:35 -0500
+	Fri, 6 Dec 2013 08:00:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 049/272] s390/uaccess: add missing page table walk range check
-Date: Fri,  6 Dec 2013 12:55:38 +0000
-Message-Id: <1386334761-25517-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 048/272] gpio: rcar: NULL dereference on error in probe()
+Date: Fri,  6 Dec 2013 12:55:37 +0000
+Message-Id: <1386334761-25517-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,45 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 71a86ef055f569b93bc6901f007bdf447dbf515f upstream.
+commit 0c8aab8e65e450f2bfea494c1b6a86ded653f88c upstream.
 
-When translating a user space address, the address must be checked against
-the ASCE limit of the process. If the address is larger than the maximum
-address that is reachable with the ASCE, an ASCE type exception must be
-generated.
+It's not obvious from the label name but "err1" tries to release
+"p->irq_domain" which leads to a NULL dereference.
 
-The current code simply ignored the higher order bits. This resulted in an
-address wrap around in user space instead of an exception in user space.
+Fixes: 119f5e448d32 ('gpio: Renesas R-Car GPIO driver V3')
 
-Reviewed-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/lib/uaccess_pt.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpio/gpio-rcar.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/s390/lib/uaccess_pt.c b/arch/s390/lib/uaccess_pt.c
-index 50ea137..1bf40ef 100644
---- a/arch/s390/lib/uaccess_pt.c
-+++ b/arch/s390/lib/uaccess_pt.c
-@@ -78,11 +78,14 @@ static size_t copy_in_kernel(size_t count, void __user *to,
-  * contains the (negative) exception code.
-  */
- #ifdef CONFIG_64BIT
-+
- static unsigned long follow_table(struct mm_struct *mm,
- 				  unsigned long address, int write)
- {
- 	unsigned long *table = (unsigned long *)__pa(mm->pgd);
+diff --git a/drivers/gpio/gpio-rcar.c b/drivers/gpio/gpio-rcar.c
+index e8198dd..e73f437 100644
+--- a/drivers/gpio/gpio-rcar.c
++++ b/drivers/gpio/gpio-rcar.c
+@@ -381,7 +381,7 @@ static int gpio_rcar_probe(struct platform_device *pdev)
+ 	if (!p->irq_domain) {
+ 		ret = -ENXIO;
+ 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
+-		goto err1;
++		goto err0;
+ 	}
  
-+	if (unlikely(address > mm->context.asce_limit - 1))
-+		return -0x38UL;
- 	switch (mm->context.asce_bits & _ASCE_TYPE_MASK) {
- 	case _ASCE_TYPE_REGION1:
- 		table = table + ((address >> 53) & 0x7ff);
+ 	if (devm_request_irq(&pdev->dev, irq->start,
 -- 
 1.8.3.2
 
