@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3LFGwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 01:52:38 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:44460 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab3LFGwg (ORCPT
+	id S1753761Ab3LFGyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 01:54:32 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59103 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab3LFGyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 01:52:36 -0500
+	Fri, 6 Dec 2013 01:54:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <33026900.FbCAopDPFz@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-	<3611889.9a0SszCTpv@vostro.rjw.lan>
-	<5750980.G76cQES87j@vostro.rjw.lan>
-	<33026900.FbCAopDPFz@vostro.rjw.lan>
-Date: Thu, 5 Dec 2013 22:52:36 -0800
-X-Google-Sender-Auth: VRK9MuaPA1KYkuds07z0qluJBMM
-Message-ID: <CAE9FiQV1KvpzfTmzbERS8heAE1z5zf=CjXnnjS9ZMBqmhY7rkw@mail.gmail.com>
-Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Myron Stowe <myron.stowe@gmail.com>
+In-Reply-To: <52A16D49.9050105@hitachi.com>
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal>
+	<20131204084551.GA31772@gmail.com>
+	<529FBA71.6070107@hitachi.com>
+	<CA+b37P1ejFn4YJekJFOCe701mLTprqQi4KSyGV4S7QiVaC1=qA@mail.gmail.com>
+	<52A16D49.9050105@hitachi.com>
+Date: Fri, 6 Dec 2013 12:24:29 +0530
+Message-ID: <CA+b37P3BywWsuNgjVfvxxK2acAbV7qd6R5UJd1UEYdHHuQ56ag@mail.gmail.com>
+Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
+ fixes crash bugs
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 2, 2013 at 6:49 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> I am not sure if this question is related, uprobes or ftrace code does
+>> not  define __kprobes, so is it safe to place kprobe on uprobes or
+>> ftrace code?
 >
-> Scenario 5: pci_stop_and_remove_bus_device() is run concurrently
->   for a device and its parent bridge via remove_callback().
+> Yes, it is "safe" in qualitative meaning. But for ftrace code, it could
+> give a performance impact by miss-hitting. Since uprobe is independent
+> from kprobe, it should work.
 >
->   In that case both code paths attempt to acquire
->   pci_remove_rescan_mutex.  If the child device removal acquires
->   it first, there will be no problems.  However, if the parent
->   bridge removal acquires it first, it will eventually execute
->   pci_destroy_dev() for the child device, but that device will
->   not be freed yet due to the reference held by the concurrent
->   child removal.  Consequently, both pci_stop_bus_device() and
->   pci_remove_bus_device() will be executed for that device
->   unnecessarily and pci_destroy_dev() will see a corrupted list
->   head in that object.  Moreover, an excess put_device() will
->   be executed for that device in that case which may lead to a
->   use-after-free in the final kobject_put() done by
->   sysfs_schedule_callback_work().
+>> Is it expected from arch code to support such cases?
 >
-> Index: linux-pm/include/linux/pci.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/pci.h
-> +++ linux-pm/include/linux/pci.h
-> @@ -321,6 +321,7 @@ struct pci_dev {
->         unsigned int    multifunction:1;/* Part of multi-function device */
->         /* keep track of device state */
->         unsigned int    is_added:1;
-> +       unsigned int    is_gone:1;
->         unsigned int    is_busmaster:1; /* device is busmaster */
->         unsigned int    no_msi:1;       /* device may not use msi */
->         unsigned int    block_cfg_access:1;     /* config space access is blocked */
-> Index: linux-pm/drivers/pci/remove.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/remove.c
-> +++ linux-pm/drivers/pci/remove.c
-> @@ -34,6 +34,7 @@ static void pci_stop_dev(struct pci_dev
->
->  static void pci_destroy_dev(struct pci_dev *dev)
->  {
-> +       dev->is_gone = 1;
->         device_del(&dev->dev);
->
->         down_write(&pci_bus_sem);
-> @@ -109,8 +110,10 @@ static void pci_remove_bus_device(struct
->   */
->  void pci_stop_and_remove_bus_device(struct pci_dev *dev)
->  {
-> -       pci_stop_bus_device(dev);
-> -       pci_remove_bus_device(dev);
-> +       if (!dev->is_gone) {
-> +               pci_stop_bus_device(dev);
-> +               pci_remove_bus_device(dev);
-> +       }
->  }
->  EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
->
+> Yes, the arch dependent implementation is the key. If it shares some
+> code which can be called from miss-hit path, it should be blacklisted.
+well, isn't the blacklist only for those routines that can not be
+handled or may crash kernel, like the code sections called from
+exception kprobes exception handlers etc?
+suppose if the probe on routine can miss-hit (probes re-cursing) but
+can be handled, it's only a quantitative issue (i.e. performance
+impact) so it should be *user's* problem right? I mean, as you said
+earlier about having white-list or a performance gatekeeper
+(systemtap), one can avoid such cases by white list or removing
+miss-hit probes dynamically.  But a blacklisting a symbol means
+placing a probe on that *can not be handled* and can crash the system,
+is it correct?
 
-Yes, above change should address sys double remove problem.
+Thanks,
+Sandeepa
 
-Thanks
-
-Yinghai
+>
+> Thank you,
+>
+> --
+> Masami HIRAMATSU
+> IT Management Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
+>
+>
