@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161620Ab3LFWJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:09:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60987 "EHLO
+	id S1161702Ab3LFWKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:10:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60971 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759418Ab3LFVxs (ORCPT
+	with ESMTP id S1759407Ab3LFVxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:48 -0500
+	Fri, 6 Dec 2013 16:53:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tom Herbert <therbert@google.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 39/58] ipv6: fix possible seqlock deadlock in ip6_finish_output2
-Date: Fri,  6 Dec 2013 13:52:10 -0800
-Message-Id: <20131206214848.523771497@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Shawn Landden <shawn@churchofgit.com>
+Subject: [PATCH 3.10 36/58] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Fri,  6 Dec 2013 13:52:07 -0800
+Message-Id: <20131206214848.247208267@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,35 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Shawn Landden <shawn@churchofgit.com>
 
-[ Upstream commit 7f88c6b23afbd31545c676dea77ba9593a1a14bf ]
+[ Upstream commit d3f7d56a7a4671d395e8af87071068a195257bf6 ]
 
-IPv6 stats are 64 bits and thus are protected with a seqlock. By not
-disabling bottom-half we could deadlock here if we don't disable bh and
-a softirq reentrantly updates the same mib.
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
 
+algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
+
+This fixes sendfile() on AF_ALG.
+
+v3: also fix udp
+
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Cc: Tom Herbert <therbert@google.com>
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Cc: David S. Miller <davem@davemloft.net>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ crypto/algif_hash.c     |    3 +++
+ crypto/algif_skcipher.c |    3 +++
+ net/ipv4/udp.c          |    3 +++
+ 3 files changed, 9 insertions(+)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -141,8 +141,8 @@ static int ip6_finish_output2(struct sk_
- 	}
- 	rcu_read_unlock_bh();
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct sock
+ 	struct hash_ctx *ctx = ask->private;
+ 	int err;
  
--	IP6_INC_STATS_BH(dev_net(dst->dev),
--			 ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
-+	IP6_INC_STATS(dev_net(dst->dev),
-+		      ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
- 	kfree_skb(skb);
- 	return -EINVAL;
- }
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct
+ 	struct skcipher_sg_list *sgl;
+ 	int err = -EINVAL;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1070,6 +1070,9 @@ int udp_sendpage(struct sock *sk, struct
+ 	struct udp_sock *up = udp_sk(sk);
+ 	int ret;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
+ 
 
 
