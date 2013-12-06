@@ -1,92 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161251Ab3LFWCd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:02:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32850 "EHLO
+	id S1759513Ab3LFVyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32801 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440Ab3LFVyF (ORCPT
+	with ESMTP id S1759440Ab3LFVx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:05 -0500
+	Fri, 6 Dec 2013 16:53:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 05/32] 6lowpan: Uncompression of traffic class field was incorrect
-Date: Fri,  6 Dec 2013 13:52:15 -0800
-Message-Id: <20131206214957.344479698@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 49/58] mm: numa: return the number of base pages altered by protection changes
+Date: Fri,  6 Dec 2013 13:52:20 -0800
+Message-Id: <20131206214849.434529349@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
-References: <20131206214956.830407026@linuxfoundation.org>
+In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
+References: <20131206214844.906193530@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-[ Upstream commit 1188f05497e7bd2f2614b99c54adfbe7413d5749 ]
+commit 72403b4a0fbdf433c1fe0127e49864658f6f6468 upstream.
 
-If priority/traffic class field in IPv6 header is set (seen when
-using ssh), the uncompression sets the TC and Flow fields incorrectly.
+Commit 0255d4918480 ("mm: Account for a THP NUMA hinting update as one
+PTE update") was added to account for the number of PTE updates when
+marking pages prot_numa.  task_numa_work was using the old return value
+to track how much address space had been updated.  Altering the return
+value causes the scanner to do more work than it is configured or
+documented to in a single unit of work.
 
-Example:
+This patch reverts that commit and accounts for the number of THP
+updates separately in vmstat.  It is up to the administrator to
+interpret the pair of values correctly.  This is a straight-forward
+operation and likely to only be of interest when actively debugging NUMA
+balancing problems.
 
-This is IPv6 header of a sent packet. Note the priority/TC (=1) in
-the first byte.
+The impact of this patch is that the NUMA PTE scanner will scan slower
+when THP is enabled and workloads may converge slower as a result.  On
+the flip size system CPU usage should be lower than recent tests
+reported.  This is an illustrative example of a short single JVM specjbb
+test
 
-00000000: 61 00 00 00 00 2c 06 40 fe 80 00 00 00 00 00 00
-00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
-00000020: 02 1e ab ff fe 4c 52 57
+specjbb
+                       3.12.0                3.12.0
+                      vanilla      acctupdates
+TPut 1      26143.00 (  0.00%)     25747.00 ( -1.51%)
+TPut 7     185257.00 (  0.00%)    183202.00 ( -1.11%)
+TPut 13    329760.00 (  0.00%)    346577.00 (  5.10%)
+TPut 19    442502.00 (  0.00%)    460146.00 (  3.99%)
+TPut 25    540634.00 (  0.00%)    549053.00 (  1.56%)
+TPut 31    512098.00 (  0.00%)    519611.00 (  1.47%)
+TPut 37    461276.00 (  0.00%)    474973.00 (  2.97%)
+TPut 43    403089.00 (  0.00%)    414172.00 (  2.75%)
 
-This gets compressed like this in the sending side
+              3.12.0      3.12.0
+             vanillaacctupdates
+User         5169.64     5184.14
+System        100.45       80.02
+Elapsed       252.75      251.85
 
-00000000: 72 31 04 06 02 1e ab ff fe 4c 52 57 ec c2 00 16
-00000010: aa 2d fe 92 86 4e be c6 ....
+Performance is similar but note the reduction in system CPU time.  While
+this showed a performance gain, it will not be universal but at least
+it'll be behaving as documented.  The vmstats are obviously different but
+here is an obvious interpretation of them from mmtests.
 
-In the receiving end, the packet gets uncompressed to this
-IPv6 header
+                                3.12.0      3.12.0
+                               vanillaacctupdates
+NUMA page range updates        1408326    11043064
+NUMA huge PMD updates                0       21040
+NUMA PTE updates               1408326      291624
 
-00000000: 60 06 06 02 00 2a 1e 40 fe 80 00 00 00 00 00 00
-00000010: 02 02 72 ff fe c6 42 10 fe 80 00 00 00 00 00 00
-00000020: ab ff fe 4c 52 57 ec c2
+"NUMA page range updates" == nr_pte_updates and is the value returned to
+the NUMA pte scanner.  NUMA huge PMD updates were the number of THP
+updates which in combination can be used to calculate how many ptes were
+updated from userspace.
 
-First four bytes are set incorrectly and we have also lost
-two bytes from destination address.
-
-The fix is to switch the case values in switch statement
-when checking the TC field.
-
-Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ieee802154/6lowpan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -803,7 +803,7 @@ lowpan_process_data(struct sk_buff *skb)
- 	 * Traffic class carried in-line
- 	 * ECN + DSCP (1 byte), Flow Label is elided
- 	 */
--	case 1: /* 10b */
-+	case 2: /* 10b */
- 		if (!skb->len)
- 			goto drop;
- 		tmp = lowpan_fetch_skb_u8(skb);
-@@ -816,7 +816,7 @@ lowpan_process_data(struct sk_buff *skb)
- 	 * Flow Label carried in-line
- 	 * ECN + 2-bit Pad + Flow Label (3 bytes), DSCP is elided
- 	 */
--	case 2: /* 01b */
-+	case 1: /* 01b */
- 		if (!skb->len)
- 			goto drop;
- 		tmp = lowpan_fetch_skb_u8(skb);
+---
+ include/linux/vm_event_item.h |    1 +
+ mm/mprotect.c                 |    7 ++++++-
+ mm/vmstat.c                   |    1 +
+ 3 files changed, 8 insertions(+), 1 deletion(-)
+
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
+ #ifdef CONFIG_NUMA_BALANCING
+ 		NUMA_PTE_UPDATES,
++		NUMA_HUGE_PTE_UPDATES,
+ 		NUMA_HINT_FAULTS,
+ 		NUMA_HINT_FAULTS_LOCAL,
+ 		NUMA_PAGE_MIGRATE,
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -135,6 +135,7 @@ static inline unsigned long change_pmd_r
+ 	pmd_t *pmd;
+ 	unsigned long next;
+ 	unsigned long pages = 0;
++	unsigned long nr_huge_updates = 0;
+ 	bool all_same_node;
+ 
+ 	pmd = pmd_offset(pud, addr);
+@@ -145,7 +146,8 @@ static inline unsigned long change_pmd_r
+ 				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot,
+ 						 prot_numa)) {
+-				pages++;
++				pages += HPAGE_PMD_NR;
++				nr_huge_updates++;
+ 				continue;
+ 			}
+ 			/* fall through */
+@@ -165,6 +167,9 @@ static inline unsigned long change_pmd_r
+ 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
+ 	} while (pmd++, addr = next, addr != end);
+ 
++	if (nr_huge_updates)
++		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
++
+ 	return pages;
+ }
+ 
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -779,6 +779,7 @@ const char * const vmstat_text[] = {
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ 	"numa_pte_updates",
++	"numa_huge_pte_updates",
+ 	"numa_hint_faults",
+ 	"numa_hint_faults_local",
+ 	"numa_pages_migrated",
 
 
