@@ -1,125 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162142Ab3LFWVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:21:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60807 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759235Ab3LFVxX (ORCPT
+	id S1422711Ab3LFWVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:21:13 -0500
+Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:38749 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161592Ab3LFWVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:23 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Florian Weimer <fweimer@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 06/58] random32: fix off-by-one in seeding requirement
-Date: Fri,  6 Dec 2013 13:51:37 -0800
-Message-Id: <20131206214845.495983264@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
-References: <20131206214844.906193530@linuxfoundation.org>
-User-Agent: quilt/0.60-8.1.3
+	Fri, 6 Dec 2013 17:21:07 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:3871:4321:5007:7652:7875:10004:10400:10848:11026:11473:11658:11914:12043:12114:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: can27_4385bb4914d58
+X-Filterd-Recvd-Size: 2543
+Message-ID: <1386368461.31845.38.camel@joe-AO722>
+Subject: [PATCH -next] etherdevice: Add ether_addr_equal_unaligned
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: mareklindner@neomailbox.ch, sw@simonwunderlich.de, antonio@meshcoding.com,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 06 Dec 2013 14:21:01 -0800
+In-Reply-To: <20131206.163806.1555069105347405484.davem@davemloft.net>
+References: <1386317890.31845.26.camel@joe-AO722>
+	 <20131206.153944.1382127535160341376.davem@davemloft.net>
+	 <1386364621.31845.32.camel@joe-AO722>
+	 <20131206.163806.1555069105347405484.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Add a generic routine to test if possibly unaligned
+to u16 Ethernet addresses are equal.
 
-------------------
+If CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is set,
+this uses the slightly faster generic routine
+ether_addr_equal, otherwise this uses memcmp.
 
-From: Daniel Borkmann <dborkman@redhat.com>
-
-[ Upstream commit 51c37a70aaa3f95773af560e6db3073520513912 ]
-
-For properly initialising the Tausworthe generator [1], we have
-a strict seeding requirement, that is, s1 > 1, s2 > 7, s3 > 15.
-
-Commit 697f8d0348 ("random32: seeding improvement") introduced
-a __seed() function that imposes boundary checks proposed by the
-errata paper [2] to properly ensure above conditions.
-
-However, we're off by one, as the function is implemented as:
-"return (x < m) ? x + m : x;", and called with __seed(X, 1),
-__seed(X, 7), __seed(X, 15). Thus, an unwanted seed of 1, 7, 15
-would be possible, whereas the lower boundary should actually
-be of at least 2, 8, 16, just as GSL does. Fix this, as otherwise
-an initialization with an unwanted seed could have the effect
-that Tausworthe's PRNG properties cannot not be ensured.
-
-Note that this PRNG is *not* used for cryptography in the kernel.
-
- [1] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
- [2] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
-
-Joint work with Hannes Frederic Sowa.
-
-Fixes: 697f8d0348a6 ("random32: seeding improvement")
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Florian Weimer <fweimer@redhat.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/random.h |    6 +++---
- lib/random32.c         |   14 +++++++-------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ include/linux/etherdevice.h | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -50,9 +50,9 @@ static inline void prandom_seed_state(st
- {
- 	u32 i = (seed >> 32) ^ (seed << 10) ^ seed;
- 
--	state->s1 = __seed(i, 1);
--	state->s2 = __seed(i, 7);
--	state->s3 = __seed(i, 15);
-+	state->s1 = __seed(i, 2);
-+	state->s2 = __seed(i, 8);
-+	state->s3 = __seed(i, 16);
+diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
+index 3526e81..eb36845 100644
+--- a/include/linux/etherdevice.h
++++ b/include/linux/etherdevice.h
+@@ -266,6 +266,24 @@ static inline bool ether_addr_equal_64bits(const u8 addr1[6+2],
  }
  
- #ifdef CONFIG_ARCH_RANDOM
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -141,7 +141,7 @@ void prandom_seed(u32 entropy)
- 	 */
- 	for_each_possible_cpu (i) {
- 		struct rnd_state *state = &per_cpu(net_rand_state, i);
--		state->s1 = __seed(state->s1 ^ entropy, 1);
-+		state->s1 = __seed(state->s1 ^ entropy, 2);
- 	}
- }
- EXPORT_SYMBOL(prandom_seed);
-@@ -158,9 +158,9 @@ static int __init prandom_init(void)
- 		struct rnd_state *state = &per_cpu(net_rand_state,i);
- 
- #define LCG(x)	((x) * 69069)	/* super-duper LCG */
--		state->s1 = __seed(LCG(i + jiffies), 1);
--		state->s2 = __seed(LCG(state->s1), 7);
--		state->s3 = __seed(LCG(state->s2), 15);
-+		state->s1 = __seed(LCG(i + jiffies), 2);
-+		state->s2 = __seed(LCG(state->s1), 8);
-+		state->s3 = __seed(LCG(state->s2), 16);
- 
- 		/* "warm it up" */
- 		prandom_u32_state(state);
-@@ -187,9 +187,9 @@ static int __init prandom_reseed(void)
- 		u32 seeds[3];
- 
- 		get_random_bytes(&seeds, sizeof(seeds));
--		state->s1 = __seed(seeds[0], 1);
--		state->s2 = __seed(seeds[1], 7);
--		state->s3 = __seed(seeds[2], 15);
-+		state->s1 = __seed(seeds[0], 2);
-+		state->s2 = __seed(seeds[1], 8);
-+		state->s3 = __seed(seeds[2], 16);
- 
- 		/* mix it in */
- 		prandom_u32_state(state);
+ /**
++ * ether_addr_equal_unaligned - Compare two not u16 aligned Ethernet addresses
++ * @addr1: Pointer to a six-byte array containing the Ethernet address
++ * @addr2: Pointer other six-byte array containing the Ethernet address
++ *
++ * Compare two Ethernet addresses, returns true if equal
++ *
++ * Please note: Use only when any Ethernet address may not be u16 aligned.
++ */
++static inline bool ether_addr_equal_unaligned(const u8 *addr1, const u8 *addr2)
++{
++#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++	return ether_addr_equal(addr1, addr2);
++#else
++	return memcmp(addr1, addr2, ETH_ALEN) == 0;
++#endif
++}
++
++/**
+  * is_etherdev_addr - Tell if given Ethernet address belongs to the device.
+  * @dev: Pointer to a device structure
+  * @addr: Pointer to a six-byte array containing the Ethernet address
 
 
