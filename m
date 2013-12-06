@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab3LFIjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:39:16 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54407 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab3LFIjN (ORCPT
+	id S1757281Ab3LFIjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:39:51 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:47525 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757231Ab3LFIjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:39:13 -0500
-X-AuditID: 9c930179-b7ce4ae000000e86-43-52a18d2f16f5
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 1/4] mm/migrate: correct return value of migrate_pages()
-Date: Fri,  6 Dec 2013 17:41:47 +0900
-Message-Id: <1386319310-28016-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 6 Dec 2013 03:39:47 -0500
+Subject: Re: [PATCH 1/6] GenWQE PCI support, health monitoring and recovery
+From: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Reply-To: haver@linux.vnet.ibm.com
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        cody@linux.vnet.ibm.com, schwidefsky@de.ibm.com, utz.bacher@de.ibm.com,
+        mmarek@suse.cz, rmallon@gmail.com, jsvogt@de.ibm.com,
+        MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de
+In-Reply-To: <201312052131.42316.arnd@arndb.de>
+References: <1386080903-27160-1-git-send-email-haver@linux.vnet.ibm.com>
+	 <201312050338.54841.arnd@arndb.de>
+	 <1386247827.11866.6.camel@oc7383187364.ibm.com>
+	 <201312052131.42316.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Fri, 06 Dec 2013 09:39:41 +0100
+Message-ID: <1386319181.7915.4.camel@oc7383187364.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120608-2966-0000-0000-000009981E56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migrate_pages() should return number of pages not migrated or error code.
-When unmap_and_move return -EAGAIN, outer loop is re-execution without
-initialising nr_failed. This makes nr_failed over-counted.
+Hi Arnd,
 
-So this patch correct it by initialising nr_failed in outer loop.
+Am Donnerstag, den 05.12.2013, 21:31 +0100 schrieb Arnd Bergmann:
+> On Thursday 05 December 2013, Frank Haverkamp wrote:
+> > > > Was wrong, as already pointed out before. It is now:
+> > > > 
+> > > > struct genwqe_mem {
+> > > >     __u64 addr;
+> > > >     __u64 size;
+> > > >     int direction;
+> > > > };
+> > > > 
+> > > > I hope the int is ok here.
+> > > 
+> > > No, it's not. The problem is that sizeof(struct genwqe_mem) is now 24 on
+> > > most architectures (including x86-64) and 20 on x86-32.
+> > 
+> > Interesting. So int is like long architecture specific. I changed it to
+> > be __u64 too, to avoid any problem.
+> 
+> The solution is ok, but the problem is different from what you thought:
+> 
+> On all architectures that Linux runs on, 'int' is 32 bit. The problem is
+> again the alignment of __u64. On normal architectures, it is naturally
+> aligned, and gcc adds 4 byte padding so that 'sizeof (struct genwqe_mem)'
+> is  multiple of the required alignment. On x86-32, the required alignment
+> for the __u64 members is only 4 bytes, so no padding is added.
+> 
+> 	Arnd
+> 
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+now I understand. Interesting. I wondered how one could check this
+automatically such that others don't repeat the mistakes I did.
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 3747fcd..1f59ccc 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1102,6 +1102,7 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
- 
- 	for(pass = 0; pass < 10 && retry; pass++) {
- 		retry = 0;
-+		nr_failed = 0;
- 
- 		list_for_each_entry_safe(page, page2, from, lru) {
- 			cond_resched();
--- 
-1.7.9.5
+I hope I have fixed all those issues now in my latest posting, or do you
+still see some?
+
+Other than that, is the code ready for inclusion now, or do you still
+like to have other changes done (hopefully not, but if so which ones)?
+
+Thanks
+
+Frank
+
 
