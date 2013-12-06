@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162816Ab3LFNvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:51:39 -0500
-Received: from kanga.kvack.org ([205.233.56.17]:35527 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161709Ab3LFNvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:51:37 -0500
-Date: Fri, 6 Dec 2013 08:51:35 -0500
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>, stable@vger.kernel.org,
-        Eryu Guan <eguan@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.10] aio: restore locking of ioctx list on removal
-Message-ID: <20131206135135.GA13581@kvack.org>
-References: <1386238142-21792-1-git-send-email-mguzik@redhat.com> <20131206010347.GA25404@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131206010347.GA25404@kroah.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1758066Ab3LFNB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:01:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44062 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758046Ab3LFNBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:01:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 106/272] IB/srp: Report receive errors correctly
+Date: Fri,  6 Dec 2013 12:56:35 +0000
+Message-Id: <1386334761-25517-107-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 05:03:47PM -0800, Greg KH wrote:
-> On Thu, Dec 05, 2013 at 11:09:02AM +0100, Mateusz Guzik wrote:
-> > Commit 36f5588905c10a8c4568a210d601fe8c3c27e0f0
-> > "aio: refcounting cleanup" resulted in ioctx_lock not being held
-> > during ctx removal, leaving the list susceptible to corruptions.
-> > 
-> > In mainline kernel the issue went away as a side effect of
-> > db446a08c23d5475e6b08c87acca79ebb20f283c "aio: convert the ioctx list to
-> > table lookup v3".
-> > 
-> > Fix the problem by restoring appropriate locking.
-> 
-> Why can't I just take db446a08c23d5475e6b08c87acca79ebb20f283c instead?
-> Does it not work well enough, or is there other issues involved in it
-> that would keep it out of stable?
-> 
-> Also, it seems like the performance increase of that patch would be good
-> to have backported, right?
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-There are several aio patches that have to be applied to -stable, but I've 
-just been waiting for some feedback now that they're in Linus' tree for a 
-bit before pushing them to -stable.  I'll review which ones are needed 
-today and send out a recommended list of patches to apply.
+------------------
 
-		-ben
+From: Bart Van Assche <bvanassche@acm.org>
 
-> thanks,
-> 
-> greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-aio' in
-> the body to majordomo@kvack.org.  For more info on Linux AIO,
-> see: http://www.kvack.org/aio/
-> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
+commit cd4e38542a5c2cab94e5410fb17c1cc004a60792 upstream.
 
+The IB spec does not guarantee that the opcode is available in error
+completions.  Hence do not rely on it.  See also commit 948d1e889e5b
+("IB/srp: Introduce srp_handle_qp_err()").
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/infiniband/ulp/srp/ib_srp.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index f93baf8..df7a19c 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1302,14 +1302,13 @@ static void srp_handle_recv(struct srp_target_port *target, struct ib_wc *wc)
+ 			     PFX "Recv failed with error code %d\n", res);
+ }
+ 
+-static void srp_handle_qp_err(enum ib_wc_status wc_status,
+-			      enum ib_wc_opcode wc_opcode,
++static void srp_handle_qp_err(enum ib_wc_status wc_status, bool send_err,
+ 			      struct srp_target_port *target)
+ {
+ 	if (target->connected && !target->qp_in_error) {
+ 		shost_printk(KERN_ERR, target->scsi_host,
+ 			     PFX "failed %s status %d\n",
+-			     wc_opcode & IB_WC_RECV ? "receive" : "send",
++			     send_err ? "send" : "receive",
+ 			     wc_status);
+ 	}
+ 	target->qp_in_error = true;
+@@ -1325,7 +1324,7 @@ static void srp_recv_completion(struct ib_cq *cq, void *target_ptr)
+ 		if (likely(wc.status == IB_WC_SUCCESS)) {
+ 			srp_handle_recv(target, &wc);
+ 		} else {
+-			srp_handle_qp_err(wc.status, wc.opcode, target);
++			srp_handle_qp_err(wc.status, false, target);
+ 		}
+ 	}
+ }
+@@ -1341,7 +1340,7 @@ static void srp_send_completion(struct ib_cq *cq, void *target_ptr)
+ 			iu = (struct srp_iu *) (uintptr_t) wc.wr_id;
+ 			list_add(&iu->list, &target->free_tx);
+ 		} else {
+-			srp_handle_qp_err(wc.status, wc.opcode, target);
++			srp_handle_qp_err(wc.status, true, target);
+ 		}
+ 	}
+ }
 -- 
-"Thought is the essence of where you are now."
+1.8.3.2
+
