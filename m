@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab3LFSvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:51:39 -0500
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:44145 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753217Ab3LFSvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:51:38 -0500
-Date: Fri, 6 Dec 2013 18:51:36 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>, Joonsoo Kim <js1304@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] mm/migrate: correct return value of
- migrate_pages()
-In-Reply-To: <1386355046-jja39cg0-mutt-n-horiguchi@ah.jp.nec.com>
-Message-ID: <00000142c9403016-a312eac7-8ca7-4f93-a61d-5b8eccbcb9db-000000@email.amazonses.com>
-References: <1386319310-28016-1-git-send-email-iamjoonsoo.kim@lge.com> <52A1E248.1000204@suse.cz> <1386355046-jja39cg0-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758099Ab3LFSzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:55:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43561 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753924Ab3LFSzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 13:55:39 -0500
+Date: Fri, 6 Dec 2013 19:55:34 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Qiaowei Ren <qiaowei.ren@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
+        Liu Jinsong <jinsong.liu@intel.com>
+Subject: Re: [PATCH 3/3] X86, mpx: Intel MPX xstate feature definition
+Message-ID: <20131206185534.GA7528@pd.tnic>
+References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com>
+ <1386355976-11732-3-git-send-email-qiaowei.ren@intel.com>
+ <20131206134631.GD6694@pd.tnic>
+ <52A2080A.9010208@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.06-54.240.9.70
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52A2080A.9010208@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Dec 2013, Naoya Horiguchi wrote:
+On Fri, Dec 06, 2013 at 09:23:22AM -0800, H. Peter Anvin wrote:
+> On 12/06/2013 05:46 AM, Borislav Petkov wrote:
+> > I'm guessing this and the struct lwp_struct above is being added so that
+> > you can have the LWP XSAVE area size? If so, you don't need it: LWP
+> > XSAVE area is 128 bytes at offset 832 according to my manuals so I'd
+> > guess having a u8 lwp_area[128] should be fine.
+> > 
+> Sure, but any reason to *not* document the internal structure?
 
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Fri, 6 Dec 2013 13:08:15 -0500
-> Subject: [PATCH] migrate: add comment about permanent failure path
->
-> Let's add a comment about where the failed page goes to, which makes
-> code more readable.
+Only that you might start getting remove-this-unused-struct patches. :-)
 
-Acked-by: Christoph Lameter <cl@linux.com>
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
