@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759600Ab3LFXqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:46:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48511 "EHLO
+	id S1759344Ab3LFXqE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:46:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48520 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161880Ab3LFXPG (ORCPT
+	with ESMTP id S1161897Ab3LFXPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:15:06 -0500
+	Fri, 6 Dec 2013 18:15:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 144/152] powerpc/pseries: Duplicate dtl entries sometimes sent to userspace
-Date: Fri,  6 Dec 2013 15:11:08 -0800
-Message-Id: <1386371476-2477-145-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 137/152] nfsd: make sure to balance get/put_write_access
+Date: Fri,  6 Dec 2013 15:11:01 -0800
+Message-Id: <1386371476-2477-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,56 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 84b073868b9d9e754ae48b828337633d1b386482 upstream.
+commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
 
-When reading from the dispatch trace log (dtl) userspace interface, I
-sometimes see duplicate entries. One example:
+Use a straight goto error label style in nfsd_setattr to make sure
+we always do the put_write_access call after we got it earlier.
 
-00000000  07 04 00 0c 00 00 48 44  00 00 00 00 00 00 00 00
-00000010  00 0c a0 b4 16 83 6d 68  00 00 00 00 00 00 00 00
-00000020  00 00 00 00 10 00 13 50  80 00 00 00 00 00 d0 32
+Note that the we have been failing to do that in the case
+nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
+6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
+setattr".
 
-00000030  07 04 00 0c 00 00 48 44  00 00 00 00 00 00 00 00
-00000040  00 0c a0 b4 16 83 6d 68  00 00 00 00 00 00 00 00
-00000050  00 00 00 00 10 00 13 50  80 00 00 00 00 00 d0 32
-
-The problem is in scan_dispatch_log() where we call dtl_consumer()
-but bail out before incrementing the index.
-
-To fix this I moved dtl_consumer() after the timebase comparison.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[ kamal: backport to 3.8 (notify_change args) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/time.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/vfs.c | 29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 127361e..b89c2ee 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -213,8 +213,6 @@ static u64 scan_dispatch_log(u64 stop_tb)
- 	if (i == vpa->dtl_idx)
- 		return 0;
- 	while (i < vpa->dtl_idx) {
--		if (dtl_consumer)
--			dtl_consumer(dtl, i);
- 		dtb = dtl->timebase;
- 		tb_delta = dtl->enqueue_to_dispatch_time +
- 			dtl->ready_to_enqueue_time;
-@@ -227,6 +225,8 @@ static u64 scan_dispatch_log(u64 stop_tb)
- 		}
- 		if (dtb > stop_tb)
- 			break;
-+		if (dtl_consumer)
-+			dtl_consumer(dtl, i);
- 		stolen += tb_delta;
- 		++i;
- 		++dtl;
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 4fc2843..59f1e77 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -443,27 +443,28 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 
+ 	iap->ia_valid |= ATTR_CTIME;
+ 
+-	err = nfserr_notsync;
+-	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
+-		host_err = nfsd_break_lease(inode);
+-		if (host_err)
+-			goto out_nfserr;
+-		fh_lock(fhp);
+-
+-		host_err = notify_change(dentry, iap);
+-		err = nfserrno(host_err);
+-		fh_unlock(fhp);
++	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
++		err = nfserr_notsync;
++		goto out_put_write_access;
+ 	}
++
++	host_err = nfsd_break_lease(inode);
++	if (host_err)
++		goto out_put_write_access_nfserror;
++
++	fh_lock(fhp);
++	host_err = notify_change(dentry, iap);
++	fh_unlock(fhp);
++
++out_put_write_access_nfserror:
++	err = nfserrno(host_err);
++out_put_write_access:
+ 	if (size_change)
+ 		put_write_access(inode);
+ 	if (!err)
+ 		commit_metadata(fhp);
+ out:
+ 	return err;
+-
+-out_nfserr:
+-	err = nfserrno(host_err);
+-	goto out;
+ }
+ 
+ #if defined(CONFIG_NFSD_V2_ACL) || \
 -- 
 1.8.3.2
 
