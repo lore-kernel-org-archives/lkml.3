@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab3LFAiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:38:00 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:39313 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756288Ab3LFAhz (ORCPT
+	id S1756620Ab3LFAiG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:38:06 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:54975 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab3LFAiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:37:55 -0500
-Subject: [PATCH v2 1/2] kobject: delay kobject release for random time
+	Thu, 5 Dec 2013 19:38:04 -0500
+Subject: [PATCH v2 2/2] kobject: remove kset from sysfs immediately in
+ kset_unregister()
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Veaceslav Falico <vfalico@redhat.com>,
         Russell King <linux@arm.linux.org.uk>,
         Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>
-Date: Thu, 05 Dec 2013 17:37:51 -0700
-Message-ID: <20131206003751.28684.32460.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Thu, 05 Dec 2013 17:38:00 -0700
+Message-ID: <20131206003759.28684.63772.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20131206003508.28684.1337.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20131206003508.28684.1337.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -26,42 +27,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_DEBUG_KOBJECT_RELEASE=y, delay kobject release functions for a
-random time between 1 and 8 seconds, which effectively changes the order in
-which they're called.
+There's no "unlink from sysfs" interface for ksets, so I think callers of
+kset_unregister() expect the kset to be removed from sysfs immediately,
+without waiting for the last reference to be released.
+
+This patch makes the sysfs removal happen immediately, so the caller may
+create a new kset with the same name as soon as kset_unregister() returns.
+Without this, every caller has to call "kobject_del(&kset->kobj)" first
+unless it knows it will never create a new kset with the same name.
+
+This sometimes shows up on module unload and reload, where the reload fails
+because it tries to create a kobject with the same name as one from the
+original load that still exists.  CONFIG_DEBUG_KOBJECT_RELEASE=y makes this
+problem easier to hit.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- lib/kobject.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ Documentation/kobject.txt |    5 ++++-
+ lib/kobject.c             |    1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/kobject.txt b/Documentation/kobject.txt
+index c5182bb2c16c..f87241dfed87 100644
+--- a/Documentation/kobject.txt
++++ b/Documentation/kobject.txt
+@@ -342,7 +342,10 @@ kset use:
+ 
+ When you are finished with the kset, call:
+   void kset_unregister(struct kset *kset);
+-to destroy it.
++to destroy it.  This removes the kset from sysfs and decrements its reference
++count.  When the reference count goes to zero, the kset will be released.
++Because other references to the kset may still exist, the release may happen
++after kset_unregister() returns.
+ 
+ An example of using a kset can be seen in the
+ samples/kobject/kset-example.c file in the kernel tree.
 diff --git a/lib/kobject.c b/lib/kobject.c
-index 962175134702..bc73312ac797 100644
+index bc73312ac797..40e3b2c0abae 100644
 --- a/lib/kobject.c
 +++ b/lib/kobject.c
-@@ -17,6 +17,7 @@
- #include <linux/export.h>
- #include <linux/stat.h>
- #include <linux/slab.h>
-+#include <linux/random.h>
- 
- /*
-  * populate_dir - populate directory with attributes.
-@@ -592,10 +593,13 @@ static void kobject_release(struct kref *kref)
+@@ -757,6 +757,7 @@ void kset_unregister(struct kset *k)
  {
- 	struct kobject *kobj = container_of(kref, struct kobject, kref);
- #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
--	pr_debug("kobject: '%s' (%p): %s, parent %p (delayed)\n",
--		 kobject_name(kobj), kobj, __func__, kobj->parent);
-+	unsigned long delay = HZ + HZ * (get_random_int() & 0x3);
-+
-+	pr_debug("kobject: '%s' (%p): %s, parent %p (delayed %ld)\n",
-+		 kobject_name(kobj), kobj, __func__, kobj->parent, delay);
- 	INIT_DELAYED_WORK(&kobj->release, kobject_delayed_cleanup);
--	schedule_delayed_work(&kobj->release, HZ);
-+
-+	schedule_delayed_work(&kobj->release, delay);
- #else
- 	kobject_cleanup(kobj);
- #endif
+ 	if (!k)
+ 		return;
++	kobject_del(&k->kobj);
+ 	kobject_put(&k->kobj);
+ }
+ 
 
