@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162149Ab3LFNFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:05:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44753 "EHLO
+	id S1162345Ab3LFNLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:11:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44767 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162117Ab3LFNFs (ORCPT
+	with ESMTP id S1162132Ab3LFNFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:05:48 -0500
+	Fri, 6 Dec 2013 08:05:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dave Airlie <airlied@redhat.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 251/272] drm: shmobile: Add dependency on BACKLIGHT_CLASS_DEVICE
-Date: Fri,  6 Dec 2013 12:59:00 +0000
-Message-Id: <1386334761-25517-252-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 254/272] ALSA: hda - Add support for CX20952
+Date: Fri,  6 Dec 2013 12:59:03 +0000
+Message-Id: <1386334761-25517-255-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0a5a5499ad886dde4a032203d01e324cfe593f99 upstream.
+commit 8f42d7698751a45cd9f7134a5da49bc5b6206179 upstream.
 
-The driver registers a backlight device and thus requires
-BACKLIGHT_CLASS_DEVICE to be selected to avoid compilation breakages.
+It's a superset of the existing CX2075x codecs, so we can reuse the
+existing parser code.
 
-Reported-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/shmobile/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_conexant.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/shmobile/Kconfig b/drivers/gpu/drm/shmobile/Kconfig
-index ca498d1..5240690 100644
---- a/drivers/gpu/drm/shmobile/Kconfig
-+++ b/drivers/gpu/drm/shmobile/Kconfig
-@@ -1,6 +1,7 @@
- config DRM_SHMOBILE
- 	tristate "DRM Support for SH Mobile"
- 	depends on DRM && (ARM || SUPERH)
-+	select BACKLIGHT_CLASS_DEVICE
- 	select DRM_KMS_HELPER
- 	select DRM_KMS_CMA_HELPER
- 	select DRM_GEM_CMA_HELPER
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index ac7697e..8311c63 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3491,6 +3491,8 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
+ 	  .patch = patch_conexant_auto },
+ 	{ .id = 0x14f15115, .name = "CX20757",
+ 	  .patch = patch_conexant_auto },
++	{ .id = 0x14f151d7, .name = "CX20952",
++	  .patch = patch_conexant_auto },
+ 	{} /* terminator */
+ };
+ 
+@@ -3517,6 +3519,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15111");
+ MODULE_ALIAS("snd-hda-codec-id:14f15113");
+ MODULE_ALIAS("snd-hda-codec-id:14f15114");
+ MODULE_ALIAS("snd-hda-codec-id:14f15115");
++MODULE_ALIAS("snd-hda-codec-id:14f151d7");
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Conexant HD-audio codec");
 -- 
 1.8.3.2
 
