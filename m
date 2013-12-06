@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab3LFPFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:05:54 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:61435 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3LFPFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:05:52 -0500
-Message-ID: <52A1E794.1040008@linaro.org>
-Date: Fri, 06 Dec 2013 16:04:52 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1161097Ab3LFPGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:06:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51086 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254Ab3LFPGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 10:06:32 -0500
+Message-ID: <52A1E7E9.8020904@redhat.com>
+Date: Fri, 06 Dec 2013 10:06:17 -0500
+From: Brian Foster <bfoster@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Mark Rutland <mark.rutland@arm.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linaro-kernel@lists.linaro.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, patches@linaro.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
-        linux-acpi@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core running
- without PCI on ARM64
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <20131203164111.GA13447@srcf.ucam.org> <529F376F.8050005@linaro.org> <201312052304.22302.arnd@arndb.de>
-In-Reply-To: <201312052304.22302.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Dwight Engen <dwight.engen@oracle.com>, Kees Cook <keescook@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Chinner <dchinner@redhat.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, Ben Myers <bpm@sgi.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: XFS security fix never sent to -stable?
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com> <20131206094327.0b0e22ef@oracle.com>
+In-Reply-To: <20131206094327.0b0e22ef@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2013 23:04, Arnd Bergmann wrote:
-> On Wednesday 04 December 2013, Hanjun Guo wrote:
->> On 2013年12月04日 00:41, Matthew Garrett wrote:
->>> Given the number of #ifdefs you're adding, wouldn't it make more sense
->>> to just add stub functions to include/linux/pci.h?
+On 12/06/2013 09:43 AM, Dwight Engen wrote:
+> On Thu, 5 Dec 2013 16:35:50 -0800
+> Kees Cook <keescook@google.com> wrote:
+> 
+>> Hi,
 >>
->> Thanks for the suggestion :)
+>> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
+>> capability check to free eofblocks ioctl") is a security fix that was
+>> never sent to -stable? From what I can see, it was introduced in 3.8
+>> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+>> XFS_IOC_FREE_EOFBLOCKS ioctl").
 >>
->> I can add stub functions in include/linux/pci.h for raw_pci_read()/
->> raw_pci_write(), then can remove #ifdefs for acpi_os_read/write_pci_configuration().
->
-> Actually I wonder about the usefulness of this patch in either form: Since ACPI
-> on ARM64 is only for servers, I would very much expect them to always come with
-> PCI, either physical host bridges with attached devices, or logical PCI functions
-> used to describe the on-SoC I/O devices. Even in case of virtual machines, you'd
-> normally use PCI as the method to communicate data about the virtio channels.
->
-> Can you name a realistic use-case where you'd want ACPI but not PCI?
+>> I don't see this in the 3.8.y tree. Should it be added there and
+>> newer?
+> 
+> I believe that would be appropriate, but would defer to Brian as the
+> original author of the eofblocks change.
+> 
 
-Yes you can describe SoC I/O devices using logical PCI functions only if 
-they are on PCI, correct me if I am wrong. Also, devices can be placed 
-only on IOMEM (like for ARM SoC) and it is hard to predict which way 
-vendors chose. So way don't let it be configurable? ACPI spec says 
-nothing like PCI is needed for ACPI, AFAIK.
+I have no objection to proposing this for stable. The fix is
+straightforward and isolated enough.
 
-Tomasz
+Brian
+
+>> Thanks,
+>>
+>> -Kees
+>>
+> 
+
