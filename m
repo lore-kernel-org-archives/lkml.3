@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab3LFRGH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:06:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:39098 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757988Ab3LFRF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:05:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,841,1378882800"; 
-   d="scan'208";a="445842043"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org, kvm@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>, Xudong Hao <xudong.hao@intel.com>,
-        Liu Jinsong <jinsong.liu@intel.com>
-Subject: [PATCH v2 3/3] X86, mpx: Intel MPX xstate feature definition
-Date: Sat,  7 Dec 2013 08:20:58 +0800
-Message-Id: <1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>
-References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>
+	id S1758086Ab3LFRIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:08:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51615 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab3LFRIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:08:06 -0500
+Message-ID: <52A20470.3040700@wwwdotorg.org>
+Date: Fri, 06 Dec 2013 10:08:00 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Thierry Reding <treding@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ashwini Ghuge <aghuge@nvidia.com>
+Subject: Re: [PATCH 4/4] pinctrl: tegra: add pinmux controller driver for
+ Tegra124
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-5-git-send-email-ldewangan@nvidia.com> <52A10C7B.8070406@wwwdotorg.org> <52A16E65.70908@nvidia.com>
+In-Reply-To: <52A16E65.70908@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines xstate feature and extends struct xsave_hdr_struct
-to support Intel MPX.
+On 12/05/2013 11:27 PM, Laxman Dewangan wrote:
+> On Friday 06 December 2013 05:00 AM, Stephen Warren wrote:
+>> On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
+>>> From: Ashwini Ghuge <aghuge@nvidia.com>
+>>>
+>>> This adds a driver for the Tegra124 pinmux, and required
+>>> parameterization data for Tegra124.
+>>>
+>>> The driver uses the common Tegra pincontrol driver utility
+>>> functions to implement the majority of the driver.
+>>>
+>>> This driver is not compatible with the earlier NVIDIA's SoCs,
+>>> hence add new compatibile as "nvidia,tegra124-pinmux".
+>>>
+>>> Originally written by Ashwini Gguhe.
+>>> ldewangan:
+>>>          - cleanup the patches,
+>>>          - Fix address issue.
+...
+>> (BTW, those 2 patches would go through the pinctrl tree, and patches 2/4
+>> and 3/4 would go through the Tegra tree. You generally shouldn't posted
+>> patches that will be applied to different trees in the same series,
+>> since there aren't dependencies).
+>
+> Fine.
+> Should I sent the diff or full change? I think full change as this need
+> to go on pincontrol subsystem, not in Tegra.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- arch/x86/include/asm/processor.h |   12 ++++++++++++
- arch/x86/include/asm/xsave.h     |    5 ++++-
- 2 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 987c75e..2fe2e75 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -370,6 +370,15 @@ struct ymmh_struct {
- 	u32 ymmh_space[64];
- };
- 
-+struct bndregs_struct {
-+	u64 bndregs[8];
-+} __packed;
-+
-+struct bndcsr_struct {
-+	u64 cfg_reg_u;
-+	u64 status_reg;
-+} __packed;
-+
- struct xsave_hdr_struct {
- 	u64 xstate_bv;
- 	u64 reserved1[2];
-@@ -380,6 +389,9 @@ struct xsave_struct {
- 	struct i387_fxsave_struct i387;
- 	struct xsave_hdr_struct xsave_hdr;
- 	struct ymmh_struct ymmh;
-+	u8 lwp_area[128];
-+	struct bndregs_struct bndregs;
-+	struct bndcsr_struct bndcsr;
- 	/* new processor state extensions will go here */
- } __attribute__ ((packed, aligned (64)));
- 
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 0415cda..7fa8855 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -9,6 +9,8 @@
- #define XSTATE_FP	0x1
- #define XSTATE_SSE	0x2
- #define XSTATE_YMM	0x4
-+#define XSTATE_BNDREGS	0x8
-+#define XSTATE_BNDCSR	0x10
- 
- #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
- 
-@@ -20,10 +22,11 @@
- #define XSAVE_YMM_SIZE	    256
- #define XSAVE_YMM_OFFSET    (XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET)
- 
-+#define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
- /*
-  * These are the features that the OS can handle currently.
-  */
--#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define XCNTXT_MASK    (XSTATE_FP | XSTATE_SSE | XSTATE_YMM | XSTATE_EAGER)
- 
- #ifdef CONFIG_X86_64
- #define REX_PREFIX	"0x48, "
--- 
-1.7.1
-
+Please send complete patches for the new driver. The patch I have in my
+local tree isn't going anywhere; I just have the early version that
+Ashwini posted applied locally for testing. A final complete patch
+should be sent to the pinctrl maintainer in the normal way.
