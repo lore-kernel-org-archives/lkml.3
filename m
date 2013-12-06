@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab3LFACJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:02:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49195 "EHLO
+	id S1756673Ab3LFAC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:02:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab3LFACH (ORCPT
+	with ESMTP id S1755594Ab3LFACy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:02:07 -0500
-Date: Thu, 5 Dec 2013 16:02:05 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: "'Martin K. Petersen'" <martin.petersen@oracle.com>,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx
- driver
-Message-ID: <20131206000205.GB21358@kroah.com>
-References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com>
- <yq1iovclm0m.fsf@sermon.lab.mkp.net>
- <00c701ceec3a$c8bcfc90$5a36f5b0$@lucidpixels.com>
- <yq1d2lkllek.fsf@sermon.lab.mkp.net>
- <010b01ceec84$27643580$762ca080$@lucidpixels.com>
- <018b01cef213$d34d1df0$79e759d0$@lucidpixels.com>
+	Thu, 5 Dec 2013 19:02:54 -0500
+Date: Thu, 5 Dec 2013 16:02:53 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Zhou Zhu <zzhu3@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] serial: rewrite pxa2xx-uart to use 8250_core
+Message-ID: <20131206000253.GC21358@kroah.com>
+References: <20131205043544.GA28580@kroah.com>
+ <1386286149-2855-1-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <018b01cef213$d34d1df0$79e759d0$@lucidpixels.com>
+In-Reply-To: <1386286149-2855-1-git-send-email-ynvich@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 06:43:39PM -0500, Justin Piszcz wrote:
+On Fri, Dec 06, 2013 at 03:28:37AM +0400, Sergei Ianovich wrote:
+> pxa2xx-uart was a separate uart platform driver. It was declaring
+> the same device names and numbers as 8250 driver. As a result,
+> it was impossible to use 8250 driver on PXA SoCs.
 > 
+> Upon closer examination pxa2xx-uart turned out to be a clone of
+> 8250_core driver.
 > 
-> > -----Original Message-----
-> > From: Martin K. Petersen [mailto:martin.petersen@oracle.com]
-> > Sent: Thursday, November 28, 2013 8:13 AM
-> > 
-> > 
-> > Martin>	http://marc.info/?l=linux-scsi&m=138252394614920&w=2
-> > 
-> > Justin> Awesome, thank you!  This patch is over a month old, do you know
-> > Justin> if is currently in mainline?
-> > 
-> > Nope. - James?
-> > 
-> > Could it possibly get added to 3.12.x -stable as well? I've patched
-> against
-> > 3.12.0 for now -- I'll let you know if there are any issues-- so far so
-> > good, thanks again.
-> > 
-> > Justin.
-> 
-> Update:
-> System uptime with the patch is 7+ days under extensive load at times and
-> I've had no issues to date.
-> I just checked the current linux git repo (3.13-rc2) and found this patch
-> has not been included.
-> 
-> Please advise if any further testing or validation needs to be completed to
-> help get this into -stable/-mainline.
+> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+> CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-It needs to get into Linus's tree first, after that, let
-stable@vger.kernel.org know the git commit id and I'll be glad to queue
-it up for a stable kernel release.
+Wonderful!
+
+Can someone else test this to verify it works for them on their platform
+as well?
 
 thanks,
 
