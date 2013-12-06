@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161951Ab3LFW3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:29:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60674 "EHLO
+	id S1422785Ab3LFWaL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:30:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60661 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161075Ab3LFVxD (ORCPT
+	with ESMTP id S1759210Ab3LFVxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:03 -0500
+	Fri, 6 Dec 2013 16:53:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Subject: [PATCH 3.12 60/83] xfrm: Fix null pointer dereference when decoding sessions
-Date: Fri,  6 Dec 2013 13:51:50 -0800
-Message-Id: <20131206214645.634826443@linuxfoundation.org>
+        jongman heo <jongman.heo@samsung.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 57/83] inet: fix possible seqlock deadlocks
+Date: Fri,  6 Dec 2013 13:51:47 -0800
+Message-Id: <20131206214645.362031369@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,64 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 84502b5ef9849a9694673b15c31bd3ac693010ae ]
+[ Upstream commit f1d8cba61c3c4b1eb88e507249c4cb8d635d9a76 ]
 
-On some codepaths the skb does not have a dst entry
-when xfrm_decode_session() is called. So check for
-a valid skb_dst() before dereferencing the device
-interface index. We use 0 as the device index if
-there is no valid skb_dst(), or at reverse decoding
-we use skb_iif as device interface index.
+In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
+another places where IP_INC_STATS_BH() were improperly used.
 
-Bug was introduced with git commit bafd4bd4dc
-("xfrm: Decode sessions with output interface.").
+udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
+process context, not from softirq context.
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+This was detected by lockdep seqlock support.
+
+Reported-by: jongman heo <jongman.heo@samsung.com>
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/xfrm4_policy.c |    6 +++++-
- net/ipv6/xfrm6_policy.c |    6 +++++-
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ net/ipv4/ping.c     |    2 +-
+ net/ipv4/tcp_ipv4.c |    2 +-
+ net/ipv4/udp.c      |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/xfrm4_policy.c
-+++ b/net/ipv4/xfrm4_policy.c
-@@ -104,10 +104,14 @@ _decode_session4(struct sk_buff *skb, st
- 	const struct iphdr *iph = ip_hdr(skb);
- 	u8 *xprth = skb_network_header(skb) + iph->ihl * 4;
- 	struct flowi4 *fl4 = &fl->u.ip4;
-+	int oif = 0;
-+
-+	if (skb_dst(skb))
-+		oif = skb_dst(skb)->dev->ifindex;
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -769,7 +769,7 @@ int ping_v4_sendmsg(struct kiocb *iocb,
+ 		err = PTR_ERR(rt);
+ 		rt = NULL;
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
+ 		goto out;
+ 	}
  
- 	memset(fl4, 0, sizeof(struct flowi4));
- 	fl4->flowi4_mark = skb->mark;
--	fl4->flowi4_oif = skb_dst(skb)->dev->ifindex;
-+	fl4->flowi4_oif = reverse ? skb->skb_iif : oif;
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -177,7 +177,7 @@ int tcp_v4_connect(struct sock *sk, stru
+ 	if (IS_ERR(rt)) {
+ 		err = PTR_ERR(rt);
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		return err;
+ 	}
  
- 	if (!ip_is_fragment(iph)) {
- 		switch (iph->protocol) {
---- a/net/ipv6/xfrm6_policy.c
-+++ b/net/ipv6/xfrm6_policy.c
-@@ -135,10 +135,14 @@ _decode_session6(struct sk_buff *skb, st
- 	struct ipv6_opt_hdr *exthdr;
- 	const unsigned char *nh = skb_network_header(skb);
- 	u8 nexthdr = nh[IP6CB(skb)->nhoff];
-+	int oif = 0;
-+
-+	if (skb_dst(skb))
-+		oif = skb_dst(skb)->dev->ifindex;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -973,7 +973,7 @@ int udp_sendmsg(struct kiocb *iocb, stru
+ 			err = PTR_ERR(rt);
+ 			rt = NULL;
+ 			if (err == -ENETUNREACH)
+-				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
++				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
+ 			goto out;
+ 		}
  
- 	memset(fl6, 0, sizeof(struct flowi6));
- 	fl6->flowi6_mark = skb->mark;
--	fl6->flowi6_oif = skb_dst(skb)->dev->ifindex;
-+	fl6->flowi6_oif = reverse ? skb->skb_iif : oif;
- 
- 	fl6->daddr = reverse ? hdr->saddr : hdr->daddr;
- 	fl6->saddr = reverse ? hdr->daddr : hdr->saddr;
 
 
