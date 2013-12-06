@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162635Ab3LFXpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:45:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48536 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162005Ab3LFXPT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1162024Ab3LFXPT (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 18:15:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48531 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161223Ab3LFXPP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 18:15:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 145/152] powerpc/signals: Mark VSX not saved with small contexts
-Date: Fri,  6 Dec 2013 15:11:09 -0800
-Message-Id: <1386371476-2477-146-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 140/152] avr32: setup crt for early panic()
+Date: Fri,  6 Dec 2013 15:11:04 -0800
+Message-Id: <1386371476-2477-141-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +31,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
 
-commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
+commit 7a2a74f4b856993218aa7cdeeb6c3103101340db upstream.
 
-The VSX MSR bit in the user context indicates if the context contains VSX
-state.  Currently we set this when the process has touched VSX at any stage.
+Before the CRT was (fully) set up in kernel_entry (bss cleared before in
+_start, but also not before jump to panic() in no_tag_table case).
 
-Unfortunately, if the user has not provided enough space to save the VSX state,
-we can't save it but we currently still set the MSR VSX bit.
+This patch fixes this up to have a fully working CRT when branching to panic()
+in no_tag_table.
 
-This patch changes this to clear the MSR VSX bit when the user doesn't provide
-enough space.  This indicates that there is no valid VSX state in the user
-context.
-
-This is needed to support get/set/make/swapcontext for applications that use
-VSX but only provide a small context.  For example, getcontext in glibc
-provides a smaller context since the VSX registers don't need to be saved over
-the glibc function call.  But since the program calling getcontext may have
-used VSX, the kernel currently says the VSX state is valid when it's not.  If
-the returned context is then used in setcontext (ie. a small context without
-VSX but with MSR VSX set), the kernel will refuse the context.  This situation
-has been reported by the glibc community.
-
-Based on patch from Carlos O'Donell.
-
-Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/signal_32.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/avr32/boot/u-boot/head.S | 30 +++++++++++++++++++++++++-----
+ arch/avr32/kernel/head.S      | 20 --------------------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
 
-diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-index 804e323..d344c036 100644
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -449,7 +449,15 @@ static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
- 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
- 			return 1;
- 		msr |= MSR_VSX;
--	}
-+	} else if (!ctx_has_vsx_region)
-+		/*
-+		 * With a small context structure we can't hold the VSX
-+		 * registers, hence clear the MSR value to indicate the state
-+		 * was not saved.
-+		 */
-+		msr &= ~MSR_VSX;
+diff --git a/arch/avr32/boot/u-boot/head.S b/arch/avr32/boot/u-boot/head.S
+index 4488fa2..d36d865 100644
+--- a/arch/avr32/boot/u-boot/head.S
++++ b/arch/avr32/boot/u-boot/head.S
+@@ -8,6 +8,8 @@
+  * published by the Free Software Foundation.
+  */
+ #include <asm/setup.h>
++#include <asm/thread_info.h>
++#include <asm/sysreg.h>
+ 
+ 	/*
+ 	 * The kernel is loaded where we want it to be and all caches
+@@ -20,11 +22,6 @@
+ 	.section .init.text,"ax"
+ 	.global _start
+ _start:
+-	/* Check if the boot loader actually provided a tag table */
+-	lddpc	r0, magic_number
+-	cp.w	r12, r0
+-	brne	no_tag_table
+-
+ 	/* Initialize .bss */
+ 	lddpc	r2, bss_start_addr
+ 	lddpc   r3, end_addr
+@@ -34,6 +31,25 @@ _start:
+ 	cp      r2, r3
+ 	brlo    1b
+ 
++	/* Initialize status register */
++	lddpc	r0, init_sr
++	mtsr	SYSREG_SR, r0
 +
++	/* Set initial stack pointer */
++	lddpc	sp, stack_addr
++	sub	sp, -THREAD_SIZE
 +
- #endif /* CONFIG_VSX */
- #ifdef CONFIG_SPE
- 	/* save spe registers */
++#ifdef CONFIG_FRAME_POINTER
++	/* Mark last stack frame */
++	mov	lr, 0
++	mov	r7, 0
++#endif
++
++	/* Check if the boot loader actually provided a tag table */
++	lddpc	r0, magic_number
++	cp.w	r12, r0
++	brne	no_tag_table
++
+ 	/*
+ 	 * Save the tag table address for later use. This must be done
+ 	 * _after_ .bss has been initialized...
+@@ -53,6 +69,10 @@ bss_start_addr:
+ 	.long   __bss_start
+ end_addr:
+ 	.long   _end
++init_sr:
++	.long	0x007f0000	/* Supervisor mode, everything masked */
++stack_addr:
++	.long	init_thread_union
+ 
+ no_tag_table:
+ 	sub	r12, pc, (. - 2f)
+diff --git a/arch/avr32/kernel/head.S b/arch/avr32/kernel/head.S
+index 6163bd0..59eae6d 100644
+--- a/arch/avr32/kernel/head.S
++++ b/arch/avr32/kernel/head.S
+@@ -10,33 +10,13 @@
+ #include <linux/linkage.h>
+ 
+ #include <asm/page.h>
+-#include <asm/thread_info.h>
+-#include <asm/sysreg.h>
+ 
+ 	.section .init.text,"ax"
+ 	.global kernel_entry
+ kernel_entry:
+-	/* Initialize status register */
+-	lddpc   r0, init_sr
+-	mtsr	SYSREG_SR, r0
+-
+-	/* Set initial stack pointer */
+-	lddpc   sp, stack_addr
+-	sub	sp, -THREAD_SIZE
+-
+-#ifdef CONFIG_FRAME_POINTER
+-	/* Mark last stack frame */
+-	mov	lr, 0
+-	mov	r7, 0
+-#endif
+-
+ 	/* Start the show */
+ 	lddpc   pc, kernel_start_addr
+ 
+ 	.align  2
+-init_sr:
+-	.long   0x007f0000	/* Supervisor mode, everything masked */
+-stack_addr:
+-	.long   init_thread_union
+ kernel_start_addr:
+ 	.long   start_kernel
 -- 
 1.8.3.2
 
