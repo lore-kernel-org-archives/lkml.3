@@ -1,716 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258Ab3LFCL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 21:11:26 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18935 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754806Ab3LFCKM (ORCPT
+	id S1756711Ab3LFCMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 21:12:06 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:61224 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab3LFCMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 21:10:12 -0500
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 2/3] pinctrl: Add msm8x74 configuration
-Date: Thu, 5 Dec 2013 18:10:04 -0800
-Message-ID: <1386295805-13708-3-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
+	Thu, 5 Dec 2013 21:12:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
+References: <CAFXGft+CXk3W8=3w=AuYzqYtYnR8nH4Of9=668tUeT+tugD9-A@mail.gmail.com>
+Date: Fri, 6 Dec 2013 10:12:01 +0800
+Message-ID: <CAFXGft+2vxKnQ88988L9v+YrWB3OBxUqDwEAO4tLFH+CEyGNJA@mail.gmail.com>
+Subject: Re: Supporting 4 way connections in LKSCTP
+From: Sun Paul <paulrbk@gmail.com>
+To: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add initial definition of parameters for pinctrl-msm for the msm8x74
-platform.
+So, can I get confirmation that whether we can enhance to support the
+scenarios or any resolution on providing the correct routing?
 
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
----
- drivers/pinctrl/Kconfig           |   4 +
- drivers/pinctrl/Makefile          |   1 +
- drivers/pinctrl/pinctrl-msm8x74.c | 636 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 641 insertions(+)
- create mode 100644 drivers/pinctrl/pinctrl-msm8x74.c
-
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index d0b6846..31c6c4a 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -208,6 +208,10 @@ config PINCTRL_MSM
- 	select PINCONF
- 	select GENERIC_PINCONF
- 
-+config PINCTRL_MSM8X74
-+	bool "Qualcomm 8x74 pin controller driver"
-+	select PINCTRL_MSM
-+
- config PINCTRL_NOMADIK
- 	bool "Nomadik pin controller driver"
- 	depends on ARCH_U8500 || ARCH_NOMADIK
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index a525f8b..e5ec89b 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_PINCTRL_MXS)	+= pinctrl-mxs.o
- obj-$(CONFIG_PINCTRL_IMX23)	+= pinctrl-imx23.o
- obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
- obj-$(CONFIG_PINCTRL_MSM)	+= pinctrl-msm.o
-+obj-$(CONFIG_PINCTRL_MSM8X74)	+= pinctrl-msm8x74.o
- obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
- obj-$(CONFIG_PINCTRL_STN8815)	+= pinctrl-nomadik-stn8815.o
- obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
-diff --git a/drivers/pinctrl/pinctrl-msm8x74.c b/drivers/pinctrl/pinctrl-msm8x74.c
-new file mode 100644
-index 0000000..762552b
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-msm8x74.c
-@@ -0,0 +1,636 @@
-+/*
-+ * Copyright (c) 2013, Sony Mobile Communications AB.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+
-+#include "pinctrl-msm.h"
-+
-+static const struct pinctrl_pin_desc msm8x74_pins[] = {
-+	PINCTRL_PIN(0, "GPIO_0"),
-+	PINCTRL_PIN(1, "GPIO_1"),
-+	PINCTRL_PIN(2, "GPIO_2"),
-+	PINCTRL_PIN(3, "GPIO_3"),
-+	PINCTRL_PIN(4, "GPIO_4"),
-+	PINCTRL_PIN(5, "GPIO_5"),
-+	PINCTRL_PIN(6, "GPIO_6"),
-+	PINCTRL_PIN(7, "GPIO_7"),
-+	PINCTRL_PIN(8, "GPIO_8"),
-+	PINCTRL_PIN(9, "GPIO_9"),
-+	PINCTRL_PIN(10, "GPIO_10"),
-+	PINCTRL_PIN(11, "GPIO_11"),
-+	PINCTRL_PIN(12, "GPIO_12"),
-+	PINCTRL_PIN(13, "GPIO_13"),
-+	PINCTRL_PIN(14, "GPIO_14"),
-+	PINCTRL_PIN(15, "GPIO_15"),
-+	PINCTRL_PIN(16, "GPIO_16"),
-+	PINCTRL_PIN(17, "GPIO_17"),
-+	PINCTRL_PIN(18, "GPIO_18"),
-+	PINCTRL_PIN(19, "GPIO_19"),
-+	PINCTRL_PIN(20, "GPIO_20"),
-+	PINCTRL_PIN(21, "GPIO_21"),
-+	PINCTRL_PIN(22, "GPIO_22"),
-+	PINCTRL_PIN(23, "GPIO_23"),
-+	PINCTRL_PIN(24, "GPIO_24"),
-+	PINCTRL_PIN(25, "GPIO_25"),
-+	PINCTRL_PIN(26, "GPIO_26"),
-+	PINCTRL_PIN(27, "GPIO_27"),
-+	PINCTRL_PIN(28, "GPIO_28"),
-+	PINCTRL_PIN(29, "GPIO_29"),
-+	PINCTRL_PIN(30, "GPIO_30"),
-+	PINCTRL_PIN(31, "GPIO_31"),
-+	PINCTRL_PIN(32, "GPIO_32"),
-+	PINCTRL_PIN(33, "GPIO_33"),
-+	PINCTRL_PIN(34, "GPIO_34"),
-+	PINCTRL_PIN(35, "GPIO_35"),
-+	PINCTRL_PIN(36, "GPIO_36"),
-+	PINCTRL_PIN(37, "GPIO_37"),
-+	PINCTRL_PIN(38, "GPIO_38"),
-+	PINCTRL_PIN(39, "GPIO_39"),
-+	PINCTRL_PIN(40, "GPIO_40"),
-+	PINCTRL_PIN(41, "GPIO_41"),
-+	PINCTRL_PIN(42, "GPIO_42"),
-+	PINCTRL_PIN(43, "GPIO_43"),
-+	PINCTRL_PIN(44, "GPIO_44"),
-+	PINCTRL_PIN(45, "GPIO_45"),
-+	PINCTRL_PIN(46, "GPIO_46"),
-+	PINCTRL_PIN(47, "GPIO_47"),
-+	PINCTRL_PIN(48, "GPIO_48"),
-+	PINCTRL_PIN(49, "GPIO_49"),
-+	PINCTRL_PIN(50, "GPIO_50"),
-+	PINCTRL_PIN(51, "GPIO_51"),
-+	PINCTRL_PIN(52, "GPIO_52"),
-+	PINCTRL_PIN(53, "GPIO_53"),
-+	PINCTRL_PIN(54, "GPIO_54"),
-+	PINCTRL_PIN(55, "GPIO_55"),
-+	PINCTRL_PIN(56, "GPIO_56"),
-+	PINCTRL_PIN(57, "GPIO_57"),
-+	PINCTRL_PIN(58, "GPIO_58"),
-+	PINCTRL_PIN(59, "GPIO_59"),
-+	PINCTRL_PIN(60, "GPIO_60"),
-+	PINCTRL_PIN(61, "GPIO_61"),
-+	PINCTRL_PIN(62, "GPIO_62"),
-+	PINCTRL_PIN(63, "GPIO_63"),
-+	PINCTRL_PIN(64, "GPIO_64"),
-+	PINCTRL_PIN(65, "GPIO_65"),
-+	PINCTRL_PIN(66, "GPIO_66"),
-+	PINCTRL_PIN(67, "GPIO_67"),
-+	PINCTRL_PIN(68, "GPIO_68"),
-+	PINCTRL_PIN(69, "GPIO_69"),
-+	PINCTRL_PIN(70, "GPIO_70"),
-+	PINCTRL_PIN(71, "GPIO_71"),
-+	PINCTRL_PIN(72, "GPIO_72"),
-+	PINCTRL_PIN(73, "GPIO_73"),
-+	PINCTRL_PIN(74, "GPIO_74"),
-+	PINCTRL_PIN(75, "GPIO_75"),
-+	PINCTRL_PIN(76, "GPIO_76"),
-+	PINCTRL_PIN(77, "GPIO_77"),
-+	PINCTRL_PIN(78, "GPIO_78"),
-+	PINCTRL_PIN(79, "GPIO_79"),
-+	PINCTRL_PIN(80, "GPIO_80"),
-+	PINCTRL_PIN(81, "GPIO_81"),
-+	PINCTRL_PIN(82, "GPIO_82"),
-+	PINCTRL_PIN(83, "GPIO_83"),
-+	PINCTRL_PIN(84, "GPIO_84"),
-+	PINCTRL_PIN(85, "GPIO_85"),
-+	PINCTRL_PIN(86, "GPIO_86"),
-+	PINCTRL_PIN(87, "GPIO_87"),
-+	PINCTRL_PIN(88, "GPIO_88"),
-+	PINCTRL_PIN(89, "GPIO_89"),
-+	PINCTRL_PIN(90, "GPIO_90"),
-+	PINCTRL_PIN(91, "GPIO_91"),
-+	PINCTRL_PIN(92, "GPIO_92"),
-+	PINCTRL_PIN(93, "GPIO_93"),
-+	PINCTRL_PIN(94, "GPIO_94"),
-+	PINCTRL_PIN(95, "GPIO_95"),
-+	PINCTRL_PIN(96, "GPIO_96"),
-+	PINCTRL_PIN(97, "GPIO_97"),
-+	PINCTRL_PIN(98, "GPIO_98"),
-+	PINCTRL_PIN(99, "GPIO_99"),
-+	PINCTRL_PIN(100, "GPIO_100"),
-+	PINCTRL_PIN(101, "GPIO_101"),
-+	PINCTRL_PIN(102, "GPIO_102"),
-+	PINCTRL_PIN(103, "GPIO_103"),
-+	PINCTRL_PIN(104, "GPIO_104"),
-+	PINCTRL_PIN(105, "GPIO_105"),
-+	PINCTRL_PIN(106, "GPIO_106"),
-+	PINCTRL_PIN(107, "GPIO_107"),
-+	PINCTRL_PIN(108, "GPIO_108"),
-+	PINCTRL_PIN(109, "GPIO_109"),
-+	PINCTRL_PIN(110, "GPIO_110"),
-+	PINCTRL_PIN(111, "GPIO_111"),
-+	PINCTRL_PIN(112, "GPIO_112"),
-+	PINCTRL_PIN(113, "GPIO_113"),
-+	PINCTRL_PIN(114, "GPIO_114"),
-+	PINCTRL_PIN(115, "GPIO_115"),
-+	PINCTRL_PIN(116, "GPIO_116"),
-+	PINCTRL_PIN(117, "GPIO_117"),
-+	PINCTRL_PIN(118, "GPIO_118"),
-+	PINCTRL_PIN(119, "GPIO_119"),
-+	PINCTRL_PIN(120, "GPIO_120"),
-+	PINCTRL_PIN(121, "GPIO_121"),
-+	PINCTRL_PIN(122, "GPIO_122"),
-+	PINCTRL_PIN(123, "GPIO_123"),
-+	PINCTRL_PIN(124, "GPIO_124"),
-+	PINCTRL_PIN(125, "GPIO_125"),
-+	PINCTRL_PIN(126, "GPIO_126"),
-+	PINCTRL_PIN(127, "GPIO_127"),
-+	PINCTRL_PIN(128, "GPIO_128"),
-+	PINCTRL_PIN(129, "GPIO_129"),
-+	PINCTRL_PIN(130, "GPIO_130"),
-+	PINCTRL_PIN(131, "GPIO_131"),
-+	PINCTRL_PIN(132, "GPIO_132"),
-+	PINCTRL_PIN(133, "GPIO_133"),
-+	PINCTRL_PIN(134, "GPIO_134"),
-+	PINCTRL_PIN(135, "GPIO_135"),
-+	PINCTRL_PIN(136, "GPIO_136"),
-+	PINCTRL_PIN(137, "GPIO_137"),
-+	PINCTRL_PIN(138, "GPIO_138"),
-+	PINCTRL_PIN(139, "GPIO_139"),
-+	PINCTRL_PIN(140, "GPIO_140"),
-+	PINCTRL_PIN(141, "GPIO_141"),
-+	PINCTRL_PIN(142, "GPIO_142"),
-+	PINCTRL_PIN(143, "GPIO_143"),
-+	PINCTRL_PIN(144, "GPIO_144"),
-+	PINCTRL_PIN(145, "GPIO_145"),
-+
-+	PINCTRL_PIN(146, "SDC1_CLK"),
-+	PINCTRL_PIN(147, "SDC1_CMD"),
-+	PINCTRL_PIN(148, "SDC1_DATA"),
-+	PINCTRL_PIN(149, "SDC2_CLK"),
-+	PINCTRL_PIN(150, "SDC2_CMD"),
-+	PINCTRL_PIN(151, "SDC2_DATA"),
-+};
-+
-+#define DECLARE_MSM_GPIO_PINS(pin) static const unsigned int gpio##pin##_pins[] = { pin }
-+DECLARE_MSM_GPIO_PINS(0);
-+DECLARE_MSM_GPIO_PINS(1);
-+DECLARE_MSM_GPIO_PINS(2);
-+DECLARE_MSM_GPIO_PINS(3);
-+DECLARE_MSM_GPIO_PINS(4);
-+DECLARE_MSM_GPIO_PINS(5);
-+DECLARE_MSM_GPIO_PINS(6);
-+DECLARE_MSM_GPIO_PINS(7);
-+DECLARE_MSM_GPIO_PINS(8);
-+DECLARE_MSM_GPIO_PINS(9);
-+DECLARE_MSM_GPIO_PINS(10);
-+DECLARE_MSM_GPIO_PINS(11);
-+DECLARE_MSM_GPIO_PINS(12);
-+DECLARE_MSM_GPIO_PINS(13);
-+DECLARE_MSM_GPIO_PINS(14);
-+DECLARE_MSM_GPIO_PINS(15);
-+DECLARE_MSM_GPIO_PINS(16);
-+DECLARE_MSM_GPIO_PINS(17);
-+DECLARE_MSM_GPIO_PINS(18);
-+DECLARE_MSM_GPIO_PINS(19);
-+DECLARE_MSM_GPIO_PINS(20);
-+DECLARE_MSM_GPIO_PINS(21);
-+DECLARE_MSM_GPIO_PINS(22);
-+DECLARE_MSM_GPIO_PINS(23);
-+DECLARE_MSM_GPIO_PINS(24);
-+DECLARE_MSM_GPIO_PINS(25);
-+DECLARE_MSM_GPIO_PINS(26);
-+DECLARE_MSM_GPIO_PINS(27);
-+DECLARE_MSM_GPIO_PINS(28);
-+DECLARE_MSM_GPIO_PINS(29);
-+DECLARE_MSM_GPIO_PINS(30);
-+DECLARE_MSM_GPIO_PINS(31);
-+DECLARE_MSM_GPIO_PINS(32);
-+DECLARE_MSM_GPIO_PINS(33);
-+DECLARE_MSM_GPIO_PINS(34);
-+DECLARE_MSM_GPIO_PINS(35);
-+DECLARE_MSM_GPIO_PINS(36);
-+DECLARE_MSM_GPIO_PINS(37);
-+DECLARE_MSM_GPIO_PINS(38);
-+DECLARE_MSM_GPIO_PINS(39);
-+DECLARE_MSM_GPIO_PINS(40);
-+DECLARE_MSM_GPIO_PINS(41);
-+DECLARE_MSM_GPIO_PINS(42);
-+DECLARE_MSM_GPIO_PINS(43);
-+DECLARE_MSM_GPIO_PINS(44);
-+DECLARE_MSM_GPIO_PINS(45);
-+DECLARE_MSM_GPIO_PINS(46);
-+DECLARE_MSM_GPIO_PINS(47);
-+DECLARE_MSM_GPIO_PINS(48);
-+DECLARE_MSM_GPIO_PINS(49);
-+DECLARE_MSM_GPIO_PINS(50);
-+DECLARE_MSM_GPIO_PINS(51);
-+DECLARE_MSM_GPIO_PINS(52);
-+DECLARE_MSM_GPIO_PINS(53);
-+DECLARE_MSM_GPIO_PINS(54);
-+DECLARE_MSM_GPIO_PINS(55);
-+DECLARE_MSM_GPIO_PINS(56);
-+DECLARE_MSM_GPIO_PINS(57);
-+DECLARE_MSM_GPIO_PINS(58);
-+DECLARE_MSM_GPIO_PINS(59);
-+DECLARE_MSM_GPIO_PINS(60);
-+DECLARE_MSM_GPIO_PINS(61);
-+DECLARE_MSM_GPIO_PINS(62);
-+DECLARE_MSM_GPIO_PINS(63);
-+DECLARE_MSM_GPIO_PINS(64);
-+DECLARE_MSM_GPIO_PINS(65);
-+DECLARE_MSM_GPIO_PINS(66);
-+DECLARE_MSM_GPIO_PINS(67);
-+DECLARE_MSM_GPIO_PINS(68);
-+DECLARE_MSM_GPIO_PINS(69);
-+DECLARE_MSM_GPIO_PINS(70);
-+DECLARE_MSM_GPIO_PINS(71);
-+DECLARE_MSM_GPIO_PINS(72);
-+DECLARE_MSM_GPIO_PINS(73);
-+DECLARE_MSM_GPIO_PINS(74);
-+DECLARE_MSM_GPIO_PINS(75);
-+DECLARE_MSM_GPIO_PINS(76);
-+DECLARE_MSM_GPIO_PINS(77);
-+DECLARE_MSM_GPIO_PINS(78);
-+DECLARE_MSM_GPIO_PINS(79);
-+DECLARE_MSM_GPIO_PINS(80);
-+DECLARE_MSM_GPIO_PINS(81);
-+DECLARE_MSM_GPIO_PINS(82);
-+DECLARE_MSM_GPIO_PINS(83);
-+DECLARE_MSM_GPIO_PINS(84);
-+DECLARE_MSM_GPIO_PINS(85);
-+DECLARE_MSM_GPIO_PINS(86);
-+DECLARE_MSM_GPIO_PINS(87);
-+DECLARE_MSM_GPIO_PINS(88);
-+DECLARE_MSM_GPIO_PINS(89);
-+DECLARE_MSM_GPIO_PINS(90);
-+DECLARE_MSM_GPIO_PINS(91);
-+DECLARE_MSM_GPIO_PINS(92);
-+DECLARE_MSM_GPIO_PINS(93);
-+DECLARE_MSM_GPIO_PINS(94);
-+DECLARE_MSM_GPIO_PINS(95);
-+DECLARE_MSM_GPIO_PINS(96);
-+DECLARE_MSM_GPIO_PINS(97);
-+DECLARE_MSM_GPIO_PINS(98);
-+DECLARE_MSM_GPIO_PINS(99);
-+DECLARE_MSM_GPIO_PINS(100);
-+DECLARE_MSM_GPIO_PINS(101);
-+DECLARE_MSM_GPIO_PINS(102);
-+DECLARE_MSM_GPIO_PINS(103);
-+DECLARE_MSM_GPIO_PINS(104);
-+DECLARE_MSM_GPIO_PINS(105);
-+DECLARE_MSM_GPIO_PINS(106);
-+DECLARE_MSM_GPIO_PINS(107);
-+DECLARE_MSM_GPIO_PINS(108);
-+DECLARE_MSM_GPIO_PINS(109);
-+DECLARE_MSM_GPIO_PINS(110);
-+DECLARE_MSM_GPIO_PINS(111);
-+DECLARE_MSM_GPIO_PINS(112);
-+DECLARE_MSM_GPIO_PINS(113);
-+DECLARE_MSM_GPIO_PINS(114);
-+DECLARE_MSM_GPIO_PINS(115);
-+DECLARE_MSM_GPIO_PINS(116);
-+DECLARE_MSM_GPIO_PINS(117);
-+DECLARE_MSM_GPIO_PINS(118);
-+DECLARE_MSM_GPIO_PINS(119);
-+DECLARE_MSM_GPIO_PINS(120);
-+DECLARE_MSM_GPIO_PINS(121);
-+DECLARE_MSM_GPIO_PINS(122);
-+DECLARE_MSM_GPIO_PINS(123);
-+DECLARE_MSM_GPIO_PINS(124);
-+DECLARE_MSM_GPIO_PINS(125);
-+DECLARE_MSM_GPIO_PINS(126);
-+DECLARE_MSM_GPIO_PINS(127);
-+DECLARE_MSM_GPIO_PINS(128);
-+DECLARE_MSM_GPIO_PINS(129);
-+DECLARE_MSM_GPIO_PINS(130);
-+DECLARE_MSM_GPIO_PINS(131);
-+DECLARE_MSM_GPIO_PINS(132);
-+DECLARE_MSM_GPIO_PINS(133);
-+DECLARE_MSM_GPIO_PINS(134);
-+DECLARE_MSM_GPIO_PINS(135);
-+DECLARE_MSM_GPIO_PINS(136);
-+DECLARE_MSM_GPIO_PINS(137);
-+DECLARE_MSM_GPIO_PINS(138);
-+DECLARE_MSM_GPIO_PINS(139);
-+DECLARE_MSM_GPIO_PINS(140);
-+DECLARE_MSM_GPIO_PINS(141);
-+DECLARE_MSM_GPIO_PINS(142);
-+DECLARE_MSM_GPIO_PINS(143);
-+DECLARE_MSM_GPIO_PINS(144);
-+DECLARE_MSM_GPIO_PINS(145);
-+
-+static const unsigned int sdc1_clk_pins[] = { 146 };
-+static const unsigned int sdc1_cmd_pins[] = { 147 };
-+static const unsigned int sdc1_data_pins[] = { 148 };
-+static const unsigned int sdc2_clk_pins[] = { 149 };
-+static const unsigned int sdc2_cmd_pins[] = { 150 };
-+static const unsigned int sdc2_data_pins[] = { 151 };
-+
-+#define FUNCTION(fname)					\
-+	[MSM_MUX_##fname] = {				\
-+		.name = #fname,				\
-+		.groups = fname##_groups,		\
-+		.ngroups = ARRAY_SIZE(fname##_groups),	\
-+	}
-+
-+#define PINGROUP(id, f1, f2, f3, f4, f5, f6, f7)	\
-+	{						\
-+		.name = "gpio" #id,			\
-+		.pins = gpio##id##_pins,		\
-+		.npins = ARRAY_SIZE(gpio##id##_pins),	\
-+		.funcs = {				\
-+			MSM_MUX_NA, /* gpio mode */	\
-+			MSM_MUX_##f1,			\
-+			MSM_MUX_##f2,			\
-+			MSM_MUX_##f3,			\
-+			MSM_MUX_##f4,			\
-+			MSM_MUX_##f5,			\
-+			MSM_MUX_##f6,			\
-+			MSM_MUX_##f7			\
-+		},					\
-+		.ctl_reg = 0x1000 + 0x10 * id ,		\
-+		.io_reg = 0x1004 + 0x10 * id,		\
-+		.intr_cfg_reg = 0x1008 + 0x10 * id,	\
-+		.intr_status_reg = 0x100c + 0x10 * id,	\
-+		.intr_target_reg = 0x1008 + 0x10 * id,	\
-+		.mux_bit = 2,				\
-+		.pull_bit = 0,				\
-+		.drv_bit = 6,				\
-+		.oe_bit = 9,				\
-+		.in_bit = 0,				\
-+		.out_bit = 1,				\
-+		.intr_enable_bit = 0,			\
-+		.intr_status_bit = 0,			\
-+		.intr_target_bit = 5,			\
-+		.intr_raw_status_bit = 4,		\
-+		.intr_polarity_bit = 1,			\
-+		.intr_detection_bit = 2,		\
-+		.intr_detection_width = 2,		\
-+	}
-+
-+#define SDC_PINGROUP(pg_name, ctl, pull, drv)		\
-+	{						\
-+		.name = #pg_name,			\
-+		.pins = pg_name##_pins,			\
-+		.npins = ARRAY_SIZE(pg_name##_pins),	\
-+		.ctl_reg = ctl,				\
-+		.io_reg = 0,				\
-+		.intr_cfg_reg = 0,			\
-+		.intr_status_reg = 0,			\
-+		.intr_target_reg = 0,			\
-+		.mux_bit = -1,				\
-+		.pull_bit = pull,			\
-+		.drv_bit = drv,				\
-+		.oe_bit = -1,				\
-+		.in_bit = -1,				\
-+		.out_bit = -1,				\
-+		.intr_enable_bit = -1,			\
-+		.intr_status_bit = -1,			\
-+		.intr_target_bit = -1,			\
-+		.intr_raw_status_bit = -1,		\
-+		.intr_polarity_bit = -1,		\
-+		.intr_detection_bit = -1,		\
-+		.intr_detection_width = -1,		\
-+	}
-+
-+/*
-+ * TODO: Add the rest of the possible functions and fill out
-+ * the pingroup table below.
-+ */
-+enum msm8x74_functions {
-+	MSM_MUX_blsp_i2c2,
-+	MSM_MUX_blsp_i2c6,
-+	MSM_MUX_blsp_i2c11,
-+	MSM_MUX_blsp_spi1,
-+	MSM_MUX_blsp_uart2,
-+	MSM_MUX_blsp_uart8,
-+	MSM_MUX_slimbus,
-+	MSM_MUX_NA,
-+};
-+
-+static const char * const blsp_i2c2_groups[] = { "gpio6", "gpio7" };
-+static const char * const blsp_i2c6_groups[] = { "gpio29", "gpio30" };
-+static const char * const blsp_i2c11_groups[] = { "gpio83", "gpio84" };
-+static const char * const blsp_spi1_groups[] = { "gpio0", "gpio1", "gpio2", "gpio3" };
-+static const char * const blsp_uart2_groups[] = { "gpio4", "gpio5" };
-+static const char * const blsp_uart8_groups[] = { "gpio45", "gpio46" };
-+static const char * const slimbus_groups[] = { "gpio70", "gpio71" };
-+
-+static const struct msm_function msm8x74_functions[] = {
-+	FUNCTION(blsp_i2c2),
-+	FUNCTION(blsp_i2c6),
-+	FUNCTION(blsp_i2c11),
-+	FUNCTION(blsp_spi1),
-+	FUNCTION(blsp_uart2),
-+	FUNCTION(blsp_uart8),
-+	FUNCTION(slimbus),
-+};
-+
-+static const struct msm_pingroup msm8x74_groups[] = {
-+	PINGROUP(0,   blsp_spi1, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(1,   blsp_spi1, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(2,   blsp_spi1, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(3,   blsp_spi1, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(4,   NA, blsp_uart2, NA, NA, NA, NA, NA),
-+	PINGROUP(5,   NA, blsp_uart2, NA, NA, NA, NA, NA),
-+	PINGROUP(6,   NA, NA, blsp_i2c2, NA, NA, NA, NA),
-+	PINGROUP(7,   NA, NA, blsp_i2c2, NA, NA, NA, NA),
-+	PINGROUP(8,   NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(9,   NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(10,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(11,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(12,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(13,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(14,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(15,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(16,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(17,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(18,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(19,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(20,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(21,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(22,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(23,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(24,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(25,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(26,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(27,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(28,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(29,  NA, NA, blsp_i2c6, NA, NA, NA, NA),
-+	PINGROUP(30,  NA, NA, blsp_i2c6, NA, NA, NA, NA),
-+	PINGROUP(31,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(32,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(33,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(34,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(35,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(36,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(37,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(38,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(39,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(40,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(41,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(42,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(43,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(44,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(45,  NA, blsp_uart8, NA, NA, NA, NA, NA),
-+	PINGROUP(46,  NA, blsp_uart8, NA, NA, NA, NA, NA),
-+	PINGROUP(47,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(48,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(49,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(50,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(51,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(52,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(53,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(54,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(55,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(56,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(57,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(58,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(59,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(60,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(61,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(62,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(63,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(64,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(65,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(66,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(67,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(68,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(69,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(70,  slimbus, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(71,  slimbus, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(72,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(73,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(74,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(75,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(76,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(77,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(78,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(79,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(80,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(81,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(82,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(83,  NA, NA, blsp_i2c11, NA, NA, NA, NA),
-+	PINGROUP(84,  NA, NA, blsp_i2c11, NA, NA, NA, NA),
-+	PINGROUP(85,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(86,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(87,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(88,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(89,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(90,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(91,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(92,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(93,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(94,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(95,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(96,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(97,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(98,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(99,  NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(100, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(101, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(102, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(103, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(104, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(105, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(106, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(107, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(108, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(109, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(110, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(111, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(112, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(113, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(114, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(115, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(116, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(117, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(118, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(119, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(120, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(121, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(122, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(123, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(124, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(125, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(126, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(127, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(128, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(129, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(130, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(131, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(132, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(133, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(134, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(135, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(136, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(137, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(138, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(139, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(140, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(141, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(143, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(143, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(144, NA, NA, NA, NA, NA, NA, NA),
-+	PINGROUP(145, NA, NA, NA, NA, NA, NA, NA),
-+	SDC_PINGROUP(sdc1_clk, 0x2044, 13, 6),
-+	SDC_PINGROUP(sdc1_cmd, 0x2044, 11, 3),
-+	SDC_PINGROUP(sdc1_data, 0x2044, 9, 0),
-+	SDC_PINGROUP(sdc2_clk, 0x2048, 14, 6),
-+	SDC_PINGROUP(sdc2_cmd, 0x2048, 11, 3),
-+	SDC_PINGROUP(sdc2_data, 0x2048, 9, 0),
-+};
-+
-+#define NUM_GPIO_PINGROUPS 146
-+
-+static const struct msm_pinctrl_soc_data msm8x74_pinctrl = {
-+	.pins = msm8x74_pins,
-+	.npins = ARRAY_SIZE(msm8x74_pins),
-+	.functions = msm8x74_functions,
-+	.nfunctions = ARRAY_SIZE(msm8x74_functions),
-+	.groups = msm8x74_groups,
-+	.ngroups = ARRAY_SIZE(msm8x74_groups),
-+	.ngpios = NUM_GPIO_PINGROUPS,
-+};
-+
-+static int msm8x74_pinctrl_probe(struct platform_device *pdev)
-+{
-+	return msm_pinctrl_probe(pdev, &msm8x74_pinctrl);
-+}
-+
-+static struct of_device_id msm8x74_pinctrl_of_match[] = {
-+	{ .compatible = "qcom,msm8x74-pinctrl", },
-+	{ },
-+};
-+
-+static struct platform_driver msm8x74_pinctrl_driver = {
-+	.driver = {
-+		.name = "msm8x74-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = msm8x74_pinctrl_of_match,
-+	},
-+	.probe = msm8x74_pinctrl_probe,
-+	.remove = msm_pinctrl_remove,
-+};
-+
-+static int __init msm8x74_pinctrl_init(void)
-+{
-+	return platform_driver_register(&msm8x74_pinctrl_driver);
-+}
-+arch_initcall(msm8x74_pinctrl_init);
-+
-+static void __exit msm8x74_pinctrl_exit(void)
-+{
-+	platform_driver_unregister(&msm8x74_pinctrl_driver);
-+}
-+module_exit(msm8x74_pinctrl_exit);
-+
-+MODULE_AUTHOR("Bjorn Andersson <bjorn.andersson@sonymobile.com>");
-+MODULE_DESCRIPTION("Qualcomm MSM8x74 pinctrl driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, msm8x74_pinctrl_of_match);
-+
--- 
-1.8.2.2
-
+On Tue, Nov 26, 2013 at 9:03 AM, Sun Paul <paulrbk@gmail.com> wrote:
+> Hi
+>
+> we have a problem on using LKSCTP to form a 4 ways multi-homing network.
+>
+> Configuration
+> - Node-A has 2 IP addresses in different subnets, known as IP-A (eth1),
+> IP-B (eth2)
+> - Node-B has 2 IP addresses in different subnets, known as IP-X (eth1),
+> IP-Y (eth2)
+>
+> the four way paths are shown below.
+> 1. IP-A (11.1.1.1) to IP-X (11.1.1.11)
+> 2. IP-B (12.1.1.1) to IP-Y (12.1.1.11)
+> 3. IP-A (11.1.1.1) to IP-Y (12.1.1.11)
+> 4. IP-B (12.1.1.1) to IP-X (11.1.1.11)
+>
+> the HB/HB_ACK is normal for the paths " IP-A to IP-X" and "IP-B to
+> IP-Y", but it is not correct for the rest of two.
+>
+> First of all, we are using iproute2 to form 2 table such that when
+> IP-B arrives on IP-X, it will know how to route back to IP-B on the
+> same interface, i.e (eth1). Same logic for the path "IP-A to IP-X".
+>
+> What we observed here is that when 12.1.1.1 sends INIT to 11.1.1.11,
+> LKSCTP will send back the INIT_ACK to 12.1.1.1 using 12.1.1.11 but not
+> using the IP 11.1.1.11.
+>
+> The above operation makes the subsequence HB/HB_ACK in using wrong IP address.
+>
+> TCP trace on eth1
+> 18:02:41.058640 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
+> [init tag: 19933036] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
+> 18:02:41.061634 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
+> 18:02:41.062642 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:41.062846 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+> 18:02:41.361811 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+> 18:02:41.661791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+> 18:02:41.961791 IP 11.1.1.11.2905 > 11.1.1.1.2905: sctp (1) [HB ACK]
+>
+> TCP trace on eth2
+> 18:02:41.058755 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
+> [init tag: 424726157] [rwnd: 131072] [OS: 5] [MIS: 5] [init TSN:
+> 3340756356]
+> 18:02:41.061696 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
+> 18:02:41.062663 IP 12.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
+> 18:02:41.062791 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:41.361777 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:41.661772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:41.961772 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:42.161771 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:42.461770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+> 18:02:42.675770 IP 11.1.1.1.2905 > 12.1.1.11.2905: sctp (1) [HB REQ]
+>
+>
+> If we are using single homing, there is no problem on the SCTP
+> communication. Below is the TCP trace on eth1 using sctp_test
+>
+> 18:09:55.356727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [INIT]
+> [init tag: 32516609] [rwnd: 102400] [OS: 16] [MIS: 16] [init TSN: 0]
+> 18:09:55.356811 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [INIT ACK]
+> [init tag: 3168861995] [rwnd: 131072] [OS: 10] [MIS: 16] [init TSN:
+> 1877695021]
+> 18:09:55.357727 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [COOKIE ECHO]
+> 18:09:55.357788 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [COOKIE ACK]
+> 18:09:55.358724 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
+> 18:09:55.358740 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
+> 18:09:55.379715 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [DATA]
+> (B)(E) [TSN: 0] [SID: 0] [SSEQ 0] [PPID 0x3]
+> 18:09:55.379735 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [SACK]
+> [cum ack 0] [a_rwnd 131064] [#gap acks 0] [#dup tsns 0]
+> 18:09:55.657716 IP 12.1.1.1.2905 > 11.1.1.11.2905: sctp (1) [HB REQ]
+> 18:09:55.657732 IP 11.1.1.11.2905 > 12.1.1.1.2905: sctp (1) [HB ACK]
+>
+> From the observations, it seems that the LKSCTP library is not able to
+> use the original local address when multi-homing is being used. Is
+> there anyway can be resolved it?
+>
+> Thanks
+>
+> PS
