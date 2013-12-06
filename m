@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab3LFGXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 01:23:31 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52914 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab3LFGX0 (ORCPT
+	id S1756285Ab3LFGX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 01:23:59 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:13382 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3LFGXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 01:23:26 -0500
-Message-ID: <52A16D49.9050105@hitachi.com>
-Date: Fri, 06 Dec 2013 15:23:05 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 6 Dec 2013 01:23:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 22:17:11 -0800
+Message-ID: <52A16CCE.7030304@nvidia.com>
+Date: Fri, 6 Dec 2013 11:51:02 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
- fixes crash bugs
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <CA+b37P1ejFn4YJekJFOCe701mLTprqQi4KSyGV4S7QiVaC1=qA@mail.gmail.com>
-In-Reply-To: <CA+b37P1ejFn4YJekJFOCe701mLTprqQi4KSyGV4S7QiVaC1=qA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/4] pinctrl: tegra: Add devicetree binding document for
+ Tegra124
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-2-git-send-email-ldewangan@nvidia.com> <52A10973.5000101@wwwdotorg.org>
+In-Reply-To: <52A10973.5000101@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/05 22:08), Sandeepa Prabhu wrote:
->> OK, I think the kprobe is like a strong medicine, not a toy,
->> since it can intercept most of the kernel functions which
->> may process a sensitive user private data. Thus even if we
->> fix all bugs and make it safe, I don't think we can open
->> it for all users (of course, there should be a knob to open
->> for any or restricted users.)
->>
->>> So we need both a maintainable and a sane/safe solution, and I'd like
->>> to apply the whole thing at once and be at ease that the solution is
->>> round. We should have done this years ago.
->>
->> For the safeness of kprobes, I have an idea; introduce a whitelist
->> for dynamic events. AFAICS, the biggest unstable issue of kprobes
->> comes from putting *many* probes on the functions called from tracers.
->>
->> It doesn't crash the kernel but slows down so much, because every
->> probes hit many other nested miss-hit probes. This gives us a big
->> performance impact. However, on the other side, this kind of feature
->> can be used *for debugging* static trace events by dynamic one if we
->> carefully use a small number of probes on such functions. :)
->>
->> Thus, I think we can restrict users from probing such functions by
->> using a whitelist which ftrace does already have;
->>  available_filter_functions :)
-> I am not sure if this question is related, uprobes or ftrace code does
-> not  define __kprobes, so is it safe to place kprobe on uprobes or
-> ftrace code? 
+On Friday 06 December 2013 04:47 AM, Stephen Warren wrote:
+> On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
+>> This device tree binding document describes the Tegra124 pincontrol
+>> DT bindings. This document lists all valid properties, names, mux
+>> options of Tegra124 pins.
+> Is this a repost of what Ashwini sent a few weeks back, or V2? If V2,
+> it'd be useful to know what changed...
 
-Yes, it is "safe" in qualitative meaning. But for ftrace code, it could
-give a performance impact by miss-hitting. Since uprobe is independent
-from kprobe, it should work.
+I am not aware that Ashwini already sent  back. I did not get chance to 
+talk to her on this. I was thinking that it is still in internal review.
 
-> Is it expected from arch code to support such cases?
+Anyhow, I compare the downstream to your linux-next-common and found 
+some diff. Something fixed in your tree which need downstream and 
+something fixed in downstream which need to upstream. :)
 
-Yes, the arch dependent implementation is the key. If it shares some
-code which can be called from miss-hit path, it should be blacklisted.
+One diff is
+Mux enums are:
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+TEGRA_MUX_SATA,
+TEGRA_MUX_CCLA,
+TEGRA_MUX_PE0,
+TEGRA_MUX_PE,
+TEGRA_MUX_PE1,
+TEGRA_MUX_DP,
+TEGRA_MUX_RTCK,
+TEGRA_MUX_SYS,
+TEGRA_MUX_CLK,
+TEGRA_MUX_TMDS,
+};
 
 
+Functions definitions are:
+
+FUNCTION(sata),
+FUNCTION(ccla),
+FUNCTION(rtck),
+FUNCTION(pe0),
+FUNCTION(pe),
+FUNCTION(pe1),
+FUNCTION(dp),
+
+
+
+I think I will post the patch to fix this issue.
