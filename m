@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759436Ab3LFVxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60955 "EHLO
+	id S1161538Ab3LFWIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:08:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759396Ab3LFVxo (ORCPT
+	with ESMTP id S1759437Ab3LFVxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:44 -0500
+	Fri, 6 Dec 2013 16:53:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Eryu Guan <eguan@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Kent Overstreet <kmo@daterainc.com>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH 3.10 44/58] aio: restore locking of ioctx list on removal
-Date: Fri,  6 Dec 2013 13:52:15 -0800
-Message-Id: <20131206214848.976371883@linuxfoundation.org>
+        KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>,
+        Chris Ball <cjb@laptop.org>
+Subject: [PATCH 3.10 43/58] mmc: block: fix a bug of error handling in MMC driver
+Date: Fri,  6 Dec 2013 13:52:14 -0800
+Message-Id: <20131206214848.882591682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -28,71 +27,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mateusz Guzik <mguzik@redhat.com>
+From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
 
-Commit 36f5588905c10a8c4568a210d601fe8c3c27e0f0
-"aio: refcounting cleanup" resulted in ioctx_lock not being held
-during ctx removal, leaving the list susceptible to corruptions.
+commit c8760069627ad3b0dbbea170f0c4c58b16e18d3d upstream.
 
-In mainline kernel the issue went away as a side effect of
-db446a08c23d5475e6b08c87acca79ebb20f283c "aio: convert the ioctx list to
-table lookup v3".
+Current MMC driver doesn't handle generic error (bit19 of device
+status) in write sequence. As a result, write data gets lost when
+generic error occurs. For example, a generic error when updating a
+filesystem management information causes a loss of write data and
+corrupts the filesystem. In the worst case, the system will never
+boot.
 
-Fix the problem by restoring appropriate locking.
+This patch includes the following functionality:
+  1. To enable error checking for the response of CMD12 and CMD13
+     in write command sequence
+  2. To retry write sequence when a generic error occurs
 
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Reported-by: Eryu Guan <eguan@redhat.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Acked-by: Benjamin LaHaise <bcrl@kvack.org>
+Messages are added for v2 to show what occurs.
+
+Signed-off-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/mmc/card/block.c |   45 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 42 insertions(+), 3 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -423,10 +423,12 @@ static void kill_ioctx_rcu(struct rcu_he
-  *	when the processes owning a context have all exited to encourage
-  *	the rapid destruction of the kioctx.
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -769,7 +769,7 @@ static int mmc_blk_cmd_error(struct requ
+  * Otherwise we don't understand what happened, so abort.
   */
--static void kill_ioctx(struct kioctx *ctx)
-+static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
+ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+-	struct mmc_blk_request *brq, int *ecc_err)
++	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
  {
- 	if (!atomic_xchg(&ctx->dead, 1)) {
-+		spin_lock(&mm->ioctx_lock);
- 		hlist_del_rcu(&ctx->list);
-+		spin_unlock(&mm->ioctx_lock);
+ 	bool prev_cmd_status_valid = true;
+ 	u32 status, stop_status = 0;
+@@ -807,6 +807,16 @@ static int mmc_blk_cmd_recovery(struct m
+ 	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
+ 		*ecc_err = 1;
  
- 		/*
- 		 * It'd be more correct to do this in free_ioctx(), after all
-@@ -494,7 +496,7 @@ void exit_aio(struct mm_struct *mm)
- 		 */
- 		ctx->mmap_size = 0;
- 
--		kill_ioctx(ctx);
-+		kill_ioctx(mm, ctx);
++	/* Flag General errors */
++	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
++		if ((status & R1_ERROR) ||
++			(brq->stop.resp[0] & R1_ERROR)) {
++			pr_err("%s: %s: general error sending stop or status command, stop cmd response %#x, card status %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0], status);
++			*gen_err = 1;
++		}
++
+ 	/*
+ 	 * Check the current card state.  If it is in some data transfer
+ 	 * mode, tell it to stop (and hopefully transition back to TRAN.)
+@@ -826,6 +836,13 @@ static int mmc_blk_cmd_recovery(struct m
+ 			return ERR_ABORT;
+ 		if (stop_status & R1_CARD_ECC_FAILED)
+ 			*ecc_err = 1;
++		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
++			if (stop_status & R1_ERROR) {
++				pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++				       req->rq_disk->disk_name, __func__,
++				       stop_status);
++				*gen_err = 1;
++			}
  	}
- }
  
-@@ -852,7 +854,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_e
- 	if (!IS_ERR(ioctx)) {
- 		ret = put_user(ioctx->user_id, ctxp);
- 		if (ret)
--			kill_ioctx(ioctx);
-+			kill_ioctx(current->mm, ioctx);
- 		put_ioctx(ioctx);
+ 	/* Check for set block count errors */
+@@ -1069,7 +1086,7 @@ static int mmc_blk_err_check(struct mmc_
+ 						    mmc_active);
+ 	struct mmc_blk_request *brq = &mq_mrq->brq;
+ 	struct request *req = mq_mrq->req;
+-	int ecc_err = 0;
++	int ecc_err = 0, gen_err = 0;
+ 
+ 	/*
+ 	 * sbc.error indicates a problem with the set block count
+@@ -1083,7 +1100,7 @@ static int mmc_blk_err_check(struct mmc_
+ 	 */
+ 	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
+ 	    brq->data.error) {
+-		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
++		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
+ 		case ERR_RETRY:
+ 			return MMC_BLK_RETRY;
+ 		case ERR_ABORT:
+@@ -1115,6 +1132,14 @@ static int mmc_blk_err_check(struct mmc_
+ 		u32 status;
+ 		unsigned long timeout;
+ 
++		/* Check stop command response */
++		if (brq->stop.resp[0] & R1_ERROR) {
++			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0]);
++			gen_err = 1;
++		}
++
+ 		timeout = jiffies + msecs_to_jiffies(MMC_BLK_TIMEOUT_MS);
+ 		do {
+ 			int err = get_card_status(card, &status, 5);
+@@ -1124,6 +1149,13 @@ static int mmc_blk_err_check(struct mmc_
+ 				return MMC_BLK_CMD_ERR;
+ 			}
+ 
++			if (status & R1_ERROR) {
++				pr_err("%s: %s: general error sending status command, card status %#x\n",
++				       req->rq_disk->disk_name, __func__,
++				       status);
++				gen_err = 1;
++			}
++
+ 			/* Timeout if the device never becomes ready for data
+ 			 * and never leaves the program state.
+ 			 */
+@@ -1143,6 +1175,13 @@ static int mmc_blk_err_check(struct mmc_
+ 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
  	}
  
-@@ -870,7 +872,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_
- {
- 	struct kioctx *ioctx = lookup_ioctx(ctx);
- 	if (likely(NULL != ioctx)) {
--		kill_ioctx(ioctx);
-+		kill_ioctx(current->mm, ioctx);
- 		put_ioctx(ioctx);
- 		return 0;
- 	}
++	/* if general error occurs, retry the write operation. */
++	if (gen_err) {
++		pr_warn("%s: retrying write for general error\n",
++				req->rq_disk->disk_name);
++		return MMC_BLK_RETRY;
++	}
++
+ 	if (brq->data.error) {
+ 		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
+ 		       req->rq_disk->disk_name, brq->data.error,
 
 
