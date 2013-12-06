@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161827Ab3LFXeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:34:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48817 "EHLO
+	id S1759011Ab3LFXfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:35:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48807 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759573Ab3LFXTB (ORCPT
+	with ESMTP id S1752412Ab3LFXS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:19:01 -0500
+	Fri, 6 Dec 2013 18:18:56 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 095/152] prism54: set netdev type to "wlan"
-Date: Fri,  6 Dec 2013 15:10:19 -0800
-Message-Id: <1386371476-2477-96-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 113/152] ipc: set EFAULT as default error in load_msg()
+Date: Fri,  6 Dec 2013 15:10:37 -0800
+Message-Id: <1386371476-2477-114-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,47 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 8e3ffa471091c560deb6738ed9ab7445b7a5fd04 upstream.
+commit 2b3097a294b6daaf390010de14ca50bfccbc6fb6 upstream.
 
-Userspace uses the netdev devtype for stuff like device naming and type
-detection.  Be nice and set it.  Remove the pointless #if/#endif around
-SET_NETDEV_DEV too.
-
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: 3.8 stable prereq for
+  4e9b45a ipc, msg: fix message length check for negative values ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/prism54/islpci_dev.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ ipc/msgutil.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wireless/prism54/islpci_dev.c b/drivers/net/wireless/prism54/islpci_dev.c
-index 5970ff6..d498b02 100644
---- a/drivers/net/wireless/prism54/islpci_dev.c
-+++ b/drivers/net/wireless/prism54/islpci_dev.c
-@@ -811,6 +811,10 @@ static const struct net_device_ops islpci_netdev_ops = {
- 	.ndo_validate_addr	= eth_validate_addr,
- };
- 
-+static struct device_type wlan_type = {
-+	.name	= "wlan",
-+};
-+
- struct net_device *
- islpci_setup(struct pci_dev *pdev)
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index b79582d..d33fbb2 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -84,7 +84,7 @@ struct msg_msg *load_msg(const void __user *src, int len)
  {
-@@ -821,9 +825,8 @@ islpci_setup(struct pci_dev *pdev)
- 		return ndev;
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg *seg;
+-	int err;
++	int err = -EFAULT;
+ 	int alen;
  
- 	pci_set_drvdata(pdev, ndev);
--#if defined(SET_NETDEV_DEV)
- 	SET_NETDEV_DEV(ndev, &pdev->dev);
--#endif
-+	SET_NETDEV_DEVTYPE(ndev, &wlan_type);
+ 	msg = alloc_msg(len);
+@@ -92,19 +92,15 @@ struct msg_msg *load_msg(const void __user *src, int len)
+ 		return ERR_PTR(-ENOMEM);
  
- 	/* setup the structure members */
- 	ndev->base_addr = pci_resource_start(pdev, 0);
+ 	alen = min(len, DATALEN_MSG);
+-	if (copy_from_user(msg + 1, src, alen)) {
+-		err = -EFAULT;
++	if (copy_from_user(msg + 1, src, alen))
+ 		goto out_err;
+-	}
+ 
+ 	for (seg = msg->next; seg != NULL; seg = seg->next) {
+ 		len -= alen;
+ 		src = (char __user *)src + alen;
+ 		alen = min(len, DATALEN_SEG);
+-		if (copy_from_user(seg + 1, src, alen)) {
+-			err = -EFAULT;
++		if (copy_from_user(seg + 1, src, alen))
+ 			goto out_err;
+-		}
+ 	}
+ 
+ 	err = security_msg_msg_alloc(msg);
 -- 
 1.8.3.2
 
