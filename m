@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759756Ab3LFWkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:40:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60452 "EHLO
+	id S1759827Ab3LFWk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:40:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758955Ab3LFVw3 (ORCPT
+	with ESMTP id S1758952Ab3LFVw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:29 -0500
+	Fri, 6 Dec 2013 16:52:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Dave Jones <davej@redhat.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Dave Jones <davej@fedoraproject.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 19/83] net-tcp: fix panic in tcp_fastopen_cache_set()
-Date: Fri,  6 Dec 2013 13:51:09 -0800
-Message-Id: <20131206214641.857972969@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: [PATCH 3.12 05/83] net: x86: bpf: dont forget to free sk_filter (v2)
+Date: Fri,  6 Dec 2013 13:50:55 -0800
+Message-Id: <20131206214640.578168115@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -29,43 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-[ Upstream commit dccf76ca6b626c0c4a4e09bb221adee3270ab0ef ]
+[ Upstream commit 98bbc06aabac5a2dcc46580d20c59baf8ebe479f ]
 
-We had some reports of crashes using TCP fastopen, and Dave Jones
-gave a nice stack trace pointing to the error.
+sk_filter isn't freed if bpf_func is equal to sk_run_filter.
 
-Issue is that tcp_get_metrics() should not be called with a NULL dst
+This memory leak was introduced by v3.12-rc3-224-gd45ed4a4
+"net: fix unsafe set_memory_rw from softirq".
 
-Fixes: 1fe4c481ba637 ("net-tcp: Fast Open client - cookie cache")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Acked-by: Yuchung Cheng <ycheng@google.com>
-Tested-by: Dave Jones <davej@fedoraproject.org>
+Before this patch sk_filter was freed in sk_filter_release_rcu,
+now it should be freed in bpf_jit_free.
+
+Here is output of kmemleak:
+unreferenced object 0xffff8800b774eab0 (size 128):
+  comm "systemd", pid 1, jiffies 4294669014 (age 124.062s)
+  hex dump (first 32 bytes):
+    00 00 00 00 0b 00 00 00 20 63 7f b7 00 88 ff ff  ........ c......
+    60 d4 55 81 ff ff ff ff 30 d9 55 81 ff ff ff ff  `.U.....0.U.....
+  backtrace:
+    [<ffffffff816444be>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff811845af>] __kmalloc+0xef/0x260
+    [<ffffffff81534028>] sock_kmalloc+0x38/0x60
+    [<ffffffff8155d4dd>] sk_attach_filter+0x5d/0x190
+    [<ffffffff815378a1>] sock_setsockopt+0x991/0x9e0
+    [<ffffffff81531bd6>] SyS_setsockopt+0xb6/0xd0
+    [<ffffffff8165f3e9>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
+
+v2: add extra { } after else
+
+Fixes: d45ed4a4e33a ("net: fix unsafe set_memory_rw from softirq")
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_metrics.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/net/bpf_jit_comp.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/ipv4/tcp_metrics.c
-+++ b/net/ipv4/tcp_metrics.c
-@@ -659,10 +659,13 @@ void tcp_fastopen_cache_get(struct sock
- void tcp_fastopen_cache_set(struct sock *sk, u16 mss,
- 			    struct tcp_fastopen_cookie *cookie, bool syn_lost)
- {
-+	struct dst_entry *dst = __sk_dst_get(sk);
- 	struct tcp_metrics_block *tm;
- 
-+	if (!dst)
-+		return;
- 	rcu_read_lock();
--	tm = tcp_get_metrics(sk, __sk_dst_get(sk), true);
-+	tm = tcp_get_metrics(sk, dst, true);
- 	if (tm) {
- 		struct tcp_fastopen_metrics *tfom = &tm->tcpm_fastopen;
- 
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -788,5 +788,7 @@ void bpf_jit_free(struct sk_filter *fp)
+ 	if (fp->bpf_func != sk_run_filter) {
+ 		INIT_WORK(&fp->work, bpf_jit_free_deferred);
+ 		schedule_work(&fp->work);
++	} else {
++		kfree(fp);
+ 	}
+ }
 
 
