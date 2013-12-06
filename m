@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3LFUZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:25:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:37162 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab3LFUZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:25:46 -0500
-Date: Fri, 6 Dec 2013 14:24:53 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] usb: phy-generic: Add GPIO based ChipSelect
-Message-ID: <20131206202453.GF21086@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk>
- <1385967919-13258-2-git-send-email-chris.ruehl@gtsys.com.hk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NGIwU0kFl1Z1A3An"
-Content-Disposition: inline
-In-Reply-To: <1385967919-13258-2-git-send-email-chris.ruehl@gtsys.com.hk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755485Ab3LFU17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:27:59 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38680 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3LFU15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 15:27:57 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vdavydov@parallels.com
+Subject: [PATCHSET REPOST cgroup/for-3.14] cgroup: factor out css creation into create_css()
+Date: Fri,  6 Dec 2013 15:27:45 -0500
+Message-Id: <1386361672-27791-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---NGIwU0kFl1Z1A3An
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+This is repost of the following.
 
-On Mon, Dec 02, 2013 at 03:05:17PM +0800, Chris Ruehl wrote:
-> @@ -231,27 +249,40 @@ static int usb_phy_gen_xceiv_probe(struct platform_=
-device *pdev)
->  		return -ENOMEM;
-> =20
->  	nop->reset_active_low =3D true;	/* default behaviour */
-> +	nop->cs_active_low =3D true;
-> =20
->  	if (dev->of_node) {
->  		struct device_node *node =3D dev->of_node;
->  		enum of_gpio_flags flags;
-> +		enum of_gpio_flags csflags;
-> =20
->  		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
->  			clk_rate =3D 0;
-> =20
->  		needs_vcc =3D of_property_read_bool(node, "vcc-supply");
-> +
->  		nop->gpio_reset =3D of_get_named_gpio_flags(node, "reset-gpios",
->  								0, &flags);
-> +
+ http://thread.gmane.org/gmane.linux.kernel.cgroups/8981
 
-two unrelated changes
+It got reviewed and acked then but I somehow forgot apply and Vladimir
+reporting the same bug that the first patch in the original patch
+fixed reminded me.  The first patch is already applied to
+cgroup/for-3.13-fixes which is pulled into for-3.14 for this series.
 
->  		if (nop->gpio_reset =3D=3D -EPROBE_DEFER)
->  			return -EPROBE_DEFER;
-> =20
->  		nop->reset_active_low =3D flags & OF_GPIO_ACTIVE_LOW;
-> =20
-> +		nop->gpio_chipselect =3D of_get_named_gpio_flags(node, "cs-gpios",
-> +								0, &csflags);
-> +		if (gpio_is_valid(nop->gpio_chipselect))
-> +			nop->cs_active_low =3D csflags & OF_GPIO_ACTIVE_LOW;
-> +
->  	} else if (pdata) {
->  		type =3D pdata->type;
->  		clk_rate =3D pdata->clk_rate;
->  		needs_vcc =3D pdata->needs_vcc;
->  		nop->gpio_reset =3D pdata->gpio_reset;
-> +		nop->gpio_chipselect =3D pdata->gpio_chipselect;
-> +	} else {
-> +		nop->gpio_reset =3D -1;
+While the patches are not completely identical, the adjustments are
+trivial.  css_id got ripped out in the meantime, so "[PATCH 4/9]
+cgroup: move css_id commit from cgroup_populate_dir() to online_css()"
+is dropped and the patches are refreshed to reflect the dropping of
+css_id handling in cgroup_create().  I'm applying the series to
+cgroup/for-3.14.
 
-This line is already going upstream, please remove it, i'll handle the
-conflict later.
+The original patchset description follows.  Thanks and sorry about the
+messup.
 
---=20
-balbi
+For unified hierarchy, a css's (cgroup_subsys_state) lifetime will be
+different from that of the associated cgroup.  css's may be created
+and destroyed dynamically over the lifetime of a single cgroup.  The
+previous changes decoupled css destruction from cgroup's.  This
+patchset decouples css creation from cgroup's.
 
---NGIwU0kFl1Z1A3An
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This patchset contains the following seven patches.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+ 0001-cgroup-css-iterations-and-css_from_dir-are-safe-unde.patch
+ 0002-cgroup-make-for_each_subsys-useable-under-cgroup_roo.patch
+ 0003-cgroup-reorder-operations-in-cgroup_create.patch
+ 0004-cgroup-combine-css-handling-loops-in-cgroup_create.patch
+ 0005-cgroup-factor-out-cgroup_subsys_state-creation-into-.patch
+ 0006-cgroup-implement-for_each_css.patch
+ 0007-cgroup-remove-for_each_root_subsys.patch
 
-iQIcBAEBAgAGBQJSojKVAAoJEIaOsuA1yqREfOEP/1XnxdD5lyvk6aPYcpre2SC7
-HK6x5Eau3xyhTBi9LMMEXKsYBynBjr0X0vDFf5NZ5Pb9x9cT2WIMuSoLD2CQGfFL
-DtWIOUofB3DStRTjMGpIo7DdlGAVgwKT8ryb1Wa0c6IwcnORzi+5cQFTNfxQVgJl
-D17ag2mzBKQ7O27RU/D/E3tY9JMpFh3h3gKq9zX3ikyDLophZDrVnnHBA53uzhw+
-NC1+wNsFKEMXxLm66r2eSA9ZwOw6idObaCkkgbxcGr+JO/PIRzUbvFRLoYavaaeU
-tU1lKVUlvENZg8gZizZl628Jj39Cniu/HBzdgx8Zikj8OtHQebPCxS0gDZFbqA6A
-mHf/VyV1JXmkLTtEFQZbNxgrQetsjrSmm8K8j5wL++qvrSBPSfC9sf2ZH+VHYWBI
-QXvheaxDFaewMuZ/hn6uT1ChlH3rPdXAu3h3TI1qY7FQp25JW4lEpxM5GHlIEkp6
-cIxQ8RnrBhkP1xS4lw/aKS2fDKdOz0CvwbzT6z2Gqyg+kN5t83U1GN1C3G/5bMaA
-ft8qN7lSUIWxqkADWDBk7Qtngwze7gh85IpboB77RT+oE0tXYqk4mhcZM/fTFWTH
-F41heRxFOrR8caA1pqmCpXNUs6SusVq1bvcyNbLeM1E156m79/QN2ICnQS+Z5G79
-PLEIFnwynx+V1nlaRHqP
-=fKYj
------END PGP SIGNATURE-----
+0001-0002 are prep patches.
 
---NGIwU0kFl1Z1A3An--
+0003-0005 collect css creation operations into single loop and factor
+it out into create_css().
+
+0006-0007 are somewhat tangential.  As everything is css based now and
+the enabled set of css's might be differ depending on the specific
+cgroup in the future, they introduce for_each_css() and replace most
+uses of for_each_root_subsys() with it.  The two left overs are
+opencoded and for_each_root_subsys() and the related logic are
+removed.
+
+This patchset shouldn't bring any userland noticeable behavior
+changes.  It's on top of cgroup/for-3.12 d1625964da ("cgroup: fix
+cgroup_css() invocation in css_from_id()") and available in the
+following git branch.
+
+ include/linux/cgroup.h |    9 -
+ kernel/cgroup.c        |  300 ++++++++++++++++++++++++++-----------------------
+ 2 files changed, 161 insertions(+), 148 deletions(-)
+
+--
+tejun
