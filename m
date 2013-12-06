@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab3LFVyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:54:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32817 "EHLO
+	id S1759496Ab3LFVyB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759488Ab3LFVx7 (ORCPT
+	with ESMTP id S1759474Ab3LFVx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:59 -0500
+	Fri, 6 Dec 2013 16:53:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>, Joerg Roedel <joro@8bytes.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH 3.10 53/58] iommu: Remove stack trace from broken irq remapping warning
-Date: Fri,  6 Dec 2013 13:52:24 -0800
-Message-Id: <20131206214849.798850796@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.10 50/58] video: kyro: fix incorrect sizes when copying to userspace
+Date: Fri,  6 Dec 2013 13:52:21 -0800
+Message-Id: <20131206214849.526563430@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -30,52 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 05104a4e8713b27291c7bb49c1e7e68b4e243571 upstream.
+commit 2ab68ec927310dc488f3403bb48f9e4ad00a9491 upstream.
 
-The warning for the irq remapping broken check in intel_irq_remapping.c is
-pretty pointless.  We need the warning, but we know where its comming from, the
-stack trace will always be the same, and it needlessly triggers things like
-Abrt.  This changes the warning to just print a text warning about BIOS being
-broken, without the stack trace, then sets the appropriate taint bit.  Since we
-automatically disable irq remapping, theres no need to contiue making Abrt jump
-at this problem
+kyro would copy u32s and specify sizeof(unsigned long) as the size to copy.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Joerg Roedel <joro@8bytes.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+This would copy more data than intended and cause memory corruption and might
+leak kernel memory.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel_irq_remapping.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/video/kyro/fbdev.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -525,12 +525,13 @@ static int __init intel_irq_remapping_su
- 	if (disable_irq_remap)
- 		return 0;
- 	if (irq_remap_broken) {
--		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
--			   "This system BIOS has enabled interrupt remapping\n"
--			   "on a chipset that contains an erratum making that\n"
--			   "feature unstable.  To maintain system stability\n"
--			   "interrupt remapping is being disabled.  Please\n"
--			   "contact your BIOS vendor for an update\n");
-+		printk(KERN_WARNING
-+			"This system BIOS has enabled interrupt remapping\n"
-+			"on a chipset that contains an erratum making that\n"
-+			"feature unstable.  To maintain system stability\n"
-+			"interrupt remapping is being disabled.  Please\n"
-+			"contact your BIOS vendor for an update\n");
-+		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
- 		disable_irq_remap = 1;
- 		return 0;
+--- a/drivers/video/kyro/fbdev.c
++++ b/drivers/video/kyro/fbdev.c
+@@ -625,15 +625,15 @@ static int kyrofb_ioctl(struct fb_info *
+ 		}
+ 		break;
+ 	case KYRO_IOCTL_UVSTRIDE:
+-		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(unsigned long)))
++		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(deviceInfo.ulOverlayUVStride)))
+ 			return -EFAULT;
+ 		break;
+ 	case KYRO_IOCTL_STRIDE:
+-		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(unsigned long)))
++		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(deviceInfo.ulOverlayStride)))
+ 			return -EFAULT;
+ 		break;
+ 	case KYRO_IOCTL_OVERLAY_OFFSET:
+-		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(unsigned long)))
++		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(deviceInfo.ulOverlayOffset)))
+ 			return -EFAULT;
+ 		break;
  	}
 
 
