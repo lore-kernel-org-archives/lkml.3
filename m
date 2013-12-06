@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161977Ab3LFNlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:41:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44250 "EHLO
+	id S1161841Ab3LFNl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:41:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44240 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161615Ab3LFNCs (ORCPT
+	with ESMTP id S1161604Ab3LFNCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:48 -0500
+	Fri, 6 Dec 2013 08:02:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Forest Bond <forest.bond@rapidrollout.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 147/272] HID: don't ignore eGalax/D-Wav/EETI HIDs
-Date: Fri,  6 Dec 2013 12:57:16 +0000
-Message-Id: <1386334761-25517-148-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 145/272] Input: cypress_ps2 - do not consider data bad if palm is detected
+Date: Fri,  6 Dec 2013 12:57:14 +0000
+Message-Id: <1386334761-25517-146-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,79 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Forest Bond <forest.bond@rapidrollout.com>
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 
-commit 95d50b6c5e18ff7351c5f2a6ff53afaed5f7e664 upstream.
+commit 5df682b297f6b23ec35615ed7bb50cbb25d25869 upstream.
 
-Certain devices with class HID, protocol None did not work with the HID
-driver at one point, and as a result were bound to usbtouchscreen
-instead as of commit 139ebe8 ("Input: usbtouchscreen - fix eGalax HID
-ignoring").  This change was prompted by the following report:
+If hardware (or firmware) detects palm on the surface of the device it does
+not mean that the data packet is bad from the protocol standpoint. Instead
+of reporting PSMOUSE_BAD_DATA in this case simply threat it as if nothing
+touches the surface.
 
-https://lkml.org/lkml/2009/1/25/127
+BugLink: http://bugs.launchpad.net/bugs/1229361
 
-Unfortunately, the device mentioned in this report is no longer
-available for testing.
-
-We've recently discovered that some devices with class HID, protocol
-None do not work with usbtouchscreen, but do work with usbhid.  Here is
-the report that made this evident:
-
-http://comments.gmane.org/gmane.linux.kernel.input/31710
-
-Driver binding for these devices has flip-flopped a few times, so both
-of the above reports were regressions.
-
-This situation would appear to leave us with no easy way to bind every
-device to the right driver.  However, in my own testing with several
-devices I have not found a device with class HID that does not work with
-the current HID driver.  It is my belief that changes to the HID driver
-since the original report have likely fixed the issue(s) that made it
-unsuitable at the time, and that we should prefer it over usbtouchscreen
-for these devices.  In particular, HID quirks affecting these devices
-were added/removed in the following commits since then:
-
-fe6065d HID: add multi-input quirk for eGalax Touchcontroller
-77933c3 Merge branch 'egalax' into for-linus
-ebd11fe HID: Add quirk for eGalax touch controler.
-d34c4aa HID: add no-get quirk for eGalax touch controller
-
-This patch makes the HID driver no longer ignore eGalax/D-Wav/EETI
-devices with class HID.  If there are in fact devices with class HID
-that still do not work with the HID driver, we will see another round of
-regressions.  In that case I propose we investigate why the device is
-not working with the HID driver rather than re-introduce regressions for
-functioning HID devices by again binding them to usbtouchscreen.
-
-The corresponding change to usbtouchscreen will be made separately.
-
-Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Tested-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-core.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/input/mouse/cypress_ps2.c | 19 +++----------------
+ 1 file changed, 3 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 15323da..6bee6e9 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -2330,15 +2330,6 @@ bool hid_ignore(struct hid_device *hdev)
- 				hdev->type == HID_TYPE_USBNONE)
- 			return true;
- 		break;
--	case USB_VENDOR_ID_DWAV:
--		/* These are handled by usbtouchscreen. hdev->type is probably
--		 * HID_TYPE_USBNONE, but we say !HID_TYPE_USBMOUSE to match
--		 * usbtouchscreen. */
--		if ((hdev->product == USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER ||
--		     hdev->product == USB_DEVICE_ID_DWAV_TOUCHCONTROLLER) &&
--		    hdev->type != HID_TYPE_USBMOUSE)
--			return true;
--		break;
- 	case USB_VENDOR_ID_VELLEMAN:
- 		/* These are not HID devices.  They are handled by comedi. */
- 		if ((hdev->product >= USB_DEVICE_ID_VELLEMAN_K8055_FIRST &&
+diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
+index f51765f..888a81a 100644
+--- a/drivers/input/mouse/cypress_ps2.c
++++ b/drivers/input/mouse/cypress_ps2.c
+@@ -439,7 +439,7 @@ static int cypress_get_finger_count(unsigned char header_byte)
+ 			case 2: return 5;
+ 			default:
+ 				/* Invalid contact (e.g. palm). Ignore it. */
+-				return -1;
++				return 0;
+ 		}
+ 	}
+ 
+@@ -452,17 +452,10 @@ static int cypress_parse_packet(struct psmouse *psmouse,
+ {
+ 	unsigned char *packet = psmouse->packet;
+ 	unsigned char header_byte = packet[0];
+-	int contact_cnt;
+ 
+ 	memset(report_data, 0, sizeof(struct cytp_report_data));
+ 
+-	contact_cnt = cypress_get_finger_count(header_byte);
+-
+-	if (contact_cnt < 0) /* e.g. palm detect */
+-		return -EINVAL;
+-
+-	report_data->contact_cnt = contact_cnt;
+-
++	report_data->contact_cnt = cypress_get_finger_count(header_byte);
+ 	report_data->tap = (header_byte & ABS_MULTIFINGER_TAP) ? 1 : 0;
+ 
+ 	if (report_data->contact_cnt == 1) {
+@@ -535,11 +528,9 @@ static void cypress_process_packet(struct psmouse *psmouse, bool zero_pkt)
+ 	int slots[CYTP_MAX_MT_SLOTS];
+ 	int n;
+ 
+-	if (cypress_parse_packet(psmouse, cytp, &report_data))
+-		return;
++	cypress_parse_packet(psmouse, cytp, &report_data);
+ 
+ 	n = report_data.contact_cnt;
+-
+ 	if (n > CYTP_MAX_MT_SLOTS)
+ 		n = CYTP_MAX_MT_SLOTS;
+ 
+@@ -605,10 +596,6 @@ static psmouse_ret_t cypress_validate_byte(struct psmouse *psmouse)
+ 		return PSMOUSE_BAD_DATA;
+ 
+ 	contact_cnt = cypress_get_finger_count(packet[0]);
+-
+-	if (contact_cnt < 0)
+-		return PSMOUSE_BAD_DATA;
+-
+ 	if (cytp->mode & CYTP_BIT_ABS_NO_PRESSURE)
+ 		cypress_set_packet_size(psmouse, contact_cnt == 2 ? 7 : 4);
+ 	else
 -- 
 1.8.3.2
 
