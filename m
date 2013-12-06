@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759709Ab3LFXVu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:21:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49086 "EHLO
+	id S1759742Ab3LFXWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:22:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49078 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423086Ab3LFXVF (ORCPT
+	with ESMTP id S1423079Ab3LFXVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:21:05 -0500
+	Fri, 6 Dec 2013 18:21:04 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 062/152] ARM: entry: move IRQ tracing exit into svc_exit
-Date: Fri,  6 Dec 2013 15:09:46 -0800
-Message-Id: <1386371476-2477-63-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 060/152] drm/ttm: Fix memory type compatibility check
+Date: Fri,  6 Dec 2013 15:09:44 -0800
+Message-Id: <1386371476-2477-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,132 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 9b56febea22003c424f11248908b534eba0f1eeb upstream.
+commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
 
-The IRQ tracing exit path is much the same between all SVC mode
-exits, so move this into the svc_exit macro.  Use a macro parameter
-to identify the IRQ case, which is the only different case there is.
+Also check the busy placements before deciding to move a buffer object.
+Failing to do this may result in a completely unneccessary move within a
+single memory type.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[ kamal: 3.8 stable prereq for
-  e16b31b ARM: 7876/1: clear Thumb-2 IT state on exception handling ]
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/entry-armv.S   | 27 +--------------------------
- arch/arm/kernel/entry-header.S | 32 ++++++++++++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 28 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo.c | 32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 5492d72..a716ea9 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -197,13 +197,6 @@ __dabt_svc:
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
- 	disable_irq_notrace
--
--#ifdef CONFIG_TRACE_IRQFLAGS
--	tst	r5, #PSR_I_BIT
--	bleq	trace_hardirqs_on
--	tst	r5, #PSR_I_BIT
--	blne	trace_hardirqs_off
--#endif
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__dabt_svc)
-@@ -223,12 +216,7 @@ __irq_svc:
- 	blne	svc_preempt
- #endif
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index 52b20b1..ba60a89 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1090,24 +1090,32 @@ out_unlock:
+ 	return ret;
+ }
  
--#ifdef CONFIG_TRACE_IRQFLAGS
--	@ The parent context IRQs must have been enabled to get here in
--	@ the first place, so there's no point checking the PSR I bit.
--	bl	trace_hardirqs_on
--#endif
--	svc_exit r5				@ return from exception
-+	svc_exit r5, irq = 1			@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__irq_svc)
+-static int ttm_bo_mem_compat(struct ttm_placement *placement,
+-			     struct ttm_mem_reg *mem)
++static bool ttm_bo_mem_compat(struct ttm_placement *placement,
++			      struct ttm_mem_reg *mem,
++			      uint32_t *new_flags)
+ {
+ 	int i;
  
-@@ -305,12 +293,6 @@ __und_svc_finish:
- 	@ restore SPSR and restart the instruction
- 	@
- 	ldr	r5, [sp, #S_PSR]		@ Get SVC cpsr
--#ifdef CONFIG_TRACE_IRQFLAGS
--	tst	r5, #PSR_I_BIT
--	bleq	trace_hardirqs_on
--	tst	r5, #PSR_I_BIT
--	blne	trace_hardirqs_off
--#endif
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__und_svc)
-@@ -325,13 +307,6 @@ __pabt_svc:
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
- 	disable_irq_notrace
--
--#ifdef CONFIG_TRACE_IRQFLAGS
--	tst	r5, #PSR_I_BIT
--	bleq	trace_hardirqs_on
--	tst	r5, #PSR_I_BIT
--	blne	trace_hardirqs_off
--#endif
- 	svc_exit r5				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__pabt_svc)
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 9a8531e..0bf15e5 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -74,7 +74,21 @@
- 	.endm
+ 	if (mem->mm_node && placement->lpfn != 0 &&
+ 	    (mem->start < placement->fpfn ||
+ 	     mem->start + mem->num_pages > placement->lpfn))
+-		return -1;
++		return false;
  
- #ifndef CONFIG_THUMB2_KERNEL
--	.macro	svc_exit, rpsr
-+	.macro	svc_exit, rpsr, irq = 0
-+	.if	\irq != 0
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	@ The parent context IRQs must have been enabled to get here in
-+	@ the first place, so there's no point checking the PSR I bit.
-+	bl	trace_hardirqs_on
-+#endif
-+	.else
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	tst	\rpsr, #PSR_I_BIT
-+	bleq	trace_hardirqs_on
-+	tst	\rpsr, #PSR_I_BIT
-+	blne	trace_hardirqs_off
-+#endif
-+	.endif
- 	msr	spsr_cxsf, \rpsr
- #if defined(CONFIG_CPU_V6)
- 	ldr	r0, [sp]
-@@ -120,7 +134,21 @@
- 	mov	pc, \reg
- 	.endm
- #else	/* CONFIG_THUMB2_KERNEL */
--	.macro	svc_exit, rpsr
-+	.macro	svc_exit, rpsr, irq = 0
-+	.if	\irq != 0
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	@ The parent context IRQs must have been enabled to get here in
-+	@ the first place, so there's no point checking the PSR I bit.
-+	bl	trace_hardirqs_on
-+#endif
-+	.else
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	tst	\rpsr, #PSR_I_BIT
-+	bleq	trace_hardirqs_on
-+	tst	\rpsr, #PSR_I_BIT
-+	blne	trace_hardirqs_off
-+#endif
-+	.endif
- 	ldr	lr, [sp, #S_SP]			@ top of the stack
- 	ldrd	r0, r1, [sp, #S_LR]		@ calling lr and pc
- 	clrex					@ clear the exclusive monitor
+ 	for (i = 0; i < placement->num_placement; i++) {
+-		if ((placement->placement[i] & mem->placement &
+-			TTM_PL_MASK_CACHING) &&
+-			(placement->placement[i] & mem->placement &
+-			TTM_PL_MASK_MEM))
+-			return i;
++		*new_flags = placement->placement[i];
++		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
++		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
++			return true;
++	}
++
++	for (i = 0; i < placement->num_busy_placement; i++) {
++		*new_flags = placement->busy_placement[i];
++		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
++		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
++			return true;
+ 	}
+-	return -1;
++
++	return false;
+ }
+ 
+ int ttm_bo_validate(struct ttm_buffer_object *bo,
+@@ -1116,6 +1124,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
+ 			bool no_wait_gpu)
+ {
+ 	int ret;
++	uint32_t new_flags;
+ 
+ 	BUG_ON(!ttm_bo_is_reserved(bo));
+ 	/* Check that range is valid */
+@@ -1126,8 +1135,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
+ 	/*
+ 	 * Check whether we need to move buffer.
+ 	 */
+-	ret = ttm_bo_mem_compat(placement, &bo->mem);
+-	if (ret < 0) {
++	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
+ 		ret = ttm_bo_move_buffer(bo, placement, interruptible,
+ 					 no_wait_gpu);
+ 		if (ret)
+@@ -1137,7 +1145,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
+ 		 * Use the access and other non-mapping-related flag bits from
+ 		 * the compatible memory placement flags to the active flags
+ 		 */
+-		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
++		ttm_flag_masked(&bo->mem.placement, new_flags,
+ 				~TTM_PL_MASK_MEMTYPE);
+ 	}
+ 	/*
 -- 
 1.8.3.2
 
