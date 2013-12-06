@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161292Ab3LFXMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:12:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48312 "EHLO
+	id S1162827Ab3LFXwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:52:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48378 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758958Ab3LFXMc (ORCPT
+	with ESMTP id S1759121Ab3LFXMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:12:32 -0500
+	Fri, 6 Dec 2013 18:12:35 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 008/152] selinux: correct locking in selinux_netlbl_socket_connect)
-Date: Fri,  6 Dec 2013 15:08:52 -0800
-Message-Id: <1386371476-2477-9-git-send-email-kamal@canonical.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 017/152] rt2800usb: slow down TX status polling
+Date: Fri,  6 Dec 2013 15:09:01 -0800
+Message-Id: <1386371476-2477-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -26,80 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 42d64e1add3a1ce8a787116036163b8724362145 upstream.
+commit 36165fd5b00bf8163f89c21bb16a3e9834555b10 upstream.
 
-The SELinux/NetLabel glue code has a locking bug that affects systems
-with NetLabel enabled, see the kernel error message below.  This patch
-corrects this problem by converting the bottom half socket lock to a
-more conventional, and correct for this call-path, lock_sock() call.
+Polling TX statuses too frequently has two negative effects. First is
+randomly peek CPU usage, causing overall system functioning delays.
+Second bad effect is that device is not able to fill TX statuses in
+H/W register on some workloads and we get lot of timeouts like below:
 
- ===============================
- [ INFO: suspicious RCU usage. ]
- 3.11.0-rc3+ #19 Not tainted
- -------------------------------
- net/ipv4/cipso_ipv4.c:1928 suspicious rcu_dereference_protected() usage!
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_entry_txstatus_timeout: Warning - TX status timeout for entry 7 in queue 2
+ieee80211 phy4: rt2800usb_txdone: Warning - Got TX status for an empty queue 2, dropping
 
- other info that might help us debug this:
+This not only cause flood of messages in dmesg, but also bad throughput,
+since rate scaling algorithm can not work optimally.
 
- rcu_scheduler_active = 1, debug_locks = 0
- 2 locks held by ping/731:
-  #0:  (slock-AF_INET/1){+.-...}, at: [...] selinux_netlbl_socket_connect
-  #1:  (rcu_read_lock){.+.+..}, at: [<...>] netlbl_conn_setattr
+In the future, we should probably make polling interval be adjusted
+automatically, but for now just increase values, this make mentioned
+problems gone.
 
- stack backtrace:
- CPU: 1 PID: 731 Comm: ping Not tainted 3.11.0-rc3+ #19
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  0000000000000001 ffff88006f659d28 ffffffff81726b6a ffff88003732c500
-  ffff88006f659d58 ffffffff810e4457 ffff88006b845a00 0000000000000000
-  000000000000000c ffff880075aa2f50 ffff88006f659d90 ffffffff8169bec7
- Call Trace:
-  [<ffffffff81726b6a>] dump_stack+0x54/0x74
-  [<ffffffff810e4457>] lockdep_rcu_suspicious+0xe7/0x120
-  [<ffffffff8169bec7>] cipso_v4_sock_setattr+0x187/0x1a0
-  [<ffffffff8170f317>] netlbl_conn_setattr+0x187/0x190
-  [<ffffffff8170f195>] ? netlbl_conn_setattr+0x5/0x190
-  [<ffffffff8131ac9e>] selinux_netlbl_socket_connect+0xae/0xc0
-  [<ffffffff81303025>] selinux_socket_connect+0x135/0x170
-  [<ffffffff8119d127>] ? might_fault+0x57/0xb0
-  [<ffffffff812fb146>] security_socket_connect+0x16/0x20
-  [<ffffffff815d3ad3>] SYSC_connect+0x73/0x130
-  [<ffffffff81739a85>] ? sysret_check+0x22/0x5d
-  [<ffffffff810e5e2d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-  [<ffffffff81373d4e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff815d52be>] SyS_connect+0xe/0x10
-  [<ffffffff81739a59>] system_call_fastpath+0x16/0x1b
+Resolve:
+https://bugzilla.kernel.org/show_bug.cgi?id=62781
 
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/selinux/netlabel.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/security/selinux/netlabel.c b/security/selinux/netlabel.c
-index da4b8b2..6235d05 100644
---- a/security/selinux/netlabel.c
-+++ b/security/selinux/netlabel.c
-@@ -442,8 +442,7 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
- 	    sksec->nlbl_state != NLBL_CONNLABELED)
- 		return 0;
- 
--	local_bh_disable();
--	bh_lock_sock_nested(sk);
-+	lock_sock(sk);
- 
- 	/* connected sockets are allowed to disconnect when the address family
- 	 * is set to AF_UNSPEC, if that is what is happening we want to reset
-@@ -464,7 +463,6 @@ int selinux_netlbl_socket_connect(struct sock *sk, struct sockaddr *addr)
- 		sksec->nlbl_state = NLBL_CONNLABELED;
- 
- socket_connect_return:
--	bh_unlock_sock(sk);
--	local_bh_enable();
-+	release_sock(sk);
- 	return rc;
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index 5c149b5..926f1b0 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -148,6 +148,8 @@ static bool rt2800usb_txstatus_timeout(struct rt2x00_dev *rt2x00dev)
+ 	return false;
  }
+ 
++#define TXSTATUS_READ_INTERVAL 1000000
++
+ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 						 int urb_status, u32 tx_status)
+ {
+@@ -175,8 +177,9 @@ static bool rt2800usb_tx_sta_fifo_read_completed(struct rt2x00_dev *rt2x00dev,
+ 		queue_work(rt2x00dev->workqueue, &rt2x00dev->txdone_work);
+ 
+ 	if (rt2800usb_txstatus_pending(rt2x00dev)) {
+-		/* Read register after 250 us */
+-		hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 250000),
++		/* Read register after 1 ms */
++		hrtimer_start(&rt2x00dev->txstatus_timer,
++			      ktime_set(0, TXSTATUS_READ_INTERVAL),
+ 			      HRTIMER_MODE_REL);
+ 		return false;
+ 	}
+@@ -201,8 +204,9 @@ static void rt2800usb_async_read_tx_status(struct rt2x00_dev *rt2x00dev)
+ 	if (test_and_set_bit(TX_STATUS_READING, &rt2x00dev->flags))
+ 		return;
+ 
+-	/* Read TX_STA_FIFO register after 500 us */
+-	hrtimer_start(&rt2x00dev->txstatus_timer, ktime_set(0, 500000),
++	/* Read TX_STA_FIFO register after 2 ms */
++	hrtimer_start(&rt2x00dev->txstatus_timer,
++		      ktime_set(0, 2*TXSTATUS_READ_INTERVAL),
+ 		      HRTIMER_MODE_REL);
+ }
+ 
 -- 
 1.8.3.2
 
