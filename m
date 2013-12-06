@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161348Ab3LFXMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:12:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48321 "EHLO
+	id S1162748Ab3LFXwL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:52:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48386 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758967Ab3LFXMd (ORCPT
+	with ESMTP id S1161297Ab3LFXMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:12:33 -0500
+	Fri, 6 Dec 2013 18:12:36 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: David Howells <dhowells@redhat.com>, David Woodhouse <dwmw2@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Josh Boyer <jwboyer@redhat.com>,
+        Alexander Holler <holler@ahsoftware.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 009/152] NFSv4: Fix a use-after-free situation in _nfs4_proc_getlk()
-Date: Fri,  6 Dec 2013 15:08:53 -0800
-Message-Id: <1386371476-2477-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 007/152] X.509: Remove certificate date checks
+Date: Fri,  6 Dec 2013 15:08:51 -0800
+Message-Id: <1386371476-2477-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,49 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Howells <dhowells@redhat.com>
 
-commit a6f951ddbdfb7bd87d31a44f61abe202ed6ce57f upstream.
+commit 124df926090b32a998483f6e43ebeccdbe5b5302 upstream.
 
-In nfs4_proc_getlk(), when some error causes a retry of the call to
-_nfs4_proc_getlk(), we can end up with Oopses of the form
+Remove the certificate date checks that are performed when a certificate is
+parsed.  There are two checks: a valid from and a valid to.  The first check is
+causing a lot of problems with system clocks that don't keep good time and the
+second places an implicit expiry date upon the kernel when used for module
+signing, so do we really need them?
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000134
- IP: [<ffffffff8165270e>] _raw_spin_lock+0xe/0x30
-<snip>
- Call Trace:
-  [<ffffffff812f287d>] _atomic_dec_and_lock+0x4d/0x70
-  [<ffffffffa053c4f2>] nfs4_put_lock_state+0x32/0xb0 [nfsv4]
-  [<ffffffffa053c585>] nfs4_fl_release_lock+0x15/0x20 [nfsv4]
-  [<ffffffffa0522c06>] _nfs4_proc_getlk.isra.40+0x146/0x170 [nfsv4]
-  [<ffffffffa052ad99>] nfs4_proc_lock+0x399/0x5a0 [nfsv4]
-
-The problem is that we don't clear the request->fl_ops after the first
-try and so when we retry, nfs4_set_lock_state() exits early without
-setting the lock stateid.
-Regression introduced by commit 70cc6487a4e08b8698c0e2ec935fb48d10490162
-(locks: make ->lock release private data before returning in GETLK case)
-
-Reported-by: Weston Andros Adamson <dros@netapp.com>
-Reported-by: Jorge Mora <mora@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: David Woodhouse <dwmw2@infradead.org>
+cc: Rusty Russell <rusty@rustcorp.com.au>
+cc: Josh Boyer <jwboyer@redhat.com>
+cc: Alexander Holler <holler@ahsoftware.de>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 1 +
- 1 file changed, 1 insertion(+)
+ crypto/asymmetric_keys/x509_public_key.c | 38 --------------------------------
+ 1 file changed, 38 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index ad967bf..ecc6f12 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4326,6 +4326,7 @@ static int _nfs4_proc_getlk(struct nfs4_state *state, int cmd, struct file_lock
- 			status = 0;
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 06007f0..52222a2 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -106,7 +106,6 @@ error_no_sig:
+ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ {
+ 	struct x509_certificate *cert;
+-	struct tm now;
+ 	size_t srlen, sulen;
+ 	char *desc = NULL;
+ 	int ret;
+@@ -137,43 +136,6 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 		goto error_free_cert;
  	}
- 	request->fl_ops->fl_release_private(request);
-+	request->fl_ops = NULL;
- out:
- 	return status;
- }
+ 
+-	time_to_tm(CURRENT_TIME.tv_sec, 0, &now);
+-	pr_devel("Now: %04ld-%02d-%02d %02d:%02d:%02d\n",
+-		 now.tm_year + 1900, now.tm_mon + 1, now.tm_mday,
+-		 now.tm_hour, now.tm_min,  now.tm_sec);
+-	if (now.tm_year < cert->valid_from.tm_year ||
+-	    (now.tm_year == cert->valid_from.tm_year &&
+-	     (now.tm_mon < cert->valid_from.tm_mon ||
+-	      (now.tm_mon == cert->valid_from.tm_mon &&
+-	       (now.tm_mday < cert->valid_from.tm_mday ||
+-		(now.tm_mday == cert->valid_from.tm_mday &&
+-		 (now.tm_hour < cert->valid_from.tm_hour ||
+-		  (now.tm_hour == cert->valid_from.tm_hour &&
+-		   (now.tm_min < cert->valid_from.tm_min ||
+-		    (now.tm_min == cert->valid_from.tm_min &&
+-		     (now.tm_sec < cert->valid_from.tm_sec
+-		      ))))))))))) {
+-		pr_warn("Cert %s is not yet valid\n", cert->fingerprint);
+-		ret = -EKEYREJECTED;
+-		goto error_free_cert;
+-	}
+-	if (now.tm_year > cert->valid_to.tm_year ||
+-	    (now.tm_year == cert->valid_to.tm_year &&
+-	     (now.tm_mon > cert->valid_to.tm_mon ||
+-	      (now.tm_mon == cert->valid_to.tm_mon &&
+-	       (now.tm_mday > cert->valid_to.tm_mday ||
+-		(now.tm_mday == cert->valid_to.tm_mday &&
+-		 (now.tm_hour > cert->valid_to.tm_hour ||
+-		  (now.tm_hour == cert->valid_to.tm_hour &&
+-		   (now.tm_min > cert->valid_to.tm_min ||
+-		    (now.tm_min == cert->valid_to.tm_min &&
+-		     (now.tm_sec > cert->valid_to.tm_sec
+-		      ))))))))))) {
+-		pr_warn("Cert %s has expired\n", cert->fingerprint);
+-		ret = -EKEYEXPIRED;
+-		goto error_free_cert;
+-	}
+-
+ 	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
+ 	cert->pub->id_type = PKEY_ID_X509;
+ 
 -- 
 1.8.3.2
 
