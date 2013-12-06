@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab3LFC4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 21:56:07 -0500
-Received: from zimbra.real-time.com ([63.170.91.9]:54624 "EHLO
-	zimbra.real-time.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab3LFC4F (ORCPT
+	id S1753050Ab3LFDHf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 22:07:35 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:21145 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab3LFDHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 21:56:05 -0500
-Date: Fri, 6 Dec 2013 13:55:41 +1100
-From: James Cameron <quozl@laptop.org>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "open list:SERIAL DRIVERS" <linux-serial@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Crispin <blogic@openwrt.org>, Jiri Slaby <jslaby@suse.cz>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        Zhou Zhu <zzhu3@marvell.com>
-Subject: Re: [PATCH] serial: rewrite pxa2xx-uart to use 8250_core
-Message-ID: <20131206025541.GL16425@us.netrek.org>
-References: <20131205043544.GA28580@kroah.com>
- <1386286149-2855-1-git-send-email-ynvich@gmail.com>
- <20131206003851.GI16425@us.netrek.org>
+	Thu, 5 Dec 2013 22:07:32 -0500
+Message-ID: <52A13F34.2010403@huawei.com>
+Date: Fri, 6 Dec 2013 11:06:28 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131206003851.GI16425@us.netrek.org>
-Organization: Netrek Vanilla Server Dictator
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Maciej W. Rozycki" <macro@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: Re: [PATCH 2/2] net/fddi: Replace local marco with PCI standard macro
+References: <1386243482-32856-1-git-send-email-wangyijing@huawei.com> <alpine.LFD.2.10.1312052154190.1599@eddie.linux-mips.org>
+In-Reply-To: <alpine.LFD.2.10.1312052154190.1599@eddie.linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 11:38:51AM +1100, James Cameron wrote:
-> On Fri, Dec 06, 2013 at 03:28:37AM +0400, Sergei Ianovich wrote:
-> > pxa2xx-uart was a separate uart platform driver. It was declaring
-> > the same device names and numbers as 8250 driver. As a result,
-> > it was impossible to use 8250 driver on PXA SoCs.
-> > 
-> > Upon closer examination pxa2xx-uart turned out to be a clone of
-> > 8250_core driver.
+On 2013/12/6 6:06, Maciej W. Rozycki wrote:
+> On Thu, 5 Dec 2013, Yijing Wang wrote:
 > 
-> I'm testing this backported to 3.5 on the OLPC XO-4 [1] [2].
+>> Replace local marco DFX_BUS_PCI with PCI standard marco
+>> dev_is_pci().
 > 
-> As Russell says, the getty had to change, but after that the shell
-> worked fine; no more or no less responsive.
-> 
-> What hasn't worked yet is the console; no kernel messages appear.  I
-> have tried changing command line to console=ttyS0,115200.
+>  Typos above: marco -> macro
 
-My error.  Our kernel had CONFIG_CMDLINE set, changing that fixed it.
-Console is working fine.
+Sorry for the mistake, David, should i need to resend this patch to fix this typo error?
+
+> 
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>  drivers/net/fddi/defxx.c |   20 +++++++-------------
+>>  1 files changed, 7 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/net/fddi/defxx.c b/drivers/net/fddi/defxx.c
+>> index 0b40e1c..0344f71 100644
+>> --- a/drivers/net/fddi/defxx.c
+>> +++ b/drivers/net/fddi/defxx.c
+>> @@ -241,12 +241,6 @@ static char version[] =
+>>   */
+>>  #define NEW_SKB_SIZE (PI_RCV_DATA_K_SIZE_MAX+128)
+>>  
+>> -#ifdef CONFIG_PCI
+>> -#define DFX_BUS_PCI(dev) (dev->bus == &pci_bus_type)
+>> -#else
+>> -#define DFX_BUS_PCI(dev) 0
+>> -#endif
+>> -
+>>  #ifdef CONFIG_EISA
+>>  #define DFX_BUS_EISA(dev) (dev->bus == &eisa_bus_type)
+>>  #else
+>> @@ -436,7 +430,7 @@ static void dfx_port_read_long(DFX_board_t *bp, int offset, u32 *data)
+>>  static void dfx_get_bars(struct device *bdev,
+>>  			 resource_size_t *bar_start, resource_size_t *bar_len)
+>>  {
+>> -	int dfx_bus_pci = DFX_BUS_PCI(bdev);
+>> +	int dfx_bus_pci = dev_is_pci(bdev);
+>>  	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+>>  	int dfx_bus_tc = DFX_BUS_TC(bdev);
+>>  	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+> 
+> Acked-by: Maciej W. Rozycki <macro@linux-mips.org>
+> 
+>   Maciej
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
 
 -- 
-James Cameron
-http://quozl.linux.org.au/
+Thanks!
+Yijing
+
