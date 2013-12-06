@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759693Ab3LFWjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:39:53 -0500
-Received: from smtprelay0137.hostedemail.com ([216.40.44.137]:40909 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759252Ab3LFWjv (ORCPT
+	id S1758960Ab3LFVw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:52:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60410 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758882Ab3LFVwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 17:39:51 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3865:3867:4321:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sugar73_55afe258c2b28
-X-Filterd-Recvd-Size: 1888
-Message-ID: <1386369586.31845.42.camel@joe-AO722>
-Subject: [PATCH -next] batadv: Slight optimization of batadv_compare_eth
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: mareklindner@neomailbox.ch, sw@simonwunderlich.de, antonio@meshcoding.com,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 06 Dec 2013 14:39:46 -0800
-In-Reply-To: <1386368461.31845.38.camel@joe-AO722>
-References: <1386317890.31845.26.camel@joe-AO722>
-	 <20131206.153944.1382127535160341376.davem@davemloft.net>
-	 <1386364621.31845.32.camel@joe-AO722>
-	 <20131206.163806.1555069105347405484.davem@davemloft.net>
-	 <1386368461.31845.38.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Dec 2013 16:52:25 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 11/83] bonding: dont permit to use ARP monitoring in 802.3ad mode
+Date: Fri,  6 Dec 2013 13:51:01 -0800
+Message-Id: <20131206214641.116671783@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.67.gb00d244
+In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
+References: <20131206214640.002320724@linuxfoundation.org>
+User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly added generic routine ether_addr_equal_unaligned
-to test if possibly unaligned to u16 Ethernet addresses are equal.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This slightly improves comparison time for systems with
-CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS.
+------------------
 
-Signed-off-by: Joe Perches <joe@perches.com>
+From: Veaceslav Falico <vfalico@redhat.com>
+
+[ Upstream commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 ]
+
+Currently the ARP monitoring is not supported with 802.3ad, and it's
+prohibited to use it via the module params.
+
+However we still can set it afterwards via sysfs, cause we only check for
+*LB modes there.
+
+To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
+
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/batman-adv/main.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/bonding/bond_sysfs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/batman-adv/main.h b/net/batman-adv/main.h
-index f94f287b..322dd73 100644
---- a/net/batman-adv/main.h
-+++ b/net/batman-adv/main.h
-@@ -266,7 +266,7 @@ static inline void batadv_dbg(int type __always_unused,
-  */
- static inline int batadv_compare_eth(const void *data1, const void *data2)
- {
--	return (memcmp(data1, data2, ETH_ALEN) == 0 ? 1 : 0);
-+	return ether_addr_equal_unaligned(data1, data2);
- }
- 
- /**
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -587,8 +587,9 @@ static ssize_t bonding_store_arp_interva
+ 		goto out;
+ 	}
+ 	if (bond->params.mode == BOND_MODE_ALB ||
+-	    bond->params.mode == BOND_MODE_TLB) {
+-		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
++	    bond->params.mode == BOND_MODE_TLB ||
++	    bond->params.mode == BOND_MODE_8023AD) {
++		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		ret = -EINVAL;
+ 		goto out;
 
 
