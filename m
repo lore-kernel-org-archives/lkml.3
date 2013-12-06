@@ -1,20 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161845Ab3LFOGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:06:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43833 "EHLO
+	id S1162051Ab3LFOHa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:07:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43829 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161350Ab3LFNA4 (ORCPT
+	with ESMTP id S1161348Ab3LFNA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 08:00:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "Hebbar, Shivananda" <x0hebbar@ti.com>,
+        "Ramos Falcon, Ernesto" <ernesto@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Anna, Suman" <s-anna@ti.com>, "Gupta, Ramesh" <grgupta@ti.com>,
+        "Gomez Castellanos, Ivan" <ivan.gomez@ti.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Armando Uribe De Leon <x0095078@ti.com>,
+        Deepak Chitriki <deepak.chitriki@ti.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 065/272] ALSA: hda - Initialize missing bass speaker pin for ASUS AIO ET2700
-Date: Fri,  6 Dec 2013 12:55:54 +0000
-Message-Id: <1386334761-25517-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 062/272] Staging: tidspbridge: disable driver
+Date: Fri,  6 Dec 2013 12:55:51 +0000
+Message-Id: <1386334761-25517-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,55 +43,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 1f0bbf03cb829162ec8e6d03c98aaaed88c6f534 upstream.
+commit 930ba4a374b96560ef9fde2145cdc454a164ddcc upstream.
 
-Add a fixup entry for the missing bass speaker pin 0x16 on ASUS ET2700
-AiO desktop.  The channel map will be added in the next patch, so that
-this can be backported easily to stable kernels.
+There seems to be no active maintainer for the driver, and there is an
+unfixed security bug, so disable the driver for now.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65961
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Hopefully someone steps up to be the maintainer, and works to get this
+out of staging, otherwise it will be deleted soon.
+
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+Cc: Kanigeri, Hari <h-kanigeri2@ti.com>
+Cc: Ameya Palande <ameya.palande@nokia.com>
+Cc: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+Cc: Hebbar, Shivananda <x0hebbar@ti.com>
+Cc: Ramos Falcon, Ernesto <ernesto@ti.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Anna, Suman <s-anna@ti.com>
+Cc: Gupta, Ramesh <grgupta@ti.com>
+Cc: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Armando Uribe De Leon <x0095078@ti.com>
+Cc: Deepak Chitriki <deepak.chitriki@ti.com>
+Cc: Menon, Nishanth <nm@ti.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/staging/tidspbridge/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 836265a..b471d28 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1747,6 +1747,7 @@ enum {
- 	ALC889_FIXUP_IMAC91_VREF,
- 	ALC882_FIXUP_INV_DMIC,
- 	ALC882_FIXUP_NO_PRIMARY_HP,
-+	ALC887_FIXUP_ASUS_BASS,
- };
+diff --git a/drivers/staging/tidspbridge/Kconfig b/drivers/staging/tidspbridge/Kconfig
+index 165b918..1b6d581 100644
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -4,7 +4,7 @@
  
- static void alc889_fixup_coef(struct hda_codec *codec,
-@@ -2068,6 +2069,13 @@ static const struct hda_fixup alc882_fixups[] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc882_fixup_no_primary_hp,
- 	},
-+	[ALC887_FIXUP_ASUS_BASS] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{0x16, 0x99130130}, /* bass speaker */
-+			{}
-+		},
-+	},
- };
- 
- static const struct snd_pci_quirk alc882_fixup_tbl[] = {
-@@ -2101,6 +2109,7 @@ static const struct snd_pci_quirk alc882_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1043, 0x1873, "ASUS W90V", ALC882_FIXUP_ASUS_W90V),
- 	SND_PCI_QUIRK(0x1043, 0x1971, "Asus W2JC", ALC882_FIXUP_ASUS_W2JC),
- 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
-+	SND_PCI_QUIRK(0x1043, 0x84bc, "ASUS ET2700", ALC887_FIXUP_ASUS_BASS),
- 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
- 	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
- 	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
+ menuconfig TIDSPBRIDGE
+ 	tristate "DSP Bridge driver"
+-	depends on ARCH_OMAP3 && !ARCH_MULTIPLATFORM
++	depends on ARCH_OMAP3 && !ARCH_MULTIPLATFORM && BROKEN
+ 	select MAILBOX
+ 	select OMAP2PLUS_MBOX
+ 	help
 -- 
 1.8.3.2
 
