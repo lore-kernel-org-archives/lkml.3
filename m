@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161697Ab3LFNDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44307 "EHLO
+	id S1161763Ab3LFNDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44385 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758243Ab3LFNDC (ORCPT
+	with ESMTP id S1161742Ab3LFND0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:02 -0500
+	Fri, 6 Dec 2013 08:03:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 158/272] HID:hid-lg4ff: Scale autocentering force properly on Logitech wheel
-Date: Fri,  6 Dec 2013 12:57:27 +0000
-Message-Id: <1386334761-25517-159-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 175/272] [media] stv090x: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:44 +0000
+Message-Id: <1386334761-25517-176-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit f8c231569a7a455dfa1907294a46ba52b3aa8859 upstream.
+commit f7a35df15b1f7de7823946aebc9164854e66ea07 upstream.
 
-Adjust the scaling and lineartity to match that of the Windows
-driver (from MOMO testing).
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+       drivers/media/dvb-frontends/stv090x.c:750:1: warning: 'stv090x_write_regs.constprop.6' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer. Considering that I2C
+transfers are generally limited, and that devices used on USB has a
+max data length of 64 bytes for	the control URBs.
+So, it seem safe to use 64 bytes as the hard limit for all those devices.
+ On most cases, the limit is a way lower than that, but	this limit
+is small enough to not affect the Kernel stack, and it is a no brain
+limit, as using smaller ones would require to either carefully each
+driver or to take a look on each datasheet.
 
-Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-lg4ff.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/media/dvb-frontends/stv090x.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index 8782fe1..530fcd19 100644
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -218,12 +218,21 @@ static void hid_lg4ff_set_autocenter_default(struct input_dev *dev, u16 magnitud
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
- 	__s32 *value = report->field[0]->value;
-+	__u32 expand_a, expand_b;
+diff --git a/drivers/media/dvb-frontends/stv090x.c b/drivers/media/dvb-frontends/stv090x.c
+index 56d470a..23e872f 100644
+--- a/drivers/media/dvb-frontends/stv090x.c
++++ b/drivers/media/dvb-frontends/stv090x.c
+@@ -35,6 +35,9 @@
+ #include "stv090x.h"
+ #include "stv090x_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
 +
-+	if (magnitude <= 0xaaaa) {
-+		expand_a = 0x0c * magnitude;
-+		expand_b = 0x80 * magnitude;
-+	} else {
-+		expand_a = (0x0c * 0xaaaa) + 0x06 * (magnitude - 0xaaaa);
-+		expand_b = (0x80 * 0xaaaa) + 0xff * (magnitude - 0xaaaa);
+ static unsigned int verbose;
+ module_param(verbose, int, 0644);
+ 
+@@ -722,9 +725,16 @@ static int stv090x_write_regs(struct stv090x_state *state, unsigned int reg, u8
+ {
+ 	const struct stv090x_config *config = state->config;
+ 	int ret;
+-	u8 buf[2 + count];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg i2c_msg = { .addr = config->address, .flags = 0, .buf = buf, .len = 2 + count };
+ 
++	if (2 + count > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
++		       KBUILD_MODNAME, reg, count);
++		return -EINVAL;
 +	}
- 
- 	value[0] = 0xfe;
- 	value[1] = 0x0d;
--	value[2] = magnitude >> 13;
--	value[3] = magnitude >> 13;
--	value[4] = magnitude >> 8;
-+	value[2] = expand_a / 0xaaaa;
-+	value[3] = expand_a / 0xaaaa;
-+	value[4] = expand_b / 0xaaaa;
- 	value[5] = 0x00;
- 	value[6] = 0x00;
- 
++
+ 	buf[0] = reg >> 8;
+ 	buf[1] = reg & 0xff;
+ 	memcpy(&buf[2], data, count);
 -- 
 1.8.3.2
 
