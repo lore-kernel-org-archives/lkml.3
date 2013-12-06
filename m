@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202Ab3LFRfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:35:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41577 "EHLO mx1.redhat.com"
+	id S1758263Ab3LFRin (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:38:43 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:38897 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795Ab3LFRfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:35:32 -0500
-Message-ID: <52A20AD6.8080706@redhat.com>
-Date: Fri, 06 Dec 2013 18:35:18 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+	id S1758073Ab3LFRil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:38:41 -0500
+Date: Fri, 6 Dec 2013 11:38:43 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Mel Gorman <mgorman@suse.de>, t@sgi.com
+Cc: Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com
+Subject: Re: [PATCH 14/15] mm: numa: Flush TLB if NUMA hinting faults race
+ with PTE scan update
+Message-ID: <20131206173843.GD3080@sgi.com>
+References: <1386060721-3794-1-git-send-email-mgorman@suse.de>
+ <1386060721-3794-15-git-send-email-mgorman@suse.de>
+ <529E641A.7040804@redhat.com>
+ <20131203234637.GS11295@suse.de>
+ <529F3D51.1090203@redhat.com>
+ <20131204160741.GC11295@suse.de>
+ <20131205104015.716ed0fe@annuminas.surriel.com>
+ <20131205195446.GI11295@suse.de>
+ <52A0DC7F.7050403@redhat.com>
+ <20131206092400.GJ11295@suse.de>
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
-        Liu Jinsong <jinsong.liu@intel.com>
-Subject: Re: [PATCH v2 3/3] X86, mpx: Intel MPX xstate feature definition
-References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com> <1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131206092400.GJ11295@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/12/2013 01:20, Qiaowei Ren ha scritto:
-> This patch defines xstate feature and extends struct xsave_hdr_struct
-> to support Intel MPX.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/include/asm/processor.h |   12 ++++++++++++
->  arch/x86/include/asm/xsave.h     |    5 ++++-
->  2 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 987c75e..2fe2e75 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -370,6 +370,15 @@ struct ymmh_struct {
->  	u32 ymmh_space[64];
->  };
->  
-> +struct bndregs_struct {
-> +	u64 bndregs[8];
-> +} __packed;
-> +
-> +struct bndcsr_struct {
-> +	u64 cfg_reg_u;
-> +	u64 status_reg;
-> +} __packed;
-> +
->  struct xsave_hdr_struct {
->  	u64 xstate_bv;
->  	u64 reserved1[2];
-> @@ -380,6 +389,9 @@ struct xsave_struct {
->  	struct i387_fxsave_struct i387;
->  	struct xsave_hdr_struct xsave_hdr;
->  	struct ymmh_struct ymmh;
-> +	u8 lwp_area[128];
+On Fri, Dec 06, 2013 at 09:24:00AM +0000, Mel Gorman wrote:
+> Good. So far I have not been seeing any problems with it at least.
 
-Sorry for the back-and-forth, but I think this and the removal of
-XSTATE_FLEXIBLE (perhaps XSTATE_LAZY?) makes your v2 worse than v1.
+I went through and tested all the different iterations of this patchset
+last night, and have hit a few problems, but I *think* this has solved
+the segfault problem.  I'm now hitting some rcu_sched stalls when
+running my tests.
 
-Since Peter already said the same, please undo these changes.
+Initially things were getting hung up on a lock in change_huge_pmd, so
+I applied Kirill's patches to split up the PTL, which did manage to ease
+the contention on that lock, but, now it appears that I'm hitting stalls
+somewhere else.
 
-Also, how is XSTATE_EAGER used?  Should MPX be disabled when xsaveopt is
-disabled on the kernel command line?  (Liu, how would this affect the
-KVM patches, too?)
+I'll play around with this a bit tonight/tomorrow and see if I can track
+down exactly where things are getting stuck.  Unfortunately, on these
+large systems, when we hit a stall, the system often completely locks up
+before the NMI backtrace can complete on all cpus, so, as of right now,
+I've not been able to get a backtrace for the cpu that's initially
+causing the stall.  I'm going to see if I can slim down the code for the
+stall detection to just give the backtrace for the cpu that's initially
+stalling out.  In the meantime, let me know if you guys have any ideas
+that could keep things moving.
 
-Paolo
-
-> +#define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
->  /*
->   * These are the features that the OS can handle currently.
->   */
-> -#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-> +#define XCNTXT_MASK    (XSTATE_FP | XSTATE_SSE | XSTATE_YMM | XSTATE_EAGER)
->  
->  #ifdef CONFIG_X86_64
->  #define REX_PREFIX	"0x48, "
-> 
-
+- Alex
