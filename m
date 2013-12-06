@@ -1,31 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab3LFOY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:24:58 -0500
-Received: from emea01-am1-ndr.ptr.protection.outlook.com ([157.56.116.100]:11350
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751051Ab3LFOYz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 09:24:55 -0500
-Content-Type: text/plain; charset=US-ASCII
+	id S932265Ab3LFO0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:26:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957Ab3LFO0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 09:26:06 -0500
+Date: Fri, 6 Dec 2013 15:26:02 +0100
+From: Miroslav Lichvar <mlichvar@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
+Message-ID: <20131206142602.GH22878@localhost>
+References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
+ <528A7C88.1030801@linaro.org>
+ <20131120183900.GA25735@localhost>
+ <529D2BA6.5020005@linaro.org>
+ <529D5805.20903@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Sponsorship Funds
-To: Recipients <uni@JKInfo967.onmicrosoft.com>
-From: <uni@JKInfo967.onmicrosoft.com>
-Date: Fri, 6 Dec 2013 19:54:39 +0530
-Reply-To: <concordloan7@yahoo.com.au>
-Message-ID: <b4418099-78dc-4300-9f3a-02ba66da3fd9@HKXPR03MB149.apcprd03.prod.outlook.com>
-X-Originating-IP: [115.244.14.111]
-X-ClientProxiedBy: SIXPR02CA024.apcprd02.prod.outlook.com (10.141.119.19) To
- HKXPR03MB149.apcprd03.prod.outlook.com (10.242.121.17)
-X-Forefront-PRVS: 0052308DC6
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(189002)(199002)(12864004)(46102001)(80022001)(66066001)(74706001)(83072001)(65816001)(74876001)(50466002)(74316001)(74366001)(4396001)(49866001)(47736001)(79102001)(47776003)(53256004)(59766001)(77982001)(561924002)(50986001)(47976001)(63696002)(42186004)(54356001)(51856001)(54316002)(56776001)(76482001)(85306002)(81686001)(76176001)(47446002)(74502001)(74662001)(81816001)(1496004)(81342001)(56816005)(85852002)(80976001)(221733001)(23756003)(64872005)(69226001)(89136003)(90146001)(81542001)(77096001)(76786001)(33646001)(76796001)(87266001)(76576001)(87976001)(31686002)(43066001)(83322001)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:HKXPR03MB149;H:[115.244.14.111];CLIP:115.244.14.111;FPR:;RD:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: JKInfo967.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529D5805.20903@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, We are individual business sponsors. We sponsor business oriented individuals by providing them with financial sponsorship to setup new business, carry out their business projects or strengthen the old business that is facing financial difficulties. We can sponsor you with any amount ranging from $100,000.00usd to $80,000,000.00usd for a start provided we can rely on your ability to pay back our money within the stipulated period of 10years. For more details and to apply for our sponsorship click your reply button now to reply us.
+On Mon, Dec 02, 2013 at 08:03:17PM -0800, John Stultz wrote:
+> On 12/02/2013 04:53 PM, John Stultz wrote:
+> Finally found a config to get it working (disabling kernel debugging
+> seems to work), and am currently trying to fixup the missing symbols
+> (although I'm getting segfaults from various inline cli's :)
+
+Patches are welcome :).
+
+> Very cool simulator, by the way. Do you plan to have a git repo at some
+> point for it?
+
+It's now at https://github.com/mlichvar/linux-tktest
+
+I'm considering to include it in https://github.com/mlichvar/clknetsim
+as an optional replacement of the somewhat idealized clock which is
+currently implemented there. This would allow us to see the whole
+picture with applications controlling the clock.
+
+> See the patch below. I'm doing some actual testing with it to see if its
+> maybe too dampened.
+
+It seems to fix the problem with stability, that's good. But the
+response seems to be very slow now. In the simulated test with 10Hz
+clock update it takes about 1000 updates (100 seconds!) for the loop
+to converge to the correct frequency.
+
+With the current tktest code from git:
+n: 30, slope: 1.00 (1.00 GHz), dev: 3.1 ns, max: 3.6 ns, freq: -100.43404 ppm
+
+You can see here the frequency is off by 0.43 ppm, that's after the 20
+skipped updates.
+
+When the sampling interval is changed to 100*50 ticks:
+n: 30, slope: 1.00 (1.00 GHz), dev: 2146.9 ns, max: 5446.5 ns, freq: -100.07928 ppm
+
+Only when the warmup period is extended to 100*1000 ticks, it produces
+a nice fit:
+n: 30, slope: 1.00 (1.00 GHz), dev: 7.3 ns, max: 12.2 ns, freq: -100.00004 ppm
+
+This graph shows the value of tk->mult as it changes with clock
+updates:
+http://mlichvar.fedorapeople.org/tmp/tk_test1.png
+
+When the TSC frequency is set to 100 MHz, it becomes more pronounced:
+http://mlichvar.fedorapeople.org/tmp/tk_test2.png
+
+I'm worried about the artifacts in the response, is that a bug?
+
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1068,7 +1068,7 @@ static __always_inline int timekeeping_bigadjust(struct timekeeper *tk,
+>  	 * here.  This is tuned so that an error of about 1 msec is adjusted
+>  	 * within about 1 sec (or 2^20 nsec in 2^SHIFT_HZ ticks).
+>  	 */
+> -	error2 = tk->ntp_error >> (NTP_SCALE_SHIFT + 22 - 2 * SHIFT_HZ);
+> +	error2 = tk->ntp_error >> (NTP_SCALE_SHIFT/2);
+>  	error2 = abs(error2);
+>  	for (look_ahead = 0; error2 > 0; look_ahead++)
+>  		error2 >>= 2;
+> 
+
+-- 
+Miroslav Lichvar
