@@ -1,91 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3LFIfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:35:20 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53760 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab3LFIfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:35:17 -0500
-X-IronPort-AV: E=Sophos;i="4.93,839,1378828800"; 
-   d="scan'208";a="9205455"
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-To: acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
-Date: Fri, 6 Dec 2013 16:33:08 -0500
-Message-Id: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.2.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/06 16:34:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/06 16:34:41,
-	Serialize complete at 2013/12/06 16:34:41
+	id S1756792Ab3LFIfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:35:32 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:34157 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab3LFIfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 03:35:18 -0500
+X-AuditID: cbfee61a-b7f796d000004313-9a-52a18c446b0c
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1386310509-5864-1-git-send-email-jaegeuk.kim@samsung.com>
+In-reply-to: <1386310509-5864-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: RE: [PATCH] f2fs: add unlikely() macro for compiler more aggressively
+Date: Fri, 06 Dec 2013 16:34:07 +0800
+Message-id: <000401cef25e$16f97d60$44ec7820$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJcF0Q5wP6r8DsEcS1NqO5Q+LT82Jksb9kA
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQV2XnoVBBkuXKVpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAldF86S1zwXzeiq17
+	n7I1MK7l6mLk5JAQMJG4sKaLGcIWk7hwbz1bFyMXh5DAdEaJLfseMoEkhAR+MEpcW+8FYrMJ
+	qEgs7/gPFhcR0Jb4ObeVHcRmFsiUmPN6MitEvZvE35lH2EBsTgF3ia3vmsFsYQE/iUcn74P1
+	sgioSlw4ORHM5hWwlDi6tokZwhaU+DH5HgvETC2J9TuPM0HY8hKb17yFOlRBYsfZ14wQNxhJ
+	PL+8EOoGcYmNR26xTGAUmoVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ
+	+bmbGMGB/0xqB+PKBotDjAIcjEo8vByrFgQJsSaWFVfmHmKU4GBWEuHtEV8YJMSbklhZlVqU
+	H19UmpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoGxsl0iu/W8yEe/7C/mKcWb
+	jwUdatTnW/ja6a/OBZlV8X7L931IbNf0Vl+sW/nKnbE8/exNd34vg6otu7615of6hsstiw5R
+	UnMzWjUjpTWNKyJ1R4L4ht3uttMKfsVvCdssXDVtVuCdRz/EV2bURBRs8C8vk06ePNGYm2lF
+	2vLCq7vV0qK3rFZiKc5INNRiLipOBABH3DyJeAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report,
-we can not get the perf information from perf data file. The all sample
-are shown as unknown.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Friday, December 06, 2013 2:15 PM
+> Cc: Jaegeuk Kim; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net; Chao Yu
+> Subject: [PATCH] f2fs: add unlikely() macro for compiler more aggressively
+> 
+> This patch adds unlikely() macro into the most of codes.
+> The basic rule is to add that when:
+> - checking unusual errors,
+> - checking page mappings,
+> - and the other unlikely conditions.
 
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
+Looks nice to me!
 
-This bug is caused when delivery sample. We use perf_session__find_machine_for_cpumode() to find
-the machine, and it call perf_session__findnew_machine(). Then we will delivery the sample to a
-new machine without kernel mapped.
+> 
+> Cc: Chao Yu <chao2.yu@samsung.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 
-This patch changes perf_session__findnew_machine() to perf_session__find_machine(), so the sample
-will be deliveried to default guest machine if there is no machine specified for it.
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
 
-Verify steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+> ---
+>  fs/f2fs/checkpoint.c |  22 ++++++----
+>  fs/f2fs/data.c       |  63 +++++++++++++--------------
+>  fs/f2fs/dir.c        |  10 ++---
+>  fs/f2fs/file.c       |  23 +++++-----
+>  fs/f2fs/gc.c         |  19 ++++-----
+>  fs/f2fs/inode.c      |  12 +++---
+>  fs/f2fs/namei.c      |  24 ++++++-----
+>  fs/f2fs/node.c       | 117 +++++++++++++++++++++++++++------------------------
+>  fs/f2fs/recovery.c   |  10 ++---
+>  fs/f2fs/segment.c    |  42 +++++++++---------
+>  fs/f2fs/super.c      |  83 ++++++++++++++++++------------------
+>  fs/f2fs/xattr.c      |  28 ++++++------
+>  12 files changed, 234 insertions(+), 219 deletions(-)
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
----
- tools/perf/util/session.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+[snip]
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8a7da6f..1770f2f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -851,6 +851,7 @@ static struct machine *
- 					       struct perf_sample *sample)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
- 
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -863,7 +864,11 @@ static struct machine *
- 		else
- 			pid = sample->pid;
- 
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
- 	}
- 
- 	return &session->machines.host;
--- 
-1.8.2.1
+> @@ -808,11 +808,11 @@ retry:
+>  		brelse(*raw_super_buf);
+>  		f2fs_msg(sb, KERN_ERR, "Can't find a valid F2FS filesystem "
+>  				"in %dth superblock", block + 1);
+> -		if(block == 0) {
+> +		if(unlikely(block != 0)) {
+
+Original code has style problem:
+Space is required before the open parenthesis '('.
+Thanks.
+
 
