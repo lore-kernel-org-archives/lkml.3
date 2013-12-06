@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab3LFS5n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:57:43 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:60080 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535Ab3LFS5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:57:42 -0500
-Date: Fri, 6 Dec 2013 10:57:38 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] test: fix sparse warnings in user_copy tests
-Message-ID: <20131206185738.GA20257@www.outflux.net>
+	id S1758183Ab3LFTAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 14:00:11 -0500
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:43548
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756607Ab3LFTAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 14:00:08 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zz98dI9371I936eI542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+Message-ID: <1386356393.7375.118.camel@snotra.buserror.net>
+Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+From: Scott Wood <scottwood@freescale.com>
+To: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+CC: Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Yoder Stuart-B08248 <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 6 Dec 2013 12:59:53 -0600
+In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D07251EE4@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385066603.2879.414.camel@ul30vt.home>
+	 <1385066835.1403.489.camel@snotra.buserror.net>
+	 <1385067648.2879.421.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385397493.2879.557.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0723624C@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1386289316.7375.107.camel@snotra.buserror.net>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D07251EE4@039-SN2MPN1-012.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 7bit
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sparse fix for "test: check copy_to/from_user boundary validation":
+On Thu, 2013-12-05 at 22:11 -0600, Bharat Bhushan wrote:
+> 
+> > -----Original Message-----
+> > From: Wood Scott-B07421
+> > Sent: Friday, December 06, 2013 5:52 AM
+> > To: Bhushan Bharat-R65777
+> > Cc: Alex Williamson; linux-pci@vger.kernel.org; agraf@suse.de; Yoder Stuart-
+> > B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
+> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> >
+> > On Thu, 2013-11-28 at 03:19 -0600, Bharat Bhushan wrote:
+> > >
+> > > > -----Original Message-----
+> > > > From: Bhushan Bharat-R65777
+> > > > Sent: Wednesday, November 27, 2013 9:39 PM
+> > > > To: 'Alex Williamson'
+> > > > Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de;
+> > > > Yoder Stuart- B08248; iommu@lists.linux-foundation.org;
+> > > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
+> > > > linux-kernel@vger.kernel.org
+> > > > Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale
+> > > > IOMMU (PAMU)
+> > > >
+> > > > If we just provide the size of MSI bank to userspace then userspace
+> > > > cannot do anything wrong.
+> > >
+> > > So userspace does not know address, so it cannot mmap and cause any
+> > interference by directly reading/writing.
+> >
+> > That's security through obscurity...  Couldn't the malicious user find out the
+> > address via other means, such as experimentation on another system over which
+> > they have full control?  What would happen if the user reads from their device's
+> > PCI config space?  Or gets the information via some back door in the PCI device
+> > they own?  Or pokes throughout the address space looking for something that
+> > generates an interrupt to its own device?
+> 
+> So how to solve this problem, Any suggestion ?
+> 
+> We have to map one window in PAMU for MSIs and a malicious user can ask
+> its device to do DMA to MSI window region with any pair of address and
+> data, which can lead to unexpected MSIs in system?
 
-To keep sparse happy with the horrible things being done with the user
-memory pointers, declare both __user and non-__user cases ahead of time
-to avoid needing to do the casts later.
+I don't think there are any solutions other than to limit each bank to
+one user, unless the admin turns some knob that says they're OK with the
+partial loss of isolation.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- lib/test_user_copy.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/lib/test_user_copy.c b/lib/test_user_copy.c
-index b61f3e406e0b..0ecef3e4690e 100644
---- a/lib/test_user_copy.c
-+++ b/lib/test_user_copy.c
-@@ -38,6 +38,7 @@ static int __init test_user_copy_init(void)
- 	int ret = 0;
- 	char *kmem;
- 	char __user *usermem;
-+	char *bad_usermem;
- 	unsigned long user_addr;
- 	unsigned long value = 0x5A;
- 
-@@ -55,6 +56,7 @@ static int __init test_user_copy_init(void)
- 	}
- 
- 	usermem = (char __user *)user_addr;
-+	bad_usermem = (char *)user_addr;
- 
- 	/* Legitimate usage: none of these should fail. */
- 	ret |= test(copy_from_user(kmem, usermem, PAGE_SIZE),
-@@ -70,13 +72,13 @@ static int __init test_user_copy_init(void)
- 	ret |= test(!copy_from_user(kmem, (char __user *)(kmem + PAGE_SIZE),
- 				    PAGE_SIZE),
- 		    "illegal all-kernel copy_from_user passed");
--	ret |= test(!copy_from_user((char *)usermem, (char __user *)kmem,
-+	ret |= test(!copy_from_user(bad_usermem, (char __user *)kmem,
- 				    PAGE_SIZE),
- 		    "illegal reversed copy_from_user passed");
- 	ret |= test(!copy_to_user((char __user *)kmem, kmem + PAGE_SIZE,
- 				  PAGE_SIZE),
- 		    "illegal all-kernel copy_to_user passed");
--	ret |= test(!copy_to_user((char __user *)kmem, (char *)usermem,
-+	ret |= test(!copy_to_user((char __user *)kmem, bad_usermem,
- 				  PAGE_SIZE),
- 		    "illegal reversed copy_to_user passed");
- 	ret |= test(!get_user(value, (unsigned long __user *)kmem),
--- 
-1.7.9.5
+-Scott
 
 
--- 
-Kees Cook
-Chrome OS Security
+
