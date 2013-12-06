@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab3LFNCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44132 "EHLO
+	id S1758161Ab3LFNCW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:02:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44146 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758075Ab3LFNCO (ORCPT
+	with ESMTP id S1758140Ab3LFNCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:14 -0500
+	Fri, 6 Dec 2013 08:02:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rodolfo Giometti <giometti@enneenne.com>, Chris Ball <cjb@laptop.org>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 121/272] mmc: atmel-mci: fix oops in atmci_tasklet_func
-Date: Fri,  6 Dec 2013 12:56:50 +0000
-Message-Id: <1386334761-25517-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 125/272] dm: allocate buffer for messages with small number of arguments using GFP_NOIO
+Date: Fri,  6 Dec 2013 12:56:54 +0000
+Message-Id: <1386334761-25517-126-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rodolfo Giometti <giometti@enneenne.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit fbd986cd420d1deeabf1039ec4e74075a5639db5 upstream.
+commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
 
-In some cases, a NULL pointer dereference happens because data is NULL when
-STATE_END_REQUEST case is reached in atmci_tasklet_func.
+dm-mpath and dm-thin must process messages even if some device is
+suspended, so we allocate argv buffer with GFP_NOIO. These messages have
+a small fixed number of arguments.
 
-Signed-off-by: Rodolfo Giometti <giometti@enneenne.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+On the other hand, dm-switch needs to process bulk data using messages
+so excessive use of GFP_NOIO could cause trouble.
+
+The patch also lowers the default number of arguments from 64 to 8, so
+that there is smaller load on GFP_NOIO allocations.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/atmel-mci.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/md/dm-table.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index e9ea2fc..78d7e47 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1792,12 +1792,14 @@ static void atmci_tasklet_func(unsigned long priv)
- 			if (unlikely(status)) {
- 				host->stop_transfer(host);
- 				host->data = NULL;
--				if (status & ATMCI_DTOE) {
--					data->error = -ETIMEDOUT;
--				} else if (status & ATMCI_DCRCE) {
--					data->error = -EILSEQ;
--				} else {
--					data->error = -EIO;
-+				if (data) {
-+					if (status & ATMCI_DTOE) {
-+						data->error = -ETIMEDOUT;
-+					} else if (status & ATMCI_DCRCE) {
-+						data->error = -EILSEQ;
-+					} else {
-+						data->error = -EIO;
-+					}
- 				}
- 			}
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index f221812..bbd7369 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -545,14 +545,28 @@ static int adjoin(struct dm_table *table, struct dm_target *ti)
  
+ /*
+  * Used to dynamically allocate the arg array.
++ *
++ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
++ * process messages even if some device is suspended. These messages have a
++ * small fixed number of arguments.
++ *
++ * On the other hand, dm-switch needs to process bulk data using messages and
++ * excessive use of GFP_NOIO could cause trouble.
+  */
+ static char **realloc_argv(unsigned *array_size, char **old_argv)
+ {
+ 	char **argv;
+ 	unsigned new_size;
++	gfp_t gfp;
+ 
+-	new_size = *array_size ? *array_size * 2 : 64;
+-	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
++	if (*array_size) {
++		new_size = *array_size * 2;
++		gfp = GFP_KERNEL;
++	} else {
++		new_size = 8;
++		gfp = GFP_NOIO;
++	}
++	argv = kmalloc(new_size * sizeof(*argv), gfp);
+ 	if (argv) {
+ 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
+ 		*array_size = new_size;
 -- 
 1.8.3.2
 
