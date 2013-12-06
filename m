@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab3LFDHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 22:07:35 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:21145 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab3LFDHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 22:07:32 -0500
-Message-ID: <52A13F34.2010403@huawei.com>
-Date: Fri, 6 Dec 2013 11:06:28 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: Re: [PATCH 2/2] net/fddi: Replace local marco with PCI standard macro
-References: <1386243482-32856-1-git-send-email-wangyijing@huawei.com> <alpine.LFD.2.10.1312052154190.1599@eddie.linux-mips.org>
-In-Reply-To: <alpine.LFD.2.10.1312052154190.1599@eddie.linux-mips.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	id S1753026Ab3LFDU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 22:20:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55222 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752513Ab3LFDUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 22:20:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,838,1378882800"; 
+   d="scan'208";a="325986866"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, iommu@lists.linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: [Patch Part1 V2 00/20] Bugfixes and improvements for Intel IOMMU drivers
+Date: Fri,  6 Dec 2013 11:21:03 +0800
+Message-Id: <1386300083-6882-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/12/6 6:06, Maciej W. Rozycki wrote:
-> On Thu, 5 Dec 2013, Yijing Wang wrote:
-> 
->> Replace local marco DFX_BUS_PCI with PCI standard marco
->> dev_is_pci().
-> 
->  Typos above: marco -> macro
+This patchset includes several bugfixes and code improvements for
+Intel DMA remapping and interrupt remapping drivers. It's also a
+preparation for Intel IOMMU device hotplug.
 
-Sorry for the mistake, David, should i need to resend this patch to fix this typo error?
+It applies to the latest mainstream kernel on top of
+	commit 7e3528c3660a2e8602abc7858b0994d611f74bc3
 
-> 
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  drivers/net/fddi/defxx.c |   20 +++++++-------------
->>  1 files changed, 7 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/net/fddi/defxx.c b/drivers/net/fddi/defxx.c
->> index 0b40e1c..0344f71 100644
->> --- a/drivers/net/fddi/defxx.c
->> +++ b/drivers/net/fddi/defxx.c
->> @@ -241,12 +241,6 @@ static char version[] =
->>   */
->>  #define NEW_SKB_SIZE (PI_RCV_DATA_K_SIZE_MAX+128)
->>  
->> -#ifdef CONFIG_PCI
->> -#define DFX_BUS_PCI(dev) (dev->bus == &pci_bus_type)
->> -#else
->> -#define DFX_BUS_PCI(dev) 0
->> -#endif
->> -
->>  #ifdef CONFIG_EISA
->>  #define DFX_BUS_EISA(dev) (dev->bus == &eisa_bus_type)
->>  #else
->> @@ -436,7 +430,7 @@ static void dfx_port_read_long(DFX_board_t *bp, int offset, u32 *data)
->>  static void dfx_get_bars(struct device *bdev,
->>  			 resource_size_t *bar_start, resource_size_t *bar_len)
->>  {
->> -	int dfx_bus_pci = DFX_BUS_PCI(bdev);
->> +	int dfx_bus_pci = dev_is_pci(bdev);
->>  	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
->>  	int dfx_bus_tc = DFX_BUS_TC(bdev);
->>  	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
-> 
-> Acked-by: Maciej W. Rozycki <macro@linux-mips.org>
-> 
->   Maciej
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+It has been tested on Intel SandyBridge and Romley-4S platforms.
 
+Thanks!
+
+V2->V3:
+1) Add three more patches 18, 19, 20
+2) Fix minor bugs in previous version
+
+V1->V2:
+1) drop one wrong bugfix of " fix remapping interrupt handle leakage in
+ error recovery path"
+2) Kill redundant call of bitmap_allocate_region().
+3) Add two new bugfixes.
+
+Jiang Liu (20):
+  iommu/vt-d: use dedicated bitmap to track remapping entry allocation
+    status
+  iommu/vt-d: fix PCI device reference leakage on error recovery path
+  iommu/vt-d: fix a race window in allocating domain ID for virtual
+    machines
+  iommu/vt-d: fix resource leakage on error recovery path in
+    iommu_init_domains()
+  iommu/vt-d, trivial: refine support of 64bit guest address
+  iommu/vt-d, trivial: print correct domain id of static identity
+    domain
+  iommu/vt-d, trivial: check suitable flag in function
+    detect_intel_iommu()
+  iommu/vt-d, trivial: clean up unused code
+  iommu/vt-d: mark internal functions as static
+  iommu/vt-d, trivial: use defined macro instead of hardcoding
+  iommu/vt-d, trivial: simplify code with existing macros
+  iommu/vt-d: fix invalid memory access when freeing DMAR irq
+  iommu/vt-d: keep shared resources when failed to initialize iommu
+    devices
+  iommu/vt-d: avoid double free in error recovery path
+  iommu/vt-d: fix access after free issue in function free_dmar_iommu()
+  iommu/vt-d: release invalidation queue when destroying IOMMU unit
+  iommu/vt-d: fix wrong return value of dmar_table_init()
+  iommu/vt-d, PCI, trivial: use dev_is_pci() instead of hardcoding
+  iommu/vt-d, trivial: clean sparse warnings
+  iommu/vt-d: free all resources if failed to initialize DMARs
+
+ drivers/iommu/dmar.c                |  126 ++++++++++++--------
+ drivers/iommu/intel-iommu.c         |  220 +++++++++++++----------------------
+ drivers/iommu/intel_irq_remapping.c |   92 +++++++--------
+ drivers/iommu/irq_remapping.c       |    6 +-
+ include/linux/dma_remapping.h       |    4 -
+ include/linux/dmar.h                |   17 +--
+ include/linux/intel-iommu.h         |    3 +-
+ 7 files changed, 213 insertions(+), 255 deletions(-)
 
 -- 
-Thanks!
-Yijing
+1.7.10.4
 
