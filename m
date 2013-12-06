@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab3LFTIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 14:08:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59423 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab3LFTIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 14:08:17 -0500
-Date: Fri, 6 Dec 2013 14:07:53 -0500
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and fixes crash bugs
-Message-ID: <20131206190753.GA3201@redhat.com>
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <y0mvbz3pd3z.fsf@fche.csb> <52A16AD7.6040500@hitachi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A16AD7.6040500@hitachi.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1758242Ab3LFTKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 14:10:11 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:3545 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754900Ab3LFTKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 14:10:09 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI936eIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+Message-ID: <1386356996.7375.120.camel@snotra.buserror.net>
+Subject: Re: [PATCH] powerpc 8xx: Loading kernels over 8Mbytes without
+ CONFIG_PIN_TLB
+From: Scott Wood <scottwood@freescale.com>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Date: Fri, 6 Dec 2013 13:09:56 -0600
+In-Reply-To: <20131127110406.6DC8E1A504F@localhost.localdomain>
+References: <20131127110406.6DC8E1A504F@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Masami -
+On Wed, 2013-11-27 at 12:04 +0100, Christophe Leroy wrote:
+> Today, the only way to load kernels whose size is greater than 8Mbytes is to
+> activate CONFIG_PIN_TLB. Otherwise, the physical memory initially mapped is
+> limited to 8Mbytes. This patch sets up 24 Mbytes of initial memory regardless
+> of whether CONFIG_PIN_TLB is active or not. It allows to load "big" kernels
+> (for instance when activating CONFIG_LOCKDEP_SUPPORT) without having
+> to activate CONFIG_PIN_TLB.
 
-masami.hiramatsu.pt wrote:
+So, what happens on boards with less than 24M memory present?  Even if
+you avoid explicitly referencing those addresses, what if there is a
+speculative access -- or does 8xx not do that?
 
-> [...]
-> >> [...]  Then, I'd like to propose this new whitelist feature in
-> >> kprobe-tracer (not raw kprobe itself). And a sysctl knob for
-> >> disabling the whitelist.  That knob will be
-> >> /proc/sys/debug/kprobe-event-whitelist and disabling it will mark
-> >> kernel tainted so that we can check it from bug reports.
-> > 
-> > How would one assemble a reliable whitelist, if we haven't fully
-> > characterized the problems that make the blacklist necessary?
-> 
-> As I said, we can use function graph tracer's list as the whitelist,
-> since it doesn't include any functions invoked from ftrace's event
-> handler. (Note that I don't mention the Systemtap or other user here)
->
-> Whitelist is just for keeping the people away from the quantitative
-> issue, who just want to trace their subsystems except for ftrace.
-> [...]
-
-Would you plan to limit kprobes (or just the perf-probe frontend) to
-only function-entries also?  If not, and if intra-function
-statement-granularity kprobes remain allowed within a
-function-granularity whitelist, then you might still have those
-"quantitative" problems.
-
-Even worse, kprobes robustness problems can bite even with a small
-whitelist, unless you can test the countless subset selections
-cartesian-product the aggrevating factors (like other tracing
-facilities being in use at the same time, limited memory, high irq
-rates, debugging sessions, architectures, whatever).
+-Scott
 
 
-> [...]  For the long term solution, I think we can introduce some
-> kind of performance gatekeeper as systemtap does. Counting the
-> miss-hit rate per second and if it go over a threshold, disable next
-> miss-hit (or most miss-hit) probe (as OOM killer does).
 
-That would make sense, but again it would not help deal with kprobes
-robustness (in the kernel-crashing rather than kernel-slowdown sense).
-
-
-- FChE
