@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162069Ab3LFNyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:54:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44034 "EHLO
+	id S1757209Ab3LFNyF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:54:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44045 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758021Ab3LFNBs (ORCPT
+	with ESMTP id S1758029Ab3LFNBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:48 -0500
+	Fri, 6 Dec 2013 08:01:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>,
+Cc: Jan Kara <jack@suse.cz>, Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 102/272] ahci: Add Device IDs for Intel Wildcat Point-LP
-Date: Fri,  6 Dec 2013 12:56:31 +0000
-Message-Id: <1386334761-25517-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/272] IB/ipath: Convert ipath_user_sdma_pin_pages() to use get_user_pages_fast()
+Date: Fri,  6 Dec 2013 12:56:33 +0000
+Message-Id: <1386334761-25517-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 9f961a5f6efc87a79571d7166257b36af28ffcfe upstream.
+commit 4adcf7fb6783e354aab38824d803fa8c4f8e8a27 upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Wildcat Point-LP PCH.
+ipath_user_sdma_queue_pkts() gets called with mmap_sem held for
+writing.  Except for get_user_pages() deep down in
+ipath_user_sdma_pin_pages() we don't seem to need mmap_sem at all.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Even more interestingly the function ipath_user_sdma_queue_pkts() (and
+also ipath_user_sdma_coalesce() called somewhat later) call
+copy_from_user() which can hit a page fault and we deadlock on trying
+to get mmap_sem when handling that fault.  So just make
+ipath_user_sdma_pin_pages() use get_user_pages_fast() and leave
+mmap_sem locking for mm.
+
+This deadlock has actually been observed in the wild when the node
+is under memory pressure.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+
+[ Merged in fix for call to get_user_pages_fast from Tetsuo Handa
+  <penguin-kernel@I-love.SAKURA.ne.jp>.  - Roland ]
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/hw/ipath/ipath_user_sdma.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 0df25a2..7e4de82 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -292,6 +292,10 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c83), board_ahci }, /* Wildcat Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
+diff --git a/drivers/infiniband/hw/ipath/ipath_user_sdma.c b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
+index f5cb13b..cc04b7b 100644
+--- a/drivers/infiniband/hw/ipath/ipath_user_sdma.c
++++ b/drivers/infiniband/hw/ipath/ipath_user_sdma.c
+@@ -280,9 +280,7 @@ static int ipath_user_sdma_pin_pages(const struct ipath_devdata *dd,
+ 	int j;
+ 	int ret;
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-	ret = get_user_pages(current, current->mm, addr,
+-			     npages, 0, 1, pages, NULL);
+-
++	ret = get_user_pages_fast(addr, npages, 0, pages);
+ 	if (ret != npages) {
+ 		int i;
+ 
+@@ -811,10 +809,7 @@ int ipath_user_sdma_writev(struct ipath_devdata *dd,
+ 	while (dim) {
+ 		const int mxp = 8;
+ 
+-		down_write(&current->mm->mmap_sem);
+ 		ret = ipath_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
+-		up_write(&current->mm->mmap_sem);
+-
+ 		if (ret <= 0)
+ 			goto done_unlock;
+ 		else {
 -- 
 1.8.3.2
 
