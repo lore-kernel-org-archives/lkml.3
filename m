@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422647Ab3LFNYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:24:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44514 "EHLO
+	id S1162561Ab3LFNYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:24:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44540 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161852Ab3LFNEC (ORCPT
+	with ESMTP id S1161865Ab3LFNEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:02 -0500
+	Fri, 6 Dec 2013 08:04:10 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vu Pham <vuhuong@mellanox.com>, Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 200/272] IB/srp: Remove target from list before freeing Scsi_Host structure
-Date: Fri,  6 Dec 2013 12:58:09 +0000
-Message-Id: <1386334761-25517-201-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 207/272] drm/radeon: fix UVD destroy IB size
+Date: Fri,  6 Dec 2013 12:58:16 +0000
+Message-Id: <1386334761-25517-208-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vu Pham <vuhuong@mellanox.com>
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
 
-commit 65d7dd2f3479ef5aec1d9ddd1481cb7851c11af6 upstream.
+commit 727ddc84a1373bf06b2fa261f44e38fb0faf5340 upstream.
 
-Remove an SRP target from the SRP target list before invoking the last
-scsi_host_put() call.  This change is necessary because that last put
-frees the memory that holds the srp_target_port structure.
+The parameter is in bytes not dwords.
 
-This patch prevents the following kernel oops:
-
-    RIP: 0010:[<ffffffff810b00d0>] __lock_acquire+0x500/0x1570
-    Call Trace:
-     [<ffffffff810b11e4>] lock_acquire+0xa4/0x120
-     [<ffffffff81531206>] _spin_lock+0x36/0x70
-     [<ffffffffa01b6d8f>] srp_remove_work+0xef/0x180 [ib_srp]
-     [<ffffffff8109125c>] worker_thread+0x21c/0x3d0
-     [<ffffffff81096e86>] kthread+0x96/0xa0
-     [<ffffffff8100c20a>] child_rip+0xa/0x20
-
-Signed-off-by: Vu Pham <vuhuong@mellanox.com>
-
-[ bvanassche - Modified path description and CC'ed stable. ]
-
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_uvd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index df7a19c..bc003a5 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -534,6 +534,11 @@ static void srp_remove_target(struct srp_target_port *target)
- 	ib_destroy_cm_id(target->cm_id);
- 	srp_free_target_ib(target);
- 	srp_free_req_data(target);
-+
-+	spin_lock(&target->srp_host->target_lock);
-+	list_del(&target->list);
-+	spin_unlock(&target->srp_host->target_lock);
-+
- 	scsi_host_put(target->scsi_host);
- }
+diff --git a/drivers/gpu/drm/radeon/radeon_uvd.c b/drivers/gpu/drm/radeon/radeon_uvd.c
+index a951ac0..1147caa 100644
+--- a/drivers/gpu/drm/radeon/radeon_uvd.c
++++ b/drivers/gpu/drm/radeon/radeon_uvd.c
+@@ -615,7 +615,7 @@ static int radeon_uvd_send_msg(struct radeon_device *rdev,
+ 	if (r) 
+ 		goto err;
  
-@@ -545,10 +550,6 @@ static void srp_remove_work(struct work_struct *work)
- 	WARN_ON_ONCE(target->state != SRP_TARGET_REMOVED);
+-	r = radeon_ib_get(rdev, ring, &ib, NULL, 16);
++	r = radeon_ib_get(rdev, ring, &ib, NULL, 64);
+ 	if (r)
+ 		goto err;
  
- 	srp_remove_target(target);
--
--	spin_lock(&target->srp_host->target_lock);
--	list_del(&target->list);
--	spin_unlock(&target->srp_host->target_lock);
- }
- 
- static void srp_rport_delete(struct srp_rport *rport)
 -- 
 1.8.3.2
 
