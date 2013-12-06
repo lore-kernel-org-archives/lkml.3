@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422796Ab3LFWav (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:30:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60635 "EHLO
+	id S1422812Ab3LFWbO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:31:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759139Ab3LFVw5 (ORCPT
+	with ESMTP id S1759174Ab3LFVw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:57 -0500
+	Fri, 6 Dec 2013 16:52:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.12 64/83] usb: musb: davinci: fix resources passed to MUSB driver for DM6467
-Date: Fri,  6 Dec 2013 13:51:54 -0800
-Message-Id: <20131206214646.006158320@linuxfoundation.org>
+        Stefan Priebe <s.priebe@profihost.ag>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 42/83] net: core: Always propagate flag changes to interfaces
+Date: Fri,  6 Dec 2013 13:51:32 -0800
+Message-Id: <20131206214643.972908394@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,53 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit ea78201e2e08f8a91e30100c4c4a908b5cf295fc upstream.
+[ Upstream commit d2615bf450694c1302d86b9cc8a8958edfe4c3a4 ]
 
-After commit 09fc7d22b024692b2fe8a943b246de1af307132b (usb: musb: fix incorrect
-usage of  resource pointer), CPPI DMA driver on DaVinci DM6467 can't detect its
-dedicated IRQ and so the MUSB IRQ  is erroneously used instead. This is because
-only 2 resources are passed to the MUSB driver from the DaVinci glue layer,  so
-fix  this by always copying 3 resources (it's  safe since a placeholder for the
-3rd resource is always  there) and passing 'pdev->num_resources' instead of the
-size of musb_resources[] to platform_device_add_resources().
+The following commit:
+    b6c40d68ff6498b7f63ddf97cf0aa818d748dee7
+    net: only invoke dev->change_rx_flags when device is UP
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+tried to fix a problem with VLAN devices and promiscuouse flag setting.
+The issue was that VLAN device was setting a flag on an interface that
+was down, thus resulting in bad promiscuity count.
+This commit blocked flag propagation to any device that is currently
+down.
+
+A later commit:
+    deede2fabe24e00bd7e246eb81cd5767dc6fcfc7
+    vlan: Don't propagate flag changes on down interfaces
+
+fixed VLAN code to only propagate flags when the VLAN interface is up,
+thus fixing the same issue as above, only localized to VLAN.
+
+The problem we have now is that if we have create a complex stack
+involving multiple software devices like bridges, bonds, and vlans,
+then it is possible that the flags would not propagate properly to
+the physical devices.  A simple examle of the scenario is the
+following:
+
+  eth0----> bond0 ----> bridge0 ---> vlan50
+
+If bond0 or eth0 happen to be down at the time bond0 is added to
+the bridge, then eth0 will never have promisc mode set which is
+currently required for operation as part of the bridge.  As a
+result, packets with vlan50 will be dropped by the interface.
+
+The only 2 devices that implement the special flag handling are
+VLAN and DSA and they both have required code to prevent incorrect
+flag propagation.  As a result we can remove the generic solution
+introduced in b6c40d68ff6498b7f63ddf97cf0aa818d748dee7 and leave
+it to the individual devices to decide whether they will block
+flag propagation or not.
+
+Reported-by: Stefan Priebe <s.priebe@profihost.ag>
+Suggested-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/usb/musb/davinci.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ net/core/dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -509,7 +509,7 @@ static u64 davinci_dmamask = DMA_BIT_MAS
- 
- static int davinci_probe(struct platform_device *pdev)
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4815,7 +4815,7 @@ static void dev_change_rx_flags(struct n
  {
--	struct resource musb_resources[2];
-+	struct resource			musb_resources[3];
- 	struct musb_hdrc_platform_data	*pdata = dev_get_platdata(&pdev->dev);
- 	struct platform_device		*musb;
- 	struct davinci_glue		*glue;
-@@ -567,6 +567,15 @@ static int davinci_probe(struct platform
- 	musb_resources[1].end = pdev->resource[1].end;
- 	musb_resources[1].flags = pdev->resource[1].flags;
+ 	const struct net_device_ops *ops = dev->netdev_ops;
  
-+	/*
-+	 * For DM6467 3 resources are passed. A placeholder for the 3rd
-+	 * resource is always there, so it's safe to always copy it...
-+	 */
-+	musb_resources[2].name = pdev->resource[2].name;
-+	musb_resources[2].start = pdev->resource[2].start;
-+	musb_resources[2].end = pdev->resource[2].end;
-+	musb_resources[2].flags = pdev->resource[2].flags;
-+
- 	ret = platform_device_add_resources(musb, musb_resources,
- 			ARRAY_SIZE(musb_resources));
- 	if (ret) {
+-	if ((dev->flags & IFF_UP) && ops->ndo_change_rx_flags)
++	if (ops->ndo_change_rx_flags)
+ 		ops->ndo_change_rx_flags(dev, flags);
+ }
+ 
 
 
