@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161683Ab3LFXNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:13:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48478 "EHLO
+	id S1422708Ab3LFXOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:14:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48456 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161469Ab3LFXMn (ORCPT
+	with ESMTP id S1161399Ab3LFXMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:12:43 -0500
+	Fri, 6 Dec 2013 18:12:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
+Cc: Olivier Sobrie <olivier@sobrie.be>, Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 051/152] audit: fix info leak in AUDIT_GET requests
-Date: Fri,  6 Dec 2013 15:09:35 -0800
-Message-Id: <1386371476-2477-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 039/152] can: kvaser_usb: fix usb endpoints detection
+Date: Fri,  6 Dec 2013 15:09:23 -0800
+Message-Id: <1386371476-2477-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -29,35 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Olivier Sobrie <olivier@sobrie.be>
 
-commit 64fbff9ae0a0a843365d922e0057fc785f23f0e3 upstream.
+commit 896e23bd04ea50a146dffd342e2f96180f0812a5 upstream.
 
-We leak 4 bytes of kernel stack in response to an AUDIT_GET request as
-we miss to initialize the mask member of status_set. Fix that.
+Some devices, like the Kvaser Memorator Professional, have several bulk in
+endpoints. Only the first one found must be used by the driver. The same holds
+for the bulk out endpoint. The official Kvaser driver (leaf) was used as
+reference for this patch.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/audit.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/can/usb/kvaser_usb.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 1da9782..bccbce0 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -676,6 +676,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+index 20b5a3a..431f07e 100644
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -1546,9 +1546,9 @@ static int kvaser_usb_init_one(struct usb_interface *intf,
+ 	return 0;
+ }
  
- 	switch (msg_type) {
- 	case AUDIT_GET:
-+		status_set.mask		 = 0;
- 		status_set.enabled	 = audit_enabled;
- 		status_set.failure	 = audit_failure;
- 		status_set.pid		 = audit_pid;
+-static void kvaser_usb_get_endpoints(const struct usb_interface *intf,
+-				     struct usb_endpoint_descriptor **in,
+-				     struct usb_endpoint_descriptor **out)
++static int kvaser_usb_get_endpoints(const struct usb_interface *intf,
++				    struct usb_endpoint_descriptor **in,
++				    struct usb_endpoint_descriptor **out)
+ {
+ 	const struct usb_host_interface *iface_desc;
+ 	struct usb_endpoint_descriptor *endpoint;
+@@ -1559,12 +1559,18 @@ static void kvaser_usb_get_endpoints(const struct usb_interface *intf,
+ 	for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
+ 		endpoint = &iface_desc->endpoint[i].desc;
+ 
+-		if (usb_endpoint_is_bulk_in(endpoint))
++		if (!*in && usb_endpoint_is_bulk_in(endpoint))
+ 			*in = endpoint;
+ 
+-		if (usb_endpoint_is_bulk_out(endpoint))
++		if (!*out && usb_endpoint_is_bulk_out(endpoint))
+ 			*out = endpoint;
++
++		/* use first bulk endpoint for in and out */
++		if (*in && *out)
++			return 0;
+ 	}
++
++	return -ENODEV;
+ }
+ 
+ static int kvaser_usb_probe(struct usb_interface *intf,
+@@ -1578,8 +1584,8 @@ static int kvaser_usb_probe(struct usb_interface *intf,
+ 	if (!dev)
+ 		return -ENOMEM;
+ 
+-	kvaser_usb_get_endpoints(intf, &dev->bulk_in, &dev->bulk_out);
+-	if (!dev->bulk_in || !dev->bulk_out) {
++	err = kvaser_usb_get_endpoints(intf, &dev->bulk_in, &dev->bulk_out);
++	if (err) {
+ 		dev_err(&intf->dev, "Cannot get usb endpoint(s)");
+ 		return err;
+ 	}
 -- 
 1.8.3.2
 
