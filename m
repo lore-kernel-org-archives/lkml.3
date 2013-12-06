@@ -1,56 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3LFGca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 01:32:30 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:13744 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab3LFGc2 (ORCPT
+	id S1753782Ab3LFGeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 01:34:50 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42822 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3LFGes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 01:32:28 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 22:25:44 -0800
-Message-ID: <52A16ECF.4000209@nvidia.com>
-Date: Fri, 6 Dec 2013 11:59:35 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Fri, 6 Dec 2013 01:34:48 -0500
+From: Yijing Wang <wangyijing@huawei.com>
+To: "David S. Miller" <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, "Maciej W. Rozycki" <macro@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>, Yijing Wang <wangyijing@huawei.com>,
+        "Hanjun Guo" <guohanjun@huawei.com>
+Subject: [PATCH net v2 1/2] net/fddi: Replace local macro with PCI standard macro
+Date: Fri, 6 Dec 2013 14:34:19 +0800
+Message-ID: <1386311659-32168-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/4] ARM: tegra: convert dts files of all Tegra platforms
- to use pinctrl defines
-References: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com> <52A10D5C.3060002@wwwdotorg.org>
-In-Reply-To: <52A10D5C.3060002@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 December 2013 05:03 AM, Stephen Warren wrote:
-> On 12/05/2013 03:44 AM, Laxman Dewangan wrote:
->> This patch series convert dts files of all Tegra's platforms to use the pinctron
->> dt-binding macro for better readability.
-> I think this series looks fine now; I'll apply soon pending what happens
-> with the DMA/reset/ binding rework.
->
-> There are quite a few typos/spelling/capitalization mistakes in the
-> commit descriptions, but I'll fix them up when applying.
+Replace local macro DFX_BUS_PCI() with PCI standard macro
+dev_is_pci().
 
-Thanks for review. I like to also update the dt binding document to use 
-thes macro.
-Will post the chnage for doc update also.
-And I want to refer this for t124 dt binding doc of pinctrl also.
+Acked-by: Maciej W. Rozycki <macro@linux-mips.org>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/net/fddi/defxx.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/fddi/defxx.c b/drivers/net/fddi/defxx.c
+index 0b40e1c..0344f71 100644
+--- a/drivers/net/fddi/defxx.c
++++ b/drivers/net/fddi/defxx.c
+@@ -241,12 +241,6 @@ static char version[] =
+  */
+ #define NEW_SKB_SIZE (PI_RCV_DATA_K_SIZE_MAX+128)
+ 
+-#ifdef CONFIG_PCI
+-#define DFX_BUS_PCI(dev) (dev->bus == &pci_bus_type)
+-#else
+-#define DFX_BUS_PCI(dev) 0
+-#endif
+-
+ #ifdef CONFIG_EISA
+ #define DFX_BUS_EISA(dev) (dev->bus == &eisa_bus_type)
+ #else
+@@ -436,7 +430,7 @@ static void dfx_port_read_long(DFX_board_t *bp, int offset, u32 *data)
+ static void dfx_get_bars(struct device *bdev,
+ 			 resource_size_t *bar_start, resource_size_t *bar_len)
+ {
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+@@ -518,7 +512,7 @@ static const struct net_device_ops dfx_netdev_ops = {
+ static int dfx_register(struct device *bdev)
+ {
+ 	static int version_disp;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+ 	const char *print_name = dev_name(bdev);
+@@ -667,7 +661,7 @@ static void dfx_bus_init(struct net_device *dev)
+ {
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+@@ -813,7 +807,7 @@ static void dfx_bus_uninit(struct net_device *dev)
+ {
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	u8 val;
+ 
+@@ -967,7 +961,7 @@ static int dfx_driver_init(struct net_device *dev, const char *print_name,
+ {
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+@@ -1877,7 +1871,7 @@ static irqreturn_t dfx_interrupt(int irq, void *dev_id)
+ 	struct net_device *dev = dev_id;
+ 	DFX_board_t *bp = netdev_priv(dev);
+ 	struct device *bdev = bp->bus_dev;
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 
+@@ -3579,7 +3573,7 @@ static void dfx_unregister(struct device *bdev)
+ {
+ 	struct net_device *dev = dev_get_drvdata(bdev);
+ 	DFX_board_t *bp = netdev_priv(dev);
+-	int dfx_bus_pci = DFX_BUS_PCI(bdev);
++	int dfx_bus_pci = dev_is_pci(bdev);
+ 	int dfx_bus_tc = DFX_BUS_TC(bdev);
+ 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
+ 	resource_size_t bar_start = 0;		/* pointer to port */
+-- 
+1.7.1
 
 
-Thanks,
-Laxman
