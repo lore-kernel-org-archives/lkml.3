@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161978Ab3LFNEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44612 "EHLO
+	id S1161996Ab3LFNEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:04:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44636 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161855Ab3LFNEa (ORCPT
+	with ESMTP id S1161855Ab3LFNEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:30 -0500
+	Fri, 6 Dec 2013 08:04:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
+Cc: Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 222/272] usb: musb: dsps: move try_idle to start hook
-Date: Fri,  6 Dec 2013 12:58:31 +0000
-Message-Id: <1386334761-25517-223-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 226/272] ALSA: compress: fix drain calls blocking other compress functions
+Date: Fri,  6 Dec 2013 12:58:35 +0000
+Message-Id: <1386334761-25517-227-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,66 +27,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Vinod Koul <vinod.koul@intel.com>
 
-commit 8b9fcce2d88586b9a120ff3e039d8f42413f0bb0 upstream.
+commit 917f4b5cba78980a527098a910d94139d3e82c8d upstream.
 
-The timer is initialized right after musb is probed. There is actually
-no need to have this timer running because _nothing_ will happen until
-we have the gadget loaded. Also we need this timer only if we run in OTG
-mode _and_ we need it also after the gadget has been replaced with
-another one.
+The drain and drain_notify callback were blocked by low level driver untill the
+draining was complete. Due to this being invoked with big fat mutex held, others
+ops like reading timestamp, calling pause, drop were blocked.
 
-I've been looking at am35x.c, da8xx.c, omap2430.c, tusb6010.c. da8xx
-seem to have the same problem as dsps and doing mostly the same thing.
-tusb6010 seem to do something different and do some actual "idle / power
-saving" work so I am not too comfortable to remove
-musb_platform_try_idle() from musb_gadget_setup().
+So to fix this we add a new snd_compr_drain_notify() API. This would be required
+to be invoked by low level driver when drain or partial drain has been completed
+by the DSP. Thus we make the drain and partial_drain callback as non blocking
+and driver returns immediately after notifying DSP.
+The waiting is done while relasing the lock so that other ops can go ahead.
 
-Therefore this patch does not start the timer if there is no gadget
-active (which is at musb_gadget_setup() at time). In order to have the
-timer active after the gadget is loaded it will be triggered from
-dsps_musb_enable().
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/musb/musb_dsps.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ include/sound/compress_driver.h | 12 ++++++++++++
+ sound/core/compress_offload.c   | 41 ++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 50 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 5233804..f7623f1 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -139,6 +139,8 @@ static const resource_size_t dsps_control_module_phys[] = {
- #define USBPHY_OTGVDET_EN	(1 << 19)
- #define USBPHY_OTGSESSEND_EN	(1 << 20)
+diff --git a/include/sound/compress_driver.h b/include/sound/compress_driver.h
+index 9031a26..175ab32 100644
+--- a/include/sound/compress_driver.h
++++ b/include/sound/compress_driver.h
+@@ -48,6 +48,8 @@ struct snd_compr_ops;
+  *	the ring buffer
+  * @total_bytes_transferred: cumulative bytes transferred by offload DSP
+  * @sleep: poll sleep
++ * @wait: drain wait queue
++ * @drain_wake: condition for drain wake
+  */
+ struct snd_compr_runtime {
+ 	snd_pcm_state_t state;
+@@ -59,6 +61,8 @@ struct snd_compr_runtime {
+ 	u64 total_bytes_available;
+ 	u64 total_bytes_transferred;
+ 	wait_queue_head_t sleep;
++	wait_queue_head_t wait;
++	unsigned int drain_wake;
+ 	void *private_data;
+ };
  
-+static void dsps_musb_try_idle(struct musb *musb, unsigned long timeout);
-+
- /**
-  * musb_dsps_phy_control - phy on/off
-  * @glue: struct dsps_glue *
-@@ -188,6 +190,7 @@ static void dsps_musb_enable(struct musb *musb)
- 	/* Force the DRVVBUS IRQ so we can start polling for ID change. */
- 	dsps_writel(reg_base, wrp->coreintr_set,
- 		    (1 << wrp->drvvbus) << wrp->usb_shift);
-+	dsps_musb_try_idle(musb, 0);
+@@ -171,4 +175,12 @@ static inline void snd_compr_fragment_elapsed(struct snd_compr_stream *stream)
+ 	wake_up(&stream->runtime->sleep);
  }
  
- /**
-@@ -280,6 +283,9 @@ static void dsps_musb_try_idle(struct musb *musb, unsigned long timeout)
- 		return;
- 	}
- 
-+	if (!musb->g.dev.driver)
-+		return;
++static inline void snd_compr_drain_notify(struct snd_compr_stream *stream)
++{
++	snd_BUG_ON(!stream);
 +
- 	if (time_after(glue->last_timer[pdev->id], timeout) &&
- 				timer_pending(&glue->timer[pdev->id])) {
- 		dev_dbg(musb->controller,
++	stream->runtime->drain_wake = 1;
++	wake_up(&stream->runtime->wait);
++}
++
+ #endif
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 5863ba6..68d3ffca 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -123,6 +123,7 @@ static int snd_compr_open(struct inode *inode, struct file *f)
+ 	}
+ 	runtime->state = SNDRV_PCM_STATE_OPEN;
+ 	init_waitqueue_head(&runtime->sleep);
++	init_waitqueue_head(&runtime->wait);
+ 	data->stream.runtime = runtime;
+ 	f->private_data = (void *)data;
+ 	mutex_lock(&compr->lock);
+@@ -670,12 +671,34 @@ static int snd_compr_stop(struct snd_compr_stream *stream)
+ 	if (!retval) {
+ 		stream->runtime->state = SNDRV_PCM_STATE_SETUP;
+ 		wake_up(&stream->runtime->sleep);
++		snd_compr_drain_notify(stream);
+ 		stream->runtime->total_bytes_available = 0;
+ 		stream->runtime->total_bytes_transferred = 0;
+ 	}
+ 	return retval;
+ }
+ 
++static int snd_compress_wait_for_drain(struct snd_compr_stream *stream)
++{
++	/*
++	 * We are called with lock held. So drop the lock while we wait for
++	 * drain complete notfication from the driver
++	 *
++	 * It is expected that driver will notify the drain completion and then
++	 * stream will be moved to SETUP state, even if draining resulted in an
++	 * error. We can trigger next track after this.
++	 */
++	stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
++	mutex_unlock(&stream->device->lock);
++
++	wait_event(stream->runtime->wait, stream->runtime->drain_wake);
++
++	wake_up(&stream->runtime->sleep);
++	mutex_lock(&stream->device->lock);
++
++	return 0;
++}
++
+ static int snd_compr_drain(struct snd_compr_stream *stream)
+ {
+ 	int retval;
+@@ -683,11 +706,17 @@ static int snd_compr_drain(struct snd_compr_stream *stream)
+ 	if (stream->runtime->state == SNDRV_PCM_STATE_PREPARED ||
+ 			stream->runtime->state == SNDRV_PCM_STATE_SETUP)
+ 		return -EPERM;
++
++	stream->runtime->drain_wake = 0;
+ 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_DRAIN);
+-	if (!retval) {
+-		stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
++	if (retval) {
++		pr_err("SND_COMPR_TRIGGER_DRAIN failed %d\n", retval);
+ 		wake_up(&stream->runtime->sleep);
++		return retval;
+ 	}
++
++	retval = snd_compress_wait_for_drain(stream);
++	stream->runtime->state = SNDRV_PCM_STATE_SETUP;
+ 	return retval;
+ }
+ 
+@@ -723,10 +752,16 @@ static int snd_compr_partial_drain(struct snd_compr_stream *stream)
+ 	if (stream->next_track == false)
+ 		return -EPERM;
+ 
++	stream->runtime->drain_wake = 0;
+ 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_PARTIAL_DRAIN);
++	if (retval) {
++		pr_err("Partial drain returned failure\n");
++		wake_up(&stream->runtime->sleep);
++		return retval;
++	}
+ 
+ 	stream->next_track = false;
+-	return retval;
++	return snd_compress_wait_for_drain(stream);
+ }
+ 
+ static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 -- 
 1.8.3.2
 
