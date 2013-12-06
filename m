@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162699Ab3LFNdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:33:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44368 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161713Ab3LFNDU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:20 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 171/272] [media] cx18: struct i2c_client is too big for stack
-Date: Fri,  6 Dec 2013 12:57:40 +0000
-Message-Id: <1386334761-25517-172-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1162715Ab3LFNdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:33:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58498 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161713Ab3LFNdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:33:44 -0500
+Date: Fri, 6 Dec 2013 14:33:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
+        Liu Jinsong <jinsong.liu@intel.com>
+Subject: Re: [PATCH 2/3] X86, mpx: Intel MPX definition
+Message-ID: <20131206133339.GC6694@pd.tnic>
+References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com>
+ <1386355976-11732-2-git-send-email-qiaowei.ren@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1386355976-11732-2-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
+On Sat, Dec 07, 2013 at 02:52:55AM +0800, Qiaowei Ren wrote:
+> 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> ---
+>  arch/x86/include/asm/cpufeature.h |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-------------------
+This patch should probably be merged with the next one...
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+> 
+> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+> index d3f5c63..6c2738d 100644
+> --- a/arch/x86/include/asm/cpufeature.h
+> +++ b/arch/x86/include/asm/cpufeature.h
+> @@ -216,6 +216,7 @@
+>  #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+>  #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
+>  #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
+> +#define X86_FEATURE_MPX		(9*32+14) /* Memory Protection Extension */
+>  #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
+>  #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
+>  #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
+> @@ -330,6 +331,7 @@ extern const char * const x86_power_flags[32];
+>  #define cpu_has_perfctr_l2	boot_cpu_has(X86_FEATURE_PERFCTR_L2)
+>  #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
+>  #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+> +#define cpu_has_mpx		boot_cpu_has(X86_FEATURE_MPX)
 
-commit 1d212cf0c2d89adf3d0a6d62d729076f49f087dc upstream.
+... and we're trying to not have more of those macros so people should be simply
+using boot_cpu_has(X86_FEATURE_YYY).
 
-	drivers/media/pci/cx18/cx18-driver.c: In function 'cx18_read_eeprom':
-	drivers/media/pci/cx18/cx18-driver.c:357:1: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]
-That happens because the routine allocates 256 bytes for an eeprom buffer, plus
-the size of struct i2c_client, with is big.
-Change the logic to dynamically allocate/deallocate space for struct i2c_client,
-instead of  using the stack.
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/media/pci/cx18/cx18-driver.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/media/pci/cx18/cx18-driver.c b/drivers/media/pci/cx18/cx18-driver.c
-index 004d8ac..6386ced 100644
---- a/drivers/media/pci/cx18/cx18-driver.c
-+++ b/drivers/media/pci/cx18/cx18-driver.c
-@@ -324,23 +324,24 @@ static void cx18_eeprom_dump(struct cx18 *cx, unsigned char *eedata, int len)
- /* Hauppauge card? get values from tveeprom */
- void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
- {
--	struct i2c_client c;
-+	struct i2c_client *c;
- 	u8 eedata[256];
- 
--	memset(&c, 0, sizeof(c));
--	strlcpy(c.name, "cx18 tveeprom tmp", sizeof(c.name));
--	c.adapter = &cx->i2c_adap[0];
--	c.addr = 0xA0 >> 1;
-+	c = kzalloc(sizeof(*c), GFP_KERNEL);
-+
-+	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
-+	c->adapter = &cx->i2c_adap[0];
-+	c->addr = 0xa0 >> 1;
- 
- 	memset(tv, 0, sizeof(*tv));
--	if (tveeprom_read(&c, eedata, sizeof(eedata)))
--		return;
-+	if (tveeprom_read(c, eedata, sizeof(eedata)))
-+		goto ret;
- 
- 	switch (cx->card->type) {
- 	case CX18_CARD_HVR_1600_ESMT:
- 	case CX18_CARD_HVR_1600_SAMSUNG:
- 	case CX18_CARD_HVR_1600_S5H1411:
--		tveeprom_hauppauge_analog(&c, tv, eedata);
-+		tveeprom_hauppauge_analog(c, tv, eedata);
- 		break;
- 	case CX18_CARD_YUAN_MPC718:
- 	case CX18_CARD_GOTVIEW_PCI_DVD3:
-@@ -354,6 +355,9 @@ void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
- 		cx18_eeprom_dump(cx, eedata, sizeof(eedata));
- 		break;
- 	}
-+
-+ret:
-+	kfree(c);
- }
- 
- static void cx18_process_eeprom(struct cx18 *cx)
 -- 
-1.8.3.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
