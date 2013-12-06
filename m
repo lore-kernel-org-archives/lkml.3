@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab3LFNCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44180 "EHLO
+	id S1422661Ab3LFNnq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:43:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44205 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758160Ab3LFNC1 (ORCPT
+	with ESMTP id S1758228Ab3LFNCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:27 -0500
+	Fri, 6 Dec 2013 08:02:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ujjal Roy <royujjal@gmail.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 131/272] mwifiex: fix wrong eth_hdr usage for bridged packets in AP mode
-Date: Fri,  6 Dec 2013 12:57:00 +0000
-Message-Id: <1386334761-25517-132-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 137/272] drm/ttm: Fix ttm_bo_move_memcpy
+Date: Fri,  6 Dec 2013 12:57:06 +0000
+Message-Id: <1386334761-25517-138-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,76 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ujjal Roy <royujjal@gmail.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 8d93f1f309d38b65fce0b9f0de91ba6c96990c07 upstream.
+commit da95c788ef0c645378ffccb7060a0df1a33aee38 upstream.
 
-The eth_hdr is never defined in this driver but it gets compiled
-without any warning/error because kernel has defined eth_hdr.
+All error paths will want to keep the mm node, so handle this at the
+function exit. This fixes an ioremap failure error path.
+Also add some comments to make the function a bit easier to understand.
 
-Fix it by defining our own p_ethhdr and use it instead of eth_hdr.
-
-Signed-off-by: Ujjal Roy <royujjal@gmail.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/uap_txrx.c | 29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo_util.c | 28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/uap_txrx.c b/drivers/net/wireless/mwifiex/uap_txrx.c
-index a018e42..48e6724 100644
---- a/drivers/net/wireless/mwifiex/uap_txrx.c
-+++ b/drivers/net/wireless/mwifiex/uap_txrx.c
-@@ -34,6 +34,7 @@ static void mwifiex_uap_queue_bridged_pkt(struct mwifiex_private *priv,
- 	struct mwifiex_txinfo *tx_info;
- 	int hdr_chop;
- 	struct timeval tv;
-+	struct ethhdr *p_ethhdr;
- 	u8 rfc1042_eth_hdr[ETH_ALEN] = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
+diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
+index 657aeb2..a291aad 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -342,21 +342,25 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
+ 	if (ret)
+ 		goto out;
  
- 	uap_rx_pd = (struct uap_rxpd *)(skb->data);
-@@ -48,14 +49,36 @@ static void mwifiex_uap_queue_bridged_pkt(struct mwifiex_private *priv,
++	/*
++	 * Single TTM move. NOP.
++	 */
+ 	if (old_iomap == NULL && new_iomap == NULL)
+ 		goto out2;
++
++	/*
++	 * Move nonexistent data. NOP.
++	 */
+ 	if (old_iomap == NULL && ttm == NULL)
+ 		goto out2;
+ 
+-	/* TTM might be null for moves within the same region.
++	/*
++	 * TTM might be null for moves within the same region.
+ 	 */
+ 	if (ttm && ttm->state == tt_unpopulated) {
+ 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
+-		if (ret) {
+-			/* if we fail here don't nuke the mm node
+-			 * as the bo still owns it */
+-			old_copy.mm_node = NULL;
++		if (ret)
+ 			goto out1;
+-		}
  	}
  
- 	if (!memcmp(&rx_pkt_hdr->rfc1042_hdr,
--		    rfc1042_eth_hdr, sizeof(rfc1042_eth_hdr)))
-+		    rfc1042_eth_hdr, sizeof(rfc1042_eth_hdr))) {
-+		/* Replace the 803 header and rfc1042 header (llc/snap) with
-+		 * an Ethernet II header, keep the src/dst and snap_type
-+		 * (ethertype).
-+		 *
-+		 * The firmware only passes up SNAP frames converting all RX
-+		 * data from 802.11 to 802.2/LLC/SNAP frames.
-+		 *
-+		 * To create the Ethernet II, just move the src, dst address
-+		 * right before the snap_type.
-+		 */
-+		p_ethhdr = (struct ethhdr *)
-+			((u8 *)(&rx_pkt_hdr->eth803_hdr)
-+			 + sizeof(rx_pkt_hdr->eth803_hdr)
-+			 + sizeof(rx_pkt_hdr->rfc1042_hdr)
-+			 - sizeof(rx_pkt_hdr->eth803_hdr.h_dest)
-+			 - sizeof(rx_pkt_hdr->eth803_hdr.h_source)
-+			 - sizeof(rx_pkt_hdr->rfc1042_hdr.snap_type));
-+		memcpy(p_ethhdr->h_source, rx_pkt_hdr->eth803_hdr.h_source,
-+		       sizeof(p_ethhdr->h_source));
-+		memcpy(p_ethhdr->h_dest, rx_pkt_hdr->eth803_hdr.h_dest,
-+		       sizeof(p_ethhdr->h_dest));
- 		/* Chop off the rxpd + the excess memory from
- 		 * 802.2/llc/snap header that was removed.
- 		 */
--		hdr_chop = (u8 *)eth_hdr - (u8 *)uap_rx_pd;
--	else
-+		hdr_chop = (u8 *)p_ethhdr - (u8 *)uap_rx_pd;
-+	} else {
- 		/* Chop off the rxpd */
- 		hdr_chop = (u8 *)&rx_pkt_hdr->eth803_hdr - (u8 *)uap_rx_pd;
-+	}
- 
- 	/* Chop off the leading header bytes so the it points
- 	 * to the start of either the reconstructed EthII frame
+ 	add = 0;
+@@ -382,11 +386,8 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
+ 						   prot);
+ 		} else
+ 			ret = ttm_copy_io_page(new_iomap, old_iomap, page);
+-		if (ret) {
+-			/* failing here, means keep old copy as-is */
+-			old_copy.mm_node = NULL;
++		if (ret)
+ 			goto out1;
+-		}
+ 	}
+ 	mb();
+ out2:
+@@ -404,7 +405,12 @@ out1:
+ 	ttm_mem_reg_iounmap(bdev, old_mem, new_iomap);
+ out:
+ 	ttm_mem_reg_iounmap(bdev, &old_copy, old_iomap);
+-	ttm_bo_mem_put(bo, &old_copy);
++
++	/*
++	 * On error, keep the mm node!
++	 */
++	if (!ret)
++		ttm_bo_mem_put(bo, &old_copy);
+ 	return ret;
+ }
+ EXPORT_SYMBOL(ttm_bo_move_memcpy);
 -- 
 1.8.3.2
 
