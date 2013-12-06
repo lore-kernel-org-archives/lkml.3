@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930Ab3LFOVb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:21:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43613 "EHLO
+	id S1758940Ab3LFOVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:21:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43608 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161096Ab3LFM75 (ORCPT
+	with ESMTP id S1161089Ab3LFM74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:57 -0500
+	Fri, 6 Dec 2013 07:59:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Frank Zago <frank@zago.net>, Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/272] nfsd: make sure to balance get/put_write_access
-Date: Fri,  6 Dec 2013 12:55:10 +0000
-Message-Id: <1386334761-25517-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 019/272] iio:accel:kxsd9 fix missing mutex unlock
+Date: Fri,  6 Dec 2013 12:55:08 +0000
+Message-Id: <1386334761-25517-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,74 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Frank Zago <frank@zago.net>
 
-commit 987da4791052fa298b7cfcde4dea9f6f2bbc786b upstream.
+commit 0ee005c7dc2803125275e24598f0fb37775a6af3 upstream.
 
-Use a straight goto error label style in nfsd_setattr to make sure
-we always do the put_write_access call after we got it earlier.
+This will leave a lock held after reading from the device, preventing
+any further reads.
 
-Note that the we have been failing to do that in the case
-nfsd_break_lease() returns an error, a bug introduced into 2.6.38 with
-6a76bebefe15d9a08864f824d7f8d5beaf37c997 "nfsd4: break lease on nfsd
-setattr".
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[ luis: backported to 3.11:
-  - dropped 3rd parameter to notify_change() ]
+Signed-off-by: Frank Zago <frank@zago.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/vfs.c | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ drivers/iio/accel/kxsd9.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 2e27c0c..72cb28e 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -444,27 +444,28 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
- 
- 	iap->ia_valid |= ATTR_CTIME;
- 
--	err = nfserr_notsync;
--	if (!check_guard || guardtime == inode->i_ctime.tv_sec) {
--		host_err = nfsd_break_lease(inode);
--		if (host_err)
--			goto out_nfserr;
--		fh_lock(fhp);
--
--		host_err = notify_change(dentry, iap);
--		err = nfserrno(host_err);
--		fh_unlock(fhp);
-+	if (check_guard && guardtime != inode->i_ctime.tv_sec) {
-+		err = nfserr_notsync;
-+		goto out_put_write_access;
- 	}
-+
-+	host_err = nfsd_break_lease(inode);
-+	if (host_err)
-+		goto out_put_write_access_nfserror;
-+
-+	fh_lock(fhp);
-+	host_err = notify_change(dentry, iap);
-+	fh_unlock(fhp);
-+
-+out_put_write_access_nfserror:
-+	err = nfserrno(host_err);
-+out_put_write_access:
- 	if (size_change)
- 		put_write_access(inode);
- 	if (!err)
- 		commit_metadata(fhp);
- out:
- 	return err;
--
--out_nfserr:
--	err = nfserrno(host_err);
--	goto out;
+diff --git a/drivers/iio/accel/kxsd9.c b/drivers/iio/accel/kxsd9.c
+index 7229645..7c9a1d9 100644
+--- a/drivers/iio/accel/kxsd9.c
++++ b/drivers/iio/accel/kxsd9.c
+@@ -112,9 +112,10 @@ static int kxsd9_read(struct iio_dev *indio_dev, u8 address)
+ 	mutex_lock(&st->buf_lock);
+ 	st->tx[0] = KXSD9_READ(address);
+ 	ret = spi_sync_transfer(st->us, xfers, ARRAY_SIZE(xfers));
+-	if (ret)
+-		return ret;
+-	return (((u16)(st->rx[0])) << 8) | (st->rx[1] & 0xF0);
++	if (!ret)
++		ret = (((u16)(st->rx[0])) << 8) | (st->rx[1] & 0xF0);
++	mutex_unlock(&st->buf_lock);
++	return ret;
  }
  
- #if defined(CONFIG_NFSD_V2_ACL) || \
+ static IIO_CONST_ATTR(accel_scale_available,
 -- 
 1.8.3.2
 
