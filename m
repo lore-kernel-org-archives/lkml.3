@@ -1,386 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162658Ab3LFNbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:31:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44401 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161766Ab3LFNDc (ORCPT
+	id S1162657Ab3LFNa7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:30:59 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:45389 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161742Ab3LFNDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 08:03:32 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 179/272] [media] dvb-frontends: Don't use dynamic static allocation
-Date: Fri,  6 Dec 2013 12:57:48 +0000
-Message-Id: <1386334761-25517-180-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+Date: Fri, 6 Dec 2013 14:02:28 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
+        nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, galak@codeaurora.org,
+        plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
+Message-ID: <20131206130227.GC30625@ulmo.nvidia.com>
+References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com>
+ <20131202105957.GD18060@ulmo.nvidia.com>
+ <529D4B58.9020700@atmel.com>
+ <20131203094326.GB21178@ulmo.nvidia.com>
+ <529E9AA2.8020400@atmel.com>
+ <20131204100340.GU19943@ulmo.nvidia.com>
+ <529FD2C0.6080707@atmel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5QAgd0e35j3NYeGe"
+Content-Disposition: inline
+In-Reply-To: <529FD2C0.6080707@atmel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--5QAgd0e35j3NYeGe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+On Thu, Dec 05, 2013 at 09:11:28AM +0800, Bo Shen wrote:
+> Hi Thierry,
+>=20
+> On 12/04/2013 06:03 PM, Thierry Reding wrote:
+> >On Wed, Dec 04, 2013 at 10:59:46AM +0800, Bo Shen wrote:
+> >>Hi Thierry,
+> >>
+> >>On 12/03/2013 05:43 PM, Thierry Reding wrote:
+> >>>On Tue, Dec 03, 2013 at 11:09:12AM +0800, Bo Shen wrote:
+> >>>>On 12/02/2013 06:59 PM, Thierry Reding wrote:
+> >>>>>On Mon, Nov 18, 2013 at 05:13:21PM +0800, Bo Shen wrote:
+> >>>[...]
+> >>>>>>diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+> >>>[...]
+> >>>>>>+	/* Calculate the period cycles */
+> >>>>>>+	while (div > PWM_MAX_PRD) {
+> >>>>>>+		div =3D clk_rate / (1 << pres);
+> >>>>>>+		div =3D div * period_ns;
+> >>>>>>+		/* 1/Hz =3D 100000000 ns */
+> >>>>>
+> >>>>>I don't think that comment is needed.
+> >>>>
+> >>>>This is asked to be added.
+> >>>>And, I think keep it and it won't hurt, what do you think?
+> >>>
+> >>>I think it's obvious that you're converting from nanoseconds because of
+> >>>the _ns prefix in period_ns. But if somebody requested this and everyo=
+ne
+> >>>else thinks it's useful, I'm okay with keeping it.
+> >>>
+> >>>>>>+	if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+> >>>>>>+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTYUPD, dty);
+> >>>>>>+	} else {
+> >>>>>>+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CDTY, dty);
+> >>>>>>+		atmel_pwm_ch_writel(atmel_pwm, pwm->hwpwm, PWMV2_CPRD, prd);
+> >>>>>>+	}
+> >>>>>>+}
+> >>>>>
+> >>>>>Neither version 1 nor version 2 seem to be able to change the period
+> >>>>>while the channel is enabled. Perhaps that should be checked for in
+> >>>>>atmel_pwm_config() and an error (-EBUSY) returned?
+> >>>>
+> >>>>The period is configured in dt in device tree, or platform data in non
+> >>>>device tree. Nowhere will update period. So, not code to update perio=
+d.
+> >>>>Am I right? If not, please figure out.
+> >>>
+> >>>The .config() operation allows the period to be specified. Just because
+> >>>nobody currently changes it at runtime doesn't mean it can't be done.
+> >>>
+> >>>It is also possible that whoever wrote the device tree or platform data
+> >>>didn't know that the period must be the same for all PWM channels and
+> >>>therefore might use different values. If you check for this, at least
+> >>>they'll notice. If you don't check for it, then they may end up having
+> >>>the period reconfigured behind their backs, which may cause parts of
+> >>>their setup to behave unexpectedly.
+> >>
+> >>Thanks for this information.
+> >>I will add code for changing period.
+> >
+> >Just to clarify: I wouldn't want this code to allow changing the period
+> >but rather reject incompatible changes to the period with an error code.
+>=20
+> So, in this patch, just check it as you suggested in previous email, would
+> it be OK?
+> --->8---
+> Perhaps that should be checked for in atmel_pwm_config() and an error
+> (-EBUSY) returned?
+> ---8<---
 
-commit 8393796dfa4cf5dffcceec464c7789bec3a2f471 upstream.
+Yes. If a user tries to set a period that conflicts with a previously
+set period (by another PWM channel), then pwm_config() for the second
+user should fail.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-compilation complains about it on some archs:
-	drivers/media/dvb-frontends/bcm3510.c:230:1: warning: 'bcm3510_do_hab_cmd' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/itd1000.c:69:1: warning: 'itd1000_write_regs.constprop.0' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/mt312.c:126:1: warning: 'mt312_write' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/nxt200x.c:111:1: warning: 'nxt200x_writebytes' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/stb6100.c:216:1: warning: 'stb6100_write_reg_range.constprop.3' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/stv6110.c:98:1: warning: 'stv6110_write_regs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/stv6110x.c:85:1: warning: 'stv6110x_write_regs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/tda18271c2dd.c:147:1: warning: 'WriteRegs' uses dynamic stack allocation [enabled by default]
-	drivers/media/dvb-frontends/zl10039.c:119:1: warning: 'zl10039_write' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer. Considering that I2C
-transfers are generally limited, and that devices used on USB has a
-max data length of 64 bytes for the control URBs.
-So, it seem safe to use 64 bytes as the hard limit for all those devices.
- On most cases, the limit is a way lower than that, but this limit
-is small enough to not affect the Kernel stack, and it is a no brain
-limit, as using smaller ones would require to either carefully each
-driver or to take a look on each datasheet.
+Thierry
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/media/dvb-frontends/bcm3510.c      | 15 ++++++++++++++-
- drivers/media/dvb-frontends/itd1000.c      | 13 ++++++++++++-
- drivers/media/dvb-frontends/mt312.c        | 10 +++++++++-
- drivers/media/dvb-frontends/nxt200x.c      | 11 ++++++++++-
- drivers/media/dvb-frontends/stb6100.c      | 11 ++++++++++-
- drivers/media/dvb-frontends/stv6110.c      | 12 +++++++++++-
- drivers/media/dvb-frontends/stv6110x.c     | 13 ++++++++++++-
- drivers/media/dvb-frontends/tda18271c2dd.c | 14 ++++++++++++--
- drivers/media/dvb-frontends/zl10039.c      | 12 +++++++++++-
- 9 files changed, 101 insertions(+), 10 deletions(-)
+--5QAgd0e35j3NYeGe
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/media/dvb-frontends/bcm3510.c b/drivers/media/dvb-frontends/bcm3510.c
-index 1b77909..39a29dd 100644
---- a/drivers/media/dvb-frontends/bcm3510.c
-+++ b/drivers/media/dvb-frontends/bcm3510.c
-@@ -44,6 +44,9 @@
- #include "bcm3510.h"
- #include "bcm3510_priv.h"
- 
-+/* Max transfer size done by bcm3510_do_hab_cmd() function */
-+#define MAX_XFER_SIZE	128
-+
- struct bcm3510_state {
- 
- 	struct i2c_adapter* i2c;
-@@ -201,9 +204,19 @@ static int bcm3510_hab_send_request(struct bcm3510_state *st, u8 *buf, int len)
- 
- static int bcm3510_do_hab_cmd(struct bcm3510_state *st, u8 cmd, u8 msgid, u8 *obuf, u8 olen, u8 *ibuf, u8 ilen)
- {
--	u8 ob[olen+2],ib[ilen+2];
-+	u8 ob[MAX_XFER_SIZE], ib[MAX_XFER_SIZE];
- 	int ret = 0;
- 
-+	if (ilen + 2 > sizeof(ib)) {
-+		deb_hab("do_hab_cmd: ilen=%d is too big!\n", ilen);
-+		return -EINVAL;
-+	}
-+
-+	if (olen + 2 > sizeof(ob)) {
-+		deb_hab("do_hab_cmd: olen=%d is too big!\n", olen);
-+		return -EINVAL;
-+	}
-+
- 	ob[0] = cmd;
- 	ob[1] = msgid;
- 	memcpy(&ob[2],obuf,olen);
-diff --git a/drivers/media/dvb-frontends/itd1000.c b/drivers/media/dvb-frontends/itd1000.c
-index c1c3400..cadcae4 100644
---- a/drivers/media/dvb-frontends/itd1000.c
-+++ b/drivers/media/dvb-frontends/itd1000.c
-@@ -31,6 +31,9 @@
- #include "itd1000.h"
- #include "itd1000_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static int debug;
- module_param(debug, int, 0644);
- MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
-@@ -52,10 +55,18 @@ MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
- /* don't write more than one byte with flexcop behind */
- static int itd1000_write_regs(struct itd1000_state *state, u8 reg, u8 v[], u8 len)
- {
--	u8 buf[1+len];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr = state->cfg->i2c_address, .flags = 0, .buf = buf, .len = len+1
- 	};
-+
-+	if (1 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "itd1000: i2c wr reg=%04x: len=%d is too big!\n",
-+		       reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf[0] = reg;
- 	memcpy(&buf[1], v, len);
- 
-diff --git a/drivers/media/dvb-frontends/mt312.c b/drivers/media/dvb-frontends/mt312.c
-index ec388c1d..a74ac0d 100644
---- a/drivers/media/dvb-frontends/mt312.c
-+++ b/drivers/media/dvb-frontends/mt312.c
-@@ -36,6 +36,8 @@
- #include "mt312_priv.h"
- #include "mt312.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
- 
- struct mt312_state {
- 	struct i2c_adapter *i2c;
-@@ -96,9 +98,15 @@ static int mt312_write(struct mt312_state *state, const enum mt312_reg_addr reg,
- 		       const u8 *src, const size_t count)
- {
- 	int ret;
--	u8 buf[count + 1];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg;
- 
-+	if (1 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "mt312: write: len=%zd is too big!\n", count);
-+		return -EINVAL;
-+	}
-+
- 	if (debug) {
- 		int i;
- 		dprintk("W(%d):", reg & 0x7f);
-diff --git a/drivers/media/dvb-frontends/nxt200x.c b/drivers/media/dvb-frontends/nxt200x.c
-index 8e28894..fbca985 100644
---- a/drivers/media/dvb-frontends/nxt200x.c
-+++ b/drivers/media/dvb-frontends/nxt200x.c
-@@ -39,6 +39,9 @@
-  */
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
- #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
- #define CRC_CCIT_MASK 0x1021
-@@ -95,10 +98,16 @@ static int i2c_readbytes(struct nxt200x_state *state, u8 addr, u8 *buf, u8 len)
- static int nxt200x_writebytes (struct nxt200x_state* state, u8 reg,
- 			       const u8 *buf, u8 len)
- {
--	u8 buf2 [len+1];
-+	u8 buf2[MAX_XFER_SIZE];
- 	int err;
- 	struct i2c_msg msg = { .addr = state->config->demod_address, .flags = 0, .buf = buf2, .len = len + 1 };
- 
-+	if (1 + len > sizeof(buf2)) {
-+		pr_warn("%s: i2c wr reg=%04x: len=%d is too big!\n",
-+			 __func__, reg, len);
-+		return -EINVAL;
-+	}
-+
- 	buf2[0] = reg;
- 	memcpy(&buf2[1], buf, len);
- 
-diff --git a/drivers/media/dvb-frontends/stb6100.c b/drivers/media/dvb-frontends/stb6100.c
-index 45f9523..cea175d 100644
---- a/drivers/media/dvb-frontends/stb6100.c
-+++ b/drivers/media/dvb-frontends/stb6100.c
-@@ -31,6 +31,8 @@
- static unsigned int verbose;
- module_param(verbose, int, 0644);
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
- 
- #define FE_ERROR		0
- #define FE_NOTICE		1
-@@ -183,7 +185,7 @@ static int stb6100_read_reg(struct stb6100_state *state, u8 reg)
- static int stb6100_write_reg_range(struct stb6100_state *state, u8 buf[], int start, int len)
- {
- 	int rc;
--	u8 cmdbuf[len + 1];
-+	u8 cmdbuf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr	= state->config->tuner_address,
- 		.flags	= 0,
-@@ -191,6 +193,13 @@ static int stb6100_write_reg_range(struct stb6100_state *state, u8 buf[], int st
- 		.len	= len + 1
- 	};
- 
-+	if (1 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, len);
-+		return -EINVAL;
-+	}
-+
- 	if (unlikely(start < 1 || start + len > STB6100_NUMREGS)) {
- 		dprintk(verbose, FE_ERROR, 1, "Invalid register range %d:%d",
- 			start, len);
-diff --git a/drivers/media/dvb-frontends/stv6110.c b/drivers/media/dvb-frontends/stv6110.c
-index 20b5fa9..b142583 100644
---- a/drivers/media/dvb-frontends/stv6110.c
-+++ b/drivers/media/dvb-frontends/stv6110.c
-@@ -30,6 +30,9 @@
- 
- #include "stv6110.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static int debug;
- 
- struct stv6110_priv {
-@@ -68,7 +71,7 @@ static int stv6110_write_regs(struct dvb_frontend *fe, u8 buf[],
- {
- 	struct stv6110_priv *priv = fe->tuner_priv;
- 	int rc;
--	u8 cmdbuf[len + 1];
-+	u8 cmdbuf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr	= priv->i2c_address,
- 		.flags	= 0,
-@@ -78,6 +81,13 @@ static int stv6110_write_regs(struct dvb_frontend *fe, u8 buf[],
- 
- 	dprintk("%s\n", __func__);
- 
-+	if (1 + len > sizeof(cmdbuf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, len);
-+		return -EINVAL;
-+	}
-+
- 	if (start + len > 8)
- 		return -EINVAL;
- 
-diff --git a/drivers/media/dvb-frontends/stv6110x.c b/drivers/media/dvb-frontends/stv6110x.c
-index f36cab1..e66154e 100644
---- a/drivers/media/dvb-frontends/stv6110x.c
-+++ b/drivers/media/dvb-frontends/stv6110x.c
-@@ -32,6 +32,9 @@
- #include "stv6110x.h"
- #include "stv6110x_priv.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- static unsigned int verbose;
- module_param(verbose, int, 0644);
- MODULE_PARM_DESC(verbose, "Set Verbosity level");
-@@ -61,7 +64,8 @@ static int stv6110x_write_regs(struct stv6110x_state *stv6110x, int start, u8 da
- {
- 	int ret;
- 	const struct stv6110x_config *config = stv6110x->config;
--	u8 buf[len + 1];
-+	u8 buf[MAX_XFER_SIZE];
-+
- 	struct i2c_msg msg = {
- 		.addr = config->addr,
- 		.flags = 0,
-@@ -69,6 +73,13 @@ static int stv6110x_write_regs(struct stv6110x_state *stv6110x, int start, u8 da
- 		.len = len + 1
- 	};
- 
-+	if (1 + len > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, len);
-+		return -EINVAL;
-+	}
-+
- 	if (start + len > 8)
- 		return -EINVAL;
- 
-diff --git a/drivers/media/dvb-frontends/tda18271c2dd.c b/drivers/media/dvb-frontends/tda18271c2dd.c
-index d281f77..2c54586 100644
---- a/drivers/media/dvb-frontends/tda18271c2dd.c
-+++ b/drivers/media/dvb-frontends/tda18271c2dd.c
-@@ -34,6 +34,9 @@
- #include "dvb_frontend.h"
- #include "tda18271c2dd.h"
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- struct SStandardParam {
- 	s32   m_IFFrequency;
- 	u32   m_BandWidth;
-@@ -139,11 +142,18 @@ static int i2c_write(struct i2c_adapter *adap, u8 adr, u8 *data, int len)
- static int WriteRegs(struct tda_state *state,
- 		     u8 SubAddr, u8 *Regs, u16 nRegs)
- {
--	u8 data[nRegs+1];
-+	u8 data[MAX_XFER_SIZE];
-+
-+	if (1 + nRegs > sizeof(data)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr: len=%d is too big!\n",
-+		       KBUILD_MODNAME, nRegs);
-+		return -EINVAL;
-+	}
- 
- 	data[0] = SubAddr;
- 	memcpy(data + 1, Regs, nRegs);
--	return i2c_write(state->i2c, state->adr, data, nRegs+1);
-+	return i2c_write(state->i2c, state->adr, data, nRegs + 1);
- }
- 
- static int WriteReg(struct tda_state *state, u8 SubAddr, u8 Reg)
-diff --git a/drivers/media/dvb-frontends/zl10039.c b/drivers/media/dvb-frontends/zl10039.c
-index eff9c5f..91b6b2e 100644
---- a/drivers/media/dvb-frontends/zl10039.c
-+++ b/drivers/media/dvb-frontends/zl10039.c
-@@ -30,6 +30,9 @@
- 
- static int debug;
- 
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
-+
- #define dprintk(args...) \
- 	do { \
- 		if (debug) \
-@@ -98,7 +101,7 @@ static int zl10039_write(struct zl10039_state *state,
- 			const enum zl10039_reg_addr reg, const u8 *src,
- 			const size_t count)
- {
--	u8 buf[count + 1];
-+	u8 buf[MAX_XFER_SIZE];
- 	struct i2c_msg msg = {
- 		.addr = state->i2c_addr,
- 		.flags = 0,
-@@ -106,6 +109,13 @@ static int zl10039_write(struct zl10039_state *state,
- 		.len = count + 1,
- 	};
- 
-+	if (1 + count > sizeof(buf)) {
-+		printk(KERN_WARNING
-+		       "%s: i2c wr reg=%04x: len=%zd is too big!\n",
-+		       KBUILD_MODNAME, reg, count);
-+		return -EINVAL;
-+	}
-+
- 	dprintk("%s\n", __func__);
- 	/* Write register address and data in one go */
- 	buf[0] = reg;
--- 
-1.8.3.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSocrjAAoJEN0jrNd/PrOhmJAP/jLz989hIjFkq4oR4J61qPOq
+6RClj+GVvJcIqqKb7PTCYrvRYYXgR9i0XOiUOA6U7sh5Hf6uD7uj3fFz97F80X1B
+mtzMQYC4n/MDZKgXOsK3ZNTI6tcXaq1+BQeq+HS61EFJDkD7wlfDRlNhn5svCfgZ
+72V0+pDxth81JyIL5jib+8o5zBN8PvvUV5jvgXBYo1CL9dfJJPMPtGM64C4Lclp0
+2Xq2ZRblRuxNF7nYVyT8Yu1Q6tXq7k41nwNeMDrxf8EZzjTLIZn5CG+H9LXFkMZ+
+WdbpIRDyzBurk1j1annSgiTepsk/aMd2R/aNtE2A9Zv1etU7+xWhPhT+ngfYD7hZ
+Yr7ee31h5bDF3atOdfIwTY6Jfebbuh382zs6d5sYm1vAbgckJMMP1WX1CAdwHtME
+8nmjEvXXO2ZdQaPP6CdsXZnVGtt6UyXeLynf8eLtL5MNPPOCLRQ3QwzKi0quIvHI
+9eHgWgvVXZEUQw2aVtSlUNi4/AMRTBVrgMlENn2BcYFzY3+Q6FcxpNdBVKjyzCiZ
+O7aWRpIv+++VDa/LKYotr0At9Ts2ZyCiDHEA+ZflYTPQowUvf/i4WzO+AkUdmmUD
+DEAfhCmRS0MVEa8vyKQ2ty7kV73Cse+SQzEJ60LCiCqjJErhdQ/1pjREEDo6RCPo
+RT3IwETmwDRCYmj1N3JC
+=NhVV
+-----END PGP SIGNATURE-----
+
+--5QAgd0e35j3NYeGe--
