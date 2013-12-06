@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab3LFPzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:55:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29298 "EHLO mx1.redhat.com"
+	id S1757956Ab3LFP7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:59:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58017 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756866Ab3LFPzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:55:42 -0500
-Date: Fri, 6 Dec 2013 16:56:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <htejun@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, zhang.yi20@zte.com.cn,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/1] usermodehelper: kill
-	____call_usermodehelper()->set_cpus_allowed_ptr()
-Message-ID: <20131206155619.GA7226@redhat.com>
-References: <20131128150233.GA10022@twins.programming.kicks-ass.net> <20131128193330.GA24767@redhat.com> <20131128193349.GB24767@redhat.com> <CAFTL4hw+Ztsy5uy2WOsyxQ1dL7B_rPEU=XtisoR5X18cPQ7LYg@mail.gmail.com> <20131205143745.GA18488@redhat.com> <20131205143903.GA3231@htj.dyndns.org> <20131205153016.GA20705@redhat.com> <00000142c42d9708-c1154c9a-4265-45ee-971f-a6c8b5768ebf-000000@email.amazonses.com> <20131206145322.GB2674@redhat.com> <00000142c88e3976-f033b304-5a25-4cf3-854e-2ac02d209099-000000@email.amazonses.com>
+	id S1751596Ab3LFP7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 10:59:13 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20131206133339.GC6694@pd.tnic>
+References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com> <1386355976-11732-2-git-send-email-qiaowei.ren@intel.com> <20131206133339.GC6694@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000142c88e3976-f033b304-5a25-4cf3-854e-2ac02d209099-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 2/3] X86, mpx: Intel MPX definition
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 06 Dec 2013 07:58:17 -0800
+To: Borislav Petkov <bp@alien8.de>, Qiaowei Ren <qiaowei.ren@intel.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
+        Liu Jinsong <jinsong.liu@intel.com>
+Message-ID: <7762f6ad-fb19-4621-9105-8c3e68c367f4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06, Christoph Lameter wrote:
->
-> On Fri, 6 Dec 2013, Oleg Nesterov wrote:
->
-> > This probably means that Tejun's "default attributes which are inherited
-> > by all workqueues" suggestion was right.
->
-> There are workqueues that are required to run on specific nodes /
-> processors. Those cannot inherit these attributes and would need to be
-> used regardless of the attributes if the kernel code demands it.
+No... we always ask for cpufeature.h patches separately because they sometimes cause conflicts between branches.
 
-Yes, yes, Tejun actually said "inherited by all workqueues unless
-they're explicitly overridden", I stripped his words too much.
+Borislav Petkov <bp@alien8.de> wrote:
+>On Sat, Dec 07, 2013 at 02:52:55AM +0800, Qiaowei Ren wrote:
+>> 
+>> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+>> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+>> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+>> ---
+>>  arch/x86/include/asm/cpufeature.h |    2 ++
+>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+>This patch should probably be merged with the next one...
+>
+>> 
+>> diff --git a/arch/x86/include/asm/cpufeature.h
+>b/arch/x86/include/asm/cpufeature.h
+>> index d3f5c63..6c2738d 100644
+>> --- a/arch/x86/include/asm/cpufeature.h
+>> +++ b/arch/x86/include/asm/cpufeature.h
+>> @@ -216,6 +216,7 @@
+>>  #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+>>  #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor
+>Context ID */
+>>  #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional
+>Memory */
+>> +#define X86_FEATURE_MPX		(9*32+14) /* Memory Protection Extension */
+>>  #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
+>>  #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions
+>*/
+>>  #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access
+>Prevention */
+>> @@ -330,6 +331,7 @@ extern const char * const x86_power_flags[32];
+>>  #define cpu_has_perfctr_l2	boot_cpu_has(X86_FEATURE_PERFCTR_L2)
+>>  #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
+>>  #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+>> +#define cpu_has_mpx		boot_cpu_has(X86_FEATURE_MPX)
+>
+>... and we're trying to not have more of those macros so people should
+>be simply
+>using boot_cpu_has(X86_FEATURE_YYY).
 
-Oleg.
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
