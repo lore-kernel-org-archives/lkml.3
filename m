@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162298Ab3LFNIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:08:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44809 "EHLO
+	id S1162184Ab3LFNGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:06:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162187Ab3LFNGE (ORCPT
+	with ESMTP id S1161381Ab3LFNF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:06:04 -0500
+	Fri, 6 Dec 2013 08:05:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 263/272] ALSA: hda - Check keep_eapd_on before inv_eapd
-Date: Fri,  6 Dec 2013 12:59:12 +0000
-Message-Id: <1386334761-25517-264-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 259/272] block: properly stack underlying max_segment_size to DM device
+Date: Fri,  6 Dec 2013 12:59:08 +0000
+Message-Id: <1386334761-25517-260-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 468ac413045af1e0e4d1272291bed6878f248a69 upstream.
+commit d82ae52e68892338068e7559a0c0657193341ce4 upstream.
 
-We don't change the EAPD bit in set_pin_eapd() if keep_eapd_on flag is
-set by the codec driver and enable is false.  But, we also apply the
-flipping of enable value according to inv_eapd flag in the same
-function, and this confused the former check, handled as if it's
-turned ON.  The inverted EAPD check must be applied after keep_eapd_on
-check, instead.
+Without this patch all DM devices will default to BLK_MAX_SEGMENT_SIZE
+(65536) even if the underlying device(s) have a larger value -- this is
+due to blk_stack_limits() using min_not_zero() when stacking the
+max_segment_size limit.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+1073741824
+
+before patch:
+65536
+
+after patch:
+1073741824
+
+Reported-by: Lukasz Flis <l.flis@cyfronet.pl>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/hda_generic.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/blk-settings.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
-index 02fdff6..c6cb67b 100644
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -789,10 +789,10 @@ static void set_pin_eapd(struct hda_codec *codec, hda_nid_t pin, bool enable)
- 	if (spec->own_eapd_ctl ||
- 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
- 		return;
--	if (codec->inv_eapd)
--		enable = !enable;
- 	if (spec->keep_eapd_on && !enable)
- 		return;
-+	if (codec->inv_eapd)
-+		enable = !enable;
- 	snd_hda_codec_update_cache(codec, pin, 0,
- 				   AC_VERB_SET_EAPD_BTLENABLE,
- 				   enable ? 0x02 : 0x00);
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index c50ecf0..5330933 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -144,6 +144,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
+ 	lim->discard_zeroes_data = 1;
+ 	lim->max_segments = USHRT_MAX;
+ 	lim->max_hw_sectors = UINT_MAX;
++	lim->max_segment_size = UINT_MAX;
+ 	lim->max_sectors = UINT_MAX;
+ 	lim->max_write_same_sectors = UINT_MAX;
+ }
 -- 
 1.8.3.2
 
