@@ -1,82 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab3LFBre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 20:47:34 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61191 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751257Ab3LFBrb convert rfc822-to-8bit (ORCPT
+	id S1753261Ab3LFBtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 20:49:11 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:56858 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab3LFBtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 20:47:31 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] SFI: fix compilation warnings
-Date: Fri, 06 Dec 2013 03:00:31 +0100
-Message-ID: <1790293.cpW4sKD6m8@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802494B65@SHSMSX101.ccr.corp.intel.com>
-References: <1386264397-27319-1-git-send-email-andriy.shevchenko@linux.intel.com> <1419818.3DzaCCe02K@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802494B65@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Thu, 5 Dec 2013 20:49:06 -0500
+X-AuditID: cbfee68e-b7fee6d000003b32-9f-52a12d102499
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Grygorii Strashko'" <grygorii.strashko@ti.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Kevin Hilman'" <khilman@linaro.org>,
+        "'Tony Lindgren'" <tony@atomide.com>,
+        "'Peter Ujfalusi'" <peter.ujfalusi@ti.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000001cef155$be1674e0$3a435ea0$%han@samsung.com>
+ <52A0AEDD.7060509@ti.com>
+In-reply-to: <52A0AEDD.7060509@ti.com>
+Subject: Re: [PATCH 1/2] rtc: rtc-twl: Use devm_*() functions
+Date: Fri, 06 Dec 2013 10:49:04 +0900
+Message-id: <000d01cef225$57f02230$07d06690$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7x0gpiKvxMyt3kQ/uT/jm5jRqQWwAUbRiA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t8zA10B3YVBBos+KFksuXiV3WLO+jVs
+	FiunsFhcXniJ1eLr4RWMFpd3zWGzmPXxB6vF/s4ORov9V7wcOD2+fZ3E4rFn4kk2jzvX9rB5
+	nJjxm8Wjb8sqRo/jN7YzeUyf95PJ4/MmuQCOKC6blNSczLLUIn27BK6MO53P2Ao2qVT8/TGf
+	pYFxgkwXIyeHhICJRMOUGywQtpjEhXvr2boYuTiEBJYxSnz4voQVpmjGnTXMEIlFjBKrb32A
+	cn4BVT0+wAhSxSagJvHly2F2EFtEIFFixdytYEXMAi1MEr1NK8CKhAQiJc72gHRzcHACNUy5
+	aQYSFhawlVi26gRYCYuAqsSqOzvZQEp4geLLX6WChHkFBCV+TL4HdimzgJbE+p3HmSBseYnN
+	a96CTZQQUJd49FcX4gIjiekvXzNClIhI7HvxjhHkGgmBiRwSU6fNg1olIPFt8iEWiF5ZiU0H
+	mCH+lZQ4uOIGywRGiVlINs9CsnkWks2zkKxYwMiyilE0tSC5oDgpvchIrzgxt7g0L10vOT93
+	EyMk1vt2MN48YH2IMRlo/URmKdHkfGCqyCuJNzQ2M7IwNTE1NjK3NCNNWEmcd9HDpCAhgfTE
+	ktTs1NSC1KL4otKc1OJDjEwcnFINjGFhwRGXX5vXXqhf1m6rduzR26rNDzaU+UzcX1Vx9tTu
+	+6f9pG9VnfStqV1XLSrpYv10m9zZSXdPXHrAE93QeHuLrMvEGkV1kfNXhW75HomN12jrf1dy
+	8LPalXqlNRlbb53/uejhOvnJC9sWpa4/rHXmb3KZ2EXZt73yD0XmP9zblfWTXUl9mrMSS3FG
+	oqEWc1FxIgCG24WDCwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKKsWRmVeSWpSXmKPExsVy+t9jAV0B3YVBBrcPyFosuXiV3WLO+jVs
+	FiunsFhcXniJ1eLr4RWMFpd3zWGzmPXxB6vF/s4ORov9V7wcOD2+fZ3E4rFn4kk2jzvX9rB5
+	nJjxm8Wjb8sqRo/jN7YzeUyf95PJ4/MmuQCOqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hT
+	MwNDXUNLC3MlhbzE3FRbJRefAF23zByg85QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYE
+	wfUYGaCBhHWMGXc6n7EVbFKp+PtjPksD4wSZLkZODgkBE4kZd9YwQ9hiEhfurWfrYuTiEBJY
+	xCix+tYHZgjnF6PEh8cHGEGq2ATUJL58OcwOYosIJEqsmLsVrIhZoIVJordpBViRkECkxNke
+	kG4ODk6ghik3zUDCwgK2EstWnQArYRFQlVh1ZycbSAkvUHz5q1SQMK+AoMSPyfdYQGxmAS2J
+	9TuPM0HY8hKb17wFmyghoC7x6K8uxAVGEtNfvmaEKBGR2PfiHeMERqFZSCbNQjJpFpJJs5C0
+	LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnEieSe1gXNlgcYhRgINRiYeXY9WCICHW
+	xLLiytxDjBIczEoivD3iC4OEeFMSK6tSi/Lji0pzUosPMSYD/TmRWUo0OR+Y5PJK4g2NTcyM
+	LI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgVFqv+y+oNjHQTs5fHsye17s
+	j8ypO+vrLXfl0xm9Z3OqVT51G6zNf3zftfqr4jmhomdqu6wnfEnkZp5670zTCp13f5S/GWbY
+	1QnOiFnz12HjJe1XeheFXtysX7/n30e+lsxlJ960Pn2yqvDeBh/H5xmHPjE+Pu7ElzrZ4sK1
+	7IR+F2vnNU9/2dYrsRRnJBpqMRcVJwIAwohbI2gDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 06, 2013 01:26:07 AM Zheng, Lv wrote:
-> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > Sent: Friday, December 06, 2013 9:26 AM
-> > 
-> > On Friday, December 06, 2013 01:08:45 AM Zheng, Lv wrote:
-> > > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > > > Sent: Friday, December 06, 2013 6:37 AM
-> > > >
-> > > > On Thursday, December 05, 2013 07:26:37 PM Andy Shevchenko wrote:
-> > > > > When build kernel with make W=1 we get the following compiler error.
-> > > > >
-> > > > > In file included from drivers/sfi/sfi_acpi.c:66:0:
-> > > > > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
-> > > > > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
-> > > > >   if (!acpi_table_parse(signature, handler))
-> > > > >   ^
-> > > > >   cc1: some warnings being treated as errors
-> > > > >
-> > > > > The patch changes acpi/acpi.h inclusion to linux/acpi.h.
-> > > > >
-> > > > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > > >
-> > > > OK
-> > > >
-> > > > Lv, I'm dropping your patch cleaning up the inclusions, please sort that thing
-> > > > out entirely for the next cycle.
-> > >
-> > > No, I think Andy's patch is wrong.
-> > 
-> > His patch may be wrong, but the warning in his changelog surely is real. :-)
-> > 
-> > > This warning is existing before merging my fixes.
-> > >
-> > > Either we fix this warning or leave it as is.
-> > >
-> > > To fix it, you need to add 1 line in sfi_acpi.h rather than change the line.
-> > > Let me post a fix for this.
-> > 
-> > Please do.  And I'm putting all ACPI header cleanups on hold until all warnings
-> > of this kind have been fixed by them.  Otherwise doing those cleanups makes a
-> > little sense in my opinion.
+On Friday, December 06, 2013 1:51 AM, Grygorii Strashko wrote:
+> On 12/05/2013 03:03 AM, Jingoo Han wrote:
+> > Use devm_*() functions to make cleanup paths simpler, and remove
+> > unnecessary remove().
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >   drivers/rtc/rtc-twl.c |   38 +++++++++++++-------------------------
+> >   1 file changed, 13 insertions(+), 25 deletions(-)
+> >
+> > diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+> > index c2e80d7..1915464 100644
+> > --- a/drivers/rtc/rtc-twl.c
+> > +++ b/drivers/rtc/rtc-twl.c
+> > @@ -479,7 +479,7 @@ static int twl_rtc_probe(struct platform_device *pdev)
+> >   	u8 rd_reg;
+> >
+> >   	if (irq <= 0)
+> > -		goto out1;
+> > +		return ret;
+> >
+> >   	/* Initialize the register map */
+> >   	if (twl_class_is_4030())
+> > @@ -489,7 +489,7 @@ static int twl_rtc_probe(struct platform_device *pdev)
+> >
+> >   	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+> >   	if (ret < 0)
+> > -		goto out1;
+> > +		return ret;
+> >
+> >   	if (rd_reg & BIT_RTC_STATUS_REG_POWER_UP_M)
+> >   		dev_warn(&pdev->dev, "Power up reset detected.\n");
+> > @@ -500,7 +500,7 @@ static int twl_rtc_probe(struct platform_device *pdev)
+> >   	/* Clear RTC Power up reset and pending alarm interrupts */
+> >   	ret = twl_rtc_write_u8(rd_reg, REG_RTC_STATUS_REG);
+> >   	if (ret < 0)
+> > -		goto out1;
+> > +		return ret;
+> >
+> >   	if (twl_class_is_6030()) {
+> >   		twl6030_interrupt_unmask(TWL6030_RTC_INT_MASK,
+> > @@ -512,7 +512,7 @@ static int twl_rtc_probe(struct platform_device *pdev)
+> >   	dev_info(&pdev->dev, "Enabling TWL-RTC\n");
+> >   	ret = twl_rtc_write_u8(BIT_RTC_CTRL_REG_STOP_RTC_M, REG_RTC_CTRL_REG);
+> >   	if (ret < 0)
+> > -		goto out1;
+> > +		return ret;
+> >
+> >   	/* ensure interrupts are disabled, bootloaders can be strange */
+> >   	ret = twl_rtc_write_u8(0, REG_RTC_INTERRUPTS_REG);
+> > @@ -522,34 +522,29 @@ static int twl_rtc_probe(struct platform_device *pdev)
+> >   	/* init cached IRQ enable bits */
+> >   	ret = twl_rtc_read_u8(&rtc_irq_bits, REG_RTC_INTERRUPTS_REG);
+> >   	if (ret < 0)
+> > -		goto out1;
+> > +		return ret;
+> >
+> >   	device_init_wakeup(&pdev->dev, 1);
+> >
+> > -	rtc = rtc_device_register(pdev->name,
+> > -				  &pdev->dev, &twl_rtc_ops, THIS_MODULE);
+> > +	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
+> > +					&twl_rtc_ops, THIS_MODULE);
+> >   	if (IS_ERR(rtc)) {
+> > -		ret = PTR_ERR(rtc);
+> >   		dev_err(&pdev->dev, "can't register RTC device, err %ld\n",
+> >   			PTR_ERR(rtc));
+> > -		goto out1;
+> > +		return PTR_ERR(rtc);
+> >   	}
+> >
+> > -	ret = request_threaded_irq(irq, NULL, twl_rtc_interrupt,
+> > -				   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> > -				   dev_name(&rtc->dev), rtc);
+> > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+> > +					twl_rtc_interrupt,
+> > +					IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> > +					dev_name(&rtc->dev), rtc);
 > 
-> OK, not only this warning, there is another warning in sfi_acpi.c.
-> I doubt whether they are strictly tested before upstreamed...
-> They are all existing warnings.
-> You can apply my new patch before the cleanup series.
+> Looks like this will change driver release order and free_irq
+> will be called after RTC device is unregistered.
+> I think, you need to request irq first -> then register RTC device.
+> Right?
 
-Sorry, I'm already lost in the thick of patches. :-)
+Hi Grygorii Strashko,
 
-Please resend them all as a single series.
+No, free_irq() will be called before RTC device is unregistered.
 
-Thanks,
-Rafael
+In probe(), the following functions are called as below:
+  1. devm_rtc_device_register() -> rtc_device_register()
+  2. devm_request_threaded_irq() -> request_threaded_irq()
+
+The release functions will be inversely called.
+When removing rtc-twl.
+  1. devm_irq_release() -> free_irq()
+  2. devm_rtc_device_release() -> rtc_device_unregister()
+
+Thus, it is safe.
+Thank you for your feedback. :-)
+
+Best regards,
+Jingoo Han
+
+> 
+> >   	if (ret < 0) {
+> >   		dev_err(&pdev->dev, "IRQ is not free.\n");
+> > -		goto out2;
+> > +		return ret;
+> >   	}
+> >
+> >   	platform_set_drvdata(pdev, rtc);
+> >   	return 0;
+> > -
+> > -out2:
+> > -	rtc_device_unregister(rtc);
+> > -out1:
+> > -	return ret;
+> >   }
+> >
+> >   /*
+> > @@ -559,9 +554,6 @@ out1:
+> >   static int twl_rtc_remove(struct platform_device *pdev)
+> >   {
+> >   	/* leave rtc running, but disable irqs */
+> > -	struct rtc_device *rtc = platform_get_drvdata(pdev);
+> > -	int irq = platform_get_irq(pdev, 0);
+> > -
+> >   	mask_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
+> >   	mask_rtc_irq_bit(BIT_RTC_INTERRUPTS_REG_IT_TIMER_M);
+> >   	if (twl_class_is_6030()) {
+> > @@ -571,10 +563,6 @@ static int twl_rtc_remove(struct platform_device *pdev)
+> >   			REG_INT_MSK_STS_A);
+> >   	}
+> >
+> > -
+> > -	free_irq(irq, rtc);
+> > -
+> > -	rtc_device_unregister(rtc);
+> >   	return 0;
+> >   }
+> >
+> >
 
