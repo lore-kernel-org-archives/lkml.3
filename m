@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161613Ab3LFNCq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44229 "EHLO
+	id S1758246Ab3LFNDC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44290 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161578Ab3LFNCm (ORCPT
+	with ESMTP id S1161578Ab3LFNC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:42 -0500
+	Fri, 6 Dec 2013 08:02:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Robert Richter <robert.richter@linaro.org>,
-        Robert Richter <rric@kernel.org>,
+Cc: Forest Bond <forest.bond@rapidrollout.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 142/272] edac, highbank: Fix interrupt setup of mem and l2 controller
-Date: Fri,  6 Dec 2013 12:57:11 +0000
-Message-Id: <1386334761-25517-143-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 155/272] HID: hid-multitouch: add support for SiS panels
+Date: Fri,  6 Dec 2013 12:57:24 +0000
+Message-Id: <1386334761-25517-156-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,107 +27,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@linaro.org>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit a72b8859fd3941cc1d2940d5c43026d2c6fb959e upstream.
+commit a6802e008e19845fd9669511b895f7515ef9c48b upstream.
 
-Register and enable interrupts after the edac registration. Otherwise
-incomming ecc error interrupts lead to crashes during device setup.
+Add support for SiS multitouch panels.
 
-Fixing this in drivers for mc and l2.
-
-Signed-off-by: Robert Richter <robert.richter@linaro.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/edac/highbank_l2_edac.c | 18 ++++++++++--------
- drivers/edac/highbank_mc_edac.c | 18 ++++++++++--------
- 2 files changed, 20 insertions(+), 16 deletions(-)
+ drivers/hid/Kconfig             | 1 +
+ drivers/hid/hid-core.c          | 2 ++
+ drivers/hid/hid-ids.h           | 4 ++++
+ drivers/hid/hid-multitouch.c    | 8 ++++++++
+ drivers/hid/usbhid/hid-quirks.c | 2 ++
+ 5 files changed, 17 insertions(+)
 
-diff --git a/drivers/edac/highbank_l2_edac.c b/drivers/edac/highbank_l2_edac.c
-index c2bd8c6..10d3d29 100644
---- a/drivers/edac/highbank_l2_edac.c
-+++ b/drivers/edac/highbank_l2_edac.c
-@@ -90,28 +90,30 @@ static int highbank_l2_err_probe(struct platform_device *pdev)
- 		goto err;
- 	}
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 6904bbd..5f5578b 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -455,6 +455,7 @@ config HID_MULTITOUCH
+ 	  - Pixcir dual touch panels
+ 	  - Quanta panels
+ 	  - eGalax dual-touch panels, including the Joojoo and Wetab tablets
++	  - SiS multitouch panels
+ 	  - Stantum multitouch panels
+ 	  - Touch International Panels
+ 	  - Unitec Panels
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 296f6dc..5793a3e 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1774,6 +1774,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_PS1000) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS817_TOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SKYCABLE, USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_BUZZ_CONTROLLER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_WIRELESS_BUZZ_CONTROLLER) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 2226e59..3161ccf 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -751,6 +751,10 @@
+ #define USB_VENDOR_ID_SIGMATEL		0x066F
+ #define USB_DEVICE_ID_SIGMATEL_STMP3780	0x3780
  
-+	dci->mod_name = dev_name(&pdev->dev);
-+	dci->dev_name = dev_name(&pdev->dev);
++#define USB_VENDOR_ID_SIS2_TOUCH	0x0457
++#define USB_DEVICE_ID_SIS9200_TOUCH	0x9200
++#define USB_DEVICE_ID_SIS817_TOUCH	0x0817
 +
-+	if (edac_device_add_device(dci))
-+		goto err;
+ #define USB_VENDOR_ID_SKYCABLE			0x1223
+ #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
+ 
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 94a903c..0e8fc79 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -1319,6 +1319,14 @@ static const struct hid_device_id mt_devices[] = {
+ 		MT_USB_DEVICE(USB_VENDOR_ID_QUANTA,
+ 			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008) },
+ 
++	/* SiS panels */
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH,
++		USB_DEVICE_ID_SIS9200_TOUCH) },
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_SIS2_TOUCH,
++		USB_DEVICE_ID_SIS817_TOUCH) },
 +
- 	drvdata->db_irq = platform_get_irq(pdev, 0);
- 	res = devm_request_irq(&pdev->dev, drvdata->db_irq,
- 			       highbank_l2_err_handler,
- 			       0, dev_name(&pdev->dev), dci);
- 	if (res < 0)
--		goto err;
-+		goto err2;
- 
- 	drvdata->sb_irq = platform_get_irq(pdev, 1);
- 	res = devm_request_irq(&pdev->dev, drvdata->sb_irq,
- 			       highbank_l2_err_handler,
- 			       0, dev_name(&pdev->dev), dci);
- 	if (res < 0)
--		goto err;
--
--	dci->mod_name = dev_name(&pdev->dev);
--	dci->dev_name = dev_name(&pdev->dev);
--
--	if (edac_device_add_device(dci))
--		goto err;
-+		goto err2;
- 
- 	devres_close_group(&pdev->dev, NULL);
- 	return 0;
-+err2:
-+	edac_device_del_device(&pdev->dev);
- err:
- 	devres_release_group(&pdev->dev, NULL);
- 	edac_device_free_ctl_info(dci);
-diff --git a/drivers/edac/highbank_mc_edac.c b/drivers/edac/highbank_mc_edac.c
-index 4695dd2..7a78307 100644
---- a/drivers/edac/highbank_mc_edac.c
-+++ b/drivers/edac/highbank_mc_edac.c
-@@ -189,14 +189,6 @@ static int highbank_mc_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = platform_get_irq(pdev, 0);
--	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
--			       0, dev_name(&pdev->dev), mci);
--	if (res < 0) {
--		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
--		goto err;
--	}
--
- 	mci->mtype_cap = MEM_FLAG_DDR3;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE | EDAC_FLAG_SECDED;
- 	mci->edac_cap = EDAC_FLAG_SECDED;
-@@ -217,10 +209,20 @@ static int highbank_mc_probe(struct platform_device *pdev)
- 	if (res < 0)
- 		goto err;
- 
-+	irq = platform_get_irq(pdev, 0);
-+	res = devm_request_irq(&pdev->dev, irq, highbank_mc_err_handler,
-+			       0, dev_name(&pdev->dev), mci);
-+	if (res < 0) {
-+		dev_err(&pdev->dev, "Unable to request irq %d\n", irq);
-+		goto err2;
-+	}
-+
- 	highbank_mc_create_debugfs_nodes(mci);
- 
- 	devres_close_group(&pdev->dev, NULL);
- 	return 0;
-+err2:
-+	edac_mc_del_mc(&pdev->dev);
- err:
- 	devres_release_group(&pdev->dev, NULL);
- 	edac_mc_free(mci);
+ 	/* Stantum panels */
+ 	{ .driver_data = MT_CLS_CONFIDENCE,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_STANTUM,
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 0734552..ae5c634 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -84,6 +84,8 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SIGMATEL, USB_DEVICE_ID_SIGMATEL_STMP3780, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS9200_TOUCH, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_SIS2_TOUCH, USB_DEVICE_ID_SIS817_TOUCH, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
 -- 
 1.8.3.2
 
