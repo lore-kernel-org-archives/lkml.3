@@ -1,135 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161082Ab3LFPBK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:01:10 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:59008 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab3LFPBH (ORCPT
+	id S1758052Ab3LFPBi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:01:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:25208 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753037Ab3LFPBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:01:07 -0500
-Date: Fri, 6 Dec 2013 10:01:01 -0500
-From: Matt Porter <matt.porter@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Kamil Debski <k.debski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, kyungmin.park@samsung.com,
-        t.figa@samsung.com, s.nawrocki@samsung.com, m.szyprowski@samsung.com,
-        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
-        yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org
-Subject: Re: [PATCH v4 5/9] usb: s3c-hsotg: Use the new Exynos USB phy driver
- with the generic phy framework
-Message-ID: <20131206150101.GA31091@beef>
-References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
- <1386246579-25141-6-git-send-email-k.debski@samsung.com>
- <52A1B0F7.2050501@ti.com>
+	Fri, 6 Dec 2013 10:01:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,841,1378882800"; 
+   d="scan'208";a="445781840"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>
+CC: Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Peter Jones <pjones@redhat.com>
+Subject: RE: [PATCH v3 6/6] ACPI/IBFT: Fix wrong <acpi/acpi.h> inclusion in
+ iSCSI boot firmware module.
+Thread-Topic: [PATCH v3 6/6] ACPI/IBFT: Fix wrong <acpi/acpi.h> inclusion in
+ iSCSI boot firmware module.
+Thread-Index: AQHO8mCocEYSzfc0pE6KYbBeZ8ggRJpHQP1w
+Date: Fri, 6 Dec 2013 15:01:06 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024950FD@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1385094640.git.lv.zheng@intel.com>
+ <cover.1386316208.git.lv.zheng@intel.com>
+ <7d10180ca652b4a20a07517946fc0fed6a591650.1386316208.git.lv.zheng@intel.com>
+In-Reply-To: <7d10180ca652b4a20a07517946fc0fed6a591650.1386316208.git.lv.zheng@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A1B0F7.2050501@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 04:41:51PM +0530, Kishon Vijay Abraham I wrote:
-> Hi,
+> From: Zheng, Lv
+> Sent: Friday, December 06, 2013 4:52 PM
 > 
-> On Thursday 05 December 2013 05:59 PM, Kamil Debski wrote:
-> > Change the used phy driver to the new Exynos USB phy driver that uses the
-> > generic phy framework.
-> > 
-> > Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> >  .../devicetree/bindings/usb/samsung-hsotg.txt      |    4 ++++
-> >  drivers/usb/gadget/s3c-hsotg.c                     |   11 ++++++-----
-> >  2 files changed, 10 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/usb/samsung-hsotg.txt b/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
-> > index b83d428..9340d06 100644
-> > --- a/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
-> > +++ b/Documentation/devicetree/bindings/usb/samsung-hsotg.txt
-> > @@ -24,6 +24,8 @@ Required properties:
-> >      - first entry: must be "otg"
-> >  - vusb_d-supply: phandle to voltage regulator of digital section,
-> >  - vusb_a-supply: phandle to voltage regulator of analog section.
-> > +- phys: from general PHY binding: phandle to the PHY device
-> > +- phy-names: from general PHY binding: should be "usb2-phy"
+> In Linux kernel, ACPICA is wrapped and safely exported by CONFIG_ACPI.  So
+> all external modules should depend on CONFIG_ACPI rather than using ACPICA
+> header directly for stubbing.  But if we moves <acpi/acpi.h> inclusions
+> into "#ifdef CONFIG_ACPI", build breakge can help to detect wrong ACPICA
+> dependent modules.
 > 
-> are you sure it's usb2-phy. The example below seems to have a different value.
+> One of the build breakage is:
+> drivers/firmware/iscsi_ibft_find.c: In function 'find_ibft_region':
+> drivers/firmware/iscsi_ibft_find.c:106:12: error: dereferencing pointer to incomplete type
+> drivers/firmware/iscsi_ibft_find.c:106:12: error: dereferencing pointer to incomplete type
+> drivers/firmware/iscsi_ibft_find.c:106:12: error: dereferencing pointer to incomplete type
+> 
+> The root cause of this breakage is:
+> 1. iBFT locating is implemented by looking up it in the memory.  This is
+>    based on the specification.  Specification doesn't mention if it can
+>    appear on a non-ACPI platforms but mentions it is defined in ACPI 3.0b.
+>    The current CONFIG_ISCSI_IBFT_FIND doesn't use ACPI table APIs to locate
+>    the table, thus it doesn't rely on CONFIG_ACPI.
+> 
+> Since ACPI iSCSI Boot Firmware is an ACPI-based mechanism (please refer to
+> the Doclink below), we can make CONFIG_ISCSI_IBFT_FIND dependent on
+> CONFIG_ACPI though the locating mechanism can be implemented without using
+> ACPI table APIs.  But please let me know if this is wrong.
 
-I requested this be changed to usb2-phy, looks like he just missed the
-update to the example.
+Ping Konrad or Peter, will this fix mess up some situations?
+Originally, this patch is marked as RFC.
+But since I can see it in linux-pm/bleeding-edge branch and this patchset refreshes what have been accepted, I took the "RFC" off.
+
+Thanks and best regards
+-Lv
 
 > 
-> >  
-> >  Example
-> >  -----
-> > @@ -36,5 +38,7 @@ Example
-> >  		clock-names = "otg";
-> >  		vusb_d-supply = <&vusb_reg>;
-> >  		vusb_a-supply = <&vusbdac_reg>;
-> > +		phys = <&usb2phy 0>;
-> > +		phy-names = "device";
-> >  	};
-> >  
-> > diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-> > index eccb147..db096fd 100644
-> > --- a/drivers/usb/gadget/s3c-hsotg.c
-> > +++ b/drivers/usb/gadget/s3c-hsotg.c
-> > @@ -31,6 +31,7 @@
-> >  #include <linux/regulator/consumer.h>
-> >  #include <linux/of.h>
-> >  #include <linux/of_platform.h>
-> > +#include <linux/phy/phy.h>
-> >  
-> >  #include <linux/usb/ch9.h>
-> >  #include <linux/usb/gadget.h>
-> > @@ -162,7 +163,7 @@ struct s3c_hsotg_ep {
-> >  struct s3c_hsotg {
-> >  	struct device		 *dev;
-> >  	struct usb_gadget_driver *driver;
-> > -	struct usb_phy		*phy;
-> > +	struct phy		 *phy;
-> >  	struct s3c_hsotg_plat	 *plat;
-> >  
-> >  	spinlock_t              lock;
-> > @@ -2905,7 +2906,7 @@ static void s3c_hsotg_phy_enable(struct s3c_hsotg *hsotg)
-> >  	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
-> >  
-> >  	if (hsotg->phy)
-> > -		usb_phy_init(hsotg->phy);
-> > +		phy_power_on(hsotg->phy);
-> >  	else if (hsotg->plat->phy_init)
-> >  		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
-> >  }
-> > @@ -2922,7 +2923,7 @@ static void s3c_hsotg_phy_disable(struct s3c_hsotg *hsotg)
-> >  	struct platform_device *pdev = to_platform_device(hsotg->dev);
-> >  
-> >  	if (hsotg->phy)
-> > -		usb_phy_shutdown(hsotg->phy);
-> > +		phy_power_off(hsotg->phy);
-> >  	else if (hsotg->plat->phy_exit)
-> >  		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);
-> >  }
-> > @@ -3529,7 +3530,7 @@ static void s3c_hsotg_delete_debug(struct s3c_hsotg *hsotg)
-> >  static int s3c_hsotg_probe(struct platform_device *pdev)
-> >  {
-> >  	struct s3c_hsotg_plat *plat = dev_get_platdata(&pdev->dev);
-> > -	struct usb_phy *phy;
-> > +	struct phy *phy;
-> >  	struct device *dev = &pdev->dev;
-> >  	struct s3c_hsotg_ep *eps;
-> >  	struct s3c_hsotg *hsotg;
-> > @@ -3544,7 +3545,7 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
-> >  		return -ENOMEM;
-> >  	}
-> >  
-> > -	phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > +	phy = devm_phy_get(&pdev->dev, "usb2-phy");
-> >  	if (IS_ERR(phy)) {
-> >  		/* Fallback for pdata */
-> >  		plat = dev_get_platdata(&pdev->dev);
-> > 
+> Doclink: http://www.microsoft.com/whdc/system/platform/firmware/ibft.mspx
+> Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+> Cc: Peter Jones <pjones@redhat.com>
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> ---
+>  drivers/firmware/Kconfig   |    2 +-
+>  include/linux/iscsi_ibft.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
+> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+> index 0747872..a6ef6ac 100644
+> --- a/drivers/firmware/Kconfig
+> +++ b/drivers/firmware/Kconfig
+> @@ -110,7 +110,7 @@ config DMI_SYSFS
+> 
+>  config ISCSI_IBFT_FIND
+>  	bool "iSCSI Boot Firmware Table Attributes"
+> -	depends on X86
+> +	depends on X86 && ACPI
+>  	default n
+>  	help
+>  	  This option enables the kernel to find the region of memory
+> diff --git a/include/linux/iscsi_ibft.h b/include/linux/iscsi_ibft.h
+> index 82f9673..605cc5c 100644
+> --- a/include/linux/iscsi_ibft.h
+> +++ b/include/linux/iscsi_ibft.h
+> @@ -21,7 +21,7 @@
+>  #ifndef ISCSI_IBFT_H
+>  #define ISCSI_IBFT_H
+> 
+> -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> +#include <linux/acpi.h>
+> 
+>  /*
+>   * Logical location of iSCSI Boot Format Table.
+> --
+> 1.7.10
+
