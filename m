@@ -1,155 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab3LFVyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:54:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32801 "EHLO
+	id S1161269Ab3LFWCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:02:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440Ab3LFVx4 (ORCPT
+	with ESMTP id S1759510Ab3LFVyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:56 -0500
+	Fri, 6 Dec 2013 16:54:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 49/58] mm: numa: return the number of base pages altered by protection changes
-Date: Fri,  6 Dec 2013 13:52:20 -0800
-Message-Id: <20131206214849.434529349@linuxfoundation.org>
+        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 04/32] bonding: dont permit to use ARP monitoring in 802.3ad mode
+Date: Fri,  6 Dec 2013 13:52:14 -0800
+Message-Id: <20131206214957.248686355@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
-References: <20131206214844.906193530@linuxfoundation.org>
+In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
+References: <20131206214956.830407026@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-commit 72403b4a0fbdf433c1fe0127e49864658f6f6468 upstream.
+[ Upstream commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 ]
 
-Commit 0255d4918480 ("mm: Account for a THP NUMA hinting update as one
-PTE update") was added to account for the number of PTE updates when
-marking pages prot_numa.  task_numa_work was using the old return value
-to track how much address space had been updated.  Altering the return
-value causes the scanner to do more work than it is configured or
-documented to in a single unit of work.
+Currently the ARP monitoring is not supported with 802.3ad, and it's
+prohibited to use it via the module params.
 
-This patch reverts that commit and accounts for the number of THP
-updates separately in vmstat.  It is up to the administrator to
-interpret the pair of values correctly.  This is a straight-forward
-operation and likely to only be of interest when actively debugging NUMA
-balancing problems.
+However we still can set it afterwards via sysfs, cause we only check for
+*LB modes there.
 
-The impact of this patch is that the NUMA PTE scanner will scan slower
-when THP is enabled and workloads may converge slower as a result.  On
-the flip size system CPU usage should be lower than recent tests
-reported.  This is an illustrative example of a short single JVM specjbb
-test
+To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
 
-specjbb
-                       3.12.0                3.12.0
-                      vanilla      acctupdates
-TPut 1      26143.00 (  0.00%)     25747.00 ( -1.51%)
-TPut 7     185257.00 (  0.00%)    183202.00 ( -1.11%)
-TPut 13    329760.00 (  0.00%)    346577.00 (  5.10%)
-TPut 19    442502.00 (  0.00%)    460146.00 (  3.99%)
-TPut 25    540634.00 (  0.00%)    549053.00 (  1.56%)
-TPut 31    512098.00 (  0.00%)    519611.00 (  1.47%)
-TPut 37    461276.00 (  0.00%)    474973.00 (  2.97%)
-TPut 43    403089.00 (  0.00%)    414172.00 (  2.75%)
-
-              3.12.0      3.12.0
-             vanillaacctupdates
-User         5169.64     5184.14
-System        100.45       80.02
-Elapsed       252.75      251.85
-
-Performance is similar but note the reduction in system CPU time.  While
-this showed a performance gain, it will not be universal but at least
-it'll be behaving as documented.  The vmstats are obviously different but
-here is an obvious interpretation of them from mmtests.
-
-                                3.12.0      3.12.0
-                               vanillaacctupdates
-NUMA page range updates        1408326    11043064
-NUMA huge PMD updates                0       21040
-NUMA PTE updates               1408326      291624
-
-"NUMA page range updates" == nr_pte_updates and is the value returned to
-the NUMA pte scanner.  NUMA huge PMD updates were the number of THP
-updates which in combination can be used to calculate how many ptes were
-updated from userspace.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/vm_event_item.h |    1 +
- mm/mprotect.c                 |    7 ++++++-
- mm/vmstat.c                   |    1 +
- 3 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_sysfs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -39,6 +39,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PS
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
- #ifdef CONFIG_NUMA_BALANCING
- 		NUMA_PTE_UPDATES,
-+		NUMA_HUGE_PTE_UPDATES,
- 		NUMA_HINT_FAULTS,
- 		NUMA_HINT_FAULTS_LOCAL,
- 		NUMA_PAGE_MIGRATE,
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -135,6 +135,7 @@ static inline unsigned long change_pmd_r
- 	pmd_t *pmd;
- 	unsigned long next;
- 	unsigned long pages = 0;
-+	unsigned long nr_huge_updates = 0;
- 	bool all_same_node;
- 
- 	pmd = pmd_offset(pud, addr);
-@@ -145,7 +146,8 @@ static inline unsigned long change_pmd_r
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot,
- 						 prot_numa)) {
--				pages++;
-+				pages += HPAGE_PMD_NR;
-+				nr_huge_updates++;
- 				continue;
- 			}
- 			/* fall through */
-@@ -165,6 +167,9 @@ static inline unsigned long change_pmd_r
- 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
- 	} while (pmd++, addr = next, addr != end);
- 
-+	if (nr_huge_updates)
-+		count_vm_numa_events(NUMA_HUGE_PTE_UPDATES, nr_huge_updates);
-+
- 	return pages;
- }
- 
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -779,6 +779,7 @@ const char * const vmstat_text[] = {
- 
- #ifdef CONFIG_NUMA_BALANCING
- 	"numa_pte_updates",
-+	"numa_huge_pte_updates",
- 	"numa_hint_faults",
- 	"numa_hint_faults_local",
- 	"numa_pages_migrated",
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -533,8 +533,9 @@ static ssize_t bonding_store_arp_interva
+ 		goto out;
+ 	}
+ 	if (bond->params.mode == BOND_MODE_ALB ||
+-	    bond->params.mode == BOND_MODE_TLB) {
+-		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
++	    bond->params.mode == BOND_MODE_TLB ||
++	    bond->params.mode == BOND_MODE_8023AD) {
++		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		ret = -EINVAL;
+ 		goto out;
 
 
