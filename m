@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759803Ab3LFXhW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:37:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48760 "EHLO
+	id S1759899Ab3LFXht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:37:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48750 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161555Ab3LFXS1 (ORCPT
+	with ESMTP id S1162332Ab3LFXSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:18:27 -0500
+	Fri, 6 Dec 2013 18:18:20 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 123/152] ASoC: wm8962: Turn on regcache_cache_only before disabling regulator
-Date: Fri,  6 Dec 2013 15:10:47 -0800
-Message-Id: <1386371476-2477-124-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 130/152] rtlwifi: rtl8192cu: Fix more pointer arithmetic errors
+Date: Fri,  6 Dec 2013 15:10:54 -0800
+Message-Id: <1386371476-2477-131-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,36 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolin Chen <b42378@freescale.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 50bfcf2df2fadf77e143d6099150e6fa7ef4d78c upstream.
+commit eafbdde9c5629bea58df07275c5917eb42afbbe7 upstream.
 
-It's safer to turn on regcache_cache_only before disabling regulator since
-the driver will turn off the regcache_cache_only after enabling regulator.
+This driver uses a number of macros to get and set various fields in the
+RX and TX descriptors. To work correctly, a u8 pointer to the descriptor
+must be used; however, in some cases a descriptor structure pointer is used
+instead. In addition, a duplicated statement is removed.
 
-If we remain cache_only false, some command like 'amixer cset' would get
-failure if being run before wm8962_resume().
-
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Mark Cave-Ayland <mark.cave-ayland@ilande.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm8962.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c | 6 +++---
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index 1b5bda8..df54650 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -3690,6 +3690,8 @@ static int wm8962_i2c_probe(struct i2c_client *i2c,
- 	if (ret < 0)
- 		goto err_enable;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+index 32ff959..aa5528c 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
+@@ -762,7 +762,7 @@ static long _rtl92c_signal_scale_mapping(struct ieee80211_hw *hw,
  
-+	regcache_cache_only(wm8962->regmap, true);
-+
- 	/* The drivers should power up as needed */
- 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
+ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 				      struct rtl_stats *pstats,
+-				      struct rx_desc_92c *pdesc,
++				      struct rx_desc_92c *p_desc,
+ 				      struct rx_fwinfo_92c *p_drvinfo,
+ 				      bool packet_match_bssid,
+ 				      bool packet_toself,
+@@ -777,11 +777,11 @@ static void _rtl92c_query_rxphystatus(struct ieee80211_hw *hw,
+ 	u32 rssi, total_rssi = 0;
+ 	bool in_powersavemode = false;
+ 	bool is_cck_rate;
++	u8 *pdesc = (u8 *)p_desc;
  
+-	is_cck_rate = RX_HAL_IS_CCK_RATE(pdesc);
++	is_cck_rate = RX_HAL_IS_CCK_RATE(p_desc);
+ 	pstats->packet_matchbssid = packet_match_bssid;
+ 	pstats->packet_toself = packet_toself;
+-	pstats->is_cck = is_cck_rate;
+ 	pstats->packet_beacon = packet_beacon;
+ 	pstats->is_cck = is_cck_rate;
+ 	pstats->RX_SIGQ[0] = -1;
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+index 6075b34..265862d 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/trx.c
+@@ -303,10 +303,10 @@ out:
+ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 			   struct rtl_stats *stats,
+ 			   struct ieee80211_rx_status *rx_status,
+-			   u8 *p_desc, struct sk_buff *skb)
++			   u8 *pdesc, struct sk_buff *skb)
+ {
+ 	struct rx_fwinfo_92c *p_drvinfo;
+-	struct rx_desc_92c *pdesc = (struct rx_desc_92c *)p_desc;
++	struct rx_desc_92c *p_desc = (struct rx_desc_92c *)pdesc;
+ 	u32 phystatus = GET_RX_DESC_PHY_STATUS(pdesc);
+ 
+ 	stats->length = (u16) GET_RX_DESC_PKT_LEN(pdesc);
+@@ -345,7 +345,7 @@ bool rtl92cu_rx_query_desc(struct ieee80211_hw *hw,
+ 	if (phystatus) {
+ 		p_drvinfo = (struct rx_fwinfo_92c *)(skb->data +
+ 						     stats->rx_bufshift);
+-		rtl92c_translate_rx_signal_stuff(hw, skb, stats, pdesc,
++		rtl92c_translate_rx_signal_stuff(hw, skb, stats, p_desc,
+ 						 p_drvinfo);
+ 	}
+ 	/*rx_status->qual = stats->signal; */
 -- 
 1.8.3.2
 
