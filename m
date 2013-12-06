@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161475Ab3LFWSR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:18:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60847 "EHLO
+	id S1759287Ab3LFVx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758778Ab3LFVx3 (ORCPT
+	with ESMTP id S1759140Ab3LFVxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:29 -0500
+	Fri, 6 Dec 2013 16:53:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+        Saran Neti <Saran.Neti@telus.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 11/58] macvtap: limit head length of skb allocated
-Date: Fri,  6 Dec 2013 13:51:42 -0800
-Message-Id: <20131206214845.966583939@linuxfoundation.org>
+Subject: [PATCH 3.10 01/58] ipv6: fix headroom calculation in udp6_ufo_fragment
+Date: Fri,  6 Dec 2013 13:51:32 -0800
+Message-Id: <20131206214845.052072777@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,58 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 16a3fa28630331e28208872fa5341ce210b901c7 ]
+[ Upstream commit 0e033e04c2678dbbe74a46b23fffb7bb918c288e ]
 
-We currently use hdr_len as a hint of head length which is advertised by
-guest. But when guest advertise a very big value, it can lead to an 64K+
-allocating of kmalloc() which has a very high possibility of failure when host
-memory is fragmented or under heavy stress. The huge hdr_len also reduce the
-effect of zerocopy or even disable if a gso skb is linearized in guest.
+Commit 1e2bd517c108816220f262d7954b697af03b5f9c ("udp6: Fix udp
+fragmentation for tunnel traffic.") changed the calculation if
+there is enough space to include a fragment header in the skb from a
+skb->mac_header dervived one to skb_headroom. Because we already peeled
+off the skb to transport_header this is wrong. Change this back to check
+if we have enough room before the mac_header.
 
-To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
-head, which guarantees an order 0 allocation each time.
+This fixes a panic Saran Neti reported. He used the tbf scheduler which
+skb_gso_segments the skb. The offsets get negative and we panic in memcpy
+because the skb was erroneously not expanded at the head.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@redhat.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
+Reported-by: Saran Neti <Saran.Neti@telus.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/ipv6/udp_offload.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -661,6 +661,7 @@ static ssize_t macvtap_get_user(struct m
- 				const struct iovec *iv, unsigned long total_len,
- 				size_t count, int noblock)
- {
-+	int good_linear = SKB_MAX_HEAD(NET_IP_ALIGN);
- 	struct sk_buff *skb;
- 	struct macvlan_dev *vlan;
- 	unsigned long len = total_len;
-@@ -703,6 +704,8 @@ static ssize_t macvtap_get_user(struct m
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -85,7 +85,7 @@ static struct sk_buff *udp6_ufo_fragment
  
- 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
- 		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
-+		if (copylen > good_linear)
-+			copylen = good_linear;
- 		linear = copylen;
- 		if (iov_pages(iv, vnet_hdr_len + copylen, count)
- 		    <= MAX_SKB_FRAGS)
-@@ -711,7 +714,10 @@ static ssize_t macvtap_get_user(struct m
- 
- 	if (!zerocopy) {
- 		copylen = len;
--		linear = vnet_hdr.hdr_len;
-+		if (vnet_hdr.hdr_len > good_linear)
-+			linear = good_linear;
-+		else
-+			linear = vnet_hdr.hdr_len;
+ 	/* Check if there is enough headroom to insert fragment header. */
+ 	tnl_hlen = skb_tnl_header_len(skb);
+-	if (skb_headroom(skb) < (tnl_hlen + frag_hdr_sz)) {
++	if (skb->mac_header < (tnl_hlen + frag_hdr_sz)) {
+ 		if (gso_pskb_expand_head(skb, tnl_hlen + frag_hdr_sz))
+ 			goto out;
  	}
- 
- 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
 
 
