@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161716Ab3LFNId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:08:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44814 "EHLO
+	id S1162298Ab3LFNIy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:08:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44809 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162194Ab3LFNGG (ORCPT
+	with ESMTP id S1162187Ab3LFNGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:06:06 -0500
+	Fri, 6 Dec 2013 08:06:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Renninger <trenn@suse.de>, Ingo Molnar <mingo@kernel.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 264/272] x86/microcode/amd: Tone down printk(), don't treat a missing firmware file as an error
-Date: Fri,  6 Dec 2013 12:59:13 +0000
-Message-Id: <1386334761-25517-265-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 263/272] ALSA: hda - Check keep_eapd_on before inv_eapd
+Date: Fri,  6 Dec 2013 12:59:12 +0000
+Message-Id: <1386334761-25517-264-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,41 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Renninger <trenn@suse.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 11f918d3e2d3861b6931e97b3aa778e4984935aa upstream.
+commit 468ac413045af1e0e4d1272291bed6878f248a69 upstream.
 
-Do it the same way as done in microcode_intel.c: use pr_debug()
-for missing firmware files.
+We don't change the EAPD bit in set_pin_eapd() if keep_eapd_on flag is
+set by the codec driver and enable is false.  But, we also apply the
+flipping of enable value according to inv_eapd flag in the same
+function, and this confused the former check, handled as if it's
+turned ON.  The inverted EAPD check must be applied after keep_eapd_on
+check, instead.
 
-There seem to be CPUs out there for which no microcode update
-has been submitted to kernel-firmware repo yet resulting in
-scary sounding error messages in dmesg:
-
-  microcode: failed to load file amd-ucode/microcode_amd_fam16h.bin
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Acked-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1384274383-43510-1-git-send-email-trenn@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/microcode_amd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_generic.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 7123b5d..803a3e0 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -430,7 +430,7 @@ static enum ucode_state request_microcode_amd(int cpu, struct device *device,
- 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
- 
- 	if (request_firmware(&fw, (const char *)fw_name, device)) {
--		pr_err("failed to load file %s\n", fw_name);
-+		pr_debug("failed to load file %s\n", fw_name);
- 		goto out;
- 	}
- 
+diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
+index 02fdff6..c6cb67b 100644
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -789,10 +789,10 @@ static void set_pin_eapd(struct hda_codec *codec, hda_nid_t pin, bool enable)
+ 	if (spec->own_eapd_ctl ||
+ 	    !(snd_hda_query_pin_caps(codec, pin) & AC_PINCAP_EAPD))
+ 		return;
+-	if (codec->inv_eapd)
+-		enable = !enable;
+ 	if (spec->keep_eapd_on && !enable)
+ 		return;
++	if (codec->inv_eapd)
++		enable = !enable;
+ 	snd_hda_codec_update_cache(codec, pin, 0,
+ 				   AC_VERB_SET_EAPD_BTLENABLE,
+ 				   enable ? 0x02 : 0x00);
 -- 
 1.8.3.2
 
