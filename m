@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161138Ab3LFNAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:00:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43621 "EHLO
+	id S1161172Ab3LFNAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:00:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43645 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161114Ab3LFM77 (ORCPT
+	with ESMTP id S1161137Ab3LFNAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:59 -0500
+	Fri, 6 Dec 2013 08:00:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 023/272] drm/i915: Replicate BIOS eDP bpp clamping hack for hsw
-Date: Fri,  6 Dec 2013 12:55:12 +0000
-Message-Id: <1386334761-25517-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 028/272] avr32: fix out-of-range jump in large kernels
+Date: Fri,  6 Dec 2013 12:55:17 +0000
+Message-Id: <1386334761-25517-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -30,63 +31,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
 
-commit 1021442098ee9328fdd4d113d63a3a7f2f40c37b upstream.
+commit d617b338bbfdd77e9cbd8e7dc949cee3dd73d575 upstream.
 
-Haswell's DDI encoders have their own ->get_config callback and in
+This patch fixes following error (for big kernels):
 
-commit c6cd2ee2d59111a07cd9199564c9bdcb2d11e5cf
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Mon Oct 21 10:52:07 2013 +0300
+---8<---
+arch/avr32/boot/u-boot/head.o: In function `no_tag_table':
+(.init.text+0x44): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
+arch/avr32/kernel/built-in.o: In function `bad_return':
+(.ex.text+0x236): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
+--->8---
 
-    drm/i915/dp: workaround BIOS eDP bpp clamping issue
+It comes up when the kernel increases and 'panic()' is too far away to fit in
+the +/- 2MiB range. Which in turn issues from the 21-bit displacement in
+'br{cond4}' mnemonic which is one of the two ways to do jumps (rjmp has just
+10-bit displacement and therefore a way smaller range). This fact was stated
+before in 8d29b7b9f81d6b83d869ff054e6c189d6da73f1f.
+One solution to solve this is to add a local storage for the symbol address
+and just load the $pc with that value.
 
-we've forgotten to replicate this hack. So let's do it that.
-
-Note for backporters: The above commit and all it's depencies need to
-be backported first.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71049
-Tested-by: Gökçen Eraslan <gokcen.eraslan@gmail.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_ddi.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/avr32/boot/u-boot/head.S    | 5 ++++-
+ arch/avr32/kernel/entry-avr32b.S | 3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
-index 5a6368d..e9af22a 100644
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -1297,6 +1297,26 @@ void intel_ddi_get_config(struct intel_encoder *encoder,
- 	default:
- 		break;
- 	}
-+
-+	if (encoder->type == INTEL_OUTPUT_EDP && dev_priv->vbt.edp_bpp &&
-+	    pipe_config->pipe_bpp > dev_priv->vbt.edp_bpp) {
-+		/*
-+		 * This is a big fat ugly hack.
-+		 *
-+		 * Some machines in UEFI boot mode provide us a VBT that has 18
-+		 * bpp and 1.62 GHz link bandwidth for eDP, which for reasons
-+		 * unknown we fail to light up. Yet the same BIOS boots up with
-+		 * 24 bpp and 2.7 GHz link. Use the same bpp as the BIOS uses as
-+		 * max, not what it tells us to use.
-+		 *
-+		 * Note: This will still be broken if the eDP panel is not lit
-+		 * up by the BIOS, and thus we can't get the mode at module
-+		 * load.
-+		 */
-+		DRM_DEBUG_KMS("pipe has %d bpp for eDP panel, overriding BIOS-provided max %d bpp\n",
-+			      pipe_config->pipe_bpp, dev_priv->vbt.edp_bpp);
-+		dev_priv->vbt.edp_bpp = pipe_config->pipe_bpp;
-+	}
- }
+diff --git a/arch/avr32/boot/u-boot/head.S b/arch/avr32/boot/u-boot/head.S
+index d36d865..2ffc298 100644
+--- a/arch/avr32/boot/u-boot/head.S
++++ b/arch/avr32/boot/u-boot/head.S
+@@ -73,8 +73,11 @@ init_sr:
+ 	.long	0x007f0000	/* Supervisor mode, everything masked */
+ stack_addr:
+ 	.long	init_thread_union
++panic_addr:
++	.long	panic
  
- static void intel_ddi_destroy(struct drm_encoder *encoder)
+ no_tag_table:
+ 	sub	r12, pc, (. - 2f)
+-	bral	panic
++	/* branch to panic() which can be far away with that construct */
++	lddpc	pc, panic_addr
+ 2:	.asciz	"Boot loader didn't provide correct magic number\n"
+diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
+index 9899d3c..7301f48 100644
+--- a/arch/avr32/kernel/entry-avr32b.S
++++ b/arch/avr32/kernel/entry-avr32b.S
+@@ -401,9 +401,10 @@ handle_critical:
+ 	/* We should never get here... */
+ bad_return:
+ 	sub	r12, pc, (. - 1f)
+-	bral	panic
++	lddpc	pc, 2f
+ 	.align	2
+ 1:	.asciz	"Return from critical exception!"
++2:	.long	panic
+ 
+ 	.align	1
+ do_bus_error_write:
 -- 
 1.8.3.2
 
