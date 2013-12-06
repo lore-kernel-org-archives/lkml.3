@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422753Ab3LFW1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:27:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60709 "EHLO
+	id S1161752Ab3LFW1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:27:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60692 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161142Ab3LFVxI (ORCPT
+	with ESMTP id S1161122Ab3LFVxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:08 -0500
+	Fri, 6 Dec 2013 16:53:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.12 78/83] aio: checking for NULL instead of IS_ERR
-Date: Fri,  6 Dec 2013 13:52:08 -0800
-Message-Id: <20131206214647.290501892@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>,
+        Shaohua Li <shli@kernel.org>
+Subject: [PATCH 3.12 63/83] md/raid5: Use conf->device_lock protect changing of multi-thread resources.
+Date: Fri,  6 Dec 2013 13:51:53 -0800
+Message-Id: <20131206214645.903841426@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,33 +27,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 7f62656be8a8ef14c168db2d98021fb9c8cc1076 upstream.
+commit 60aaf933854511630e16be4efe0f96485e132de4 upstream.
+and commit 0c775d5208284700de423e6746259da54a42e1f5
 
-alloc_anon_inode() returns an ERR_PTR(), it doesn't return NULL.
+When we change group_thread_cnt from sysfs entry, it can OOPS.
 
-Fixes: 71ad7490c1f3 ('rework aio migrate pages to use aio fs')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+The kernel messages are:
+[  135.299021] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  135.299073] IP: [<ffffffff815188ab>] handle_active_stripes+0x32b/0x440
+[  135.299107] PGD 0
+[  135.299122] Oops: 0000 [#1] SMP
+[  135.299144] Modules linked in: netconsole e1000e ptp pps_core
+[  135.299188] CPU: 3 PID: 2225 Comm: md0_raid5 Not tainted 3.12.0+ #24
+[  135.299214] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
+[  135.299255] task: ffff8800b9638f80 ti: ffff8800b77a4000 task.ti: ffff8800b77a4000
+[  135.299283] RIP: 0010:[<ffffffff815188ab>]  [<ffffffff815188ab>] handle_active_stripes+0x32b/0x440
+[  135.299323] RSP: 0018:ffff8800b77a5c48  EFLAGS: 00010002
+[  135.299344] RAX: ffff880037bb5c70 RBX: 0000000000000000 RCX: 0000000000000008
+[  135.299371] RDX: ffff880037bb5cb8 RSI: 0000000000000001 RDI: ffff880037bb5c00
+[  135.299398] RBP: ffff8800b77a5d08 R08: 0000000000000001 R09: 0000000000000000
+[  135.299425] R10: ffff8800b77a5c98 R11: 00000000ffffffff R12: ffff880037bb5c00
+[  135.299452] R13: 0000000000000000 R14: 0000000000000000 R15: ffff880037bb5c70
+[  135.299479] FS:  0000000000000000(0000) GS:ffff88013fd80000(0000) knlGS:0000000000000000
+[  135.299510] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  135.299532] CR2: 0000000000000000 CR3: 0000000001c0b000 CR4: 00000000000407e0
+[  135.299559] Stack:
+[  135.299570]  ffff8800b77a5c88 ffffffff8107383e ffff8800b77a5c88 ffff880037a64300
+[  135.299611]  000000000000ec08 ffff880037bb5cb8 ffff8800b77a5c98 ffffffffffffffd8
+[  135.299654]  000000000000ec08 ffff880037bb5c60 ffff8800b77a5c98 ffff8800b77a5c98
+[  135.299696] Call Trace:
+[  135.299711]  [<ffffffff8107383e>] ? __wake_up+0x4e/0x70
+[  135.299733]  [<ffffffff81518f88>] raid5d+0x4c8/0x680
+[  135.299756]  [<ffffffff817174ed>] ? schedule_timeout+0x15d/0x1f0
+[  135.299781]  [<ffffffff81524c9f>] md_thread+0x11f/0x170
+[  135.299804]  [<ffffffff81069cd0>] ? wake_up_bit+0x40/0x40
+[  135.299826]  [<ffffffff81524b80>] ? md_rdev_init+0x110/0x110
+[  135.299850]  [<ffffffff81069656>] kthread+0xc6/0xd0
+[  135.299871]  [<ffffffff81069590>] ? kthread_freezable_should_stop+0x70/0x70
+[  135.299899]  [<ffffffff81722ffc>] ret_from_fork+0x7c/0xb0
+[  135.299923]  [<ffffffff81069590>] ? kthread_freezable_should_stop+0x70/0x70
+[  135.299951] Code: ff ff ff 0f 84 d7 fe ff ff e9 5c fe ff ff 66 90 41 8b b4 24 d8 01 00 00 45 31 ed 85 f6 0f 8e 7b fd ff ff 49 8b 9c 24 d0 01 00 00 <48> 3b 1b 49 89 dd 0f 85 67 fd ff ff 48 8d 43 28 31 d2 eb 17 90
+[  135.300005] RIP  [<ffffffff815188ab>] handle_active_stripes+0x32b/0x440
+[  135.300005]  RSP <ffff8800b77a5c48>
+[  135.300005] CR2: 0000000000000000
+[  135.300005] ---[ end trace 504854e5bb7562ed ]---
+[  135.300005] Kernel panic - not syncing: Fatal exception
+
+This is because raid5d() can be running when the multi-thread
+resources are changed via system. We see need to provide locking.
+
+mddev->device_lock is suitable, but we cannot simple call
+alloc_thread_groups under this lock as we cannot allocate memory
+while holding a spinlock.
+So change alloc_thread_groups() to allocate and return the data
+structures, then raid5_store_group_thread_cnt() can take the lock
+while updating the pointers to the data structures.
+
+This fixes a bug introduced in 3.12 and so is suitable for the 3.12.x
+stable series.
+
+Fixes: b721420e8719131896b009b11edbbd27
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Reviewed-by: Shaohua Li <shli@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |   63 ++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 39 insertions(+), 24 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -164,8 +164,8 @@ static struct file *aio_private_file(str
- 	struct file *file;
- 	struct path path;
- 	struct inode *inode = alloc_anon_inode(aio_mnt->mnt_sb);
--	if (!inode)
--		return ERR_PTR(-ENOMEM);
-+	if (IS_ERR(inode))
-+		return ERR_CAST(inode);
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -5214,15 +5214,18 @@ raid5_show_group_thread_cnt(struct mddev
+ 		return 0;
+ }
  
- 	inode->i_mapping->a_ops = &aio_ctx_aops;
- 	inode->i_mapping->private_data = ctx;
+-static int alloc_thread_groups(struct r5conf *conf, int cnt);
++static int alloc_thread_groups(struct r5conf *conf, int cnt,
++			       int *group_cnt,
++			       int *worker_cnt_per_group,
++			       struct r5worker_group **worker_groups);
+ static ssize_t
+ raid5_store_group_thread_cnt(struct mddev *mddev, const char *page, size_t len)
+ {
+ 	struct r5conf *conf = mddev->private;
+ 	unsigned long new;
+ 	int err;
+-	struct r5worker_group *old_groups;
+-	int old_group_cnt;
++	struct r5worker_group *new_groups, *old_groups;
++	int group_cnt, worker_cnt_per_group;
+ 
+ 	if (len >= PAGE_SIZE)
+ 		return -EINVAL;
+@@ -5238,17 +5241,19 @@ raid5_store_group_thread_cnt(struct mdde
+ 	mddev_suspend(mddev);
+ 
+ 	old_groups = conf->worker_groups;
+-	old_group_cnt = conf->worker_cnt_per_group;
+-
+ 	if (old_groups)
+ 		flush_workqueue(raid5_wq);
+ 
+-	conf->worker_groups = NULL;
+-	err = alloc_thread_groups(conf, new);
+-	if (err) {
+-		conf->worker_groups = old_groups;
+-		conf->worker_cnt_per_group = old_group_cnt;
+-	} else {
++	err = alloc_thread_groups(conf, new,
++				  &group_cnt, &worker_cnt_per_group,
++				  &new_groups);
++	if (!err) {
++		spin_lock_irq(&conf->device_lock);
++		conf->group_cnt = group_cnt;
++		conf->worker_cnt_per_group = worker_cnt_per_group;
++		conf->worker_groups = new_groups;
++		spin_unlock_irq(&conf->device_lock);
++
+ 		if (old_groups)
+ 			kfree(old_groups[0].workers);
+ 		kfree(old_groups);
+@@ -5278,33 +5283,36 @@ static struct attribute_group raid5_attr
+ 	.attrs = raid5_attrs,
+ };
+ 
+-static int alloc_thread_groups(struct r5conf *conf, int cnt)
++static int alloc_thread_groups(struct r5conf *conf, int cnt,
++			       int *group_cnt,
++			       int *worker_cnt_per_group,
++			       struct r5worker_group **worker_groups)
+ {
+ 	int i, j;
+ 	ssize_t size;
+ 	struct r5worker *workers;
+ 
+-	conf->worker_cnt_per_group = cnt;
++	*worker_cnt_per_group = cnt;
+ 	if (cnt == 0) {
+-		conf->worker_groups = NULL;
++		*group_cnt = 0;
++		*worker_groups = NULL;
+ 		return 0;
+ 	}
+-	conf->group_cnt = num_possible_nodes();
++	*group_cnt = num_possible_nodes();
+ 	size = sizeof(struct r5worker) * cnt;
+-	workers = kzalloc(size * conf->group_cnt, GFP_NOIO);
+-	conf->worker_groups = kzalloc(sizeof(struct r5worker_group) *
+-				conf->group_cnt, GFP_NOIO);
+-	if (!conf->worker_groups || !workers) {
++	workers = kzalloc(size * *group_cnt, GFP_NOIO);
++	*worker_groups = kzalloc(sizeof(struct r5worker_group) *
++				*group_cnt, GFP_NOIO);
++	if (!*worker_groups || !workers) {
+ 		kfree(workers);
+-		kfree(conf->worker_groups);
+-		conf->worker_groups = NULL;
++		kfree(*worker_groups);
+ 		return -ENOMEM;
+ 	}
+ 
+-	for (i = 0; i < conf->group_cnt; i++) {
++	for (i = 0; i < *group_cnt; i++) {
+ 		struct r5worker_group *group;
+ 
+-		group = &conf->worker_groups[i];
++		group = &(*worker_groups)[i];
+ 		INIT_LIST_HEAD(&group->handle_list);
+ 		group->conf = conf;
+ 		group->workers = workers + i * cnt;
+@@ -5462,6 +5470,8 @@ static struct r5conf *setup_conf(struct
+ 	struct md_rdev *rdev;
+ 	struct disk_info *disk;
+ 	char pers_name[6];
++	int group_cnt, worker_cnt_per_group;
++	struct r5worker_group *new_group;
+ 
+ 	if (mddev->new_level != 5
+ 	    && mddev->new_level != 4
+@@ -5496,7 +5506,12 @@ static struct r5conf *setup_conf(struct
+ 	if (conf == NULL)
+ 		goto abort;
+ 	/* Don't enable multi-threading by default*/
+-	if (alloc_thread_groups(conf, 0))
++	if (!alloc_thread_groups(conf, 0, &group_cnt, &worker_cnt_per_group,
++				 &new_group)) {
++		conf->group_cnt = group_cnt;
++		conf->worker_cnt_per_group = worker_cnt_per_group;
++		conf->worker_groups = new_group;
++	} else
+ 		goto abort;
+ 	spin_lock_init(&conf->device_lock);
+ 	seqcount_init(&conf->gen_lock);
 
 
