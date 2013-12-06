@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162438Ab3LFNQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:16:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44648 "EHLO
+	id S1162166Ab3LFNQb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:16:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44656 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161992Ab3LFNEk (ORCPT
+	with ESMTP id S1161094Ab3LFNEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:40 -0500
+	Fri, 6 Dec 2013 08:04:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 229/272] NFSv4: Fix state reference counting in _nfs4_opendata_reclaim_to_nfs4_state
-Date: Fri,  6 Dec 2013 12:58:38 +0000
-Message-Id: <1386334761-25517-230-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 231/272] ALSA: 6fire: Fix probe of multiple cards
+Date: Fri,  6 Dec 2013 12:58:40 +0000
+Message-Id: <1386334761-25517-232-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d49f042aeec99c5f87160bb52dd52088b1051311 upstream.
+commit 9b389a8a022110b4bc055a19b888283544d9eba6 upstream.
 
-Currently, if the call to nfs_refresh_inode fails, then we end up leaking
-a reference count, due to the call to nfs4_get_open_state.
-While we're at it, replace nfs4_get_open_state with a simple call to
-atomic_inc(); there is no need to do a full lookup of the struct nfs_state
-since it is passed as an argument in the struct nfs4_opendata, and
-is already assigned to the variable 'state'.
+The probe code of snd-usb-6fire driver overrides the devices[] pointer
+wrongly without checking whether it's already occupied or not.  This
+would screw up the device disconnection later.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Spotted by coverity CID 141423.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ sound/usb/6fire/chip.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 84c6225..9960a5b 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1236,11 +1236,6 @@ _nfs4_opendata_reclaim_to_nfs4_state(struct nfs4_opendata *data)
- 		goto err;
+diff --git a/sound/usb/6fire/chip.c b/sound/usb/6fire/chip.c
+index c39c779..66edc4a 100644
+--- a/sound/usb/6fire/chip.c
++++ b/sound/usb/6fire/chip.c
+@@ -101,7 +101,7 @@ static int usb6fire_chip_probe(struct usb_interface *intf,
+ 			usb_set_intfdata(intf, chips[i]);
+ 			mutex_unlock(&register_mutex);
+ 			return 0;
+-		} else if (regidx < 0)
++		} else if (!devices[i] && regidx < 0)
+ 			regidx = i;
  	}
- 
--	ret = -ENOMEM;
--	state = nfs4_get_open_state(inode, data->owner);
--	if (state == NULL)
--		goto err;
--
- 	ret = nfs_refresh_inode(inode, &data->f_attr);
- 	if (ret)
- 		goto err;
-@@ -1251,6 +1246,7 @@ _nfs4_opendata_reclaim_to_nfs4_state(struct nfs4_opendata *data)
- 		nfs4_opendata_check_deleg(data, state);
- 	update_open_stateid(state, &data->o_res.stateid, NULL,
- 			    data->o_arg.fmode);
-+	atomic_inc(&state->count);
- 
- 	return state;
- err:
+ 	if (regidx < 0) {
 -- 
 1.8.3.2
 
