@@ -1,129 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab3LFCAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 21:00:04 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63422 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab3LFCAA (ORCPT
+	id S1754572Ab3LFCAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 21:00:52 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55191 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752702Ab3LFCAv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 21:00:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/3] arm: Add [U]EFI runtime services support
-Date: Fri, 6 Dec 2013 02:59:48 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        mark.rutland@arm.com, linaro-uefi@linaro.org, matt.fleming@intel.com,
-        patches@linaro.org, roy.franz@linaro.org, msalter@redhat.com,
-        grant.likely@linaro.org
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org> <1385656883-4420-3-git-send-email-leif.lindholm@linaro.org>
-In-Reply-To: <1385656883-4420-3-git-send-email-leif.lindholm@linaro.org>
+	Thu, 5 Dec 2013 21:00:51 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] Power management fixes for v3.13-rc3
+Date: Fri, 06 Dec 2013 03:13:46 +0100
+Message-ID: <2062235.VIUAclBWFD@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312060259.48259.arnd@arndb.de>
-X-Provags-ID: V02:K0:YRYn61J5FSGKucG7li5piIR3zhuV2779QslzZkpCLds
- k9zU+lLzSiFb9xPyO3IyXqfDLruFWM9ecOKZop4vzbhM4ZqOuC
- UwRbtXDF8pK0e4RdZ/u1T3uNmdT4/i5oGNTM7OBM0HqxQ9Ye9+
- zOgSDKMpDLAv2FPH2Rfk+CYdAiedqToegz5XgTtn+vKwtry0sb
- zcr6Ff6yK0fP7WL3+BsxSkwbriPsQxA4V8BOs8YVZVeBywcIyH
- wwzN5Hs64bjhUYCvWlJNoDAT/u7uHcVDchEfHWcJcKXztIrJIf
- oWxT3BQUV4mRnbMXgn2A6Up9+BHExhw0YRIj9X7P2fR1t9iCWk
- ReuFz2k3R3xM0m13/ebs=
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 November 2013, Leif Lindholm wrote:
-> @@ -898,6 +900,10 @@ void __init setup_arch(char **cmdline_p)
->  	sanity_check_meminfo();
->  	arm_memblock_init(&meminfo, mdesc);
->  
-> +#ifdef CONFIG_EFI
-> +	uefi_memblock_arm_reserve_range();
-> +#endif
-> +
+Hi Linus,
 
-Better use 
+Please pull from the git repository at
 
-	if (IS_ENABLED(CONFIG_EFI))
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-3.13-rc3
 
-here for readability and better build-time checking of the interface when
-CONFIG_EFI is disabled.
+to receive power management fixes for v3.13-rc3 with
+top-most commit 8e7030097e9f3ea8031e8cc4230e357cb556f8f9
 
-> +/*
-> + * Returns 1 if 'facility' is enabled, 0 otherwise.
-> + */
-> +int efi_enabled(int facility)
-> +{
-> +	return test_bit(facility, &arm_uefi_facility) != 0;
-> +}
-> +EXPORT_SYMBOL(efi_enabled);
+  Merge branches 'pm-epoll', 'pnp' and 'powercap'
 
-I'd use EXPORT_SYMBOL_GPL() unless there is a documented reason why
-a symbol should be available to GPL-incompatible modules.
+on top of commit dc1ccc48159d63eca5089e507c82c7d22ef60839
 
-> +static __init int is_discardable_region(efi_memory_desc_t *md)
-> +{
-> +#ifdef KEEP_ALL_REGIONS
-> +	return 0;
-> +#endif
+  Linux 3.13-rc2
 
-IS_ENABLED() again.
+These fix two regressions introduced in 3.12 (in cpufreq and PNP core),
+fix up the new power capping framework and recent changes in intel_idle
+and cpufreq, and fix a couple of older bugs.
 
-> +	if (md->attribute & EFI_MEMORY_RUNTIME)
-> +		return 0;
-> +
-> +	switch (md->type) {
-> +#ifdef KEEP_BOOT_SERVICES_REGIONS
-> +	case EFI_BOOT_SERVICES_CODE:
-> +	case EFI_BOOT_SERVICES_DATA:
-> +#endif
+Specifics:
 
-and I think it can be used here too:
+ - cpufreq regression fix from Bjørn Mork restoring the pre-3.12
+   behavior of the framework during system suspend/hibernation to
+   avoid garbage sysfs files from being left behind in case of a
+   suspend error.
 
-	switch (md->type) {
-	case EFI_BOOT_SERVICES_CODE:
-	case EFI_BOOT_SERVICES_DATA:
-		if (IS_ENABLED(KEEP_BOOT_SERVICES_REGIONS))
-			return 1;
-		/* fallthrough */
-	case EFI_ACPI_RECLAIM_MEMORY:
+ - PNP regression fix to restore the correct states of devices after
+   resume from hibernation broken in 3.12.  From Dmitry Torokhov.
 
-> +	memmap.phys_map = early_memremap((phys_addr_t)(u32) uefi_boot_mmap,
-> +					 uefi_boot_mmap_size);
-> +	if (!memmap.phys_map)
-> +		return 1;
-> +
-> +	p = memmap.phys_map;
-> +	e = (void *)((u32)p + uefi_boot_mmap_size);
+ - cpuidle fix to prevent cpuidle device unregistration from crashing 
+   due to a NULL pointer dereference if cpuidle has been disabled
+   from the kernel command line.  From Konrad Rzeszutek Wilk.
 
-You are doing a lot of type casts here, which is normally an indication
-that you have the types wrong in some way. I can't spot a mistake
-here, but maybe you can give it some more thought and see if it can be
-changed.
+ - intel_idle fix for the C6 state definition on Intel Avoton/Rangeley
+   processors from Arne Bockholdt.
 
-> +static int __init remap_region(efi_memory_desc_t *md, efi_memory_desc_t *entry)
-> +{
-> +	u64 va;
-> +	u64 paddr;
-> +	u64 size;
-> +
-> +	*entry = *md;
-> +	paddr = entry->phys_addr;
-> +	size = entry->num_pages << EFI_PAGE_SHIFT;
-> +
-> +	/*
-> +	 * Map everything writeback-capable as coherent memory,
-> +	 * anything else as device.
-> +	 */
-> +	if (md->attribute & EFI_MEMORY_WB)
-> +		va = (u64)((u32)uefi_remap(paddr, size) & 0xffffffffUL);
-> +	else
-> +		va = (u64)((u32)uefi_ioremap(paddr, size) & 0xffffffffUL);
+ - Power capping framework fix to make the energy_uj sysfs attribute
+   work in accordance with the documentation.  From Srinivas Pandruvada.
 
-Same here. Why is 'va' a u64?
+ - epoll fix to make it ignore the EPOLLWAKEUP flag if the kernel has
+   been compiled with CONFIG_PM_SLEEP unset (in which case that flag
+   should not have any effect).  From Amit Pundir.
 
-	Arnd
+ - cpufreq fix to prevent governor sysfs files from being lost over
+   system suspend/resume in some (arguably unusual) situations.  From
+   Viresh Kumar.
+
+Thanks!
+
+
+---------------
+
+Amit Pundir (1):
+      epoll: drop EPOLLWAKEUP if PM_SLEEP is disabled
+
+Bjørn Mork (1):
+      cpufreq: fix garbage kobjects on errors during suspend/resume
+
+Bockholdt Arne (1):
+      intel_idle: Fixed C6 state on Avoton/Rangeley processors
+
+Dmitry Torokhov (1):
+      PNP: fix restoring devices after hibernation
+
+Konrad Rzeszutek Wilk (1):
+      cpuidle: Check for dev before deregistering it.
+
+Srinivas Pandruvada (1):
+      PowerCap: Fix mode for energy counter
+
+Viresh Kumar (1):
+      cpufreq: suspend governors on system suspend/hibernate
+
+---------------
+
+ drivers/base/power/main.c       |    3 +++
+ drivers/cpufreq/cpufreq.c       |   46 ++++++++++++++++++++++++++++++++++++---
+ drivers/cpuidle/cpuidle.c       |    2 +-
+ drivers/idle/intel_idle.c       |    4 ++--
+ drivers/pnp/driver.c            |   12 +++++++++-
+ drivers/powercap/powercap_sys.c |    7 +++++-
+ fs/eventpoll.c                  |    3 +--
+ include/linux/cpufreq.h         |    8 +++++++
+ include/uapi/linux/eventpoll.h  |   13 ++++++++++-
+ 9 files changed, 87 insertions(+), 11 deletions(-)
+
