@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161915Ab3LFOH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:07:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43828 "EHLO
+	id S1162112Ab3LFOIW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:08:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43823 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161347Ab3LFNA4 (ORCPT
+	with ESMTP id S1161342Ab3LFNAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:56 -0500
+	Fri, 6 Dec 2013 08:00:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: John Stultz <john.stultz@linaro.org>, Mel Gorman <mgorman@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 063/272] cpuset: Fix memory allocator deadlock
-Date: Fri,  6 Dec 2013 12:55:52 +0000
-Message-Id: <1386334761-25517-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/272] ALSA: hda - Check leaf nodes to find aamix amps
+Date: Fri,  6 Dec 2013 12:55:53 +0000
+Message-Id: <1386334761-25517-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,93 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0fc0287c9ed1ffd3706f8b4d9b314aa102ef1245 upstream.
+commit 2ded3e5b61d61d0bc90bebb8004db6184c7db6eb upstream.
 
-Juri hit the below lockdep report:
+The current generic parser assumes blindly that the volume and mute
+amps are found in the aamix node itself.  But on some codecs,
+typically Analog Devices ones, the aamix amps are separately
+implemented in each leaf node of the aamix node, and the current
+driver can't establish the correct amp controls.  This is a regression
+compared with the previous static quirks.
 
-[    4.303391] ======================================================
-[    4.303392] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-[    4.303394] 3.12.0-dl-peterz+ #144 Not tainted
-[    4.303395] ------------------------------------------------------
-[    4.303397] kworker/u4:3/689 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    4.303399]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff8114e63c>] new_slab+0x6c/0x290
-[    4.303417]
-[    4.303417] and this task is already holding:
-[    4.303418]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff812d2dfb>] blk_execute_rq_nowait+0x5b/0x100
-[    4.303431] which would create a new lock dependency:
-[    4.303432]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-[    4.303436]
+This patch extends the search for the amps to the leaf nodes for
+allowing the aamix controls again on such codecs.
+In this implementation, I didn't code to loop through the whole paths,
+since usually one depth should suffice, and we can't search too
+deeply, as it may result in the conflicting control assignments.
 
-[    4.303898] the dependencies between the lock to be acquired and SOFTIRQ-irq-unsafe lock:
-[    4.303918] -> (&p->mems_allowed_seq){+.+...} ops: 2762 {
-[    4.303922]    HARDIRQ-ON-W at:
-[    4.303923]                     [<ffffffff8108ab9a>] __lock_acquire+0x65a/0x1ff0
-[    4.303926]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303929]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303931]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303933]    SOFTIRQ-ON-W at:
-[    4.303933]                     [<ffffffff8108abcc>] __lock_acquire+0x68c/0x1ff0
-[    4.303935]                     [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303940]                     [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303955]                     [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303959]    INITIAL USE at:
-[    4.303960]                    [<ffffffff8108a884>] __lock_acquire+0x344/0x1ff0
-[    4.303963]                    [<ffffffff8108cbe3>] lock_acquire+0x93/0x140
-[    4.303966]                    [<ffffffff81063dd6>] kthreadd+0x86/0x180
-[    4.303969]                    [<ffffffff816ded6c>] ret_from_fork+0x7c/0xb0
-[    4.303972]  }
-
-Which reports that we take mems_allowed_seq with interrupts enabled. A
-little digging found that this can only be from
-cpuset_change_task_nodemask().
-
-This is an actual deadlock because an interrupt doing an allocation will
-hit get_mems_allowed()->...->__read_seqcount_begin(), which will spin
-forever waiting for the write side to complete.
-
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Reported-by: Juri Lelli <juri.lelli@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Juri Lelli <juri.lelli@gmail.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65641
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cpuset.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_generic.c | 57 +++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 45 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index ea1966d..b49f24a 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1044,8 +1044,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 	need_loop = task_has_mempolicy(tsk) ||
- 			!nodes_intersects(*newmems, tsk->mems_allowed);
- 
--	if (need_loop)
-+	if (need_loop) {
-+		local_irq_disable();
- 		write_seqcount_begin(&tsk->mems_allowed_seq);
-+	}
- 
- 	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
-@@ -1053,8 +1055,10 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
- 	tsk->mems_allowed = *newmems;
- 
--	if (need_loop)
-+	if (need_loop) {
- 		write_seqcount_end(&tsk->mems_allowed_seq);
-+		local_irq_enable();
-+	}
- 
- 	task_unlock(tsk);
+diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
+index a8e3be6..02fdff6 100644
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -2778,6 +2778,42 @@ static int add_loopback_list(struct hda_gen_spec *spec, hda_nid_t mix, int idx)
+ 	return 0;
  }
+ 
++/* return true if either a volume or a mute amp is found for the given
++ * aamix path; the amp has to be either in the mixer node or its direct leaf
++ */
++static bool look_for_mix_leaf_ctls(struct hda_codec *codec, hda_nid_t mix_nid,
++				   hda_nid_t pin, unsigned int *mix_val,
++				   unsigned int *mute_val)
++{
++	int idx, num_conns;
++	const hda_nid_t *list;
++	hda_nid_t nid;
++
++	idx = snd_hda_get_conn_index(codec, mix_nid, pin, true);
++	if (idx < 0)
++		return false;
++
++	*mix_val = *mute_val = 0;
++	if (nid_has_volume(codec, mix_nid, HDA_INPUT))
++		*mix_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
++	if (nid_has_mute(codec, mix_nid, HDA_INPUT))
++		*mute_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
++	if (*mix_val && *mute_val)
++		return true;
++
++	/* check leaf node */
++	num_conns = snd_hda_get_conn_list(codec, mix_nid, &list);
++	if (num_conns < idx)
++		return false;
++	nid = list[idx];
++	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
++		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
++	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
++		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
++
++	return *mix_val || *mute_val;
++}
++
+ /* create input playback/capture controls for the given pin */
+ static int new_analog_input(struct hda_codec *codec, int input_idx,
+ 			    hda_nid_t pin, const char *ctlname, int ctlidx,
+@@ -2785,12 +2821,11 @@ static int new_analog_input(struct hda_codec *codec, int input_idx,
+ {
+ 	struct hda_gen_spec *spec = codec->spec;
+ 	struct nid_path *path;
+-	unsigned int val;
++	unsigned int mix_val, mute_val;
+ 	int err, idx;
+ 
+-	if (!nid_has_volume(codec, mix_nid, HDA_INPUT) &&
+-	    !nid_has_mute(codec, mix_nid, HDA_INPUT))
+-		return 0; /* no need for analog loopback */
++	if (!look_for_mix_leaf_ctls(codec, mix_nid, pin, &mix_val, &mute_val))
++		return 0;
+ 
+ 	path = snd_hda_add_new_path(codec, pin, mix_nid, 0);
+ 	if (!path)
+@@ -2799,20 +2834,18 @@ static int new_analog_input(struct hda_codec *codec, int input_idx,
+ 	spec->loopback_paths[input_idx] = snd_hda_get_path_idx(codec, path);
+ 
+ 	idx = path->idx[path->depth - 1];
+-	if (nid_has_volume(codec, mix_nid, HDA_INPUT)) {
+-		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
+-		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, val);
++	if (mix_val) {
++		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, mix_val);
+ 		if (err < 0)
+ 			return err;
+-		path->ctls[NID_PATH_VOL_CTL] = val;
++		path->ctls[NID_PATH_VOL_CTL] = mix_val;
+ 	}
+ 
+-	if (nid_has_mute(codec, mix_nid, HDA_INPUT)) {
+-		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
+-		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, val);
++	if (mute_val) {
++		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, mute_val);
+ 		if (err < 0)
+ 			return err;
+-		path->ctls[NID_PATH_MUTE_CTL] = val;
++		path->ctls[NID_PATH_MUTE_CTL] = mute_val;
+ 	}
+ 
+ 	path->active = true;
 -- 
 1.8.3.2
 
