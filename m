@@ -1,126 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162569Ab3LFNqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:46:39 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33351 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161774Ab3LFNqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:46:36 -0500
-Date: Fri, 6 Dec 2013 14:46:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
-        Liu Jinsong <jinsong.liu@intel.com>
-Subject: Re: [PATCH 3/3] X86, mpx: Intel MPX xstate feature definition
-Message-ID: <20131206134631.GD6694@pd.tnic>
-References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com>
- <1386355976-11732-3-git-send-email-qiaowei.ren@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1386355976-11732-3-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1162590Ab3LFNrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:47:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44160 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758147Ab3LFNCV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:02:21 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 127/272] PM / hibernate: Avoid overflow in hibernate_preallocate_memory()
+Date: Fri,  6 Dec 2013 12:56:56 +0000
+Message-Id: <1386334761-25517-128-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 07, 2013 at 02:52:56AM +0800, Qiaowei Ren wrote:
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Commit message please.
+------------------
 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/include/asm/processor.h |   23 +++++++++++++++++++++++
->  arch/x86/include/asm/xsave.h     |    6 +++++-
->  2 files changed, 28 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 987c75e..43be6f6 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -370,6 +370,26 @@ struct ymmh_struct {
->  	u32 ymmh_space[64];
->  };
->  
-> +struct lwp_struct {
-> +	u64 lwpcb_addr;
-> +	u32 flags;
-> +	u32 buf_head_offset;
-> +	u64 buf_base;
-> +	u32 buf_size;
-> +	u32 filters;
-> +	u64 saved_event_record[4];
-> +	u32 event_counter[16];
-> +};
-> +
-> +struct bndregs_struct {
-> +	u64 bndregs[8];
-> +} __packed;
-> +
-> +struct bndcsr_struct {
-> +	u64 cfg_reg_u;
-> +	u64 status_reg;
-> +} __packed;
-> +
->  struct xsave_hdr_struct {
->  	u64 xstate_bv;
->  	u64 reserved1[2];
-> @@ -380,6 +400,9 @@ struct xsave_struct {
->  	struct i387_fxsave_struct i387;
->  	struct xsave_hdr_struct xsave_hdr;
->  	struct ymmh_struct ymmh;
-> +	struct lwp_struct lwp;
+From: Aaron Lu <aaron.lu@intel.com>
 
-I'm guessing this and the struct lwp_struct above is being added so that
-you can have the LWP XSAVE area size? If so, you don't need it: LWP
-XSAVE area is 128 bytes at offset 832 according to my manuals so I'd
-guess having a u8 lwp_area[128] should be fine.
+commit fd432b9f8c7c88428a4635b9f5a9c6e174df6e36 upstream.
 
+When system has a lot of highmem (e.g. 16GiB using a 32 bits kernel),
+the code to calculate how much memory we need to preallocate in
+normal zone may cause overflow. As Leon has analysed:
 
-> +	struct bndregs_struct bndregs;
-> +	struct bndcsr_struct bndcsr;
->  	/* new processor state extensions will go here */
->  } __attribute__ ((packed, aligned (64)));
->  
-> diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-> index 0415cda..5cd9de3 100644
-> --- a/arch/x86/include/asm/xsave.h
-> +++ b/arch/x86/include/asm/xsave.h
-> @@ -9,6 +9,8 @@
->  #define XSTATE_FP	0x1
->  #define XSTATE_SSE	0x2
->  #define XSTATE_YMM	0x4
-> +#define XSTATE_BNDREGS	0x8
-> +#define XSTATE_BNDCSR	0x10
->  
->  #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
->  
-> @@ -20,10 +22,12 @@
->  #define XSAVE_YMM_SIZE	    256
->  #define XSAVE_YMM_OFFSET    (XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET)
->  
-> +#define XSTATE_FLEXIBLE (XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+ It looks that during computing 'alloc' variable there is overflow:
+ alloc = (3943404 - 1970542) - 1978280 = -5418 (signed)
+ And this function goes to err_out.
 
-What's the use of that macro if it is used only once?
+Fix this by avoiding that overflow.
 
-> +#define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
->  /*
->   * These are the features that the OS can handle currently.
->   */
-> -#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-> +#define XCNTXT_MASK	(XSTATE_FLEXIBLE | XSTATE_EAGER)
->  
->  #ifdef CONFIG_X86_64
->  #define REX_PREFIX	"0x48, "
+References: https://bugzilla.kernel.org/show_bug.cgi?id=60817
+Reported-and-tested-by: Leon Drugi <eyak@wp.pl>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/power/snapshot.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 349587b..e8d1a82 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1399,7 +1399,11 @@ int hibernate_preallocate_memory(void)
+ 	 * highmem and non-highmem zones separately.
+ 	 */
+ 	pages_highmem = preallocate_image_highmem(highmem / 2);
+-	alloc = (count - max_size) - pages_highmem;
++	alloc = count - max_size;
++	if (alloc > pages_highmem)
++		alloc -= pages_highmem;
++	else
++		alloc = 0;
+ 	pages = preallocate_image_memory(alloc, avail_normal);
+ 	if (pages < alloc) {
+ 		/* We have exhausted non-highmem pages, try highmem. */
 -- 
-Regards/Gruss,
-    Boris.
+1.8.3.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
