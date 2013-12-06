@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161738Ab3LFWLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:11:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60965 "EHLO
+	id S1758846Ab3LFWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:11:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759401Ab3LFVxp (ORCPT
+	with ESMTP id S1759397Ab3LFVxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:53:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Yang Yingliang <yangyingliang@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 35/58] net: 8139cp: fix a BUG_ON triggered by wrong bytes_compl
-Date: Fri,  6 Dec 2013 13:52:06 -0800
-Message-Id: <20131206214848.151007201@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kim Phillips <kim.phillips@linaro.org>
+Subject: [PATCH 3.10 45/58] clockevents: Get rid of the notifier chain
+Date: Fri,  6 Dec 2013 13:52:16 -0800
+Message-Id: <20131206214849.069722835@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -28,107 +29,253 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yang Yingliang <yangyingliang@huawei.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[ Upstream commit 7fe0ee099ad5e3dea88d4ee1b6f20246b1ca57c3 ]
+commit 7172a286ced0c1f4f239a0fa09db54ed37d3ead2 upstream.
 
-Using iperf to send packets(GSO mode is on), a bug is triggered:
+7+ years and still a single user. Kill it.
 
-[  212.672781] kernel BUG at lib/dynamic_queue_limits.c:26!
-[  212.673396] invalid opcode: 0000 [#1] SMP
-[  212.673882] Modules linked in: 8139cp(O) nls_utf8 edd fuse loop dm_mod ipv6 i2c_piix4 8139too i2c_core intel_agp joydev pcspkr hid_generic intel_gtt floppy sr_mod mii button sg cdrom ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore sd_mod usb_common crc_t10dif crct10dif_common processor thermal_sys hwmon scsi_dh_emc scsi_dh_rdac scsi_dh_hp_sw scsi_dh ata_generic ata_piix libata scsi_mod [last unloaded: 8139cp]
-[  212.676084] CPU: 0 PID: 4124 Comm: iperf Tainted: G           O 3.12.0-0.7-default+ #16
-[  212.676084] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  212.676084] task: ffff8800d83966c0 ti: ffff8800db4c8000 task.ti: ffff8800db4c8000
-[  212.676084] RIP: 0010:[<ffffffff8122e23f>]  [<ffffffff8122e23f>] dql_completed+0x17f/0x190
-[  212.676084] RSP: 0018:ffff880116e03e30  EFLAGS: 00010083
-[  212.676084] RAX: 00000000000005ea RBX: 0000000000000f7c RCX: 0000000000000002
-[  212.676084] RDX: ffff880111dd0dc0 RSI: 0000000000000bd4 RDI: ffff8800db6ffcc0
-[  212.676084] RBP: ffff880116e03e48 R08: 0000000000000992 R09: 0000000000000000
-[  212.676084] R10: ffffffff8181e400 R11: 0000000000000004 R12: 000000000000000f
-[  212.676084] R13: ffff8800d94ec840 R14: ffff8800db440c80 R15: 000000000000000e
-[  212.676084] FS:  00007f6685a3c700(0000) GS:ffff880116e00000(0000) knlGS:0000000000000000
-[  212.676084] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  212.676084] CR2: 00007f6685ad6460 CR3: 00000000db714000 CR4: 00000000000006f0
-[  212.676084] Stack:
-[  212.676084]  ffff8800db6ffc00 000000000000000f ffff8800d94ec840 ffff880116e03eb8
-[  212.676084]  ffffffffa041509f ffff880116e03e88 0000000f16e03e88 ffff8800d94ec000
-[  212.676084]  00000bd400059858 000000050000000f ffffffff81094c36 ffff880116e03eb8
-[  212.676084] Call Trace:
-[  212.676084]  <IRQ>
-[  212.676084]  [<ffffffffa041509f>] cp_interrupt+0x4ef/0x590 [8139cp]
-[  212.676084]  [<ffffffff81094c36>] ? ktime_get+0x56/0xd0
-[  212.676084]  [<ffffffff8108cf73>] handle_irq_event_percpu+0x53/0x170
-[  212.676084]  [<ffffffff8108d0cc>] handle_irq_event+0x3c/0x60
-[  212.676084]  [<ffffffff8108fdb5>] handle_fasteoi_irq+0x55/0xf0
-[  212.676084]  [<ffffffff810045df>] handle_irq+0x1f/0x30
-[  212.676084]  [<ffffffff81003c8b>] do_IRQ+0x5b/0xe0
-[  212.676084]  [<ffffffff8142beaa>] common_interrupt+0x6a/0x6a
-[  212.676084]  <EOI>
-[  212.676084]  [<ffffffffa0416a21>] ? cp_start_xmit+0x621/0x97c [8139cp]
-[  212.676084]  [<ffffffffa0416a09>] ? cp_start_xmit+0x609/0x97c [8139cp]
-[  212.676084]  [<ffffffff81378ed9>] dev_hard_start_xmit+0x2c9/0x550
-[  212.676084]  [<ffffffff813960a9>] sch_direct_xmit+0x179/0x1d0
-[  212.676084]  [<ffffffff813793f3>] dev_queue_xmit+0x293/0x440
-[  212.676084]  [<ffffffff813b0e46>] ip_finish_output+0x236/0x450
-[  212.676084]  [<ffffffff810e59e7>] ? __alloc_pages_nodemask+0x187/0xb10
-[  212.676084]  [<ffffffff813b10e8>] ip_output+0x88/0x90
-[  212.676084]  [<ffffffff813afa64>] ip_local_out+0x24/0x30
-[  212.676084]  [<ffffffff813aff0d>] ip_queue_xmit+0x14d/0x3e0
-[  212.676084]  [<ffffffff813c6fd1>] tcp_transmit_skb+0x501/0x840
-[  212.676084]  [<ffffffff813c8323>] tcp_write_xmit+0x1e3/0xb20
-[  212.676084]  [<ffffffff81363237>] ? skb_page_frag_refill+0x87/0xd0
-[  212.676084]  [<ffffffff813c8c8b>] tcp_push_one+0x2b/0x40
-[  212.676084]  [<ffffffff813bb7e6>] tcp_sendmsg+0x926/0xc90
-[  212.676084]  [<ffffffff813e1d21>] inet_sendmsg+0x61/0xc0
-[  212.676084]  [<ffffffff8135e861>] sock_aio_write+0x101/0x120
-[  212.676084]  [<ffffffff81107cf1>] ? vma_adjust+0x2e1/0x5d0
-[  212.676084]  [<ffffffff812163e0>] ? timerqueue_add+0x60/0xb0
-[  212.676084]  [<ffffffff81130b60>] do_sync_write+0x60/0x90
-[  212.676084]  [<ffffffff81130d44>] ? rw_verify_area+0x54/0xf0
-[  212.676084]  [<ffffffff81130f66>] vfs_write+0x186/0x190
-[  212.676084]  [<ffffffff811317fd>] SyS_write+0x5d/0xa0
-[  212.676084]  [<ffffffff814321e2>] system_call_fastpath+0x16/0x1b
-[  212.676084] Code: ca 41 89 dc 41 29 cc 45 31 db 29 c2 41 89 c5 89 d0 45 29 c5 f7 d0 c1 e8 1f e9 43 ff ff ff 66 0f 1f 44 00 00 31 c0 e9 7b ff ff ff <0f> 0b eb fe 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 c7 47 40 00
-[  212.676084] RIP  [<ffffffff8122e23f>] dql_completed+0x17f/0x190
-------------[ cut here ]------------
-
-When a skb has frags, bytes_compl plus skb->len nr_frags times in cp_tx().
-It's not the correct value(actually, it should plus skb->len once) and it
-will trigger the BUG_ON(bytes_compl > num_queued - dql->num_completed).
-So only increase bytes_compl when finish sending all frags. pkts_compl also
-has a wrong value, fix it too.
-
-It's introduced by commit 871f0d4c ("8139cp: enable bql").
-
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Link: http://lkml.kernel.org/r/20130425143436.098520211@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kim Phillips <kim.phillips@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/realtek/8139cp.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -678,9 +678,6 @@ static void cp_tx (struct cp_private *cp
- 				 le32_to_cpu(txd->opts1) & 0xffff,
- 				 PCI_DMA_TODEVICE);
+---
+ include/linux/clockchips.h   |    1 -
+ kernel/time/clockevents.c    |   35 +++--------------------------------
+ kernel/time/tick-broadcast.c |    5 ++---
+ kernel/time/tick-common.c    |   30 +++++-------------------------
+ kernel/time/tick-internal.h  |    7 ++++---
+ 5 files changed, 14 insertions(+), 64 deletions(-)
+
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -150,7 +150,6 @@ extern void clockevents_exchange_device(
+ 					struct clock_event_device *new);
+ extern void clockevents_set_mode(struct clock_event_device *dev,
+ 				 enum clock_event_mode mode);
+-extern int clockevents_register_notifier(struct notifier_block *nb);
+ extern int clockevents_program_event(struct clock_event_device *dev,
+ 				     ktime_t expires, bool force);
  
--		bytes_compl += skb->len;
--		pkts_compl++;
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -15,7 +15,6 @@
+ #include <linux/hrtimer.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+-#include <linux/notifier.h>
+ #include <linux/smp.h>
+ 
+ #include "tick-internal.h"
+@@ -23,10 +22,6 @@
+ /* The registered clock event devices */
+ static LIST_HEAD(clockevent_devices);
+ static LIST_HEAD(clockevents_released);
 -
- 		if (status & LastFrag) {
- 			if (status & (TxError | TxFIFOUnder)) {
- 				netif_dbg(cp, tx_err, cp->dev,
-@@ -702,6 +699,8 @@ static void cp_tx (struct cp_private *cp
- 				netif_dbg(cp, tx_done, cp->dev,
- 					  "tx done, slot %d\n", tx_tail);
- 			}
-+			bytes_compl += skb->len;
-+			pkts_compl++;
- 			dev_kfree_skb_irq(skb);
- 		}
+-/* Notification for clock events */
+-static RAW_NOTIFIER_HEAD(clockevents_chain);
+-
+ /* Protection for the above */
+ static DEFINE_RAW_SPINLOCK(clockevents_lock);
  
+@@ -267,30 +262,6 @@ int clockevents_program_event(struct clo
+ 	return (rc && force) ? clockevents_program_min_delta(dev) : rc;
+ }
+ 
+-/**
+- * clockevents_register_notifier - register a clock events change listener
+- */
+-int clockevents_register_notifier(struct notifier_block *nb)
+-{
+-	unsigned long flags;
+-	int ret;
+-
+-	raw_spin_lock_irqsave(&clockevents_lock, flags);
+-	ret = raw_notifier_chain_register(&clockevents_chain, nb);
+-	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
+-
+-	return ret;
+-}
+-
+-/*
+- * Notify about a clock event change. Called with clockevents_lock
+- * held.
+- */
+-static void clockevents_do_notify(unsigned long reason, void *dev)
+-{
+-	raw_notifier_call_chain(&clockevents_chain, reason, dev);
+-}
+-
+ /*
+  * Called after a notify add to make devices available which were
+  * released from the notifier call.
+@@ -304,7 +275,7 @@ static void clockevents_notify_released(
+ 				 struct clock_event_device, list);
+ 		list_del(&dev->list);
+ 		list_add(&dev->list, &clockevent_devices);
+-		clockevents_do_notify(CLOCK_EVT_NOTIFY_ADD, dev);
++		tick_check_new_device(dev);
+ 	}
+ }
+ 
+@@ -325,7 +296,7 @@ void clockevents_register_device(struct
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+ 
+ 	list_add(&dev->list, &clockevent_devices);
+-	clockevents_do_notify(CLOCK_EVT_NOTIFY_ADD, dev);
++	tick_check_new_device(dev);
+ 	clockevents_notify_released();
+ 
+ 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
+@@ -468,7 +439,7 @@ void clockevents_notify(unsigned long re
+ 	int cpu;
+ 
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+-	clockevents_do_notify(reason, arg);
++	tick_notify(reason, arg);
+ 
+ 	switch (reason) {
+ 	case CLOCK_EVT_NOTIFY_CPU_DEAD:
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -65,7 +65,7 @@ static void tick_broadcast_start_periodi
+ /*
+  * Check, if the device can be utilized as broadcast device:
+  */
+-int tick_check_broadcast_device(struct clock_event_device *dev)
++void tick_install_broadcast_device(struct clock_event_device *dev)
+ {
+ 	struct clock_event_device *cur = tick_broadcast_device.evtdev;
+ 
+@@ -73,7 +73,7 @@ int tick_check_broadcast_device(struct c
+ 	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+-		return 0;
++		return;
+ 
+ 	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
+ 	if (cur)
+@@ -91,7 +91,6 @@ int tick_check_broadcast_device(struct c
+ 	 */
+ 	if (dev->features & CLOCK_EVT_FEAT_ONESHOT)
+ 		tick_clock_notify();
+-	return 1;
+ }
+ 
+ /*
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -209,11 +209,11 @@ static void tick_setup_device(struct tic
+ /*
+  * Check, if the new registered device should be used.
+  */
+-static int tick_check_new_device(struct clock_event_device *newdev)
++void tick_check_new_device(struct clock_event_device *newdev)
+ {
+ 	struct clock_event_device *curdev;
+ 	struct tick_device *td;
+-	int cpu, ret = NOTIFY_OK;
++	int cpu;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&tick_device_lock, flags);
+@@ -276,18 +276,14 @@ static int tick_check_new_device(struct
+ 		tick_oneshot_notify();
+ 
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
+-	return NOTIFY_STOP;
++	return;
+ 
+ out_bc:
+ 	/*
+ 	 * Can the new device be used as a broadcast device ?
+ 	 */
+-	if (tick_check_broadcast_device(newdev))
+-		ret = NOTIFY_STOP;
+-
++	tick_install_broadcast_device(newdev);
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
+-
+-	return ret;
+ }
+ 
+ /*
+@@ -361,17 +357,10 @@ static void tick_resume(void)
+ 	raw_spin_unlock_irqrestore(&tick_device_lock, flags);
+ }
+ 
+-/*
+- * Notification about clock event devices
+- */
+-static int tick_notify(struct notifier_block *nb, unsigned long reason,
+-			       void *dev)
++void tick_notify(unsigned long reason, void *dev)
+ {
+ 	switch (reason) {
+ 
+-	case CLOCK_EVT_NOTIFY_ADD:
+-		return tick_check_new_device(dev);
+-
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_ON:
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_OFF:
+ 	case CLOCK_EVT_NOTIFY_BROADCAST_FORCE:
+@@ -405,21 +394,12 @@ static int tick_notify(struct notifier_b
+ 	default:
+ 		break;
+ 	}
+-
+-	return NOTIFY_OK;
+ }
+ 
+-static struct notifier_block tick_notifier = {
+-	.notifier_call = tick_notify,
+-};
+-
+ /**
+  * tick_init - initialize the tick control
+- *
+- * Register the notifier with the clockevents framework
+  */
+ void __init tick_init(void)
+ {
+-	clockevents_register_notifier(&tick_notifier);
+ 	tick_broadcast_init();
+ }
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -18,6 +18,8 @@ extern int tick_do_timer_cpu __read_most
+ 
+ extern void tick_setup_periodic(struct clock_event_device *dev, int broadcast);
+ extern void tick_handle_periodic(struct clock_event_device *dev);
++extern void tick_notify(unsigned long reason, void *dev);
++extern void tick_check_new_device(struct clock_event_device *dev);
+ 
+ extern void clockevents_shutdown(struct clock_event_device *dev);
+ 
+@@ -90,7 +92,7 @@ static inline bool tick_broadcast_onesho
+  */
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+ extern int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu);
+-extern int tick_check_broadcast_device(struct clock_event_device *dev);
++extern void tick_install_broadcast_device(struct clock_event_device *dev);
+ extern int tick_is_broadcast_device(struct clock_event_device *dev);
+ extern void tick_broadcast_on_off(unsigned long reason, int *oncpu);
+ extern void tick_shutdown_broadcast(unsigned int *cpup);
+@@ -102,9 +104,8 @@ tick_set_periodic_handler(struct clock_e
+ 
+ #else /* !BROADCAST */
+ 
+-static inline int tick_check_broadcast_device(struct clock_event_device *dev)
++static inline void tick_install_broadcast_device(struct clock_event_device *dev)
+ {
+-	return 0;
+ }
+ 
+ static inline int tick_is_broadcast_device(struct clock_event_device *dev)
 
 
