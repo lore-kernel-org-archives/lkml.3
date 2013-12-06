@@ -1,155 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758356Ab3LFUN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:13:26 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45525 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab3LFUNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:13:24 -0500
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH v4 net-next 1/4] vhost: remove the dead branch
-Date: Sat,  7 Dec 2013 04:13:03 +0800
-Message-Id: <1386360786-17687-2-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1386360786-17687-1-git-send-email-zwu.kernel@gmail.com>
-References: <1386360786-17687-1-git-send-email-zwu.kernel@gmail.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120620-5806-0000-0000-0000239B7440
+	id S1758585Ab3LFUNb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:13:31 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:42858 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756905Ab3LFUN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 15:13:28 -0500
+X-IronPort-AV: E=Sophos;i="4.93,842,1378882800"; 
+   d="scan'208";a="371094"
+Message-ID: <52A22FD6.8070105@broadcom.com>
+Date: Fri, 6 Dec 2013 12:13:10 -0800
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: timer: catching new timers in migrated tvec_base
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Hi all,
 
-Since vhost_dev_init() forever return 0, some branches are never run,
-therefore need to be removed.
+I'm looking for feedback regarding explicitly invalidating the 
+list_heads in tvec_base.tv1 .. tv5 after a migration, for example by 
+doing a list_del(head) at the end of migrate_timer_list().  This is not 
+meant to fix any bugs, but to help catch attempts to add timers to the 
+migrated tvec_base.  Bugs like this could be difficult to catch without 
+this change (example below).
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/net.c   |    9 ++-------
- drivers/vhost/scsi.c  |    7 +------
- drivers/vhost/test.c  |    8 +-------
- drivers/vhost/vhost.c |    4 +---
- drivers/vhost/vhost.h |    2 +-
- 5 files changed, 6 insertions(+), 24 deletions(-)
+If I understand correctly, after migration of timers from one cpu (the 
+one being shut down, say cpu1) to another (say cpu0), no one should be 
+adding any timers to the tvec_base of cpu1.  When cpu1 later comes back 
+up, new timers can be added only after init_timers_cpu(1).
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 831eb4f..9a68409 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -683,7 +683,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
- 	struct vhost_net *n = kmalloc(sizeof *n, GFP_KERNEL);
- 	struct vhost_dev *dev;
- 	struct vhost_virtqueue **vqs;
--	int r, i;
-+	int i;
- 
- 	if (!n)
- 		return -ENOMEM;
-@@ -706,12 +706,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
- 		n->vqs[i].vhost_hlen = 0;
- 		n->vqs[i].sock_hlen = 0;
- 	}
--	r = vhost_dev_init(dev, vqs, VHOST_NET_VQ_MAX);
--	if (r < 0) {
--		kfree(n);
--		kfree(vqs);
--		return r;
--	}
-+	vhost_dev_init(dev, vqs, VHOST_NET_VQ_MAX);
- 
- 	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
- 	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
-diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
-index f175629..1e4c75c 100644
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -1417,18 +1417,13 @@ static int vhost_scsi_open(struct inode *inode, struct file *f)
- 		vqs[i] = &vs->vqs[i].vq;
- 		vs->vqs[i].vq.handle_kick = vhost_scsi_handle_kick;
- 	}
--	r = vhost_dev_init(&vs->dev, vqs, VHOST_SCSI_MAX_VQ);
-+	vhost_dev_init(&vs->dev, vqs, VHOST_SCSI_MAX_VQ);
- 
- 	tcm_vhost_init_inflight(vs, NULL);
- 
--	if (r < 0)
--		goto err_init;
--
- 	f->private_data = vs;
- 	return 0;
- 
--err_init:
--	kfree(vqs);
- err_vqs:
- 	vhost_scsi_free(vs);
- err_vs:
-diff --git a/drivers/vhost/test.c b/drivers/vhost/test.c
-index 339eae8..c2a54fb 100644
---- a/drivers/vhost/test.c
-+++ b/drivers/vhost/test.c
-@@ -104,7 +104,6 @@ static int vhost_test_open(struct inode *inode, struct file *f)
- 	struct vhost_test *n = kmalloc(sizeof *n, GFP_KERNEL);
- 	struct vhost_dev *dev;
- 	struct vhost_virtqueue **vqs;
--	int r;
- 
- 	if (!n)
- 		return -ENOMEM;
-@@ -117,12 +116,7 @@ static int vhost_test_open(struct inode *inode, struct file *f)
- 	dev = &n->dev;
- 	vqs[VHOST_TEST_VQ] = &n->vqs[VHOST_TEST_VQ];
- 	n->vqs[VHOST_TEST_VQ].handle_kick = handle_vq_kick;
--	r = vhost_dev_init(dev, vqs, VHOST_TEST_VQ_MAX);
--	if (r < 0) {
--		kfree(vqs);
--		kfree(n);
--		return r;
--	}
-+	vhost_dev_init(dev, vqs, VHOST_TEST_VQ_MAX);
- 
- 	f->private_data = n;
- 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 69068e0..78987e4 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -290,7 +290,7 @@ static void vhost_dev_free_iovecs(struct vhost_dev *dev)
- 		vhost_vq_free_iovecs(dev->vqs[i]);
- }
- 
--long vhost_dev_init(struct vhost_dev *dev,
-+void vhost_dev_init(struct vhost_dev *dev,
- 		    struct vhost_virtqueue **vqs, int nvqs)
- {
- 	struct vhost_virtqueue *vq;
-@@ -319,8 +319,6 @@ long vhost_dev_init(struct vhost_dev *dev,
- 			vhost_poll_init(&vq->poll, vq->handle_kick,
- 					POLLIN, dev);
- 	}
--
--	return 0;
- }
- EXPORT_SYMBOL_GPL(vhost_dev_init);
- 
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 4465ed5..35eeb2a 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -127,7 +127,7 @@ struct vhost_dev {
- 	struct task_struct *worker;
- };
- 
--long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue **vqs, int nvqs);
-+void vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue **vqs, int nvqs);
- long vhost_dev_set_owner(struct vhost_dev *dev);
- bool vhost_dev_has_owner(struct vhost_dev *dev);
- long vhost_dev_check_owner(struct vhost_dev *);
--- 
-1.7.6.5
+If a buggy driver tries to add a timer to cpu1 after it has shut down, 
+eg with add_timer_on(1), there is no indication that this is an invalid 
+operation (no BUG_ON, no return code).  The following is what happened 
+in my case:
 
+1. cpu1 shuts down, all timers migrated to cpu0
+2. driverA adds a timerX to cpu1's tvec_base.tv1[n] (bug)
+3. cpu1 returns, all lists in tvec_base.tv1 re-initialized without 
+checking if the lists are indeed empty.
+4. timerX is now "orphaned"; its entry->next and entry->prev points to 
+cpu1's tvec_base.tv1[n], but tvec_base.tv1[n] is an empty list.
+5. driverB adds a timerY to cpu1's tvec_base.tv[n] and becomes the only 
+entry in that list.
+6. driverA removes timerX, which eventually calls __list_del on 
+timerX.entry.
+7. Since timerX.entry points to cpu1's tvec_base.tv1[n], 
+tvec_base.tv1[n] will now become an empty list, and timerY is now 
+"orphaned".
+8. timerY never fires
+
+This bug was difficult to catch because it will only happen if timerX 
+and timerY are both added to the same slot tv1[n].  The likelihood may 
+be low so the bug might be very difficult to reproduce.
+
+By invalidating the list_heads in tv[1..5] right after migration, we can 
+catch this bug at step 2.  A patch might look like:
+------------------------
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1585,6 +1585,14 @@ static void migrate_timer_list(struct tvec_base 
+*new_base, struct list_head *hea
+  		timer_set_base(timer, new_base);
+  		internal_add_timer(new_base, timer);
+  	}
++
++	/*
++	 * After existing timers are migrated, new timers should never be added
++	 * to this list until after the next init_timers_cpu().  Deleting
++	 * list_head here will not affect timer behavior but will help catch
++	 * anyone trying to add to this list when they shouldn't.
++	 */
++	list_del(head);
+  }
+
+  static void __cpuinit migrate_timers(int cpu)
+------------------------
+
+Is there anything I missed or failed to consider here?
+
+Thanks,
+Sherman
