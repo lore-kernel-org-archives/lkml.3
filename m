@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab3LFADf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:03:35 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:46023 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911Ab3LFADd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:03:33 -0500
+	id S1755860Ab3LFAGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:06:07 -0500
+Received: from mga03.intel.com ([143.182.124.21]:30695 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752756Ab3LFAGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 19:06:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,837,1378882800"; 
+   d="scan'208";a="325960012"
+Message-ID: <52A11604.8000702@linux.intel.com>
+Date: Thu, 05 Dec 2013 16:10:44 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-In-Reply-To: <1386171888-28190-6-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1386171888-28190-6-git-send-email-sebastian.hesselbarth@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 5 Dec 2013 16:02:53 -0800
-Message-ID: <CAGVrzcaY2WAhSRNHwR4+rm5h71Ayq3kHb-a269wRqQL+c_WSLQ@mail.gmail.com>
-Subject: Re: [PATCH RFCv2 5/6] net: phy: suspend unused PHYs on mdio_bus in late_initcall
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Mugunthan V N <mugunthanvnm@ti.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Rob Landley <rob@landley.net>
+CC: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mmarek@suse.cz, rostedt@goodmis.org
+Subject: Re: make oldnoconfig fix?
+References: <1386039493.1974.305@driftwood>
+In-Reply-To: <1386039493.1974.305@driftwood>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/4 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
-> Since phy_attach ensures PHYs are resumed, we can now suspend all
-> PHYs that have no attached netdev after initcalls.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> RFCv1->RFCv2:
-> - only check for phydev->attached_dev and let phy_suspend decide on
->   performing suspend or not (Suggested by Florian)
->
-> @Florian: You suggested to 'make sure that the MDIO bus suspend policy
-> was set to "auto"'. I wasn't able to find any clue how to check that,
-> so I ignored that for now.
+On 12/02/2013 06:58 PM, Rob Landley wrote:
+> On 11/11/2013 12:55:37 PM, David Cohen wrote:
+>> On 11/11/2013 10:13 AM, Yann E. MORIN wrote:
+>>> David, All,
+>>
+>> Hi Yann,
+>>
+>>>
+>>> On 2013-11-11 10:11 -0800, David Cohen spake thusly:
+>>>> Is there a plan to fix 'make oldnoconfig' option?
+>>>> I currently have need to it :)
+>>>> I've tracked a thread fixing 'make olddefconfig' where 'oldnoconfig'
+>>>> option is reported as a known bug, right?
+>>>
+>>> Sorry, I don't understand what your problem is.
+>>
+>> Maybe I assumed it was more 'known' then it actually is :)
+>>
+>>>
+>>> Care to explain in details what problem you have:
+>>>    - what you start with
+>>>    - what you do
+>>>    - what you get
+>>>    - what you expected
+>>
+>> The bug with 'oldnoconfig' is: 'make oldnoconfig' is just an alias to
+>> 'olddefconfig'. Any non-existent config is defined with its default
+>> value instead of 'N'.
+>>
+>> I work with embedded platforms. I need to maintain a set of defconfigs
+>> for different products (customers some times want tailored configs, so
+>> creating a generic one isn't an option always).
+> 
+> make allnoconfig KCONFIG_ALLCONFIG=oldconfigfile
 
-I was looking at the sysfs knob which controls the auto suspend
-policy, but I am not sure myself how to query that from the kernel, so
-let's just forget about it.
+I'll give it a try. Thanks!
 
->
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Mugunthan V N <mugunthanvnm@ti.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/phy/mdio_bus.c |   25 +++++++++++++++++++++++++
->  1 files changed, 25 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-> index 5617876..f533d17 100644
-> --- a/drivers/net/phy/mdio_bus.c
-> +++ b/drivers/net/phy/mdio_bus.c
-> @@ -320,6 +320,31 @@ static int mdio_bus_match(struct device *dev, struct device_driver *drv)
->                 (phydev->phy_id & phydrv->phy_id_mask));
->  }
->
-> +static int mdio_bus_suspend_unused(struct device *busdev, void *data)
-> +{
-> +       struct mii_bus *bus = to_mii_bus(busdev);
-> +       struct phy_device *phydev;
-> +       int i;
-> +
-> +       for (i = 0; i < PHY_MAX_ADDR; i++) {
-> +               if (!bus->phy_map[i])
-> +                       continue;
-> +
-> +               phydev = to_phy_device(&bus->phy_map[i]->dev);
-> +               if (!phydev->attached_dev)
-> +                       phy_suspend(phydev);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int mdio_bus_class_suspend_unused(void)
-> +{
-> +       return class_for_each_device(&mdio_bus_class, NULL, NULL,
-> +                                    mdio_bus_suspend_unused);
-> +}
-> +late_initcall_sync(mdio_bus_class_suspend_unused);
-> +
->  #ifdef CONFIG_PM
->
->  static bool mdio_bus_phy_may_suspend(struct phy_device *phydev)
-> --
-> 1.7.2.5
->
+> 
+> I use this trick in http://landley.net/aboriginal/FAQ.html#dev_miniconfig
+> 
+> And yes, I submitted it upstream a couple times last decade, with
+> documentation and everything:
 
+You could send it again.
+But maybe oldnoconfig would be a better name WRT current standard.
 
+Br, David
 
--- 
-Florian
+> 
+>   https://lwn.net/Articles/160497/
+>   https://lwn.net/Articles/161086/
+>   http://lkml.indiana.edu/hypermail/linux/kernel/0607.0/1805.html
+> 
+> Rob
+
