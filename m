@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab3LFUcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:32:01 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35206 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3LFUb7 (ORCPT
+	id S1758708Ab3LFUcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:32:23 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:39062 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758136Ab3LFUcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:31:59 -0500
-Message-ID: <52A2343A.2090008@wwwdotorg.org>
-Date: Fri, 06 Dec 2013 13:31:54 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 6 Dec 2013 15:32:20 -0500
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: kai.poggensee@avionic-design.de, Liam Girdwood <lgirdwood@gmail.com>,
-        thierry.reding@gmail.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dev@lynxeye.de,
-        sameo@linux.intel.com, broonie@kernel.org,
-        Stefan Agner <stefan@agner.ch>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] mfd: tps6586x: add version detection
-References: <cover.1386333697.git.stefan@agner.ch>	<7812fb79beac0a6a409090f43d129893f9f93b5b.1386333697.git.stefan@agner.ch>	<52A20E09.7090005@wwwdotorg.org> <CAF2Aj3i95j+ZG4gmpSS9Hq6AKXj6w7mB1psYQwT6oas3QfNBrA@mail.gmail.com>
-In-Reply-To: <CAF2Aj3i95j+ZG4gmpSS9Hq6AKXj6w7mB1psYQwT6oas3QfNBrA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <20131206.124500.1976272290413710707.davem@davemloft.net>
+References: <1386320930-11285-1-git-send-email-zwu.kernel@gmail.com>
+	<1386320930-11285-2-git-send-email-zwu.kernel@gmail.com>
+	<20131206.124500.1976272290413710707.davem@davemloft.net>
+Date: Sat, 7 Dec 2013 04:32:20 +0800
+Message-ID: <CAEH94LgGv79e7ACzb_zF97p2iEPYFwxuQSHpoYf5_s-YMZsn0A@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] tun: update file current position
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 01:24 PM, Lee Jones wrote:
-> 
-> On 6 Dec 2013 17:49, "Stephen Warren" <swarren@wwwdotorg.org
-> <mailto:swarren@wwwdotorg.org>> wrote:
+On Sat, Dec 7, 2013 at 1:45 AM, David Miller <davem@davemloft.net> wrote:
+> From: Zhi Yong Wu <zwu.kernel@gmail.com>
+> Date: Fri,  6 Dec 2013 17:08:50 +0800
+>
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 >>
->> On 12/06/2013 05:51 AM, Stefan Agner wrote:
->> > Use the VERSIONCRC to determine the exact device version. According to
->> > the datasheet this register can be used as device identifier. The
->> > identification is needed since some tps6586x regulators use a different
->> > voltage table.
->>
->> FWIW, this version looks good to me now.
-> 
-> If that's an Ack I can apply it.
+>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>
+> Also applied and queued up for -stable, thanks.
+>
+> I noticed in these two cases that that min_t() adjustment of 'ret'
+> seems strange.  I can't understand why it's needed.
+>
+> If, for example, tun_do_read() really did read more than 'len'
+> bytes:
+>
+> 1) That would write past the end of the buffer.
+>
+> 2) Writing a different value to the ->ki_pos would mean
+>    that ->ki_pos is now inaccurate.
+>
+> Unless someone can explain why the min_t() is needed, we should remove
+> it.
+Yes, from my side, it seems to be impossible that ret is bigger than
+let or total_len.
+So we also remove the branch "if (ret > total_len) {...}" in xxx_rcvmsg().
+If you hope to submit the patch for this, please let me know, thanks.
 
-Yes, it is. I thought you said you'd already applied it though, so I
-didn't write the ack, but if not:
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+-- 
+Regards,
+
+Zhi Yong Wu
