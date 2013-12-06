@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab3LFBUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 20:20:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:40894 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910Ab3LFBUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 20:20:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,837,1378882800"; 
-   d="scan'208";a="447715108"
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
-	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
-	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-	<20131206001454.GB21717@two.firstfloor.org>
-	<52A12421.2040208@zytor.com>
-Date: Thu, 05 Dec 2013 17:20:25 -0800
-In-Reply-To: <52A12421.2040208@zytor.com> (H. Peter Anvin's message of "Thu,
-	05 Dec 2013 17:10:57 -0800")
-Message-ID: <871u1qwzae.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752004Ab3LFBZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 20:25:49 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:49768 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab3LFBZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 20:25:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: bcm2835: Fix grammar in help message
+Date: Fri, 6 Dec 2013 02:25:04 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Stefan Weil <sw@weilnetz.de>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Jiri Kosina <trivial@kernel.org>, linux-rpi-kernel@lists.infradead.org
+References: <1386271060-2375-1-git-send-email-sw@weilnetz.de> <52A0D1E4.7070802@wwwdotorg.org>
+In-Reply-To: <52A0D1E4.7070802@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312060225.05221.arnd@arndb.de>
+X-Provags-ID: V02:K0:c+oQP26QgDEq711k3dldlZd7FgAZVtG3A4SkXsfXmxx
+ PsdxIj476wE3TELiFmWq2u6BjKkg1pNLfA7CWupvn7bsLhw47Q
+ i8ZPai2Rm6fyl0w42M7bJyxrGOQwvKZGqII2UuA1FZjlrqr9hJ
+ KlAqAAgbi7AfxrXVy6xygEJlA7aDwr1XhtPLcbrOxxSFaD1Lho
+ r0h18DvIMyskmHTyLODPZ5onZDzYfKZ6NlppVg4hSBUzMkZCvk
+ RACi9MuN4biPtYT+AnkcASqE/aRunnopKm1ECkMSTt6RlgPHwM
+ Aegtr61nImslwk0+f/7CrVyE4nhfcfjaGTqGdu9i9XNjZhke3f
+ j5mmZ2Gr8TE7gWib8xmE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
->
-> Not to mention that in that case we might as well -- since we need a
-> compiler anyway -- generate the machine code in user space; the JIT
-> solution really only is useful if it can provide something that we can't
-> do otherwise, e.g. enable it in secure boot environments.
+On Thursday 05 December 2013, Stephen Warren wrote:
+> On 12/05/2013 12:17 PM, Stefan Weil wrote:
+> > Replace "is use" by "is used" and remove a comma.
+> 
+> Well, typo not grammar. The comma is correct though, at least in
+> American English, which is what I tend to write these days (there's a
+> comma before the and in a list of items).
 
-I can see there may be some setups which don't have a compiler
-(e.g. I know some people don't use systemtap because of that)
-But this needs a custom gcc install too as far as I understand.
+Listen to the two German guys teaching you about your native language:
+while you can do this in both British and American English for a list
+(it's called the serial comma or the Oxford comma [1]), two nouns 
+separated by "and" are not a list, and this doesn't apply here.
 
--Andi
+	Arnd
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+[1] http://en.wikipedia.org/wiki/Serial_comma
