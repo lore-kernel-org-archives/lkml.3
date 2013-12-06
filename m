@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759962Ab3LFWnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:43:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60406 "EHLO
+	id S1161545Ab3LFWoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:44:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60375 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758819Ab3LFVwW (ORCPT
+	with ESMTP id S1758431Ab3LFVwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:22 -0500
+	Fri, 6 Dec 2013 16:52:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas HICHER <nhicher@avencall.com>,
-        Andreas Henriksson <andreas@fatal.se>,
+        Saran Neti <Saran.Neti@telus.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 07/83] net: Fix "ip rule delete table 256"
-Date: Fri,  6 Dec 2013 13:50:57 -0800
-Message-Id: <20131206214640.759617950@linuxfoundation.org>
+Subject: [PATCH 3.12 03/83] ipv6: fix headroom calculation in udp6_ufo_fragment
+Date: Fri,  6 Dec 2013 13:50:53 -0800
+Message-Id: <20131206214640.386606146@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -28,41 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas@fatal.se>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
+[ Upstream commit 0e033e04c2678dbbe74a46b23fffb7bb918c288e ]
 
-When trying to delete a table >= 256 using iproute2 the local table
-will be deleted.
-The table id is specified as a netlink attribute when it needs more then
-8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
-Preconditions to matching the table id in the rule delete code
-doesn't seem to take the "table id in netlink attribute" into condition
-so the frh_get_table helper function never gets to do its job when
-matching against current rule.
-Use the helper function twice instead of peaking at the table value directly.
+Commit 1e2bd517c108816220f262d7954b697af03b5f9c ("udp6: Fix udp
+fragmentation for tunnel traffic.") changed the calculation if
+there is enough space to include a fragment header in the skb from a
+skb->mac_header dervived one to skb_headroom. Because we already peeled
+off the skb to transport_header this is wrong. Change this back to check
+if we have enough room before the mac_header.
 
-Originally reported at: http://bugs.debian.org/724783
+This fixes a panic Saran Neti reported. He used the tbf scheduler which
+skb_gso_segments the skb. The offsets get negative and we panic in memcpy
+because the skb was erroneously not expanded at the head.
 
-Reported-by: Nicolas HICHER <nhicher@avencall.com>
-Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+Reported-by: Saran Neti <Saran.Neti@telus.com>
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/fib_rules.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/udp_offload.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -460,7 +460,8 @@ static int fib_nl_delrule(struct sk_buff
- 		if (frh->action && (frh->action != rule->action))
- 			continue;
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -88,7 +88,7 @@ static struct sk_buff *udp6_ufo_fragment
  
--		if (frh->table && (frh_get_table(frh, tb) != rule->table))
-+		if (frh_get_table(frh, tb) &&
-+		    (frh_get_table(frh, tb) != rule->table))
- 			continue;
- 
- 		if (tb[FRA_PRIORITY] &&
+ 		/* Check if there is enough headroom to insert fragment header. */
+ 		tnl_hlen = skb_tnl_header_len(skb);
+-		if (skb_headroom(skb) < (tnl_hlen + frag_hdr_sz)) {
++		if (skb->mac_header < (tnl_hlen + frag_hdr_sz)) {
+ 			if (gso_pskb_expand_head(skb, tnl_hlen + frag_hdr_sz))
+ 				goto out;
+ 		}
 
 
