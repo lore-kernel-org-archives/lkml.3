@@ -1,316 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1160999Ab3LFK3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 05:29:42 -0500
-Received: from smtp-69.nebula.fi ([83.145.220.69]:33308 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757198Ab3LFK3i (ORCPT
+	id S1757598Ab3LFKcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 05:32:04 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:54281 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab3LFKcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 05:29:38 -0500
-Date: Fri, 6 Dec 2013 12:28:29 +0200
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: linux-kernel@vger.kernel.org, linux@openrisc.net
-Cc: jonas@southpole.se
-Subject: Re: [PATCH] openrisc: tlb miss handler optimizations
-Message-ID: <20131206102828.GA1369@chokladfabriken.org>
-References: <1375343170-17848-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375343170-17848-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Dec 2013 05:32:00 -0500
+X-AuditID: cbfee61a-b7f796d000004313-5e-52a1a79e6636
+From: Kamil Debski <k.debski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: kyungmin.park@samsung.com, kishon@ti.com, t.figa@samsung.com,
+        s.nawrocki@samsung.com, m.szyprowski@samsung.com,
+        gautam.vivek@samsung.com, mat.krawczuk@gmail.com,
+        yulgon.kim@samsung.com, p.paneri@samsung.com,
+        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
+        matt.porter@linaro.org, k.debski@samsung.com
+Subject: [PATCH v4 6/9] phy: Add support for S5PV210 to the Exynos USB PHY
+ driver
+Date: Fri, 06 Dec 2013 11:31:37 +0100
+Message-id: <1386325897-27260-1-git-send-email-k.debski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd35yxcGGbzfwm2xZPcNVov5R86x
+	WvS/Wchq0XblILvF5YWXWC1+vL7AZnHhaQ+bxdmmN0CxXXPYLGac38dksWhZK7PF2iN32S3O
+	9t9ms5jYNI3d4vyWTiaLw2/aWS3Wz3jNYtFx9iC7g5DH5b5eJo+ds+6ye9y5tofNo2/LKkaP
+	4ze2M3l83iQXwBbFZZOSmpNZllqkb5fAlfHg5yPmglfuFX8/7WNsYJxt3cXIySEhYCLR3bSN
+	EcIWk7hwbz1bFyMXh5DAdEaJ39vusEM4HUwSiyY9Y+li5OBgE9CUWHXPA6RBRKBGYsqtK+wg
+	NrPAOSaJmwuZQWxhgWCJH087mUBsFgFVicWNbUwgrbwCLhKfnweAmBICChJzJtmAVHAKuEqs
+	nHiYDSQsBFSx5ormBEbeBYwMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCw/iZ1A7GlQ0W
+	hxgFOBiVeHg5Vi0IEmJNLCuuzD3EKMHBrCTC2zNvYZAQb0piZVVqUX58UWlOavEhRmkOFiVx
+	3gOt1oFCAumJJanZqakFqUUwWSYOTqkGRr/vp35PZ/+76PfHVbMLly3fese4R66as3ThBoUb
+	Jyt2HX/TwGOvmScT+KMq7VCMZcnm5uR7K0P+BKsLCd7g2tXBrr/ba0vdlMp/LAacqxS9Wll2
+	JstNuB4+zb7j2S+hqUmu8isFRAWqvcLnx30X5lWJ1OV4qzx1/fZg9R0PC8/8NZrIMP28pBJL
+	cUaioRZzUXEiABDUzhRfAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonas,
+From: Mateusz Krawczuk <mat.krawczuk@gmail.com>
 
-I realised that this haven't been picked up nor commented on (and that I missed
-CC you on it).
-Could you take a look at it?
+Add support for the Samsung's S5PV210 SoC to the Exynos USB PHY driver.
 
-Stefan
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+[k.debski@samsung.com: cleanup and commit description]
+[k.debski@samsung.com: make changes accordingly to the mailing list
+comments]
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ .../devicetree/bindings/phy/samsung-usbphy.txt     |    1 +
+ drivers/phy/Kconfig                                |    7 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-s5pv210-usb2.c                     |  206 ++++++++++++++++++++
+ drivers/phy/phy-samsung-usb2.c                     |    6 +
+ drivers/phy/phy-samsung-usb2.h                     |    1 +
+ 6 files changed, 222 insertions(+)
+ create mode 100644 drivers/phy/phy-s5pv210-usb2.c
 
-On Thu, Aug 01, 2013 at 10:46:10AM +0300, Stefan Kristiansson wrote:
-> By slightly reorganizing the code, the number of registers
-> used in the tlb miss handlers can be reduced by two,
-> thus removing the need to save them to memory.
-> 
-> Also, some dead and commented out code is removed.
-> 
-> No functional change.
-> 
-> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-> ---
->  arch/openrisc/kernel/head.S | 141 +++++++++++++++-----------------------------
->  1 file changed, 46 insertions(+), 95 deletions(-)
-> 
-> diff --git a/arch/openrisc/kernel/head.S b/arch/openrisc/kernel/head.S
-> index 1d3c9c2..eecc8df 100644
-> --- a/arch/openrisc/kernel/head.S
-> +++ b/arch/openrisc/kernel/head.S
-> @@ -976,8 +976,6 @@ ENTRY(dtlb_miss_handler)
->  	EXCEPTION_STORE_GPR2
->  	EXCEPTION_STORE_GPR3
->  	EXCEPTION_STORE_GPR4
-> -	EXCEPTION_STORE_GPR5
-> -	EXCEPTION_STORE_GPR6
->  	/*
->  	 * get EA of the miss
->  	 */
-> @@ -985,91 +983,70 @@ ENTRY(dtlb_miss_handler)
->  	/*
->  	 * pmd = (pmd_t *)(current_pgd + pgd_index(daddr));
->  	 */
-> -	GET_CURRENT_PGD(r3,r5)		// r3 is current_pgd, r5 is temp
-> +	GET_CURRENT_PGD(r3,r4)		// r3 is current_pgd, r4 is temp
->  	l.srli	r4,r2,0x18		// >> PAGE_SHIFT + (PAGE_SHIFT - 2)
->  	l.slli	r4,r4,0x2		// to get address << 2
-> -	l.add	r5,r4,r3		// r4 is pgd_index(daddr)
-> +	l.add	r3,r4,r3		// r4 is pgd_index(daddr)
->  	/*
->  	 * if (pmd_none(*pmd))
->  	 *   goto pmd_none:
->  	 */
-> -	tophys	(r4,r5)
-> +	tophys	(r4,r3)
->  	l.lwz	r3,0x0(r4)		// get *pmd value
->  	l.sfne	r3,r0
->  	l.bnf	d_pmd_none
-> -	 l.andi	r3,r3,~PAGE_MASK //0x1fff		// ~PAGE_MASK
-> -	/*
-> -	 * if (pmd_bad(*pmd))
-> -	 *   pmd_clear(pmd)
-> -	 *   goto pmd_bad:
-> -	 */
-> -//	l.sfeq	r3,r0			// check *pmd value
-> -//	l.bf	d_pmd_good
-> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
-> -//	l.j	d_pmd_bad
-> -//	l.sw	0x0(r4),r0		// clear pmd
-> +	 l.addi	r3,r0,0xffffe000	// PAGE_MASK
-> +
->  d_pmd_good:
->  	/*
->  	 * pte = *pte_offset(pmd, daddr);
->  	 */
->  	l.lwz	r4,0x0(r4)		// get **pmd value
->  	l.and	r4,r4,r3		// & PAGE_MASK
-> -	l.srli	r5,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
-> -	l.andi	r3,r5,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
-> +	l.srli	r2,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
-> +	l.andi	r3,r2,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
->  	l.slli	r3,r3,0x2		// to get address << 2
->  	l.add	r3,r3,r4
-> -	l.lwz	r2,0x0(r3)		// this is pte at last
-> +	l.lwz	r3,0x0(r3)		// this is pte at last
->  	/*
->  	 * if (!pte_present(pte))
->  	 */
-> -	l.andi	r4,r2,0x1
-> +	l.andi	r4,r3,0x1
->  	l.sfne	r4,r0			// is pte present
->  	l.bnf	d_pte_not_present
-> -	l.addi	r3,r0,0xffffe3fa	// PAGE_MASK | DTLB_UP_CONVERT_MASK
-> +	l.addi	r4,r0,0xffffe3fa	// PAGE_MASK | DTLB_UP_CONVERT_MASK
->  	/*
->  	 * fill DTLB TR register
->  	 */
-> -	l.and	r4,r2,r3		// apply the mask
-> +	l.and	r4,r3,r4		// apply the mask
->  	// Determine number of DMMU sets
-> -	l.mfspr r6, r0, SPR_DMMUCFGR
-> -	l.andi	r6, r6, SPR_DMMUCFGR_NTS
-> -	l.srli	r6, r6, SPR_DMMUCFGR_NTS_OFF
-> +	l.mfspr r2, r0, SPR_DMMUCFGR
-> +	l.andi	r2, r2, SPR_DMMUCFGR_NTS
-> +	l.srli	r2, r2, SPR_DMMUCFGR_NTS_OFF
->  	l.ori	r3, r0, 0x1
-> -	l.sll	r3, r3, r6 	// r3 = number DMMU sets DMMUCFGR
-> -	l.addi	r6, r3, -1  	// r6 = nsets mask
-> -	l.and	r5, r5, r6	// calc offset:	 & (NUM_TLB_ENTRIES-1)
-> +	l.sll	r3, r3, r2 	// r3 = number DMMU sets DMMUCFGR
-> +	l.addi	r2, r3, -1  	// r2 = nsets mask
-> +	l.mfspr	r3, r0, SPR_EEAR_BASE
-> +	l.srli	r3, r3, 0xd	// >> PAGE_SHIFT
-> +	l.and	r2, r3, r2	// calc offset:	 & (NUM_TLB_ENTRIES-1)
->  	                                                   //NUM_TLB_ENTRIES
-> -	l.mtspr	r5,r4,SPR_DTLBTR_BASE(0)
-> +	l.mtspr	r2,r4,SPR_DTLBTR_BASE(0)
->  	/*
->  	 * fill DTLB MR register
->  	 */
-> -	l.mfspr	r2,r0,SPR_EEAR_BASE
-> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
-> -	l.and	r4,r2,r3		// apply PAGE_MASK to EA (__PHX__ do we really need this?)
-> -	l.ori	r4,r4,0x1		// set hardware valid bit: DTBL_MR entry
-> -	l.mtspr	r5,r4,SPR_DTLBMR_BASE(0)
-> +	l.slli	r3, r3, 0xd		/* << PAGE_SHIFT => EA & PAGE_MASK */
-> +	l.ori	r4,r3,0x1		// set hardware valid bit: DTBL_MR entry
-> +	l.mtspr	r2,r4,SPR_DTLBMR_BASE(0)
->  
->  	EXCEPTION_LOAD_GPR2
->  	EXCEPTION_LOAD_GPR3
->  	EXCEPTION_LOAD_GPR4
-> -	EXCEPTION_LOAD_GPR5
-> -	EXCEPTION_LOAD_GPR6
-> -	l.rfe
-> -d_pmd_bad:
-> -	l.nop	1
-> -	EXCEPTION_LOAD_GPR2
-> -	EXCEPTION_LOAD_GPR3
-> -	EXCEPTION_LOAD_GPR4
-> -	EXCEPTION_LOAD_GPR5
-> -	EXCEPTION_LOAD_GPR6
->  	l.rfe
->  d_pmd_none:
->  d_pte_not_present:
->  	EXCEPTION_LOAD_GPR2
->  	EXCEPTION_LOAD_GPR3
->  	EXCEPTION_LOAD_GPR4
-> -	EXCEPTION_LOAD_GPR5
-> -	EXCEPTION_LOAD_GPR6
->  	EXCEPTION_HANDLE(_dtlb_miss_page_fault_handler)
->  
->  /* ==============================================[ ITLB miss handler ]=== */
-> @@ -1077,8 +1054,6 @@ ENTRY(itlb_miss_handler)
->  	EXCEPTION_STORE_GPR2
->  	EXCEPTION_STORE_GPR3
->  	EXCEPTION_STORE_GPR4
-> -	EXCEPTION_STORE_GPR5
-> -	EXCEPTION_STORE_GPR6
->  	/*
->  	 * get EA of the miss
->  	 */
-> @@ -1088,30 +1063,19 @@ ENTRY(itlb_miss_handler)
->  	 * pmd = (pmd_t *)(current_pgd + pgd_index(daddr));
->  	 *
->  	 */
-> -	GET_CURRENT_PGD(r3,r5)		// r3 is current_pgd, r5 is temp
-> +	GET_CURRENT_PGD(r3,r4)		// r3 is current_pgd, r5 is temp
->  	l.srli	r4,r2,0x18		// >> PAGE_SHIFT + (PAGE_SHIFT - 2)
->  	l.slli	r4,r4,0x2		// to get address << 2
-> -	l.add	r5,r4,r3		// r4 is pgd_index(daddr)
-> +	l.add	r3,r4,r3		// r4 is pgd_index(daddr)
->  	/*
->  	 * if (pmd_none(*pmd))
->  	 *   goto pmd_none:
->  	 */
-> -	tophys	(r4,r5)
-> +	tophys	(r4,r3)
->  	l.lwz	r3,0x0(r4)		// get *pmd value
->  	l.sfne	r3,r0
->  	l.bnf	i_pmd_none
-> -	l.andi	r3,r3,0x1fff		// ~PAGE_MASK
-> -	/*
-> -	 * if (pmd_bad(*pmd))
-> -	 *   pmd_clear(pmd)
-> -	 *   goto pmd_bad:
-> -	 */
-> -
-> -//	l.sfeq	r3,r0			// check *pmd value
-> -//	l.bf	i_pmd_good
-> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
-> -//	l.j	i_pmd_bad
-> -//	l.sw	0x0(r4),r0		// clear pmd
-> +	 l.addi	r3,r0,0xffffe000	// PAGE_MASK
->  
->  i_pmd_good:
->  	/*
-> @@ -1120,35 +1084,36 @@ i_pmd_good:
->  	 */
->  	l.lwz	r4,0x0(r4)		// get **pmd value
->  	l.and	r4,r4,r3		// & PAGE_MASK
-> -	l.srli	r5,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
-> -	l.andi	r3,r5,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
-> +	l.srli	r2,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
-> +	l.andi	r3,r2,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
->  	l.slli	r3,r3,0x2		// to get address << 2
->  	l.add	r3,r3,r4
-> -	l.lwz	r2,0x0(r3)		// this is pte at last
-> +	l.lwz	r3,0x0(r3)		// this is pte at last
->  	/*
->  	 * if (!pte_present(pte))
->  	 *
->  	 */
-> -	l.andi	r4,r2,0x1
-> +	l.andi	r4,r3,0x1
->  	l.sfne	r4,r0			// is pte present
->  	l.bnf	i_pte_not_present
-> -	l.addi	r3,r0,0xffffe03a	// PAGE_MASK | ITLB_UP_CONVERT_MASK
-> +	 l.addi	r4,r0,0xffffe03a	// PAGE_MASK | ITLB_UP_CONVERT_MASK
->  	/*
->  	 * fill ITLB TR register
->  	 */
-> -	l.and	r4,r2,r3		// apply the mask
-> -	l.andi	r3,r2,0x7c0		// _PAGE_EXEC | _PAGE_SRE | _PAGE_SWE |  _PAGE_URE | _PAGE_UWE
-> -//	l.andi	r3,r2,0x400		// _PAGE_EXEC
-> +	l.and	r4,r3,r4		// apply the mask
-> +	l.andi	r3,r3,0x7c0		// _PAGE_EXEC | _PAGE_SRE | _PAGE_SWE |  _PAGE_URE | _PAGE_UWE
->  	l.sfeq	r3,r0
->  	l.bf	itlb_tr_fill //_workaround
->  	// Determine number of IMMU sets
-> -	l.mfspr r6, r0, SPR_IMMUCFGR
-> -	l.andi	r6, r6, SPR_IMMUCFGR_NTS
-> -	l.srli	r6, r6, SPR_IMMUCFGR_NTS_OFF
-> +	l.mfspr r2, r0, SPR_IMMUCFGR
-> +	l.andi	r2, r2, SPR_IMMUCFGR_NTS
-> +	l.srli	r2, r2, SPR_IMMUCFGR_NTS_OFF
->  	l.ori	r3, r0, 0x1
-> -	l.sll	r3, r3, r6 	// r3 = number IMMU sets IMMUCFGR
-> -	l.addi	r6, r3, -1  	// r6 = nsets mask
-> -	l.and	r5, r5, r6	// calc offset:	 & (NUM_TLB_ENTRIES-1)
-> +	l.sll	r3, r3, r2 	// r3 = number IMMU sets IMMUCFGR
-> +	l.addi	r2, r3, -1  	// r2 = nsets mask
-> +	l.mfspr	r3, r0, SPR_EEAR_BASE
-> +	l.srli	r3, r3, 0xd	// >> PAGE_SHIFT
-> +	l.and	r2, r3, r2	// calc offset:	 & (NUM_TLB_ENTRIES-1)
->  
->  /*
->   * __PHX__ :: fixme
-> @@ -1160,38 +1125,24 @@ i_pmd_good:
->  itlb_tr_fill_workaround:
->  	l.ori	r4,r4,0xc0		// | (SPR_ITLBTR_UXE | ITLBTR_SXE)
->  itlb_tr_fill:
-> -	l.mtspr	r5,r4,SPR_ITLBTR_BASE(0)
-> +	l.mtspr	r2,r4,SPR_ITLBTR_BASE(0)
->  	/*
->  	 * fill DTLB MR register
->  	 */
-> -	l.mfspr	r2,r0,SPR_EEAR_BASE
-> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
-> -	l.and	r4,r2,r3		// apply PAGE_MASK to EA (__PHX__ do we really need this?)
-> -	l.ori	r4,r4,0x1		// set hardware valid bit: DTBL_MR entry
-> -	l.mtspr	r5,r4,SPR_ITLBMR_BASE(0)
-> +	l.slli	r3, r3, 0xd		/* << PAGE_SHIFT => EA & PAGE_MASK */
-> +	l.ori	r4,r3,0x1		// set hardware valid bit: ITBL_MR entry
-> +	l.mtspr	r2,r4,SPR_ITLBMR_BASE(0)
->  
->  	EXCEPTION_LOAD_GPR2
->  	EXCEPTION_LOAD_GPR3
->  	EXCEPTION_LOAD_GPR4
-> -	EXCEPTION_LOAD_GPR5
-> -	EXCEPTION_LOAD_GPR6
->  	l.rfe
->  
-> -i_pmd_bad:
-> -	l.nop	1
-> -	EXCEPTION_LOAD_GPR2
-> -	EXCEPTION_LOAD_GPR3
-> -	EXCEPTION_LOAD_GPR4
-> -	EXCEPTION_LOAD_GPR5
-> -	EXCEPTION_LOAD_GPR6
-> -	l.rfe
->  i_pmd_none:
->  i_pte_not_present:
->  	EXCEPTION_LOAD_GPR2
->  	EXCEPTION_LOAD_GPR3
->  	EXCEPTION_LOAD_GPR4
-> -	EXCEPTION_LOAD_GPR5
-> -	EXCEPTION_LOAD_GPR6
->  	EXCEPTION_HANDLE(_itlb_miss_page_fault_handler)
->  
->  /* ==============================================[ boot tlb handlers ]=== */
-> -- 
-> 1.8.1.2
-> 
+diff --git a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+index cadbf70..77a8e9c 100644
+--- a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
++++ b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
+@@ -3,6 +3,7 @@ Samsung S5P/EXYNOS SoC series USB PHY
+ 
+ Required properties:
+ - compatible : should be one of the listed compatibles:
++	- "samsung,s5pv210-usb2-phy"
+ 	- "samsung,exynos4210-usb2-phy"
+ 	- "samsung,exynos4212-usb2-phy"
+ - reg : a list of registers used by phy driver
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index b29018f..2e433cd 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -58,6 +58,13 @@ config PHY_SAMSUNG_USB2
+ 	  This driver provides common interface to interact, for Samsung
+ 	  USB 2.0 PHY driver.
+ 
++config PHY_S5PV210_USB2
++	bool "Support for S5PV210"
++	depends on PHY_SAMSUNG_USB2
++	depends on ARCH_S5PV210
++	help
++	  Enable USB PHY support for S5PV210
++
+ config PHY_EXYNOS4210_USB2
+ 	bool "Support for Exynos 4210"
+ 	depends on PHY_SAMSUNG_USB2
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 9f4befd..fefc6c2 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -8,5 +8,6 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
+ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+ obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
+ obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
++obj-$(CONFIG_PHY_S5PV210_USB2)		+= phy-s5pv210-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS4212_USB2)	+= phy-exynos4212-usb2.o
+diff --git a/drivers/phy/phy-s5pv210-usb2.c b/drivers/phy/phy-s5pv210-usb2.c
+new file mode 100644
+index 0000000..528a114
+--- /dev/null
++++ b/drivers/phy/phy-s5pv210-usb2.c
+@@ -0,0 +1,206 @@
++/*
++ * Samsung SoC USB 1.1/2.0 PHY driver - S5PV210 support
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Authors: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/phy/phy.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include "phy-samsung-usb2.h"
++
++/* Exynos USB PHY registers */
++
++/* PHY power control */
++#define S5PV210_UPHYPWR			0x0
++
++#define S5PV210_UPHYPWR_PHY0_SUSPEND	(1 << 0)
++#define S5PV210_UPHYPWR_PHY0_PWR		(1 << 3)
++#define S5PV210_UPHYPWR_PHY0_OTG_PWR	(1 << 4)
++#define S5PV210_UPHYPWR_PHY0	( \
++	S5PV210_UPHYPWR_PHY0_SUSPEND | \
++	S5PV210_UPHYPWR_PHY0_PWR | \
++	S5PV210_UPHYPWR_PHY0_OTG_PWR)
++
++#define S5PV210_UPHYPWR_PHY1_SUSPEND	(1 << 6)
++#define S5PV210_UPHYPWR_PHY1_PWR		(1 << 7)
++#define S5PV210_UPHYPWR_PHY1 ( \
++	S5PV210_UPHYPWR_PHY1_SUSPEND | \
++	S5PV210_UPHYPWR_PHY1_PWR)
++
++/* PHY clock control */
++#define S5PV210_UPHYCLK			0x4
++
++#define S5PV210_UPHYCLK_PHYFSEL_MASK	(0x3 << 0)
++#define S5PV210_UPHYCLK_PHYFSEL_48MHZ	(0x0 << 0)
++#define S5PV210_UPHYCLK_PHYFSEL_24MHZ	(0x3 << 0)
++#define S5PV210_UPHYCLK_PHYFSEL_12MHZ	(0x2 << 0)
++
++#define S5PV210_UPHYCLK_PHY0_ID_PULLUP	(0x1 << 2)
++#define S5PV210_UPHYCLK_PHY0_COMMON_ON	(0x1 << 4)
++#define S5PV210_UPHYCLK_PHY1_COMMON_ON	(0x1 << 7)
++
++/* PHY reset control */
++#define S5PV210_UPHYRST			0x8
++
++#define S5PV210_URSTCON_PHY0		(1 << 0)
++#define S5PV210_URSTCON_OTG_HLINK		(1 << 1)
++#define S5PV210_URSTCON_OTG_PHYLINK		(1 << 2)
++#define S5PV210_URSTCON_PHY1_ALL		(1 << 3)
++#define S5PV210_URSTCON_HOST_LINK_ALL	(1 << 4)
++
++/* Isolation, configured in the power management unit */
++#define S5PV210_USB_ISOL_DEVICE_OFFSET	0x704
++#define S5PV210_USB_ISOL_DEVICE		(1 << 0)
++#define S5PV210_USB_ISOL_HOST_OFFSET	0x708
++#define S5PV210_USB_ISOL_HOST		(1 << 1)
++
++
++enum s5pv210_phy_id {
++	S5PV210_DEVICE,
++	S5PV210_HOST,
++	S5PV210_NUM_PHYS,
++};
++
++/*
++ * s5pv210_rate_to_clk() converts the supplied clock rate to the value that
++ * can be written to the phy register.
++ */
++static int s5pv210_rate_to_clk(unsigned long rate, u32 *reg)
++{
++	pr_info("%lu\n", rate);
++	switch (rate) {
++	case 12 * MHZ:
++		*reg = S5PV210_UPHYCLK_PHYFSEL_12MHZ;
++		break;
++	case 24 * MHZ:
++		*reg = S5PV210_UPHYCLK_PHYFSEL_24MHZ;
++		break;
++	case 48 * MHZ:
++		*reg = S5PV210_UPHYCLK_PHYFSEL_48MHZ;
++		break;
++	default:
++		return -EINVAL;
++	}
++}
++
++static void s5pv210_isol(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 mask;
++	u32 tmp;
++
++	if (!drv->reg_isol)
++		return;
++
++	switch (inst->cfg->id) {
++	case S5PV210_DEVICE:
++		mask = S5PV210_USB_ISOL_DEVICE;
++		break;
++	case S5PV210_HOST:
++		mask = S5PV210_USB_ISOL_HOST;
++		break;
++	default:
++		return;
++	};
++
++	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
++}
++
++static void s5pv210_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 rstbits = 0;
++	u32 phypwr = 0;
++	u32 rst;
++	u32 pwr;
++
++	switch (inst->cfg->id) {
++	case S5PV210_DEVICE:
++		phypwr =	S5PV210_UPHYPWR_PHY0;
++		rstbits =	S5PV210_URSTCON_PHY0;
++		break;
++	case S5PV210_HOST:
++		phypwr =	S5PV210_UPHYPWR_PHY1;
++		rstbits =	S5PV210_URSTCON_PHY1_ALL |
++				S5PV210_URSTCON_HOST_LINK_ALL;
++		break;
++	};
++
++	if (on) {
++		writel(inst->clk, drv->reg_phy + S5PV210_UPHYCLK);
++
++		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
++		pwr &= ~phypwr;
++		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
++
++		rst = readl(drv->reg_phy + S5PV210_UPHYRST);
++		rst |= rstbits;
++		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
++		udelay(10);
++		rst &= ~rstbits;
++		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
++	} else {
++		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
++		pwr |= phypwr;
++		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
++	}
++}
++
++static int s5pv210_power_on(struct samsung_usb2_phy_instance *inst)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++
++	s5pv210_isol(inst, 0);
++	s5pv210_phy_pwr(inst, 1);
++
++	return 0;
++}
++
++static int s5pv210_power_off(struct samsung_usb2_phy_instance *inst)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++
++	s5pv210_phy_pwr(inst, 0);
++	s5pv210_isol(inst, 1);
++
++	return 0;
++}
++
++
++static const struct samsung_usb2_common_phy s5pv210_phys[] = {
++	{
++		.label		= "device",
++		.id		= S5PV210_DEVICE,
++		.rate_to_clk	= s5pv210_rate_to_clk,
++		.power_on	= s5pv210_power_on,
++		.power_off	= s5pv210_power_off,
++	},
++	{
++		.label		= "host",
++		.id		= S5PV210_HOST,
++		.rate_to_clk	= s5pv210_rate_to_clk,
++		.power_on	= s5pv210_power_on,
++		.power_off	= s5pv210_power_off,
++	},
++	{},
++};
++
++const struct samsung_usb2_phy_config s5pv210_usb2_phy_config = {
++	.cpu		= TYPE_S5PV210,
++	.num_phys	= S5PV210_NUM_PHYS,
++	.phys		= s5pv210_phys,
++};
++
+diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+index 804ec77..ef93fd3 100644
+--- a/drivers/phy/phy-samsung-usb2.c
++++ b/drivers/phy/phy-samsung-usb2.c
+@@ -98,6 +98,12 @@ static struct phy *samsung_usb2_phy_xlate(struct device *dev,
+ }
+ 
+ static const struct of_device_id samsung_usb2_phy_of_match[] = {
++#ifdef CONFIG_PHY_S5PV210_USB2
++	{
++		.compatible = "samsung,s5pv210-usb2-phy",
++		.data = &s5pv210_usb2_phy_config,
++	},
++#endif
+ #ifdef CONFIG_PHY_EXYNOS4210_USB2
+ 	{
+ 		.compatible = "samsung,exynos4210-usb2-phy",
+diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
+index cd12477..0f51dbb 100644
+--- a/drivers/phy/phy-samsung-usb2.h
++++ b/drivers/phy/phy-samsung-usb2.h
+@@ -66,6 +66,7 @@ struct samsung_usb2_phy_config {
+ 	char has_mode_switch;
+ };
+ 
++extern const struct samsung_usb2_phy_config s5pv210_usb2_phy_config;
+ extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
+ extern const struct samsung_usb2_phy_config exynos4212_usb2_phy_config;
+ #endif
+-- 
+1.7.9.5
+
