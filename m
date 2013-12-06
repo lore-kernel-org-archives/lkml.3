@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759687Ab3LFVzN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:55:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32966 "EHLO
+	id S1759717Ab3LFVzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:55:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759620Ab3LFVy0 (ORCPT
+	with ESMTP id S1759618Ab3LFVyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:26 -0500
+	Fri, 6 Dec 2013 16:54:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Shawn Landden <shawn@churchofgit.com>
-Subject: [PATCH 3.4 21/32] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
-Date: Fri,  6 Dec 2013 13:52:31 -0800
-Message-Id: <20131206214958.767924895@linuxfoundation.org>
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
+        Jens Axboe <axboe@kernel.dk>, Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.4 30/32] elevator: acquire q->sysfs_lock in elevator_change()
+Date: Fri,  6 Dec 2013 13:52:40 -0800
+Message-Id: <20131206214959.588722356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -29,70 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Landden <shawn@churchofgit.com>
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 
-[ Upstream commit d3f7d56a7a4671d395e8af87071068a195257bf6 ]
+commit 7c8a3679e3d8e9d92d58f282161760a0e247df97 upstream.
 
-Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag MSG_SENDPAGE_NOTLAST, similar to
-MSG_MORE.
+Add locking of q->sysfs_lock into elevator_change() (an exported function)
+to ensure it is held to protect q->elevator from elevator_init(), even if
+elevator_change() is called from non-sysfs paths.
+sysfs path (elv_iosched_store) uses __elevator_change(), non-locking
+version, as the lock is already taken by elv_iosched_store().
 
-algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
-and need to see the new flag as identical to MSG_MORE.
-
-This fixes sendfile() on AF_ALG.
-
-v3: also fix udp
-
-Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Original-patch: Richard Weinberger <richard@nod.at>
-Signed-off-by: Shawn Landden <shawn@churchofgit.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- crypto/algif_hash.c     |    3 +++
- crypto/algif_skcipher.c |    3 +++
- net/ipv4/udp.c          |    3 +++
- 3 files changed, 9 insertions(+)
 
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -114,6 +114,9 @@ static ssize_t hash_sendpage(struct sock
- 	struct hash_ctx *ctx = ask->private;
- 	int err;
+---
+ block/elevator.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -961,7 +961,7 @@ fail_register:
+ /*
+  * Switch this queue to the given IO scheduler.
+  */
+-int elevator_change(struct request_queue *q, const char *name)
++static int __elevator_change(struct request_queue *q, const char *name)
+ {
+ 	char elevator_name[ELV_NAME_MAX];
+ 	struct elevator_type *e;
+@@ -983,6 +983,18 @@ int elevator_change(struct request_queue
  
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
+ 	return elevator_switch(q, e);
+ }
 +
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -378,6 +378,9 @@ static ssize_t skcipher_sendpage(struct
- 	struct skcipher_sg_list *sgl;
- 	int err = -EINVAL;
++int elevator_change(struct request_queue *q, const char *name)
++{
++	int ret;
++
++	/* Protect q->elevator from elevator_init() */
++	mutex_lock(&q->sysfs_lock);
++	ret = __elevator_change(q, name);
++	mutex_unlock(&q->sysfs_lock);
++
++	return ret;
++}
+ EXPORT_SYMBOL(elevator_change);
  
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1039,6 +1039,9 @@ int udp_sendpage(struct sock *sk, struct
- 	struct udp_sock *up = udp_sk(sk);
- 	int ret;
+ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
+@@ -993,7 +1005,7 @@ ssize_t elv_iosched_store(struct request
+ 	if (!q->elevator)
+ 		return count;
  
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	if (!up->pending) {
- 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
+-	ret = elevator_change(q, name);
++	ret = __elevator_change(q, name);
+ 	if (!ret)
+ 		return count;
  
 
 
