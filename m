@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3LFJZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 04:25:34 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45429 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757141Ab3LFJZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 04:25:30 -0500
-Date: Fri, 6 Dec 2013 10:25:27 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'Doug Thompson'" <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCH 07/39] edac: remove DEFINE_PCI_DEVICE_TABLE macro
-Message-ID: <20131206092527.GB6181@pd.tnic>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
- <001c01ceefb3$5724d860$056e8920$%han@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <001c01ceefb3$5724d860$056e8920$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757195Ab3LFJ1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:27:17 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48446 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab3LFJ1N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 04:27:13 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH] mm/hwpoison: add '#' to hwpoison_inject
+Date: Fri,  6 Dec 2013 17:26:53 +0800
+Message-Id: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120609-5564-0000-0000-00000AFD2801
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 08:07:57AM +0900, Jingoo Han wrote:
-> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> is not preferred.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Add '#' to hwpoison_inject just as done in madvise_hwpoison.
 
-Applied, thanks.
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/hwpoison-inject.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
+index 4c84678..146cead 100644
+--- a/mm/hwpoison-inject.c
++++ b/mm/hwpoison-inject.c
+@@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
+ 		return 0;
+ 
+ inject:
+-	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
++	pr_info(KERN_INFO "Injecting memory failure at pfn %#lx\n", pfn);
+ 	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
+ }
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.7.6
 
-Sent from a fat crate under my desk. Formatting is fine.
---
