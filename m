@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667Ab3LFOMy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:12:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43743 "EHLO
+	id S1758688Ab3LFONY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:13:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43738 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161264Ab3LFNAe (ORCPT
+	with ESMTP id S1161249Ab3LFNAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:34 -0500
+	Fri, 6 Dec 2013 08:00:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/272] gpio: rcar: NULL dereference on error in probe()
-Date: Fri,  6 Dec 2013 12:55:37 +0000
-Message-Id: <1386334761-25517-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 047/272] gpio: msm: make msm_gpio.summary_irq signed for error handling
+Date: Fri,  6 Dec 2013 12:55:36 +0000
+Message-Id: <1386334761-25517-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -30,34 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 0c8aab8e65e450f2bfea494c1b6a86ded653f88c upstream.
+commit bfea603bc54c0a736d45bc60b188a8cdae9aaaa3 upstream.
 
-It's not obvious from the label name but "err1" tries to release
-"p->irq_domain" which leads to a NULL dereference.
+There is a bug in msm_gpio_probe() where we do:
 
-Fixes: 119f5e448d32 ('gpio: Renesas R-Car GPIO driver V3')
+	msm_gpio.summary_irq = platform_get_irq(pdev, 0);
+	if (msm_gpio.summary_irq < 0) {
+
+The problem is that "msm_gpio.summary_irq" is unsigned so the error
+handling doesn't work.  I've fixed it by making it signed.
+
+Fixes: 43f68444bce7 ('gpio: msm: Add device tree and irqdomain support for gpio-msm-v2')
 
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Magnus Damm <damm@opensource.se>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpio/gpio-rcar.c | 2 +-
+ drivers/gpio/gpio-msm-v2.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-rcar.c b/drivers/gpio/gpio-rcar.c
-index e8198dd..e73f437 100644
---- a/drivers/gpio/gpio-rcar.c
-+++ b/drivers/gpio/gpio-rcar.c
-@@ -381,7 +381,7 @@ static int gpio_rcar_probe(struct platform_device *pdev)
- 	if (!p->irq_domain) {
- 		ret = -ENXIO;
- 		dev_err(&pdev->dev, "cannot initialize irq domain\n");
--		goto err1;
-+		goto err0;
- 	}
+diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
+index c2fa770..6516499 100644
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -102,7 +102,7 @@ struct msm_gpio_dev {
+ 	DECLARE_BITMAP(wake_irqs, MAX_NR_GPIO);
+ 	DECLARE_BITMAP(dual_edge_irqs, MAX_NR_GPIO);
+ 	struct irq_domain *domain;
+-	unsigned int summary_irq;
++	int summary_irq;
+ 	void __iomem *msm_tlmm_base;
+ };
  
- 	if (devm_request_irq(&pdev->dev, irq->start,
 -- 
 1.8.3.2
 
