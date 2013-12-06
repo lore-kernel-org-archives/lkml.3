@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759281Ab3LFXRE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:17:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48660 "EHLO
+	id S1759350Ab3LFXRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:17:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48673 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422840Ab3LFXQ7 (ORCPT
+	with ESMTP id S1758762Ab3LFXRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:16:59 -0500
+	Fri, 6 Dec 2013 18:17:22 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>, Pax Team <pageexec@freemail.hu>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Manfred Spraul <manfred@colorfullife.com>,
+Cc: Kees Cook <keescook@chromium.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Doug Ledford <dledford@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        James Morris <james.l.morris@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 114/152] ipc, msg: fix message length check for negative values
-Date: Fri,  6 Dec 2013 15:10:38 -0800
-Message-Id: <1386371476-2477-115-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 107/152] coredump: remove redundant defines for dumpable states
+Date: Fri,  6 Dec 2013 15:10:31 -0800
+Message-Id: <1386371476-2477-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -32,177 +35,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
+commit e579d2c259be42b6f29458327e5153b22414b031 upstream.
 
-On 64 bit systems the test for negative message sizes is bogus as the
-size, which may be positive when evaluated as a long, will get truncated
-to an int when passed to load_msg().  So a long might very well contain a
-positive value but when truncated to an int it would become negative.
+The existing SUID_DUMP_* defines duplicate the newer SUID_DUMPABLE_*
+defines introduced in 54b501992dd2 ("coredump: warn about unsafe
+suid_dumpable / core_pattern combo").  Remove the new ones, and use the
+prior values instead.
 
-That in combination with a small negative value of msg_ctlmax (which will
-be promoted to an unsigned type for the comparison against msgsz, making
-it a big positive value and therefore make it pass the check) will lead to
-two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
-small buffer as the addition of alen is effectively a subtraction.  2/ The
-copy_from_user() call in load_msg() will first overflow the buffer with
-userland data and then, when the userland access generates an access
-violation, the fixup handler copy_user_handle_tail() will try to fill the
-remainder with zeros -- roughly 4GB.  That almost instantly results in a
-system crash or reset.
-
-  ,-[ Reproducer (needs to be run as root) ]--
-  | #include <sys/stat.h>
-  | #include <sys/msg.h>
-  | #include <unistd.h>
-  | #include <fcntl.h>
-  |
-  | int main(void) {
-  |     long msg = 1;
-  |     int fd;
-  |
-  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
-  |     write(fd, "-1", 2);
-  |     close(fd);
-  |
-  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
-  |
-  |     return 0;
-  | }
-  '---
-
-Fix the issue by preventing msgsz from getting truncated by consistently
-using size_t for the message length.  This way the size checks in
-do_msgsnd() could still be passed with a negative value for msg_ctlmax but
-we would fail on the buffer allocation in that case and error out.
-
-Also change the type of m_ts from int to size_t to avoid similar nastiness
-in other code paths -- it is used in similar constructs, i.e.  signed vs.
-unsigned checks.  It should never become negative under normal
-circumstances, though.
-
-Setting msg_ctlmax to a negative value is an odd configuration and should
-be prevented.  As that might break existing userland, it will be handled
-in a separate commit so it could easily be reverted and reworked without
-reintroducing the above described bug.
-
-Hardening mechanisms for user copy operations would have catched that bug
-early -- e.g.  checking slab object sizes on user copy operations as the
-usercopy feature of the PaX patch does.  Or, for that matter, detect the
-long vs.  int sign change due to truncation, as the size overflow plugin
-of the very same patch does.
-
-[akpm@linux-foundation.org: fix i386 min() warnings]
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Pax Team <pageexec@freemail.hu>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Doug Ledford <dledford@redhat.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: 3.8 stable prereq for
+  d049f74 exec/ptrace: fix get_dumpable() incorrect tests ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/msg.h |  6 +++---
- ipc/msgutil.c       | 20 ++++++++++----------
- ipc/util.h          |  4 ++--
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ fs/coredump.c         |  2 +-
+ fs/exec.c             | 10 +++++-----
+ fs/proc/internal.h    |  3 ++-
+ include/linux/sched.h |  5 -----
+ kernel/sysctl.c       |  2 +-
+ 5 files changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/msg.h b/include/linux/msg.h
-index 391af8d..e21f9d4 100644
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -6,9 +6,9 @@
+diff --git a/fs/coredump.c b/fs/coredump.c
+index 1774932..57b9bd6 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -501,7 +501,7 @@ void do_coredump(siginfo_t *siginfo)
+ 	 * so we dump it as root in mode 2, and only into a controlled
+ 	 * environment (pipe handler or fully qualified path).
+ 	 */
+-	if (__get_dumpable(cprm.mm_flags) == SUID_DUMPABLE_SAFE) {
++	if (__get_dumpable(cprm.mm_flags) == SUID_DUMP_ROOT) {
+ 		/* Setuid core dump mode */
+ 		flag = O_EXCL;		/* Stop rewrite attacks */
+ 		cred->fsuid = GLOBAL_ROOT_UID;	/* Dump root private */
+diff --git a/fs/exec.c b/fs/exec.c
+index 0b5038a..40418c9 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1114,7 +1114,7 @@ void setup_new_exec(struct linux_binprm * bprm)
+ 	current->sas_ss_sp = current->sas_ss_size = 0;
  
- /* one msg_msg structure for each message */
- struct msg_msg {
--	struct list_head m_list; 
--	long  m_type;          
--	int m_ts;           /* message text size */
-+	struct list_head m_list;
-+	long m_type;
-+	size_t m_ts;		/* message text size */
- 	struct msg_msgseg* next;
- 	void *security;
- 	/* the actual message follows immediately */
-diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-index d33fbb2..3c75850 100644
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -41,15 +41,15 @@ struct msg_msgseg {
- 	/* the next part of the message follows immediately */
- };
+ 	if (uid_eq(current_euid(), current_uid()) && gid_eq(current_egid(), current_gid()))
+-		set_dumpable(current->mm, SUID_DUMPABLE_ENABLED);
++		set_dumpable(current->mm, SUID_DUMP_USER);
+ 	else
+ 		set_dumpable(current->mm, suid_dumpable);
  
--#define DATALEN_MSG	(int)(PAGE_SIZE-sizeof(struct msg_msg))
--#define DATALEN_SEG	(int)(PAGE_SIZE-sizeof(struct msg_msgseg))
-+#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
-+#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
- 
- 
--static struct msg_msg *alloc_msg(int len)
-+static struct msg_msg *alloc_msg(size_t len)
+@@ -1644,17 +1644,17 @@ EXPORT_SYMBOL(set_binfmt);
+ void set_dumpable(struct mm_struct *mm, int value)
  {
- 	struct msg_msg *msg;
- 	struct msg_msgseg **pseg;
--	int alen;
-+	size_t alen;
+ 	switch (value) {
+-	case SUID_DUMPABLE_DISABLED:
++	case SUID_DUMP_DISABLE:
+ 		clear_bit(MMF_DUMPABLE, &mm->flags);
+ 		smp_wmb();
+ 		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
+ 		break;
+-	case SUID_DUMPABLE_ENABLED:
++	case SUID_DUMP_USER:
+ 		set_bit(MMF_DUMPABLE, &mm->flags);
+ 		smp_wmb();
+ 		clear_bit(MMF_DUMP_SECURELY, &mm->flags);
+ 		break;
+-	case SUID_DUMPABLE_SAFE:
++	case SUID_DUMP_ROOT:
+ 		set_bit(MMF_DUMP_SECURELY, &mm->flags);
+ 		smp_wmb();
+ 		set_bit(MMF_DUMPABLE, &mm->flags);
+@@ -1667,7 +1667,7 @@ int __get_dumpable(unsigned long mm_flags)
+ 	int ret;
  
- 	alen = min(len, DATALEN_MSG);
- 	msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
-@@ -80,12 +80,12 @@ out_err:
- 	return NULL;
+ 	ret = mm_flags & MMF_DUMPABLE_MASK;
+-	return (ret > SUID_DUMPABLE_ENABLED) ? SUID_DUMPABLE_SAFE : ret;
++	return (ret > SUID_DUMP_USER) ? SUID_DUMP_ROOT : ret;
  }
  
--struct msg_msg *load_msg(const void __user *src, int len)
-+struct msg_msg *load_msg(const void __user *src, size_t len)
- {
- 	struct msg_msg *msg;
- 	struct msg_msgseg *seg;
- 	int err = -EFAULT;
--	int alen;
-+	size_t alen;
+ int get_dumpable(struct mm_struct *mm)
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 252544c..85ff3a4 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -11,6 +11,7 @@
  
- 	msg = alloc_msg(len);
- 	if (msg == NULL)
-@@ -117,8 +117,8 @@ out_err:
- struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
- {
- 	struct msg_msgseg *dst_pseg, *src_pseg;
--	int len = src->m_ts;
--	int alen;
-+	size_t len = src->m_ts;
-+	size_t alen;
+ #include <linux/sched.h>
+ #include <linux/proc_fs.h>
++#include <linux/binfmts.h>
+ struct  ctl_table_header;
+ struct  mempolicy;
  
- 	BUG_ON(dst == NULL);
- 	if (src->m_ts > dst->m_ts)
-@@ -147,9 +147,9 @@ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
- 	return ERR_PTR(-ENOSYS);
+@@ -108,7 +109,7 @@ static inline int task_dumpable(struct task_struct *task)
+ 	if (mm)
+ 		dumpable = get_dumpable(mm);
+ 	task_unlock(task);
+-	if (dumpable == SUID_DUMPABLE_ENABLED)
++	if (dumpable == SUID_DUMP_USER)
+ 		return 1;
+ 	return 0;
  }
- #endif
--int store_msg(void __user *dest, struct msg_msg *msg, int len)
-+int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index caa76ae..6019ecc 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -378,11 +378,6 @@ static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
+ extern void set_dumpable(struct mm_struct *mm, int value);
+ extern int get_dumpable(struct mm_struct *mm);
+ 
+-/* get/set_dumpable() values */
+-#define SUID_DUMPABLE_DISABLED	0
+-#define SUID_DUMPABLE_ENABLED	1
+-#define SUID_DUMPABLE_SAFE	2
+-
+ /* mm flags */
+ /* dumpable bits */
+ #define MMF_DUMPABLE      0  /* core dump is permitted */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..585015f 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2083,7 +2083,7 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
+ static void validate_coredump_safety(void)
  {
--	int alen;
-+	size_t alen;
- 	struct msg_msgseg *seg;
- 
- 	alen = min(len, DATALEN_MSG);
-diff --git a/ipc/util.h b/ipc/util.h
-index eeb79a1..099f28a 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -139,9 +139,9 @@ int ipc_parse_version (int *cmd);
- #endif
- 
- extern void free_msg(struct msg_msg *msg);
--extern struct msg_msg *load_msg(const void __user *src, int len);
-+extern struct msg_msg *load_msg(const void __user *src, size_t len);
- extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
--extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
-+extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
- 
- extern void recompute_msgmni(struct ipc_namespace *);
- 
+ #ifdef CONFIG_COREDUMP
+-	if (suid_dumpable == SUID_DUMPABLE_SAFE &&
++	if (suid_dumpable == SUID_DUMP_ROOT &&
+ 	    core_pattern[0] != '/' && core_pattern[0] != '|') {
+ 		printk(KERN_WARNING "Unsafe core_pattern used with "\
+ 			"suid_dumpable=2. Pipe handler or fully qualified "\
 -- 
 1.8.3.2
 
