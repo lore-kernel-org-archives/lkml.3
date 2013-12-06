@@ -1,81 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab3LFQNU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 11:13:20 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:52766 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab3LFQNS (ORCPT
+	id S1758083Ab3LFQPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 11:15:19 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36258 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757911Ab3LFQPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 11:13:18 -0500
-Date: Fri, 6 Dec 2013 11:13:12 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH cgroup/for-3.13-fixes] cgroup: fix oops in cgroup init
- failure path
-Message-ID: <20131206161312.GC13373@htj.dyndns.org>
-References: <1386234006-1633-1-git-send-email-vdavydov@parallels.com>
- <20131205211814.GA29598@mtj.dyndns.org>
- <52A1766F.5090808@parallels.com>
+	Fri, 6 Dec 2013 11:15:16 -0500
+Date: Fri, 6 Dec 2013 11:12:58 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Eugene Krasnikov <k.eugene.e@gmail.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Peter Stuge <peter@stuge.se>,
+        ath9k-devel <ath9k-devel@venema.h4ckr.net>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] net: wireless: wcn36xx: fix potential NULL pointer
+ dereference
+Message-ID: <20131206161258.GC13285@tuxdriver.com>
+References: <1385744870-10164-1-git-send-email-mpn@google.com>
+ <20131201004715.11125.qmail@stuge.se>
+ <xa1tiov78kmp.fsf@mina86.com>
+ <CAFSJ42YckTDO=UV=fWG9mmVXSBYep1x6xiHahzGDcrB4dy0oOQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52A1766F.5090808@parallels.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFSJ42YckTDO=UV=fWG9mmVXSBYep1x6xiHahzGDcrB4dy0oOQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vladimir.
+FWIW, I merged the earlier version.  Please send any changes as a
+follow-up patch, probably against wireless-next.
 
-On Fri, Dec 06, 2013 at 11:02:07AM +0400, Vladimir Davydov wrote:
-> This patch fixes this bug, but I have a couple of questions regarding it.
-> 
-> First, cgroup_load_subsys() also calls css_online(), and if it fails, it
-> calls cgroup_unload_subsys() to rollback. The latter function executes
-> the following command:
-> 
->     offline_css(cgroup_css(cgroup_dummy_top, ss));
-> 
-> But since we failed to online_css(), cgroup_css() will return NULL
-> resulting in another oops.
+John
 
-I don't think the root css onlining fails for any existing controllers
-but yeah that looks wrong.  Can you please send a patch?
-
-> Second, it's not clear to me why we need the CSS_ONLINE flag at all if
-> we never assign css's that we fail to online to a cgroup. AFAIU we will
-> never see such css's, because in all places we call offline_css(),
-> namely cgroup_destroy_locked() (via kill_css()) and
-> cgroup_unload_subsys(), we use cgroup_css() which will return NULL for them.
-
-The whole thing is in flux and will look very different in near
-future.  I actually had patches queued which deal with the issue you
-spotted but they are being blocked on other changes ATM.  So, yeah,
-there are some spurious stuff now.
-
-> Before we get here, we call
+On Thu, Dec 05, 2013 at 08:41:29AM +0000, Eugene Krasnikov wrote:
+> > +               if (msg_ind)
+> > +                       break;
+> > +               /* FIXME: Do something smarter then just printing an error. */
+> > +               wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
 > 
->     /* each css holds a ref to the cgroup's dentry and the parent css */
->     for_each_root_subsys(root, ss) {
->         struct cgroup_subsys_state *css = css_ar[ss->subsys_id];
+> I think code will look neater if error case will be handled in "else"
+> statement something like:
+> if (msg_ind) {
+> ...
+> } else {
+> /*print message*/
+> }
+> /*unlock and break;*/
 > 
->         dget(dentry);
->         css_get(css->parent);
->     }
+> How about that?
 > 
-> If we fail to online a css, we will only call
 > 
->     ss->css_free(css);
+> On Mon, Dec 2, 2013 at 1:09 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
+> >
+> > If kmalloc fails wcn36xx_smd_rsp_process will attempt to dereference
+> > a NULL pointer.  There might be a better error recovery then just
+> > printing an error, but printing an error message is better then the
+> > current behaviour.
+> >
+> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> > ---
+> >  drivers/net/wireless/ath/wcn36xx/smd.c | 19 +++++++++++++------
+> >  1 file changed, 13 insertions(+), 6 deletions(-)
+> >
+> > On Sun, Dec 01 2013, Peter Stuge wrote:
+> >> Michal Nazarewicz wrote:
+> >>> +                    wcn36xx_err("Run out of memory while hnadling SMD_EVENT (%d)\n",
+> >>> +                                msg_header->msg_type);
+> >>
+> >> Typo hnadling.
+> >
+> > Fixed.
+> >
+> > diff --git a/drivers/net/wireless/ath/wcn36xx/smd.c b/drivers/net/wireless/ath/wcn36xx/smd.c
+> > index de9eb2c..3663394 100644
+> > --- a/drivers/net/wireless/ath/wcn36xx/smd.c
+> > +++ b/drivers/net/wireless/ath/wcn36xx/smd.c
+> > @@ -2041,13 +2041,20 @@ static void wcn36xx_smd_rsp_process(struct wcn36xx *wcn, void *buf, size_t len)
+> >         case WCN36XX_HAL_DELETE_STA_CONTEXT_IND:
+> >                 mutex_lock(&wcn->hal_ind_mutex);
+> >                 msg_ind = kmalloc(sizeof(*msg_ind), GFP_KERNEL);
+> > -               msg_ind->msg_len = len;
+> > -               msg_ind->msg = kmalloc(len, GFP_KERNEL);
+> > -               memcpy(msg_ind->msg, buf, len);
+> > -               list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
+> > -               queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
+> > -               wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
+> > +               if (msg_ind) {
+> > +                       msg_ind->msg_len = len;
+> > +                       msg_ind->msg = kmalloc(len, GFP_KERNEL);
+> > +                       memcpy(msg_ind->msg, buf, len);
+> > +                       list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
+> > +                       queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
+> > +                       wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
+> > +               }
+> >                 mutex_unlock(&wcn->hal_ind_mutex);
+> > +               if (msg_ind)
+> > +                       break;
+> > +               /* FIXME: Do something smarter then just printing an error. */
+> > +               wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
+> > +                           msg_header->msg_type);
+> >                 break;
+> >         default:
+> >                 wcn36xx_err("SMD_EVENT (%d) not supported\n",
+> > --
+> > 1.8.4.1
+> >
+> > --
+> > Best regards,                                         _     _
+> > .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> > ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> > ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
 > 
-> on it skipping css_put() on parent.
 > 
-> css_put() is called on parent in css_release() on normal destroy path.
-
-You're right.  I'll revise the patch.
-
-Thanks.
+> 
+> -- 
+> Best regards,
+> Eugene
+> 
 
 -- 
-tejun
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
