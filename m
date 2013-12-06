@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab3LFRpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:45:03 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40657 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab3LFRpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:45:01 -0500
-Date: Fri, 06 Dec 2013 12:45:00 -0500 (EST)
-Message-Id: <20131206.124500.1976272290413710707.davem@davemloft.net>
-To: zwu.kernel@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wuzhy@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 2/2] tun: update file current position
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386320930-11285-2-git-send-email-zwu.kernel@gmail.com>
-References: <1386320930-11285-1-git-send-email-zwu.kernel@gmail.com>
-	<1386320930-11285-2-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S932226Ab3LFRso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:48:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932148Ab3LFRsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:48:43 -0500
+Date: Fri, 06 Dec 2013 12:48:19 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1386352099-a1o7ki65-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: Re: [PATCH] mm/hwpoison: add '#' to hwpoison_inject
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 06 Dec 2013 09:45:01 -0800 (PST)
+Content-Disposition: inline
+X-Mutt-References: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-Date: Fri,  6 Dec 2013 17:08:50 +0800
-
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Fri, Dec 06, 2013 at 05:26:53PM +0800, Wanpeng Li wrote:
+> Add '#' to hwpoison_inject just as done in madvise_hwpoison.
 > 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-Also applied and queued up for -stable, thanks.
+It could affect some test code, but I checked mce-test and it doesn't
+depend on this message. So maybe it's OK.
 
-I noticed in these two cases that that min_t() adjustment of 'ret'
-seems strange.  I can't understand why it's needed.
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-If, for example, tun_do_read() really did read more than 'len'
-bytes:
+Thanks,
+Naoya
 
-1) That would write past the end of the buffer.
-
-2) Writing a different value to the ->ki_pos would mean
-   that ->ki_pos is now inaccurate.
-
-Unless someone can explain why the min_t() is needed, we should remove
-it.
+> ---
+>  mm/hwpoison-inject.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
+> index 4c84678..146cead 100644
+> --- a/mm/hwpoison-inject.c
+> +++ b/mm/hwpoison-inject.c
+> @@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
+>  		return 0;
+>  
+>  inject:
+> -	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
+> +	pr_info(KERN_INFO "Injecting memory failure at pfn %#lx\n", pfn);
+>  	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
+>  }
+>  
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
