@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab3LFWRi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:17:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60858 "EHLO
+	id S1759485Ab3LFWRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:17:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759300Ab3LFVxa (ORCPT
+	with ESMTP id S1759291Ab3LFVxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:53:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Sujith Manoharan <sujith@msujith.org>,
+        Arnaud Ebalard <arno@natisbad.org>, Felix Fietkau <nbd@openwrt.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 13/58] bonding: fix two race conditions in bond_store_updelay/downdelay
-Date: Fri,  6 Dec 2013 13:51:44 -0800
-Message-Id: <20131206214846.158265950@linuxfoundation.org>
+Subject: [PATCH 3.10 12/58] tcp: tsq: restore minimal amount of queueing
+Date: Fri,  6 Dec 2013 13:51:43 -0800
+Message-Id: <20131206214846.067920687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,63 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit b869ccfab1e324507fa3596e3e1308444fb68227 ]
+[ Upstream commit 98e09386c0ef4dfd48af7ba60ff908f0d525cdee ]
 
-This patch fixes two race conditions between bond_store_updelay/downdelay
-and bond_store_miimon which could lead to division by zero as miimon can
-be set to 0 while either updelay/downdelay are being set and thus miss the
-zero check in the beginning, the zero div happens because updelay/downdelay
-are stored as new_value / bond->params.miimon. Use rtnl to synchronize with
-miimon setting.
+After commit c9eeec26e32e ("tcp: TSQ can use a dynamic limit"), several
+users reported throughput regressions, notably on mvneta and wifi
+adapters.
 
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
+802.11 AMPDU requires a fair amount of queueing to be effective.
+
+This patch partially reverts the change done in tcp_write_xmit()
+so that the minimal amount is sysctl_tcp_limit_output_bytes.
+
+It also remove the use of this sysctl while building skb stored
+in write queue, as TSO autosizing does the right thing anyway.
+
+Users with well behaving NICS and correct qdisc (like sch_fq),
+can then lower the default sysctl_tcp_limit_output_bytes value from
+128KB to 8KB.
+
+This new usage of sysctl_tcp_limit_output_bytes permits each driver
+authors to check how their driver performs when/if the value is set
+to a minimum of 4KB.
+
+Normally, line rate for a single TCP flow should be possible,
+but some drivers rely on timers to perform TX completion and
+too long TX completion delays prevent reaching full throughput.
+
+Fixes: c9eeec26e32e ("tcp: TSQ can use a dynamic limit")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Sujith Manoharan <sujith@msujith.org>
+Reported-by: Arnaud Ebalard <arno@natisbad.org>
+Tested-by: Sujith Manoharan <sujith@msujith.org>
+Cc: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_sysfs.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/networking/ip-sysctl.txt |    3 ---
+ net/ipv4/tcp.c                         |    6 ------
+ net/ipv4/tcp_output.c                  |    6 +++++-
+ 3 files changed, 5 insertions(+), 10 deletions(-)
 
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -697,6 +697,8 @@ static ssize_t bonding_store_downdelay(s
- 	int new_value, ret = count;
- 	struct bonding *bond = to_bond(d);
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -571,9 +571,6 @@ tcp_limit_output_bytes - INTEGER
+ 	typical pfifo_fast qdiscs.
+ 	tcp_limit_output_bytes limits the number of bytes on qdisc
+ 	or device to reduce artificial RTT/cwnd and reduce bufferbloat.
+-	Note: For GSO/TSO enabled flows, we try to have at least two
+-	packets in flight. Reducing tcp_limit_output_bytes might also
+-	reduce the size of individual GSO packet (64KB being the max)
+ 	Default: 131072
  
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (!(bond->params.miimon)) {
- 		pr_err("%s: Unable to set down delay as MII monitoring is disabled\n",
- 		       bond->dev->name);
-@@ -730,6 +732,7 @@ static ssize_t bonding_store_downdelay(s
- 	}
+ tcp_challenge_ack_limit - INTEGER
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -807,12 +807,6 @@ static unsigned int tcp_xmit_size_goal(s
+ 		xmit_size_goal = min_t(u32, gso_size,
+ 				       sk->sk_gso_max_size - 1 - hlen);
  
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(downdelay, S_IRUGO | S_IWUSR,
-@@ -752,6 +755,8 @@ static ssize_t bonding_store_updelay(str
- 	int new_value, ret = count;
- 	struct bonding *bond = to_bond(d);
+-		/* TSQ : try to have at least two segments in flight
+-		 * (one in NIC TX ring, another in Qdisc)
+-		 */
+-		xmit_size_goal = min_t(u32, xmit_size_goal,
+-				       sysctl_tcp_limit_output_bytes >> 1);
+-
+ 		xmit_size_goal = tcp_bound_to_half_wnd(tp, xmit_size_goal);
  
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (!(bond->params.miimon)) {
- 		pr_err("%s: Unable to set up delay as MII monitoring is disabled\n",
- 		       bond->dev->name);
-@@ -785,6 +790,7 @@ static ssize_t bonding_store_updelay(str
- 	}
+ 		/* We try hard to avoid divides here */
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1866,8 +1866,12 @@ static bool tcp_write_xmit(struct sock *
+ 		 *  - better RTT estimation and ACK scheduling
+ 		 *  - faster recovery
+ 		 *  - high rates
++		 * Alas, some drivers / subsystems require a fair amount
++		 * of queued bytes to ensure line rate.
++		 * One example is wifi aggregation (802.11 AMPDU)
+ 		 */
+-		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
++		limit = max_t(unsigned int, sysctl_tcp_limit_output_bytes,
++			      sk->sk_pacing_rate >> 10);
  
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(updelay, S_IRUGO | S_IWUSR,
+ 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
+ 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
 
 
