@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab3LFNzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:55:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44025 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758006Ab3LFNBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758008Ab3LFNBq (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 08:01:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43988 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161478Ab3LFNBi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:01:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>, Pax Team <pageexec@freemail.hu>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Shan Hai <shan.hai@windriver.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/272] ipc, msg: fix message length check for negative values
-Date: Fri,  6 Dec 2013 12:56:27 +0000
-Message-Id: <1386334761-25517-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 093/272] drivers/libata: Set max sector to 65535 for Slimtype DVD A DS8A9SH drive
+Date: Fri,  6 Dec 2013 12:56:22 +0000
+Message-Id: <1386334761-25517-94-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -32,176 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
+commit 0523f037f65dba10191b0fa9c51266f90ba64630 upstream.
 
-On 64 bit systems the test for negative message sizes is bogus as the
-size, which may be positive when evaluated as a long, will get truncated
-to an int when passed to load_msg().  So a long might very well contain a
-positive value but when truncated to an int it would become negative.
+The "Slimtype DVD A  DS8A9SH" drive locks up with following backtrace when
+the max sector is smaller than 65535 bytes, fix it by adding a quirk to set
+the max sector to 65535 bytes.
 
-That in combination with a small negative value of msg_ctlmax (which will
-be promoted to an unsigned type for the comparison against msgsz, making
-it a big positive value and therefore make it pass the check) will lead to
-two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
-small buffer as the addition of alen is effectively a subtraction.  2/ The
-copy_from_user() call in load_msg() will first overflow the buffer with
-userland data and then, when the userland access generates an access
-violation, the fixup handler copy_user_handle_tail() will try to fill the
-remainder with zeros -- roughly 4GB.  That almost instantly results in a
-system crash or reset.
+INFO: task flush-11:0:663 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-11:0    D 00000000ffff5ceb     0   663      2 0x00000000
+ ffff88026d3b1710 0000000000000046 0000000000000001 0000000000000000
+ ffff88026f2530c0 ffff88026d365860 ffff88026d3b16e0 ffffffff812ffd52
+ ffff88026d4fd3d0 0000000100000001 ffff88026d3b16f0 ffff88026d3b1fd8
+Call Trace:
+ [<ffffffff812ffd52>] ? cfq_may_queue+0x52/0xf0
+ [<ffffffff81604338>] schedule+0x18/0x30
+ [<ffffffff81604392>] io_schedule+0x42/0x60
+ [<ffffffff812f22bb>] get_request_wait+0xeb/0x1f0
+ [<ffffffff81065660>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff812eb382>] ? elv_merge+0x42/0x210
+ [<ffffffff812f26ae>] __make_request+0x8e/0x4e0
+ [<ffffffff812f068e>] generic_make_request+0x21e/0x5e0
+ [<ffffffff812f0aad>] submit_bio+0x5d/0xd0
+ [<ffffffff81141422>] submit_bh+0xf2/0x130
+ [<ffffffff8114474c>] __block_write_full_page+0x1dc/0x3a0
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff811474e0>] ? blkdev_get_block+0x0/0x70
+ [<ffffffff81143f60>] ? end_buffer_async_write+0x0/0x120
+ [<ffffffff811449ee>] block_write_full_page_endio+0xde/0x100
+ [<ffffffff81144a20>] block_write_full_page+0x10/0x20
+ [<ffffffff81148703>] blkdev_writepage+0x13/0x20
+ [<ffffffff810d7525>] __writepage+0x15/0x40
+ [<ffffffff810d7c0f>] write_cache_pages+0x1cf/0x3e0
+ [<ffffffff810d7510>] ? __writepage+0x0/0x40
+ [<ffffffff810d7e42>] generic_writepages+0x22/0x30
+ [<ffffffff810d7e6f>] do_writepages+0x1f/0x40
+ [<ffffffff8113ae67>] writeback_single_inode+0xe7/0x3b0
+ [<ffffffff8113b574>] writeback_sb_inodes+0x184/0x280
+ [<ffffffff8113bedb>] writeback_inodes_wb+0x6b/0x1a0
+ [<ffffffff8113c24b>] wb_writeback+0x23b/0x2a0
+ [<ffffffff8113c42d>] wb_do_writeback+0x17d/0x190
+ [<ffffffff8113c48b>] bdi_writeback_task+0x4b/0xe0
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff810e8321>] bdi_start_fn+0x81/0x100
+ [<ffffffff810e82a0>] ? bdi_start_fn+0x0/0x100
+ [<ffffffff8106522e>] kthread+0x8e/0xa0
+ [<ffffffff81039274>] ? finish_task_switch+0x54/0xc0
+ [<ffffffff81003334>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810651a0>] ? kthread+0x0/0xa0
+ [<ffffffff81003330>] ? kernel_thread_helper+0x0/0x10
 
-  ,-[ Reproducer (needs to be run as root) ]--
-  | #include <sys/stat.h>
-  | #include <sys/msg.h>
-  | #include <unistd.h>
-  | #include <fcntl.h>
-  |
-  | int main(void) {
-  |     long msg = 1;
-  |     int fd;
-  |
-  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
-  |     write(fd, "-1", 2);
-  |     close(fd);
-  |
-  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
-  |
-  |     return 0;
-  | }
-  '---
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
 
-Fix the issue by preventing msgsz from getting truncated by consistently
-using size_t for the message length.  This way the size checks in
-do_msgsnd() could still be passed with a negative value for msg_ctlmax but
-we would fail on the buffer allocation in that case and error out.
-
-Also change the type of m_ts from int to size_t to avoid similar nastiness
-in other code paths -- it is used in similar constructs, i.e.  signed vs.
-unsigned checks.  It should never become negative under normal
-circumstances, though.
-
-Setting msg_ctlmax to a negative value is an odd configuration and should
-be prevented.  As that might break existing userland, it will be handled
-in a separate commit so it could easily be reverted and reworked without
-reintroducing the above described bug.
-
-Hardening mechanisms for user copy operations would have catched that bug
-early -- e.g.  checking slab object sizes on user copy operations as the
-usercopy feature of the PaX patch does.  Or, for that matter, detect the
-long vs.  int sign change due to truncation, as the size overflow plugin
-of the very same patch does.
-
-[akpm@linux-foundation.org: fix i386 min() warnings]
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Pax Team <pageexec@freemail.hu>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/msg.h |  6 +++---
- ipc/msgutil.c       | 20 ++++++++++----------
- ipc/util.h          |  4 ++--
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/ata/libata-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/msg.h b/include/linux/msg.h
-index 391af8d..e21f9d4 100644
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -6,9 +6,9 @@
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index c24354d..738cd76 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4110,6 +4110,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
+ 	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
++	{ "Slimtype DVD A  DS8A9SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
  
- /* one msg_msg structure for each message */
- struct msg_msg {
--	struct list_head m_list; 
--	long  m_type;          
--	int m_ts;           /* message text size */
-+	struct list_head m_list;
-+	long m_type;
-+	size_t m_ts;		/* message text size */
- 	struct msg_msgseg* next;
- 	void *security;
- 	/* the actual message follows immediately */
-diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-index 491e71f..7e70959 100644
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -41,15 +41,15 @@ struct msg_msgseg {
- 	/* the next part of the message follows immediately */
- };
- 
--#define DATALEN_MSG	(int)(PAGE_SIZE-sizeof(struct msg_msg))
--#define DATALEN_SEG	(int)(PAGE_SIZE-sizeof(struct msg_msgseg))
-+#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
-+#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
- 
- 
--static struct msg_msg *alloc_msg(int len)
-+static struct msg_msg *alloc_msg(size_t len)
- {
- 	struct msg_msg *msg;
- 	struct msg_msgseg **pseg;
--	int alen;
-+	size_t alen;
- 
- 	alen = min(len, DATALEN_MSG);
- 	msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
-@@ -80,12 +80,12 @@ out_err:
- 	return NULL;
- }
- 
--struct msg_msg *load_msg(const void __user *src, int len)
-+struct msg_msg *load_msg(const void __user *src, size_t len)
- {
- 	struct msg_msg *msg;
- 	struct msg_msgseg *seg;
- 	int err = -EFAULT;
--	int alen;
-+	size_t alen;
- 
- 	msg = alloc_msg(len);
- 	if (msg == NULL)
-@@ -117,8 +117,8 @@ out_err:
- struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
- {
- 	struct msg_msgseg *dst_pseg, *src_pseg;
--	int len = src->m_ts;
--	int alen;
-+	size_t len = src->m_ts;
-+	size_t alen;
- 
- 	BUG_ON(dst == NULL);
- 	if (src->m_ts > dst->m_ts)
-@@ -147,9 +147,9 @@ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
- 	return ERR_PTR(-ENOSYS);
- }
- #endif
--int store_msg(void __user *dest, struct msg_msg *msg, int len)
-+int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
- {
--	int alen;
-+	size_t alen;
- 	struct msg_msgseg *seg;
- 
- 	alen = min(len, DATALEN_MSG);
-diff --git a/ipc/util.h b/ipc/util.h
-index f2f5036..59d78aa 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -148,9 +148,9 @@ int ipc_parse_version (int *cmd);
- #endif
- 
- extern void free_msg(struct msg_msg *msg);
--extern struct msg_msg *load_msg(const void __user *src, int len);
-+extern struct msg_msg *load_msg(const void __user *src, size_t len);
- extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
--extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
-+extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
- 
- extern void recompute_msgmni(struct ipc_namespace *);
+ 	/* Devices we expect to fail diagnostics */
  
 -- 
 1.8.3.2
