@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485Ab3LFWRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:17:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60853 "EHLO
+	id S1161475Ab3LFWSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:18:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759291Ab3LFVxa (ORCPT
+	with ESMTP id S1758778Ab3LFVx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:30 -0500
+	Fri, 6 Dec 2013 16:53:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Sujith Manoharan <sujith@msujith.org>,
-        Arnaud Ebalard <arno@natisbad.org>, Felix Fietkau <nbd@openwrt.org>,
+        Jason Wang <jasowang@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/58] tcp: tsq: restore minimal amount of queueing
-Date: Fri,  6 Dec 2013 13:51:43 -0800
-Message-Id: <20131206214846.067920687@linuxfoundation.org>
+Subject: [PATCH 3.10 11/58] macvtap: limit head length of skb allocated
+Date: Fri,  6 Dec 2013 13:51:42 -0800
+Message-Id: <20131206214845.966583939@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,90 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 98e09386c0ef4dfd48af7ba60ff908f0d525cdee ]
+[ Upstream commit 16a3fa28630331e28208872fa5341ce210b901c7 ]
 
-After commit c9eeec26e32e ("tcp: TSQ can use a dynamic limit"), several
-users reported throughput regressions, notably on mvneta and wifi
-adapters.
+We currently use hdr_len as a hint of head length which is advertised by
+guest. But when guest advertise a very big value, it can lead to an 64K+
+allocating of kmalloc() which has a very high possibility of failure when host
+memory is fragmented or under heavy stress. The huge hdr_len also reduce the
+effect of zerocopy or even disable if a gso skb is linearized in guest.
 
-802.11 AMPDU requires a fair amount of queueing to be effective.
+To solves those issues, this patch introduces an upper limit (PAGE_SIZE) of the
+head, which guarantees an order 0 allocation each time.
 
-This patch partially reverts the change done in tcp_write_xmit()
-so that the minimal amount is sysctl_tcp_limit_output_bytes.
-
-It also remove the use of this sysctl while building skb stored
-in write queue, as TSO autosizing does the right thing anyway.
-
-Users with well behaving NICS and correct qdisc (like sch_fq),
-can then lower the default sysctl_tcp_limit_output_bytes value from
-128KB to 8KB.
-
-This new usage of sysctl_tcp_limit_output_bytes permits each driver
-authors to check how their driver performs when/if the value is set
-to a minimum of 4KB.
-
-Normally, line rate for a single TCP flow should be possible,
-but some drivers rely on timers to perform TX completion and
-too long TX completion delays prevent reaching full throughput.
-
-Fixes: c9eeec26e32e ("tcp: TSQ can use a dynamic limit")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Sujith Manoharan <sujith@msujith.org>
-Reported-by: Arnaud Ebalard <arno@natisbad.org>
-Tested-by: Sujith Manoharan <sujith@msujith.org>
-Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@redhat.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- Documentation/networking/ip-sysctl.txt |    3 ---
- net/ipv4/tcp.c                         |    6 ------
- net/ipv4/tcp_output.c                  |    6 +++++-
- 3 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/net/macvtap.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -571,9 +571,6 @@ tcp_limit_output_bytes - INTEGER
- 	typical pfifo_fast qdiscs.
- 	tcp_limit_output_bytes limits the number of bytes on qdisc
- 	or device to reduce artificial RTT/cwnd and reduce bufferbloat.
--	Note: For GSO/TSO enabled flows, we try to have at least two
--	packets in flight. Reducing tcp_limit_output_bytes might also
--	reduce the size of individual GSO packet (64KB being the max)
- 	Default: 131072
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -661,6 +661,7 @@ static ssize_t macvtap_get_user(struct m
+ 				const struct iovec *iv, unsigned long total_len,
+ 				size_t count, int noblock)
+ {
++	int good_linear = SKB_MAX_HEAD(NET_IP_ALIGN);
+ 	struct sk_buff *skb;
+ 	struct macvlan_dev *vlan;
+ 	unsigned long len = total_len;
+@@ -703,6 +704,8 @@ static ssize_t macvtap_get_user(struct m
  
- tcp_challenge_ack_limit - INTEGER
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -807,12 +807,6 @@ static unsigned int tcp_xmit_size_goal(s
- 		xmit_size_goal = min_t(u32, gso_size,
- 				       sk->sk_gso_max_size - 1 - hlen);
+ 	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
+ 		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
++		if (copylen > good_linear)
++			copylen = good_linear;
+ 		linear = copylen;
+ 		if (iov_pages(iv, vnet_hdr_len + copylen, count)
+ 		    <= MAX_SKB_FRAGS)
+@@ -711,7 +714,10 @@ static ssize_t macvtap_get_user(struct m
  
--		/* TSQ : try to have at least two segments in flight
--		 * (one in NIC TX ring, another in Qdisc)
--		 */
--		xmit_size_goal = min_t(u32, xmit_size_goal,
--				       sysctl_tcp_limit_output_bytes >> 1);
--
- 		xmit_size_goal = tcp_bound_to_half_wnd(tp, xmit_size_goal);
+ 	if (!zerocopy) {
+ 		copylen = len;
+-		linear = vnet_hdr.hdr_len;
++		if (vnet_hdr.hdr_len > good_linear)
++			linear = good_linear;
++		else
++			linear = vnet_hdr.hdr_len;
+ 	}
  
- 		/* We try hard to avoid divides here */
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1866,8 +1866,12 @@ static bool tcp_write_xmit(struct sock *
- 		 *  - better RTT estimation and ACK scheduling
- 		 *  - faster recovery
- 		 *  - high rates
-+		 * Alas, some drivers / subsystems require a fair amount
-+		 * of queued bytes to ensure line rate.
-+		 * One example is wifi aggregation (802.11 AMPDU)
- 		 */
--		limit = max(skb->truesize, sk->sk_pacing_rate >> 10);
-+		limit = max_t(unsigned int, sysctl_tcp_limit_output_bytes,
-+			      sk->sk_pacing_rate >> 10);
- 
- 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
- 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
+ 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
 
 
