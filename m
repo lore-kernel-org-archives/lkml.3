@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161962Ab3LFNEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44575 "EHLO
+	id S1422640Ab3LFNS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:18:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44619 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161861Ab3LFNEU (ORCPT
+	with ESMTP id S1161953Ab3LFNEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:20 -0500
+	Fri, 6 Dec 2013 08:04:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+Cc: Daniel Mack <zonque@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 214/272] usb: musb: davinci: fix resources passed to MUSB driver for DM6467
-Date: Fri,  6 Dec 2013 12:58:23 +0000
-Message-Id: <1386334761-25517-215-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 223/272] usb: musb: core: properly free host / device structs in err path
+Date: Fri,  6 Dec 2013 12:58:32 +0000
+Message-Id: <1386334761-25517-224-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit ea78201e2e08f8a91e30100c4c4a908b5cf295fc upstream.
+commit 0d2dd7eaed1dac07b266ca2c662ff4a184a3060f upstream.
 
-After commit 09fc7d22b024692b2fe8a943b246de1af307132b (usb: musb: fix incorrect
-usage of  resource pointer), CPPI DMA driver on DaVinci DM6467 can't detect its
-dedicated IRQ and so the MUSB IRQ  is erroneously used instead. This is because
-only 2 resources are passed to the MUSB driver from the DaVinci glue layer,  so
-fix  this by always copying 3 resources (it's  safe since a placeholder for the
-3rd resource is always  there) and passing 'pdev->num_resources' instead of the
-size of musb_resources[] to platform_device_add_resources().
+The patch fixes two issues in the error path cleanup:
+- in MUSB_PORT_MODE_DUAL_ROLE mode, if musb_gadget_setup() fails we
+  never cleanup the host struct earlier allocated.
+- if musb_init_debugfs() or sysfs_create_group() fails, then we never
+  free the host part initialization, only device part.
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/musb/davinci.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/musb/musb_core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index f8aeaf2..f71db09 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -509,7 +509,7 @@ static u64 davinci_dmamask = DMA_BIT_MASK(32);
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 6ef8c94..41b9d6f 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1962,6 +1962,8 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 		if (status < 0)
+ 			goto fail3;
+ 		status = musb_gadget_setup(musb);
++		if (status)
++			musb_host_cleanup(musb);
+ 		break;
+ 	default:
+ 		dev_err(dev, "unsupported port mode %d\n", musb->port_mode);
+@@ -1988,6 +1990,7 @@ fail5:
  
- static int davinci_probe(struct platform_device *pdev)
- {
--	struct resource musb_resources[2];
-+	struct resource			musb_resources[3];
- 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
- 	struct platform_device		*musb;
- 	struct davinci_glue		*glue;
-@@ -567,6 +567,15 @@ static int davinci_probe(struct platform_device *pdev)
- 	musb_resources[1].end = pdev->resource[1].end;
- 	musb_resources[1].flags = pdev->resource[1].flags;
+ fail4:
+ 	musb_gadget_cleanup(musb);
++	musb_host_cleanup(musb);
  
-+	/*
-+	 * For DM6467 3 resources are passed. A placeholder for the 3rd
-+	 * resource is always there, so it's safe to always copy it...
-+	 */
-+	musb_resources[2].name = pdev->resource[2].name;
-+	musb_resources[2].start = pdev->resource[2].start;
-+	musb_resources[2].end = pdev->resource[2].end;
-+	musb_resources[2].flags = pdev->resource[2].flags;
-+
- 	ret = platform_device_add_resources(musb, musb_resources,
- 			ARRAY_SIZE(musb_resources));
- 	if (ret) {
+ fail3:
+ 	pm_runtime_put_sync(musb->controller);
 -- 
 1.8.3.2
 
