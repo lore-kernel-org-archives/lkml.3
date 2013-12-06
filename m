@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab3LFIx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:53:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23825 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967Ab3LFIxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:53:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,839,1378882800"; 
-   d="scan'208";a="447872795"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Peter Jones <pjones@redhat.com>
-Subject: [PATCH v3 6/6] ACPI/IBFT: Fix wrong <acpi/acpi.h> inclusion in iSCSI boot firmware module.
-Date: Fri,  6 Dec 2013 16:52:19 +0800
-Message-Id: <7d10180ca652b4a20a07517946fc0fed6a591650.1386316208.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1386316208.git.lv.zheng@intel.com>
-References: <cover.1385094640.git.lv.zheng@intel.com> <cover.1386316208.git.lv.zheng@intel.com>
+	id S1756871Ab3LFIy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 03:54:57 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62664 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab3LFIyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 03:54:52 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-a2-52a190dab543
+Date: Fri, 6 Dec 2013 17:57:30 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        azurIt <azurit@pobox.sk>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Christian Casteyde <casteyde.christian@free.fr>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [patch 2/2] fs: buffer: move allocation failure loop into the
+ allocator
+Message-ID: <20131206085730.GB24706@lge.com>
+References: <1381265890-11333-1-git-send-email-hannes@cmpxchg.org>
+ <1381265890-11333-2-git-send-email-hannes@cmpxchg.org>
+ <20131203165910.54d6b4724a1f3e329af52ac6@linux-foundation.org>
+ <20131204015218.GA19709@lge.com>
+ <20131203180717.94c013d1.akpm@linux-foundation.org>
+ <00000142be2f1de0-764bb035-adbc-4367-b2b4-bf05498510a6-000000@email.amazonses.com>
+ <CAAmzW4PwLhMd61ksOktdg=rkj0xHsSGt2Wm_za2Adjh4+tss-g@mail.gmail.com>
+ <00000142be753b07-aa0e2354-6704-41f8-8e11-3c856a186af5-000000@email.amazonses.com>
+ <20131205084441.GA5561@lge.com>
+ <00000142c4192155-e27322df-ba1a-4af8-98c3-f2b15dd70d13-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142c4192155-e27322df-ba1a-4af8-98c3-f2b15dd70d13-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Linux kernel, ACPICA is wrapped and safely exported by CONFIG_ACPI.  So
-all external modules should depend on CONFIG_ACPI rather than using ACPICA
-header directly for stubbing.  But if we moves <acpi/acpi.h> inclusions
-into "#ifdef CONFIG_ACPI", build breakge can help to detect wrong ACPICA
-dependent modules.
+On Thu, Dec 05, 2013 at 06:50:50PM +0000, Christoph Lameter wrote:
+> On Thu, 5 Dec 2013, Joonsoo Kim wrote:
+> 
+> > I could try. But my trial would not figure this out, since my machine has
+> > just 4 cores which normally cannot produce heavy contention.
+> 
+> I think that is fine for starters. Once we know what to look for we can
+> find machines to test specific scenarios.
+> 
+> > Anyway, could you tell me where I can find your synthetic benchmarks for slab?
+> 
+> https://lkml.org/lkml/2009/10/13/459
 
-One of the build breakage is:
-drivers/firmware/iscsi_ibft_find.c: In function 'find_ibft_region':
-drivers/firmware/iscsi_ibft_find.c:106:12: error: dereferencing pointer to incomplete type
-drivers/firmware/iscsi_ibft_find.c:106:12: error: dereferencing pointer to incomplete type
-drivers/firmware/iscsi_ibft_find.c:106:12: error: dereferencing pointer to incomplete type
-
-The root cause of this breakage is:
-1. iBFT locating is implemented by looking up it in the memory.  This is
-   based on the specification.  Specification doesn't mention if it can
-   appear on a non-ACPI platforms but mentions it is defined in ACPI 3.0b.
-   The current CONFIG_ISCSI_IBFT_FIND doesn't use ACPI table APIs to locate
-   the table, thus it doesn't rely on CONFIG_ACPI.
-
-Since ACPI iSCSI Boot Firmware is an ACPI-based mechanism (please refer to
-the Doclink below), we can make CONFIG_ISCSI_IBFT_FIND dependent on
-CONFIG_ACPI though the locating mechanism can be implemented without using
-ACPI table APIs.  But please let me know if this is wrong.
-
-Doclink: http://www.microsoft.com/whdc/system/platform/firmware/ibft.mspx
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Peter Jones <pjones@redhat.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
----
- drivers/firmware/Kconfig   |    2 +-
- include/linux/iscsi_ibft.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
-index 0747872..a6ef6ac 100644
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -110,7 +110,7 @@ config DMI_SYSFS
- 
- config ISCSI_IBFT_FIND
- 	bool "iSCSI Boot Firmware Table Attributes"
--	depends on X86
-+	depends on X86 && ACPI
- 	default n
- 	help
- 	  This option enables the kernel to find the region of memory
-diff --git a/include/linux/iscsi_ibft.h b/include/linux/iscsi_ibft.h
-index 82f9673..605cc5c 100644
---- a/include/linux/iscsi_ibft.h
-+++ b/include/linux/iscsi_ibft.h
-@@ -21,7 +21,7 @@
- #ifndef ISCSI_IBFT_H
- #define ISCSI_IBFT_H
- 
--#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
-+#include <linux/acpi.h>
- 
- /*
-  * Logical location of iSCSI Boot Format Table.
--- 
-1.7.10
-
+Okay.
+Thanks.
