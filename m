@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162280Ab3LFNMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:12:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44743 "EHLO
+	id S1162367Ab3LFNMi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:12:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44741 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162108Ab3LFNFq (ORCPT
+	with ESMTP id S1162103Ab3LFNFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:05:46 -0500
+	Fri, 6 Dec 2013 08:05:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Edwards <gedwards@ddn.com>, Gleb Natapov <gleb@redhat.com>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 248/272] KVM: IOMMU: hva align mapping page size
-Date: Fri,  6 Dec 2013 12:58:57 +0000
-Message-Id: <1386334761-25517-249-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 249/272] ALSA: hda - Force buffer alignment for Haswell HDMI controllers
+Date: Fri,  6 Dec 2013 12:58:58 +0000
+Message-Id: <1386334761-25517-250-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,51 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Edwards <gedwards@ddn.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 27ef63c7e97d1e5dddd85051c03f8d44cc887f34 upstream.
+commit 33499a15c2f7addc81695778753c2338b960eff7 upstream.
 
-When determining the page size we could use to map with the IOMMU, the
-page size should also be aligned with the hva, not just the gfn.  The
-gfn may not reflect the real alignment within the hugetlbfs file.
+Haswell HDMI audio controllers seem to get stuck when unaligned buffer
+size is used.  Let's enable the buffer alignment for the corresponding
+entries.
 
-Most of the time, this works fine.  However, if the hugetlbfs file is
-backed by non-contiguous huge pages, a multi-huge page memslot starts at
-an unaligned offset within the hugetlbfs file, and the gfn is aligned
-with respect to the huge page size, kvm_host_page_size() will return the
-huge page size and we will use that to map with the IOMMU.
+Since AZX_DCAPS_INTEL_PCH contains AZX_DCAPS_BUFSIZE that disables the
+buffer alignment forcibly, define AZX_DCAPS_INTEL_HASWELL and put the
+necessary AZX_DCAPS bits there.
 
-When we later unpin that same memslot, the IOMMU returns the unmap size
-as the huge page size, and we happily unpin that many pfns in
-monotonically increasing order, not realizing we are spanning
-non-contiguous huge pages and partially unpin the wrong huge page.
-
-Ensure the IOMMU mapping page size is aligned with the hva corresponding
-to the gfn, which does reflect the alignment within the hugetlbfs file.
-
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Greg Edwards <gedwards@ddn.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60769
+Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- virt/kvm/iommu.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ sound/pci/hda/hda_intel.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
-index 72a130b..c329c8f 100644
---- a/virt/kvm/iommu.c
-+++ b/virt/kvm/iommu.c
-@@ -103,6 +103,10 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
- 		while ((gfn << PAGE_SHIFT) & (page_size - 1))
- 			page_size >>= 1;
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index 9552da2..022c535 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -609,6 +609,11 @@ enum {
+ #define AZX_DCAPS_INTEL_PCH \
+ 	(AZX_DCAPS_INTEL_PCH_NOPM | AZX_DCAPS_PM_RUNTIME)
  
-+		/* Make sure hva is aligned to the page size we want to map */
-+		while (__gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
-+			page_size >>= 1;
++#define AZX_DCAPS_INTEL_HASWELL \
++	(AZX_DCAPS_SCH_SNOOP | AZX_DCAPS_ALIGN_BUFSIZE | \
++	 AZX_DCAPS_COUNT_LPIB_DELAY | AZX_DCAPS_PM_RUNTIME | \
++	 AZX_DCAPS_I915_POWERWELL)
 +
- 		/*
- 		 * Pin all pages we are about to map in memory. This is
- 		 * important because we unmap and unpin in 4kb steps later.
+ /* quirks for ATI SB / AMD Hudson */
+ #define AZX_DCAPS_PRESET_ATI_SB \
+ 	(AZX_DCAPS_ATI_SNOOP | AZX_DCAPS_NO_TCSEL | \
+@@ -3933,14 +3938,11 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+ 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+ 	/* Haswell */
+ 	{ PCI_DEVICE(0x8086, 0x0a0c),
+-	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH |
+-	  AZX_DCAPS_I915_POWERWELL },
++	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_HASWELL },
+ 	{ PCI_DEVICE(0x8086, 0x0c0c),
+-	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH |
+-	  AZX_DCAPS_I915_POWERWELL },
++	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_HASWELL },
+ 	{ PCI_DEVICE(0x8086, 0x0d0c),
+-	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH |
+-	  AZX_DCAPS_I915_POWERWELL },
++	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_HASWELL },
+ 	/* 5 Series/3400 */
+ 	{ PCI_DEVICE(0x8086, 0x3b56),
+ 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH_NOPM },
 -- 
 1.8.3.2
 
