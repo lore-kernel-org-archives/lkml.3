@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab3LEX5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 18:57:34 -0500
-Received: from smtprelay0143.hostedemail.com ([216.40.44.143]:44920 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754427Ab3LEX5a (ORCPT
+	id S1755813Ab3LFABG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:01:06 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:9252 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754427Ab3LFABC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 18:57:30 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3865:3866:3868:3871:3872:4321:4384:4605:5007:7652:7809:7875:8957:10004:10400:10481:10848:11026:11233:11473:11658:11914:12043:12296:12438:12517:12519:12555:19900,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: corn52_7b74e9c389923
-X-Filterd-Recvd-Size: 3511
-Message-ID: <1386287846.10003.34.camel@joe-AO722>
-Subject: [PATCH -next] staging: slicoss:  Remove last reference to
- compare_ether_addr
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel <devel@driverdev.osuosl.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Dec 2013 15:57:26 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 5 Dec 2013 19:01:02 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+Message-ID: <1386288052.7375.100.camel@snotra.buserror.net>
+Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+From: Scott Wood <scottwood@freescale.com>
+To: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+CC: Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Yoder Stuart-B08248 <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 5 Dec 2013 18:00:52 -0600
+In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385066603.2879.414.camel@ul30vt.home>
+	 <1385066835.1403.489.camel@snotra.buserror.net>
+	 <1385067648.2879.421.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And use the normal is_<foo>_ether_addr functions and ETH_ALEN too.
+On Sun, 2013-11-24 at 23:33 -0600, Bharat Bhushan wrote:
+> 
+> > -----Original Message-----
+> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > Sent: Friday, November 22, 2013 2:31 AM
+> > To: Wood Scott-B07421
+> > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org; agraf@suse.de; Yoder
+> > Stuart-B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
+> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> >
+> > On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
+> > > On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
+> > > > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
+> > > > >
+> > > > > > -----Original Message-----
+> > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > > > Sent: Thursday, November 21, 2013 12:17 AM
+> > > > > > To: Bhushan Bharat-R65777
+> > > > > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood
+> > > > > > Scott-B07421; Yoder Stuart-B08248;
+> > > > > > iommu@lists.linux-foundation.org; linux- pci@vger.kernel.org;
+> > > > > > linuxppc-dev@lists.ozlabs.org; linux- kernel@vger.kernel.org;
+> > > > > > Bhushan Bharat-R65777
+> > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
+> > > > > > IOMMU (PAMU)
+> > > > > >
+> > > > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each
+> > > > > > vfio user has $COUNT regions at their disposal exclusively)?
+> > > > >
+> > > > > Number of msi-bank count is system wide and not per aperture, But will be
+> > setting windows for banks in the device aperture.
+> > > > > So say if we are direct assigning 2 pci device (both have different iommu
+> > group, so 2 aperture in iommu) to VM.
+> > > > > Now qemu can make only one call to know how many msi-banks are there but
+> > it must set sub-windows for all banks for both pci device in its respective
+> > aperture.
+> > > >
+> > > > I'm still confused.  What I want to make sure of is that the banks
+> > > > are independent per aperture.  For instance, if we have two separate
+> > > > userspace processes operating independently and they both chose to
+> > > > use msi bank zero for their device, that's bank zero within each
+> > > > aperture and doesn't interfere.  Or another way to ask is can a
+> > > > malicious user interfere with other users by using the wrong bank.
+> > > > Thanks,
+> > >
+> > > They can interfere.
+> 
+> Want to be sure of how they can interfere?
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/staging/slicoss/README    |  1 -
- drivers/staging/slicoss/slicoss.c | 21 ++++++++-------------
- 2 files changed, 8 insertions(+), 14 deletions(-)
+If more than one VFIO user shares the same MSI group, one of the users
+can send MSIs to another user, by using the wrong interrupt within the
+bank.  Unexpected MSIs could cause misbehavior or denial of service.
 
-diff --git a/drivers/staging/slicoss/README b/drivers/staging/slicoss/README
-index cb04a87..53052c4 100644
---- a/drivers/staging/slicoss/README
-+++ b/drivers/staging/slicoss/README
-@@ -14,7 +14,6 @@ TODO:
- 	- use net_device_ops
- 	- use dev->stats rather than adapter->stats
- 	- don't cast netdev_priv it is already void
--	- use compare_ether_addr
- 	- GET RID OF MACROS
- 	- work on all architectures
- 	   - without CONFIG_X86_64 confusion
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index f340cb9..1426ca4 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -595,15 +595,12 @@ static void slic_adapter_set_hwaddr(struct adapter *adapter)
- 		memcpy(adapter->macaddr,
- 		       card->config.MacInfo[adapter->functionnumber].macaddrA,
- 		       sizeof(struct slic_config_mac));
--		if (!(adapter->currmacaddr[0] || adapter->currmacaddr[1] ||
--		      adapter->currmacaddr[2] || adapter->currmacaddr[3] ||
--		      adapter->currmacaddr[4] || adapter->currmacaddr[5])) {
--			memcpy(adapter->currmacaddr, adapter->macaddr, 6);
--		}
--		if (adapter->netdev) {
-+		if (is_zero_ether_addr(adapter->currmacaddr))
-+			memcpy(adapter->currmacaddr, adapter->macaddr,
-+			       ETH_ALEN);
-+		if (adapter->netdev)
- 			memcpy(adapter->netdev->dev_addr, adapter->currmacaddr,
--			       6);
--		}
-+			       ETH_ALEN);
- 	}
- }
- 
-@@ -767,13 +764,11 @@ static bool slic_mac_filter(struct adapter *adapter,
- {
- 	struct net_device *netdev = adapter->netdev;
- 	u32 opts = adapter->macopts;
--	u32 *dhost4 = (u32 *)&ether_frame->ether_dhost[0];
--	u16 *dhost2 = (u16 *)&ether_frame->ether_dhost[4];
- 
- 	if (opts & MAC_PROMISC)
- 		return true;
- 
--	if ((*dhost4 == 0xFFFFFFFF) && (*dhost2 == 0xFFFF)) {
-+	if (is_broadcast_ether_addr(ether_frame->ether_dhost)) {
- 		if (opts & MAC_BCAST) {
- 			adapter->rcv_broadcasts++;
- 			return true;
-@@ -782,7 +777,7 @@ static bool slic_mac_filter(struct adapter *adapter,
- 		}
- 	}
- 
--	if (ether_frame->ether_dhost[0] & 0x01) {
-+	if (is_multicast_ether_addr(ether_frame->ether_dhost)) {
- 		if (opts & MAC_ALLMCAST) {
- 			adapter->rcv_multicasts++;
- 			netdev->stats.multicast++;
-@@ -2335,7 +2330,7 @@ static int slic_mcast_add_list(struct adapter *adapter, char *address)
- 	if (mcaddr == NULL)
- 		return 1;
- 
--	memcpy(mcaddr->address, address, 6);
-+	memcpy(mcaddr->address, address, ETH_ALEN);
- 
- 	mcaddr->next = adapter->mcastaddrs;
- 	adapter->mcastaddrs = mcaddr;
+> >>  With this hardware, the only way to prevent that
+> > > is to make sure that a bank is not shared by multiple protection contexts.
+> > > For some of our users, though, I believe preventing this is less
+> > > important than the performance benefit.
+> 
+> So should we let this patch series in without protection?
+
+No, there should be some sort of opt-in mechanism similar to IOMMU-less
+VFIO -- but not the same exact one, since one is a much more serious
+loss of isolation than the other.
+
+> > I think we need some sort of ownership model around the msi banks then.
+> > Otherwise there's nothing preventing another userspace from attempting an MSI
+> > based attack on other users, or perhaps even on the host.  VFIO can't allow
+> > that.  Thanks,
+> 
+> We have very few (3 MSI bank on most of chips), so we can not assign
+> one to each userspace.
+
+That depends on how many users there are.
+
+-Scott
+
 
 
