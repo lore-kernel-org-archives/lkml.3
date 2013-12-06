@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab3LFVKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:10:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758731Ab3LFVKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:10:10 -0500
-Date: Fri, 06 Dec 2013 16:09:36 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Message-ID: <1386364176-it8qfec-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1386321136-27538-4-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386321136-27538-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1386321136-27538-4-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 4/6] sched/numa: use wrapper function task_node to get
- node which task is on
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1386321136-27538-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1758865Ab3LFVKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:10:25 -0500
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:8314
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758837Ab3LFVKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 16:10:15 -0500
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(zzzz1f42h2148h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah1fc6h1082kzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Alan Tull <delicious.quinoa@gmail.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Jamie Iles <jamie@jamieiles.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        delicious quinoa <delicious.quinoa@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+Subject: [PATCH v9] gpio: add a driver for Synopsys DesignWare APB GPIO
+Date: Fri, 6 Dec 2013 15:09:38 -0600
+Message-ID: <1386364179-28650-1-git-send-email-delicious.quinoa@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 05:12:14PM +0800, Wanpeng Li wrote:
-> Use wrapper function task_node to get node which task is on.
-> 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: Alan Tull <atull@altera.com>
 
-Maybe we have another line to apply the same fix:
+Hi Linus,
 
-./kernel/sched/debug.c:142:     SEQ_printf(m, " %d", cpu_to_node(task_cpu(p)));
+If you don't have any further comments, can you take this patch?
 
-But anyway,
+Alan
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Jamie Iles (1):
+  gpio: add a driver for the Synopsys DesignWare APB GPIO block
 
-Thanks,
-Naoya Horiguchi
+ .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   59 +++
+ drivers/gpio/Kconfig                               |    9 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-dwapb.c                          |  415 ++++++++++++++++++++
+ 4 files changed, 484 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
+ create mode 100644 drivers/gpio/gpio-dwapb.c
 
-> ---
->  kernel/sched/fair.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 56bcc0c..e0b1063 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1216,7 +1216,7 @@ static int task_numa_migrate(struct task_struct *p)
->  	 * elsewhere, so there is no point in (re)trying.
->  	 */
->  	if (unlikely(!sd)) {
-> -		p->numa_preferred_nid = cpu_to_node(task_cpu(p));
-> +		p->numa_preferred_nid = task_node(p);
->  		return -EINVAL;
->  	}
->  
-> @@ -1283,7 +1283,7 @@ static void numa_migrate_preferred(struct task_struct *p)
->  	p->numa_migrate_retry = jiffies + HZ;
->  
->  	/* Success if task is already running on preferred CPU */
-> -	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
-> +	if (task_node(p) == p->numa_preferred_nid)
->  		return;
->  
->  	/* Otherwise, try migrate to a CPU on the preferred node */
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+-- 
+1.7.9.5
+
+
