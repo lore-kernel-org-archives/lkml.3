@@ -1,69 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab3LFRso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:48:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61998 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932148Ab3LFRsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:48:43 -0500
-Date: Fri, 06 Dec 2013 12:48:19 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+	id S1758266Ab3LFRtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:49:05 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42416 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932148Ab3LFRtC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:49:02 -0500
+Message-ID: <52A20E09.7090005@wwwdotorg.org>
+Date: Fri, 06 Dec 2013 10:48:57 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Stefan Agner <stefan@agner.ch>, thierry.reding@gmail.com, dev@lynxeye.de,
+        lee.jones@linaro.org, lgirdwood@gmail.com, broonie@kernel.org
+CC: kai.poggensee@avionic-design.de, sameo@linux.intel.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Message-ID: <1386352099-a1o7ki65-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
-Subject: Re: [PATCH] mm/hwpoison: add '#' to hwpoison_inject
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+Subject: Re: [PATCH v5 1/3] mfd: tps6586x: add version detection
+References: <cover.1386333697.git.stefan@agner.ch> <7812fb79beac0a6a409090f43d129893f9f93b5b.1386333697.git.stefan@agner.ch>
+In-Reply-To: <7812fb79beac0a6a409090f43d129893f9f93b5b.1386333697.git.stefan@agner.ch>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1386322013-29554-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 05:26:53PM +0800, Wanpeng Li wrote:
-> Add '#' to hwpoison_inject just as done in madvise_hwpoison.
-> 
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+On 12/06/2013 05:51 AM, Stefan Agner wrote:
+> Use the VERSIONCRC to determine the exact device version. According to
+> the datasheet this register can be used as device identifier. The
+> identification is needed since some tps6586x regulators use a different
+> voltage table.
 
-It could affect some test code, but I checked mce-test and it doesn't
-depend on this message. So maybe it's OK.
-
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
-Thanks,
-Naoya
-
-> ---
->  mm/hwpoison-inject.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
-> index 4c84678..146cead 100644
-> --- a/mm/hwpoison-inject.c
-> +++ b/mm/hwpoison-inject.c
-> @@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
->  		return 0;
->  
->  inject:
-> -	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
-> +	pr_info(KERN_INFO "Injecting memory failure at pfn %#lx\n", pfn);
->  	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
->  }
->  
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+FWIW, this version looks good to me now.
