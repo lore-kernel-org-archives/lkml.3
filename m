@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759989Ab3LFWBe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:01:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32876 "EHLO
+	id S1760003Ab3LFWBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:01:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32857 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759531Ab3LFVyJ (ORCPT
+	with ESMTP id S1759523Ab3LFVyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:09 -0500
+	Fri, 6 Dec 2013 16:54:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Willem de Bruijn <willemb@google.com>, Phil Sutter <phil@nwl.cc>,
-        Eric Dumazet <edumazet@google.com>, Jan Stancek <jstancek@redhat.com>,
-        Veaceslav Falico <vfalico@redhat.com>
-Subject: [PATCH 3.4 20/32] af_packet: block BH in prb_shutdown_retire_blk_timer()
-Date: Fri,  6 Dec 2013 13:52:30 -0800
-Message-Id: <20131206214958.679705231@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 07/32] isdnloop: use strlcpy() instead of strcpy()
+Date: Fri,  6 Dec 2013 13:52:17 -0800
+Message-Id: <20131206214957.522425628@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -30,45 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit ec6f809ff6f19fafba3212f6aff0dda71dfac8e8 ]
+[ Upstream commit f9a23c84486ed350cce7bb1b2828abd1f6658796 ]
 
-Currently we're using plain spin_lock() in prb_shutdown_retire_blk_timer(),
-however the timer might fire right in the middle and thus try to re-aquire
-the same spinlock, leaving us in a endless loop.
+These strings come from a copy_from_user() and there is no way to be
+sure they are NUL terminated.
 
-To fix that, use the spin_lock_bh() to block it.
-
-Fixes: f6fb8f100b80 ("af-packet: TPACKET_V3 flexible buffer implementation.")
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Daniel Borkmann <dborkman@redhat.com>
-CC: Willem de Bruijn <willemb@google.com>
-CC: Phil Sutter <phil@nwl.cc>
-CC: Eric Dumazet <edumazet@google.com>
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Tested-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -504,9 +504,9 @@ static void prb_shutdown_retire_blk_time
- 
- 	pkc = tx_ring ? &po->tx_ring.prb_bdqc : &po->rx_ring.prb_bdqc;
- 
--	spin_lock(&rb_queue->lock);
-+	spin_lock_bh(&rb_queue->lock);
- 	pkc->delete_blk_timer = 1;
--	spin_unlock(&rb_queue->lock);
-+	spin_unlock_bh(&rb_queue->lock);
- 
- 	prb_del_retire_blk_timer(pkc);
- }
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1083,8 +1083,10 @@ isdnloop_start(isdnloop_card *card, isdn
+ 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
+ 			return -ENOMEM;
+ 		}
+-		for (i = 0; i < 3; i++)
+-			strcpy(card->s0num[i], sdef.num[i]);
++		for (i = 0; i < 3; i++) {
++			strlcpy(card->s0num[i], sdef.num[i],
++				sizeof(card->s0num[0]));
++		}
+ 		break;
+ 	case ISDN_PTYPE_1TR6:
+ 		if (isdnloop_fake(card, "DRV1.04TC-1TR6-CAPI-CNS-BASIS-29.11.95",
+@@ -1097,7 +1099,7 @@ isdnloop_start(isdnloop_card *card, isdn
+ 			spin_unlock_irqrestore(&card->isdnloop_lock, flags);
+ 			return -ENOMEM;
+ 		}
+-		strcpy(card->s0num[0], sdef.num[0]);
++		strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
+ 		card->s0num[1][0] = '\0';
+ 		card->s0num[2][0] = '\0';
+ 		break;
 
 
