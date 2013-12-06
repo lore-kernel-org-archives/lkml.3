@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab3LFHHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:07:15 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:44873 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab3LFHHL (ORCPT
+	id S1753719Ab3LFHIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:08:43 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:15404 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab3LFHIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:07:11 -0500
-X-AuditID: cbfee68f-b7f256d000003c1b-42-52a1779d068b
+	Fri, 6 Dec 2013 02:08:40 -0500
+X-AuditID: cbfee68e-b7fee6d000003b32-72-52a177f6fd05
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Mark Brown'" <broonie@kernel.org>
 Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
         "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>,
-        "'Axel Lin'" <axel.lin@ingics.com>
-Subject: [PATCH 1/6] regulator: ab8500: use devm_regulator_register()
-Date: Fri, 06 Dec 2013 16:07:09 +0900
-Message-id: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>
+References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+In-reply-to: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+Subject: [PATCH 2/6] regulator: db8500-prcmu: use devm_regulator_register()
+Date: Fri, 06 Dec 2013 16:08:38 +0900
+Message-id: <000b01cef251$fc6df360$f549da20$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9g==
+Thread-index: Ac7yUb+lAqO9MkXdRJaD6VTAoDhw9gAAAxYw
 Content-language: ko
-x-cr-hashedpuzzle: B6p4 i4cf vH+a yZbS 1MmC AAWnCQ== AAmIxA== AA33fw== ABCOaA==
- ABZ7dg== AB+Xsg== ACnDfA== ADnTZQ== AE0VJg== AFAmrg==
- AFvadQ==;7;YQB4AGUAbAAuAGwAaQBuAEAAaQBuAGcAaQBjAHMALgBjAG8AbQA7AGIAZQBuAGcAdAAuAGcALgBqAG8AbgBzAHMAbwBuAEAAcwB0AGUAcgBpAGMAcwBzAG8AbgAuAGMAbwBtADsAYgByAG8AbwBuAGkAZQBAAGsAZQByAG4AZQBsAC4AbwByAGcAOwBqAGcAMQAuAGgAYQBuAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABlAGUALgBqAG8AbgBlAHMAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAbABnAGkAcgBkAHcAbwBvAGQAQABnAG0AYQBpAGwALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{16487644-B78F-4963-98A3-171330066DA9};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Fri,
- 06 Dec 2013 07:06:56
- GMT;WwBQAEEAVABDAEgAIAAxAC8ANgBdACAAcgBlAGcAdQBsAGEAdABvAHIAOgAgAGEAYgA4ADUAMAAwADoAIAB1AHMAZQAgAGQAZQB2AG0AXwByAGUAZwB1AGwAYQB0AG8AcgBfAHIAZQBnAGkAcwB0AGUAcgAoACkA
-x-cr-puzzleid: {16487644-B78F-4963-98A3-171330066DA9}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zI9155QuDDM75WByZ85XZYv2DY0wW
-	Ux8+YbO4vPASq8X9r0cZLb5d6WCyuLxrDpsDu8fOWXfZPdp+lnlsWtXJ5nHn2h42j74tqxg9
-	vi9dw+7xeZNcAHsUl01Kak5mWWqRvl0CV8aiWyvYC47wV8x+vYyxgfE1TxcjJ4eEgInE5cn9
-	jBC2mMSFe+vZuhi5OIQEljFKfHp3kAWm6PmLLmaIxHRGiZ7ub+wQzi8gZ/JsZpAqNgE1iS9f
-	DgMlODhEBFQl/r9yB6lhFnjJKPFgcx8TSI2wgKtE6+V5jCA1LEA11+Zpg4R5BWwl5vZsYYGw
-	BSV+TL4HZjMLaEms33mcCcKWl9i85i0zSKuEgLrEo7+6IGERAT2Ji8d/QpWLSOx78Y4RZK2E
-	wAs2iYUn25kg6k0l7j4qhIj/ZJeY8/0qWAOLgIDEt8mHWCBqZCU2HWCG+FdS4uCKGywTGCVm
-	IbloFpKLZiG5aBaS1QsYWVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihERz/w7GuwesDzEm
-	A62fyCwlmpwPTAZ5JfGGxmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNa
-	fIiRiYNTqoExkPll7dSbm74eEw3o7jK9+bFXPzFby/NT3RXpdmOr2SejVpcKdyxMn5V0K4Bj
-	n3fp7t8HPzRtFvspe6z1z5Ul4rPObKoQUQ1JTBP/FjCve2WG3cV7PG9l1ua0u7tsyP6etMTn
-	2LmOBj+Wqrxc9/2OoQ822YmvDD+4v8YvacXsPe/rH0i1R9xQYinOSDTUYi4qTgQAD7NlIfwC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd255QuDDKa2WlocmfOV2WL9g2NM
-	FlMfPmGzuLzwEqvF/a9HGS2+Xelgsri8aw6bA7vHzll32T3afpZ5bFrVyeZx59oeNo++LasY
-	Pb4vXcPu8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
-	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjEW3VrAX
-	HOGvmP16GWMD42ueLkZODgkBE4nnL7qYIWwxiQv31rN1MXJxCAlMZ5To6f7GDuH8AnImzwar
-	YhNQk/jy5TBQgoNDREBV4v8rd5AaZoGXjBIPNvcxgdQIC7hKtF6exwhSwwJUc22eNkiYV8BW
-	Ym7PFhYIW1Dix+R7YDazgJbE+p3HmSBseYnNa94yg7RKCKhLPPqrCxIWEdCTuHj8J1S5iMS+
-	F+8YQdZKCLxgk1h4sp0Jot5U4u6jwgmMQrOQbJiFZMMsJBtmIRm1gJFlFaNoakFyQXFSeq6R
-	XnFibnFpXrpecn7uJkZwsngmvYNxVYPFIUYBDkYlHl6OVQuChFgTy4orcw8xSnAwK4nw9ogv
-	DBLiTUmsrEotyo8vKs1JLT7EmAz0/0RmKdHkfGAiyyuJNzQ2MTOyNDKzMDIxNydNWEmc92Cr
-	daCQQHpiSWp2ampBahHMFiYOTqkGxgDXCWoFN54daMnMFrXzNO4Xk9x07dz0+ETVGn/J7zM1
-	kn9WBez8VTm/1XlxZ1XDy+RJqTsMk9zVha+Jye1j/jWPY/MWDamd+lbfns/2+ppvqPk0pOyF
-	fSnTcac3VjxbXTq7Kid6zdv4y8Hih3XW9f+rBFt+eZ3Yz7pycfgMf5uuyv1L/xTFKLEUZyQa
-	ajEXFScCABdY/2taAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zI91v5QuDDP7tk7BY/+AYk8XUh0/Y
+	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvusWlVJ5tH35ZVjB7fl65h9/i8SS6ANYrLJiU1J7Ms
+	tUjfLoEr4/v/S8wFW3gqdnTeYG5gXMDVxcjJISFgInFlShszhC0mceHeerYuRi4OIYFljBKT
+	L2xlgina2jCZCSIxnVFi+6GPjBDOL0aJIxs3gbWzCahJfPlymL2LkYNDREBV4v8rd5AaZoGF
+	jBJTljxgBokLCdhKrLpfDVLOKWAn8efoG7BWYQFvibdHPoEtYwFqnX/6ICuIzQtU/vz9fShb
+	UOLH5HssIDazgJbE+p3HmSBseYnNa96CjZcQUJd49FcXJCwiYCTxb9tudogSEYl9L96BnSwh
+	8IhdYtLCCewQuwQkvk0+xALRKyux6QA0ICQlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIU
+	TS1ILihOSi8y0itOzC0uzUvXS87P3cQIidS+HYw3D1gfYkwGWj+RWUo0OR8Y6Xkl8YbGZkYW
+	piamxkbmlmakCSuJ8y56mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbGt68qxrS//7tyo
+	qzPn6gWOfXx/V82rdv6Q1+r/y9+DT2THB1HWXxP91Ktf8RjsXXe4/8dpwdlm9xY49c416DNw
+	Xqj7/W3pt7on1haLtNZ9/ugT+cy6t0PRbqbXkof35a7sWvxF4iJHvnBgUKNrduPuXxlZk2/7
+	xB7yzRSc2iW/7tWhbMua1VuUWIozEg21mIuKEwEUa+Kf6gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd1v5QuDDFatEbFY/+AYk8XUh0/Y
+	LC4vvMRq8e1KB5PF5V1z2BxYPXbOusvusWlVJ5tH35ZVjB7fl65h9/i8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMeP7/0vMBVt4KnZ03mBuYFzA1cXIySEhYCKx
+	tWEyE4QtJnHh3nq2LkYuDiGB6YwS2w99ZIRwfjFKHNm4iRmkik1ATeLLl8PsXYwcHCICqhL/
+	X7mD1DALLGSUmLLkATNIXEjAVmLV/WqQck4BO4k/R9+AtQoLeEu8PfIJbBkLUOv80wdZQWxe
+	oPLn7+9D2YISPybfYwGxmQW0JNbvPM4EYctLbF7zFmy8hIC6xKO/uiBhEQEjiX/bdrNDlIhI
+	7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQITgPP
+	pHYwrmywOMQowMGoxMPLsWpBkBBrYllxZe4hRgkOZiUR3h7xhUFCvCmJlVWpRfnxRaU5qcWH
+	GJOBHp3ILCWanA9MUXkl8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLE
+	wSnVwGg+8xDny43ytZ1TGqWuy1q5XRBLrfGO86qMnLj6f+WpM69zTeeXCkVaq22+vsXwu/f1
+	larRUSf2Ttdv0t9VvFF8TdbHV+zH40rM027rMmeLHdo85aLGY2WHrNRjL6b/aBbxEVzkW/7/
+	bgXPN3H3j41Si1we5X93f/m5yuu+aYa6y8xLRU0XDymxFGckGmoxFxUnAgBBi+63RwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -67,61 +60,53 @@ Use devm_regulator_register() to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/regulator/ab8500.c |   24 ++++--------------------
- 1 file changed, 4 insertions(+), 20 deletions(-)
+ drivers/regulator/db8500-prcmu.c |   20 +-------------------
+ 1 file changed, 1 insertion(+), 19 deletions(-)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 0f86695..c625468 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -3005,7 +3005,6 @@ static int ab8500_regulator_register(struct platform_device *pdev,
- 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
- 	struct ab8500_regulator_info *info = NULL;
- 	struct regulator_config config = { };
--	int err;
+diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
+index a53c11a..846acf2 100644
+--- a/drivers/regulator/db8500-prcmu.c
++++ b/drivers/regulator/db8500-prcmu.c
+@@ -431,17 +431,11 @@ static int db8500_regulator_register(struct platform_device *pdev,
+ 	config.of_node = np;
  
- 	/* assign per-regulator data */
- 	info = &abx500_regulator.info[id];
-@@ -3027,17 +3026,12 @@ static int ab8500_regulator_register(struct platform_device *pdev,
- 	}
- 
- 	/* register regulator with framework */
--	info->regulator = regulator_register(&info->desc, &config);
-+	info->regulator = devm_regulator_register(&pdev->dev, &info->desc,
-+						&config);
- 	if (IS_ERR(info->regulator)) {
--		err = PTR_ERR(info->regulator);
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
- 			info->desc.name);
--		/* when we fail, un-register all earlier regulators */
+ 	/* register with the regulator framework */
+-	info->rdev = regulator_register(&info->desc, &config);
++	info->rdev = devm_regulator_register(&pdev->dev, &info->desc, &config);
+ 	if (IS_ERR(info->rdev)) {
+ 		err = PTR_ERR(info->rdev);
+ 		dev_err(&pdev->dev, "failed to register %s: err %i\n",
+ 			info->desc.name, err);
+-
+-		/* if failing, unregister all earlier regulators */
 -		while (--id >= 0) {
--			info = &abx500_regulator.info[id];
--			regulator_unregister(info->regulator);
+-			info = &dbx500_regulator_info[id];
+-			regulator_unregister(info->rdev);
 -		}
--		return err;
-+		return PTR_ERR(info->regulator);
+ 		return err;
  	}
  
- 	return 0;
-@@ -3086,17 +3080,7 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
+@@ -530,20 +524,8 @@ static int db8500_regulator_probe(struct platform_device *pdev)
  
- static int ab8500_regulator_remove(struct platform_device *pdev)
+ static int db8500_regulator_remove(struct platform_device *pdev)
  {
--	int i, err;
+-	int i;
 -
--	for (i = 0; i < abx500_regulator.info_size; i++) {
--		struct ab8500_regulator_info *info = NULL;
--		info = &abx500_regulator.info[i];
--
--		dev_vdbg(rdev_get_dev(info->regulator),
--			"%s-remove\n", info->desc.name);
--
--		regulator_unregister(info->regulator);
--	}
-+	int err;
+ 	ux500_regulator_debug_exit();
  
- 	/* remove regulator debug */
- 	err = ab8500_regulator_debug_exit(pdev);
+-	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
+-		struct dbx500_regulator_info *info;
+-		info = &dbx500_regulator_info[i];
+-
+-		dev_vdbg(rdev_get_dev(info->rdev),
+-			"regulator-%s-remove\n", info->desc.name);
+-
+-		regulator_unregister(info->rdev);
+-	}
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
