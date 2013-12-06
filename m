@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759012Ab3LFVwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:52:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60473 "EHLO
+	id S1759135Ab3LFVwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:52:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758982Ab3LFVwc (ORCPT
+	with ESMTP id S1754730Ab3LFVwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:32 -0500
+	Fri, 6 Dec 2013 16:52:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 18/83] bonding: fix two race conditions in bond_store_updelay/downdelay
-Date: Fri,  6 Dec 2013 13:51:08 -0800
-Message-Id: <20131206214641.765412064@linuxfoundation.org>
+Subject: [PATCH 3.12 41/83] ipv4: fix race in concurrent ip_route_input_slow()
+Date: Fri,  6 Dec 2013 13:51:31 -0800
+Message-Id: <20131206214643.876014820@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -29,63 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-[ Upstream commit b869ccfab1e324507fa3596e3e1308444fb68227 ]
+[ Upstream commit dcdfdf56b4a6c9437fc37dbc9cee94a788f9b0c4 ]
 
-This patch fixes two race conditions between bond_store_updelay/downdelay
-and bond_store_miimon which could lead to division by zero as miimon can
-be set to 0 while either updelay/downdelay are being set and thus miss the
-zero check in the beginning, the zero div happens because updelay/downdelay
-are stored as new_value / bond->params.miimon. Use rtnl to synchronize with
-miimon setting.
+CPUs can ask for local route via ip_route_input_noref() concurrently.
+if nh_rth_input is not cached yet, CPUs will proceed to allocate
+equivalent DSTs on 'lo' and then will try to cache them in nh_rth_input
+via rt_cache_route()
+Most of the time they succeed, but on occasion the following two lines:
+	orig = *p;
+	prev = cmpxchg(p, orig, rt);
+in rt_cache_route() do race and one of the cpus fails to complete cmpxchg.
+But ip_route_input_slow() doesn't check the return code of rt_cache_route(),
+so dst is leaking. dst_destroy() is never called and 'lo' device
+refcnt doesn't go to zero, which can be seen in the logs as:
+	unregister_netdevice: waiting for lo to become free. Usage count = 1
+Adding mdelay() between above two lines makes it easily reproducible.
+Fix it similar to nh_pcpu_rth_output case.
 
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
+Fixes: d2d68ba9fe8b ("ipv4: Cache input routes in fib_info nexthops.")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_sysfs.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv4/route.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -760,6 +760,8 @@ static ssize_t bonding_store_downdelay(s
- 	int new_value, ret = count;
- 	struct bonding *bond = to_bond(d);
- 
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (!(bond->params.miimon)) {
- 		pr_err("%s: Unable to set down delay as MII monitoring is disabled\n",
- 		       bond->dev->name);
-@@ -793,6 +795,7 @@ static ssize_t bonding_store_downdelay(s
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1772,8 +1772,12 @@ local_input:
+ 		rth->dst.error= -err;
+ 		rth->rt_flags 	&= ~RTCF_LOCAL;
  	}
- 
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(downdelay, S_IRUGO | S_IWUSR,
-@@ -815,6 +818,8 @@ static ssize_t bonding_store_updelay(str
- 	int new_value, ret = count;
- 	struct bonding *bond = to_bond(d);
- 
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (!(bond->params.miimon)) {
- 		pr_err("%s: Unable to set up delay as MII monitoring is disabled\n",
- 		       bond->dev->name);
-@@ -848,6 +853,7 @@ static ssize_t bonding_store_updelay(str
- 	}
- 
- out:
-+	rtnl_unlock();
- 	return ret;
- }
- static DEVICE_ATTR(updelay, S_IRUGO | S_IWUSR,
+-	if (do_cache)
+-		rt_cache_route(&FIB_RES_NH(res), rth);
++	if (do_cache) {
++		if (unlikely(!rt_cache_route(&FIB_RES_NH(res), rth))) {
++			rth->dst.flags |= DST_NOCACHE;
++			rt_add_uncached_list(rth);
++		}
++	}
+ 	skb_dst_set(skb, &rth->dst);
+ 	err = 0;
+ 	goto out;
 
 
