@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162245Ab3LFWZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:25:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60733 "EHLO
+	id S932232Ab3LFWZy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:25:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60730 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161195Ab3LFVxM (ORCPT
+	with ESMTP id S1161181Ab3LFVxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:12 -0500
+	Fri, 6 Dec 2013 16:53:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        Jens Axboe <axboe@kernel.dk>, Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.12 72/83] elevator: Fix a race in elevator switching and md device initialization
-Date: Fri,  6 Dec 2013 13:52:02 -0800
-Message-Id: <20131206214646.750902268@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.12 71/83] rt2800: add support for radio chip RF3070
+Date: Fri,  6 Dec 2013 13:52:01 -0800
+Message-Id: <20131206214646.657406247@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,103 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit eb1c160b22655fd4ec44be732d6594fd1b1e44f4 upstream.
+commit 3b9b74baa1af2952d719735b4a4a34706a593948 upstream.
 
-The soft lockup below happens at the boot time of the system using dm
-multipath and the udev rules to switch scheduler.
+Add support for new RF chip ID: 3070. It seems to be the same as 5370,
+maybe vendor just put wrong value on the eeprom, but add this id anyway
+since devices with it showed on the marked.
 
-[  356.127001] BUG: soft lockup - CPU#3 stuck for 22s! [sh:483]
-[  356.127001] RIP: 0010:[<ffffffff81072a7d>]  [<ffffffff81072a7d>] lock_timer_base.isra.35+0x1d/0x50
-...
-[  356.127001] Call Trace:
-[  356.127001]  [<ffffffff81073810>] try_to_del_timer_sync+0x20/0x70
-[  356.127001]  [<ffffffff8118b08a>] ? kmem_cache_alloc_node_trace+0x20a/0x230
-[  356.127001]  [<ffffffff810738b2>] del_timer_sync+0x52/0x60
-[  356.127001]  [<ffffffff812ece22>] cfq_exit_queue+0x32/0xf0
-[  356.127001]  [<ffffffff812c98df>] elevator_exit+0x2f/0x50
-[  356.127001]  [<ffffffff812c9f21>] elevator_change+0xf1/0x1c0
-[  356.127001]  [<ffffffff812caa50>] elv_iosched_store+0x20/0x50
-[  356.127001]  [<ffffffff812d1d09>] queue_attr_store+0x59/0xb0
-[  356.127001]  [<ffffffff812143f6>] sysfs_write_file+0xc6/0x140
-[  356.127001]  [<ffffffff811a326d>] vfs_write+0xbd/0x1e0
-[  356.127001]  [<ffffffff811a3ca9>] SyS_write+0x49/0xa0
-[  356.127001]  [<ffffffff8164e899>] system_call_fastpath+0x16/0x1b
-
-This is caused by a race between md device initialization by multipathd and
-shell script to switch the scheduler using sysfs.
-
- - multipathd:
-   SyS_ioctl -> do_vfs_ioctl -> dm_ctl_ioctl -> ctl_ioctl -> table_load
-   -> dm_setup_md_queue -> blk_init_allocated_queue -> elevator_init
-    q->elevator = elevator_alloc(q, e); // not yet initialized
-
- - sh -c 'echo deadline > /sys/$DEVPATH/queue/scheduler':
-   elevator_switch (in the call trace above)
-    struct elevator_queue *old = q->elevator;
-    q->elevator = elevator_alloc(q, new_e);
-    elevator_exit(old);                 // lockup! (*)
-
- - multipathd: (cont.)
-    err = e->ops.elevator_init_fn(q);   // init fails; q->elevator is modified
-
-(*) When del_timer_sync() is called, lock_timer_base() will loop infinitely
-while timer->base == NULL. In this case, as timer will never initialized,
-it results in lockup.
-
-This patch introduces acquisition of q->sysfs_lock around elevator_init()
-into blk_init_allocated_queue(), to provide mutual exclusion between
-initialization of the q->scheduler and switching of the scheduler.
-
-This should fix this bugzilla:
-https://bugzilla.redhat.com/show_bug.cgi?id=902012
-
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-core.c |   10 +++++++++-
- block/elevator.c |    6 ++++++
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800.h    |    2 ++
+ drivers/net/wireless/rt2x00/rt2800lib.c |    8 +++++++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -741,9 +741,17 @@ blk_init_allocated_queue(struct request_
+--- a/drivers/net/wireless/rt2x00/rt2800.h
++++ b/drivers/net/wireless/rt2x00/rt2800.h
+@@ -52,6 +52,7 @@
+  * RF3322 2.4G 2T2R(RT3352/RT3371/RT3372/RT3391/RT3392)
+  * RF3053 2.4G/5G 3T3R(RT3883/RT3563/RT3573/RT3593/RT3662)
+  * RF5592 2.4G/5G 2T2R
++ * RF3070 2.4G 1T1R
+  * RF5360 2.4G 1T1R
+  * RF5370 2.4G 1T1R
+  * RF5390 2.4G 1T1R
+@@ -70,6 +71,7 @@
+ #define RF3322				0x000c
+ #define RF3053				0x000d
+ #define RF5592				0x000f
++#define RF3070				0x3070
+ #define RF3290				0x3290
+ #define RF5360				0x5360
+ #define RF5370				0x5370
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -3152,6 +3152,7 @@ static void rt2800_config_channel(struct
+ 	case RF3322:
+ 		rt2800_config_channel_rf3322(rt2x00dev, conf, rf, info);
+ 		break;
++	case RF3070:
+ 	case RF5360:
+ 	case RF5370:
+ 	case RF5372:
+@@ -3166,7 +3167,8 @@ static void rt2800_config_channel(struct
+ 		rt2800_config_channel_rf2xxx(rt2x00dev, conf, rf, info);
+ 	}
  
- 	q->sg_reserved_size = INT_MAX;
- 
-+	/* Protect q->elevator from elevator_change */
-+	mutex_lock(&q->sysfs_lock);
-+
- 	/* init elevator */
--	if (elevator_init(q, NULL))
-+	if (elevator_init(q, NULL)) {
-+		mutex_unlock(&q->sysfs_lock);
- 		return NULL;
-+	}
-+
-+	mutex_unlock(&q->sysfs_lock);
-+
- 	return q;
- }
- EXPORT_SYMBOL(blk_init_allocated_queue);
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -186,6 +186,12 @@ int elevator_init(struct request_queue *
- 	struct elevator_type *e = NULL;
- 	int err;
- 
-+	/*
-+	 * q->sysfs_lock must be held to provide mutual exclusion between
-+	 * elevator_switch() and here.
-+	 */
-+	lockdep_assert_held(&q->sysfs_lock);
-+
- 	if (unlikely(q->elevator))
- 		return 0;
- 
+-	if (rt2x00_rf(rt2x00dev, RF3290) ||
++	if (rt2x00_rf(rt2x00dev, RF3070) ||
++	    rt2x00_rf(rt2x00dev, RF3290) ||
+ 	    rt2x00_rf(rt2x00dev, RF3322) ||
+ 	    rt2x00_rf(rt2x00dev, RF5360) ||
+ 	    rt2x00_rf(rt2x00dev, RF5370) ||
+@@ -4264,6 +4266,7 @@ void rt2800_vco_calibration(struct rt2x0
+ 		rt2800_rfcsr_write(rt2x00dev, 7, rfcsr);
+ 		break;
+ 	case RF3053:
++	case RF3070:
+ 	case RF3290:
+ 	case RF5360:
+ 	case RF5370:
+@@ -7024,6 +7027,7 @@ static int rt2800_init_eeprom(struct rt2
+ 	case RF3022:
+ 	case RF3052:
+ 	case RF3053:
++	case RF3070:
+ 	case RF3290:
+ 	case RF3320:
+ 	case RF3322:
+@@ -7546,6 +7550,7 @@ static int rt2800_probe_hw_mode(struct r
+ 		   rt2x00_rf(rt2x00dev, RF2020) ||
+ 		   rt2x00_rf(rt2x00dev, RF3021) ||
+ 		   rt2x00_rf(rt2x00dev, RF3022) ||
++		   rt2x00_rf(rt2x00dev, RF3070) ||
+ 		   rt2x00_rf(rt2x00dev, RF3290) ||
+ 		   rt2x00_rf(rt2x00dev, RF3320) ||
+ 		   rt2x00_rf(rt2x00dev, RF3322) ||
+@@ -7674,6 +7679,7 @@ static int rt2800_probe_hw_mode(struct r
+ 	case RF3320:
+ 	case RF3052:
+ 	case RF3053:
++	case RF3070:
+ 	case RF3290:
+ 	case RF5360:
+ 	case RF5370:
 
 
