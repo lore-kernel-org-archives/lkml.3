@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161684Ab3LFNDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44312 "EHLO
+	id S1758352Ab3LFNfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:35:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44344 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757612Ab3LFNDD (ORCPT
+	with ESMTP id S1161683Ab3LFNDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:03 -0500
+	Fri, 6 Dec 2013 08:03:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: KaiChung Cheng <kenny_cheng@wistron.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 157/272] HID: multicouh: add PID VID to support 1 new Wistron optical touch device
-Date: Fri,  6 Dec 2013 12:57:26 +0000
-Message-Id: <1386334761-25517-158-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 165/272] [media] af9015: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:34 +0000
+Message-Id: <1386334761-25517-166-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KaiChung Cheng <kenny_cheng@wistron.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit bf9d121efc18c30caa2caad85358cf9408eca117 upstream.
+commit 65e2f1cb3fe0f0630834b9517ba8f631936f325c upstream.
 
-This patch adds PID VID to support for the Wistron Inc. Optical touch panel.
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/usb/dvb-usb-v2/af9015.c:433:1: warning: 'af9015_eeprom_hash' uses dynamic stack allocation [enabled by default]
+In this specific case, it is a gcc bug, as the size is a const, but
+it is easy to just change it from const to a #define, getting rid of
+the gcc warning.
 
-Signed-off-by: KaiChung Cheng <kenny_cheng@wistron.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Reviewed-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/Kconfig          | 1 +
- drivers/hid/hid-ids.h        | 3 +++
- drivers/hid/hid-multitouch.c | 6 ++++++
- 3 files changed, 10 insertions(+)
+ drivers/media/usb/dvb-usb-v2/af9015.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 5f5578b..70178f3 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -459,6 +459,7 @@ config HID_MULTITOUCH
- 	  - Stantum multitouch panels
- 	  - Touch International Panels
- 	  - Unitec Panels
-+	  - Wistron optical touch panels
- 	  - XAT optical touch panels
- 	  - Xiroku optical touch panels
- 	  - Zytronic touch panels
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 3161ccf..a3e2fe0 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -896,6 +896,9 @@
- #define USB_DEVICE_ID_SUPER_DUAL_BOX_PRO 0x8802
- #define USB_DEVICE_ID_SUPER_JOY_BOX_5_PRO 0x8804
+diff --git a/drivers/media/usb/dvb-usb-v2/af9015.c b/drivers/media/usb/dvb-usb-v2/af9015.c
+index d556042..da47d23 100644
+--- a/drivers/media/usb/dvb-usb-v2/af9015.c
++++ b/drivers/media/usb/dvb-usb-v2/af9015.c
+@@ -397,12 +397,13 @@ error:
+ 	return ret;
+ }
  
-+#define USB_VENDOR_ID_WISTRON		0x0fb8
-+#define USB_DEVICE_ID_WISTRON_OPTICAL_TOUCH		0x1109
++#define AF9015_EEPROM_SIZE 256
 +
- #define USB_VENDOR_ID_X_TENSIONS               0x1ae7
- #define USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE    0x9001
+ /* hash (and dump) eeprom */
+ static int af9015_eeprom_hash(struct dvb_usb_device *d)
+ {
+ 	struct af9015_state *state = d_to_priv(d);
+ 	int ret, i;
+-	static const unsigned int AF9015_EEPROM_SIZE = 256;
+ 	u8 buf[AF9015_EEPROM_SIZE];
+ 	struct req_t req = {READ_I2C, AF9015_I2C_EEPROM, 0, 0, 1, 1, NULL};
  
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 0e8fc79..15f7312 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -1355,6 +1355,12 @@ static const struct hid_device_id mt_devices[] = {
- 	{ .driver_data = MT_CLS_NSMU,
- 		MT_USB_DEVICE(USB_VENDOR_ID_UNITEC,
- 			USB_DEVICE_ID_UNITEC_USB_TOUCH_0A19) },
-+
-+	/* Wistron panels */
-+	{ .driver_data = MT_CLS_NSMU,
-+		MT_USB_DEVICE(USB_VENDOR_ID_WISTRON,
-+			USB_DEVICE_ID_WISTRON_OPTICAL_TOUCH) },
-+
- 	/* XAT */
- 	{ .driver_data = MT_CLS_NSMU,
- 		MT_USB_DEVICE(USB_VENDOR_ID_XAT,
 -- 
 1.8.3.2
 
