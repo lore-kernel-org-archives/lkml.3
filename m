@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab3LFHfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 02:35:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:4740 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756067Ab3LFHfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 02:35:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,839,1378882800"; 
-   d="scan'208";a="447839472"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH V2 3/3] perf script: Improve srcline display for BTS
-Date: Fri,  6 Dec 2013 09:42:58 +0200
-Message-Id: <1386315778-11633-4-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386315778-11633-1-git-send-email-adrian.hunter@intel.com>
-References: <1386315778-11633-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1756820Ab3LFHgL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 02:36:11 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50854 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756766Ab3LFHgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 02:36:08 -0500
+Date: Fri, 6 Dec 2013 10:32:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>, pavel@ucw.cz,
+        pali.rohar@gmail.com
+Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
+Message-ID: <20131206073225.GD28413@mwanda>
+References: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+ <52A16932.8020909@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A16932.8020909@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the order of the output to put the srcline last.
-e.g. old format:
+On Fri, Dec 06, 2013 at 08:05:38AM +0200, Ivajlo Dimitrov wrote:
+> Hi Greg,
+> 
+> On 01.12.2013 19:07, Ivaylo DImitrov wrote:
+> >From: Ivaylo Dimitrov <freemangordon@abv.bg>
+> >
+> >Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+> >need to be exported. It can also be made way simpler by using sscanf.
+> >
+> >Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> >---
+> >  drivers/staging/tidspbridge/Makefile               |    2 +-
+> >  drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
+> >  .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
+> >  drivers/staging/tidspbridge/rmgr/dbdcd.c           |   42 +++++++++-
+> >  4 files changed, 39 insertions(+), 108 deletions(-)
+> >  delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
+> >
+> 
+> I guess the initial mail somehow didn't make it through your spam filter:
+> https://lkml.org/lkml/2013/12/1/70
+> 
 
-          4028fc main+0x2c (/bin/ls)
-  /build/buildd/coreutils-8.20/src/ls.c:1269 =>           40d8a0 set_program_name+0x0 (/bin/ls)
+It's too early to start resending.  Wait for another week at least.
 
-new format:
-
-          4028fc main+0x2c (/bin/ls) =>           40d8a0 set_program_name+0x0 (/bin/ls)
-  /build/buildd/coreutils-8.20/src/ls.c:1269
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-script.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 7a571fb..8997b69 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -428,15 +428,22 @@ static void print_sample_bts(union perf_event *event,
- 			     struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
-+	bool print_srcline_last = false;
- 
- 	/* print branch_from information */
- 	if (PRINT_FIELD(IP)) {
--		if (!symbol_conf.use_callchain)
--			printf(" ");
--		else
-+		unsigned int print_opts = output[attr->type].print_ip_opts;
-+
-+		if (symbol_conf.use_callchain && sample->callchain) {
- 			printf("\n");
--		perf_evsel__print_ip(evsel, sample, machine, al,
--				     output[attr->type].print_ip_opts,
-+		} else {
-+			printf(" ");
-+			if (print_opts & PRINT_IP_OPT_SRCLINE) {
-+				print_srcline_last = true;
-+				print_opts &= ~PRINT_IP_OPT_SRCLINE;
-+			}
-+		}
-+		perf_evsel__print_ip(evsel, sample, machine, al, print_opts,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
- 
-@@ -448,6 +455,9 @@ static void print_sample_bts(union perf_event *event,
- 	     !output[attr->type].user_set))
- 		print_sample_addr(event, sample, machine, thread, attr);
- 
-+	if (print_srcline_last)
-+		map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
-+
- 	printf("\n");
- }
- 
--- 
-1.7.11.7
+regards,
+dan carpenter
 
