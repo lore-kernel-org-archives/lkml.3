@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161894Ab3LFXPH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:15:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48506 "EHLO
+	id S1161958Ab3LFXPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:15:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48515 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161223Ab3LFXPC (ORCPT
+	with ESMTP id S1161223Ab3LFXPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:15:02 -0500
+	Fri, 6 Dec 2013 18:15:08 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 141/152] avr32: fix out-of-range jump in large kernels
-Date: Fri,  6 Dec 2013 15:11:05 -0800
-Message-Id: <1386371476-2477-142-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 139/152] nfsd4: fix xdr decoding of large non-write compounds
+Date: Fri,  6 Dec 2013 15:11:03 -0800
+Message-Id: <1386371476-2477-140-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,69 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit d617b338bbfdd77e9cbd8e7dc949cee3dd73d575 upstream.
+commit 365da4adebb1c012febf81019ad3dc5bb52e2a13 upstream.
 
-This patch fixes following error (for big kernels):
+This fixes a regression from 247500820ebd02ad87525db5d9b199e5b66f6636
+"nfsd4: fix decoding of compounds across page boundaries".  The previous
+code was correct: argp->pagelist is initialized in
+nfs4svc_deocde_compoundargs to rqstp->rq_arg.pages, and is therefore a
+pointer to the page *after* the page we are currently decoding.
 
----8<---
-arch/avr32/boot/u-boot/head.o: In function `no_tag_table':
-(.init.text+0x44): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
-arch/avr32/kernel/built-in.o: In function `bad_return':
-(.ex.text+0x236): relocation truncated to fit: R_AVR32_22H_PCREL against symbol `panic' defined in .text.unlikely section in kernel/built-in.o
---->8---
+The reason that patch nevertheless fixed a problem with decoding
+compounds containing write was a bug in the write decoding introduced by
+5a80a54d21c96590d013378d8c5f65f879451ab4 "nfsd4: reorganize write
+decoding", after which write decoding no longer adhered to the rule that
+argp->pagelist point to the next page.
 
-It comes up when the kernel increases and 'panic()' is too far away to fit in
-the +/- 2MiB range. Which in turn issues from the 21-bit displacement in
-'br{cond4}' mnemonic which is one of the two ways to do jumps (rjmp has just
-10-bit displacement and therefore a way smaller range). This fact was stated
-before in 8d29b7b9f81d6b83d869ff054e6c189d6da73f1f.
-One solution to solve this is to add a local storage for the symbol address
-and just load the $pc with that value.
-
-Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[ kamal: backport to 3.8 (next_decode_page change is in read_buf) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/avr32/boot/u-boot/head.S    | 5 ++++-
- arch/avr32/kernel/entry-avr32b.S | 3 ++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4xdr.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/avr32/boot/u-boot/head.S b/arch/avr32/boot/u-boot/head.S
-index d36d865..2ffc298 100644
---- a/arch/avr32/boot/u-boot/head.S
-+++ b/arch/avr32/boot/u-boot/head.S
-@@ -73,8 +73,11 @@ init_sr:
- 	.long	0x007f0000	/* Supervisor mode, everything masked */
- stack_addr:
- 	.long	init_thread_union
-+panic_addr:
-+	.long	panic
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 859d145..3ed8550 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -162,8 +162,8 @@ static __be32 *read_buf(struct nfsd4_compoundargs *argp, u32 nbytes)
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->pagelist++;
+ 	argp->p = page_address(argp->pagelist[0]);
++	argp->pagelist++;
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
+@@ -1160,6 +1160,7 @@ nfsd4_decode_write(struct nfsd4_compoundargs *argp, struct nfsd4_write *write)
+ 		len -= pages * PAGE_SIZE;
  
- no_tag_table:
- 	sub	r12, pc, (. - 2f)
--	bral	panic
-+	/* branch to panic() which can be far away with that construct */
-+	lddpc	pc, panic_addr
- 2:	.asciz	"Boot loader didn't provide correct magic number\n"
-diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
-index 9899d3c..7301f48 100644
---- a/arch/avr32/kernel/entry-avr32b.S
-+++ b/arch/avr32/kernel/entry-avr32b.S
-@@ -401,9 +401,10 @@ handle_critical:
- 	/* We should never get here... */
- bad_return:
- 	sub	r12, pc, (. - 1f)
--	bral	panic
-+	lddpc	pc, 2f
- 	.align	2
- 1:	.asciz	"Return from critical exception!"
-+2:	.long	panic
- 
- 	.align	1
- do_bus_error_write:
+ 		argp->p = (__be32 *)page_address(argp->pagelist[0]);
++		argp->pagelist++;
+ 		argp->end = argp->p + XDR_QUADLEN(PAGE_SIZE);
+ 	}
+ 	argp->p += XDR_QUADLEN(len);
 -- 
 1.8.3.2
 
