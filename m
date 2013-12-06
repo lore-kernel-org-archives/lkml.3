@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3LFPZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 10:25:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:36802 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752675Ab3LFPZi (ORCPT
+	id S1755656Ab3LFP0D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 10:26:03 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:53794 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3LFP0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 10:25:38 -0500
-Date: Fri, 6 Dec 2013 10:25:32 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: linux-rt-users@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] read_lock migrate_disable pushdown to rt_read_lock
-Message-ID: <20131206102532.712d4ae4@gandalf.local.home>
-In-Reply-To: <20131206023334.GA26623@opentech.at>
-References: <20131205234449.GF15603@opentech.at>
-	<20131205211951.5c2eaa0f@gandalf.local.home>
-	<20131206023334.GA26623@opentech.at>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 6 Dec 2013 10:26:00 -0500
+Message-ID: <52A1EC84.3090703@gmail.com>
+Date: Fri, 06 Dec 2013 16:25:56 +0100
+From: Duncan Sands <duncan.sands@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Seth Archer <learc83@gmail.com>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Usb: atm: usbatm: fixed a pointer variable format issue
+References: <1386302363-10975-1-git-send-email-learc83@gmail.com>	<52A189D2.3030500@free.fr> <CAFcs13FWknRxhT_ZUnirRk+O0ZeDq1TVFtgMD9hkp=aVKUnHLA@mail.gmail.com>
+In-Reply-To: <CAFcs13FWknRxhT_ZUnirRk+O0ZeDq1TVFtgMD9hkp=aVKUnHLA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Dec 2013 03:33:34 +0100
-Nicholas Mc Guire <der.herr@hofr.at> wrote:
+Hi Seth,
 
-> > > -	migrate_disable();
-> > >  	if (rt_mutex_owner(lock) != current) {
-> > >  		ret = rt_mutex_trylock(lock);
-> > > -		if (ret)
-> > > +		if (ret) {
-> > > +			migrate_disable();
-> > >  			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
-> > > +		}
-> > 
-> > I like this patch in general, but I'm nervous about this part.
-> > 
-> > What was the original reason to disable migration before checking the
-> > mutex owner? Seems like we should have only disabled it on success. I'm
-> > assuming there was some subtle reason not to.
-> >
-> 
-> I think that it was simply being treated semantically as a lock - but it
-> is actually not.
->                        hold a
->  migrate_disable/lock  per_cpu  unlock/migrate_enable
->  lock/migrate_disable  per_cpu  migrate_enable/unlcok
->  lock/migrate_disable  per_cpu  unlock/migrate_enable
->  migrate_disable/lock  per_cpu  migrate_enable/unlcok
->                        reference
-> 
-> are all equivalent - the only thing you need to ensure that the per cpu 
-> object will not be accessed before both lock and migration_disable have
-> been sucessful. So from my understanding this is safe.
+On 06/12/13 15:24, Seth Archer wrote:
+> Sorry, but do you mean the patch is OK, or the original is OK and no patch
+> necessary?
 
-I think you may be right, but I'm still a little nervous about this
-code. But that's good. We all should be nervous about any locking
-code ;-)
+I meant that the patch is obviously OK.
 
-> 
-> if we get migrated after a succesful trylock what would go wrong ?
-> the protected object will not be accessed until after the spin_trylock
-> returned so migration is disabled
+Ciao, Duncan.
 
-I agree.
+>
+> -Seth
+>
+>
+> On Fri, Dec 6, 2013 at 3:24 AM, Duncan Sands <duncan.sands@gmail.com
+> <mailto:duncan.sands@gmail.com>> wrote:
+>
+>     On 06/12/13 04:59, learc83 wrote:
+>
+>         Fixed a pointer variable format issue.
+>
+>
+>     This is obviously OK.
 
-> 
-> > If there was some strange reason, I'm not convinced that your change
-> > makes that reason go away.
-> >
-> IF there is a reason then this patch is broken - my conclusion up to now
-> is that there is no such reason.
-> 
 
-Let me analyze the original code first. I'll poke peterz and tglx too
-to make sure this modification is OK.
-
-Thanks,
-
--- Steve
