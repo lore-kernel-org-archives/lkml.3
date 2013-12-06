@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759082Ab3LFVwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:52:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60497 "EHLO
+	id S1162019Ab3LFWfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:35:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60550 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759016Ab3LFVwg (ORCPT
+	with ESMTP id S1754936Ab3LFVwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:36 -0500
+	Fri, 6 Dec 2013 16:52:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Dave Jones <davej@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 25/83] ipv4: fix possible seqlock deadlock
-Date: Fri,  6 Dec 2013 13:51:15 -0800
-Message-Id: <20131206214642.415025028@linuxfoundation.org>
+        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 36/83] ip6_output: fragment outgoing reassembled skb properly
+Date: Fri,  6 Dec 2013 13:51:26 -0800
+Message-Id: <20131206214643.406579517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,34 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-[ Upstream commit c9e9042994d37cbc1ee538c500e9da1bb9d1bcdf ]
+[ Upstream commit 9037c3579a277f3a23ba476664629fda8c35f7c4 ]
 
-ip4_datagram_connect() being called from process context,
-it should use IP_INC_STATS() instead of IP_INC_STATS_BH()
-otherwise we can deadlock on 32bit arches, or get corruptions of
-SNMP counters.
+If reassembled packet would fit into outdev MTU, it is not fragmented
+according the original frag size and it is send as single big packet.
 
-Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dave Jones <davej@redhat.com>
+The second case is if skb is gso. In that case fragmentation does not happen
+according to the original frag size.
+
+This patch fixes these.
+
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/datagram.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/ip6_output.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/datagram.c
-+++ b/net/ipv4/datagram.c
-@@ -57,7 +57,7 @@ int ip4_datagram_connect(struct sock *sk
- 	if (IS_ERR(rt)) {
- 		err = PTR_ERR(rt);
- 		if (err == -ENETUNREACH)
--			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
-+			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
- 		goto out;
- 	}
- 
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -125,7 +125,8 @@ static int ip6_finish_output2(struct sk_
+ static int ip6_finish_output(struct sk_buff *skb)
+ {
+ 	if ((skb->len > ip6_skb_dst_mtu(skb) && !skb_is_gso(skb)) ||
+-	    dst_allfrag(skb_dst(skb)))
++	    dst_allfrag(skb_dst(skb)) ||
++	    (IP6CB(skb)->frag_max_size && skb->len > IP6CB(skb)->frag_max_size))
+ 		return ip6_fragment(skb, ip6_finish_output2);
+ 	else
+ 		return ip6_finish_output2(skb);
 
 
