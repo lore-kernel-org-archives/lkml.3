@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758766Ab3LFVxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60747 "EHLO
+	id S1759334Ab3LFVxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60769 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161061Ab3LFVxO (ORCPT
+	with ESMTP id S1753208Ab3LFVxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:14 -0500
+	Fri, 6 Dec 2013 16:53:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>, Benjamin LaHaise <bcrl@kvack.org>
-Subject: [PATCH 3.12 75/83] aio: Fix a trinity splat
-Date: Fri,  6 Dec 2013 13:52:05 -0800
-Message-Id: <20131206214647.020602747@linuxfoundation.org>
+        Pierre Ossman <pierre@ossman.eu>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.12 82/83] drm/radeon/audio: improve ACR calculation
+Date: Fri,  6 Dec 2013 13:52:12 -0800
+Message-Id: <20131206214647.659223503@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,288 +31,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Pierre Ossman <pierre@ossman.eu>
 
-commit e34ecee2ae791df674dfb466ce40692ca6218e43 upstream.
+commit a2098250fbda149cfad9e626afe80abe3b21e574 upstream.
 
-aio kiocb refcounting was broken - it was relying on keeping track of
-the number of available ring buffer entries, which it needs to do
-anyways; then at shutdown time it'd wait for completions to be delivered
-until the # of available ring buffer entries equalled what it was
-initialized to.
+In order to have any realistic chance of calculating proper
+ACR values, we need to be able to calculate both N and CTS,
+not just CTS. We still aim for the ideal N as specified in
+the HDMI spec though.
 
-Problem with  that is that the ring buffer is mapped writable into
-userspace, so userspace could futz with the head and tail pointers to
-cause the kernel to see extra completions, and cause free_ioctx() to
-return while there were still outstanding kiocbs. Which would be bad.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69675
 
-Fix is just to directly refcount the kiocbs - which is more
-straightforward, and with the new percpu refcounting code doesn't cost
-us any cacheline bouncing which was the whole point of the original
-scheme.
-
-Also clean up ioctx_alloc()'s error path and fix a bug where it wasn't
-subtracting from aio_nr if ioctx_add_table() failed.
-
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Pierre Ossman <pierre@ossman.eu>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |  129 +++++++++++++++++++++++----------------------------------------
- 1 file changed, 48 insertions(+), 81 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c |   68 +++++++++++++++++++++++++------------
+ 1 file changed, 46 insertions(+), 22 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -80,6 +80,8 @@ struct kioctx {
- 	struct percpu_ref	users;
- 	atomic_t		dead;
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -24,6 +24,7 @@
+  * Authors: Christian König
+  */
+ #include <linux/hdmi.h>
++#include <linux/gcd.h>
+ #include <drm/drmP.h>
+ #include <drm/radeon_drm.h>
+ #include "radeon.h"
+@@ -67,25 +68,47 @@ static const struct radeon_hdmi_acr r600
+     {  74250,  4096,  74250,  6272,  82500,  6144,  74250 }, /*  74.25       MHz */
+     { 148352, 11648, 421875,  8918, 234375,  5824, 140625 }, /* 148.50/1.001 MHz */
+     { 148500,  4096, 148500,  6272, 165000,  6144, 148500 }, /* 148.50       MHz */
+-    {      0,  4096,      0,  6272,      0,  6144,      0 }  /* Other */
+ };
  
-+	struct percpu_ref	reqs;
-+
- 	unsigned long		user_id;
- 
- 	struct __percpu kioctx_cpu *cpu;
-@@ -107,7 +109,6 @@ struct kioctx {
- 	struct page		**ring_pages;
- 	long			nr_pages;
- 
--	struct rcu_head		rcu_head;
- 	struct work_struct	free_work;
- 
- 	struct {
-@@ -412,26 +413,34 @@ static int kiocb_cancel(struct kioctx *c
- 	return cancel(kiocb);
- }
- 
--static void free_ioctx_rcu(struct rcu_head *head)
-+static void free_ioctx(struct work_struct *work)
- {
--	struct kioctx *ctx = container_of(head, struct kioctx, rcu_head);
-+	struct kioctx *ctx = container_of(work, struct kioctx, free_work);
- 
-+	pr_debug("freeing %p\n", ctx);
-+
-+	aio_free_ring(ctx);
- 	free_percpu(ctx->cpu);
- 	kmem_cache_free(kioctx_cachep, ctx);
- }
- 
-+static void free_ioctx_reqs(struct percpu_ref *ref)
-+{
-+	struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
-+
-+	INIT_WORK(&ctx->free_work, free_ioctx);
-+	schedule_work(&ctx->free_work);
-+}
 +
  /*
-  * When this function runs, the kioctx has been removed from the "hash table"
-  * and ctx->users has dropped to 0, so we know no more kiocbs can be submitted -
-  * now it's safe to cancel any that need to be.
+- * calculate CTS value if it's not found in the table
++ * calculate CTS and N values if they are not found in the table
   */
--static void free_ioctx(struct work_struct *work)
-+static void free_ioctx_users(struct percpu_ref *ref)
+-static void r600_hdmi_calc_cts(uint32_t clock, int *CTS, int N, int freq)
++static void r600_hdmi_calc_cts(uint32_t clock, int *CTS, int *N, int freq)
  {
--	struct kioctx *ctx = container_of(work, struct kioctx, free_work);
--	struct aio_ring *ring;
-+	struct kioctx *ctx = container_of(ref, struct kioctx, users);
- 	struct kiocb *req;
--	unsigned cpu, avail;
--	DEFINE_WAIT(wait);
+-	u64 n;
+-	u32 d;
++	int n, cts;
++	unsigned long div, mul;
  
- 	spin_lock_irq(&ctx->ctx_lock);
- 
-@@ -445,54 +454,8 @@ static void free_ioctx(struct work_struc
- 
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
--	for_each_possible_cpu(cpu) {
--		struct kioctx_cpu *kcpu = per_cpu_ptr(ctx->cpu, cpu);
--
--		atomic_add(kcpu->reqs_available, &ctx->reqs_available);
--		kcpu->reqs_available = 0;
+-	if (*CTS == 0) {
+-		n = (u64)clock * (u64)N * 1000ULL;
+-		d = 128 * freq;
+-		do_div(n, d);
+-		*CTS = n;
 -	}
--
--	while (1) {
--		prepare_to_wait(&ctx->wait, &wait, TASK_UNINTERRUPTIBLE);
--
--		ring = kmap_atomic(ctx->ring_pages[0]);
--		avail = (ring->head <= ring->tail)
--			 ? ring->tail - ring->head
--			 : ctx->nr_events - ring->head + ring->tail;
--
--		atomic_add(avail, &ctx->reqs_available);
--		ring->head = ring->tail;
--		kunmap_atomic(ring);
--
--		if (atomic_read(&ctx->reqs_available) >= ctx->nr_events - 1)
--			break;
--
--		schedule();
--	}
--	finish_wait(&ctx->wait, &wait);
--
--	WARN_ON(atomic_read(&ctx->reqs_available) > ctx->nr_events - 1);
--
--	aio_free_ring(ctx);
--
--	pr_debug("freeing %p\n", ctx);
--
--	/*
--	 * Here the call_rcu() is between the wait_event() for reqs_active to
--	 * hit 0, and freeing the ioctx.
--	 *
--	 * aio_complete() decrements reqs_active, but it has to touch the ioctx
--	 * after to issue a wakeup so we use rcu.
--	 */
--	call_rcu(&ctx->rcu_head, free_ioctx_rcu);
--}
--
--static void free_ioctx_ref(struct percpu_ref *ref)
--{
--	struct kioctx *ctx = container_of(ref, struct kioctx, users);
--
--	INIT_WORK(&ctx->free_work, free_ioctx);
--	schedule_work(&ctx->free_work);
-+	percpu_ref_kill(&ctx->reqs);
-+	percpu_ref_put(&ctx->reqs);
+-	DRM_DEBUG("Using ACR timing N=%d CTS=%d for frequency %d\n",
+-		  N, *CTS, freq);
++	/* Safe, but overly large values */
++	n = 128 * freq;
++	cts = clock * 1000;
++
++	/* Smallest valid fraction */
++	div = gcd(n, cts);
++
++	n /= div;
++	cts /= div;
++
++	/*
++	 * The optimal N is 128*freq/1000. Calculate the closest larger
++	 * value that doesn't truncate any bits.
++	 */
++	mul = ((128*freq/1000) + (n-1))/n;
++
++	n *= mul;
++	cts *= mul;
++
++	/* Check that we are in spec (not always possible) */
++	if (n < (128*freq/1500))
++		printk(KERN_WARNING "Calculated ACR N value is too small. You may experience audio problems.\n");
++	if (n > (128*freq/300))
++		printk(KERN_WARNING "Calculated ACR N value is too large. You may experience audio problems.\n");
++
++	*N = n;
++	*CTS = cts;
++
++	DRM_DEBUG("Calculated ACR timing N=%d CTS=%d for frequency %d\n",
++		  *N, *CTS, freq);
  }
  
- static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
-@@ -551,6 +514,16 @@ static int ioctx_add_table(struct kioctx
- 	}
- }
+ struct radeon_hdmi_acr r600_hdmi_acr(uint32_t clock)
+@@ -93,15 +116,16 @@ struct radeon_hdmi_acr r600_hdmi_acr(uin
+ 	struct radeon_hdmi_acr res;
+ 	u8 i;
  
-+static void aio_nr_sub(unsigned nr)
-+{
-+	spin_lock(&aio_nr_lock);
-+	if (WARN_ON(aio_nr - nr > aio_nr))
-+		aio_nr = 0;
-+	else
-+		aio_nr -= nr;
-+	spin_unlock(&aio_nr_lock);
-+}
-+
- /* ioctx_alloc
-  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
-  */
-@@ -588,8 +561,11 @@ static struct kioctx *ioctx_alloc(unsign
- 
- 	ctx->max_reqs = nr_events;
- 
--	if (percpu_ref_init(&ctx->users, free_ioctx_ref))
--		goto out_freectx;
-+	if (percpu_ref_init(&ctx->users, free_ioctx_users))
-+		goto err;
-+
-+	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
-+		goto err;
- 
- 	spin_lock_init(&ctx->ctx_lock);
- 	spin_lock_init(&ctx->completion_lock);
-@@ -600,10 +576,10 @@ static struct kioctx *ioctx_alloc(unsign
- 
- 	ctx->cpu = alloc_percpu(struct kioctx_cpu);
- 	if (!ctx->cpu)
--		goto out_freeref;
-+		goto err;
- 
- 	if (aio_setup_ring(ctx) < 0)
--		goto out_freepcpu;
-+		goto err;
- 
- 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
- 	ctx->req_batch = (ctx->nr_events - 1) / (num_possible_cpus() * 4);
-@@ -615,7 +591,8 @@ static struct kioctx *ioctx_alloc(unsign
- 	if (aio_nr + nr_events > (aio_max_nr * 2UL) ||
- 	    aio_nr + nr_events < aio_nr) {
- 		spin_unlock(&aio_nr_lock);
--		goto out_cleanup;
-+		err = -EAGAIN;
-+		goto err;
- 	}
- 	aio_nr += ctx->max_reqs;
- 	spin_unlock(&aio_nr_lock);
-@@ -624,23 +601,19 @@ static struct kioctx *ioctx_alloc(unsign
- 
- 	err = ioctx_add_table(ctx, mm);
- 	if (err)
--		goto out_cleanup_put;
-+		goto err_cleanup;
- 
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		 ctx, ctx->user_id, mm, ctx->nr_events);
- 	return ctx;
- 
--out_cleanup_put:
--	percpu_ref_put(&ctx->users);
--out_cleanup:
--	err = -EAGAIN;
-+err_cleanup:
-+	aio_nr_sub(ctx->max_reqs);
-+err:
- 	aio_free_ring(ctx);
--out_freepcpu:
- 	free_percpu(ctx->cpu);
--out_freeref:
-+	free_percpu(ctx->reqs.pcpu_count);
- 	free_percpu(ctx->users.pcpu_count);
--out_freectx:
--	put_aio_ring_file(ctx);
- 	kmem_cache_free(kioctx_cachep, ctx);
- 	pr_debug("error allocating ioctx %d\n", err);
- 	return ERR_PTR(err);
-@@ -675,10 +648,7 @@ static void kill_ioctx(struct mm_struct
- 		 * -EAGAIN with no ioctxs actually in use (as far as userspace
- 		 *  could tell).
- 		 */
--		spin_lock(&aio_nr_lock);
--		BUG_ON(aio_nr - ctx->max_reqs > aio_nr);
--		aio_nr -= ctx->max_reqs;
--		spin_unlock(&aio_nr_lock);
-+		aio_nr_sub(ctx->max_reqs);
- 
- 		if (ctx->mmap_size)
- 			vm_munmap(ctx->mmap_base, ctx->mmap_size);
-@@ -810,6 +780,8 @@ static inline struct kiocb *aio_get_req(
- 	if (unlikely(!req))
- 		goto out_put;
- 
-+	percpu_ref_get(&ctx->reqs);
-+
- 	req->ki_ctx = ctx;
- 	return req;
- out_put:
-@@ -879,12 +851,6 @@ void aio_complete(struct kiocb *iocb, lo
- 		return;
- 	}
- 
--	/*
--	 * Take rcu_read_lock() in case the kioctx is being destroyed, as we
--	 * need to issue a wakeup after incrementing reqs_available.
--	 */
--	rcu_read_lock();
+-	for (i = 0; r600_hdmi_predefined_acr[i].clock != clock &&
+-	     r600_hdmi_predefined_acr[i].clock != 0; i++)
+-		;
+-	res = r600_hdmi_predefined_acr[i];
 -
- 	if (iocb->ki_list.next) {
- 		unsigned long flags;
+-	/* In case some CTS are missing */
+-	r600_hdmi_calc_cts(clock, &res.cts_32khz, res.n_32khz, 32000);
+-	r600_hdmi_calc_cts(clock, &res.cts_44_1khz, res.n_44_1khz, 44100);
+-	r600_hdmi_calc_cts(clock, &res.cts_48khz, res.n_48khz, 48000);
++	/* Precalculated values for common clocks */
++	for (i = 0; i < ARRAY_SIZE(r600_hdmi_predefined_acr); i++) {
++		if (r600_hdmi_predefined_acr[i].clock == clock)
++			return r600_hdmi_predefined_acr[i];
++	}
++
++	/* And odd clocks get manually calculated */
++	r600_hdmi_calc_cts(clock, &res.cts_32khz, &res.n_32khz, 32000);
++	r600_hdmi_calc_cts(clock, &res.cts_44_1khz, &res.n_44_1khz, 44100);
++	r600_hdmi_calc_cts(clock, &res.cts_48khz, &res.n_48khz, 48000);
  
-@@ -959,7 +925,7 @@ void aio_complete(struct kiocb *iocb, lo
- 	if (waitqueue_active(&ctx->wait))
- 		wake_up(&ctx->wait);
- 
--	rcu_read_unlock();
-+	percpu_ref_put(&ctx->reqs);
- }
- EXPORT_SYMBOL(aio_complete);
- 
-@@ -1370,6 +1336,7 @@ static int io_submit_one(struct kioctx *
- 	return 0;
- out_put_req:
- 	put_reqs_available(ctx, 1);
-+	percpu_ref_put(&ctx->reqs);
- 	kiocb_free(req);
- 	return ret;
+ 	return res;
  }
 
 
