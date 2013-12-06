@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab3LFXP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:15:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48571 "EHLO
+	id S1162376Ab3LFXnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:43:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48576 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422756Ab3LFXPx (ORCPT
+	with ESMTP id S932103Ab3LFXP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:15:53 -0500
+	Fri, 6 Dec 2013 18:15:56 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 149/152] configfs: fix race between dentry put and lookup
-Date: Fri,  6 Dec 2013 15:11:13 -0800
-Message-Id: <1386371476-2477-150-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 152/152] libertas: potential oops in debugfs
+Date: Fri,  6 Dec 2013 15:11:16 -0800
+Message-Id: <1386371476-2477-153-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -30,96 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
+commit a497e47d4aec37aaf8f13509f3ef3d1f6a717d88 upstream.
 
-A race window in configfs, it starts from one dentry is UNHASHED and end
-before configfs_d_iput is called.  In this window, if a lookup happen,
-since the original dentry was UNHASHED, so a new dentry will be
-allocated, and then in configfs_attach_attr(), sd->s_dentry will be
-updated to the new dentry.  Then in configfs_d_iput(),
-BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
+If we do a zero size allocation then it will oops.  Also we can't be
+sure the user passes us a NUL terminated string so I've added a
+terminator.
 
-sys_open:                     sys_close:
- ...                           fput
-                                dput
-                                 dentry_kill
-                                  __d_drop <--- dentry unhashed here,
-                                           but sd->dentry still point
-                                           to this dentry.
+This code can only be triggered by root.
 
- lookup_real
-  configfs_lookup
-   configfs_attach_attr---> update sd->s_dentry
-                            to new allocated dentry here.
-
-                                   d_kill
-                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
-                                                     triggered here.
-
-To fix it, change configfs_d_iput to not update sd->s_dentry if
-sd->s_count > 2, that means there are another dentry is using the sd
-beside the one that is going to be put.  Use configfs_dirent_lock in
-configfs_attach_attr to sync with configfs_d_iput.
-
-With the following steps, you can reproduce the bug.
-
-1. enable ocfs2, this will mount configfs at /sys/kernel/config and
-   fill configure in it.
-
-2. run the following script.
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ kamal: 3.8 stable for CVE-2013-6378 ]
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/configfs/dir.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/wireless/libertas/debugfs.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-index 712b10f..76bb46a 100644
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentry * dentry,
- 	struct configfs_dirent *sd = dentry->d_fsdata;
+diff --git a/drivers/net/wireless/libertas/debugfs.c b/drivers/net/wireless/libertas/debugfs.c
+index 668dd27..cc6a0a5 100644
+--- a/drivers/net/wireless/libertas/debugfs.c
++++ b/drivers/net/wireless/libertas/debugfs.c
+@@ -913,7 +913,10 @@ static ssize_t lbs_debugfs_write(struct file *f, const char __user *buf,
+ 	char *p2;
+ 	struct debug_data *d = f->private_data;
  
- 	if (sd) {
--		BUG_ON(sd->s_dentry != dentry);
- 		/* Coordinate with configfs_readdir */
- 		spin_lock(&configfs_dirent_lock);
--		sd->s_dentry = NULL;
-+		/* Coordinate with configfs_attach_attr where will increase
-+		 * sd->s_count and update sd->s_dentry to new allocated one.
-+		 * Only set sd->dentry to null when this dentry is the only
-+		 * sd owner.
-+		 * If not do so, configfs_d_iput may run just after
-+		 * configfs_attach_attr and set sd->s_dentry to null
-+		 * even it's still in use.
-+		 */
-+		if (atomic_read(&sd->s_count) <= 2)
-+			sd->s_dentry = NULL;
+-	pdata = kmalloc(cnt, GFP_KERNEL);
++	if (cnt == 0)
++		return 0;
 +
- 		spin_unlock(&configfs_dirent_lock);
- 		configfs_put(sd);
++	pdata = kmalloc(cnt + 1, GFP_KERNEL);
+ 	if (pdata == NULL)
+ 		return 0;
+ 
+@@ -922,6 +925,7 @@ static ssize_t lbs_debugfs_write(struct file *f, const char __user *buf,
+ 		kfree(pdata);
+ 		return 0;
  	}
-@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct configfs_dirent * sd, struct dentry * den
- 	struct configfs_attribute * attr = sd->s_element;
- 	int error;
++	pdata[cnt] = '\0';
  
-+	spin_lock(&configfs_dirent_lock);
- 	dentry->d_fsdata = configfs_get(sd);
- 	sd->s_dentry = dentry;
-+	spin_unlock(&configfs_dirent_lock);
-+
- 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
- 				configfs_init_file);
- 	if (error) {
+ 	p0 = pdata;
+ 	for (i = 0; i < num_of_items; i++) {
 -- 
 1.8.3.2
 
