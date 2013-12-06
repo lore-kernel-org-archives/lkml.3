@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760241Ab3LFXr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:47:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48425 "EHLO
+	id S1760211Ab3LFXrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:47:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48436 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161371Ab3LFXMi (ORCPT
+	with ESMTP id S1161376Ab3LFXMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:12:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Markus Pargmann <mpa@pengutronix.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 038/152] can: c_can: Fix RX message handling, handle lost message before EOB
-Date: Fri,  6 Dec 2013 15:09:22 -0800
-Message-Id: <1386371476-2477-39-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 046/152] ALSA: hda - Enable SPDIF for Acer TravelMate 6293
+Date: Fri,  6 Dec 2013 15:09:30 -0800
+Message-Id: <1386371476-2477-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,49 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5d0f801a2ccec3b1fdabc3392c8d99ed0413d216 upstream.
+commit 24eff328f65c8ef352c90b6adb7c2f39eb94205d upstream.
 
-If we handle end of block messages with higher priority than a lost message,
-we can run into an endless interrupt loop.
+BIOS on Acer TravelMate 6293 doesn't set up the SPDIF output pin
+correctly as default, so enable it via a fixup entry.
 
-This is reproducable with a am335x processor and "cansequence -r" at 1Mbit.
-As soon as we loose a packet we can't escape from an interrupt loop.
-
-This patch fixes the problem by handling lost packets before EOB packets.
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reported-and-tested-by: Hagen Heiduck <heiduck.suse@fmail.postpro.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/c_can/c_can.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 2282b1a..915847d 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -810,9 +810,6 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
- 			msg_ctrl_save = priv->read_reg(priv,
- 					C_CAN_IFACE(MSGCTRL_REG, 0));
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index fe2138d..500c00a 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5687,6 +5687,7 @@ static const struct hda_verb alc268_beep_init_verbs[] = {
+ enum {
+ 	ALC268_FIXUP_INV_DMIC,
+ 	ALC268_FIXUP_HP_EAPD,
++	ALC268_FIXUP_SPDIF,
+ };
  
--			if (msg_ctrl_save & IF_MCONT_EOB)
--				return num_rx_pkts;
--
- 			if (msg_ctrl_save & IF_MCONT_MSGLST) {
- 				c_can_handle_lost_msg_obj(dev, 0, msg_obj);
- 				num_rx_pkts++;
-@@ -820,6 +817,9 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
- 				continue;
- 			}
+ static const struct alc_fixup alc268_fixups[] = {
+@@ -5701,6 +5702,13 @@ static const struct alc_fixup alc268_fixups[] = {
+ 			{}
+ 		}
+ 	},
++	[ALC268_FIXUP_SPDIF] = {
++		.type = HDA_FIXUP_PINS,
++		.v.pins = (const struct hda_pintbl[]) {
++			{ 0x1e, 0x014b1180 }, /* enable SPDIF out */
++			{}
++		}
++	},
+ };
  
-+			if (msg_ctrl_save & IF_MCONT_EOB)
-+				return num_rx_pkts;
-+
- 			if (!(msg_ctrl_save & IF_MCONT_NEWDAT))
- 				continue;
+ static const struct alc_model_fixup alc268_fixup_models[] = {
+@@ -5710,6 +5718,7 @@ static const struct alc_model_fixup alc268_fixup_models[] = {
+ };
  
+ static const struct snd_pci_quirk alc268_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1025, 0x0139, "Acer TravelMate 6293", ALC268_FIXUP_SPDIF),
+ 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer AOA 150 (ZG5)", ALC268_FIXUP_INV_DMIC),
+ 	/* below is codec SSID since multiple Toshiba laptops have the
+ 	 * same PCI SSID 1179:ff00
 -- 
 1.8.3.2
 
