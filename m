@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144Ab3LFXrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:47:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48439 "EHLO
+	id S1162714Ab3LFXvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:51:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48401 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161383Ab3LFXMi (ORCPT
+	with ESMTP id S1161351Ab3LFXMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:12:38 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 045/152] KVM: x86: fix emulation of "movzbl %bpl, %eax"
-Date: Fri,  6 Dec 2013 15:09:29 -0800
-Message-Id: <1386371476-2477-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 036/152] s390/vtime: correct idle time calculation
+Date: Fri,  6 Dec 2013 15:09:20 -0800
+Message-Id: <1386371476-2477-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,52 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit daf727225b8abfdfe424716abac3d15a3ac5626a upstream.
+commit 4560e7c3317c7a2b370e36dadd3a3bac2ed70818 upstream.
 
-When I was looking at RHEL5.9's failure to start with
-unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
-slightly older tree than kvm.git.  I now debugged the remaining failure,
-which was introduced by commit 660696d1 (KVM: X86 emulator: fix
-source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
-introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
-fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
-decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
-is sil/dil/bpl/spl.
+Use the ACCESS_ONCE macro for both accesses to idle->sequence in the
+loops to calculate the idle time. If only one access uses the macro,
+the compiler is free to cache the value for the second access which
+can cause endless loops.
 
-Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
-prolog, just a handful of instructions before finally giving control to
-the decompressed vmlinux and getting out of the invalid guest state.
-
-Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
-must be applied to OpMem8.
-
-Reported-by: Michele Baldessari <michele@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kvm/emulate.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/s390/kernel/smp.c   | 4 ++--
+ arch/s390/kernel/vtime.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index d330b3c..c047b35 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -4031,7 +4031,10 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
- 	case OpMem8:
- 		ctxt->memop.bytes = 1;
- 		if (ctxt->memop.type == OP_REG) {
--			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
-+			int highbyte_regs = ctxt->rex_prefix == 0;
-+
-+			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
-+					       highbyte_regs);
- 			fetch_register_operand(&ctxt->memop);
- 		}
- 		goto mem_common;
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index 7433a2f..8341c28 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -934,7 +934,7 @@ static ssize_t show_idle_count(struct device *dev,
+ 		idle_count = ACCESS_ONCE(idle->idle_count);
+ 		if (ACCESS_ONCE(idle->clock_idle_enter))
+ 			idle_count++;
+-	} while ((sequence & 1) || (idle->sequence != sequence));
++	} while ((sequence & 1) || (ACCESS_ONCE(idle->sequence) != sequence));
+ 	return sprintf(buf, "%llu\n", idle_count);
+ }
+ static DEVICE_ATTR(idle_count, 0444, show_idle_count, NULL);
+@@ -952,7 +952,7 @@ static ssize_t show_idle_time(struct device *dev,
+ 		idle_time = ACCESS_ONCE(idle->idle_time);
+ 		idle_enter = ACCESS_ONCE(idle->clock_idle_enter);
+ 		idle_exit = ACCESS_ONCE(idle->clock_idle_exit);
+-	} while ((sequence & 1) || (idle->sequence != sequence));
++	} while ((sequence & 1) || (ACCESS_ONCE(idle->sequence) != sequence));
+ 	idle_time += idle_enter ? ((idle_exit ? : now) - idle_enter) : 0;
+ 	return sprintf(buf, "%llu\n", idle_time >> 12);
+ }
+diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
+index e84b8b6..2fc9deb 100644
+--- a/arch/s390/kernel/vtime.c
++++ b/arch/s390/kernel/vtime.c
+@@ -195,7 +195,7 @@ cputime64_t s390_get_idle_time(int cpu)
+ 		sequence = ACCESS_ONCE(idle->sequence);
+ 		idle_enter = ACCESS_ONCE(idle->clock_idle_enter);
+ 		idle_exit = ACCESS_ONCE(idle->clock_idle_exit);
+-	} while ((sequence & 1) || (idle->sequence != sequence));
++	} while ((sequence & 1) || (ACCESS_ONCE(idle->sequence) != sequence));
+ 	return idle_enter ? ((idle_exit ?: now) - idle_enter) : 0;
+ }
+ 
 -- 
 1.8.3.2
 
