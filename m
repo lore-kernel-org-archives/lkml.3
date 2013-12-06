@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759395Ab3LFVxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60927 "EHLO
+	id S1759528Ab3LFVyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32817 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759336Ab3LFVxk (ORCPT
+	with ESMTP id S1759488Ab3LFVx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:40 -0500
+	Fri, 6 Dec 2013 16:53:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Wong <normalperson@yhbt.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 22/58] net: clamp ->msg_namelen instead of returning an error
-Date: Fri,  6 Dec 2013 13:51:53 -0800
-Message-Id: <20131206214846.976397916@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>, Joerg Roedel <joro@8bytes.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH 3.10 53/58] iommu: Remove stack trace from broken irq remapping warning
+Date: Fri,  6 Dec 2013 13:52:24 -0800
+Message-Id: <20131206214849.798850796@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,52 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit db31c55a6fb245fdbb752a2ca4aefec89afabb06 ]
+commit 05104a4e8713b27291c7bb49c1e7e68b4e243571 upstream.
 
-If kmsg->msg_namelen > sizeof(struct sockaddr_storage) then in the
-original code that would lead to memory corruption in the kernel if you
-had audit configured.  If you didn't have audit configured it was
-harmless.
+The warning for the irq remapping broken check in intel_irq_remapping.c is
+pretty pointless.  We need the warning, but we know where its comming from, the
+stack trace will always be the same, and it needlessly triggers things like
+Abrt.  This changes the warning to just print a text warning about BIOS being
+broken, without the stack trace, then sets the appropriate taint bit.  Since we
+automatically disable irq remapping, theres no need to contiue making Abrt jump
+at this problem
 
-There are some programs such as beta versions of Ruby which use too
-large of a buffer and returning an error code breaks them.  We should
-clamp the ->msg_namelen value instead.
-
-Fixes: 1661bf364ae9 ("net: heap overflow in __audit_sockaddr()")
-Reported-by: Eric Wong <normalperson@yhbt.net>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Tested-by: Eric Wong <normalperson@yhbt.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Joerg Roedel <joro@8bytes.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/compat.c |    2 +-
- net/socket.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -72,7 +72,7 @@ int get_compat_msghdr(struct msghdr *kms
- 	    __get_user(kmsg->msg_flags, &umsg->msg_flags))
- 		return -EFAULT;
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
--		return -EINVAL;
-+		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	kmsg->msg_name = compat_ptr(tmp1);
- 	kmsg->msg_iov = compat_ptr(tmp2);
- 	kmsg->msg_control = compat_ptr(tmp3);
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1965,7 +1965,7 @@ static int copy_msghdr_from_user(struct
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
--		return -EINVAL;
-+		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	return 0;
- }
- 
+---
+ drivers/iommu/intel_irq_remapping.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -525,12 +525,13 @@ static int __init intel_irq_remapping_su
+ 	if (disable_irq_remap)
+ 		return 0;
+ 	if (irq_remap_broken) {
+-		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
+-			   "This system BIOS has enabled interrupt remapping\n"
+-			   "on a chipset that contains an erratum making that\n"
+-			   "feature unstable.  To maintain system stability\n"
+-			   "interrupt remapping is being disabled.  Please\n"
+-			   "contact your BIOS vendor for an update\n");
++		printk(KERN_WARNING
++			"This system BIOS has enabled interrupt remapping\n"
++			"on a chipset that contains an erratum making that\n"
++			"feature unstable.  To maintain system stability\n"
++			"interrupt remapping is being disabled.  Please\n"
++			"contact your BIOS vendor for an update\n");
++		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+ 		disable_irq_remap = 1;
+ 		return 0;
+ 	}
 
 
