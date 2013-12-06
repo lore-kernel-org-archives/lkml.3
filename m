@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162526Ab3LFNoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:44:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44197 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758213Ab3LFNCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758212Ab3LFNCc (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 08:02:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44177 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758190Ab3LFNC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:02:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+Cc: Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 135/272] drm/ttm: Fix memory type compatibility check
-Date: Fri,  6 Dec 2013 12:57:04 +0000
-Message-Id: <1386334761-25517-136-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 130/272] mwifiex: correct packet length for packets from SDIO interface
+Date: Fri,  6 Dec 2013 12:56:59 +0000
+Message-Id: <1386334761-25517-131-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,94 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Avinash Patil <patila@marvell.com>
 
-commit 59c8e66378fb78adbcd05f0d09783dde6fef282b upstream.
+commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
 
-Also check the busy placements before deciding to move a buffer object.
-Failing to do this may result in a completely unneccessary move within a
-single memory type.
+While receiving a packet on SDIO interface, we allocate skb with
+size multiple of SDIO block size. We need to resize this skb
+after RX using packet length from RX header.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/ttm/ttm_bo.c | 32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ drivers/net/wireless/mwifiex/sdio.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-index cb9dd67..eb96c21 100644
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -993,24 +993,32 @@ out_unlock:
- 	return ret;
- }
- 
--static int ttm_bo_mem_compat(struct ttm_placement *placement,
--			     struct ttm_mem_reg *mem)
-+static bool ttm_bo_mem_compat(struct ttm_placement *placement,
-+			      struct ttm_mem_reg *mem,
-+			      uint32_t *new_flags)
+diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
+index 09185c9..d4bf8c3 100644
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -1032,7 +1032,10 @@ static int mwifiex_decode_rx_packet(struct mwifiex_adapter *adapter,
+ 				    struct sk_buff *skb, u32 upld_typ)
  {
- 	int i;
+ 	u8 *cmd_buf;
++	__le16 *curr_ptr = (__le16 *)skb->data;
++	u16 pkt_len = le16_to_cpu(*curr_ptr);
  
- 	if (mem->mm_node && placement->lpfn != 0 &&
- 	    (mem->start < placement->fpfn ||
- 	     mem->start + mem->num_pages > placement->lpfn))
--		return -1;
-+		return false;
++	skb_trim(skb, pkt_len);
+ 	skb_pull(skb, INTF_HEADER_LEN);
  
- 	for (i = 0; i < placement->num_placement; i++) {
--		if ((placement->placement[i] & mem->placement &
--			TTM_PL_MASK_CACHING) &&
--			(placement->placement[i] & mem->placement &
--			TTM_PL_MASK_MEM))
--			return i;
-+		*new_flags = placement->placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
-+	}
-+
-+	for (i = 0; i < placement->num_busy_placement; i++) {
-+		*new_flags = placement->busy_placement[i];
-+		if ((*new_flags & mem->placement & TTM_PL_MASK_CACHING) &&
-+		    (*new_flags & mem->placement & TTM_PL_MASK_MEM))
-+			return true;
- 	}
--	return -1;
-+
-+	return false;
- }
- 
- int ttm_bo_validate(struct ttm_buffer_object *bo,
-@@ -1019,6 +1027,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
- 			bool no_wait_gpu)
- {
- 	int ret;
-+	uint32_t new_flags;
- 
- 	lockdep_assert_held(&bo->resv->lock.base);
- 	/* Check that range is valid */
-@@ -1029,8 +1038,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
- 	/*
- 	 * Check whether we need to move buffer.
- 	 */
--	ret = ttm_bo_mem_compat(placement, &bo->mem);
--	if (ret < 0) {
-+	if (!ttm_bo_mem_compat(placement, &bo->mem, &new_flags)) {
- 		ret = ttm_bo_move_buffer(bo, placement, interruptible,
- 					 no_wait_gpu);
- 		if (ret)
-@@ -1040,7 +1048,7 @@ int ttm_bo_validate(struct ttm_buffer_object *bo,
- 		 * Use the access and other non-mapping-related flag bits from
- 		 * the compatible memory placement flags to the active flags
- 		 */
--		ttm_flag_masked(&bo->mem.placement, placement->placement[ret],
-+		ttm_flag_masked(&bo->mem.placement, new_flags,
- 				~TTM_PL_MASK_MEMTYPE);
- 	}
- 	/*
+ 	switch (upld_typ) {
 -- 
 1.8.3.2
 
