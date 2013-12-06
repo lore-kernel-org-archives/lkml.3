@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162305Ab3LFNJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:09:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44805 "EHLO
+	id S1162314Ab3LFNJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:09:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44801 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162179Ab3LFNGD (ORCPT
+	with ESMTP id S1162169Ab3LFNGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:06:03 -0500
+	Fri, 6 Dec 2013 08:06:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 262/272] ALSA: hda - Fix Line Out automute on Realtek multifunction jacks
-Date: Fri,  6 Dec 2013 12:59:11 +0000
-Message-Id: <1386334761-25517-263-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 261/272] ALSA: msnd: Avoid duplicated driver name
+Date: Fri,  6 Dec 2013 12:59:10 +0000
+Message-Id: <1386334761-25517-262-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5959a6bc1124211a359525d209005abc07b0197b upstream.
+commit 092f9cd16aac7d054af1755c945f37c1b33399e6 upstream.
 
-In case there is both a multifunction headset jack and a Line Out
-jack, automuting was not working properly from the Line Out jack.
-This patch fixes that issue.
+msnd_pinnacle.c is used for both snd-msnd-pinnacle and
+snd-msnd-classic drivers, and both should have different driver
+names.  Using the same driver name results in the sysfs warning for
+duplicated entries like
+ kobject: 'msnd-pinnacle.7' (cec33408): kobject_release, parent   (null) (delayed)
+ kobject: 'msnd-pinnacle' (cecd4980): kobject_release, parent cf3ad9b0 (delayed)
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 1 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x7d/0xa0()
+ sysfs: cannot create duplicate filename '/bus/isa/drivers/msnd-pinnacle'
+ ......
 
-BugLink: https://bugs.launchpad.net/bugs/1250377
-Tested-by: Cyrus Lien <cyrus.lien@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/isa/msnd/msnd_pinnacle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index a67015a..69d784f 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3231,8 +3231,10 @@ static void alc_update_headset_mode(struct hda_codec *codec)
- 	else
- 		new_headset_mode = ALC_HEADSET_MODE_HEADPHONE;
+diff --git a/sound/isa/msnd/msnd_pinnacle.c b/sound/isa/msnd/msnd_pinnacle.c
+index 81aeb93..0a90bd6 100644
+--- a/sound/isa/msnd/msnd_pinnacle.c
++++ b/sound/isa/msnd/msnd_pinnacle.c
+@@ -73,9 +73,11 @@
+ #ifdef MSND_CLASSIC
+ #  include "msnd_classic.h"
+ #  define LOGNAME			"msnd_classic"
++#  define DEV_NAME			"msnd-classic"
+ #else
+ #  include "msnd_pinnacle.h"
+ #  define LOGNAME			"snd_msnd_pinnacle"
++#  define DEV_NAME			"msnd-pinnacle"
+ #endif
  
--	if (new_headset_mode == spec->current_headset_mode)
-+	if (new_headset_mode == spec->current_headset_mode) {
-+		snd_hda_gen_update_outputs(codec);
- 		return;
-+	}
+ static void set_default_audio_parameters(struct snd_msnd *chip)
+@@ -1067,8 +1069,6 @@ static int snd_msnd_isa_remove(struct device *pdev, unsigned int dev)
+ 	return 0;
+ }
  
- 	switch (new_headset_mode) {
- 	case ALC_HEADSET_MODE_UNPLUGGED:
+-#define DEV_NAME "msnd-pinnacle"
+-
+ static struct isa_driver snd_msnd_driver = {
+ 	.match		= snd_msnd_isa_match,
+ 	.probe		= snd_msnd_isa_probe,
 -- 
 1.8.3.2
 
