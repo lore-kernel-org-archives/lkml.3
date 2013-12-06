@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161727Ab3LFNDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44352 "EHLO
+	id S1161778Ab3LFNDe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44393 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161698Ab3LFNDO (ORCPT
+	with ESMTP id S1161753Ab3LFND2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:14 -0500
+	Fri, 6 Dec 2013 08:03:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 167/272] [media] dibusb-common: Don't use dynamic static allocation
-Date: Fri,  6 Dec 2013 12:57:36 +0000
-Message-Id: <1386334761-25517-168-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 177/272] [media] stb0899_drv: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:46 +0000
+Message-Id: <1386334761-25517-178-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,54 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 1d7fa359d4c0fbb2756fa01cc47212908d90b7b0 upstream.
+commit ba4746423488aafa435739c32bfe0758f3dd5d77 upstream.
 
 Dynamic static allocation is evil, as Kernel stack is too low, and
 compilation complains about it on some archs:
-	drivers/media/usb/dvb-usb/dibusb-common.c:124:1: warning: 'dibusb_i2c_msg' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer to be the max size of
-a control URB payload data (64 bytes).
+	drivers/media/dvb-frontends/stb0899_drv.c:540:1: warning: 'stb0899_write_regs' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer. Considering that I2C
+transfers are generally limited, and that devices used on USB has a
+max data length of 64 bytes for	the control URBs.
+So, it seem safe to use 64 bytes as the hard limit for all those devices.
+ On most cases, the limit is a way lower than that, but	this limit
+is small enough to not affect the Kernel stack, and it is a no brain
+limit, as using smaller ones would require to either carefully each
+driver or to take a look on each datasheet.
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/usb/dvb-usb/dibusb-common.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/media/dvb-frontends/stb0899_drv.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/dvb-usb/dibusb-common.c b/drivers/media/usb/dvb-usb/dibusb-common.c
-index c2dded9..6d68af0 100644
---- a/drivers/media/usb/dvb-usb/dibusb-common.c
-+++ b/drivers/media/usb/dvb-usb/dibusb-common.c
-@@ -12,6 +12,9 @@
- #include <linux/kconfig.h>
- #include "dibusb.h"
+diff --git a/drivers/media/dvb-frontends/stb0899_drv.c b/drivers/media/dvb-frontends/stb0899_drv.c
+index 3dd5714..07cd5ea 100644
+--- a/drivers/media/dvb-frontends/stb0899_drv.c
++++ b/drivers/media/dvb-frontends/stb0899_drv.c
+@@ -32,6 +32,9 @@
+ #include "stb0899_priv.h"
+ #include "stb0899_reg.h"
  
 +/* Max transfer size done by I2C transfer functions */
 +#define MAX_XFER_SIZE  64
 +
- static int debug;
- module_param(debug, int, 0644);
- MODULE_PARM_DESC(debug, "set debugging level (1=info (|-able))." DVB_USB_DEBUG_STATUS);
-@@ -105,11 +108,16 @@ EXPORT_SYMBOL(dibusb2_0_power_ctrl);
- static int dibusb_i2c_msg(struct dvb_usb_device *d, u8 addr,
- 			  u8 *wbuf, u16 wlen, u8 *rbuf, u16 rlen)
- {
--	u8 sndbuf[wlen+4]; /* lead(1) devaddr,direction(1) addr(2) data(wlen) (len(2) (when reading)) */
-+	u8 sndbuf[MAX_XFER_SIZE]; /* lead(1) devaddr,direction(1) addr(2) data(wlen) (len(2) (when reading)) */
- 	/* write only ? */
- 	int wo = (rbuf == NULL || rlen == 0),
- 		len = 2 + wlen + (wo ? 0 : 2);
+ static unsigned int verbose = 0;//1;
+ module_param(verbose, int, 0644);
  
-+	if (4 + wlen > sizeof(sndbuf)) {
-+		warn("i2c wr: len=%d is too big!\n", wlen);
-+		return -EOPNOTSUPP;
+@@ -499,7 +502,7 @@ err:
+ int stb0899_write_regs(struct stb0899_state *state, unsigned int reg, u8 *data, u32 count)
+ {
+ 	int ret;
+-	u8 buf[2 + count];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg i2c_msg = {
+ 		.addr	= state->config->demod_address,
+ 		.flags	= 0,
+@@ -507,6 +510,13 @@ int stb0899_write_regs(struct stb0899_state *state, unsigned int reg, u8 *data,
+ 		.len	= 2 + count
+ 	};
+ 
++	if (2 + count > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr reg=%04x: len=%d is too big!\n",
++		       KBUILD_MODNAME, reg, count);
++		return -EINVAL;
 +	}
 +
- 	sndbuf[0] = wo ? DIBUSB_REQ_I2C_WRITE : DIBUSB_REQ_I2C_READ;
- 	sndbuf[1] = (addr << 1) | (wo ? 0 : 1);
- 
+ 	buf[0] = reg >> 8;
+ 	buf[1] = reg & 0xff;
+ 	memcpy(&buf[2], data, count);
 -- 
 1.8.3.2
 
