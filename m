@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161550Ab3LFOTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:19:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43627 "EHLO
+	id S1758901Ab3LFOTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:19:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43631 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161088Ab3LFNAB (ORCPT
+	with ESMTP id S1161120Ab3LFNAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:01 -0500
+	Fri, 6 Dec 2013 08:00:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>,
+Cc: Samuel Li <samuel.li@amd.com>, Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 024/272] ASoC: wm5110: Add post SYSCLK register patch for rev D chip
-Date: Fri,  6 Dec 2013 12:55:13 +0000
-Message-Id: <1386334761-25517-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 025/272] drm/radeon: hook up backlight functions for CI and KV family.
+Date: Fri,  6 Dec 2013 12:55:14 +0000
+Message-Id: <1386334761-25517-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,81 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Samuel Li <samuel.li@amd.com>
 
-commit f69f86b1ba6493126a7f093a65a8952bcb183de2 upstream.
+commit 7272c9d2286525d4c6bce788243cf2b6f306d15c upstream.
 
-Certain registers require patching after the SYSCLK has been brought up
-add support for this into the CODEC driver.
+Fixes crashes when handling atif events due to the lack of a
+callback being registered.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Samuel Li <samuel.li@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm5110.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_asic.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
-index 2e7cb4b..18cdee7 100644
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -37,6 +37,47 @@ struct wm5110_priv {
- 	struct arizona_fll fll[2];
- };
- 
-+static const struct reg_default wm5110_sysclk_revd_patch[] = {
-+	{ 0x3093, 0x1001 },
-+	{ 0x30E3, 0x1301 },
-+	{ 0x3133, 0x1201 },
-+	{ 0x3183, 0x1501 },
-+	{ 0x31D3, 0x1401 },
-+};
-+
-+static int wm5110_sysclk_ev(struct snd_soc_dapm_widget *w,
-+			    struct snd_kcontrol *kcontrol, int event)
-+{
-+	struct snd_soc_codec *codec = w->codec;
-+	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
-+	struct regmap *regmap = codec->control_data;
-+	const struct reg_default *patch = NULL;
-+	int i, patch_size;
-+
-+	switch (arizona->rev) {
-+	case 3:
-+		patch = wm5110_sysclk_revd_patch;
-+		patch_size = ARRAY_SIZE(wm5110_sysclk_revd_patch);
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	switch (event) {
-+	case SND_SOC_DAPM_POST_PMU:
-+		if (patch)
-+			for (i = 0; i < patch_size; i++)
-+				regmap_write(regmap, patch[i].reg,
-+					     patch[i].def);
-+		break;
-+
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- static DECLARE_TLV_DB_SCALE(ana_tlv, 0, 100, 0);
- static DECLARE_TLV_DB_SCALE(eq_tlv, -1200, 100, 0);
- static DECLARE_TLV_DB_SCALE(digital_tlv, -6400, 50, 0);
-@@ -404,7 +445,7 @@ static const struct snd_kcontrol_new wm5110_aec_loopback_mux =
- 
- static const struct snd_soc_dapm_widget wm5110_dapm_widgets[] = {
- SND_SOC_DAPM_SUPPLY("SYSCLK", ARIZONA_SYSTEM_CLOCK_1, ARIZONA_SYSCLK_ENA_SHIFT,
--		    0, NULL, 0),
-+		    0, wm5110_sysclk_ev, SND_SOC_DAPM_POST_PMU),
- SND_SOC_DAPM_SUPPLY("ASYNCCLK", ARIZONA_ASYNC_CLOCK_1,
- 		    ARIZONA_ASYNC_CLK_ENA_SHIFT, 0, NULL, 0),
- SND_SOC_DAPM_SUPPLY("OPCLK", ARIZONA_OUTPUT_SYSTEM_CLOCK,
+diff --git a/drivers/gpu/drm/radeon/radeon_asic.c b/drivers/gpu/drm/radeon/radeon_asic.c
+index 8e5438e..1000a70 100644
+--- a/drivers/gpu/drm/radeon/radeon_asic.c
++++ b/drivers/gpu/drm/radeon/radeon_asic.c
+@@ -2423,6 +2423,8 @@ static struct radeon_asic ci_asic = {
+ 		.bandwidth_update = &dce8_bandwidth_update,
+ 		.get_vblank_counter = &evergreen_get_vblank_counter,
+ 		.wait_for_vblank = &dce4_wait_for_vblank,
++		.set_backlight_level = &atombios_set_backlight_level,
++		.get_backlight_level = &atombios_get_backlight_level,
+ 	},
+ 	.copy = {
+ 		.blit = NULL,
+@@ -2578,6 +2580,8 @@ static struct radeon_asic kv_asic = {
+ 		.bandwidth_update = &dce8_bandwidth_update,
+ 		.get_vblank_counter = &evergreen_get_vblank_counter,
+ 		.wait_for_vblank = &dce4_wait_for_vblank,
++		.set_backlight_level = &atombios_set_backlight_level,
++		.get_backlight_level = &atombios_get_backlight_level,
+ 	},
+ 	.copy = {
+ 		.blit = NULL,
 -- 
 1.8.3.2
 
