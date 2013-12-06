@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162579Ab3LFN1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:27:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44467 "EHLO
+	id S1162587Ab3LFN1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:27:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44457 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161836Ab3LFNDv (ORCPT
+	with ESMTP id S1161828Ab3LFNDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:51 -0500
+	Fri, 6 Dec 2013 08:03:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Paul Stewart <pstew@google.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Michal Kubecek <mkubecek@suse.cz>, Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 193/272] iwl3945: better skb management in rx path
-Date: Fri,  6 Dec 2013 12:58:02 +0000
-Message-Id: <1386334761-25517-194-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 191/272] netfilter: nf_conntrack: use RCU safe kfree for conntrack extensions
+Date: Fri,  6 Dec 2013 12:58:00 +0000
+Message-Id: <1386334761-25517-192-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,103 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: =?UTF-8?q?Michal=20Kube=C4=8Dek?= <mkubecek@suse.cz>
 
-commit 45fe142cefa864b685615bcb930159f6749c3667 upstream.
+commit c13a84a830a208fb3443628773c8ca0557773cc7 upstream.
 
-Steinar reported reallocations of skb->head with IPv6, leading to
-a warning in skb_try_coalesce()
+Commit 68b80f11 (netfilter: nf_nat: fix RCU races) introduced
+RCU protection for freeing extension data when reallocation
+moves them to a new location. We need the same protection when
+freeing them in nf_ct_ext_free() in order to prevent a
+use-after-free by other threads referencing a NAT extension data
+via bysource list.
 
-It turns out iwl3945 has several problems :
-
-1) skb->truesize is underestimated.
-   We really consume PAGE_SIZE bytes for a fragment,
-   not the frame length.
-2) 128 bytes of initial headroom is a bit low and forces reallocations.
-3) We can avoid consuming a full page for small enough frames.
-
-Reported-by: Steinar H. Gunderson <sesse@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Paul Stewart <pstew@google.com>
-Acked-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/iwlegacy/3945.c | 31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ include/net/netfilter/nf_conntrack_extend.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlegacy/3945.c b/drivers/net/wireless/iwlegacy/3945.c
-index c092033..f09e257 100644
---- a/drivers/net/wireless/iwlegacy/3945.c
-+++ b/drivers/net/wireless/iwlegacy/3945.c
-@@ -475,6 +475,8 @@ il3945_is_network_packet(struct il_priv *il, struct ieee80211_hdr *header)
- 	}
+diff --git a/include/net/netfilter/nf_conntrack_extend.h b/include/net/netfilter/nf_conntrack_extend.h
+index 977bc8a..3313108 100644
+--- a/include/net/netfilter/nf_conntrack_extend.h
++++ b/include/net/netfilter/nf_conntrack_extend.h
+@@ -80,7 +80,7 @@ static inline void nf_ct_ext_destroy(struct nf_conn *ct)
+ static inline void nf_ct_ext_free(struct nf_conn *ct)
+ {
+ 	if (ct->ext)
+-		kfree(ct->ext);
++		kfree_rcu(ct->ext, rcu);
  }
  
-+#define SMALL_PACKET_SIZE 256
-+
- static void
- il3945_pass_packet_to_mac80211(struct il_priv *il, struct il_rx_buf *rxb,
- 			       struct ieee80211_rx_status *stats)
-@@ -483,14 +485,13 @@ il3945_pass_packet_to_mac80211(struct il_priv *il, struct il_rx_buf *rxb,
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)IL_RX_DATA(pkt);
- 	struct il3945_rx_frame_hdr *rx_hdr = IL_RX_HDR(pkt);
- 	struct il3945_rx_frame_end *rx_end = IL_RX_END(pkt);
--	u16 len = le16_to_cpu(rx_hdr->len);
-+	u32 len = le16_to_cpu(rx_hdr->len);
- 	struct sk_buff *skb;
- 	__le16 fc = hdr->frame_control;
-+	u32 fraglen = PAGE_SIZE << il->hw_params.rx_page_order;
- 
- 	/* We received data from the HW, so stop the watchdog */
--	if (unlikely
--	    (len + IL39_RX_FRAME_SIZE >
--	     PAGE_SIZE << il->hw_params.rx_page_order)) {
-+	if (unlikely(len + IL39_RX_FRAME_SIZE > fraglen)) {
- 		D_DROP("Corruption detected!\n");
- 		return;
- 	}
-@@ -506,26 +507,32 @@ il3945_pass_packet_to_mac80211(struct il_priv *il, struct il_rx_buf *rxb,
- 		D_INFO("Woke queues - frame received on passive channel\n");
- 	}
- 
--	skb = dev_alloc_skb(128);
-+	skb = dev_alloc_skb(SMALL_PACKET_SIZE);
- 	if (!skb) {
- 		IL_ERR("dev_alloc_skb failed\n");
- 		return;
- 	}
- 
- 	if (!il3945_mod_params.sw_crypto)
--		il_set_decrypted_flag(il, (struct ieee80211_hdr *)rxb_addr(rxb),
-+		il_set_decrypted_flag(il, (struct ieee80211_hdr *)pkt,
- 				      le32_to_cpu(rx_end->status), stats);
- 
--	skb_add_rx_frag(skb, 0, rxb->page,
--			(void *)rx_hdr->payload - (void *)pkt, len,
--			len);
--
-+	/* If frame is small enough to fit into skb->head, copy it
-+	 * and do not consume a full page
-+	 */
-+	if (len <= SMALL_PACKET_SIZE) {
-+		memcpy(skb_put(skb, len), rx_hdr->payload, len);
-+	} else {
-+		skb_add_rx_frag(skb, 0, rxb->page,
-+				(void *)rx_hdr->payload - (void *)pkt, len,
-+				fraglen);
-+		il->alloc_rxb_page--;
-+		rxb->page = NULL;
-+	}
- 	il_update_stats(il, false, fc, len);
- 	memcpy(IEEE80211_SKB_RXCB(skb), stats, sizeof(*stats));
- 
- 	ieee80211_rx(il->hw, skb);
--	il->alloc_rxb_page--;
--	rxb->page = NULL;
- }
- 
- #define IL_DELAY_NEXT_SCAN_AFTER_ASSOC (HZ*6)
+ /* Add this type, returns pointer to data or NULL. */
 -- 
 1.8.3.2
 
