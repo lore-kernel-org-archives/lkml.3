@@ -1,151 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab3LFNid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:38:33 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:33178 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758531Ab3LFNi3 (ORCPT
+	id S1758576Ab3LFNiU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:38:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44301 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757983Ab3LFNC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:38:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131206133015.GA27211@glanzmann.de>
-References: <20131206074455.GB21029@glanzmann.de>
-	<CAKb7Uvht8=ydSgCe-mKpoR3LRvf1KJw2_CAV_0zeh2t4nt9nww@mail.gmail.com>
-	<20131206133015.GA27211@glanzmann.de>
-Date: Fri, 6 Dec 2013 08:38:28 -0500
-X-Google-Sender-Auth: dqCMOuU_K6T7AcjEyeqGbAPMYpk
-Message-ID: <CAKb7UvhgboLR_w_15dk+t_s3EkJDgHQgN5ASfAOvJJ-ACfrRuw@mail.gmail.com>
-Subject: Re: Regression: drm/nouveau/clk: implement power state and engine
- clock control in core (7c856522069755ab9d163a24ac332cd3cb35fe30) breaks
- GeForce 9400 on Intel Mac Mini Model November 2010 model
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Thomas Glanzmann <thomas@glanzmann.de>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        Ben Skeggs <bskeggs@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Dec 2013 08:02:59 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Luosong <android@generaltouch.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 153/272] HID: multitouch: Fix GeneralTouch products and add more PIDs
+Date: Fri,  6 Dec 2013 12:57:22 +0000
+Message-Id: <1386334761-25517-154-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 8:30 AM, Thomas Glanzmann <thomas@glanzmann.de> wrote:
-> Hello Ilia,
->
->> > [    7.569394] nouveau  [  DEVICE][0000:02:00.0] BOOT0  : 0x0ac080b1
->> > [    7.569460] nouveau  [  DEVICE][0000:02:00.0] Chipset: MCP79/MCP7A (NVAC)
->> > [    7.569530] nouveau  [  DEVICE][0000:02:00.0] Family : NV50
->> > [    7.571151] nouveau  [   VBIOS][0000:02:00.0] checking PRAMIN for image...
->> > [    7.633082] nouveau  [   VBIOS][0000:02:00.0] ... appears to be valid
->> > [    7.633155] nouveau  [   VBIOS][0000:02:00.0] using image from PRAMIN
->> > [    7.633468] nouveau  [   VBIOS][0000:02:00.0] BIT signature found
->> > [    7.633533] nouveau  [   VBIOS][0000:02:00.0] version 62.79.4e.00.01
->> > [    7.654309] nouveau  [     PMC][0000:02:00.0] MSI interrupts enabled
->> > [    7.654417] nouveau  [     PFB][0000:02:00.0] RAM type: stolen system memory
->> > [    7.654481] nouveau  [     PFB][0000:02:00.0] RAM size: 256 MiB
->> > [    7.654546] nouveau  [     PFB][0000:02:00.0]    ZCOMP: 0 tags
->> > [    7.687282] nouveau  [  PTHERM][0000:02:00.0] FAN control: none / external
->> > [    7.687366] nouveau  [  PTHERM][0000:02:00.0] fan management: automatic
->> > [    7.687429] nouveau  [  PTHERM][0000:02:00.0] internal sensor: yes
->> > [    7.687500] nouveau  [     CLK][0000:02:00.0] 03: core 150 MHz shader 300 MHz
->> > [    7.687575] nouveau  [     CLK][0000:02:00.0] 05: core 150 MHz shader 300 MHz
->> > [    7.687648] nouveau  [     CLK][0000:02:00.0] 0e: core 350 MHz shader 800 MHz
->> > [    7.687721] nouveau  [     CLK][0000:02:00.0] 0f: core 450 MHz shader 1100 MHz
->> > [    7.687806] nouveau E[     CLK][0000:02:00.0] 17 freq unknown
->> > [    7.687867] nouveau E[     CLK][0000:02:00.0] init failed, -22
->
->> http://lists.freedesktop.org/archives/nouveau/2013-December/015304.html
->
-> thank you. I tried to cherry pick this patch on top of Linux tip, but
-> was not able to:
->
->   CC [M]  drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.o
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:478:8: error: redefinition of 'struct nvaa_clock_priv'
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Something very funny happened. Are you sure you applied the patch
-correctly? The file should only be 445 lines long, I'm guessing you
-double-applied it?
+------------------
 
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:33:8: note: originally defined here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:488:1: error: redefinition of 'read_div'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:43:1: note: previous definition of 'read_div' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:494:1: error: redefinition of 'read_pll'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:49:1: note: previous definition of 'read_pll' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:525:1: error: redefinition of 'nvaa_clock_read'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:80:1: note: previous definition of 'nvaa_clock_read' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:607:1: error: conflicting types for 'calc_pll'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:162:1: note: previous definition of 'calc_pll' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:628:1: error: redefinition of 'calc_P'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:183:1: note: previous definition of 'calc_P' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:646:1: error: redefinition of 'nvaa_clock_calc'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:201:1: note: previous definition of 'nvaa_clock_calc' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:744:1: error: redefinition of 'nvaa_clock_prog'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:299:1: note: previous definition of 'nvaa_clock_prog' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:847:1: error: redefinition of 'nvaa_clock_tidy'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:402:1: note: previous definition of 'nvaa_clock_tidy' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:852:1: error: redefinition of 'nvaa_domains'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:407:1: note: previous definition of 'nvaa_domains' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:862:1: error: redefinition of 'nvaa_clock_ctor'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:417:1: note: previous definition of 'nvaa_clock_ctor' was here
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:882:1: error: redefinition of 'nvaa_clock_oclass'
-> drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:437:1: note: previous definition of 'nvaa_clock_oclass' was here
-> make[4]: *** [drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.o] Error 1
-> make[3]: *** [drivers/gpu/drm/nouveau] Error 2
-> make[2]: *** [drivers/gpu/drm] Error 2
-> make[1]: *** [drivers/gpu] Error 2
-> make: *** [drivers] Error 2
->
-> Probably I'm missing a dependency.
->
-> Than I checked out drm-nouveau-next of
-> git://anongit.freedesktop.org/nouveau/linux-2.6 and tried again. This time it
+From: Luosong <android@generaltouch.com>
 
-It's in Dave Airlie's drm-fixes branch, which should get submitted to
-3.13 at some point.
+commit 7b2262920db2b98fe2cd32cde52141f02fd9eecf upstream.
 
-> worked. Thank you. Will the fix wander to upstream before v3.13?
-> Otherwise I would appreciate a heads-up when it wanders upstream, so
-> that I can test again.
->
-> [    7.964230] nouveau  [  DEVICE][0000:02:00.0] BOOT0  : 0x0ac080b1
-> [    7.964232] nouveau  [  DEVICE][0000:02:00.0] Chipset: MCP79/MCP7A (NVAC)
-> [    7.964233] nouveau  [  DEVICE][0000:02:00.0] Family : NV50
-> [    7.965828] nouveau  [   VBIOS][0000:02:00.0] checking PRAMIN for image...
-> [    8.027695] nouveau  [   VBIOS][0000:02:00.0] ... appears to be valid
-> [    8.027769] nouveau  [   VBIOS][0000:02:00.0] using image from PRAMIN
-> [    8.028070] nouveau  [   VBIOS][0000:02:00.0] BIT signature found
-> [    8.028134] nouveau  [   VBIOS][0000:02:00.0] version 62.79.4e.00.01
-> [    8.061976] nouveau  [     PFB][0000:02:00.0] RAM type: stolen system memory
-> [    8.062051] nouveau  [     PFB][0000:02:00.0] RAM size: 256 MiB
-> [    8.062122] nouveau  [     PFB][0000:02:00.0]    ZCOMP: 0 tags
-> [    8.086562] [TTM] Zone  kernel: Available graphics memory: 1887908 kiB
-> [    8.086633] [TTM] Initializing pool allocator
-> [    8.086707] [TTM] Initializing DMA pool allocator
-> [    8.088703] nouveau  [     DRM] VRAM: 256 MiB
-> [    8.088774] nouveau  [     DRM] GART: 512 MiB
-> [    8.088843] nouveau  [     DRM] BIT BIOS found
-> [    8.088902] nouveau  [     DRM] Bios version 62.79.4e.00
-> [    8.088969] nouveau  [     DRM] TMDS table version 2.0
-> [    8.089030] nouveau  [     DRM] DCB version 4.0
-> [    8.089096] nouveau  [     DRM] DCB outp 00: 02021286 0f220010
-> [    8.089157] nouveau  [     DRM] DCB outp 01: 01000122 00000010
-> [    8.089222] nouveau  [     DRM] DCB outp 02: 01000120 0000001e
-> [    8.089283] nouveau  [     DRM] DCB outp 03: 02021232 00000010
-> [    8.089349] nouveau  [     DRM] DCB conn 00: 00001020
-> [    8.089459] nouveau  [     DRM] DCB conn 01: 0000a146
-> [    8.089565] nouveau  [     DRM] DCB conn 02: 00005246
-> [    8.099341] nouveau W[     DRM] unknown connector type 20
-> [    8.100025] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-> [    8.100090] [drm] No driver support for vblank timestamp query.
-> [    8.300673] nouveau  [     DRM] 4 available performance level(s)
-> [    8.300759] nouveau  [     DRM] 0: core 150MHz shader 300MHz voltage 900mV fanspeed 100%
-> [    8.300839] nouveau  [     DRM] 1: core 150MHz shader 300MHz voltage 900mV fanspeed 100%
-> [    8.300921] nouveau  [     DRM] 2: core 350MHz shader 800MHz voltage 900mV fanspeed 100%
-> [    8.301001] nouveau  [     DRM] 3: core 450MHz shader 1100MHz voltage 1010mV fanspeed 100%
-> [    8.301080] nouveau  [     DRM] c:
-> [    8.325812] nouveau  [     DRM] MM: using M2MF for buffer copies
+GeneralTouch products should use the quirk SLOT_IS_CONTACTID
+instead of SLOT_IS_CONTACTNUMBER.
 
-This boot log is from a kernel that does not include any of nouveau's
-v3.13 changes. (See how it says "performance levels", and it's printed
-under [DRM]... the new kernel should say [CLK] and the output format
-is different.)
+Adding PIDs 0101,e100,0102,0106,010a from the new products.
 
-  -ilia
+Tested on new and older products by GeneralTouch engineers.
+
+Signed-off-by: Luosong <android@generaltouch.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/hid/hid-ids.h        |  5 +++++
+ drivers/hid/hid-multitouch.c | 19 +++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index e2808f5..6dd4f03 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -332,6 +332,11 @@
+ #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
+ #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
++#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
+ 
+ #define USB_VENDOR_ID_GLAB		0x06c2
+ #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 2d3677c..94a903c 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -244,12 +244,12 @@ static struct mt_class mt_classes[] = {
+ 	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
+ 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+ 			MT_QUIRK_VALID_IS_INRANGE |
+-			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
++			MT_QUIRK_SLOT_IS_CONTACTID,
+ 		.maxcontacts = 2
+ 	},
+ 	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+ 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+-			MT_QUIRK_SLOT_IS_CONTACTNUMBER
++			MT_QUIRK_SLOT_IS_CONTACTID
+ 	},
+ 
+ 	{ .name = MT_CLS_FLATFROG,
+@@ -1193,6 +1193,21 @@ static const struct hid_device_id mt_devices[] = {
+ 	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+ 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
+ 			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
++	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
++		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
++			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
+ 
+ 	/* Gametel game controller */
+ 	{ .driver_data = MT_CLS_NSMU,
+-- 
+1.8.3.2
+
