@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161127Ab3LFVxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60645 "EHLO
+	id S1422776Ab3LFW3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:29:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759140Ab3LFVw7 (ORCPT
+	with ESMTP id S1161090Ab3LFVxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:59 -0500
+	Fri, 6 Dec 2013 16:53:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.12 66/83] video: kyro: fix incorrect sizes when copying to userspace
-Date: Fri,  6 Dec 2013 13:51:56 -0800
-Message-Id: <20131206214646.187900466@linuxfoundation.org>
+        Brian Foster <bfoster@redhat.com>, Dave Chinner <dchinner@redhat.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Dwight Engen <dwight.engen@oracle.com>, Ben Myers <bpm@sgi.com>,
+        Kees Cook <keescook@google.com>
+Subject: [PATCH 3.12 61/83] xfs: add capability check to free eofblocks ioctl
+Date: Fri,  6 Dec 2013 13:51:51 -0800
+Message-Id: <20131206214645.723864669@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,43 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Dwight Engen <dwight.engen@oracle.com>
 
-commit 2ab68ec927310dc488f3403bb48f9e4ad00a9491 upstream.
+commit 8c567a7fab6e086a0284eee2db82348521e7120c upstream.
 
-kyro would copy u32s and specify sizeof(unsigned long) as the size to copy.
+Check for CAP_SYS_ADMIN since the caller can truncate preallocated
+blocks from files they do not own nor have write access to. A more
+fine grained access check was considered: require the caller to
+specify their own uid/gid and to use inode_permission to check for
+write, but this would not catch the case of an inode not reachable
+via path traversal from the callers mount namespace.
 
-This would copy more data than intended and cause memory corruption and might
-leak kernel memory.
+Add check for read-only filesystem to free eofblocks ioctl.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Cc: Kees Cook <keescook@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/kyro/fbdev.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/xfs/xfs_ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/video/kyro/fbdev.c
-+++ b/drivers/video/kyro/fbdev.c
-@@ -625,15 +625,15 @@ static int kyrofb_ioctl(struct fb_info *
- 		}
- 		break;
- 	case KYRO_IOCTL_UVSTRIDE:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayUVStride, sizeof(deviceInfo.ulOverlayUVStride)))
- 			return -EFAULT;
- 		break;
- 	case KYRO_IOCTL_STRIDE:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayStride, sizeof(deviceInfo.ulOverlayStride)))
- 			return -EFAULT;
- 		break;
- 	case KYRO_IOCTL_OVERLAY_OFFSET:
--		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(unsigned long)))
-+		if (copy_to_user(argp, &deviceInfo.ulOverlayOffset, sizeof(deviceInfo.ulOverlayOffset)))
- 			return -EFAULT;
- 		break;
- 	}
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -1717,6 +1717,12 @@ xfs_file_ioctl(
+ 		if (mp->m_flags & XFS_MOUNT_RDONLY)
+ 			return -XFS_ERROR(EROFS);
+ 
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++
++		if (mp->m_flags & XFS_MOUNT_RDONLY)
++			return -XFS_ERROR(EROFS);
++
+ 		if (copy_from_user(&eofb, arg, sizeof(eofb)))
+ 			return -XFS_ERROR(EFAULT);
+ 
 
 
