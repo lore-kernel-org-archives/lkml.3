@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab3LFD0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 22:26:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:56623 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab3LFDUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 22:20:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,838,1378882800"; 
-   d="scan'208";a="325986881"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org
-Subject: [Patch Part1 V2 02/20] iommu/vt-d: fix PCI device reference leakage on error recovery path
-Date: Fri,  6 Dec 2013 11:21:05 +0800
-Message-Id: <1386300083-6882-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1386300083-6882-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1386300083-6882-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1753093Ab3LFDa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 22:30:27 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:57136 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3LFDaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 22:30:24 -0500
+From: Julius Werner <jwerner@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH v2] usb: core: Make sure usb_set_configuration(-1) cannot fail
+Date: Thu,  5 Dec 2013 19:29:53 -0800
+Message-Id: <1386300593-1270-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.5.1
+References: <1386116201-22131-1-git-send-email-jwerner@chromium.org> <Pine.LNX.4.44L0.1312041014460.1329-100000@iolanthe.rowland.org> <CAODwPW8aLDUyQbX1h2FkeFvWHCTV=sCFVztPP6kHpaaF-OBOOA@mail.gmail.com>
+In-Reply-To: <CAODwPW8aLDUyQbX1h2FkeFvWHCTV=sCFVztPP6kHpaaF-OBOOA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function dmar_parse_dev_scope() should release the PCI device reference
-count gained in function dmar_parse_one_dev_scope() on error recovery,
-otherwise will cause PCI device object leakage.
+usb_deauthorize_device() tries to unset the configuration of a USB
+device and then unconditionally blows away the configuration descriptors
+with usb_destroy_configuration(). This is bad if the
+usb_set_configuration() call failed before the configuration could be
+correctly unset, since pointers like udev->actconfig can keep pointing
+to the now invalid memory. We have encountered hard to reproduce crashes
+from devices disconnected during suspend due to this, where khubd's
+disconnect handling races with userspace tools that change authorization
+on resume.
 
-This patch also introduces dmar_free_dev_scope(), which will be used
-to support DMAR device hotplug.
+It seems desirable that a USB device can always be marked as
+unconfigured (reclaiming its bandwidth) in the kernel, regardless of
+communication problems. This patch changes usb_set_configuration() to
+ignore all failures in the case where no new configuration is being set.
 
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 ---
- drivers/iommu/dmar.c |   14 ++++++++++++--
- include/linux/dmar.h |    1 +
- 2 files changed, 13 insertions(+), 2 deletions(-)
+ drivers/usb/core/message.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 8b452c9..c17dbf7 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -100,7 +100,6 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
- 	if (!pdev) {
- 		pr_warn("Device scope device [%04x:%02x:%02x.%02x] not found\n",
- 			segment, scope->bus, path->device, path->function);
--		*dev = NULL;
- 		return 0;
- 	}
- 	if ((scope->entry_type == ACPI_DMAR_SCOPE_TYPE_ENDPOINT && \
-@@ -151,7 +150,7 @@ int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
- 			ret = dmar_parse_one_dev_scope(scope,
- 				&(*devices)[index], segment);
- 			if (ret) {
--				kfree(*devices);
-+				dmar_free_dev_scope(devices, cnt);
- 				return ret;
- 			}
- 			index ++;
-@@ -162,6 +161,17 @@ int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
- 	return 0;
- }
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index bb31597..f980b6d 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1706,7 +1706,8 @@ static void __usb_queue_reset_device(struct work_struct *ws)
+  * underlying call that failed.  On successful completion, each interface
+  * in the original device configuration has been destroyed, and each one
+  * in the new configuration has been probed by all relevant usb device
+- * drivers currently known to the kernel.
++ * drivers currently known to the kernel. Guaranteed not to fail if the
++ * device is to be unconfigured (@configuration = -1).
+  */
+ int usb_set_configuration(struct usb_device *dev, int configuration)
+ {
+@@ -1774,7 +1775,7 @@ free_interfaces:
  
-+void dmar_free_dev_scope(struct pci_dev ***devices, int *cnt)
-+{
-+	if (*devices && *cnt) {
-+		while (--*cnt >= 0)
-+			pci_dev_put((*devices)[*cnt]);
-+		kfree(*devices);
-+		*devices = NULL;
-+		*cnt = 0;
-+	}
-+}
-+
- /**
-  * dmar_parse_one_drhd - parses exactly one DMA remapping hardware definition
-  * structure which uniquely represent one DMA remapping hardware unit
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index b029d1a..8adfce0 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -159,6 +159,7 @@ extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
- extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
- extern int dmar_parse_dev_scope(void *start, void *end, int *cnt,
- 				struct pci_dev ***devices, u16 segment);
-+extern void dmar_free_dev_scope(struct pci_dev ***devices, int *cnt);
- extern int intel_iommu_init(void);
- #else /* !CONFIG_INTEL_IOMMU: */
- static inline int intel_iommu_init(void) { return -ENODEV; }
+ 	/* Wake up the device so we can send it the Set-Config request */
+ 	ret = usb_autoresume_device(dev);
+-	if (ret)
++	if (ret && cp)
+ 		goto free_interfaces;
+ 
+ 	/* if it's already configured, clear out old state first.
+@@ -1797,7 +1798,7 @@ free_interfaces:
+ 	 * installed, so that the xHCI driver can recalculate the U1/U2
+ 	 * timeouts.
+ 	 */
+-	if (dev->actconfig && usb_disable_lpm(dev)) {
++	if (dev->actconfig && usb_disable_lpm(dev) && cp) {
+ 		dev_err(&dev->dev, "%s Failed to disable LPM\n.", __func__);
+ 		mutex_unlock(hcd->bandwidth_mutex);
+ 		ret = -ENOMEM;
 -- 
-1.7.10.4
+1.7.12.4
 
