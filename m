@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161269Ab3LFWCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:02:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32845 "EHLO
+	id S1161287Ab3LFWDO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:03:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759510Ab3LFVyE (ORCPT
+	with ESMTP id S1759503Ab3LFVyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 16:54:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Florian Weimer <fweimer@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 04/32] bonding: dont permit to use ARP monitoring in 802.3ad mode
-Date: Fri,  6 Dec 2013 13:52:14 -0800
-Message-Id: <20131206214957.248686355@linuxfoundation.org>
+Subject: [PATCH 3.4 03/32] random32: fix off-by-one in seeding requirement
+Date: Fri,  6 Dec 2013 13:52:13 -0800
+Message-Id: <20131206214957.152714658@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -28,40 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit ec9f1d15db8185f63a2c3143dc1e90ba18541b08 ]
+[ Upstream commit 51c37a70aaa3f95773af560e6db3073520513912 ]
 
-Currently the ARP monitoring is not supported with 802.3ad, and it's
-prohibited to use it via the module params.
+For properly initialising the Tausworthe generator [1], we have
+a strict seeding requirement, that is, s1 > 1, s2 > 7, s3 > 15.
 
-However we still can set it afterwards via sysfs, cause we only check for
-*LB modes there.
+Commit 697f8d0348 ("random32: seeding improvement") introduced
+a __seed() function that imposes boundary checks proposed by the
+errata paper [2] to properly ensure above conditions.
 
-To fix this - add a check for 802.3ad mode in bonding_store_arp_interval.
+However, we're off by one, as the function is implemented as:
+"return (x < m) ? x + m : x;", and called with __seed(X, 1),
+__seed(X, 7), __seed(X, 15). Thus, an unwanted seed of 1, 7, 15
+would be possible, whereas the lower boundary should actually
+be of at least 2, 8, 16, just as GSL does. Fix this, as otherwise
+an initialization with an unwanted seed could have the effect
+that Tausworthe's PRNG properties cannot not be ensured.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
+Note that this PRNG is *not* used for cryptography in the kernel.
+
+ [1] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps
+ [2] http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme2.ps
+
+Joint work with Hannes Frederic Sowa.
+
+Fixes: 697f8d0348a6 ("random32: seeding improvement")
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Florian Weimer <fweimer@redhat.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_sysfs.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/random.h |    6 +++---
+ lib/random32.c         |   14 +++++++-------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -533,8 +533,9 @@ static ssize_t bonding_store_arp_interva
- 		goto out;
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -87,9 +87,9 @@ static inline void prandom32_seed(struct
+ {
+ 	u32 i = (seed >> 32) ^ (seed << 10) ^ seed;
+ 
+-	state->s1 = __seed(i, 1);
+-	state->s2 = __seed(i, 7);
+-	state->s3 = __seed(i, 15);
++	state->s1 = __seed(i, 2);
++	state->s2 = __seed(i, 8);
++	state->s3 = __seed(i, 16);
+ }
+ 
+ #ifdef CONFIG_ARCH_RANDOM
+--- a/lib/random32.c
++++ b/lib/random32.c
+@@ -92,7 +92,7 @@ void srandom32(u32 entropy)
+ 	 */
+ 	for_each_possible_cpu (i) {
+ 		struct rnd_state *state = &per_cpu(net_rand_state, i);
+-		state->s1 = __seed(state->s1 ^ entropy, 1);
++		state->s1 = __seed(state->s1 ^ entropy, 2);
  	}
- 	if (bond->params.mode == BOND_MODE_ALB ||
--	    bond->params.mode == BOND_MODE_TLB) {
--		pr_info("%s: ARP monitoring cannot be used with ALB/TLB. Only MII monitoring is supported on %s.\n",
-+	    bond->params.mode == BOND_MODE_TLB ||
-+	    bond->params.mode == BOND_MODE_8023AD) {
-+		pr_info("%s: ARP monitoring cannot be used with ALB/TLB/802.3ad. Only MII monitoring is supported on %s.\n",
- 			bond->dev->name, bond->dev->name);
- 		ret = -EINVAL;
- 		goto out;
+ }
+ EXPORT_SYMBOL(srandom32);
+@@ -109,9 +109,9 @@ static int __init random32_init(void)
+ 		struct rnd_state *state = &per_cpu(net_rand_state,i);
+ 
+ #define LCG(x)	((x) * 69069)	/* super-duper LCG */
+-		state->s1 = __seed(LCG(i + jiffies), 1);
+-		state->s2 = __seed(LCG(state->s1), 7);
+-		state->s3 = __seed(LCG(state->s2), 15);
++		state->s1 = __seed(LCG(i + jiffies), 2);
++		state->s2 = __seed(LCG(state->s1), 8);
++		state->s3 = __seed(LCG(state->s2), 16);
+ 
+ 		/* "warm it up" */
+ 		prandom32(state);
+@@ -138,9 +138,9 @@ static int __init random32_reseed(void)
+ 		u32 seeds[3];
+ 
+ 		get_random_bytes(&seeds, sizeof(seeds));
+-		state->s1 = __seed(seeds[0], 1);
+-		state->s2 = __seed(seeds[1], 7);
+-		state->s3 = __seed(seeds[2], 15);
++		state->s1 = __seed(seeds[0], 2);
++		state->s2 = __seed(seeds[1], 8);
++		state->s3 = __seed(seeds[2], 16);
+ 
+ 		/* mix it in */
+ 		prandom32(state);
 
 
