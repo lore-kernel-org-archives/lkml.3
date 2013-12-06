@@ -1,491 +1,412 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757732Ab3LFLQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 06:16:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56496 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab3LFLQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 06:16:11 -0500
-Message-ID: <52A1B1EE.8050201@ti.com>
-Date: Fri, 6 Dec 2013 16:45:58 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
-        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
-        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
-        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
-        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
-        <galak@codeaurora.org>, <matt.porter@linaro.org>
-Subject: Re: [PATCH v4 7/9] phy: Add Exynos 5250 support to the Exynos USB
- 2.0 PHY driver
-References: <1386246579-25141-1-git-send-email-k.debski@samsung.com> <1386325955-27322-1-git-send-email-k.debski@samsung.com>
-In-Reply-To: <1386325955-27322-1-git-send-email-k.debski@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1757528Ab3LFLch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 06:32:37 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59574 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757597Ab3LFLc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 06:32:28 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-b4-52a1b5caa816
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v7 1/3] charger: max14577: Add charger support for Maxim 14577
+Date: Fri, 06 Dec 2013 12:32:12 +0100
+Message-id: <1386329534-14186-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1386329534-14186-1-git-send-email-k.kozlowski@samsung.com>
+References: <1386329534-14186-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xK7qnti4MMtjTa2hxcKumxcYZ61kt
+	pj58wmZx/ctzVov5R86xWkxcOZnZ4tyrlYwWr18YWpxtesNucf/rUUaLb1c6mCw2Pb7GarGw
+	bQmLxeVdc9gs1h65y26x9PpFJosJ09eyWBxecYDJYt3L6SwWrw62sTiIeKyZt4bRY8HnK+we
+	E/o/MXrsnHWX3WPl8i9sHptXaHlsWtXJ5vFq9UxWjzvX9gCFltR79G1ZxejxeZOcx8a5oQG8
+	UVw2Kak5mWWpRfp2CVwZUxefYy24H10x/a1RA+NWny5GTg4JAROJ6e/uMkPYYhIX7q1n62Lk
+	4hASWMoosbr9BgtIQkigj0li5o1IEJtNwFhi8/IlYEUiArdYJCa8XMcO4jALbGSUeH90I1MX
+	IweHsICfxMk15iANLAKqEv3zzoJt4BVwl7i4cD9YiYSAgsScSTYgYU4BD4ljR85B7XKXuLX5
+	HesERt4FjAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUJi48sOxsXHrA4xCnAwKvHwJqxZ
+	ECTEmlhWXJl7iFGCg1lJhNdm+cIgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwG05OMq662xDk5
+	y6cfsy1p7Lum9OPpguANE+7HTxdOr9/Mzs56/2G94dvVE/+XM9n5Zb+wcejoeL7Q2u/dJeNG
+	bobeit6LTrt0vHWefKpljOCQX1S0fPrTYzdLuSazSdyNWn5tz7atu5R8JITUe2MmuxzSXbK3
+	7/BB3+9nZn64Nblo++KyWauUWIozEg21mIuKEwFZHGdoawIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 December 2013 04:02 PM, Kamil Debski wrote:
-> Add support for Exynos 5250. This driver is to replace the old
-> USB 2.0 PHY driver.
-> 
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  .../devicetree/bindings/phy/samsung-usbphy.txt     |    1 +
->  drivers/phy/Kconfig                                |    8 +
->  drivers/phy/Makefile                               |    1 +
->  drivers/phy/phy-exynos5250-usb2.c                  |  363 ++++++++++++++++++++
->  drivers/phy/phy-samsung-usb2.c                     |    6 +
->  drivers/phy/phy-samsung-usb2.h                     |    1 +
->  6 files changed, 380 insertions(+)
->  create mode 100644 drivers/phy/phy-exynos5250-usb2.c
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> index 77a8e9c..94096fc 100644
-> --- a/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> +++ b/Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> @@ -6,6 +6,7 @@ Required properties:
->  	- "samsung,s5pv210-usb2-phy"
->  	- "samsung,exynos4210-usb2-phy"
->  	- "samsung,exynos4212-usb2-phy"
-> +	- "samsung,exynos5250-usb2-phy"
->  - reg : a list of registers used by phy driver
->  	- first and obligatory is the location of phy modules registers
->  - samsung,sysreg-phandle - handle to syscon used to control the system registers
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 2e433cd..74e9064 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -78,4 +78,12 @@ config PHY_EXYNOS4212_USB2
->  	depends on (SOC_EXYNOS4212 || SOC_EXYNOS4412)
->  	help
->  	  Enable USB PHY support for Exynos 4212
-> +
-> +config PHY_EXYNOS5250_USB2
-> +	bool "Support for Exynos 5250"
-> +	depends on PHY_SAMSUNG_USB2
-> +	depends on SOC_EXYNOS5250
-> +	help
-> +	  Enable USB PHY support for Exynos 5250
+MAX14577 chip is a multi-function device which includes MUIC, charger
+and voltage regulator. The driver is located in drivers/mfd.
 
-My comments for the previous patch is applicable here too..
+This patch supports battery charging control of MAX14577 chip and
+provides power supply class information to userspace.
 
-Thanks
-Kishon
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/power/Kconfig            |    7 +
+ drivers/power/Makefile           |    1 +
+ drivers/power/max14577_charger.c |  311 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 319 insertions(+)
+ create mode 100644 drivers/power/max14577_charger.c
 
-> +
->  endmenu
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index fefc6c2..33c3ac1 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -11,3 +11,4 @@ obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
->  obj-$(CONFIG_PHY_S5PV210_USB2)		+= phy-s5pv210-usb2.o
->  obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
->  obj-$(CONFIG_PHY_EXYNOS4212_USB2)	+= phy-exynos4212-usb2.o
-> +obj-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
-> diff --git a/drivers/phy/phy-exynos5250-usb2.c b/drivers/phy/phy-exynos5250-usb2.c
-> new file mode 100644
-> index 0000000..7aeebc8
-> --- /dev/null
-> +++ b/drivers/phy/phy-exynos5250-usb2.c
-> @@ -0,0 +1,363 @@
-> +/*
-> + * Samsung SoC USB 1.1/2.0 PHY driver - Exynos 5250 support
-> + *
-> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> + * Author: Kamil Debski <k.debski@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/delay.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/spinlock.h>
-> +#include "phy-samsung-usb2.h"
-> +
-> +/* Exynos USB PHY registers */
-> +#define EXYNOS_5250_REFCLKSEL_CRYSTAL	0x0
-> +#define EXYNOS_5250_REFCLKSEL_XO	0x1
-> +#define EXYNOS_5250_REFCLKSEL_CLKCORE	0x2
-> +
-> +#define EXYNOS_5250_FSEL_9MHZ6		0x0
-> +#define EXYNOS_5250_FSEL_10MHZ		0x1
-> +#define EXYNOS_5250_FSEL_12MHZ		0x2
-> +#define EXYNOS_5250_FSEL_19MHZ2		0x3
-> +#define EXYNOS_5250_FSEL_20MHZ		0x4
-> +#define EXYNOS_5250_FSEL_24MHZ		0x5
-> +#define EXYNOS_5250_FSEL_50MHZ		0x7
-> +
-> +/* Normal host */
-> +#define EXYNOS_5250_HOSTPHYCTRL0			0x0
-> +
-> +#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL		(0x1 << 31)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT	19
-> +#define EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_MASK	\
-> +		(0x3 << EXYNOS_5250_HOSTPHYCTRL0_REFCLKSEL_SHIFT)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT		16
-> +#define EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK \
-> +		(0x7 << EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_TESTBURNIN		(0x1 << 11)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_RETENABLE		(0x1 << 10)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N		(0x1 << 9)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_MASK		(0x3 << 7)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_DUAL		(0x0 << 7)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ID0		(0x1 << 7)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_VATESTENB_ANALOGTEST	(0x2 << 7)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_SIDDQ			(0x1 << 6)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP		(0x1 << 5)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND		(0x1 << 4)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_WORDINTERFACE		(0x1 << 3)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST		(0x1 << 2)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST		(0x1 << 1)
-> +#define EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST		(0x1 << 0)
-> +
-> +/* HSIC0 & HSCI1 */
-> +#define EXYNOS_5250_HOSTPHYCTRL1			0x10
-> +#define EXYNOS_5250_HOSTPHYCTRL2			0x20
-> +
-> +#define EXYNOS_5250_HOSTPHYCTRLX_REFCLKSEL_MASK		(0x3 << 23)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_REFCLKDIV_MASK		(0x7f << 16)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_SIDDQ			(0x1 << 6)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_FORCESLEEP		(0x1 << 5)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_FORCESUSPEND		(0x1 << 4)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_WORDINTERFACE		(0x1 << 3)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_UTMISWRST		(0x1 << 2)
-> +#define EXYNOS_5250_HOSTPHYCTRLX_PHYSWRST		(0x1 << 0)
-> +
-> +/* EHCI control */
-> +#define EXYNOS_5250_HOSTEHCICTRL			0x30
-> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN		(0x1 << 29)
-> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR4		(0x1 << 28)
-> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR8		(0x1 << 27)
-> +#define EXYNOS_5250_HOSTEHCICTRL_ENAINCR16		(0x1 << 26)
-> +#define EXYNOS_5250_HOSTEHCICTRL_AUTOPPDONOVRCUREN	(0x1 << 25)
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT	19
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK	\
-> +		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT	13
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_MASK	\
-> +		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL1_SHIFT)
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL2_SHIFT	7
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_MASK	\
-> +		(0x3f << EXYNOS_5250_HOSTEHCICTRL_FLADJVAL0_SHIFT)
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT	1
-> +#define EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_MASK \
-> +		(0x1 << EXYNOS_5250_HOSTEHCICTRL_FLADJVALHOST_SHIFT)
-> +#define EXYNOS_5250_HOSTEHCICTRL_SIMULATIONMODE		(0x1 << 0)
-> +
-> +/* OHCI control */
-> +#define EXYNOS_5250_HOSTOHCICTRL                        0x34
-> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT	1
-> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_MASK \
-> +		(0x3ff << EXYNOS_5250_HOSTOHCICTRL_FRAMELENVAL_SHIFT)
-> +#define EXYNOS_5250_HOSTOHCICTRL_FRAMELENVALEN		(0x1 << 0)
-> +
-> +/* USBOTG */
-> +#define EXYNOS_5250_USBOTGSYS				0x38
-> +#define EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET		(0x1 << 14)
-> +#define EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG		(0x1 << 13)
-> +#define EXYNOS_5250_USBOTGSYS_PHY_SW_RST		(0x1 << 12)
-> +#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT		9
-> +#define EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK \
-> +		(0x3 << EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT)
-> +#define EXYNOS_5250_USBOTGSYS_ID_PULLUP			(0x1 << 8)
-> +#define EXYNOS_5250_USBOTGSYS_COMMON_ON			(0x1 << 7)
-> +#define EXYNOS_5250_USBOTGSYS_FSEL_SHIFT		4
-> +#define EXYNOS_5250_USBOTGSYS_FSEL_MASK \
-> +		(0x3 << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT)
-> +#define EXYNOS_5250_USBOTGSYS_FORCE_SLEEP		(0x1 << 3)
-> +#define EXYNOS_5250_USBOTGSYS_OTGDISABLE		(0x1 << 2)
-> +#define EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG		(0x1 << 1)
-> +#define EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND		(0x1 << 0)
-> +
-> +/* Isolation, configured in the power management unit */
-> +#define EXYNOS_5250_USB_ISOL_OTG_OFFSET		0x704
-> +#define EXYNOS_5250_USB_ISOL_OTG		(1 << 0)
-> +#define EXYNOS_5250_USB_ISOL_HOST_OFFSET	0x708
-> +#define EXYNOS_5250_USB_ISOL_HOST		(1 << 0)
-> +
-> +/* Mode swtich register */
-> +#define EXYNOS_5250_MODE_SWITCH_OFFSET		0x230
-> +#define EXYNOS_5250_MODE_SWITCH_MASK		1
-> +#define EXYNOS_5250_MODE_SWITCH_DEVICE		0
-> +#define EXYNOS_5250_MODE_SWITCH_HOST		1
-> +
-> +enum exynos4x12_phy_id {
-> +	EXYNOS5250_DEVICE,
-> +	EXYNOS5250_HOST,
-> +	EXYNOS5250_HSIC0,
-> +	EXYNOS5250_HSIC1,
-> +	EXYNOS5250_NUM_PHYS,
-> +};
-> +
-> +/*
-> + * exynos5250_rate_to_clk() converts the supplied clock rate to the value that
-> + * can be written to the phy register.
-> + */
-> +static int exynos5250_rate_to_clk(unsigned long rate, u32 *reg)
-> +{
-> +	/* EXYNOS_5250_FSEL_MASK */
-> +
-> +	switch (rate) {
-> +	case 9600 * KHZ:
-> +		*reg = EXYNOS_5250_FSEL_9MHZ6;
-> +		break;
-> +	case 10 * MHZ:
-> +		*reg = EXYNOS_5250_FSEL_10MHZ;
-> +		break;
-> +	case 12 * MHZ:
-> +		*reg = EXYNOS_5250_FSEL_12MHZ;
-> +		break;
-> +	case 19200 * KHZ:
-> +		*reg = EXYNOS_5250_FSEL_19MHZ2;
-> +		break;
-> +	case 20 * MHZ:
-> +		*reg = EXYNOS_5250_FSEL_20MHZ;
-> +		break;
-> +	case 24 * MHZ:
-> +		*reg = EXYNOS_5250_FSEL_24MHZ;
-> +		break;
-> +	case 50 * MHZ:
-> +		*reg = EXYNOS_5250_FSEL_50MHZ;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void exynos5250_isol(struct samsung_usb2_phy_instance *inst, bool on)
-> +{
-> +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> +	u32 offset;
-> +	u32 mask;
-> +
-> +	switch (inst->cfg->id) {
-> +	case EXYNOS5250_DEVICE:
-> +		offset = EXYNOS_5250_USB_ISOL_OTG_OFFSET;
-> +		mask = EXYNOS_5250_USB_ISOL_OTG;
-> +		break;
-> +	case EXYNOS5250_HOST:
-> +		offset = EXYNOS_5250_USB_ISOL_HOST_OFFSET;
-> +		mask = EXYNOS_5250_USB_ISOL_HOST;
-> +		break;
-> +	default:
-> +		return;
-> +	};
-> +
-> +	regmap_update_bits(drv->reg_pmu, offset, mask, on ? 0 : mask);
-> +}
-> +
-> +static void exynos5250_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
-> +{
-> +	struct samsung_usb2_phy_driver *drv = inst->drv;
-> +	u32 ctrl0;
-> +	u32 otg;
-> +	u32 ehci;
-> +	u32 ohci;
-> +
-> +	switch (inst->cfg->id) {
-> +	case EXYNOS5250_DEVICE:
-> +		regmap_update_bits(drv->reg_sys,
-> +			EXYNOS_5250_MODE_SWITCH_OFFSET,
-> +			EXYNOS_5250_MODE_SWITCH_MASK,
-> +			EXYNOS_5250_MODE_SWITCH_DEVICE);
-> +
-> +		/* OTG configuration */
-> +		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
-> +		/* The clock */
-> +		otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
-> +		otg |= inst->clk_reg_val << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
-> +		/* Reset */
-> +		otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
-> +			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
-> +			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
-> +		otg |=	EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
-> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
-> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
-> +			EXYNOS_5250_USBOTGSYS_OTGDISABLE;
-> +		/* Ref clock */
-> +		otg &=	~EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
-> +		otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
-> +					EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
-> +		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
-> +		udelay(100);
-> +		otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
-> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
-> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
-> +			EXYNOS_5250_USBOTGSYS_OTGDISABLE);
-> +		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
-> +
-> +
-> +		break;
-> +	case EXYNOS5250_HOST:
-> +		/* Host registers configuration */
-> +		ctrl0 = readl(drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
-> +		/* The clock */
-> +		ctrl0 &= ~EXYNOS_5250_HOSTPHYCTRL0_FSEL_MASK;
-> +		ctrl0 |= inst->clk_reg_val <<
-> +					EXYNOS_5250_HOSTPHYCTRL0_FSEL_SHIFT;
-> +
-> +		/* Reset */
-> +		ctrl0 &=	~(EXYNOS_5250_HOSTPHYCTRL0_PHYSWRST |
-> +				EXYNOS_5250_HOSTPHYCTRL0_PHYSWRSTALL |
-> +				EXYNOS_5250_HOSTPHYCTRL0_SIDDQ |
-> +				EXYNOS_5250_HOSTPHYCTRL0_FORCESUSPEND |
-> +				EXYNOS_5250_HOSTPHYCTRL0_FORCESLEEP);
-> +		ctrl0 |=	EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
-> +				EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST |
-> +				EXYNOS_5250_HOSTPHYCTRL0_COMMON_ON_N;
-> +		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
-> +		udelay(10);
-> +		ctrl0 &=	~(EXYNOS_5250_HOSTPHYCTRL0_LINKSWRST |
-> +				EXYNOS_5250_HOSTPHYCTRL0_UTMISWRST);
-> +		writel(ctrl0, drv->reg_phy + EXYNOS_5250_HOSTPHYCTRL0);
-> +
-> +		/* OTG configuration */
-> +		otg = readl(drv->reg_phy + EXYNOS_5250_USBOTGSYS);
-> +		/* The clock */
-> +		otg &= ~EXYNOS_5250_USBOTGSYS_FSEL_MASK;
-> +		otg |= inst->clk_reg_val << EXYNOS_5250_USBOTGSYS_FSEL_SHIFT;
-> +		/* Reset */
-> +		otg &= ~(EXYNOS_5250_USBOTGSYS_FORCE_SUSPEND |
-> +			EXYNOS_5250_USBOTGSYS_FORCE_SLEEP |
-> +			EXYNOS_5250_USBOTGSYS_SIDDQ_UOTG);
-> +		otg |=	EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
-> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET |
-> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
-> +			EXYNOS_5250_USBOTGSYS_OTGDISABLE;
-> +		/* Ref clock */
-> +		otg &=	~EXYNOS_5250_USBOTGSYS_REFCLKSEL_MASK;
-> +		otg |=  EXYNOS_5250_REFCLKSEL_CLKCORE <<
-> +					EXYNOS_5250_USBOTGSYS_REFCLKSEL_SHIFT;
-> +		writel(otg, drv->reg_phy + EXYNOS_5250_USBOTGSYS);
-> +		udelay(10);
-> +		otg &= ~(EXYNOS_5250_USBOTGSYS_PHY_SW_RST |
-> +			EXYNOS_5250_USBOTGSYS_LINK_SW_RST_UOTG |
-> +			EXYNOS_5250_USBOTGSYS_PHYLINK_SW_RESET);
-> +
-> +		/* Enable EHCI DMA burst */
-> +		ehci = readl(drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
-> +		ehci |=	EXYNOS_5250_HOSTEHCICTRL_ENAINCRXALIGN |
-> +			EXYNOS_5250_HOSTEHCICTRL_ENAINCR4 |
-> +			EXYNOS_5250_HOSTEHCICTRL_ENAINCR8 |
-> +			EXYNOS_5250_HOSTEHCICTRL_ENAINCR16;
-> +		writel(ehci, drv->reg_phy + EXYNOS_5250_HOSTEHCICTRL);
-> +
-> +		/* OHCI settings */
-> +		ohci = readl(drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
-> +		/* Following code is based on the old driver */
-> +		ohci |=	0x1 << 3;
-> +		writel(ohci, drv->reg_phy + EXYNOS_5250_HOSTOHCICTRL);
-> +
-> +		break;
-> +	}
-> +}
-> +
-> +static int exynos5250_power_on(struct samsung_usb2_phy_instance *inst)
-> +{
-> +	inst->enabled = 1;
-> +	exynos5250_phy_pwr(inst, 1);
-> +	exynos5250_isol(inst, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +static int exynos5250_power_off(struct samsung_usb2_phy_instance *inst)
-> +{
-> +	inst->enabled = 0;
-> +	exynos5250_isol(inst, 1);
-> +	exynos5250_phy_pwr(inst, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +
-> +static const struct samsung_usb2_common_phy exynos5250_phys[] = {
-> +	{
-> +		.label		= "device",
-> +		.id		= EXYNOS5250_DEVICE,
-> +		.rate_to_clk	= exynos5250_rate_to_clk,
-> +		.power_on	= exynos5250_power_on,
-> +		.power_off	= exynos5250_power_off,
-> +	},
-> +	{
-> +		.label		= "host",
-> +		.id		= EXYNOS5250_HOST,
-> +		.rate_to_clk	= exynos5250_rate_to_clk,
-> +		.power_on	= exynos5250_power_on,
-> +		.power_off	= exynos5250_power_off,
-> +	},
-> +	{
-> +		.label		= "hsic0",
-> +		.id		= EXYNOS5250_HSIC0,
-> +		.rate_to_clk	= exynos5250_rate_to_clk,
-> +		.power_on	= exynos5250_power_on,
-> +		.power_off	= exynos5250_power_off,
-> +	},
-> +	{
-> +		.label		= "hsic1",
-> +		.id		= EXYNOS5250_HSIC1,
-> +		.rate_to_clk	= exynos5250_rate_to_clk,
-> +		.power_on	= exynos5250_power_on,
-> +		.power_off	= exynos5250_power_off,
-> +	},
-> +	{},
-> +};
-> +
-> +const struct samsung_usb2_phy_config exynos5250_usb2_phy_config = {
-> +	.num_phys		= EXYNOS5250_NUM_PHYS,
-> +	.phys			= exynos5250_phys,
-> +	.has_mode_switch	= 1,
-> +};
-> +
-> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
-> index ef93fd3..d62e847 100644
-> --- a/drivers/phy/phy-samsung-usb2.c
-> +++ b/drivers/phy/phy-samsung-usb2.c
-> @@ -116,6 +116,12 @@ static const struct of_device_id samsung_usb2_phy_of_match[] = {
->  		.data = &exynos4212_usb2_phy_config,
->  	},
->  #endif
-> +#ifdef CONFIG_PHY_EXYNOS5250_USB2
-> +	{
-> +		.compatible = "samsung,exynos5250-usb2-phy",
-> +		.data = &exynos5250_usb2_phy_config,
-> +	},
-> +#endif
->  	{ },
->  };
->  
-> diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
-> index 0f51dbb..0049e8a 100644
-> --- a/drivers/phy/phy-samsung-usb2.h
-> +++ b/drivers/phy/phy-samsung-usb2.h
-> @@ -69,5 +69,6 @@ struct samsung_usb2_phy_config {
->  extern const struct samsung_usb2_phy_config s5pv210_usb2_phy_config;
->  extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
->  extern const struct samsung_usb2_phy_config exynos4212_usb2_phy_config;
-> +extern const struct samsung_usb2_phy_config exynos5250_usb2_phy_config;
->  #endif
->  
-> 
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 5e2054afe840..9b6d4666d61e 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -316,6 +316,13 @@ config CHARGER_MANAGER
+           runtime and in suspend-to-RAM by waking up the system periodically
+           with help of suspend_again support.
+ 
++config CHARGER_MAX14577
++	tristate "Maxim MAX14577 MUIC battery charger driver"
++	depends on MFD_MAX14577
++	help
++	  Say Y to enable support for the battery charger control sysfs and
++	  platform data of MAX14577 MUICs.
++
+ config CHARGER_MAX8997
+ 	tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
+ 	depends on MFD_MAX8997 && REGULATOR_MAX8997
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 372b4e8ab598..ee54a3e4c90a 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -48,6 +48,7 @@ obj-$(CONFIG_CHARGER_LP8727)	+= lp8727_charger.o
+ obj-$(CONFIG_CHARGER_LP8788)	+= lp8788-charger.o
+ obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
+ obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
++obj-$(CONFIG_CHARGER_MAX14577)	+= max14577_charger.o
+ obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
+ obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
+ obj-$(CONFIG_CHARGER_BQ2415X)	+= bq2415x_charger.o
+diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
+new file mode 100644
+index 000000000000..e0faf57283a8
+--- /dev/null
++++ b/drivers/power/max14577_charger.c
+@@ -0,0 +1,311 @@
++/*
++ * max14577_charger.c - Battery charger driver for the Maxim 14577
++ *
++ * Copyright (C) 2013 Samsung Electronics
++ * Krzysztof Kozlowski <k.kozlowski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/mfd/max14577-private.h>
++
++struct max14577_charger {
++	struct device *dev;
++	struct max14577	*max14577;
++	struct power_supply	charger;
++
++	unsigned int	charging_state;
++	unsigned int	battery_state;
++};
++
++static int max14577_get_charger_state(struct max14577_charger *chg)
++{
++	struct regmap *rmap = chg->max14577->regmap;
++	int state = POWER_SUPPLY_STATUS_DISCHARGING;
++	u8 reg_data;
++
++	/*
++	 * Charging occurs only if:
++	 *  - CHGCTRL2/MBCHOSTEN == 1
++	 *  - STATUS2/CGMBC == 1
++	 *
++	 * TODO:
++	 *  - handle FULL after Top-off timer (EOC register may be off
++	 *    and the charger won't be charging although MBCHOSTEN is on)
++	 *  - handle properly dead-battery charging (respect timer)
++	 *  - handle timers (fast-charge and prequal) /MBCCHGERR/
++	 */
++	max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL2, &reg_data);
++	if ((reg_data & CHGCTRL2_MBCHOSTEN_MASK) == 0)
++		goto state_set;
++
++	max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
++	if (reg_data & STATUS3_CGMBC_MASK) {
++		/* Charger or USB-cable is connected */
++		if (reg_data & STATUS3_EOC_MASK)
++			state = POWER_SUPPLY_STATUS_FULL;
++		else
++			state = POWER_SUPPLY_STATUS_CHARGING;
++		goto state_set;
++	}
++
++state_set:
++	chg->charging_state = state;
++	return state;
++}
++
++/*
++ * Supported charge types:
++ *  - POWER_SUPPLY_CHARGE_TYPE_NONE
++ *  - POWER_SUPPLY_CHARGE_TYPE_FAST
++ */
++static int max14577_get_charge_type(struct max14577_charger *chg)
++{
++	/*
++	 * TODO: CHARGE_TYPE_TRICKLE (VCHGR_RC or EOC)?
++	 * As spec says:
++	 * [after reaching EOC interrupt]
++	 * "When the battery is fully charged, the 30-minute (typ)
++	 *  top-off timer starts. The device continues to trickle
++	 *  charge the battery until the top-off timer runs out."
++	 */
++	if (max14577_get_charger_state(chg) == POWER_SUPPLY_STATUS_CHARGING)
++		return POWER_SUPPLY_CHARGE_TYPE_FAST;
++	return POWER_SUPPLY_CHARGE_TYPE_NONE;
++}
++
++static int max14577_get_online(struct max14577_charger *chg)
++{
++	struct regmap *rmap = chg->max14577->regmap;
++	u8 reg_data;
++
++	max14577_read_reg(rmap, MAX14577_MUIC_REG_STATUS2, &reg_data);
++	reg_data = ((reg_data & STATUS2_CHGTYP_MASK) >> STATUS2_CHGTYP_SHIFT);
++	switch (reg_data) {
++	case MAX14577_CHARGER_TYPE_USB:
++	case MAX14577_CHARGER_TYPE_DEDICATED_CHG:
++	case MAX14577_CHARGER_TYPE_SPECIAL_500MA:
++	case MAX14577_CHARGER_TYPE_SPECIAL_1A:
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
++		return 1;
++	case MAX14577_CHARGER_TYPE_NONE:
++	case MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT:
++	case MAX14577_CHARGER_TYPE_RESERVED:
++	default:
++		return 0;
++	}
++}
++
++/*
++ * Supported health statuses:
++ *  - POWER_SUPPLY_HEALTH_DEAD
++ *  - POWER_SUPPLY_HEALTH_OVERVOLTAGE
++ *  - POWER_SUPPLY_HEALTH_GOOD
++ */
++static int max14577_get_battery_health(struct max14577_charger *chg)
++{
++	struct regmap *rmap = chg->max14577->regmap;
++	int state = POWER_SUPPLY_HEALTH_GOOD;
++	u8 reg_data;
++
++	max14577_read_reg(rmap, MAX14577_MUIC_REG_STATUS2, &reg_data);
++	reg_data = ((reg_data & STATUS2_CHGTYP_MASK) >> STATUS2_CHGTYP_SHIFT);
++	if (reg_data == MAX14577_CHARGER_TYPE_DEAD_BATTERY) {
++		state = POWER_SUPPLY_HEALTH_DEAD;
++		goto state_set;
++	}
++
++	max14577_read_reg(rmap, MAX14577_CHG_REG_STATUS3, &reg_data);
++	if (reg_data & STATUS3_OVP_MASK) {
++		state = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++		goto state_set;
++	}
++
++state_set:
++	chg->battery_state = state;
++	return state;
++}
++
++/*
++ * Always returns 1.
++ * The max14577 chip doesn't report any status of battery presence.
++ * Lets assume that it will always be used with some battery.
++ */
++static int max14577_get_present(struct max14577_charger *chg)
++{
++	return 1;
++}
++
++/*
++ * Sets charger registers to proper and safe default values.
++ * Some of these values are equal to defaults in MAX14577E
++ * data sheet but there are minor differences.
++ */
++static void max14577_charger_reg_init(struct max14577_charger *chg)
++{
++	struct regmap *rmap = chg->max14577->regmap;
++	u8 reg_data;
++
++	/*
++	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
++	 * Charger-Detection Enable, default on (set CHGDETEN to 1)
++	 * Combined mask of CHGDETEN and CHGTYPMAN will zero the CHGTYPMAN bit
++	 */
++	reg_data = 0x1 << CDETCTRL1_CHGDETEN_SHIFT;
++	max14577_update_reg(rmap, MAX14577_REG_CDETCTRL1,
++			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
++			reg_data);
++
++	/* Battery Fast-Charge Timer, from SM-V700: 6hrs */
++	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
++
++	/*
++	 * Wall-Adapter Rapid Charge, default on
++	 * Battery-Charger, default on
++	 */
++	reg_data = 0x1 << CHGCTRL2_VCHGR_RC_SHIFT;
++	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
++
++	/* Battery-Charger Constant Voltage (CV) Mode, from SM-V700: 4.35V */
++	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
++
++	/*
++	 * Fast Battery-Charge Current Low, default 200-950mA
++	 * Fast Battery-Charge Current High, from SM-V700: 450mA
++	 */
++	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
++	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
++
++	/* End-of-Charge Current, from SM-V700: 50mA */
++	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
++
++	/* Auto Charging Stop, default off */
++	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
++
++	/* Overvoltage-Protection Threshold, from SM-V700: 6.5V */
++	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
++}
++
++/* Support property from charger */
++static enum power_supply_property max14577_charger_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_TYPE,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++	POWER_SUPPLY_PROP_MANUFACTURER,
++};
++
++static const char *model_name = "MAX14577";
++static const char *manufacturer = "Maxim Integrated";
++static int max14577_charger_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val)
++{
++	struct max14577_charger *chg = container_of(psy,
++						  struct max14577_charger,
++						  charger);
++	int ret = 0;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = max14577_get_charger_state(chg);
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_TYPE:
++		val->intval = max14577_get_charge_type(chg);
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		val->intval = max14577_get_battery_health(chg);
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = max14577_get_present(chg);
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = max14577_get_online(chg);
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = model_name;
++		break;
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		val->strval = manufacturer;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return ret;
++}
++
++static int max14577_charger_probe(struct platform_device *pdev)
++{
++	struct max14577_charger *chg;
++	struct max14577 *max14577 = dev_get_drvdata(pdev->dev.parent);
++	int ret;
++
++	chg = devm_kzalloc(&pdev->dev, sizeof(*chg), GFP_KERNEL);
++	if (!chg)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, chg);
++	chg->dev = &pdev->dev;
++	chg->max14577 = max14577;
++
++	max14577_charger_reg_init(chg);
++
++	chg->charger.name = "max14577-charger",
++	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
++	chg->charger.properties = max14577_charger_props,
++	chg->charger.num_properties = ARRAY_SIZE(max14577_charger_props),
++	chg->charger.get_property = max14577_charger_get_property,
++
++	ret = power_supply_register(&pdev->dev, &chg->charger);
++	if (ret) {
++		dev_err(&pdev->dev, "failed: power supply register\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++static int max14577_charger_remove(struct platform_device *pdev)
++{
++	struct max14577_charger *chg = platform_get_drvdata(pdev);
++
++	power_supply_unregister(&chg->charger);
++
++	return 0;
++}
++
++static struct platform_driver max14577_charger_driver = {
++	.driver = {
++		.owner	= THIS_MODULE,
++		.name	= "max14577-charger",
++	},
++	.probe		= max14577_charger_probe,
++	.remove		= max14577_charger_remove,
++};
++
++module_platform_driver(max14577_charger_driver);
++
++MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
++MODULE_DESCRIPTION("MAXIM 14577 charger driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.9.5
 
