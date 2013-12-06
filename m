@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422646Ab3LFWPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:15:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60894 "EHLO
+	id S1422667Ab3LFWP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:15:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759346Ab3LFVxg (ORCPT
+	with ESMTP id S1759339Ab3LFVxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:36 -0500
+	Fri, 6 Dec 2013 16:53:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 24/58] ip6_output: fragment outgoing reassembled skb properly
-Date: Fri,  6 Dec 2013 13:51:55 -0800
-Message-Id: <20131206214847.159175939@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 23/58] ipv6: fix leaking uninitialized port number of offender sockaddr
+Date: Fri,  6 Dec 2013 13:51:54 -0800
+Message-Id: <20131206214847.065635912@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -26,36 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 9037c3579a277f3a23ba476664629fda8c35f7c4 ]
+[ Upstream commit 1fa4c710b6fe7b0aac9907240291b6fe6aafc3b8 ]
 
-If reassembled packet would fit into outdev MTU, it is not fragmented
-according the original frag size and it is send as single big packet.
+Offenders don't have port numbers, so set it to 0.
 
-The second case is if skb is gso. In that case fragmentation does not happen
-according to the original frag size.
-
-This patch fixes these.
-
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_output.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/datagram.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -150,7 +150,8 @@ static int ip6_finish_output2(struct sk_
- static int ip6_finish_output(struct sk_buff *skb)
- {
- 	if ((skb->len > ip6_skb_dst_mtu(skb) && !skb_is_gso(skb)) ||
--	    dst_allfrag(skb_dst(skb)))
-+	    dst_allfrag(skb_dst(skb)) ||
-+	    (IP6CB(skb)->frag_max_size && skb->len > IP6CB(skb)->frag_max_size))
- 		return ip6_fragment(skb, ip6_finish_output2);
- 	else
- 		return ip6_finish_output2(skb);
+--- a/net/ipv6/datagram.c
++++ b/net/ipv6/datagram.c
+@@ -378,6 +378,7 @@ int ipv6_recv_error(struct sock *sk, str
+ 	if (serr->ee.ee_origin != SO_EE_ORIGIN_LOCAL) {
+ 		sin->sin6_family = AF_INET6;
+ 		sin->sin6_flowinfo = 0;
++		sin->sin6_port = 0;
+ 		if (skb->protocol == htons(ETH_P_IPV6)) {
+ 			sin->sin6_addr = ipv6_hdr(skb)->saddr;
+ 			if (np->rxopt.all)
 
 
