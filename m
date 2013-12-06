@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161873Ab3LFNj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:39:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44277 "EHLO
+	id S1758625Ab3LFNko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:40:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44256 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161644Ab3LFNCy (ORCPT
+	with ESMTP id S1161620Ab3LFNCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:54 -0500
+	Fri, 6 Dec 2013 08:02:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Guinot <simon.guinot@sequanux.org>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Michael Turquette <mturquette@deferred.io>,
+Cc: Forest Bond <forest.bond@rapidrollout.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 151/272] clk: armada-370: fix tclk frequencies
-Date: Fri,  6 Dec 2013 12:57:20 +0000
-Message-Id: <1386334761-25517-152-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 148/272] Input: usbtouchscreen: ignore eGalax/D-Wav/EETI HIDs
+Date: Fri,  6 Dec 2013 12:57:17 +0000
+Message-Id: <1386334761-25517-149-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -30,48 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <simon.guinot@sequanux.org>
+From: Forest Bond <forest.bond@rapidrollout.com>
 
-commit 1022c75f5abd3a3b25e679bc8793d21bedd009b4 upstream.
+commit ae2aa3a512fa5f50f67feba9e66bc2efb394bd63 upstream.
 
-This patch fixes the tclk frequency array for the Armada-370 SoC.
-This bug has been introduced by commit 6b72333d
-("clk: mvebu: add Armada 370 SoC-centric clock init").
+The HID driver now handles these devices, regardless of what protocol
+the device claims it supports.
 
-A wrong tclk frequency affects the following drivers: mvsdio, mvneta,
-i2c-mv64xxx and mvebu-devbus. This list may be incomplete.
-
-About the mvneta Ethernet driver, note that the tclk frequency is used
-to compute the Rx time coalescence. Then, this bug harms the coalescence
-configuration and also degrades the networking performances with the
-default values.
-
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Michael Turquette <mturquette@deferred.io>
+Signed-off-by: Forest Bond <forest.bond@rapidrollout.com>
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/mvebu/armada-370.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/usbtouchscreen.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/clk/mvebu/armada-370.c b/drivers/clk/mvebu/armada-370.c
-index fc777bd..81a202d 100644
---- a/drivers/clk/mvebu/armada-370.c
-+++ b/drivers/clk/mvebu/armada-370.c
-@@ -39,8 +39,8 @@ static const struct coreclk_ratio a370_coreclk_ratios[] __initconst = {
- };
+diff --git a/drivers/input/touchscreen/usbtouchscreen.c b/drivers/input/touchscreen/usbtouchscreen.c
+index 721fdb3..ae4b6b9 100644
+--- a/drivers/input/touchscreen/usbtouchscreen.c
++++ b/drivers/input/touchscreen/usbtouchscreen.c
+@@ -146,12 +146,10 @@ enum {
  
- static const u32 a370_tclk_freqs[] __initconst = {
--	16600000,
--	20000000,
-+	166000000,
-+	200000000,
- };
+ #define USB_DEVICE_HID_CLASS(vend, prod) \
+ 	.match_flags = USB_DEVICE_ID_MATCH_INT_CLASS \
+-		| USB_DEVICE_ID_MATCH_INT_PROTOCOL \
+ 		| USB_DEVICE_ID_MATCH_DEVICE, \
+ 	.idVendor = (vend), \
+ 	.idProduct = (prod), \
+-	.bInterfaceClass = USB_INTERFACE_CLASS_HID, \
+-	.bInterfaceProtocol = USB_INTERFACE_PROTOCOL_MOUSE
++	.bInterfaceClass = USB_INTERFACE_CLASS_HID
  
- static u32 __init a370_get_tclk_freq(void __iomem *sar)
+ static const struct usb_device_id usbtouch_devices[] = {
+ #ifdef CONFIG_TOUCHSCREEN_USB_EGALAX
 -- 
 1.8.3.2
 
