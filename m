@@ -1,186 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3LFNyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:54:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44029 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758011Ab3LFNBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:47 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Manfred Spraul <manfred@colorfullife.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/272] ipc/sem.c: synchronize semop and semctl with IPC_RMID
-Date: Fri,  6 Dec 2013 12:56:30 +0000
-Message-Id: <1386334761-25517-102-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1752629Ab3LFNz1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:55:27 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49829 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab3LFNzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:55:24 -0500
+Message-ID: <52A1E4C2.6020004@ti.com>
+Date: Fri, 6 Dec 2013 16:52:50 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
+ apis
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <52A0AB34.2030703@ti.com>,<20131205165325.GA24062@mtj.dyndns.org> <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com> <52A0E357.7090008@ti.com>
+In-Reply-To: <52A0E357.7090008@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
+On 12/05/2013 10:34 PM, Santosh Shilimkar wrote:
+> Grygorii,
+>
+> On Thursday 05 December 2013 01:48 PM, Strashko, Grygorii wrote:
+>> Hi Tejun,
+>>
+>>> On Thu, Dec 05, 2013 at 06:35:00PM +0200, Grygorii Strashko wrote:
+>>>>>> +#define memblock_virt_alloc_align(x, align) \
+>>>>>> +  memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
+>>>>>> +                               BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
+>>>>>
+>>>>> Also, do we really need this align variant separate when the caller
+>>>>> can simply specify 0 for the default?
+>>>>
+>>>> Unfortunately Yes.
+>>>> We need it to keep compatibility with bootmem/nobootmem
+>>>> which don't handle 0 as default align value.
+>>>
+>>> Hmm... why wouldn't just interpreting 0 to SMP_CACHE_BYTES in the
+>>> memblock_virt*() function work?
+>>>
+>>
+>> Problem is not with memblock_virt*(). The issue will happen in case if
+>> memblock or nobootmem are disabled in below code (memblock_virt*() is disabled).
+>>
+>> +/* Fall back to all the existing bootmem APIs */
+>> +#define memblock_virt_alloc(x) \
+>> +       __alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
+>>
+>> which will be transformed to
+>> +/* Fall back to all the existing bootmem APIs */
+>> +#define memblock_virt_alloc(x, align) \
+>> +       __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
+>>
+>> and used as
+>>
+>> memblock_virt_alloc(size, 0);
+>>
+>> so, by default bootmem code will use 0 as default alignment and not SMP_CACHE_BYTES
+>> and that is wrong.
+>>
+> Looks like you didn't understood the suggestion completely.
+> The fall back inline will look like below .....
+>
+> static inline memblock_virt_alloc(x, align)
+> {
+> 	if (align == 0)
+> 		align = SMP_CACHE_BYTES
+> 	__alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT);
+> }
+>
 
-------------------
+I understand. thanks.
 
-From: Manfred Spraul <manfred@colorfullife.com>
-
-commit 6e224f94597842c5eb17f1fc2208d20b6f7f7d49 upstream.
-
-After acquiring the semlock spinlock, operations must test that the
-array is still valid.
-
- - semctl() and exit_sem() would walk stale linked lists (ugly, but
-   should be ok: all lists are empty)
-
- - semtimedop() would sleep forever - and if woken up due to a signal -
-   access memory after free.
-
-The patch also:
- - standardizes the tests for .deleted, so that all tests in one
-   function leave the function with the same approach.
- - unconditionally tests for .deleted immediately after every call to
-   sem_lock - even it it means that for semctl(GETALL), .deleted will be
-   tested twice.
-
-Both changes make the review simpler: After every sem_lock, there must
-be a test of .deleted, followed by a goto to the cleanup code (if the
-function uses "goto cleanup").
-
-The only exception is semctl_down(): If sem_ids().rwsem is locked, then
-the presence in ids->ipcs_idr is equivalent to !.deleted, thus no
-additional test is required.
-
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- ipc/sem.c | 42 +++++++++++++++++++++++++++++-------------
- 1 file changed, 29 insertions(+), 13 deletions(-)
-
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 8e2bf30..3d9a8af 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1282,6 +1282,12 @@ static int semctl_setval(struct ipc_namespace *ns, int semid, int semnum,
- 
- 	sem_lock(sma, NULL, -1);
- 
-+	if (sma->sem_perm.deleted) {
-+		sem_unlock(sma, -1);
-+		rcu_read_unlock();
-+		return -EIDRM;
-+	}
-+
- 	curr = &sma->sem_base[semnum];
- 
- 	ipc_assert_locked_object(&sma->sem_perm);
-@@ -1336,12 +1342,14 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		int i;
- 
- 		sem_lock(sma, NULL, -1);
-+		if (sma->sem_perm.deleted) {
-+			err = -EIDRM;
-+			goto out_unlock;
-+		}
- 		if(nsems > SEMMSL_FAST) {
- 			if (!ipc_rcu_getref(sma)) {
--				sem_unlock(sma, -1);
--				rcu_read_unlock();
- 				err = -EIDRM;
--				goto out_free;
-+				goto out_unlock;
- 			}
- 			sem_unlock(sma, -1);
- 			rcu_read_unlock();
-@@ -1354,10 +1362,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 			rcu_read_lock();
- 			sem_lock_and_putref(sma);
- 			if (sma->sem_perm.deleted) {
--				sem_unlock(sma, -1);
--				rcu_read_unlock();
- 				err = -EIDRM;
--				goto out_free;
-+				goto out_unlock;
- 			}
- 		}
- 		for (i = 0; i < sma->sem_nsems; i++)
-@@ -1375,8 +1381,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		struct sem_undo *un;
- 
- 		if (!ipc_rcu_getref(sma)) {
--			rcu_read_unlock();
--			return -EIDRM;
-+			err = -EIDRM;
-+			goto out_rcu_wakeup;
- 		}
- 		rcu_read_unlock();
- 
-@@ -1404,10 +1410,8 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		rcu_read_lock();
- 		sem_lock_and_putref(sma);
- 		if (sma->sem_perm.deleted) {
--			sem_unlock(sma, -1);
--			rcu_read_unlock();
- 			err = -EIDRM;
--			goto out_free;
-+			goto out_unlock;
- 		}
- 
- 		for (i = 0; i < nsems; i++)
-@@ -1431,6 +1435,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 		goto out_rcu_wakeup;
- 
- 	sem_lock(sma, NULL, -1);
-+	if (sma->sem_perm.deleted) {
-+		err = -EIDRM;
-+		goto out_unlock;
-+	}
- 	curr = &sma->sem_base[semnum];
- 
- 	switch (cmd) {
-@@ -1836,6 +1844,10 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	if (error)
- 		goto out_rcu_wakeup;
- 
-+	error = -EIDRM;
-+	locknum = sem_lock(sma, sops, nsops);
-+	if (sma->sem_perm.deleted)
-+		goto out_unlock_free;
- 	/*
- 	 * semid identifiers are not unique - find_alloc_undo may have
- 	 * allocated an undo structure, it was invalidated by an RMID
-@@ -1843,8 +1855,6 @@ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
- 	 * This case can be detected checking un->semid. The existence of
- 	 * "un" itself is guaranteed by rcu.
- 	 */
--	error = -EIDRM;
--	locknum = sem_lock(sma, sops, nsops);
- 	if (un && un->semid == -1)
- 		goto out_unlock_free;
- 
-@@ -2057,6 +2067,12 @@ void exit_sem(struct task_struct *tsk)
- 		}
- 
- 		sem_lock(sma, NULL, -1);
-+		/* exit_sem raced with IPC_RMID, nothing to do */
-+		if (sma->sem_perm.deleted) {
-+			sem_unlock(sma, -1);
-+			rcu_read_unlock();
-+			continue;
-+		}
- 		un = __lookup_undo(ulp, semid);
- 		if (un == NULL) {
- 			/* exit_sem raced with IPC_RMID+semget() that created
--- 
-1.8.3.2
-
+Regards,
+-grygorii
