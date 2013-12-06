@@ -1,78 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab3LFVVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:21:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758023Ab3LFVVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:21:47 -0500
-Date: Fri, 6 Dec 2013 16:21:37 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        kirill.shutemov@linux.intel.com
-Subject: Re: oops in pgtable_trans_huge_withdraw
-Message-ID: <20131206212137.GA9561@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	kirill.shutemov@linux.intel.com
-References: <20131206210254.GA7962@redhat.com>
+	id S1758663Ab3LFVZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:25:57 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60760 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab3LFVZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 16:25:55 -0500
+Date: Fri, 6 Dec 2013 22:25:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Neil Zhang <zhangwm@marvell.com>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        haojian.zhuang@gmail.com, LAK <linux-arm-kernel@lists.infradead.org>
+Subject: Re: ARM: gic_arch_extn (Was: [PATCH v3] irqchip: mmp: add dt support
+ for wakeup)
+In-Reply-To: <20131205094931.GB4360@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1312062029560.30673@ionos.tec.linutronix.de>
+References: <1386159214-31483-1-git-send-email-zhangwm@marvell.com> <alpine.DEB.2.02.1312042234190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312042347350.30673@ionos.tec.linutronix.de> <20131205005216.GA4360@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.02.1312050157550.30673@ionos.tec.linutronix.de> <20131205094931.GB4360@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131206210254.GA7962@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 04:02:54PM -0500, Dave Jones wrote:
- 
- > Call Trace:
- >  [<ffffffff811b13e2>] zap_huge_pmd+0x62/0x140
- >  [<ffffffff8117ac58>] unmap_single_vma+0x678/0x830
- >  [<ffffffff8117bea9>] unmap_vmas+0x49/0x90
- >  [<ffffffff81184da5>] exit_mmap+0xc5/0x170
- >  [<ffffffff8105104b>] mmput+0x6b/0x100
- >  [<ffffffff81055a18>] do_exit+0x298/0xce0
- >  [<ffffffff8105782c>] do_group_exit+0x4c/0xc0
- >  [<ffffffff8106a671>] get_signal_to_deliver+0x2d1/0x930
- >  [<ffffffff810024a8>] do_signal+0x48/0x610
- >  [<ffffffff810a9af9>] ? get_lock_stats+0x19/0x60
- >  [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
- >  [<ffffffff810aa7de>] ? lock_release_holdtime.part.29+0xee/0x170
- >  [<ffffffff8114f18e>] ? context_tracking_user_exit+0x4e/0x190
- >  [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
- >  [<ffffffff81002acc>] do_notify_resume+0x5c/0xa0
- >  [<ffffffff817587c6>] retint_signal+0x46/0x90
+On Thu, 5 Dec 2013, Russell King - ARM Linux wrote:
+> So there's not much point discussing this with you until you:
+> 
+> (a) calm down
 
-Same end result, but different trace..
+Done so :)
 
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: ipt_ULOG nfnetlink scsi_transport_iscsi af_802154 nfc irda crc_ccitt rds x25 atm appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill xfs libcrc32c snd_hda_codec_realtek snd_hda_codec_hdmi coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel microcode serio_raw pcspkr snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc e1000e usb_debug snd_timer shpchp ptp snd pps_core soundcore
-CPU: 3 PID: 24319 Comm: trinity-child3 Not tainted 3.13.0-rc2+ #23 
-task: ffff88023e60d740 ti: ffff88021e64a000 task.ti: ffff88021e64a000
-RIP: 0010:[<ffffffff8118e415>]  [<ffffffff8118e415>] pgtable_trans_huge_withdraw+0x55/0xc0
-RSP: 0018:ffff88021e64bd28  EFLAGS: 00010206
-RAX: 00000000026fffc0 RBX: 0000000000000000 RCX: 0000000000000027
-RDX: 0000000000000000 RSI: ffff88009bfff000 RDI: ffff88009bfff000
-RBP: ffff88021e64bd48 R08: ffff88023e60deb8 R09: ffff880224d73c00
-R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009bfff000
-R13: ffffea0000000000 R14: 0000000000000020 R15: ffff880221bf2200
-FS:  00007f70aa5cc740(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000020 CR3: 000000021ea97000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-Stack:
- ffff88021e4e3b18 ffffea0008738000 0000000080000000 ffffea0000000000
- ffff88021e64bdc0 ffffffff811b1cec ffff88021ddc9550 0000000008738000
- ffff880200000000 ffff88009bfff000 0000000100000246 0000000000000000
-Call Trace:
- [<ffffffff811b1cec>] split_huge_page_to_list+0x4ac/0x740
- [<ffffffff811b32ac>] __split_huge_page_pmd+0x11c/0x290
- [<ffffffff8118648d>] move_page_tables+0x21d/0x620
- [<ffffffff8118697b>] move_vma+0xeb/0x270
- [<ffffffff81186e76>] SyS_mremap+0x376/0x520
- [<ffffffff81760b64>] tracesys+0xdd/0xe2
-Code: c1 e0 06 4a 8b 44 28 30 0f b7 00 38 c4 74 79 4c 89 e7 e8 af 03 eb ff 4c 89 e7 48 c1 e8 0c 48 c1 e0 06 49 8b 5c 05 20 4c 8d 73 20 <4c> 3b 73 20 74 35 e8 90 03 eb ff 4c 89 f7 48 89 c2 48 8b 43 20 
+> (b) analyse it properly and work out the frequency under which each
+> class of IRQ (those >= 32 and those < 32) call into these functions.
+
+Here you go:
+
+The frequency of invoking the gic_arch_extn callbacks is exactly equal
+to the frequency of interrupts in the system which go through the GIC
+at least for mask/unmask/eoi. The frequency of calls per interrupt
+depends on the interrupt type, but at minimum it is one.
+
+So basically it does for any interrupt independent of >= 32 or < 32:
+
+irq_fn(d)
+{
+	do_something_common(d);
+	if (gic_arch_extn.fn)
+	   gic_arch_extn.fn(d);
+	do_something_common(d);
+}
+
+which then does:
+
+extn_fn(d)
+{
+	if (this_irq_is_affected(d))
+	   do_some_more(d);
+}      
+
+So when this_irq_is_affected(d) boils down to
+
+   if (d->irq [<>] n)
+
+then I agree, that it's debatable, whether the conditonal function
+call and the simple this_irq_is_affected(d) check is worth to worry
+about. Though there are people who care about two pointless
+conditonals for various reasons.
+
+But at the point when this_irq_is_affected(d) is doing a loop lookup,
+then this really starts to smell badly.
+
+Sure you might argue, that it's the problem of that particular patch
+author to put a loop lookup into this_irq_is_affected().
+
+Fair enough, though you have to admit that the design of the
+gic_arch_extn actually enforces that, if you can't do a simple "if irq
+[<>] n" check for whatever reason.
+
+The alternative approach to that is to use different irq chip
+implementations for interrupts affected by gic_arch_extn and those
+which are not affected as we do in lot of other places do deal with
+the subtle differences of particular interrupt lines. That definitely
+would avoid that people try to stick more complex decision functions
+than "irq [<>] n" into this_irq_is_affected().
+
+Now looking at the locking szenario of GIC, it might eventually create
+quite some duplicated code, which is undesirable as well. OTOH, the
+locking requirements especially if I look at gic_[un]mask_irq and
+gic_eoi_irq are not entirely clear to me from the code.
+
+gic_[un]mask_irq(d)
+{
+	mask = 1 << SFT(gic_irq(d));
+
+	lock(controller_lock);
+	if (gic_arch_extn.irq_[un]mask)
+	   gic_arch_extn.irq_[un]mask(d);
+	writel(mask, GIC_ENABLE_[CLEAR|SET]);
+	unlock(controller_lock);
+}
+
+while
+
+gic_eoi_irq(d)
+{
+	if (gic_arch_extn.irq_eoi) {
+	   lock(controller_lock);
+	   gic_arch_extn.irq_eoi(d);
+	   unlock(controller_lock);
+	}
+	writel(gic_irq(d), GIC_EOI);
+}
+
+So is there a requirement to serialize the mask/unmask operations for
+a particular interrupt line against mask/unmask operations on a
+different core on some other interrupt line?
+
+  The operations for a particular interrupt line are already
+  serialized at the core code level.
+
+  The CLEAR/SET registers are designed to avoid locking in contrary to
+  the classic ENABLE reg, where you have to maintain consistency of
+  the full set of interrupts affected by that register.
+
+  So for the case where gic_arch_extn is not used, the locking is
+  completely pointless, right?
+
+Or is this locking required to maintain consistency between the
+gic_arch_extn.[un]mask and the GIC.[un]mask itself?
+
+And even if the locking is required for this, then having two separate
+chips with two different callbacks makes sense.
+
+gic_mask_irq()
+{
+	writel(mask, GIC_ENABLE_CLEAR);
+}
+
+gic_mask_extn_irq(d)
+{
+	lock(controller_lock);
+	gic_arch_extn.irq_mask(d);
+	gic_mask_irq(d);
+	unlock(controller_lock);
+}
+
+And then have the gic_chip and gic_extn_chip set for the various
+interrupt lines.
+
+That avoids several things:
+
+1) The locking for non gic_arch_extn interrupts
+
+2) Two conditionals for gic_arch_extn interrupts
+
+3) The enforcement of adding complex decision functions into the
+   gic_extn functions if there is no simple x < N check possible.
+
+I might have missed something as always, but at least I did a proper
+analysis of the code as it is understandable to a mere mortal.
+
+Thoughts?
+
+Thanks,
+
+	tglx
 
