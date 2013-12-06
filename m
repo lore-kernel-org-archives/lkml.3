@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161049Ab3LFU2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:28:42 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:39870 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758064Ab3LFU2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758071Ab3LFU2F (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 15:28:05 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:49364 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3LFU2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 15:28:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, vdavydov@parallels.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/7] cgroup: remove for_each_root_subsys()
-Date: Fri,  6 Dec 2013 15:27:52 -0500
-Message-Id: <1386361672-27791-8-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, kbuild test robot <fengguang.wu@intel.com>
+Subject: [PATCH 2/7] cgroup: make for_each_subsys() useable under cgroup_root_mutex
+Date: Fri,  6 Dec 2013 15:27:47 -0500
+Message-Id: <1386361672-27791-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1386361672-27791-1-git-send-email-tj@kernel.org>
 References: <1386361672-27791-1-git-send-email-tj@kernel.org>
@@ -22,170 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous patch which introduced for_each_css(),
-for_each_root_subsys() only has two users left.  This patch replaces
-it with for_each_subsys() + explicit subsys_mask testing and remove
-for_each_root_subsys() along with cgroupfs_root->subsys_list handling.
+We want to use for_each_subsys() in cgroupfs_root handling where only
+cgroup_root_mutex is held.  The only way cgroup_subsys[] can change is
+through module load/unload, make cgroup_[un]load_subsys() grab
+cgroup_root_mutex too and update the lockdep annotation in
+for_each_subsys() to allow either cgroup_mutex or cgroup_root_mutex.
 
-This patch doesn't introduce any behavior changes.
+* Lockdep annotation is moved from inner 'if' condition to outer 'for'
+  init caluse.  There's no reason to execute the assertion every loop.
+
+* Loop index @i is renamed to @ssid.  Indices iterating through subsys
+  will be [re]named to @ssid gradually.
+
+v2: cgroup_assert_mutex_or_root_locked() caused build failure if
+    !CONFIG_LOCKEDP.  Conditionalize its definition.  The build failure
+    was reported by kbuild test bot.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Li Zefan <lizefan@huawei.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>
 ---
- include/linux/cgroup.h |  9 +--------
- kernel/cgroup.c        | 37 +++++++++++++++----------------------
- 2 files changed, 16 insertions(+), 30 deletions(-)
+ kernel/cgroup.c | 26 ++++++++++++++++++++------
+ 1 file changed, 20 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 8b9a594..cfaf416 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -319,9 +319,6 @@ struct cgroupfs_root {
- 	/* Unique id for this hierarchy. */
- 	int hierarchy_id;
- 
--	/* A list running through the attached subsystems */
--	struct list_head subsys_list;
--
- 	/* The root cgroup for this hierarchy */
- 	struct cgroup top_cgroup;
- 
-@@ -617,12 +614,8 @@ struct cgroup_subsys {
- #define MAX_CGROUP_TYPE_NAMELEN 32
- 	const char *name;
- 
--	/*
--	 * Link to parent, and list entry in parent's children.
--	 * Protected by cgroup_lock()
--	 */
-+	/* link to parent, protected by cgroup_lock() */
- 	struct cgroupfs_root *root;
--	struct list_head sibling;
- 
- 	/* list of cftype_sets */
- 	struct list_head cftsets;
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 329fde8..fb1193b 100644
+index c22eecb..4a7fb40 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -283,10 +283,6 @@ static int notify_on_release(const struct cgroup *cgrp)
- 	for ((i) = 0; (i) < CGROUP_BUILTIN_SUBSYS_COUNT &&		\
- 	     (((ss) = cgroup_subsys[i]) || true); (i)++)
+@@ -98,6 +98,14 @@ static DEFINE_MUTEX(cgroup_root_mutex);
+ 			   lockdep_is_held(&cgroup_mutex),		\
+ 			   "cgroup_mutex or RCU read lock required");
  
--/* iterate each subsystem attached to a hierarchy */
--#define for_each_root_subsys(root, ss)					\
--	list_for_each_entry((ss), &(root)->subsys_list, sibling)
--
- /* iterate across the active hierarchies */
- #define for_each_active_root(root)					\
- 	list_for_each_entry((root), &cgroup_roots, root_list)
-@@ -1033,7 +1029,6 @@ static int rebind_subsystems(struct cgroupfs_root *root,
- 					   cgroup_css(cgroup_dummy_top, ss));
- 			cgroup_css(cgrp, ss)->cgroup = cgrp;
++#ifdef CONFIG_LOCKDEP
++#define cgroup_assert_mutex_or_root_locked()				\
++	WARN_ON_ONCE(debug_locks && (!lockdep_is_held(&cgroup_mutex) &&	\
++				     !lockdep_is_held(&cgroup_root_mutex)))
++#else
++#define cgroup_assert_mutex_or_root_locked()	do { } while (0)
++#endif
++
+ /*
+  * cgroup destruction makes heavy use of work items and there can be a lot
+  * of concurrent destructions.  Use a separate workqueue so that cgroup
+@@ -237,14 +245,15 @@ static int notify_on_release(const struct cgroup *cgrp)
+ /**
+  * for_each_subsys - iterate all loaded cgroup subsystems
+  * @ss: the iteration cursor
+- * @i: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
++ * @ssid: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
+  *
+- * Should be called under cgroup_mutex.
++ * Iterates through all loaded subsystems.  Should be called under
++ * cgroup_mutex or cgroup_root_mutex.
+  */
+-#define for_each_subsys(ss, i)						\
+-	for ((i) = 0; (i) < CGROUP_SUBSYS_COUNT; (i)++)			\
+-		if (({ lockdep_assert_held(&cgroup_mutex);		\
+-		       !((ss) = cgroup_subsys[i]); })) { }		\
++#define for_each_subsys(ss, ssid)					\
++	for (({ cgroup_assert_mutex_or_root_locked(); (ssid) = 0; });	\
++	     (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)			\
++		if (!((ss) = cgroup_subsys[(ssid)])) { }		\
+ 		else
  
--			list_move(&ss->sibling, &root->subsys_list);
- 			ss->root = root;
- 			if (ss->bind)
- 				ss->bind(cgroup_css(cgrp, ss));
-@@ -1052,7 +1047,6 @@ static int rebind_subsystems(struct cgroupfs_root *root,
- 			RCU_INIT_POINTER(cgrp->subsys[i], NULL);
- 
- 			cgroup_subsys[i]->root = &cgroup_dummy_root;
--			list_move(&ss->sibling, &cgroup_dummy_root.subsys_list);
- 
- 			/* subsystem is now free - drop reference on module */
- 			module_put(ss->module);
-@@ -1079,10 +1073,12 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
- {
- 	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
- 	struct cgroup_subsys *ss;
-+	int ssid;
- 
- 	mutex_lock(&cgroup_root_mutex);
--	for_each_root_subsys(root, ss)
--		seq_printf(seq, ",%s", ss->name);
-+	for_each_subsys(ss, ssid)
-+		if (root->subsys_mask & (1 << ssid))
-+			seq_printf(seq, ",%s", ss->name);
- 	if (root->flags & CGRP_ROOT_SANE_BEHAVIOR)
- 		seq_puts(seq, ",sane_behavior");
- 	if (root->flags & CGRP_ROOT_NOPREFIX)
-@@ -1352,7 +1348,6 @@ static void init_cgroup_root(struct cgroupfs_root *root)
- {
- 	struct cgroup *cgrp = &root->top_cgroup;
- 
--	INIT_LIST_HEAD(&root->subsys_list);
- 	INIT_LIST_HEAD(&root->root_list);
- 	root->number_of_cgroups = 1;
- 	cgrp->root = root;
-@@ -4151,7 +4146,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	struct cgroup *cgrp;
- 	struct cgroup_name *name;
- 	struct cgroupfs_root *root = parent->root;
--	int err = 0;
-+	int ssid, err = 0;
- 	struct cgroup_subsys *ss;
- 	struct super_block *sb = root->sb;
- 
-@@ -4237,10 +4232,12 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		goto err_destroy;
- 
- 	/* let's create and online css's */
--	for_each_root_subsys(root, ss) {
--		err = create_css(cgrp, ss);
--		if (err)
--			goto err_destroy;
-+	for_each_subsys(ss, ssid) {
-+		if (root->subsys_mask & (1 << ssid)) {
-+			err = create_css(cgrp, ss);
-+			if (err)
-+				goto err_destroy;
-+		}
- 	}
- 
- 	mutex_unlock(&cgroup_mutex);
-@@ -4536,7 +4533,6 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ /**
+@@ -4592,6 +4601,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
  	cgroup_init_cftsets(ss);
  
- 	/* Create the top cgroup state for this subsystem */
--	list_add(&ss->sibling, &cgroup_dummy_root.subsys_list);
- 	ss->root = &cgroup_dummy_root;
- 	css = ss->css_alloc(cgroup_css(cgroup_dummy_top, ss));
- 	/* We don't handle early failures gracefully */
-@@ -4626,7 +4622,6 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 		return PTR_ERR(css);
- 	}
+ 	mutex_lock(&cgroup_mutex);
++	mutex_lock(&cgroup_root_mutex);
+ 	cgroup_subsys[ss->subsys_id] = ss;
  
--	list_add(&ss->sibling, &cgroup_dummy_root.subsys_list);
- 	ss->root = &cgroup_dummy_root;
- 
- 	/* our new subsystem will be attached to the dummy hierarchy. */
-@@ -4702,9 +4697,6 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
- 	/* deassign the subsys_id */
- 	cgroup_subsys[ss->subsys_id] = NULL;
- 
--	/* remove subsystem from the dummy root's list of subsystems */
--	list_del_init(&ss->sibling);
--
  	/*
- 	 * disentangle the css from all css_sets attached to the dummy
- 	 * top. as in loading, we need to pay our respects to the hashtable
-@@ -4901,11 +4893,12 @@ int proc_cgroup_show(struct seq_file *m, void *v)
- 	for_each_active_root(root) {
- 		struct cgroup_subsys *ss;
- 		struct cgroup *cgrp;
--		int count = 0;
-+		int ssid, count = 0;
+@@ -4641,10 +4651,12 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 		goto err_unload;
  
- 		seq_printf(m, "%d:", root->hierarchy_id);
--		for_each_root_subsys(root, ss)
--			seq_printf(m, "%s%s", count++ ? "," : "", ss->name);
-+		for_each_subsys(ss, ssid)
-+			if (root->subsys_mask & (1 << ssid))
-+				seq_printf(m, "%s%s", count++ ? "," : "", ss->name);
- 		if (strlen(root->name))
- 			seq_printf(m, "%sname=%s", count ? "," : "",
- 				   root->name);
+ 	/* success! */
++	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 	return 0;
+ 
+ err_unload:
++	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 	/* @ss can't be mounted here as try_module_get() would fail */
+ 	cgroup_unload_subsys(ss);
+@@ -4674,6 +4686,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ 	BUG_ON(ss->root != &cgroup_dummy_root);
+ 
+ 	mutex_lock(&cgroup_mutex);
++	mutex_lock(&cgroup_root_mutex);
+ 
+ 	offline_css(cgroup_css(cgroup_dummy_top, ss));
+ 
+@@ -4708,6 +4721,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ 	ss->css_free(cgroup_css(cgroup_dummy_top, ss));
+ 	RCU_INIT_POINTER(cgroup_dummy_top->subsys[ss->subsys_id], NULL);
+ 
++	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ }
+ EXPORT_SYMBOL_GPL(cgroup_unload_subsys);
 -- 
 1.8.4.2
 
