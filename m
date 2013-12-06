@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162822Ab3LFNwE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:52:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44073 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758053Ab3LFNB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:57 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 109/272] mtd: nand: hack ONFI for non-power-of-2 dimensions
-Date: Fri,  6 Dec 2013 12:56:38 +0000
-Message-Id: <1386334761-25517-110-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1162831Ab3LFNwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:52:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161912Ab3LFNwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:52:03 -0500
+Message-ID: <1386337892.1861.158.camel@deneb.redhat.com>
+Subject: Re: [PATCH 1/3] arm64: add EFI stub
+From: Mark Salter <msalter@redhat.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Date: Fri, 06 Dec 2013 08:51:32 -0500
+In-Reply-To: <20131206133827.GB24997@rocoto.smurfnet.nu>
+References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
+	 <1385762712-17043-2-git-send-email-msalter@redhat.com>
+	 <20131205141853.GA974@darko.cambridge.arm.com>
+	 <1386254603.1861.120.camel@deneb.redhat.com>
+	 <20131205152806.GC974@darko.cambridge.arm.com>
+	 <20131206122511.301D6C40757@trevor.secretlab.ca>
+	 <1386336870.1861.155.camel@deneb.redhat.com>
+	 <20131206133827.GB24997@rocoto.smurfnet.nu>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2013-12-06 at 14:38 +0100, Leif Lindholm wrote:
+> On Fri, Dec 06, 2013 at 08:34:30AM -0500, Mark Salter wrote:
+> > > Or just disable runtime services on the switch to big ending. Big endian
+> > > should not disable the stub (but getting it to work could be a follow-up
+> > > patch)
+> > > 
+> > The other problem with BE is that the PE/COFF masquerading is built into
+> > head.S so the same Image can be used for EFI and non-EFI. I don't see
+> > a BE opcode which we could us to provide the magic "MZ" at the start
+> > of a BE kernel Image.
+> 
+> That's actually not an issue.
+> Instructions are always LE - endinaness affects only data.
+> 
 
-------------------
+Oh right, I knew that. Time for coffee.
 
-From: Brian Norris <computersforpeace@gmail.com>
-
-commit 4355b70cf48363c50a9de450b01178c83aba8f6a upstream.
-
-Some bright specification writers decided to write this in the ONFI spec
-(from ONFI 3.0, Section 3.1):
-
-  "The number of blocks and number of pages per block is not required to
-  be a power of two. In the case where one of these values is not a
-  power of two, the corresponding address shall be rounded to an
-  integral number of bits such that it addresses a range up to the
-  subsequent power of two value. The host shall not access upper
-  addresses in a range that is shown as not supported."
-
-This breaks every assumption MTD makes about NAND block/chip-size
-dimensions -- they *must* be a power of two!
-
-And of course, an enterprising manufacturer has made use of this lovely
-freedom. Exhibit A: Micron MT29F32G08CBADAWP
-
-  "- Plane size: 2 planes x 1064 blocks per plane
-   - Device size: 32Gb: 2128 blockss [sic]"
-
-This quickly hits a BUG() in nand_base.c, since the extra dimensions
-overflow so we think it's a second chip (on my single-chip setup):
-
-    ONFI param page 0 valid
-    ONFI flash detected
-    NAND device: Manufacturer ID: 0x2c, Chip ID: 0x44 (Micron MT29F32G08CBADAWP), 4256MiB, page size: 8192, OOB size: 744
-    ------------[ cut here ]------------
-    kernel BUG at drivers/mtd/nand/nand_base.c:203!
-    Internal error: Oops - BUG: 0 [#1] SMP ARM
-    [... trim ...]
-    [<c02cf3e4>] (nand_select_chip+0x18/0x2c) from [<c02d25c0>] (nand_do_read_ops+0x90/0x424)
-    [<c02d25c0>] (nand_do_read_ops+0x90/0x424) from [<c02d2dd8>] (nand_read+0x54/0x78)
-    [<c02d2dd8>] (nand_read+0x54/0x78) from [<c02ad2c8>] (mtd_read+0x84/0xbc)
-    [<c02ad2c8>] (mtd_read+0x84/0xbc) from [<c02d4b28>] (scan_read.clone.4+0x4c/0x64)
-    [<c02d4b28>] (scan_read.clone.4+0x4c/0x64) from [<c02d4c88>] (search_bbt+0x148/0x290)
-    [<c02d4c88>] (search_bbt+0x148/0x290) from [<c02d4ea4>] (nand_scan_bbt+0xd4/0x5c0)
-    [... trim ...]
-    ---[ end trace 0c9363860d865ff2 ]---
-
-So to fix this, just truncate these dimensions down to the greatest
-power-of-2 dimension that is less than or equal to the specified
-dimension.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/mtd/nand/nand_base.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index fb8c4de..633db88 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2904,10 +2904,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	sanitize_string(p->model, sizeof(p->model));
- 	if (!mtd->name)
- 		mtd->name = p->model;
-+
- 	mtd->writesize = le32_to_cpu(p->byte_per_page);
--	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
-+
-+	/*
-+	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
-+	 * (don't ask me who thought of this...). MTD assumes that these
-+	 * dimensions will be power-of-2, so just truncate the remaining area.
-+	 */
-+	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
-+	mtd->erasesize *= mtd->writesize;
-+
- 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
--	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
-+
-+	/* See erasesize comment */
-+	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
- 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
- 	*busw = 0;
- 	if (le16_to_cpu(p->features) & 1)
--- 
-1.8.3.2
 
