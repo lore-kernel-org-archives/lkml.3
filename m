@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162329Ab3LFNKB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:10:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44797 "EHLO
+	id S1162334Ab3LFNKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:10:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162166Ab3LFNGB (ORCPT
+	with ESMTP id S1162117Ab3LFNF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:06:01 -0500
+	Fri, 6 Dec 2013 08:05:57 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 260/272] SUNRPC: Fix a data corruption issue when retransmitting RPC calls
-Date: Fri,  6 Dec 2013 12:59:09 +0000
-Message-Id: <1386334761-25517-261-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 257/272] block: fix race between request completion and timeout handling
+Date: Fri,  6 Dec 2013 12:59:06 +0000
+Message-Id: <1386334761-25517-258-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,154 +27,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit a6b31d18b02ff9d7915c5898c9b5ca41a798cd73 upstream.
+commit 4912aa6c11e6a5d910264deedbec2075c6f1bb73 upstream.
 
-The following scenario can cause silent data corruption when doing
-NFS writes. It has mainly been observed when doing database writes
-using O_DIRECT.
+crocode i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca be2net sg ses enclosure ext4 mbcache jbd2 sd_mod crc_t10dif ahci megaraid_sas(U) dm_mirror dm_region_hash dm_log dm_mod [last unloaded: scsi_wait_scan]
 
-1) The RPC client uses sendpage() to do zero-copy of the page data.
-2) Due to networking issues, the reply from the server is delayed,
-   and so the RPC client times out.
+Pid: 491, comm: scsi_eh_0 Tainted: G        W  ----------------   2.6.32-220.13.1.el6.x86_64 #1 IBM  -[8722PAX]-/00D1461
+RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+RSP: 0018:ffff881057eefd60  EFLAGS: 00010012
+RAX: ffff881d99e3e8a8 RBX: ffff881d99e3e780 RCX: ffff881d99e3e8a8
+RDX: ffff881d99e3e8a8 RSI: ffff881d99e3e780 RDI: ffff881d99e3e780
+RBP: ffff881057eefd80 R08: ffff881057eefe90 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff881057f92338
+R13: 0000000000000000 R14: ffff881057f92338 R15: ffff883058188000
+FS:  0000000000000000(0000) GS:ffff880040200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 00000000006d3ec0 CR3: 000000302cd7d000 CR4: 00000000000406b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process scsi_eh_0 (pid: 491, threadinfo ffff881057eee000, task ffff881057e29540)
+Stack:
+ 0000000000001057 0000000000000286 ffff8810275efdc0 ffff881057f16000
+<0> ffff881057eefdd0 ffffffff81362323 ffff881057eefe20 ffffffff8135f393
+<0> ffff881057e29af8 ffff8810275efdc0 ffff881057eefe78 ffff881057eefe90
+Call Trace:
+ [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+ [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+ [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+ [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+ [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+ [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+ [<ffffffff810908c6>] kthread+0x96/0xa0
+ [<ffffffff8100c14a>] child_rip+0xa/0x20
+ [<ffffffff81090830>] ? kthread+0x0/0xa0
+ [<ffffffff8100c140>] ? child_rip+0x0/0x20
+Code: 00 00 eb d1 4c 8b 2d 3c 8f 97 00 4d 85 ed 74 bf 49 8b 45 00 49 83 c5 08 48 89 de 4c 89 e7 ff d0 49 8b 45 00 48 85 c0 75 eb eb a4 <0f> 0b eb fe 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00
+RIP  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+ RSP <ffff881057eefd60>
 
-3) The client issues a second sendpage of the page data as part of
-   an RPC call retransmission.
+The RIP is this line:
+        BUG_ON(blk_queued_rq(rq));
 
-4) The reply to the first transmission arrives from the server
-   _before_ the client hardware has emptied the TCP socket send
-   buffer.
-5) After processing the reply, the RPC state machine rules that
-   the call to be done, and triggers the completion callbacks.
-6) The application notices the RPC call is done, and reuses the
-   pages to store something else (e.g. a new write).
+After digging through the code, I think there may be a race between the
+request completion and the timer handler running.
 
-7) The client NIC drains the TCP socket send buffer. Since the
-   page data has now changed, it reads a corrupted version of the
-   initial RPC call, and puts it on the wire.
+A timer is started for each request put on the device's queue (see
+blk_start_request->blk_add_timer).  If the request does not complete
+before the timer expires, the timer handler (blk_rq_timed_out_timer)
+will mark the request complete atomically:
 
-This patch fixes the problem in the following manner:
+static inline int blk_mark_rq_complete(struct request *rq)
+{
+        return test_and_set_bit(REQ_ATOM_COMPLETE, &rq->atomic_flags);
+}
 
-The ordering guarantees of TCP ensure that when the server sends a
-reply, then we know that the _first_ transmission has completed. Using
-zero-copy in that situation is therefore safe.
-If a time out occurs, we then send the retransmission using sendmsg()
-(i.e. no zero-copy), We then know that the socket contains a full copy of
-the data, and so it will retransmit a faithful reproduction even if the
-RPC call completes, and the application reuses the O_DIRECT buffer in
-the meantime.
+and then call blk_rq_timed_out.  The latter function will call
+scsi_times_out, which will return one of BLK_EH_HANDLED,
+BLK_EH_RESET_TIMER or BLK_EH_NOT_HANDLED.  If BLK_EH_RESET_TIMER is
+returned, blk_clear_rq_complete is called, and blk_add_timer is again
+called to simply wait longer for the request to complete.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Now, if the request happens to complete while this is going on, what
+happens?  Given that we know the completion handler will bail if it
+finds the REQ_ATOM_COMPLETE bit set, we need to focus on the completion
+handler running after that bit is cleared.  So, from the above
+paragraph, after the call to blk_clear_rq_complete.  If the completion
+sets REQ_ATOM_COMPLETE before the BUG_ON in blk_add_timer, we go boom
+there (I haven't seen this in the cores).  Next, if we get the
+completion before the call to list_add_tail, then the timer will
+eventually fire for an old req, which may either be freed or reallocated
+(there is evidence that this might be the case).  Finally, if the
+completion comes in *after* the addition to the timeout list, I think
+it's harmless.  The request will be removed from the timeout list,
+req_atom_complete will be set, and all will be well.
+
+This will only actually explain the coredumps *IF* the request
+structure was freed, reallocated *and* queued before the error handler
+thread had a chance to process it.  That is possible, but it may make
+sense to keep digging for another race.  I think that if this is what
+was happening, we would see other instances of this problem showing up
+as null pointer or garbage pointer dereferences, for example when the
+request structure was not re-used.  It looks like we actually do run
+into that situation in other reports.
+
+This patch moves the BUG_ON(test_bit(REQ_ATOM_COMPLETE,
+&req->atomic_flags)); from blk_add_timer to the only caller that could
+trip over it (blk_start_request).  It then inverts the calls to
+blk_clear_rq_complete and blk_add_timer in blk_rq_timed_out to address
+the race.  I've boot tested this patch, but nothing more.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/xprtsock.c | 28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ block/blk-core.c    | 1 +
+ block/blk-timeout.c | 3 +--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index ddf0602..e865e08 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -391,8 +391,10 @@ static int xs_send_kvec(struct socket *sock, struct sockaddr *addr, int addrlen,
- 	return kernel_sendmsg(sock, &msg, NULL, 0, 0);
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1ff47dd..365f472 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2231,6 +2231,7 @@ void blk_start_request(struct request *req)
+ 	if (unlikely(blk_bidi_rq(req)))
+ 		req->next_rq->resid_len = blk_rq_bytes(req->next_rq);
+ 
++	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+ 	blk_add_timer(req);
  }
+ EXPORT_SYMBOL(blk_start_request);
+diff --git a/block/blk-timeout.c b/block/blk-timeout.c
+index 65f1035..655ba90 100644
+--- a/block/blk-timeout.c
++++ b/block/blk-timeout.c
+@@ -91,8 +91,8 @@ static void blk_rq_timed_out(struct request *req)
+ 		__blk_complete_request(req);
+ 		break;
+ 	case BLK_EH_RESET_TIMER:
+-		blk_clear_rq_complete(req);
+ 		blk_add_timer(req);
++		blk_clear_rq_complete(req);
+ 		break;
+ 	case BLK_EH_NOT_HANDLED:
+ 		/*
+@@ -174,7 +174,6 @@ void blk_add_timer(struct request *req)
+ 		return;
  
--static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more)
-+static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned int base, int more, bool zerocopy)
- {
-+	ssize_t (*do_sendpage)(struct socket *sock, struct page *page,
-+			int offset, size_t size, int flags);
- 	struct page **ppage;
- 	unsigned int remainder;
- 	int err, sent = 0;
-@@ -401,6 +403,9 @@ static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned i
- 	base += xdr->page_base;
- 	ppage = xdr->pages + (base >> PAGE_SHIFT);
- 	base &= ~PAGE_MASK;
-+	do_sendpage = sock->ops->sendpage;
-+	if (!zerocopy)
-+		do_sendpage = sock_no_sendpage;
- 	for(;;) {
- 		unsigned int len = min_t(unsigned int, PAGE_SIZE - base, remainder);
- 		int flags = XS_SENDMSG_FLAGS;
-@@ -408,7 +413,7 @@ static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned i
- 		remainder -= len;
- 		if (remainder != 0 || more)
- 			flags |= MSG_MORE;
--		err = sock->ops->sendpage(sock, *ppage, base, len, flags);
-+		err = do_sendpage(sock, *ppage, base, len, flags);
- 		if (remainder == 0 || err != len)
- 			break;
- 		sent += err;
-@@ -429,9 +434,10 @@ static int xs_send_pagedata(struct socket *sock, struct xdr_buf *xdr, unsigned i
-  * @addrlen: UDP only -- length of destination address
-  * @xdr: buffer containing this request
-  * @base: starting position in the buffer
-+ * @zerocopy: true if it is safe to use sendpage()
-  *
-  */
--static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base)
-+static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen, struct xdr_buf *xdr, unsigned int base, bool zerocopy)
- {
- 	unsigned int remainder = xdr->len - base;
- 	int err, sent = 0;
-@@ -459,7 +465,7 @@ static int xs_sendpages(struct socket *sock, struct sockaddr *addr, int addrlen,
- 	if (base < xdr->page_len) {
- 		unsigned int len = xdr->page_len - base;
- 		remainder -= len;
--		err = xs_send_pagedata(sock, xdr, base, remainder != 0);
-+		err = xs_send_pagedata(sock, xdr, base, remainder != 0, zerocopy);
- 		if (remainder == 0 || err != len)
- 			goto out;
- 		sent += err;
-@@ -562,7 +568,7 @@ static int xs_local_send_request(struct rpc_task *task)
- 			req->rq_svec->iov_base, req->rq_svec->iov_len);
+ 	BUG_ON(!list_empty(&req->timeout_list));
+-	BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
  
- 	status = xs_sendpages(transport->sock, NULL, 0,
--						xdr, req->rq_bytes_sent);
-+						xdr, req->rq_bytes_sent, true);
- 	dprintk("RPC:       %s(%u) = %d\n",
- 			__func__, xdr->len - req->rq_bytes_sent, status);
- 	if (likely(status >= 0)) {
-@@ -618,7 +624,7 @@ static int xs_udp_send_request(struct rpc_task *task)
- 	status = xs_sendpages(transport->sock,
- 			      xs_addr(xprt),
- 			      xprt->addrlen, xdr,
--			      req->rq_bytes_sent);
-+			      req->rq_bytes_sent, true);
- 
- 	dprintk("RPC:       xs_udp_send_request(%u) = %d\n",
- 			xdr->len - req->rq_bytes_sent, status);
-@@ -689,6 +695,7 @@ static int xs_tcp_send_request(struct rpc_task *task)
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
- 	struct xdr_buf *xdr = &req->rq_snd_buf;
-+	bool zerocopy = true;
- 	int status;
- 
- 	xs_encode_stream_record_marker(&req->rq_snd_buf);
-@@ -696,13 +703,20 @@ static int xs_tcp_send_request(struct rpc_task *task)
- 	xs_pktdump("packet data:",
- 				req->rq_svec->iov_base,
- 				req->rq_svec->iov_len);
-+	/* Don't use zero copy if this is a resend. If the RPC call
-+	 * completes while the socket holds a reference to the pages,
-+	 * then we may end up resending corrupted data.
-+	 */
-+	if (task->tk_flags & RPC_TASK_SENT)
-+		zerocopy = false;
- 
- 	/* Continue transmitting the packet/record. We must be careful
- 	 * to cope with writespace callbacks arriving _after_ we have
- 	 * called sendmsg(). */
- 	while (1) {
- 		status = xs_sendpages(transport->sock,
--					NULL, 0, xdr, req->rq_bytes_sent);
-+					NULL, 0, xdr, req->rq_bytes_sent,
-+					zerocopy);
- 
- 		dprintk("RPC:       xs_tcp_send_request(%u) = %d\n",
- 				xdr->len - req->rq_bytes_sent, status);
+ 	/*
+ 	 * Some LLDs, like scsi, peek at the timeout to prevent a
 -- 
 1.8.3.2
 
