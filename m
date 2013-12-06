@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab3LFJGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 04:06:17 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:61201 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab3LFJFe (ORCPT
+	id S1757404Ab3LFJHY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:07:24 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:34615 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757209Ab3LFJGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 04:05:34 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: minchan@kernel.org, pyrasis@gamil.com, harryxiyou@gmail.com,
-        tshibata@ab.jp.nec.com, rob@landley.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH 3/4] Documentation: zh_CN: Update broken link to tpp
-Date: Fri,  6 Dec 2013 18:04:44 +0900
-Message-Id: <1386320685-28484-3-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1386320685-28484-1-git-send-email-sj38.park@gmail.com>
-References: <1386320685-28484-1-git-send-email-sj38.park@gmail.com>
+	Fri, 6 Dec 2013 04:06:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131204203837.GA7517@pd.tnic>
+References: <20130116235102.16015.77379.stgit@grignak.americas.hpqcorp.net>
+	<CANVTcTaP18CiGOSEcX5Ch_wPw9mEhkgokfp+d+ZOMFD+Ce4juA@mail.gmail.com>
+	<20131204203837.GA7517@pd.tnic>
+Date: Fri, 6 Dec 2013 17:06:10 +0800
+Message-ID: <CANVTcTYJS3eAUA4bHVCrKgz=7rQpJZHCiBcw3JM=j0FbCsgQJw@mail.gmail.com>
+Subject: Re: [PATCH v10 1/3] aerdrv: Trace Event for AER
+From: rui wang <ruiv.wang@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@intel.com, tony.luck@intel.com,
+        rostedt@goodmis.org, mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gong.chen@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Links for 'The Perfect Patch' which described on HOWTO document is
-broken. Change those links to the copy at ozlabs.
+On 12/5/13, Borislav Petkov <bp@alien8.de> wrote:
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+> Yes, the AER tracepoint above should use the AER_* defines and not the
+> HW_EVENT_ERR_* ones which are for memory errors.
+>
+> Wanna send a fix?
+>
+
+Yes. Does it translate into something like this?
+
+From: Rui Wang <rui.y.wang@intel.com>
+Date: Fri, 6 Dec 2013 16:47:46 +0800
+Subject: [PATCH] Fix severity usage in aer trace event
+
+Signed-off-by: Rui Wang <rui.y.wang@intel.com>
 ---
- Documentation/zh_CN/HOWTO | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/trace/events/ras.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/zh_CN/HOWTO b/Documentation/zh_CN/HOWTO
-index 7fba5aa..6c914aa 100644
---- a/Documentation/zh_CN/HOWTO
-+++ b/Documentation/zh_CN/HOWTO
-@@ -112,7 +112,7 @@ Linux内核代码中包含有大量的文档。这些文档对于学习如何与
- 
-     其他关于如何正确地生成补丁的优秀文档包括：
-     "The Perfect Patch"
--        http://userweb.kernel.org/~akpm/stuff/tpp.txt
-+        http://www.ozlabs.org/~akpm/stuff/tpp.txt
-     "Linux kernel patch submission format"
-         http://linux.yyz.us/patch-format.html
- 
-@@ -515,7 +515,7 @@ Linux内核社区并不喜欢一下接收大段的代码。修改需要被恰当
- 
- 想了解它具体应该看起来像什么，请查阅以下文档中的“ChangeLog”章节：
-   “The Perfect Patch”
--  	 http://userweb.kernel.org/~akpm/stuff/tpp.txt
-+  	 http://www.ozlabs.org/~akpm/stuff/tpp.txt
- 
- 
- 这些事情有时候做起来很难。要在任何方面都做到完美可能需要好几年时间。这是
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+index 88b8783..e2a17d8 100644
+--- a/include/trace/events/ras.h
++++ b/include/trace/events/ras.h
+@@ -5,7 +5,7 @@
+ #define _TRACE_AER_H
+
+ #include <linux/tracepoint.h>
+-#include <linux/edac.h>
++#include <linux/aer.h>
+
+
+ /*
+@@ -63,10 +63,10 @@ TRACE_EVENT(aer_event,
+
+        TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
+                __get_str(dev_name),
+-               __entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
+-                       __entry->severity == HW_EVENT_ERR_FATAL ?
++               __entry->severity == AER_CORRECTABLE ? "Corrected" :
++                       __entry->severity == AER_FATAL ?
+                        "Fatal" : "Uncorrected",
+-               __entry->severity == HW_EVENT_ERR_CORRECTED ?
++               __entry->severity == AER_CORRECTABLE ?
+                __print_flags(__entry->status, "|", aer_correctable_errors) :
+                __print_flags(__entry->status, "|", aer_uncorrectable_errors))
+ );
 -- 
-1.8.1.2
+1.7.5.4
 
+Regards,
+Rui
