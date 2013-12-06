@@ -1,139 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162796Ab3LFNvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:51:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44083 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758073Ab3LFNCA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:00 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Huang Shijie <b32955@freescale.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 111/272] mtd: gpmi: fix kernel BUG due to racing DMA operations
-Date: Fri,  6 Dec 2013 12:56:40 +0000
-Message-Id: <1386334761-25517-112-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1162816Ab3LFNvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:51:39 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:35527 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161709Ab3LFNvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:51:37 -0500
+Date: Fri, 6 Dec 2013 08:51:35 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mateusz Guzik <mguzik@redhat.com>, stable@vger.kernel.org,
+        Eryu Guan <eguan@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.10] aio: restore locking of ioctx list on removal
+Message-ID: <20131206135135.GA13581@kvack.org>
+References: <1386238142-21792-1-git-send-email-mguzik@redhat.com> <20131206010347.GA25404@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131206010347.GA25404@kroah.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Dec 05, 2013 at 05:03:47PM -0800, Greg KH wrote:
+> On Thu, Dec 05, 2013 at 11:09:02AM +0100, Mateusz Guzik wrote:
+> > Commit 36f5588905c10a8c4568a210d601fe8c3c27e0f0
+> > "aio: refcounting cleanup" resulted in ioctx_lock not being held
+> > during ctx removal, leaving the list susceptible to corruptions.
+> > 
+> > In mainline kernel the issue went away as a side effect of
+> > db446a08c23d5475e6b08c87acca79ebb20f283c "aio: convert the ioctx list to
+> > table lookup v3".
+> > 
+> > Fix the problem by restoring appropriate locking.
+> 
+> Why can't I just take db446a08c23d5475e6b08c87acca79ebb20f283c instead?
+> Does it not work well enough, or is there other issues involved in it
+> that would keep it out of stable?
+> 
+> Also, it seems like the performance increase of that patch would be good
+> to have backported, right?
 
-------------------
+There are several aio patches that have to be applied to -stable, but I've 
+just been waiting for some feedback now that they're in Linus' tree for a 
+bit before pushing them to -stable.  I'll review which ones are needed 
+today and send out a recommended list of patches to apply.
 
-From: Huang Shijie <b32955@freescale.com>
+		-ben
 
-commit 7b3d2fb92067bcb29f0f085a9fa9fa64920a6646 upstream.
+> thanks,
+> 
+> greg k-h
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-aio' in
+> the body to majordomo@kvack.org.  For more info on Linux AIO,
+> see: http://www.kvack.org/aio/
+> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
 
-[1] The gpmi uses the nand_command_lp to issue the commands to NAND chips.
-    The gpmi issues a DMA operation with gpmi_cmd_ctrl when it handles
-    a NAND_CMD_NONE control command. So when we read a page(NAND_CMD_READ0)
-    from the NAND, we may send two DMA operations back-to-back.
-
-    If we do not serialize the two DMA operations, we will meet a bug when
-
-    1.1) we enable CONFIG_DMA_API_DEBUG, CONFIG_DMADEVICES_DEBUG,
-         and CONFIG_DEBUG_SG.
-
-    1.2) Use the following commands in an UART console and a SSH console:
-         cmd 1: while true;do dd if=/dev/mtd0 of=/dev/null;done
-         cmd 1: while true;do dd if=/dev/mmcblk0 of=/dev/null;done
-
-    The kernel log shows below:
-    -----------------------------------------------------------------
-    kernel BUG at lib/scatterlist.c:28!
-    Unable to handle kernel NULL pointer dereference at virtual address 00000000
-      .........................
-    [<80044a0c>] (__bug+0x18/0x24) from [<80249b74>] (sg_next+0x48/0x4c)
-    [<80249b74>] (sg_next+0x48/0x4c) from [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4)
-    [<80255398>] (debug_dma_unmap_sg+0x170/0x1a4) from [<8004af58>] (dma_unmap_sg+0x14/0x6c)
-    [<8004af58>] (dma_unmap_sg+0x14/0x6c) from [<8027e594>] (mxs_dma_tasklet+0x18/0x1c)
-    [<8027e594>] (mxs_dma_tasklet+0x18/0x1c) from [<8007d444>] (tasklet_action+0x114/0x164)
-    -----------------------------------------------------------------
-
-    1.3) Assume the two DMA operations is X (first) and Y (second).
-
-         The root cause of the bug:
-	   Assume process P issues DMA X, and sleep on the completion
-	 @this->dma_done. X's tasklet callback is dma_irq_callback. It firstly
-	 wake up the process sleeping on the completion @this->dma_done,
-	 and then trid to unmap the scatterlist S. The waked process P will
-	 issue Y in another ARM core. Y initializes S->sg_magic to zero
-	 with sg_init_one(), while dma_irq_callback is unmapping S at the same
-	 time.
-
-	 See the diagram:
-
-                   ARM core 0              |         ARM core 1
-	 -------------------------------------------------------------
-         (P issues DMA X, then sleep)  --> |
-                                           |
-         (X's tasklet wakes P)         --> |
-                                           |
-                                           | <-- (P begin to issue DMA Y)
-                                           |
-         (X's tasklet unmap the            |
-      scatterlist S with dma_unmap_sg) --> | <-- (Y calls sg_init_one() to init
-                                           |      scatterlist S)
-                                           |
-
-[2] This patch serialize both the X and Y in the following way:
-     Unmap the DMA scatterlist S firstly, and wake up the process at the end
-     of the DMA callback, in such a way, Y will be executed after X.
-
-     After this patch:
-
-                   ARM core 0              |         ARM core 1
-	 -------------------------------------------------------------
-         (P issues DMA X, then sleep)  --> |
-                                           |
-         (X's tasklet unmap the            |
-      scatterlist S with dma_unmap_sg) --> |
-                                           |
-         (X's tasklet wakes P)         --> |
-                                           |
-                                           | <-- (P begin to issue DMA Y)
-                                           |
-                                           | <-- (Y calls sg_init_one() to init
-                                           |     scatterlist S)
-                                           |
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-index 25ecfa1..ab6581f 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -264,8 +264,6 @@ static void dma_irq_callback(void *param)
- 	struct gpmi_nand_data *this = param;
- 	struct completion *dma_c = &this->dma_done;
- 
--	complete(dma_c);
--
- 	switch (this->dma_type) {
- 	case DMA_FOR_COMMAND:
- 		dma_unmap_sg(this->dev, &this->cmd_sgl, 1, DMA_TO_DEVICE);
-@@ -290,6 +288,8 @@ static void dma_irq_callback(void *param)
- 	default:
- 		pr_err("in wrong DMA operation.\n");
- 	}
-+
-+	complete(dma_c);
- }
- 
- int start_dma_without_bch_irq(struct gpmi_nand_data *this,
 -- 
-1.8.3.2
-
+"Thought is the essence of where you are now."
