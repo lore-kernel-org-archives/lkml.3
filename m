@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab3LFOLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:11:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43757 "EHLO
+	id S1161279Ab3LFNAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:00:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43721 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161282Ab3LFNAh (ORCPT
+	with ESMTP id S1161237Ab3LFNA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:37 -0500
+	Fri, 6 Dec 2013 08:00:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Samir Benmendil <samir.benmendil@gmail.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 051/272] Staging: zram: Fix memory leak by refcount mismatch
-Date: Fri,  6 Dec 2013 12:55:40 +0000
-Message-Id: <1386334761-25517-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 044/272] ahci: add Marvell 9230 to the AHCI PCI device list
+Date: Fri,  6 Dec 2013 12:55:33 +0000
+Message-Id: <1386334761-25517-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -28,66 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+From: Samir Benmendil <samir.benmendil@gmail.com>
 
-commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
+commit 6d5278a68a75891db1df5ae1ecf83d288fc58c65 upstream.
 
-As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
-get the block device (bdget_disk()) but it does not put it (bdput()) when
-it's done using it. The usage count is therefore incremented but never
-decremented."
+Tested with a DAWICONTROL DC-624e on 3.10.10
 
-This patch also puts bdput() for all error cases.
-
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Samir Benmendil <samir.benmendil@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Levente Kurusa <levex@linux.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ drivers/ata/ahci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index ee6b435..dda8771 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -651,21 +651,30 @@ static ssize_t reset_store(struct device *dev,
- 		return -ENOMEM;
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index db4380d..0df25a2 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -431,6 +431,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
++	  .driver_data = board_ahci_yes_fbs },
  
- 	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
-+	if (bdev->bd_holders) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	ret = kstrtou16(buf, 10, &do_reset);
- 	if (ret)
--		return ret;
-+		goto out;
- 
--	if (!do_reset)
--		return -EINVAL;
-+	if (!do_reset) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Make sure all pending I/O is finished */
- 	fsync_bdev(bdev);
-+	bdput(bdev);
- 
- 	zram_reset_device(zram, true);
- 	return len;
-+
-+out:
-+	bdput(bdev);
-+	return ret;
- }
- 
- static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+ 	/* Promise */
+ 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
 -- 
 1.8.3.2
 
