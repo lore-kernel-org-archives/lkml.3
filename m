@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab3LFWZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:25:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60730 "EHLO
+	id S932315Ab3LFW0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:26:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161181Ab3LFVxL (ORCPT
+	with ESMTP id S1161171Ab3LFVxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:11 -0500
+	Fri, 6 Dec 2013 16:53:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.12 71/83] rt2800: add support for radio chip RF3070
-Date: Fri,  6 Dec 2013 13:52:01 -0800
-Message-Id: <20131206214646.657406247@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>, Joerg Roedel <joro@8bytes.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH 3.12 70/83] iommu: Remove stack trace from broken irq remapping warning
+Date: Fri,  6 Dec 2013 13:52:00 -0800
+Message-Id: <20131206214646.563945194@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,92 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 3b9b74baa1af2952d719735b4a4a34706a593948 upstream.
+commit 05104a4e8713b27291c7bb49c1e7e68b4e243571 upstream.
 
-Add support for new RF chip ID: 3070. It seems to be the same as 5370,
-maybe vendor just put wrong value on the eeprom, but add this id anyway
-since devices with it showed on the marked.
+The warning for the irq remapping broken check in intel_irq_remapping.c is
+pretty pointless.  We need the warning, but we know where its comming from, the
+stack trace will always be the same, and it needlessly triggers things like
+Abrt.  This changes the warning to just print a text warning about BIOS being
+broken, without the stack trace, then sets the appropriate taint bit.  Since we
+automatically disable irq remapping, theres no need to contiue making Abrt jump
+at this problem
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Joerg Roedel <joro@8bytes.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800.h    |    2 ++
- drivers/net/wireless/rt2x00/rt2800lib.c |    8 +++++++-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/iommu/intel_irq_remapping.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800.h
-+++ b/drivers/net/wireless/rt2x00/rt2800.h
-@@ -52,6 +52,7 @@
-  * RF3322 2.4G 2T2R(RT3352/RT3371/RT3372/RT3391/RT3392)
-  * RF3053 2.4G/5G 3T3R(RT3883/RT3563/RT3573/RT3593/RT3662)
-  * RF5592 2.4G/5G 2T2R
-+ * RF3070 2.4G 1T1R
-  * RF5360 2.4G 1T1R
-  * RF5370 2.4G 1T1R
-  * RF5390 2.4G 1T1R
-@@ -70,6 +71,7 @@
- #define RF3322				0x000c
- #define RF3053				0x000d
- #define RF5592				0x000f
-+#define RF3070				0x3070
- #define RF3290				0x3290
- #define RF5360				0x5360
- #define RF5370				0x5370
---- a/drivers/net/wireless/rt2x00/rt2800lib.c
-+++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-@@ -3152,6 +3152,7 @@ static void rt2800_config_channel(struct
- 	case RF3322:
- 		rt2800_config_channel_rf3322(rt2x00dev, conf, rf, info);
- 		break;
-+	case RF3070:
- 	case RF5360:
- 	case RF5370:
- 	case RF5372:
-@@ -3166,7 +3167,8 @@ static void rt2800_config_channel(struct
- 		rt2800_config_channel_rf2xxx(rt2x00dev, conf, rf, info);
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -525,12 +525,13 @@ static int __init intel_irq_remapping_su
+ 	if (disable_irq_remap)
+ 		return 0;
+ 	if (irq_remap_broken) {
+-		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
+-			   "This system BIOS has enabled interrupt remapping\n"
+-			   "on a chipset that contains an erratum making that\n"
+-			   "feature unstable.  To maintain system stability\n"
+-			   "interrupt remapping is being disabled.  Please\n"
+-			   "contact your BIOS vendor for an update\n");
++		printk(KERN_WARNING
++			"This system BIOS has enabled interrupt remapping\n"
++			"on a chipset that contains an erratum making that\n"
++			"feature unstable.  To maintain system stability\n"
++			"interrupt remapping is being disabled.  Please\n"
++			"contact your BIOS vendor for an update\n");
++		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
+ 		disable_irq_remap = 1;
+ 		return 0;
  	}
- 
--	if (rt2x00_rf(rt2x00dev, RF3290) ||
-+	if (rt2x00_rf(rt2x00dev, RF3070) ||
-+	    rt2x00_rf(rt2x00dev, RF3290) ||
- 	    rt2x00_rf(rt2x00dev, RF3322) ||
- 	    rt2x00_rf(rt2x00dev, RF5360) ||
- 	    rt2x00_rf(rt2x00dev, RF5370) ||
-@@ -4264,6 +4266,7 @@ void rt2800_vco_calibration(struct rt2x0
- 		rt2800_rfcsr_write(rt2x00dev, 7, rfcsr);
- 		break;
- 	case RF3053:
-+	case RF3070:
- 	case RF3290:
- 	case RF5360:
- 	case RF5370:
-@@ -7024,6 +7027,7 @@ static int rt2800_init_eeprom(struct rt2
- 	case RF3022:
- 	case RF3052:
- 	case RF3053:
-+	case RF3070:
- 	case RF3290:
- 	case RF3320:
- 	case RF3322:
-@@ -7546,6 +7550,7 @@ static int rt2800_probe_hw_mode(struct r
- 		   rt2x00_rf(rt2x00dev, RF2020) ||
- 		   rt2x00_rf(rt2x00dev, RF3021) ||
- 		   rt2x00_rf(rt2x00dev, RF3022) ||
-+		   rt2x00_rf(rt2x00dev, RF3070) ||
- 		   rt2x00_rf(rt2x00dev, RF3290) ||
- 		   rt2x00_rf(rt2x00dev, RF3320) ||
- 		   rt2x00_rf(rt2x00dev, RF3322) ||
-@@ -7674,6 +7679,7 @@ static int rt2800_probe_hw_mode(struct r
- 	case RF3320:
- 	case RF3052:
- 	case RF3053:
-+	case RF3070:
- 	case RF3290:
- 	case RF5360:
- 	case RF5370:
 
 
