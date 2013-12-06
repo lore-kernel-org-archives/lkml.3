@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416Ab3LFVxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:53:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60950 "EHLO
+	id S1161647Ab3LFWJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:09:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759336Ab3LFVxn (ORCPT
+	with ESMTP id S1759336Ab3LFVxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:43 -0500
+	Fri, 6 Dec 2013 16:53:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshiaki Makita <toshiaki.makita1@gmail.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Ding Tianhong <dingtianhong@huawei.com>,
+        jongman heo <jongman.heo@samsung.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 31/58] bridge: flush brs address entry in fdb when remove the bridge dev
-Date: Fri,  6 Dec 2013 13:52:02 -0800
-Message-Id: <20131206214847.782891592@linuxfoundation.org>
+Subject: [PATCH 3.10 38/58] inet: fix possible seqlock deadlocks
+Date: Fri,  6 Dec 2013 13:52:09 -0800
+Message-Id: <20131206214848.434810072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,67 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ding Tianhong <dingtianhong@huawei.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit f873042093c0b418d2351fe142222b625c740149 ]
+[ Upstream commit f1d8cba61c3c4b1eb88e507249c4cb8d635d9a76 ]
 
-When the following commands are executed:
+In commit c9e9042994d3 ("ipv4: fix possible seqlock deadlock") I left
+another places where IP_INC_STATS_BH() were improperly used.
 
-brctl addbr br0
-ifconfig br0 hw ether <addr>
-rmmod bridge
+udp_sendmsg(), ping_v4_sendmsg() and tcp_v4_connect() are called from
+process context, not from softirq context.
 
-The calltrace will occur:
+This was detected by lockdep seqlock support.
 
-[  563.312114] device eth1 left promiscuous mode
-[  563.312188] br0: port 1(eth1) entered disabled state
-[  563.468190] kmem_cache_destroy bridge_fdb_cache: Slab cache still has objects
-[  563.468197] CPU: 6 PID: 6982 Comm: rmmod Tainted: G           O 3.12.0-0.7-default+ #9
-[  563.468199] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  563.468200]  0000000000000880 ffff88010f111e98 ffffffff814d1c92 ffff88010f111eb8
-[  563.468204]  ffffffff81148efd ffff88010f111eb8 0000000000000000 ffff88010f111ec8
-[  563.468206]  ffffffffa062a270 ffff88010f111ed8 ffffffffa063ac76 ffff88010f111f78
-[  563.468209] Call Trace:
-[  563.468218]  [<ffffffff814d1c92>] dump_stack+0x6a/0x78
-[  563.468234]  [<ffffffff81148efd>] kmem_cache_destroy+0xfd/0x100
-[  563.468242]  [<ffffffffa062a270>] br_fdb_fini+0x10/0x20 [bridge]
-[  563.468247]  [<ffffffffa063ac76>] br_deinit+0x4e/0x50 [bridge]
-[  563.468254]  [<ffffffff810c7dc9>] SyS_delete_module+0x199/0x2b0
-[  563.468259]  [<ffffffff814e0922>] system_call_fastpath+0x16/0x1b
-[  570.377958] Bridge firewalling registered
-
---------------------------- cut here -------------------------------
-
-The reason is that when the bridge dev's address is changed, the
-br_fdb_change_mac_address() will add new address in fdb, but when
-the bridge was removed, the address entry in the fdb did not free,
-the bridge_fdb_cache still has objects when destroy the cache, Fix
-this by flushing the bridge address entry when removing the bridge.
-
-v2: according to the Toshiaki Makita and Vlad's suggestion, I only
-    delete the vlan0 entry, it still have a leak here if the vlan id
-    is other number, so I need to call fdb_delete_by_port(br, NULL, 1)
-    to flush all entries whose dst is NULL for the bridge.
-
-Suggested-by: Toshiaki Makita <toshiaki.makita1@gmail.com>
-Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Reported-by: jongman heo <jongman.heo@samsung.com>
+Fixes: 584bdf8cbdf6 ("[IPV4]: Fix "ipOutNoRoutes" counter error for TCP and UDP")
+Fixes: c319b4d76b9e ("net: ipv4: add IPPROTO_ICMP socket kind")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_if.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/ping.c     |    2 +-
+ net/ipv4/tcp_ipv4.c |    2 +-
+ net/ipv4/udp.c      |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -172,6 +172,8 @@ void br_dev_delete(struct net_device *de
- 		del_nbp(p);
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -570,7 +570,7 @@ static int ping_sendmsg(struct kiocb *io
+ 		err = PTR_ERR(rt);
+ 		rt = NULL;
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
+ 		goto out;
  	}
  
-+	br_fdb_delete_by_port(br, NULL, 1);
-+
- 	del_timer_sync(&br->gc_timer);
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -176,7 +176,7 @@ int tcp_v4_connect(struct sock *sk, stru
+ 	if (IS_ERR(rt)) {
+ 		err = PTR_ERR(rt);
+ 		if (err == -ENETUNREACH)
+-			IP_INC_STATS_BH(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
++			IP_INC_STATS(sock_net(sk), IPSTATS_MIB_OUTNOROUTES);
+ 		return err;
+ 	}
  
- 	br_sysfs_delbr(br->dev);
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -971,7 +971,7 @@ int udp_sendmsg(struct kiocb *iocb, stru
+ 			err = PTR_ERR(rt);
+ 			rt = NULL;
+ 			if (err == -ENETUNREACH)
+-				IP_INC_STATS_BH(net, IPSTATS_MIB_OUTNOROUTES);
++				IP_INC_STATS(net, IPSTATS_MIB_OUTNOROUTES);
+ 			goto out;
+ 		}
+ 
 
 
