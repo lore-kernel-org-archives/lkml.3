@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759662Ab3LFWGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:06:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32791 "EHLO
+	id S1759760Ab3LFWG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:06:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759464Ab3LFVxz (ORCPT
+	with ESMTP id S1759457Ab3LFVxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:55 -0500
+	Fri, 6 Dec 2013 16:53:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kim Phillips <kim.phillips@linaro.org>
-Subject: [PATCH 3.10 47/58] clockevents: Split out selection logic
-Date: Fri,  6 Dec 2013 13:52:18 -0800
-Message-Id: <20131206214849.251325104@linuxfoundation.org>
+        Pierre Ossman <pierre@ossman.eu>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.10 58/58] drm/radeon/audio: correct ACR table
+Date: Fri,  6 Dec 2013 13:52:29 -0800
+Message-Id: <20131206214850.256981071@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -29,153 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Pierre Ossman <pierre@ossman.eu>
 
-commit 45cb8e01b2ecef1c2afb18333e95793fa1a90281 upstream.
+commit 3e71985f2439d8c4090dc2820e497e6f3d72dcff upstream.
 
-Split out the clockevent device selection logic. Preparatory patch to
-allow unbinding active clockevent devices.
+The values were taken from the HDMI spec, but they assumed
+exact x/1.001 clocks. Since we round the clocks, we also need
+to calculate different N and CTS values.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Link: http://lkml.kernel.org/r/20130425143436.431796247@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kim Phillips <kim.phillips@linaro.org>
+Note that the N for 25.2/1.001 MHz at 44.1 kHz audio is out of
+spec. Hopefully this mode is rarely used and/or HDMI sinks
+tolerate overly large values of N.
+
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69675
+
+Signed-off-by: Pierre Ossman <pierre@ossman.eu>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-broadcast.c |   25 ++++++++++++---
- kernel/time/tick-common.c    |   69 ++++++++++++++++++++++---------------------
- 2 files changed, 56 insertions(+), 38 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,19 +66,34 @@ static void tick_broadcast_start_periodi
- /*
-  * Check, if the device can be utilized as broadcast device:
-  */
-+static bool tick_check_broadcast_device(struct clock_event_device *curdev,
-+					struct clock_event_device *newdev)
-+{
-+	if ((newdev->features & CLOCK_EVT_FEAT_DUMMY) ||
-+	    (newdev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return false;
-+
-+	if (tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT &&
-+	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return false;
-+
-+	return !curdev || newdev->rating > curdev->rating;
-+}
-+
-+/*
-+ * Conditionally install/replace broadcast device
-+ */
- void tick_install_broadcast_device(struct clock_event_device *dev)
- {
- 	struct clock_event_device *cur = tick_broadcast_device.evtdev;
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -58,15 +58,15 @@ enum r600_hdmi_iec_status_bits {
+ static const struct radeon_hdmi_acr r600_hdmi_predefined_acr[] = {
+     /*	     32kHz	  44.1kHz	48kHz    */
+     /* Clock      N     CTS      N     CTS      N     CTS */
+-    {  25175,  4576,  28125,  7007,  31250,  6864,  28125 }, /*  25,20/1.001 MHz */
++    {  25175,  4096,  25175, 28224, 125875,  6144,  25175 }, /*  25,20/1.001 MHz */
+     {  25200,  4096,  25200,  6272,  28000,  6144,  25200 }, /*  25.20       MHz */
+     {  27000,  4096,  27000,  6272,  30000,  6144,  27000 }, /*  27.00       MHz */
+     {  27027,  4096,  27027,  6272,  30030,  6144,  27027 }, /*  27.00*1.001 MHz */
+     {  54000,  4096,  54000,  6272,  60000,  6144,  54000 }, /*  54.00       MHz */
+     {  54054,  4096,  54054,  6272,  60060,  6144,  54054 }, /*  54.00*1.001 MHz */
+-    {  74176, 11648, 210937, 17836, 234375, 11648, 140625 }, /*  74.25/1.001 MHz */
++    {  74176,  4096,  74176,  5733,  75335,  6144,  74176 }, /*  74.25/1.001 MHz */
+     {  74250,  4096,  74250,  6272,  82500,  6144,  74250 }, /*  74.25       MHz */
+-    { 148352, 11648, 421875,  8918, 234375,  5824, 140625 }, /* 148.50/1.001 MHz */
++    { 148352,  4096, 148352,  5733, 150670,  6144, 148352 }, /* 148.50/1.001 MHz */
+     { 148500,  4096, 148500,  6272, 165000,  6144, 148500 }, /* 148.50       MHz */
+ };
  
--	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
--	    (tick_broadcast_device.evtdev &&
--	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
--	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
-+	if (!tick_check_broadcast_device(cur, dev))
- 		return;
-+
- 	if (!try_module_get(dev->owner))
- 		return;
- 
--	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
-+	clockevents_exchange_device(cur, dev);
- 	if (cur)
- 		cur->event_handler = clockevents_handle_noop;
- 	tick_broadcast_device.evtdev = dev;
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -207,6 +207,37 @@ static void tick_setup_device(struct tic
- 		tick_setup_oneshot(newdev, handler, next_event);
- }
- 
-+static bool tick_check_percpu(struct clock_event_device *curdev,
-+			      struct clock_event_device *newdev, int cpu)
-+{
-+	if (!cpumask_test_cpu(cpu, newdev->cpumask))
-+		return false;
-+	if (cpumask_equal(newdev->cpumask, cpumask_of(cpu)))
-+		return true;
-+	/* Check if irq affinity can be set */
-+	if (newdev->irq >= 0 && !irq_can_set_affinity(newdev->irq))
-+		return false;
-+	/* Prefer an existing cpu local device */
-+	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
-+		return false;
-+	return true;
-+}
-+
-+static bool tick_check_preferred(struct clock_event_device *curdev,
-+				 struct clock_event_device *newdev)
-+{
-+	/* Prefer oneshot capable device */
-+	if (!(newdev->features & CLOCK_EVT_FEAT_ONESHOT)) {
-+		if (curdev && (curdev->features & CLOCK_EVT_FEAT_ONESHOT))
-+			return false;
-+		if (tick_oneshot_mode_active())
-+			return false;
-+	}
-+
-+	/* Use the higher rated one */
-+	return !curdev || newdev->rating > curdev->rating;
-+}
-+
- /*
-  * Check, if the new registered device should be used.
-  */
-@@ -227,40 +258,12 @@ void tick_check_new_device(struct clock_
- 	curdev = td->evtdev;
- 
- 	/* cpu local device ? */
--	if (!cpumask_equal(newdev->cpumask, cpumask_of(cpu))) {
--
--		/*
--		 * If the cpu affinity of the device interrupt can not
--		 * be set, ignore it.
--		 */
--		if (!irq_can_set_affinity(newdev->irq))
--			goto out_bc;
--
--		/*
--		 * If we have a cpu local device already, do not replace it
--		 * by a non cpu local device
--		 */
--		if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
--			goto out_bc;
--	}
-+	if (!tick_check_percpu(curdev, newdev, cpu))
-+		goto out_bc;
- 
--	/*
--	 * If we have an active device, then check the rating and the oneshot
--	 * feature.
--	 */
--	if (curdev) {
--		/*
--		 * Prefer one shot capable devices !
--		 */
--		if ((curdev->features & CLOCK_EVT_FEAT_ONESHOT) &&
--		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
--			goto out_bc;
--		/*
--		 * Check the rating
--		 */
--		if (curdev->rating >= newdev->rating)
--			goto out_bc;
--	}
-+	/* Preference decision */
-+	if (!tick_check_preferred(curdev, newdev))
-+		goto out_bc;
- 
- 	if (!try_module_get(newdev->owner))
- 		return;
 
 
