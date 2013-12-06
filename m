@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab3LFNZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:25:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44492 "EHLO
+	id S1758306Ab3LFND6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44478 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758300Ab3LFND5 (ORCPT
+	with ESMTP id S1758282Ab3LFNDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:57 -0500
+	Fri, 6 Dec 2013 08:03:54 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Pfaff <tpfaff@pcs.com>, Ivo Sieben <meltedpianoman@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 197/272] genirq: Set the irq thread policy without checking CAP_SYS_NICE
-Date: Fri,  6 Dec 2013 12:58:06 +0000
-Message-Id: <1386334761-25517-198-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 195/272] ARM: OMAP2+: omap_device: maintain sane runtime pm status around suspend/resume
+Date: Fri,  6 Dec 2013 12:58:04 +0000
+Message-Id: <1386334761-25517-196-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,46 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pfaff <tpfaff@pcs.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit bbfe65c219c638e19f1da5adab1005b2d68ca810 upstream.
+commit 3522bf7bfa248b99eafa2f4872190699a808c7d9 upstream.
 
-In commit ee23871389 ("genirq: Set irq thread to RT priority on
-creation") we moved the assigment of the thread's priority from the
-thread's function into __setup_irq(). That function may run in user
-context for instance if the user opens an UART node and then driver
-calls requests in the ->open() callback. That user may not have
-CAP_SYS_NICE and so the irq thread won't run with the SCHED_OTHER
-policy.
+OMAP device hooks around suspend|resume_noirq ensures that hwmod
+devices are forced to idle using omap_device_idle/enable as part of
+the last stage of suspend activity.
 
-This patch uses sched_setscheduler_nocheck() so we omit the CAP_SYS_NICE
-check which is otherwise required for the SCHED_OTHER policy.
+For a device such as i2c who uses autosuspend, it is possible to enter
+the suspend path with dev->power.runtime_status = RPM_ACTIVE.
 
-[bigeasy: Rewrite the changelog]
+As part of the suspend flow, the generic runtime logic would increment
+it's dev->power.disable_depth to 1. This should prevent further
+pm_runtime_get_sync from succeeding once the runtime_status has been
+set to RPM_SUSPENDED.
 
-Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
-Cc: Ivo Sieben <meltedpianoman@gmail.com>
-Link: http://lkml.kernel.org/r/1381489240-29626-1-git-send-email-bigeasy@linutronix.de
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Now, as part of the suspend_noirq handler in omap_device, we force the
+following: if the device status is !suspended, we force the device
+to idle using omap_device_idle (clocks are cut etc..). This ensures
+that from a hardware perspective, the device is "suspended". However,
+runtime_status is left to be active.
+
+*if* an operation is attempted after this point to
+pm_runtime_get_sync, runtime framework depends on runtime_status to
+indicate accurately the device status, and since it sees it to be
+ACTIVE, it assumes the module is functional and returns a non-error
+value. As a result the user will see pm_runtime_get succeed, however a
+register access will crash due to the lack of clocks.
+
+To prevent this from happening, we should ensure that runtime_status
+exactly indicates the device status. As a result of this change
+any further calls to pm_runtime_get* would return -EACCES (since
+disable_depth is 1). On resume, we restore the clocks and runtime
+status exactly as we suspended with. These operations are not expected
+to fail as we update the states after the core runtime framework has
+suspended itself and restore before the core runtime framework has
+resumed.
+
+Reported-by: J Keerthy <j-keerthy@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rajendra Nayak <rnayak@ti.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/irq/manage.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_device.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 514bcfd..3e59f95 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -956,7 +956,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			goto out_mput;
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index f99f68e..26e4829 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -621,6 +621,7 @@ static int _od_suspend_noirq(struct device *dev)
+ 
+ 	if (!ret && !pm_runtime_status_suspended(dev)) {
+ 		if (pm_generic_runtime_suspend(dev) == 0) {
++			pm_runtime_set_suspended(dev);
+ 			omap_device_idle(pdev);
+ 			od->flags |= OMAP_DEVICE_SUSPENDED;
  		}
+@@ -634,10 +635,18 @@ static int _od_resume_noirq(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct omap_device *od = to_omap_device(pdev);
  
--		sched_setscheduler(t, SCHED_FIFO, &param);
-+		sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
+-	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+-	    !pm_runtime_status_suspended(dev)) {
++	if (od->flags & OMAP_DEVICE_SUSPENDED) {
+ 		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+ 		omap_device_enable(pdev);
++		/*
++		 * XXX: we run before core runtime pm has resumed itself. At
++		 * this point in time, we just restore the runtime pm state and
++		 * considering symmetric operations in resume, we donot expect
++		 * to fail. If we failed, something changed in core runtime_pm
++		 * framework OR some device driver messed things up, hence, WARN
++		 */
++		WARN(pm_runtime_set_active(dev),
++		     "Could not set %s runtime state active\n", dev_name(dev));
+ 		pm_generic_runtime_resume(dev);
+ 	}
  
- 		/*
- 		 * We keep the reference to the task struct even if
 -- 
 1.8.3.2
 
