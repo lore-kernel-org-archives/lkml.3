@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab3LFNiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:38:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44301 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757983Ab3LFNC7 (ORCPT
+	id S1758547Ab3LFNiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:38:17 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:59657 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758530Ab3LFNiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:59 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Luosong <android@generaltouch.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 153/272] HID: multitouch: Fix GeneralTouch products and add more PIDs
-Date: Fri,  6 Dec 2013 12:57:22 +0000
-Message-Id: <1386334761-25517-154-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 6 Dec 2013 08:38:14 -0500
+Date: Fri, 6 Dec 2013 14:38:27 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>
+Subject: Re: [PATCH 1/3] arm64: add EFI stub
+Message-ID: <20131206133827.GB24997@rocoto.smurfnet.nu>
+References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
+ <1385762712-17043-2-git-send-email-msalter@redhat.com>
+ <20131205141853.GA974@darko.cambridge.arm.com>
+ <1386254603.1861.120.camel@deneb.redhat.com>
+ <20131205152806.GC974@darko.cambridge.arm.com>
+ <20131206122511.301D6C40757@trevor.secretlab.ca>
+ <1386336870.1861.155.camel@deneb.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386336870.1861.155.camel@deneb.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Dec 06, 2013 at 08:34:30AM -0500, Mark Salter wrote:
+> > Or just disable runtime services on the switch to big ending. Big endian
+> > should not disable the stub (but getting it to work could be a follow-up
+> > patch)
+> > 
+> The other problem with BE is that the PE/COFF masquerading is built into
+> head.S so the same Image can be used for EFI and non-EFI. I don't see
+> a BE opcode which we could us to provide the magic "MZ" at the start
+> of a BE kernel Image.
 
-------------------
+That's actually not an issue.
+Instructions are always LE - endinaness affects only data.
 
-From: Luosong <android@generaltouch.com>
-
-commit 7b2262920db2b98fe2cd32cde52141f02fd9eecf upstream.
-
-GeneralTouch products should use the quirk SLOT_IS_CONTACTID
-instead of SLOT_IS_CONTACTNUMBER.
-
-Adding PIDs 0101,e100,0102,0106,010a from the new products.
-
-Tested on new and older products by GeneralTouch engineers.
-
-Signed-off-by: Luosong <android@generaltouch.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hid/hid-ids.h        |  5 +++++
- drivers/hid/hid-multitouch.c | 19 +++++++++++++++++--
- 2 files changed, 22 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index e2808f5..6dd4f03 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -332,6 +332,11 @@
- #define USB_VENDOR_ID_GENERAL_TOUCH	0x0dfc
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS 0x0003
- #define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS 0x0100
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101 0x0101
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102 0x0102
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106 0x0106
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A 0x010a
-+#define USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100 0xe100
- 
- #define USB_VENDOR_ID_GLAB		0x06c2
- #define USB_DEVICE_ID_4_PHIDGETSERVO_30	0x0038
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 2d3677c..94a903c 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -244,12 +244,12 @@ static struct mt_class mt_classes[] = {
- 	{ .name	= MT_CLS_GENERALTOUCH_TWOFINGERS,
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
- 			MT_QUIRK_VALID_IS_INRANGE |
--			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
-+			MT_QUIRK_SLOT_IS_CONTACTID,
- 		.maxcontacts = 2
- 	},
- 	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
- 		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
--			MT_QUIRK_SLOT_IS_CONTACTNUMBER
-+			MT_QUIRK_SLOT_IS_CONTACTID
- 	},
- 
- 	{ .name = MT_CLS_FLATFROG,
-@@ -1193,6 +1193,21 @@ static const struct hid_device_id mt_devices[] = {
- 	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
- 		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
- 			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PWT_TENFINGERS) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_TWOFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0101) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0102) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_0106) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_010A) },
-+	{ .driver_data = MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
-+		MT_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
-+			USB_DEVICE_ID_GENERAL_TOUCH_WIN8_PIT_E100) },
- 
- 	/* Gametel game controller */
- 	{ .driver_data = MT_CLS_NSMU,
--- 
-1.8.3.2
-
+/
+    Leif
