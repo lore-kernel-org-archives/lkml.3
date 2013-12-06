@@ -1,51 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab3LFG3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 01:29:21 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:60691 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3LFG3S (ORCPT
+	id S1752881Ab3LFGap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 01:30:45 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8275 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3LFGal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 01:29:18 -0500
+	Fri, 6 Dec 2013 01:30:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 05 Dec 2013 22:23:57 -0800
+Message-ID: <52A16E65.70908@nvidia.com>
+Date: Fri, 6 Dec 2013 11:57:49 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1992931.Zv6xBcN8V4@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
-	<33026900.FbCAopDPFz@vostro.rjw.lan>
-	<CAErSpo6edmz5nkSYogbYk1FFYsCCwNV_-rir2jGP2JBnvOx+iw@mail.gmail.com>
-	<1992931.Zv6xBcN8V4@vostro.rjw.lan>
-Date: Thu, 5 Dec 2013 22:29:17 -0800
-X-Google-Sender-Auth: 9CwQeh9hgKjdX9UK02mQzi_7UMY
-Message-ID: <CAE9FiQWnvZwfJ+qoazMQP11bh_VuFDctGf0zcBhEfADRWH_ocg@mail.gmail.com>
-Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Thierry Reding <treding@nvidia.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Myron Stowe <myron.stowe@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ashwini Ghuge <aghuge@nvidia.com>
+Subject: Re: [PATCH 4/4] pinctrl: tegra: add pinmux controller driver for
+ Tegra124
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-5-git-send-email-ldewangan@nvidia.com> <52A10C7B.8070406@wwwdotorg.org>
+In-Reply-To: <52A10C7B.8070406@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 5:21 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+On Friday 06 December 2013 05:00 AM, Stephen Warren wrote:
+> On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
+>> From: Ashwini Ghuge <aghuge@nvidia.com>
 >>
->> The use-after-free problems *sound* like a reference counting issue.
->> Yinghai's patch [1] should fix some of this; how much is left after
->> that?
+>> This adds a driver for the Tegra124 pinmux, and required
+>> parameterization data for Tegra124.
 >>
->> [1] http://lkml.kernel.org/r/1385851238-21085-4-git-send-email-yinghai@kernel.org
+>> The driver uses the common Tegra pincontrol driver utility
+>> functions to implement the majority of the driver.
+>>
+>> This driver is not compatible with the earlier NVIDIA's SoCs,
+>> hence add new compatibile as "nvidia,tegra124-pinmux".
+>>
+>> Originally written by Ashwini Gguhe.
+>> ldewangan:
+>>          - cleanup the patches,
+>>          - Fix address issue.
+> IIRC, Thierry mentioned he had some fixes in his local branch for this
+> driver. Thierry, can you please confirm/deny this?
 >
-> Hmm, no.  Do you mean https://patchwork.kernel.org/patch/3261171/ ?
+> I made the following comment on the version Ashwini posted, which hasn't
+> been addressed yet:
+>
+> A day or two ago during upstream review:
 
-should be
+Yes, we have some missing entry and I responded into other mail thread. 
+I will post the diff here to complete.
 
-https://patchwork.kernel.org/patch/3261001/
-[v3,03/12] PCI: Move resources and bus_list releasing to pci_release_dev
 
-move down list_del(&pci_dev->bus_list).
+>>> +static const struct tegra_function  tegra124_functions[] = {
+>> ...
+>>> +	FUNCTION(i2c1),
+>>> +	FUNCTION(i2c2),
+>>> +	FUNCTION(i2c3),
+>>> +	FUNCTION(i2c4),
+>>> +	FUNCTION(i2cpwr),
+>> Is that complete? Tegra124 apparently has 6 I2C controllers. Are the
+>> pins for the new sixth controller (0x7000d100) not affected by the pinmux?
+> That said, if we find things are missing, I suppose we can add them
+> later without breaking existing ABI. Breakage would only happen if we
+> had to change/remove something.
+>
+> During downstream review quite a while ago I also said:
 
-Yinghai
+I2C6 pinmux is not in this controller, it is dpaux controller and we 
+have not supported this. This require little bit different handling. I 
+have already downstream bug for support this. Will add you in loop so 
+that single fix can work for mainline and downstream.
+
+Other than I2C6, some other mux are missing.
+
+
+>>>> +static const struct pinctrl_pin_desc  tegra124_pins[] = {
+>>> There are two spaces before "tegra124_pins[]".
+>>>
+>>>> +static const char * const gmi_groups[] = {
+>>>> +	"uart2_cts_n_pj5",
+>>>> +	"uart2_rts_n_pj6",
+>>>> +	"uart3_txd_pw6",
+>>>> +	"uart3_rxd_pw7",
+>>>> +	"uart3_cts_n_pa1",
+>>>> +	"uart3_rts_n_pc0",
+>>>> +
+>>>> +	"pu0",
+>>> It'd be best not to have blank lines in the middle of arrays. The same comment exists elsewhere in the
+>>> file, so make sure you search the whole file.
+> Nits:
+>
+> - There are some cases of multiple blank lines back-to-back.
+> - There's a blank line at the end of the file.
+>
+> Aside from those minor issues, patches 1/4 and 4/4,
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+>
+> (BTW, those 2 patches would go through the pinctrl tree, and patches 2/4
+> and 3/4 would go through the Tegra tree. You generally shouldn't posted
+> patches that will be applied to different trees in the same series,
+> since there aren't dependencies).
+Fine.
+Should I sent the diff or full change? I think full change as this need 
+to go on pincontrol subsystem, not in Tegra.
+
+Thanks,
+Laxman
+
+
