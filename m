@@ -1,62 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab3LFMVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 07:21:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46451 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757612Ab3LFMV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:21:29 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>
-Subject: [PATCH 3/3] phy: kconfig: add depends on "USB_PHY" to OMAP_USB2 and TWL4030_USB
-Date: Fri, 6 Dec 2013 17:51:20 +0530
-Message-ID: <1386332480-31671-4-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1386332480-31671-1-git-send-email-kishon@ti.com>
-References: <1386332480-31671-1-git-send-email-kishon@ti.com>
+	id S1161050Ab3LFMVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:21:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43325 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757664Ab3LFMVr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 07:21:47 -0500
+Date: Fri, 6 Dec 2013 12:21:41 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
+Cc: gregkh@linuxfoundation.org, stable@vger.kernel.org, cjb@laptop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.4] mmc: block: fix a bug of error handling in MMC driver
+Message-ID: <20131206122141.GB4158@hercules>
+References: <1386262023-30954-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386262023-30954-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes
-warning: (OMAP_USB2 && TWL4030_USB) selects USB_PHY which has unmet
-direct dependencies (USB_SUPPORT)
-that shows up while disabling USB_SUPPORT from menuconfig.
+On Fri, Dec 06, 2013 at 01:47:03AM +0900, Yoshitake Kobayashi wrote:
+> From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+> 
+> commit c8760069627ad3b0dbbea170f0c4c58b16e18d3d upstream.
+> 
+> Current MMC driver doesn't handle generic error (bit19 of device
+> status) in write sequence. As a result, write data gets lost when
+> generic error occurs. For example, a generic error when updating a
+> filesystem management information causes a loss of write data and
+> corrupts the filesystem. In the worst case, the system will never
+> boot.
+> 
+> This patch includes the following functionality:
+>   1. To enable error checking for the response of CMD12 and CMD13
+>      in write command sequence
+>   2. To retry write sequence when a generic error occurs
+> 
+> [Backported to 3.4-stable]
 
-Reported-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- drivers/phy/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thank you, I am queuing this backport to the 3.5 kernel as well.
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index a344f3d..330ef2d 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -24,8 +24,8 @@ config PHY_EXYNOS_MIPI_VIDEO
- config OMAP_USB2
- 	tristate "OMAP USB2 PHY Driver"
- 	depends on ARCH_OMAP2PLUS
-+	depends on USB_PHY
- 	select GENERIC_PHY
--	select USB_PHY
- 	select OMAP_CONTROL_USB
- 	help
- 	  Enable this to support the transceiver that is part of SOC. This
-@@ -36,8 +36,8 @@ config OMAP_USB2
- config TWL4030_USB
- 	tristate "TWL4030 USB Transceiver Driver"
- 	depends on TWL4030_CORE && REGULATOR_TWL4030 && USB_MUSB_OMAP2PLUS
-+	depends on USB_PHY
- 	select GENERIC_PHY
--	select USB_PHY
- 	help
- 	  Enable this to support the USB OTG transceiver on TWL4030
- 	  family chips (including the TWL5030 and TPS659x0 devices).
--- 
-1.7.10.4
+Cheers,
+--
+Luis
 
+
+> 
+> Signed-off-by: KOBAYASHI Yoshitake
+> <yoshitake.kobayashi@toshiba.co.jp> Signed-off-by: Chris Ball
+> <cjb@laptop.org> --- drivers/mmc/card/block.c | 47
+> +++++++++++++++++++++++++++++++++++++++++++-- 1 files changed, 44
+> insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 833ff16..91042a2 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -701,7 +701,7 @@ static int mmc_blk_cmd_error(struct request *req, const char *name, int error,
+>   * Otherwise we don't understand what happened, so abort.
+>   */
+>  static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+> -	struct mmc_blk_request *brq, int *ecc_err)
+> +	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
+>  {
+>  	bool prev_cmd_status_valid = true;
+>  	u32 status, stop_status = 0;
+> @@ -739,6 +739,16 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+>  	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
+>  		*ecc_err = 1;
+>  
+> +	/* Flag General errors */
+> +	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
+> +		if ((status & R1_ERROR) ||
+> +			(brq->stop.resp[0] & R1_ERROR)) {
+> +			pr_err("%s: %s: general error sending stop or status command, stop cmd response %#x, card status %#x\n",
+> +			       req->rq_disk->disk_name, __func__,
+> +			       brq->stop.resp[0], status);
+> +			*gen_err = 1;
+> +		}
+> +
+>  	/*
+>  	 * Check the current card state.  If it is in some data transfer
+>  	 * mode, tell it to stop (and hopefully transition back to TRAN.)
+> @@ -758,6 +768,13 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+>  			return ERR_ABORT;
+>  		if (stop_status & R1_CARD_ECC_FAILED)
+>  			*ecc_err = 1;
+> +		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
+> +			if (stop_status & R1_ERROR) {
+> +				pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
+> +				       req->rq_disk->disk_name, __func__,
+> +				       stop_status);
+> +				*gen_err = 1;
+> +			}
+>  	}
+>  
+>  	/* Check for set block count errors */
+> @@ -1007,7 +1024,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
+>  						    mmc_active);
+>  	struct mmc_blk_request *brq = &mq_mrq->brq;
+>  	struct request *req = mq_mrq->req;
+> -	int ecc_err = 0;
+> +	int ecc_err = 0, gen_err = 0;
+>  
+>  	/*
+>  	 * sbc.error indicates a problem with the set block count
+> @@ -1021,7 +1038,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
+>  	 */
+>  	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
+>  	    brq->data.error) {
+> -		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
+> +		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
+>  		case ERR_RETRY:
+>  			return MMC_BLK_RETRY;
+>  		case ERR_ABORT:
+> @@ -1051,6 +1068,15 @@ static int mmc_blk_err_check(struct mmc_card *card,
+>  	 */
+>  	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
+>  		u32 status;
+> +
+> +		/* Check stop command response */
+> +		if (brq->stop.resp[0] & R1_ERROR) {
+> +			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
+> +			       req->rq_disk->disk_name, __func__,
+> +			       brq->stop.resp[0]);
+> +			gen_err = 1;
+> +		}
+> +
+>  		do {
+>  			int err = get_card_status(card, &status, 5);
+>  			if (err) {
+> @@ -1058,6 +1084,14 @@ static int mmc_blk_err_check(struct mmc_card *card,
+>  				       req->rq_disk->disk_name, err);
+>  				return MMC_BLK_CMD_ERR;
+>  			}
+> +
+> +			if (status & R1_ERROR) {
+> +				pr_err("%s: %s: general error sending status command, card status %#x\n",
+> +				       req->rq_disk->disk_name, __func__,
+> +				       status);
+> +				gen_err = 1;
+> +			}
+> +
+>  			/*
+>  			 * Some cards mishandle the status bits,
+>  			 * so make sure to check both the busy
+> @@ -1067,6 +1101,13 @@ static int mmc_blk_err_check(struct mmc_card *card,
+>  			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
+>  	}
+>  
+> +	/* if general error occurs, retry the write operation. */
+> +	if (gen_err) {
+> +		pr_warning("%s: retrying write for general error\n",
+> +				req->rq_disk->disk_name);
+> +		return MMC_BLK_RETRY;
+> +	}
+> +
+>  	if (brq->data.error) {
+>  		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
+>  		       req->rq_disk->disk_name, brq->data.error,
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
