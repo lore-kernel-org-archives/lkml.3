@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634Ab3LFXgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:36:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48776 "EHLO
+	id S1759721Ab3LFXgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:36:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48771 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3LFXSg (ORCPT
+	with ESMTP id S1758198Ab3LFXSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:18:36 -0500
+	Fri, 6 Dec 2013 18:18:33 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Oskar Schirmer <oskar@scara.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 129/152] rt2x00: fix a crash bug in the HT descriptor handling fix
-Date: Fri,  6 Dec 2013 15:10:53 -0800
-Message-Id: <1386371476-2477-130-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 121/152] ASoC: fsl: imx-pcm-fiq: omit fiq counter to avoid harm in unbalanced situations
+Date: Fri,  6 Dec 2013 15:10:45 -0800
+Message-Id: <1386371476-2477-122-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,45 +27,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Oskar Schirmer <oskar@scara.com>
 
-commit b4089d6d8e71a7293e2192025dfa507a04f661c4 upstream.
+commit fc7dc61d9a87011aaf8a6eb3144ebf9552adf5d2 upstream.
 
-Commit "rt2x00: fix HT TX descriptor settings regression"
-assumes that the control parameter to rt2x00mac_tx is always non-NULL.
-There is an internal call in rt2x00lib_bc_buffer_iter where NULL is
-passed. Fix the resulting crash by adding an initialized dummy on-stack
-ieee80211_tx_control struct.
+Unbalanced calls to snd_imx_pcm_trigger() may result in endless
+FIQ activity and thus provoke eternal sound. While on the first glance,
+the switch statement looks pretty symmetric, the SUSPEND/RESUME
+pair is not: the suspend case comes along snd_pcm_suspend_all(),
+which for fsl/imx-pcm-fiq is called only at snd_soc_suspend(),
+but the resume case originates straight from the SNDRV_PCM_IOCTL_RESUME.
+This way userland may provoke an unbalanced resume, which might cause
+the fiq_enable counter to increase and never return to zero again,
+so eventually imx_pcm_fiq is never disabled.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Simply removing the fiq_enable will solve the problem, as long as
+one never goes play and capture game simultaneously, but beware
+trying both at once, the early TRIGGER_STOP will cut off the other
+activity prematurely. So now playing and capturing is scrutinized
+separately, instead of by counting.
+
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/soc/fsl/imx-pcm-fiq.c | 29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index cdbfc30..a1789f5 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -181,6 +181,7 @@ static void rt2x00lib_autowakeup(struct work_struct *work)
- static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
- 				     struct ieee80211_vif *vif)
- {
-+	struct ieee80211_tx_control control = {};
- 	struct rt2x00_dev *rt2x00dev = data;
- 	struct sk_buff *skb;
+diff --git a/sound/soc/fsl/imx-pcm-fiq.c b/sound/soc/fsl/imx-pcm-fiq.c
+index 920f945..6948a6a 100644
+--- a/sound/soc/fsl/imx-pcm-fiq.c
++++ b/sound/soc/fsl/imx-pcm-fiq.c
+@@ -42,7 +42,8 @@ struct imx_pcm_runtime_data {
+ 	struct hrtimer hrt;
+ 	int poll_time_ns;
+ 	struct snd_pcm_substream *substream;
+-	atomic_t running;
++	atomic_t playing;
++	atomic_t capturing;
+ };
  
-@@ -195,7 +196,7 @@ static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
- 	 */
- 	skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
- 	while (skb) {
--		rt2x00mac_tx(rt2x00dev->hw, NULL, skb);
-+		rt2x00mac_tx(rt2x00dev->hw, &control, skb);
- 		skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
- 	}
+ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
+@@ -54,7 +55,7 @@ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
+ 	struct pt_regs regs;
+ 	unsigned long delta;
+ 
+-	if (!atomic_read(&iprtd->running))
++	if (!atomic_read(&iprtd->playing) && !atomic_read(&iprtd->capturing))
+ 		return HRTIMER_NORESTART;
+ 
+ 	get_fiq_regs(&regs);
+@@ -122,7 +123,6 @@ static int snd_imx_pcm_prepare(struct snd_pcm_substream *substream)
+ 	return 0;
  }
+ 
+-static int fiq_enable;
+ static int imx_pcm_fiq;
+ 
+ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+@@ -134,23 +134,27 @@ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+-		atomic_set(&iprtd->running, 1);
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			atomic_set(&iprtd->playing, 1);
++		else
++			atomic_set(&iprtd->capturing, 1);
+ 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
+ 		      HRTIMER_MODE_REL);
+-		if (++fiq_enable == 1)
+-			enable_fiq(imx_pcm_fiq);
+-
++		enable_fiq(imx_pcm_fiq);
+ 		break;
+ 
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		atomic_set(&iprtd->running, 0);
+-
+-		if (--fiq_enable == 0)
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			atomic_set(&iprtd->playing, 0);
++		else
++			atomic_set(&iprtd->capturing, 0);
++		if (!atomic_read(&iprtd->playing) &&
++				!atomic_read(&iprtd->capturing))
+ 			disable_fiq(imx_pcm_fiq);
+-
+ 		break;
++
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -198,7 +202,8 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
+ 
+ 	iprtd->substream = substream;
+ 
+-	atomic_set(&iprtd->running, 0);
++	atomic_set(&iprtd->playing, 0);
++	atomic_set(&iprtd->capturing, 0);
+ 	hrtimer_init(&iprtd->hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	iprtd->hrt.function = snd_hrtimer_callback;
+ 
 -- 
 1.8.3.2
 
