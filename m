@@ -1,43 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3LFBxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 20:53:52 -0500
-Received: from p3plcorpmail009.prod.phx3.secureserver.net ([72.167.238.129]:37426
-	"HELO p3plcorpmail009.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751977Ab3LFBxs convert rfc822-to-8bit (ORCPT
+	id S1753589Ab3LFCAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 21:00:04 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63422 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab3LFCAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 20:53:48 -0500
-X-MID: ec77a83c-5fa0-4703-8a11-69e6886023fd
-X-10pl8ID: 397
-Thread-Topic: Your Email Abuse Report
+	Thu, 5 Dec 2013 21:00:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/3] arm: Add [U]EFI runtime services support
+Date: Fri, 6 Dec 2013 02:59:48 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        mark.rutland@arm.com, linaro-uefi@linaro.org, matt.fleming@intel.com,
+        patches@linaro.org, roy.franz@linaro.org, msalter@redhat.com,
+        grant.likely@linaro.org
+References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org> <1385656883-4420-3-git-send-email-leif.lindholm@linaro.org>
+In-Reply-To: <1385656883-4420-3-git-send-email-leif.lindholm@linaro.org>
 MIME-Version: 1.0
-From: "GoDaddy" <abuse@domainsbyproxy.com>
-To: linux-kernel@vger.kernel.org
-Reply-To: abuse@domainsbyproxy.com
-Date: 5 Dec 2013 18:47:08 -0700
-Subject: Your Email Abuse Report
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-ID: <GDMAILER02T1ePyu91w00003077@gdmailer02.dc1.corp.gd>
-X-OriginalArrivalTime: 06 Dec 2013 01:47:08.0367 (UTC) FILETIME=[12D035F0:01CEF225]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312060259.48259.arnd@arndb.de>
+X-Provags-ID: V02:K0:YRYn61J5FSGKucG7li5piIR3zhuV2779QslzZkpCLds
+ k9zU+lLzSiFb9xPyO3IyXqfDLruFWM9ecOKZop4vzbhM4ZqOuC
+ UwRbtXDF8pK0e4RdZ/u1T3uNmdT4/i5oGNTM7OBM0HqxQ9Ye9+
+ zOgSDKMpDLAv2FPH2Rfk+CYdAiedqToegz5XgTtn+vKwtry0sb
+ zcr6Ff6yK0fP7WL3+BsxSkwbriPsQxA4V8BOs8YVZVeBywcIyH
+ wwzN5Hs64bjhUYCvWlJNoDAT/u7uHcVDchEfHWcJcKXztIrJIf
+ oWxT3BQUV4mRnbMXgn2A6Up9+BHExhw0YRIj9X7P2fR1t9iCWk
+ ReuFz2k3R3xM0m13/ebs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We received notification of your spam complaint from Domains By Proxy(R) who provides privacy service for BUYERLEADS.INFO. As the registrar for this domain name, GoDaddy will investigate your complaint.
+On Thursday 28 November 2013, Leif Lindholm wrote:
+> @@ -898,6 +900,10 @@ void __init setup_arch(char **cmdline_p)
+>  	sanity_check_meminfo();
+>  	arm_memblock_init(&meminfo, mdesc);
+>  
+> +#ifdef CONFIG_EFI
+> +	uefi_memblock_arm_reserve_range();
+> +#endif
+> +
 
-If our investigation shows the domain name to be spamming or violating our Terms of Service, we will take actions to redirect, suspend, or cancel the services involved. This will include the Private Registration Services as well.
+Better use 
 
-Please note that our abilities to immediately stop the problem are greatly influenced by the level of services we provide. As a result, we also recommend you contact the registrar, hosting provider, and/or email service provider if you have not already done so.
+	if (IS_ENABLED(CONFIG_EFI))
 
-For a more detailed explanation of the applicable Anti-Spam policies, including the actions we take to stop spam and network abuse, please visit https://www.domainsbyproxy.com/policy/ShowDoc.aspx?pageid=spam_dbp&isFilter=true and https://www.godaddy.com/agreements/showdoc.aspx?prog_id=GoDaddy&pageid=SPAM_EULA&isc=gdbb397
- 
-Again, thank you for helping bring this to our attention. Please be aware that this may be the only response you receive to your complaint.
+here for readability and better build-time checking of the interface when
+CONFIG_EFI is disabled.
 
+> +/*
+> + * Returns 1 if 'facility' is enabled, 0 otherwise.
+> + */
+> +int efi_enabled(int facility)
+> +{
+> +	return test_bit(facility, &arm_uefi_facility) != 0;
+> +}
+> +EXPORT_SYMBOL(efi_enabled);
 
-Regards,
-GoDaddy.com(R) Network Abuse Department
+I'd use EXPORT_SYMBOL_GPL() unless there is a documented reason why
+a symbol should be available to GPL-incompatible modules.
 
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Copyright (C) 1999-2013 GoDaddy.com, LLC. All rights reserved.
+> +static __init int is_discardable_region(efi_memory_desc_t *md)
+> +{
+> +#ifdef KEEP_ALL_REGIONS
+> +	return 0;
+> +#endif
+
+IS_ENABLED() again.
+
+> +	if (md->attribute & EFI_MEMORY_RUNTIME)
+> +		return 0;
+> +
+> +	switch (md->type) {
+> +#ifdef KEEP_BOOT_SERVICES_REGIONS
+> +	case EFI_BOOT_SERVICES_CODE:
+> +	case EFI_BOOT_SERVICES_DATA:
+> +#endif
+
+and I think it can be used here too:
+
+	switch (md->type) {
+	case EFI_BOOT_SERVICES_CODE:
+	case EFI_BOOT_SERVICES_DATA:
+		if (IS_ENABLED(KEEP_BOOT_SERVICES_REGIONS))
+			return 1;
+		/* fallthrough */
+	case EFI_ACPI_RECLAIM_MEMORY:
+
+> +	memmap.phys_map = early_memremap((phys_addr_t)(u32) uefi_boot_mmap,
+> +					 uefi_boot_mmap_size);
+> +	if (!memmap.phys_map)
+> +		return 1;
+> +
+> +	p = memmap.phys_map;
+> +	e = (void *)((u32)p + uefi_boot_mmap_size);
+
+You are doing a lot of type casts here, which is normally an indication
+that you have the types wrong in some way. I can't spot a mistake
+here, but maybe you can give it some more thought and see if it can be
+changed.
+
+> +static int __init remap_region(efi_memory_desc_t *md, efi_memory_desc_t *entry)
+> +{
+> +	u64 va;
+> +	u64 paddr;
+> +	u64 size;
+> +
+> +	*entry = *md;
+> +	paddr = entry->phys_addr;
+> +	size = entry->num_pages << EFI_PAGE_SHIFT;
+> +
+> +	/*
+> +	 * Map everything writeback-capable as coherent memory,
+> +	 * anything else as device.
+> +	 */
+> +	if (md->attribute & EFI_MEMORY_WB)
+> +		va = (u64)((u32)uefi_remap(paddr, size) & 0xffffffffUL);
+> +	else
+> +		va = (u64)((u32)uefi_ioremap(paddr, size) & 0xffffffffUL);
+
+Same here. Why is 'va' a u64?
+
+	Arnd
