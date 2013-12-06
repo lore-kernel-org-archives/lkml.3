@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760015Ab3LFWoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:44:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60383 "EHLO
+	id S1161616Ab3LFWot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:44:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60372 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758565Ab3LFVwS (ORCPT
+	with ESMTP id S1758198Ab3LFVwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:18 -0500
+	Fri, 6 Dec 2013 16:52:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Veaceslav Falico <vfalico@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 04/83] bonding: RCUify bond_set_rx_mode()
-Date: Fri,  6 Dec 2013 13:50:54 -0800
-Message-Id: <20131206214640.475530836@linuxfoundation.org>
+Subject: [PATCH 3.12 02/83] net: mv643xx_eth: potential NULL dereference in probe()
+Date: Fri,  6 Dec 2013 13:50:52 -0800
+Message-Id: <20131206214640.286784135@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -29,65 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit b32418705107265dfca5edfe2b547643e53a732e ]
+upstream commit 6115c11fe1a5a636ac99fc823b00df4ff3c0674e
 
-Currently we rely on rtnl locking in bond_set_rx_mode(), however it's not
-always the case:
+We assume that "mp->phy" can be NULL a couple lines before the
+dereference.
 
-RTNL: assertion failed at drivers/net/bonding/bond_main.c (3391)
-...
- [<ffffffff81651ca5>] dump_stack+0x54/0x74
- [<ffffffffa029e717>] bond_set_rx_mode+0xc7/0xd0 [bonding]
- [<ffffffff81553af7>] __dev_set_rx_mode+0x57/0xa0
- [<ffffffff81557ff8>] __dev_mc_add+0x58/0x70
- [<ffffffff81558020>] dev_mc_add+0x10/0x20
- [<ffffffff8161e26e>] igmp6_group_added+0x18e/0x1d0
- [<ffffffff81186f76>] ? kmem_cache_alloc_trace+0x236/0x260
- [<ffffffff8161f80f>] ipv6_dev_mc_inc+0x29f/0x320
- [<ffffffff8161f9e7>] ipv6_sock_mc_join+0x157/0x260
-...
-
-Fix this by using RCU primitives.
-
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Tested-by: Joe Lawrence <joe.lawrence@stratus.com>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Fixes: 1cce16d37d0f ('net: mv643xx_eth: Add missing phy_addr_set in DT mode')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/bonding/bond_main.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3395,20 +3395,20 @@ static void bond_set_rx_mode(struct net_
- 	struct bonding *bond = netdev_priv(bond_dev);
- 	struct slave *slave;
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2890,7 +2890,8 @@ static int mv643xx_eth_probe(struct plat
+ 					 PHY_INTERFACE_MODE_GMII);
+ 		if (!mp->phy)
+ 			err = -ENODEV;
+-		phy_addr_set(mp, mp->phy->addr);
++		else
++			phy_addr_set(mp, mp->phy->addr);
+ 	} else if (pd->phy_addr != MV643XX_ETH_PHY_NONE) {
+ 		mp->phy = phy_scan(mp, pd->phy_addr);
  
--	ASSERT_RTNL();
--
-+	rcu_read_lock();
- 	if (USES_PRIMARY(bond->params.mode)) {
--		slave = rtnl_dereference(bond->curr_active_slave);
-+		slave = rcu_dereference(bond->curr_active_slave);
- 		if (slave) {
- 			dev_uc_sync(slave->dev, bond_dev);
- 			dev_mc_sync(slave->dev, bond_dev);
- 		}
- 	} else {
--		bond_for_each_slave(bond, slave) {
-+		bond_for_each_slave_rcu(bond, slave) {
- 			dev_uc_sync_multiple(slave->dev, bond_dev);
- 			dev_mc_sync_multiple(slave->dev, bond_dev);
- 		}
- 	}
-+	rcu_read_unlock();
- }
- 
- static int bond_neigh_init(struct neighbour *n)
 
 
