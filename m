@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566Ab3LFVyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:54:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32862 "EHLO
+	id S1759549Ab3LFVyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:54:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759527Ab3LFVyH (ORCPT
+	with ESMTP id S1759488Ab3LFVyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:07 -0500
+	Fri, 6 Dec 2013 16:54:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas HICHER <nhicher@avencall.com>,
-        Andreas Henriksson <andreas@fatal.se>,
+        Toshiaki Makita <toshiaki.makita1@gmail.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 01/32] net: Fix "ip rule delete table 256"
-Date: Fri,  6 Dec 2013 13:52:11 -0800
-Message-Id: <20131206214956.973999642@linuxfoundation.org>
+Subject: [PATCH 3.4 18/32] bridge: flush brs address entry in fdb when remove the bridge dev
+Date: Fri,  6 Dec 2013 13:52:28 -0800
+Message-Id: <20131206214958.499579903@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -28,41 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas@fatal.se>
+From: Ding Tianhong <dingtianhong@huawei.com>
 
-[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
+[ Upstream commit f873042093c0b418d2351fe142222b625c740149 ]
 
-When trying to delete a table >= 256 using iproute2 the local table
-will be deleted.
-The table id is specified as a netlink attribute when it needs more then
-8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
-Preconditions to matching the table id in the rule delete code
-doesn't seem to take the "table id in netlink attribute" into condition
-so the frh_get_table helper function never gets to do its job when
-matching against current rule.
-Use the helper function twice instead of peaking at the table value directly.
+When the following commands are executed:
 
-Originally reported at: http://bugs.debian.org/724783
+brctl addbr br0
+ifconfig br0 hw ether <addr>
+rmmod bridge
 
-Reported-by: Nicolas HICHER <nhicher@avencall.com>
-Signed-off-by: Andreas Henriksson <andreas@fatal.se>
+The calltrace will occur:
+
+[  563.312114] device eth1 left promiscuous mode
+[  563.312188] br0: port 1(eth1) entered disabled state
+[  563.468190] kmem_cache_destroy bridge_fdb_cache: Slab cache still has objects
+[  563.468197] CPU: 6 PID: 6982 Comm: rmmod Tainted: G           O 3.12.0-0.7-default+ #9
+[  563.468199] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[  563.468200]  0000000000000880 ffff88010f111e98 ffffffff814d1c92 ffff88010f111eb8
+[  563.468204]  ffffffff81148efd ffff88010f111eb8 0000000000000000 ffff88010f111ec8
+[  563.468206]  ffffffffa062a270 ffff88010f111ed8 ffffffffa063ac76 ffff88010f111f78
+[  563.468209] Call Trace:
+[  563.468218]  [<ffffffff814d1c92>] dump_stack+0x6a/0x78
+[  563.468234]  [<ffffffff81148efd>] kmem_cache_destroy+0xfd/0x100
+[  563.468242]  [<ffffffffa062a270>] br_fdb_fini+0x10/0x20 [bridge]
+[  563.468247]  [<ffffffffa063ac76>] br_deinit+0x4e/0x50 [bridge]
+[  563.468254]  [<ffffffff810c7dc9>] SyS_delete_module+0x199/0x2b0
+[  563.468259]  [<ffffffff814e0922>] system_call_fastpath+0x16/0x1b
+[  570.377958] Bridge firewalling registered
+
+--------------------------- cut here -------------------------------
+
+The reason is that when the bridge dev's address is changed, the
+br_fdb_change_mac_address() will add new address in fdb, but when
+the bridge was removed, the address entry in the fdb did not free,
+the bridge_fdb_cache still has objects when destroy the cache, Fix
+this by flushing the bridge address entry when removing the bridge.
+
+v2: according to the Toshiaki Makita and Vlad's suggestion, I only
+    delete the vlan0 entry, it still have a leak here if the vlan id
+    is other number, so I need to call fdb_delete_by_port(br, NULL, 1)
+    to flush all entries whose dst is NULL for the bridge.
+
+Suggested-by: Toshiaki Makita <toshiaki.makita1@gmail.com>
+Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/fib_rules.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/bridge/br_if.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/core/fib_rules.c
-+++ b/net/core/fib_rules.c
-@@ -443,7 +443,8 @@ static int fib_nl_delrule(struct sk_buff
- 		if (frh->action && (frh->action != rule->action))
- 			continue;
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -170,6 +170,8 @@ void br_dev_delete(struct net_device *de
+ 		del_nbp(p);
+ 	}
  
--		if (frh->table && (frh_get_table(frh, tb) != rule->table))
-+		if (frh_get_table(frh, tb) &&
-+		    (frh_get_table(frh, tb) != rule->table))
- 			continue;
++	br_fdb_delete_by_port(br, NULL, 1);
++
+ 	del_timer_sync(&br->gc_timer);
  
- 		if (tb[FRA_PRIORITY] &&
+ 	br_sysfs_delbr(br->dev);
 
 
