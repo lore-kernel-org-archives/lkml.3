@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab3LFAPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:15:04 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:54166 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3LFAO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:14:57 -0500
-Date: Fri, 6 Dec 2013 01:14:54 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-Message-ID: <20131206001454.GB21717@two.firstfloor.org>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
- <87fvq9cwlk.fsf@tassilo.jf.intel.com>
- <CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
- <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	id S1753519Ab3LFAQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:16:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63163 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752003Ab3LFAQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 19:16:39 -0500
+Date: Thu, 5 Dec 2013 22:15:54 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+Message-ID: <20131206001554.GA28698@amt.cnet>
+References: <20131122191429.GA13308@amt.cnet>
+ <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com>
+ <5292EE2F.5090305@linux.vnet.ibm.com>
+ <20131125181254.GB21858@amt.cnet>
+ <529413C1.60302@linux.vnet.ibm.com>
+ <20131126193148.GA18071@amt.cnet>
+ <5297049E.3020800@linux.vnet.ibm.com>
+ <529D83F8.7050605@linux.vnet.ibm.com>
+ <20131205135021.GA12996@amt.cnet>
+ <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 1M skb alloc/free 185660 (usecs)
+On Thu, Dec 05, 2013 at 11:30:27PM +0800, Xiao Guangrong wrote:
+> > Is it not the case that simply moving to the slow path once a maximum of
+> > rewalks has been reached enough? (looks a like a good solution).
 > 
-> the difference is bigger now: 484-145 vs 185-145
+> In some cases, the lockless walker will do endless-walking on desc and
+> without rewalk, consider this case:
+> 
+> there are two descs: desc1 and desc2 who is pointed by desc1->next：
+> desc1->next = desc2.
+> 
+> CPU 0                                                                            CPU 1
+> 
+> lockless walk on desc1
+>                                                                  deleting desc1 from the rmap
+> lockless walk on desc2 (desc1->next)
+>                                                                 delete desc2 from the rmap
+>                                                                 add desc1
+>                                                                 add desc2, then desc2->next = desc1
+> 
+> lockless walk on desc1
+>                                                                delete desc2
+>                                                                delete desc1
+>                                                                add desc2
+>                                                                add desc1; the desc1->next = desc2
+> lockless walk on desc2
+> 
+> ……
+> 
+> Then, the walker is endlessly walking on desc1 and desc2 without any rewalk.
 
-Thanks for the data. 
+Ouch, this is the sort of thing that is worrysome. Do you still think
+that having the benefit for shadow is important enough to justify this
+complexity?
 
-This is a obvious improvement, but imho not big enough to be extremely
-compelling (< cost 1-2 cache misses, no orders of magnitude improvements
-that would justify a lot of code)
+Also, another separate possibility is to use the dirty bit (which recent
+Intel processors support). Then there are no faults at all to handle.
 
-One larger problem I have with your patchkit is where exactly it fits
-with the user base.
-
-In my experience there are roughly two groups of trace users:
-kernel hackers and users. The kernel hackers want something
-convenient and fast, but for anything complicated or performance
-critical they can always hack the kernel to include custom 
-instrumentation.
-
-Your code requires a compiler, so from my perspective it 
-wouldn't be a lot easier or faster to use than just changing 
-the code directly and recompile.
-
-The users want something simple too that shields them from
-having to learn all the internals. They don't want to recompile.
-As far as I can tell your code is a bit too low level for that,
-and the requirement for the compiler may also scare them.
-
-Where exactly does it fit?
-
--Andi
 
