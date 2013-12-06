@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760092Ab3LFXZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:25:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49013 "EHLO
+	id S1760077Ab3LFXZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:25:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49017 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162428Ab3LFXUt (ORCPT
+	with ESMTP id S1162447Ab3LFXUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 18:20:49 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gwendal Grignou <gwendal@google.com>, Tejun Heo <tj@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 025/152] libata: Fix display of sata speed
-Date: Fri,  6 Dec 2013 15:09:09 -0800
-Message-Id: <1386371476-2477-26-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 066/152] ALSA: hda - Add support for CX20952
+Date: Fri,  6 Dec 2013 15:09:50 -0800
+Message-Id: <1386371476-2477-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,69 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gwendal Grignou <gwendal@google.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 3e85c3ecbc520751324a191d23bb94873ed01b10 upstream.
+commit 8f42d7698751a45cd9f7134a5da49bc5b6206179 upstream.
 
-6.0 Gbps link speed was not decoded properly:
-speed was reported at 3.0 Gbps only.
+It's a superset of the existing CX2075x codecs, so we can reuse the
+existing parser code.
 
-Tested: On a machine where libata reports 6.0 Gbps in
-        /var/log/messages:
-    ata1: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-
-    Before:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	3.0 Gbps
-    After:
-    	cat /sys/class/ata_link/link1/sata_spd
-    	6.0 Gbps
-
-Signed-off-by: Gwendal Grignou <gwendal@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/libata-transport.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_conexant.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
-index c04d393..08e6728 100644
---- a/drivers/ata/libata-transport.c
-+++ b/drivers/ata/libata-transport.c
-@@ -319,25 +319,25 @@ int ata_tport_add(struct device *parent,
- /*
-  * ATA link attributes
-  */
-+static int noop(int x) { return x; }
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 09fae16..c631e08 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4642,6 +4642,8 @@ static const struct hda_codec_preset snd_hda_preset_conexant[] = {
+ 	  .patch = patch_conexant_auto },
+ 	{ .id = 0x14f15115, .name = "CX20757",
+ 	  .patch = patch_conexant_auto },
++	{ .id = 0x14f151d7, .name = "CX20952",
++	  .patch = patch_conexant_auto },
+ 	{} /* terminator */
+ };
  
--
--#define ata_link_show_linkspeed(field)					\
-+#define ata_link_show_linkspeed(field, format)			        \
- static ssize_t								\
- show_ata_link_##field(struct device *dev,				\
- 		      struct device_attribute *attr, char *buf)		\
- {									\
- 	struct ata_link *link = transport_class_to_link(dev);		\
- 									\
--	return sprintf(buf,"%s\n", sata_spd_string(fls(link->field)));	\
-+	return sprintf(buf, "%s\n", sata_spd_string(format(link->field))); \
- }
+@@ -4668,6 +4670,7 @@ MODULE_ALIAS("snd-hda-codec-id:14f15111");
+ MODULE_ALIAS("snd-hda-codec-id:14f15113");
+ MODULE_ALIAS("snd-hda-codec-id:14f15114");
+ MODULE_ALIAS("snd-hda-codec-id:14f15115");
++MODULE_ALIAS("snd-hda-codec-id:14f151d7");
  
--#define ata_link_linkspeed_attr(field)					\
--	ata_link_show_linkspeed(field)					\
-+#define ata_link_linkspeed_attr(field, format)				\
-+	ata_link_show_linkspeed(field, format)				\
- static DEVICE_ATTR(field, S_IRUGO, show_ata_link_##field, NULL)
- 
--ata_link_linkspeed_attr(hw_sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd_limit);
--ata_link_linkspeed_attr(sata_spd);
-+ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd_limit, fls);
-+ata_link_linkspeed_attr(sata_spd, noop);
- 
- 
- static DECLARE_TRANSPORT_CLASS(ata_link_class,
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Conexant HD-audio codec");
 -- 
 1.8.3.2
 
