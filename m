@@ -1,89 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab3LFNz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:55:27 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49829 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab3LFNzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:55:24 -0500
-Message-ID: <52A1E4C2.6020004@ti.com>
-Date: Fri, 6 Dec 2013 16:52:50 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <52A0AB34.2030703@ti.com>,<20131205165325.GA24062@mtj.dyndns.org> <902E09E6452B0E43903E4F2D568737AB097B26B2@DNCE04.ent.ti.com> <52A0E357.7090008@ti.com>
-In-Reply-To: <52A0E357.7090008@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+	id S1753716Ab3LFNzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:55:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44025 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758006Ab3LFNBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:01:46 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mathias Krause <minipli@googlemail.com>, Pax Team <pageexec@freemail.hu>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 098/272] ipc, msg: fix message length check for negative values
+Date: Fri,  6 Dec 2013 12:56:27 +0000
+Message-Id: <1386334761-25517-99-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 10:34 PM, Santosh Shilimkar wrote:
-> Grygorii,
->
-> On Thursday 05 December 2013 01:48 PM, Strashko, Grygorii wrote:
->> Hi Tejun,
->>
->>> On Thu, Dec 05, 2013 at 06:35:00PM +0200, Grygorii Strashko wrote:
->>>>>> +#define memblock_virt_alloc_align(x, align) \
->>>>>> +  memblock_virt_alloc_try_nid(x, align, BOOTMEM_LOW_LIMIT, \
->>>>>> +                               BOOTMEM_ALLOC_ACCESSIBLE, MAX_NUMNODES)
->>>>>
->>>>> Also, do we really need this align variant separate when the caller
->>>>> can simply specify 0 for the default?
->>>>
->>>> Unfortunately Yes.
->>>> We need it to keep compatibility with bootmem/nobootmem
->>>> which don't handle 0 as default align value.
->>>
->>> Hmm... why wouldn't just interpreting 0 to SMP_CACHE_BYTES in the
->>> memblock_virt*() function work?
->>>
->>
->> Problem is not with memblock_virt*(). The issue will happen in case if
->> memblock or nobootmem are disabled in below code (memblock_virt*() is disabled).
->>
->> +/* Fall back to all the existing bootmem APIs */
->> +#define memblock_virt_alloc(x) \
->> +       __alloc_bootmem(x, SMP_CACHE_BYTES, BOOTMEM_LOW_LIMIT)
->>
->> which will be transformed to
->> +/* Fall back to all the existing bootmem APIs */
->> +#define memblock_virt_alloc(x, align) \
->> +       __alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT)
->>
->> and used as
->>
->> memblock_virt_alloc(size, 0);
->>
->> so, by default bootmem code will use 0 as default alignment and not SMP_CACHE_BYTES
->> and that is wrong.
->>
-> Looks like you didn't understood the suggestion completely.
-> The fall back inline will look like below .....
->
-> static inline memblock_virt_alloc(x, align)
-> {
-> 	if (align == 0)
-> 		align = SMP_CACHE_BYTES
-> 	__alloc_bootmem(x, align, BOOTMEM_LOW_LIMIT);
-> }
->
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-I understand. thanks.
+------------------
 
-Regards,
--grygorii
+From: Mathias Krause <minipli@googlemail.com>
+
+commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
+
+On 64 bit systems the test for negative message sizes is bogus as the
+size, which may be positive when evaluated as a long, will get truncated
+to an int when passed to load_msg().  So a long might very well contain a
+positive value but when truncated to an int it would become negative.
+
+That in combination with a small negative value of msg_ctlmax (which will
+be promoted to an unsigned type for the comparison against msgsz, making
+it a big positive value and therefore make it pass the check) will lead to
+two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
+small buffer as the addition of alen is effectively a subtraction.  2/ The
+copy_from_user() call in load_msg() will first overflow the buffer with
+userland data and then, when the userland access generates an access
+violation, the fixup handler copy_user_handle_tail() will try to fill the
+remainder with zeros -- roughly 4GB.  That almost instantly results in a
+system crash or reset.
+
+  ,-[ Reproducer (needs to be run as root) ]--
+  | #include <sys/stat.h>
+  | #include <sys/msg.h>
+  | #include <unistd.h>
+  | #include <fcntl.h>
+  |
+  | int main(void) {
+  |     long msg = 1;
+  |     int fd;
+  |
+  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
+  |     write(fd, "-1", 2);
+  |     close(fd);
+  |
+  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
+  |
+  |     return 0;
+  | }
+  '---
+
+Fix the issue by preventing msgsz from getting truncated by consistently
+using size_t for the message length.  This way the size checks in
+do_msgsnd() could still be passed with a negative value for msg_ctlmax but
+we would fail on the buffer allocation in that case and error out.
+
+Also change the type of m_ts from int to size_t to avoid similar nastiness
+in other code paths -- it is used in similar constructs, i.e.  signed vs.
+unsigned checks.  It should never become negative under normal
+circumstances, though.
+
+Setting msg_ctlmax to a negative value is an odd configuration and should
+be prevented.  As that might break existing userland, it will be handled
+in a separate commit so it could easily be reverted and reworked without
+reintroducing the above described bug.
+
+Hardening mechanisms for user copy operations would have catched that bug
+early -- e.g.  checking slab object sizes on user copy operations as the
+usercopy feature of the PaX patch does.  Or, for that matter, detect the
+long vs.  int sign change due to truncation, as the size overflow plugin
+of the very same patch does.
+
+[akpm@linux-foundation.org: fix i386 min() warnings]
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Pax Team <pageexec@freemail.hu>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/linux/msg.h |  6 +++---
+ ipc/msgutil.c       | 20 ++++++++++----------
+ ipc/util.h          |  4 ++--
+ 3 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/include/linux/msg.h b/include/linux/msg.h
+index 391af8d..e21f9d4 100644
+--- a/include/linux/msg.h
++++ b/include/linux/msg.h
+@@ -6,9 +6,9 @@
+ 
+ /* one msg_msg structure for each message */
+ struct msg_msg {
+-	struct list_head m_list; 
+-	long  m_type;          
+-	int m_ts;           /* message text size */
++	struct list_head m_list;
++	long m_type;
++	size_t m_ts;		/* message text size */
+ 	struct msg_msgseg* next;
+ 	void *security;
+ 	/* the actual message follows immediately */
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index 491e71f..7e70959 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -41,15 +41,15 @@ struct msg_msgseg {
+ 	/* the next part of the message follows immediately */
+ };
+ 
+-#define DATALEN_MSG	(int)(PAGE_SIZE-sizeof(struct msg_msg))
+-#define DATALEN_SEG	(int)(PAGE_SIZE-sizeof(struct msg_msgseg))
++#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
++#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
+ 
+ 
+-static struct msg_msg *alloc_msg(int len)
++static struct msg_msg *alloc_msg(size_t len)
+ {
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg **pseg;
+-	int alen;
++	size_t alen;
+ 
+ 	alen = min(len, DATALEN_MSG);
+ 	msg = kmalloc(sizeof(*msg) + alen, GFP_KERNEL);
+@@ -80,12 +80,12 @@ out_err:
+ 	return NULL;
+ }
+ 
+-struct msg_msg *load_msg(const void __user *src, int len)
++struct msg_msg *load_msg(const void __user *src, size_t len)
+ {
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg *seg;
+ 	int err = -EFAULT;
+-	int alen;
++	size_t alen;
+ 
+ 	msg = alloc_msg(len);
+ 	if (msg == NULL)
+@@ -117,8 +117,8 @@ out_err:
+ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+ {
+ 	struct msg_msgseg *dst_pseg, *src_pseg;
+-	int len = src->m_ts;
+-	int alen;
++	size_t len = src->m_ts;
++	size_t alen;
+ 
+ 	BUG_ON(dst == NULL);
+ 	if (src->m_ts > dst->m_ts)
+@@ -147,9 +147,9 @@ struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+ 	return ERR_PTR(-ENOSYS);
+ }
+ #endif
+-int store_msg(void __user *dest, struct msg_msg *msg, int len)
++int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
+ {
+-	int alen;
++	size_t alen;
+ 	struct msg_msgseg *seg;
+ 
+ 	alen = min(len, DATALEN_MSG);
+diff --git a/ipc/util.h b/ipc/util.h
+index f2f5036..59d78aa 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -148,9 +148,9 @@ int ipc_parse_version (int *cmd);
+ #endif
+ 
+ extern void free_msg(struct msg_msg *msg);
+-extern struct msg_msg *load_msg(const void __user *src, int len);
++extern struct msg_msg *load_msg(const void __user *src, size_t len);
+ extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
+-extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
++extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
+ 
+ extern void recompute_msgmni(struct ipc_namespace *);
+ 
+-- 
+1.8.3.2
+
