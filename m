@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162112Ab3LFOIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:08:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43823 "EHLO
+	id S1162232Ab3LFOIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:08:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43794 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161342Ab3LFNAz (ORCPT
+	with ESMTP id S1161326Ab3LFNAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:55 -0500
+	Fri, 6 Dec 2013 08:00:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 064/272] ALSA: hda - Check leaf nodes to find aamix amps
-Date: Fri,  6 Dec 2013 12:55:53 +0000
-Message-Id: <1386334761-25517-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 041/272] configfs: fix race between dentry put and lookup
+Date: Fri,  6 Dec 2013 12:55:30 +0000
+Message-Id: <1386334761-25517-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,120 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 2ded3e5b61d61d0bc90bebb8004db6184c7db6eb upstream.
+commit 76ae281f6307331aa063288edb6422ae99f435f0 upstream.
 
-The current generic parser assumes blindly that the volume and mute
-amps are found in the aamix node itself.  But on some codecs,
-typically Analog Devices ones, the aamix amps are separately
-implemented in each leaf node of the aamix node, and the current
-driver can't establish the correct amp controls.  This is a regression
-compared with the previous static quirks.
+A race window in configfs, it starts from one dentry is UNHASHED and end
+before configfs_d_iput is called.  In this window, if a lookup happen,
+since the original dentry was UNHASHED, so a new dentry will be
+allocated, and then in configfs_attach_attr(), sd->s_dentry will be
+updated to the new dentry.  Then in configfs_d_iput(),
+BUG_ON(sd->s_dentry != dentry) will be triggered and system panic.
 
-This patch extends the search for the amps to the leaf nodes for
-allowing the aamix controls again on such codecs.
-In this implementation, I didn't code to loop through the whole paths,
-since usually one depth should suffice, and we can't search too
-deeply, as it may result in the conflicting control assignments.
+sys_open:                     sys_close:
+ ...                           fput
+                                dput
+                                 dentry_kill
+                                  __d_drop <--- dentry unhashed here,
+                                           but sd->dentry still point
+                                           to this dentry.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65641
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+ lookup_real
+  configfs_lookup
+   configfs_attach_attr---> update sd->s_dentry
+                            to new allocated dentry here.
+
+                                   d_kill
+                                     configfs_d_iput <--- BUG_ON(sd->s_dentry != dentry)
+                                                     triggered here.
+
+To fix it, change configfs_d_iput to not update sd->s_dentry if
+sd->s_count > 2, that means there are another dentry is using the sd
+beside the one that is going to be put.  Use configfs_dirent_lock in
+configfs_attach_attr to sync with configfs_d_iput.
+
+With the following steps, you can reproduce the bug.
+
+1. enable ocfs2, this will mount configfs at /sys/kernel/config and
+   fill configure in it.
+
+2. run the following script.
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+	while [ 1 ]; do cat /sys/kernel/config/cluster/$your_cluster_name/idle_timeout_ms > /dev/null; done &
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/hda_generic.c | 57 +++++++++++++++++++++++++++++++++++----------
- 1 file changed, 45 insertions(+), 12 deletions(-)
+ fs/configfs/dir.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
-index a8e3be6..02fdff6 100644
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -2778,6 +2778,42 @@ static int add_loopback_list(struct hda_gen_spec *spec, hda_nid_t mix, int idx)
- 	return 0;
- }
+diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
+index 277bd1b..511d415 100644
+--- a/fs/configfs/dir.c
++++ b/fs/configfs/dir.c
+@@ -56,10 +56,19 @@ static void configfs_d_iput(struct dentry * dentry,
+ 	struct configfs_dirent *sd = dentry->d_fsdata;
  
-+/* return true if either a volume or a mute amp is found for the given
-+ * aamix path; the amp has to be either in the mixer node or its direct leaf
-+ */
-+static bool look_for_mix_leaf_ctls(struct hda_codec *codec, hda_nid_t mix_nid,
-+				   hda_nid_t pin, unsigned int *mix_val,
-+				   unsigned int *mute_val)
-+{
-+	int idx, num_conns;
-+	const hda_nid_t *list;
-+	hda_nid_t nid;
+ 	if (sd) {
+-		BUG_ON(sd->s_dentry != dentry);
+ 		/* Coordinate with configfs_readdir */
+ 		spin_lock(&configfs_dirent_lock);
+-		sd->s_dentry = NULL;
++		/* Coordinate with configfs_attach_attr where will increase
++		 * sd->s_count and update sd->s_dentry to new allocated one.
++		 * Only set sd->dentry to null when this dentry is the only
++		 * sd owner.
++		 * If not do so, configfs_d_iput may run just after
++		 * configfs_attach_attr and set sd->s_dentry to null
++		 * even it's still in use.
++		 */
++		if (atomic_read(&sd->s_count) <= 2)
++			sd->s_dentry = NULL;
 +
-+	idx = snd_hda_get_conn_index(codec, mix_nid, pin, true);
-+	if (idx < 0)
-+		return false;
-+
-+	*mix_val = *mute_val = 0;
-+	if (nid_has_volume(codec, mix_nid, HDA_INPUT))
-+		*mix_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
-+	if (nid_has_mute(codec, mix_nid, HDA_INPUT))
-+		*mute_val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
-+	if (*mix_val && *mute_val)
-+		return true;
-+
-+	/* check leaf node */
-+	num_conns = snd_hda_get_conn_list(codec, mix_nid, &list);
-+	if (num_conns < idx)
-+		return false;
-+	nid = list[idx];
-+	if (!*mix_val && nid_has_volume(codec, nid, HDA_OUTPUT))
-+		*mix_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
-+	if (!*mute_val && nid_has_mute(codec, nid, HDA_OUTPUT))
-+		*mute_val = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_OUTPUT);
-+
-+	return *mix_val || *mute_val;
-+}
-+
- /* create input playback/capture controls for the given pin */
- static int new_analog_input(struct hda_codec *codec, int input_idx,
- 			    hda_nid_t pin, const char *ctlname, int ctlidx,
-@@ -2785,12 +2821,11 @@ static int new_analog_input(struct hda_codec *codec, int input_idx,
- {
- 	struct hda_gen_spec *spec = codec->spec;
- 	struct nid_path *path;
--	unsigned int val;
-+	unsigned int mix_val, mute_val;
- 	int err, idx;
- 
--	if (!nid_has_volume(codec, mix_nid, HDA_INPUT) &&
--	    !nid_has_mute(codec, mix_nid, HDA_INPUT))
--		return 0; /* no need for analog loopback */
-+	if (!look_for_mix_leaf_ctls(codec, mix_nid, pin, &mix_val, &mute_val))
-+		return 0;
- 
- 	path = snd_hda_add_new_path(codec, pin, mix_nid, 0);
- 	if (!path)
-@@ -2799,20 +2834,18 @@ static int new_analog_input(struct hda_codec *codec, int input_idx,
- 	spec->loopback_paths[input_idx] = snd_hda_get_path_idx(codec, path);
- 
- 	idx = path->idx[path->depth - 1];
--	if (nid_has_volume(codec, mix_nid, HDA_INPUT)) {
--		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
--		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, val);
-+	if (mix_val) {
-+		err = __add_pb_vol_ctrl(spec, HDA_CTL_WIDGET_VOL, ctlname, ctlidx, mix_val);
- 		if (err < 0)
- 			return err;
--		path->ctls[NID_PATH_VOL_CTL] = val;
-+		path->ctls[NID_PATH_VOL_CTL] = mix_val;
+ 		spin_unlock(&configfs_dirent_lock);
+ 		configfs_put(sd);
  	}
+@@ -426,8 +435,11 @@ static int configfs_attach_attr(struct configfs_dirent * sd, struct dentry * den
+ 	struct configfs_attribute * attr = sd->s_element;
+ 	int error;
  
--	if (nid_has_mute(codec, mix_nid, HDA_INPUT)) {
--		val = HDA_COMPOSE_AMP_VAL(mix_nid, 3, idx, HDA_INPUT);
--		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, val);
-+	if (mute_val) {
-+		err = __add_pb_sw_ctrl(spec, HDA_CTL_WIDGET_MUTE, ctlname, ctlidx, mute_val);
- 		if (err < 0)
- 			return err;
--		path->ctls[NID_PATH_MUTE_CTL] = val;
-+		path->ctls[NID_PATH_MUTE_CTL] = mute_val;
- 	}
- 
- 	path->active = true;
++	spin_lock(&configfs_dirent_lock);
+ 	dentry->d_fsdata = configfs_get(sd);
+ 	sd->s_dentry = dentry;
++	spin_unlock(&configfs_dirent_lock);
++
+ 	error = configfs_create(dentry, (attr->ca_mode & S_IALLUGO) | S_IFREG,
+ 				configfs_init_file);
+ 	if (error) {
 -- 
 1.8.3.2
 
