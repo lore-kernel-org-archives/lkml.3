@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422969Ab3LFXUT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:20:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48918 "EHLO
+	id S1422993Ab3LFXU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:20:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48929 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238Ab3LFXUP (ORCPT
+	with ESMTP id S1752729Ab3LFXUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:20:15 -0500
+	Fri, 6 Dec 2013 18:20:21 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 087/152] IB/srp: Report receive errors correctly
-Date: Fri,  6 Dec 2013 15:10:11 -0800
-Message-Id: <1386371476-2477-88-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 089/152] rt2x00: fix HT TX descriptor settings regression
+Date: Fri,  6 Dec 2013 15:10:13 -0800
+Message-Id: <1386371476-2477-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,61 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit cd4e38542a5c2cab94e5410fb17c1cc004a60792 upstream.
+commit 3d8bfe141be8e5c21261fc63da8e7964d44f2645 upstream.
 
-The IB spec does not guarantee that the opcode is available in error
-completions.  Hence do not rely on it.  See also commit 948d1e889e5b
-("IB/srp: Introduce srp_handle_qp_err()").
+Since:
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-[ kamal: backport to 3.8 (context) ]
+commit 36323f817af0376c78612cfdab714b0feb05fea5
+Author: Thomas Huehn <thomas@net.t-labs.tu-berlin.de>
+Date:   Mon Jul 23 21:33:42 2012 +0200
+
+    mac80211: move TX station pointer and restructure TX
+
+we do not pass sta pointer to rt2x00queue_create_tx_descriptor_ht(),
+hence we do not correctly set station WCID and AMPDU density parameters.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00lib.h   | 2 +-
+ drivers/net/wireless/rt2x00/rt2x00mac.c   | 4 ++--
+ drivers/net/wireless/rt2x00/rt2x00queue.c | 4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index bff567b..e070166 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1301,14 +1301,13 @@ static void srp_handle_recv(struct srp_target_port *target, struct ib_wc *wc)
- 			     PFX "Recv failed with error code %d\n", res);
+diff --git a/drivers/net/wireless/rt2x00/rt2x00lib.h b/drivers/net/wireless/rt2x00/rt2x00lib.h
+index a093598..7f40ab8 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00lib.h
++++ b/drivers/net/wireless/rt2x00/rt2x00lib.h
+@@ -146,7 +146,7 @@ void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int header_length);
+  * @local: frame is not from mac80211
+  */
+ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
+-			       bool local);
++			       struct ieee80211_sta *sta, bool local);
+ 
+ /**
+  * rt2x00queue_update_beacon - Send new beacon from mac80211
+diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless/rt2x00/rt2x00mac.c
+index 509c3f1..9b00fcb 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -90,7 +90,7 @@ static int rt2x00mac_tx_rts_cts(struct rt2x00_dev *rt2x00dev,
+ 				  frag_skb->data, data_length, tx_info,
+ 				  (struct ieee80211_rts *)(skb->data));
+ 
+-	retval = rt2x00queue_write_tx_frame(queue, skb, true);
++	retval = rt2x00queue_write_tx_frame(queue, skb, NULL, true);
+ 	if (retval) {
+ 		dev_kfree_skb_any(skb);
+ 		WARNING(rt2x00dev, "Failed to send RTS/CTS frame.\n");
+@@ -151,7 +151,7 @@ void rt2x00mac_tx(struct ieee80211_hw *hw,
+ 			goto exit_fail;
+ 	}
+ 
+-	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
++	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, control->sta, false)))
+ 		goto exit_fail;
+ 
+ 	/*
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
+index a57032e..bc1216f 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -583,7 +583,7 @@ static void rt2x00queue_kick_tx_queue(struct data_queue *queue,
  }
  
--static void srp_handle_qp_err(enum ib_wc_status wc_status,
--			      enum ib_wc_opcode wc_opcode,
-+static void srp_handle_qp_err(enum ib_wc_status wc_status, bool send_err,
- 			      struct srp_target_port *target)
+ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
+-			       bool local)
++			       struct ieee80211_sta *sta, bool local)
  {
- 	if (target->connected && !target->qp_in_error) {
- 		shost_printk(KERN_ERR, target->scsi_host,
- 			     PFX "failed %s status %d\n",
--			     wc_opcode & IB_WC_RECV ? "receive" : "send",
-+			     send_err ? "send" : "receive",
- 			     wc_status);
- 	}
- 	target->qp_in_error = true;
-@@ -1324,7 +1323,7 @@ static void srp_recv_completion(struct ib_cq *cq, void *target_ptr)
- 		if (likely(wc.status == IB_WC_SUCCESS)) {
- 			srp_handle_recv(target, &wc);
- 		} else {
--			srp_handle_qp_err(wc.status, wc.opcode, target);
-+			srp_handle_qp_err(wc.status, false, target);
- 		}
- 	}
- }
-@@ -1340,7 +1339,7 @@ static void srp_send_completion(struct ib_cq *cq, void *target_ptr)
- 			iu = (struct srp_iu *) (uintptr_t) wc.wr_id;
- 			list_add(&iu->list, &target->free_tx);
- 		} else {
--			srp_handle_qp_err(wc.status, wc.opcode, target);
-+			srp_handle_qp_err(wc.status, true, target);
- 		}
- 	}
- }
+ 	struct ieee80211_tx_info *tx_info;
+ 	struct queue_entry *entry;
+@@ -597,7 +597,7 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
+ 	 * after that we are free to use the skb->cb array
+ 	 * for our information.
+ 	 */
+-	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, NULL);
++	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc, sta);
+ 
+ 	/*
+ 	 * All information is retrieved from the skb->cb array,
 -- 
 1.8.3.2
 
