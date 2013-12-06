@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab3LFNhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:37:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44322 "EHLO
+	id S1758562Ab3LFNiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:38:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44302 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254Ab3LFNDF (ORCPT
+	with ESMTP id S1757984Ab3LFNDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:05 -0500
+	Fri, 6 Dec 2013 08:03:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 160/272] HID: lg: fix ReportDescriptor for Logitech Formula Vibration
-Date: Fri,  6 Dec 2013 12:57:29 +0000
-Message-Id: <1386334761-25517-161-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 156/272] HID: hid-sensor-hub: fix report size
+Date: Fri,  6 Dec 2013 12:57:25 +0000
+Message-Id: <1386334761-25517-157-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,123 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 7f50547059bd55ac6a98c29fd1989421bdc36ec9 upstream.
+commit d4b1bba76171cb783e32441b28462fe841073ed8 upstream.
 
-By default the Logitech Formula Vibration presents a combined accel/brake
-axis ('Y'). This patch modifies the HID descriptor to present seperate
-accel/brake axes ('Y' and 'Z').
+Most of the hid sensor field size is reported in report_size field
+in the report descriptor. For rotation fusion sensor the quaternion
+data is 16 byte field, the report size was set to 4 and report
+count field is set to 4. So the total size is 16 bytes. But the current
+driver has a bug and not taking account for report count field. This
+causes user space to see only 4 bytes of data sent via IIO interface.
+The number of bytes in a field needs to take account of report_count
+field. Need to multiply report_size and report_count to get total
+number of bytes.
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-lg.c | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
+ drivers/hid/hid-sensor-hub.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
-index c2c7dab..1bfd292 100644
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -45,6 +45,7 @@
- /* Size of the original descriptors of the Driving Force (and Pro) wheels */
- #define DF_RDESC_ORIG_SIZE	130
- #define DFP_RDESC_ORIG_SIZE	97
-+#define FV_RDESC_ORIG_SIZE	130
- #define MOMO_RDESC_ORIG_SIZE	87
- 
- /* Fixed report descriptors for Logitech Driving Force (and Pro)
-@@ -170,6 +171,73 @@ static __u8 dfp_rdesc_fixed[] = {
- 0xC0                /*  End Collection                          */
- };
- 
-+static __u8 fv_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),                   */
-+0x09, 0x04,         /*  Usage (Joystik),                        */
-+0xA1, 0x01,         /*  Collection (Application),               */
-+0xA1, 0x02,         /*      Collection (Logical),               */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x0A,         /*          Report Size (10),               */
-+0x15, 0x00,         /*          Logical Minimum (0),            */
-+0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),         */
-+0x35, 0x00,         /*          Physical Minimum (0),           */
-+0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),        */
-+0x09, 0x30,         /*          Usage (X),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x95, 0x0C,         /*          Report Count (12),              */
-+0x75, 0x01,         /*          Report Size (1),                */
-+0x25, 0x01,         /*          Logical Maximum (1),            */
-+0x45, 0x01,         /*          Physical Maximum (1),           */
-+0x05, 0x09,         /*          Usage Page (Button),            */
-+0x19, 0x01,         /*          Usage Minimum (01h),            */
-+0x29, 0x0C,         /*          Usage Maximum (0Ch),            */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x95, 0x02,         /*          Report Count (2),               */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
-+0x09, 0x01,         /*          Usage (01h),                    */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x09, 0x02,         /*          Usage (02h),                    */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x08,         /*          Report Size (8),                */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x05, 0x01,         /*          Usage Page (Desktop),           */
-+0x25, 0x07,         /*          Logical Maximum (7),            */
-+0x46, 0x3B, 0x01,   /*          Physical Maximum (315),         */
-+0x75, 0x04,         /*          Report Size (4),                */
-+0x65, 0x14,         /*          Unit (Degrees),                 */
-+0x09, 0x39,         /*          Usage (Hat Switch),             */
-+0x81, 0x42,         /*          Input (Variable, Null State),   */
-+0x75, 0x01,         /*          Report Size (1),                */
-+0x95, 0x04,         /*          Report Count (4),               */
-+0x65, 0x00,         /*          Unit,                           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
-+0x09, 0x01,         /*          Usage (01h),                    */
-+0x25, 0x01,         /*          Logical Maximum (1),            */
-+0x45, 0x01,         /*          Physical Maximum (1),           */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x05, 0x01,         /*          Usage Page (Desktop),           */
-+0x95, 0x01,         /*          Report Count (1),               */
-+0x75, 0x08,         /*          Report Size (8),                */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
-+0x09, 0x31,         /*          Usage (Y),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0x09, 0x32,         /*          Usage (Z),                      */
-+0x81, 0x02,         /*          Input (Variable),               */
-+0xC0,               /*      End Collection,                     */
-+0xA1, 0x02,         /*      Collection (Logical),               */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
-+0x95, 0x07,         /*          Report Count (7),               */
-+0x75, 0x08,         /*          Report Size (8),                */
-+0x09, 0x03,         /*          Usage (03h),                    */
-+0x91, 0x02,         /*          Output (Variable),              */
-+0xC0,               /*      End Collection,                     */
-+0xC0                /*  End Collection                          */
-+};
-+
- static __u8 momo_rdesc_fixed[] = {
- 0x05, 0x01,         /*  Usage Page (Desktop),               */
- 0x09, 0x04,         /*  Usage (Joystik),                    */
-@@ -275,6 +343,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		}
- 		break;
- 
-+	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
-+		if (*rsize == FV_RDESC_ORIG_SIZE) {
-+			hid_info(hdev,
-+				"fixing up Logitech Formula Vibration report descriptor\n");
-+			rdesc = fv_rdesc_fixed;
-+			*rsize = sizeof(fv_rdesc_fixed);
-+		}
-+		break;
-+
- 	case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
- 		if (*rsize == DFP_RDESC_ORIG_SIZE) {
- 			hid_info(hdev,
+diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+index aa34755..b189feb 100644
+--- a/drivers/hid/hid-sensor-hub.c
++++ b/drivers/hid/hid-sensor-hub.c
+@@ -327,7 +327,8 @@ int sensor_hub_input_get_attribute_info(struct hid_sensor_hub_device *hsdev,
+ 				field->logical == attr_usage_id) {
+ 				sensor_hub_fill_attr_info(info, i, report->id,
+ 					field->unit, field->unit_exponent,
+-					field->report_size);
++					field->report_size *
++							field->report_count);
+ 				ret = 0;
+ 			} else {
+ 				for (j = 0; j < field->maxusage; ++j) {
+@@ -339,7 +340,8 @@ int sensor_hub_input_get_attribute_info(struct hid_sensor_hub_device *hsdev,
+ 							i, report->id,
+ 							field->unit,
+ 							field->unit_exponent,
+-							field->report_size);
++							field->report_size *
++							field->report_count);
+ 						ret = 0;
+ 						break;
+ 					}
+@@ -426,9 +428,10 @@ static int sensor_hub_raw_event(struct hid_device *hdev,
+ 		hid_dbg(hdev, "%d collection_index:%x hid:%x sz:%x\n",
+ 				i, report->field[i]->usage->collection_index,
+ 				report->field[i]->usage->hid,
+-				report->field[i]->report_size/8);
+-
+-		sz = report->field[i]->report_size/8;
++				(report->field[i]->report_size *
++					report->field[i]->report_count)/8);
++		sz = (report->field[i]->report_size *
++					report->field[i]->report_count)/8;
+ 		if (pdata->pending.status && pdata->pending.attr_usage_id ==
+ 				report->field[i]->usage->hid) {
+ 			hid_dbg(hdev, "data was pending ...\n");
 -- 
 1.8.3.2
 
