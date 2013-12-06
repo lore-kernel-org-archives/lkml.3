@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760261Ab3LFXaE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:30:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48924 "EHLO
+	id S1760247Ab3LFXaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:30:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48941 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422962Ab3LFXUS (ORCPT
+	with ESMTP id S1754059Ab3LFXUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:20:18 -0500
+	Fri, 6 Dec 2013 18:20:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vu Pham <vuhuong@mellanox.com>, Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Ujjal Roy <royujjal@gmail.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 085/152] IB/srp: Remove target from list before freeing Scsi_Host structure
-Date: Fri,  6 Dec 2013 15:10:09 -0800
-Message-Id: <1386371476-2477-86-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 094/152] mwifiex: fix wrong eth_hdr usage for bridged packets in AP mode
+Date: Fri,  6 Dec 2013 15:10:18 -0800
+Message-Id: <1386371476-2477-95-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,64 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vu Pham <vuhuong@mellanox.com>
+From: Ujjal Roy <royujjal@gmail.com>
 
-commit 65d7dd2f3479ef5aec1d9ddd1481cb7851c11af6 upstream.
+commit 8d93f1f309d38b65fce0b9f0de91ba6c96990c07 upstream.
 
-Remove an SRP target from the SRP target list before invoking the last
-scsi_host_put() call.  This change is necessary because that last put
-frees the memory that holds the srp_target_port structure.
+The eth_hdr is never defined in this driver but it gets compiled
+without any warning/error because kernel has defined eth_hdr.
 
-This patch prevents the following kernel oops:
+Fix it by defining our own p_ethhdr and use it instead of eth_hdr.
 
-    RIP: 0010:[<ffffffff810b00d0>] __lock_acquire+0x500/0x1570
-    Call Trace:
-     [<ffffffff810b11e4>] lock_acquire+0xa4/0x120
-     [<ffffffff81531206>] _spin_lock+0x36/0x70
-     [<ffffffffa01b6d8f>] srp_remove_work+0xef/0x180 [ib_srp]
-     [<ffffffff8109125c>] worker_thread+0x21c/0x3d0
-     [<ffffffff81096e86>] kthread+0x96/0xa0
-     [<ffffffff8100c20a>] child_rip+0xa/0x20
-
-Signed-off-by: Vu Pham <vuhuong@mellanox.com>
-
-[ bvanassche - Modified path description and CC'ed stable. ]
-
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Ujjal Roy <royujjal@gmail.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/wireless/mwifiex/uap_txrx.c | 29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index 7ccf328..2223eb6 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -532,6 +532,11 @@ static void srp_remove_target(struct srp_target_port *target)
- 	ib_destroy_cm_id(target->cm_id);
- 	srp_free_target_ib(target);
- 	srp_free_req_data(target);
-+
-+	spin_lock(&target->srp_host->target_lock);
-+	list_del(&target->list);
-+	spin_unlock(&target->srp_host->target_lock);
-+
- 	scsi_host_put(target->scsi_host);
- }
+diff --git a/drivers/net/wireless/mwifiex/uap_txrx.c b/drivers/net/wireless/mwifiex/uap_txrx.c
+index a018e42..48e6724 100644
+--- a/drivers/net/wireless/mwifiex/uap_txrx.c
++++ b/drivers/net/wireless/mwifiex/uap_txrx.c
+@@ -34,6 +34,7 @@ static void mwifiex_uap_queue_bridged_pkt(struct mwifiex_private *priv,
+ 	struct mwifiex_txinfo *tx_info;
+ 	int hdr_chop;
+ 	struct timeval tv;
++	struct ethhdr *p_ethhdr;
+ 	u8 rfc1042_eth_hdr[ETH_ALEN] = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
  
-@@ -542,10 +547,6 @@ static void srp_remove_work(struct work_struct *work)
+ 	uap_rx_pd = (struct uap_rxpd *)(skb->data);
+@@ -48,14 +49,36 @@ static void mwifiex_uap_queue_bridged_pkt(struct mwifiex_private *priv,
+ 	}
  
- 	WARN_ON_ONCE(target->state != SRP_TARGET_REMOVED);
+ 	if (!memcmp(&rx_pkt_hdr->rfc1042_hdr,
+-		    rfc1042_eth_hdr, sizeof(rfc1042_eth_hdr)))
++		    rfc1042_eth_hdr, sizeof(rfc1042_eth_hdr))) {
++		/* Replace the 803 header and rfc1042 header (llc/snap) with
++		 * an Ethernet II header, keep the src/dst and snap_type
++		 * (ethertype).
++		 *
++		 * The firmware only passes up SNAP frames converting all RX
++		 * data from 802.11 to 802.2/LLC/SNAP frames.
++		 *
++		 * To create the Ethernet II, just move the src, dst address
++		 * right before the snap_type.
++		 */
++		p_ethhdr = (struct ethhdr *)
++			((u8 *)(&rx_pkt_hdr->eth803_hdr)
++			 + sizeof(rx_pkt_hdr->eth803_hdr)
++			 + sizeof(rx_pkt_hdr->rfc1042_hdr)
++			 - sizeof(rx_pkt_hdr->eth803_hdr.h_dest)
++			 - sizeof(rx_pkt_hdr->eth803_hdr.h_source)
++			 - sizeof(rx_pkt_hdr->rfc1042_hdr.snap_type));
++		memcpy(p_ethhdr->h_source, rx_pkt_hdr->eth803_hdr.h_source,
++		       sizeof(p_ethhdr->h_source));
++		memcpy(p_ethhdr->h_dest, rx_pkt_hdr->eth803_hdr.h_dest,
++		       sizeof(p_ethhdr->h_dest));
+ 		/* Chop off the rxpd + the excess memory from
+ 		 * 802.2/llc/snap header that was removed.
+ 		 */
+-		hdr_chop = (u8 *)eth_hdr - (u8 *)uap_rx_pd;
+-	else
++		hdr_chop = (u8 *)p_ethhdr - (u8 *)uap_rx_pd;
++	} else {
+ 		/* Chop off the rxpd */
+ 		hdr_chop = (u8 *)&rx_pkt_hdr->eth803_hdr - (u8 *)uap_rx_pd;
++	}
  
--	spin_lock(&target->srp_host->target_lock);
--	list_del(&target->list);
--	spin_unlock(&target->srp_host->target_lock);
--
- 	srp_remove_target(target);
- }
- 
+ 	/* Chop off the leading header bytes so the it points
+ 	 * to the start of either the reconstructed EthII frame
 -- 
 1.8.3.2
 
