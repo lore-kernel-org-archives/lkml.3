@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161406Ab3LFNBH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:01:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43860 "EHLO
+	id S1758586Ab3LFOFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:05:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43848 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161390Ab3LFNBF (ORCPT
+	with ESMTP id S1161376Ab3LFNBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:01:05 -0500
+	Fri, 6 Dec 2013 08:01:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Markus Pargmann <mpa@pengutronix.de>, Tony Lindgren <tony@atomide.com>,
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 070/272] ARM: OMAP2+: irq, AM33XX add missing register check
-Date: Fri,  6 Dec 2013 12:55:59 +0000
-Message-Id: <1386334761-25517-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 068/272] HID: appleir: force input to be set
+Date: Fri,  6 Dec 2013 12:55:57 +0000
+Message-Id: <1386334761-25517-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 0bebda684857f76548ea48c8886785198701d8d3 upstream.
+commit 3d18bd41a82fac69c82e1725c7beea25b17a0190 upstream.
 
-am33xx has a INTC_PENDING_IRQ3 register that is not checked for pending
-interrupts. This patch adds AM33XX to the ifdef of SOCs that have to
-check this register.
+Some weird remotes are not correctly creating the input device. Their
+report descriptor starts with:
+0x06, 0x00, 0xff,              // Usage Page (Vendor Defined Page 1)  0
+0xa1, 0x01,                    // Collection (Application)            3
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+whereas others (which are correctly handled) start with:
+0x05, 0x0c,                    // Usage Page (Consumer Devices)       0
+0x09, 0x01,                    // Usage (Consumer Control)            2
+0xa1, 0x01,                    // Collection (Application)            4
+
+The rest of the report descriptor is the same.
+
+Adding the quirk HID_QUIRK_HIDINPUT_FORCE forces hid-input to allocate
+the inputs, and everything should be ok.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Tested-by: James Henstridge <james.henstridge@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/irq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-appleir.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index 3926f37..e022a86 100644
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -233,7 +233,7 @@ static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs
- 			goto out;
+diff --git a/drivers/hid/hid-appleir.c b/drivers/hid/hid-appleir.c
+index a42e6a3..0e6a42d 100644
+--- a/drivers/hid/hid-appleir.c
++++ b/drivers/hid/hid-appleir.c
+@@ -297,6 +297,9 @@ static int appleir_probe(struct hid_device *hid, const struct hid_device_id *id)
  
- 		irqnr = readl_relaxed(base_addr + 0xd8);
--#ifdef CONFIG_SOC_TI81XX
-+#if IS_ENABLED(CONFIG_SOC_TI81XX) || IS_ENABLED(CONFIG_SOC_AM33XX)
- 		if (irqnr)
- 			goto out;
- 		irqnr = readl_relaxed(base_addr + 0xf8);
+ 	appleir->hid = hid;
+ 
++	/* force input as some remotes bypass the input registration */
++	hid->quirks |= HID_QUIRK_HIDINPUT_FORCE;
++
+ 	spin_lock_init(&appleir->lock);
+ 	setup_timer(&appleir->key_up_timer,
+ 		    key_up_tick, (unsigned long) appleir);
 -- 
 1.8.3.2
 
