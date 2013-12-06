@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162097Ab3LFNFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:05:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44727 "EHLO
+	id S1162379Ab3LFNNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:13:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44719 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162015Ab3LFNFl (ORCPT
+	with ESMTP id S1162070Ab3LFNFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:05:41 -0500
+	Fri, 6 Dec 2013 08:05:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 246/272] ALSA: hda - Enable SPDIF for Acer TravelMate 6293
-Date: Fri,  6 Dec 2013 12:58:55 +0000
-Message-Id: <1386334761-25517-247-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 244/272] KVM: x86: fix emulation of "movzbl %bpl, %eax"
+Date: Fri,  6 Dec 2013 12:58:53 +0000
+Message-Id: <1386334761-25517-245-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 24eff328f65c8ef352c90b6adb7c2f39eb94205d upstream.
+commit daf727225b8abfdfe424716abac3d15a3ac5626a upstream.
 
-BIOS on Acer TravelMate 6293 doesn't set up the SPDIF output pin
-correctly as default, so enable it via a fixup entry.
+When I was looking at RHEL5.9's failure to start with
+unrestricted_guest=0/emulate_invalid_guest_state=1, I got it working with a
+slightly older tree than kvm.git.  I now debugged the remaining failure,
+which was introduced by commit 660696d1 (KVM: X86 emulator: fix
+source operand decoding for 8bit mov[zs]x instructions, 2013-04-24)
+introduced a similar mis-emulation to the one in commit 8acb4207 (KVM:
+fix sil/dil/bpl/spl in the mod/rm fields, 2013-05-30).  The incorrect
+decoding occurs in 8-bit movzx/movsx instructions whose 8-bit operand
+is sil/dil/bpl/spl.
 
-Reported-and-tested-by: Hagen Heiduck <heiduck.suse@fmail.postpro.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Needless to say, "movzbl %bpl, %eax" does occur in RHEL5.9's decompression
+prolog, just a handful of instructions before finally giving control to
+the decompressed vmlinux and getting out of the invalid guest state.
+
+Because OpMem8 bypasses decode_modrm, the same handling of the REX prefix
+must be applied to OpMem8.
+
+Reported-by: Michele Baldessari <michele@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/kvm/emulate.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index e776e25..4869049 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2414,6 +2414,7 @@ static const struct hda_verb alc268_beep_init_verbs[] = {
- enum {
- 	ALC268_FIXUP_INV_DMIC,
- 	ALC268_FIXUP_HP_EAPD,
-+	ALC268_FIXUP_SPDIF,
- };
- 
- static const struct hda_fixup alc268_fixups[] = {
-@@ -2428,6 +2429,13 @@ static const struct hda_fixup alc268_fixups[] = {
- 			{}
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 2bc1e81..7210ee3 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -4028,7 +4028,10 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+ 	case OpMem8:
+ 		ctxt->memop.bytes = 1;
+ 		if (ctxt->memop.type == OP_REG) {
+-			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm, 1);
++			int highbyte_regs = ctxt->rex_prefix == 0;
++
++			ctxt->memop.addr.reg = decode_register(ctxt, ctxt->modrm_rm,
++					       highbyte_regs);
+ 			fetch_register_operand(&ctxt->memop);
  		}
- 	},
-+	[ALC268_FIXUP_SPDIF] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			{ 0x1e, 0x014b1180 }, /* enable SPDIF out */
-+			{}
-+		}
-+	},
- };
- 
- static const struct hda_model_fixup alc268_fixup_models[] = {
-@@ -2437,6 +2445,7 @@ static const struct hda_model_fixup alc268_fixup_models[] = {
- };
- 
- static const struct snd_pci_quirk alc268_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0139, "Acer TravelMate 6293", ALC268_FIXUP_SPDIF),
- 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer AOA 150 (ZG5)", ALC268_FIXUP_INV_DMIC),
- 	/* below is codec SSID since multiple Toshiba laptops have the
- 	 * same PCI SSID 1179:ff00
+ 		goto mem_common;
 -- 
 1.8.3.2
 
