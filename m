@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422956Ab3LFXUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:20:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48907 "EHLO
+	id S1422969Ab3LFXUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:20:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422940Ab3LFXT7 (ORCPT
+	with ESMTP id S1754238Ab3LFXUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:19:59 -0500
+	Fri, 6 Dec 2013 18:20:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 093/152] mwifiex: correct packet length for packets from SDIO interface
-Date: Fri,  6 Dec 2013 15:10:17 -0800
-Message-Id: <1386371476-2477-94-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 087/152] IB/srp: Report receive errors correctly
+Date: Fri,  6 Dec 2013 15:10:11 -0800
+Message-Id: <1386371476-2477-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,37 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit d03b4aa77e1187b77dfe37d14a923547f00baa66 upstream.
+commit cd4e38542a5c2cab94e5410fb17c1cc004a60792 upstream.
 
-While receiving a packet on SDIO interface, we allocate skb with
-size multiple of SDIO block size. We need to resize this skb
-after RX using packet length from RX header.
+The IB spec does not guarantee that the opcode is available in error
+completions.  Hence do not rely on it.  See also commit 948d1e889e5b
+("IB/srp: Introduce srp_handle_qp_err()").
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/mwifiex/sdio.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/infiniband/ulp/srp/ib_srp.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
-index 86c025d..2df55d8 100644
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -944,7 +944,10 @@ static int mwifiex_decode_rx_packet(struct mwifiex_adapter *adapter,
- 				    struct sk_buff *skb, u32 upld_typ)
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index bff567b..e070166 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1301,14 +1301,13 @@ static void srp_handle_recv(struct srp_target_port *target, struct ib_wc *wc)
+ 			     PFX "Recv failed with error code %d\n", res);
+ }
+ 
+-static void srp_handle_qp_err(enum ib_wc_status wc_status,
+-			      enum ib_wc_opcode wc_opcode,
++static void srp_handle_qp_err(enum ib_wc_status wc_status, bool send_err,
+ 			      struct srp_target_port *target)
  {
- 	u8 *cmd_buf;
-+	__le16 *curr_ptr = (__le16 *)skb->data;
-+	u16 pkt_len = le16_to_cpu(*curr_ptr);
- 
-+	skb_trim(skb, pkt_len);
- 	skb_pull(skb, INTF_HEADER_LEN);
- 
- 	switch (upld_typ) {
+ 	if (target->connected && !target->qp_in_error) {
+ 		shost_printk(KERN_ERR, target->scsi_host,
+ 			     PFX "failed %s status %d\n",
+-			     wc_opcode & IB_WC_RECV ? "receive" : "send",
++			     send_err ? "send" : "receive",
+ 			     wc_status);
+ 	}
+ 	target->qp_in_error = true;
+@@ -1324,7 +1323,7 @@ static void srp_recv_completion(struct ib_cq *cq, void *target_ptr)
+ 		if (likely(wc.status == IB_WC_SUCCESS)) {
+ 			srp_handle_recv(target, &wc);
+ 		} else {
+-			srp_handle_qp_err(wc.status, wc.opcode, target);
++			srp_handle_qp_err(wc.status, false, target);
+ 		}
+ 	}
+ }
+@@ -1340,7 +1339,7 @@ static void srp_send_completion(struct ib_cq *cq, void *target_ptr)
+ 			iu = (struct srp_iu *) (uintptr_t) wc.wr_id;
+ 			list_add(&iu->list, &target->free_tx);
+ 		} else {
+-			srp_handle_qp_err(wc.status, wc.opcode, target);
++			srp_handle_qp_err(wc.status, true, target);
+ 		}
+ 	}
+ }
 -- 
 1.8.3.2
 
