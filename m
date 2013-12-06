@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab3LFKvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 05:51:45 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:61999 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab3LFKvm (ORCPT
+	id S1757733Ab3LFKwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 05:52:24 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:57763 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757141Ab3LFKwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 05:51:42 -0500
-X-AuditID: cbfec7f4-b7f966d0000003d9-e8-52a1ac3b8694
+	Fri, 6 Dec 2013 05:52:21 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-96-52a1ac63fa2f
 From: Kamil Debski <k.debski@samsung.com>
 To: "'Kishon Vijay Abraham I'" <kishon@ti.com>, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
@@ -19,29 +19,30 @@ Cc: kyungmin.park@samsung.com, Tomasz Figa <t.figa@samsung.com>,
         av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
         matt.porter@linaro.org
 References: <1386246579-25141-1-git-send-email-k.debski@samsung.com>
- <52A0969A.5070607@ti.com>
-In-reply-to: <52A0969A.5070607@ti.com>
-Subject: RE: [PATCH v4 0/9] phy: Add new Exynos USB 2.0 PHY driver
-Date: Fri, 06 Dec 2013 11:51:38 +0100
-Message-id: <009801cef271$245f88b0$6d1e9a10$%debski@samsung.com>
+ <1386246579-25141-2-git-send-email-k.debski@samsung.com>
+ <52A16104.3080704@ti.com>
+In-reply-to: <52A16104.3080704@ti.com>
+Subject: RE: [PATCH 1/9] phy: core: Change the way of_phy_get is called
+Date: Fri, 06 Dec 2013 11:52:18 +0100
+Message-id: <009901cef271$3c40d0b0$b4c27210$%debski@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac7xy7Io9nght4jLSg6SC3Nz7YNt4AAo1Kyg
+Thread-index: Ac7yRFgY0CO1onqnSuOtVYXVIbU/CAAKzmww
 Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBIsWRmVeSWpSXmKPExsVy+t/xy7rWaxYGGfTMUbVYsvsGq8X8I+dY
-	LfrfLGS1aLtykN3i8sJLrBYXnvawWZxtegPk7prDZjHj/D4mi0XLWpkt1h65y25xtv82m8XE
-	pmnsFue3dDJZHH7TzmqxfsZrFouOswfZHQQ9Lvf1MnnsnHWX3ePOtT1sHn1bVjF6HL+xncnj
-	8ya5ALYoLpuU1JzMstQifbsEroyP25czFUw0rJi97jZ7A+N0lS5GTg4JAROJ/5/XsEPYYhIX
-	7q1n62Lk4hASWMooMW3mORYIp4FJYtaGVUxdjBwcbAKaEqvueYDERQRWMEoceHCcGcRhFnjI
-	JLHz8Qo2kFFCAgkSpz+eArM5BdQkuuaeYwaxhQWcJBY+7mUEsVkEVCVmdH0Ds3kFHCQuf9jI
-	AmELSvyYfA/MZhbQkli/8zgThC0vsXnNW2aQIyQE1CUe/dUFMUUEjCQ2P4uEqBCRuNvwnHUC
-	o9AsJINmIRk0C8mgWUhaFjCyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQIic0vOxgXH7M6
-	xCjAwajEw5uwZkGQEGtiWXFl7iFGCQ5mJRFem+ULg4R4UxIrq1KL8uOLSnNSiw8xMnFwSjUw
-	9h36bHLaoj/RPnldibGPTtbujTkzk/ueS9aU5zg8WX5xtaz3+syfQvULGiyNPh6dP61E1EV3
-	umKXzb89an1tJ388Se97cu/qFKs3n14fnXLuWk9ngedV+Xmi+QuPV9eXKFqZKfTffLBT5J5C
-	t+O6SXfssjbetbua8lxBvCkj1aaX6e7SY9MjlViKMxINtZiLihMBKhW9lasCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t/xy7rJaxYGGcy7pG6xZPcNVov5R86x
+	WvS/Wchq0XblILvF5YWXWC0uPO1hszjb9AbI3TWHzWLG+X1MFouWtTJbrD1yl93ibP9tNouJ
+	TdPYLc5v6WSyOPymndVi/YzXLBYdZw+yOwh6XO7rZfLYOesuu8eda3vYPPq2rGL0OH5jO5PH
+	501yAWxRXDYpqTmZZalF+nYJXBk9h0+xFqzjq7j/bhl7A+MNzi5GTg4JAROJrY/vMkHYYhIX
+	7q1n62Lk4hASWMooseD9fVYIp4FJ4vzvr4xdjBwcbAKaEqvueYDERQRWMEoceHCcGcRhFnjI
+	JLHz8Qqo9tmMEpvXX2EDmcspoCaxdfJvFhBbWMBdouPPdkYQm0VAVeLjj/lgNbwCDhKdS1ez
+	QtiCEj8m3wOrZxbQkli/8zgThC0vsXnNW2aQKyQE1CUe/dUFCYsIGEn0zl7ADFEiInG34Tnr
+	BEahWUgmzUIyaRaSSbOQtCxgZFnFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERKfX3YwLj5m
+	dYhRgINRiYc3Yc2CICHWxLLiytxDjBIczEoivDbLFwYJ8aYkVlalFuXHF5XmpBYfYmTi4JRq
+	YGT4Pql6w/ZjOfaHhXYmXbsbWSAYHuhvYuv8J4XrvUtRsnWGgrFK79Iu16snn+VnFpjfVN24
+	ez9jknecc27Z/Sl2mxmXGYe+X5NxlcUz92P3w6LFcnavZLLstu7zjp99rNJz+XVB2zkLFmVO
+	5OFeFLs/4mzp9xM+Z7Pvrzv7b4XFrV1dCUu1NimxFGckGmoxFxUnAgCkUXzFrQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -49,162 +50,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi,
 
 > From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
-> Sent: Thursday, December 05, 2013 4:07 PM
+> Sent: Friday, December 06, 2013 6:31 AM
 > 
 > Hi,
 > 
 > On Thursday 05 December 2013 05:59 PM, Kamil Debski wrote:
-> > Hi,
-> >
-> > This is the fourth version of the patchset adding the new Exynos USB
-> > 2.0 PHY driver. The driver uses the Generic PHY Framework.
-> >
-> > A month has passed since the last version. I have addressed numerous
-> > comments that appeared on the mailing list in this patch. I would
-> like
-> > to specially thank Kishon, Tomasz, Matt and Vivek for their comments.
-> >
-> > This patch contains two necessary patches to the phy core.
-> > It is very useful to be able to get phy using a device tree node.
-> >
-> > In addition this patch depends on:
-> > [PATCH V11 1/3] ARM: dts: Add pmu sysreg node to exynos5250 and
-> > exynos5420 dtsi files [1].
-> >
-> > Best wishes,
-> > Kamil Debski
+> > Previously the of_phy_get function took a struct device * and was
+> > declared static. It was impossible to call it from another driver and
+> > thus it was impossible to get phy defined
 > 
-> The last four patches are missing [1]
+> It was never intended to be called from other drivers. What's up with
+> the wrapper of of_phy_get, phy_get()/devm_phy_get()? Why isn't that
+> enough?
 
-I am sorry, git send-email failed on the 6th patch thus that and the
-Following patches were not sent. I guess it is the Murphy's law,
-sending patches just before leaving office had high chances of such
-a mishap.
+Implementing support for multiple phys in the ehci driver is a bit tricky.
+Especially when we want to do it right. Please have a look at this part of
+the dts file:
+
++    ehci@12580000 {
++        compatible = "samsung,exynos4210-ehci";
++        reg = <0x12580000 0x20000>;
++        interrupts = <0 70 0>;
++        clocks = <&clock 304>, <&clock 305>;
++        clock-names = "usbhost", "otg";
++        status = "disabled";
++        #address-cells = <1>;
++        #size-cells = <0>;
++        port@0 {
++            reg = <0>;
++            phys = <&usb2phy 1>;
++            phy-names = "host";
++            status = "disabled";
++        };
++        port@1 {
++            reg = <1>;
++            phys = <&usb2phy 2>;
++            phy-names = "hsic0";
++            status = "disabled";
++        };
++        port@2 {
++            reg = <2>;
++            phys = <&usb2phy 3>;
++            phy-names = "hsic1";
++            status = "disabled";
++        };
++    };
+
+With the above we have a clear specification of ports and their respective
+phys. But to do this properly the ehci driver has to iterate over port
+nodes. It is much easier to use devm_of_phy_get by giving the node as its
+argument.
+
+[snip]
 
 Best wishes,
 -- 
 Kamil Debski
 Samsung R&D Institute Poland
- 
-> [1] -> https://lkml.org/lkml/2013/12/5/166
-> 
-> Thanks
-> Kishon
-> >
-> > [1] - http://www.spinics.net/lists/linux-samsung-soc/msg24528.html
-> >
-> > ----------------
-> > Changes from v3:
-> > - using PMU and system registers indirectly via syscon
-> > - change labelling
-> > - change Kconfig name
-> > - fixed typos/stray whitespace
-> > - move of_phy_provider_register() to the end of probe
-> > - add a regular error return code to the rate_to_clk functions
-> > - cleanup code and remove unused code
-> > - change struct names to avoid collisions
-> > - add mechanism to support multiple phys by the ehci driver
-> >
-> > ----------------
-> > Changes from v2:
-> > - rebase all patches to the usb-next branch
-> > - fixes in the documentation file
-> >   - remove wrong entries in the phy node (ranges, and #address- &
-> #size-cells)
-> >   - add clocks and clock-names as required properites
-> >   - rephrase a few sentences
-> > - fixes in the ehci-exynos.c file
-> >   - move phy_name variable next to phy in exynos_ehci_hcd
-> >   - remove otg from exynos_ehci_hcd as it was no longer used
-> >   - move devm_phy_get after the Exynos5440 skip_phy check
-> > - fixes in the s3c-hsotg.c file
-> >   - cosmetic fixes (remove empty line that was wrongfully added)
-> > - fixes in the main driver
-> >   - remove cpu_type in favour for a boolean flag matched with the
-> compatible
-> >     value
-> >   - rename files, structures, variables and Kconfig entires - change
-> from simple
-> >     "uphy" to "usb2_phy"
-> >   - fix multiline comments style
-> >   - simplify #ifdefs in of_device_id
-> >   - fix Kconfig description
-> >   - change dev_info to dev_dbg where reasonable
-> >   - cosmetic changes (remove wrongful blank lines)
-> >   - remove unnecessary reference counting
-> >
-> > ----------------
-> > Changes from v1:
-> > - the changes include minor fixes of the hardware initialization of
-> the PHY
-> >   module
-> > - some other minor fixes were introduced
-> >
-> > ----------------------
-> > Original cover letter:
-> >
-> > Hi,
-> >
-> > This patch adds a new drive for USB PHYs for Samsung SoCs. The driver
-> > is using the Generic PHY Framework created by Kishon Vijay Abrahan I.
-> > It can be found here https://lkml.org/lkml/2013/8/21/29. This patch
-> > adds support to Exynos4 family of SoCs. Support for Exynos3 and
-> > Exynos5 is planned to be added in the near future.
-> >
-> > I welcome your comments.
-> >
-> > ----------------------
-> >
-> > [1] https://lkml.org/lkml/2013/8/21/29
-> >
-> >
-> > Kamil Debski (8):
-> >   phy: core: Change the way of_phy_get is called
-> >   phy: core: Add devm_of_phy_get to phy-core
-> >   phy: Add new Exynos USB PHY driver
-> >   usb: ehci-s5p: Change to use phy provided by the generic phy
-> >     framework
-> >   usb: s3c-hsotg: Use the new Exynos USB phy driver with the generic
-> >     phy framework
-> >   phy: Add Exynos 5250 support to the Exynos USB 2.0 PHY driver
-> >   dts: Add usb2phy to Exynos 4
-> >   dts: Add usb2phy to Exynos 5250
-> >
-> > Mateusz Krawczuk (1):
-> >   phy: Add support for S5PV210 to the Exynos USB PHY driver
-> >
-> >  .../devicetree/bindings/arm/samsung/pmu.txt        |    2 +
-> >  .../devicetree/bindings/phy/samsung-usbphy.txt     |   56 +++
-> >  .../devicetree/bindings/usb/samsung-hsotg.txt      |    4 +
-> >  Documentation/devicetree/bindings/usb/usb-ehci.txt |   35 ++
-> >  arch/arm/boot/dts/exynos4.dtsi                     |   31 ++
-> >  arch/arm/boot/dts/exynos4210.dtsi                  |   17 +
-> >  arch/arm/boot/dts/exynos4x12.dtsi                  |   17 +
-> >  arch/arm/boot/dts/exynos5250.dtsi                  |   33 +-
-> >  drivers/phy/Kconfig                                |   35 ++
-> >  drivers/phy/Makefile                               |    5 +
-> >  drivers/phy/phy-core.c                             |   43 ++-
-> >  drivers/phy/phy-exynos4210-usb2.c                  |  264
-> ++++++++++++++
-> >  drivers/phy/phy-exynos4212-usb2.c                  |  312
-> +++++++++++++++++
-> >  drivers/phy/phy-exynos5250-usb2.c                  |  363
-> ++++++++++++++++++++
-> >  drivers/phy/phy-s5pv210-usb2.c                     |  206
-> +++++++++++
-> >  drivers/phy/phy-samsung-usb2.c                     |  240
-> +++++++++++++
-> >  drivers/phy/phy-samsung-usb2.h                     |   74 ++++
-> >  drivers/usb/gadget/s3c-hsotg.c                     |   11 +-
-> >  drivers/usb/host/ehci-exynos.c                     |   95 +++--
-> >  include/linux/phy/phy.h                            |    3 +
-> >  20 files changed, 1789 insertions(+), 57 deletions(-)  create mode
-> > 100644 Documentation/devicetree/bindings/phy/samsung-usbphy.txt
-> >  create mode 100644 drivers/phy/phy-exynos4210-usb2.c  create mode
-> > 100644 drivers/phy/phy-exynos4212-usb2.c  create mode 100644
-> > drivers/phy/phy-exynos5250-usb2.c  create mode 100644
-> > drivers/phy/phy-s5pv210-usb2.c  create mode 100644
-> > drivers/phy/phy-samsung-usb2.c  create mode 100644
-> > drivers/phy/phy-samsung-usb2.h
-> >
+
 
