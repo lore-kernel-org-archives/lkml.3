@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab3LFAJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:09:26 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:53215 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab3LFAJY (ORCPT
+	id S1753136Ab3LFAPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:15:04 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:54166 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3LFAO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:09:24 -0500
+	Thu, 5 Dec 2013 19:14:57 -0500
+Date: Fri, 6 Dec 2013 01:14:54 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+Message-ID: <20131206001454.GB21717@two.firstfloor.org>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+ <87fvq9cwlk.fsf@tassilo.jf.intel.com>
+ <CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+ <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1386171888-28190-4-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1384978913-8052-1-git-send-email-sebastian.hesselbarth@gmail.com> <1386171888-28190-4-git-send-email-sebastian.hesselbarth@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Thu, 5 Dec 2013 16:08:44 -0800
-Message-ID: <CAGVrzcaTVbHCty2RWZM9jvETYVHV8fFRV1RXOYVauzf0-Arj7g@mail.gmail.com>
-Subject: Re: [PATCH RFCv2 3/6] net: phy: provide phy_resume/phy_suspend helpers
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Mugunthan V N <mugunthanvnm@ti.com>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/4 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>:
-> This adds helper functions to resume and suspend a given phy_device
-> by calling the corresponding driver callbacks if available.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Changelog:
-> RFCv1->RFCv2:
-> - only suspend if WOL is not enabled
-> - remove EXPORT_SYMBOL for phy_suspend/resume
->
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
-> Cc: Mugunthan V N <mugunthanvnm@ti.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/phy/phy_device.c |   24 ++++++++++++++++++++++++
->  include/linux/phy.h          |    2 ++
->  2 files changed, 26 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-> index d6447b3..6f0e9e4 100644
-> --- a/drivers/net/phy/phy_device.c
-> +++ b/drivers/net/phy/phy_device.c
-> @@ -625,6 +625,30 @@ void phy_detach(struct phy_device *phydev)
->  }
->  EXPORT_SYMBOL(phy_detach);
->
-> +int phy_suspend(struct phy_device *phydev)
-> +{
-> +       struct phy_driver *phydrv = to_phy_driver(phydev->dev.driver);
-> +       struct ethtool_wolinfo wol;
-> +
-> +       /* If the device has WOL enabled, we cannot suspend the PHY */
-> +       wol.cmd = ETHTOOL_GWOL;
-> +       phy_ethtool_get_wol(phydev, &wol);
-> +       if (wol.wolopts)
-> +               return -EBUSY;
+> 1M skb alloc/free 185660 (usecs)
+> 
+> the difference is bigger now: 484-145 vs 185-145
 
-I wonder if we should not set a flag in the phy device structure which
-says "someone called my phydrv->set_wol() callback, this succeeded and
-WoL is now enabled for me", rather than using this potentially racy
-call? This would have to be modified in phy_ethtool_set_wol() for
-instance?
+Thanks for the data. 
 
-This is kind of theoretical though as I can't picture a case where
-this sequence of events would happen in real-life.
---
-Florian
+This is a obvious improvement, but imho not big enough to be extremely
+compelling (< cost 1-2 cache misses, no orders of magnitude improvements
+that would justify a lot of code)
+
+One larger problem I have with your patchkit is where exactly it fits
+with the user base.
+
+In my experience there are roughly two groups of trace users:
+kernel hackers and users. The kernel hackers want something
+convenient and fast, but for anything complicated or performance
+critical they can always hack the kernel to include custom 
+instrumentation.
+
+Your code requires a compiler, so from my perspective it 
+wouldn't be a lot easier or faster to use than just changing 
+the code directly and recompile.
+
+The users want something simple too that shields them from
+having to learn all the internals. They don't want to recompile.
+As far as I can tell your code is a bit too low level for that,
+and the requirement for the compiler may also scare them.
+
+Where exactly does it fit?
+
+-Andi
+
