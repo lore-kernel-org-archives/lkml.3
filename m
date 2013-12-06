@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab3LFNCW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:02:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44146 "EHLO
+	id S1161576Ab3LFNCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:02:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44184 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758140Ab3LFNCS (ORCPT
+	with ESMTP id S1758194Ab3LFNC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:02:18 -0500
+	Fri, 6 Dec 2013 08:02:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Jeff Layton <jlayton@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/272] dm: allocate buffer for messages with small number of arguments using GFP_NOIO
-Date: Fri,  6 Dec 2013 12:56:54 +0000
-Message-Id: <1386334761-25517-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 132/272] audit: add child record before the create to handle case where create fails
+Date: Fri,  6 Dec 2013 12:57:01 +0000
+Message-Id: <1386334761-25517-133-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit f36afb3957353d2529cb2b00f78fdccd14fc5e9c upstream.
+commit 14e972b4517128ac8e30e3de2ee4fbd995084223 upstream.
 
-dm-mpath and dm-thin must process messages even if some device is
-suspended, so we allocate argv buffer with GFP_NOIO. These messages have
-a small fixed number of arguments.
+Historically, when a syscall that creates a dentry fails, you get an audit
+record that looks something like this (when trying to create a file named
+"new" in "/tmp/tmp.SxiLnCcv63"):
 
-On the other hand, dm-switch needs to process bulk data using messages
-so excessive use of GFP_NOIO could cause trouble.
+    type=PATH msg=audit(1366128956.279:965): item=0 name="/tmp/tmp.SxiLnCcv63/new" inode=2138308 dev=fd:02 mode=040700 ouid=0 ogid=0 rdev=00:00 obj=staff_u:object_r:user_tmp_t:s15:c0.c1023
 
-The patch also lowers the default number of arguments from 64 to 8, so
-that there is smaller load on GFP_NOIO allocations.
+This record makes no sense since it's associating the inode information for
+"/tmp/tmp.SxiLnCcv63" with the path "/tmp/tmp.SxiLnCcv63/new". The recent
+patch I posted to fix the audit_inode call in do_last fixes this, by making it
+look more like this:
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+    type=PATH msg=audit(1366128765.989:13875): item=0 name="/tmp/tmp.DJ1O8V3e4f/" inode=141 dev=fd:02 mode=040700 ouid=0 ogid=0 rdev=00:00 obj=staff_u:object_r:user_tmp_t:s15:c0.c1023
+
+While this is more correct, if the creation of the file fails, then we
+have no record of the filename that the user tried to create.
+
+This patch adds a call to audit_inode_child to may_create. This creates
+an AUDIT_TYPE_CHILD_CREATE record that will sit in place until the
+create succeeds. When and if the create does succeed, then this record
+will be updated with the correct inode info from the create.
+
+This fixes what was broken in commit bfcec708.
+Commit 79f6530c should also be backported to stable v3.7+.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-table.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ fs/namei.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index f221812..bbd7369 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -545,14 +545,28 @@ static int adjoin(struct dm_table *table, struct dm_target *ti)
- 
- /*
-  * Used to dynamically allocate the arg array.
-+ *
-+ * We do first allocation with GFP_NOIO because dm-mpath and dm-thin must
-+ * process messages even if some device is suspended. These messages have a
-+ * small fixed number of arguments.
-+ *
-+ * On the other hand, dm-switch needs to process bulk data using messages and
-+ * excessive use of GFP_NOIO could cause trouble.
+diff --git a/fs/namei.c b/fs/namei.c
+index 7720fbd..df9946e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2262,6 +2262,7 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
   */
- static char **realloc_argv(unsigned *array_size, char **old_argv)
+ static inline int may_create(struct inode *dir, struct dentry *child)
  {
- 	char **argv;
- 	unsigned new_size;
-+	gfp_t gfp;
- 
--	new_size = *array_size ? *array_size * 2 : 64;
--	argv = kmalloc(new_size * sizeof(*argv), GFP_KERNEL);
-+	if (*array_size) {
-+		new_size = *array_size * 2;
-+		gfp = GFP_KERNEL;
-+	} else {
-+		new_size = 8;
-+		gfp = GFP_NOIO;
-+	}
-+	argv = kmalloc(new_size * sizeof(*argv), gfp);
- 	if (argv) {
- 		memcpy(argv, old_argv, *array_size * sizeof(*argv));
- 		*array_size = new_size;
++	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
+ 	if (child->d_inode)
+ 		return -EEXIST;
+ 	if (IS_DEADDIR(dir))
 -- 
 1.8.3.2
 
