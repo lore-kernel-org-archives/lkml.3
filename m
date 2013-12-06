@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab3LFAxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:53:24 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52669 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab3LFAxU (ORCPT
+	id S1751211Ab3LFA6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:58:37 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:58198 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723Ab3LFA6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:53:20 -0500
-Date: Fri, 6 Dec 2013 01:53:19 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Len Brown <lenb@kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Thu, 5 Dec 2013 19:58:35 -0500
+Date: Thu, 5 Dec 2013 18:58:29 -0600
+From: rkuo <rkuo@codeaurora.org>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        James Hogan <james.hogan@imgtec.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks
- at system suspend
-Message-ID: <20131206005318.GB27953@amd.pavel.ucw.cz>
-References: <CAJvTdKnqD3ccPUzh7kNMNqrEYFfD93Vh9hgFuKyHz+pjGNHdtA@mail.gmail.com>
- <Pine.LNX.4.44L0.1312051720330.869-100000@iolanthe.rowland.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH] arc: kernel: add default extern variable 'screen_info'
+ in "setup.c"
+Message-ID: <20131206005829.GA7615@codeaurora.org>
+References: <529707B9.1090809@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1312051720330.869-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <529707B9.1090809@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-12-05 17:21:50, Alan Stern wrote:
-> On Thu, 5 Dec 2013, Len Brown wrote:
+On Thu, Nov 28, 2013 at 05:07:05PM +0800, Chen Gang wrote:
+> Hello Vineet:
 > 
-> > This thread raises the question...
-> > 
-> > Do we still need to have PM_RUNTIME apart from PM_SLEEP?
-> > 
-> > What is the benefit of being able to build-in one one without the other?
-> > If that benefit is not significant, perhaps the time has come to
-> > replace them both with CONFIG_PM...
+> hexagon meets the same issue, could you help send related patch for it?
 > 
-> There are lots of embedded/SoC platforms that implement PM_RUNTIME but
-> not PM_SLEEP.
+> If you have no time, please let me know, I should send it within next
+> month.
+> 
+> BTW: I assume hexagon need not support VGA_CONSOLE, either, if it is
+> incorrect, please let me know thanks.
+> 
+> 
 
-And lots of PCs where PM_SLEEP is useful but PM_RUNTIME is not :-).
-									Pavel
+Just to chime in on this one, Hexagon probably won't have the hardware,
+but we would still like to be able to compile the code, so I will fix this
+in Hexagon's arch tree.
+
+Thanks for the help,
+Richard Kuo
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
