@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab3LFV7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:59:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32894 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759559Ab3LFVyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759566Ab3LFVyN (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 16:54:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32862 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759527Ab3LFVyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 16:54:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brad Spengler <spender@grsecurity.net>, mpb <mpb.mail@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Subject: [PATCH 3.4 13/32] inet: fix addr_len/msg->msg_namelen assignment in recv_error and rxpmtu functions
-Date: Fri,  6 Dec 2013 13:52:23 -0800
-Message-Id: <20131206214958.056793675@linuxfoundation.org>
+        Nicolas HICHER <nhicher@avencall.com>,
+        Andreas Henriksson <andreas@fatal.se>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 01/32] net: Fix "ip rule delete table 256"
+Date: Fri,  6 Dec 2013 13:52:11 -0800
+Message-Id: <20131206214956.973999642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -29,186 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Andreas Henriksson <andreas@fatal.se>
 
-[ Upstream commit 85fbaa75037d0b6b786ff18658ddf0b4014ce2a4 ]
+[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
 
-Commit bceaa90240b6019ed73b49965eac7d167610be69 ("inet: prevent leakage
-of uninitialized memory to user in recv syscalls") conditionally updated
-addr_len if the msg_name is written to. The recv_error and rxpmtu
-functions relied on the recvmsg functions to set up addr_len before.
+When trying to delete a table >= 256 using iproute2 the local table
+will be deleted.
+The table id is specified as a netlink attribute when it needs more then
+8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
+Preconditions to matching the table id in the rule delete code
+doesn't seem to take the "table id in netlink attribute" into condition
+so the frh_get_table helper function never gets to do its job when
+matching against current rule.
+Use the helper function twice instead of peaking at the table value directly.
 
-As this does not happen any more we have to pass addr_len to those
-functions as well and set it to the size of the corresponding sockaddr
-length.
+Originally reported at: http://bugs.debian.org/724783
 
-This broke traceroute and such.
-
-Fixes: bceaa90240b6 ("inet: prevent leakage of uninitialized memory to user in recv syscalls")
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Reported-by: Tom Labanowski
-Cc: mpb <mpb.mail@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Nicolas HICHER <nhicher@avencall.com>
+Signed-off-by: Andreas Henriksson <andreas@fatal.se>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/ip.h       |    2 +-
- include/net/ipv6.h     |    6 ++++--
- net/ipv4/ip_sockglue.c |    3 ++-
- net/ipv4/ping.c        |    2 +-
- net/ipv4/raw.c         |    2 +-
- net/ipv4/udp.c         |    2 +-
- net/ipv6/datagram.c    |    7 +++++--
- net/ipv6/raw.c         |    4 ++--
- net/ipv6/udp.c         |    4 ++--
- 9 files changed, 19 insertions(+), 13 deletions(-)
+ net/core/fib_rules.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/net/ip.h
-+++ b/include/net/ip.h
-@@ -466,7 +466,7 @@ extern int	compat_ip_getsockopt(struct s
- 			int optname, char __user *optval, int __user *optlen);
- extern int	ip_ra_control(struct sock *sk, unsigned char on, void (*destructor)(struct sock *));
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -443,7 +443,8 @@ static int fib_nl_delrule(struct sk_buff
+ 		if (frh->action && (frh->action != rule->action))
+ 			continue;
  
--extern int 	ip_recv_error(struct sock *sk, struct msghdr *msg, int len);
-+extern int 	ip_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len);
- extern void	ip_icmp_error(struct sock *sk, struct sk_buff *skb, int err, 
- 			      __be16 port, u32 info, u8 *payload);
- extern void	ip_local_error(struct sock *sk, int err, __be32 daddr, __be16 dport,
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -606,8 +606,10 @@ extern int			compat_ipv6_getsockopt(stru
- extern int			ip6_datagram_connect(struct sock *sk, 
- 						     struct sockaddr *addr, int addr_len);
+-		if (frh->table && (frh_get_table(frh, tb) != rule->table))
++		if (frh_get_table(frh, tb) &&
++		    (frh_get_table(frh, tb) != rule->table))
+ 			continue;
  
--extern int 			ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len);
--extern int 			ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len);
-+extern int 			ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len,
-+						int *addr_len);
-+extern int 			ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len,
-+						 int *addr_len);
- extern void			ipv6_icmp_error(struct sock *sk, struct sk_buff *skb, int err, __be16 port,
- 						u32 info, u8 *payload);
- extern void			ipv6_local_error(struct sock *sk, int err, struct flowi6 *fl6, u32 info);
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -367,7 +367,7 @@ void ip_local_error(struct sock *sk, int
- /*
-  *	Handle MSG_ERRQUEUE
-  */
--int ip_recv_error(struct sock *sk, struct msghdr *msg, int len)
-+int ip_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
- {
- 	struct sock_exterr_skb *serr;
- 	struct sk_buff *skb, *skb2;
-@@ -404,6 +404,7 @@ int ip_recv_error(struct sock *sk, struc
- 						   serr->addr_offset);
- 		sin->sin_port = serr->port;
- 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
-+		*addr_len = sizeof(*sin);
- 	}
- 
- 	memcpy(&errhdr.ee, &serr->ee, sizeof(struct sock_extended_err));
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -634,7 +634,7 @@ static int ping_recvmsg(struct kiocb *io
- 		goto out;
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ip_recv_error(sk, msg, len);
-+		return ip_recv_error(sk, msg, len, addr_len);
- 
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb)
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -689,7 +689,7 @@ static int raw_recvmsg(struct kiocb *ioc
- 		goto out;
- 
- 	if (flags & MSG_ERRQUEUE) {
--		err = ip_recv_error(sk, msg, len);
-+		err = ip_recv_error(sk, msg, len, addr_len);
- 		goto out;
- 	}
- 
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1175,7 +1175,7 @@ int udp_recvmsg(struct kiocb *iocb, stru
- 	bool slow;
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ip_recv_error(sk, msg, len);
-+		return ip_recv_error(sk, msg, len, addr_len);
- 
- try_again:
- 	skb = __skb_recv_datagram(sk, flags | (noblock ? MSG_DONTWAIT : 0),
---- a/net/ipv6/datagram.c
-+++ b/net/ipv6/datagram.c
-@@ -315,7 +315,7 @@ void ipv6_local_rxpmtu(struct sock *sk,
- /*
-  *	Handle MSG_ERRQUEUE
-  */
--int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
-+int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
- {
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct sock_exterr_skb *serr;
-@@ -366,6 +366,7 @@ int ipv6_recv_error(struct sock *sk, str
- 			ipv6_addr_set_v4mapped(*(__be32 *)(nh + serr->addr_offset),
- 					       &sin->sin6_addr);
- 		}
-+		*addr_len = sizeof(*sin);
- 	}
- 
- 	memcpy(&errhdr.ee, &serr->ee, sizeof(struct sock_extended_err));
-@@ -418,7 +419,8 @@ out:
- /*
-  *	Handle IPV6_RECVPATHMTU
-  */
--int ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len)
-+int ipv6_recv_rxpmtu(struct sock *sk, struct msghdr *msg, int len,
-+		     int *addr_len)
- {
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct sk_buff *skb;
-@@ -452,6 +454,7 @@ int ipv6_recv_rxpmtu(struct sock *sk, st
- 		sin->sin6_port = 0;
- 		sin->sin6_scope_id = mtu_info.ip6m_addr.sin6_scope_id;
- 		sin->sin6_addr = mtu_info.ip6m_addr.sin6_addr;
-+		*addr_len = sizeof(*sin);
- 	}
- 
- 	put_cmsg(msg, SOL_IPV6, IPV6_PATHMTU, sizeof(mtu_info), &mtu_info);
---- a/net/ipv6/raw.c
-+++ b/net/ipv6/raw.c
-@@ -458,10 +458,10 @@ static int rawv6_recvmsg(struct kiocb *i
- 		return -EOPNOTSUPP;
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ipv6_recv_error(sk, msg, len);
-+		return ipv6_recv_error(sk, msg, len, addr_len);
- 
- 	if (np->rxpmtu && np->rxopt.bits.rxpmtu)
--		return ipv6_recv_rxpmtu(sk, msg, len);
-+		return ipv6_recv_rxpmtu(sk, msg, len, addr_len);
- 
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb)
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -349,10 +349,10 @@ int udpv6_recvmsg(struct kiocb *iocb, st
- 	bool slow;
- 
- 	if (flags & MSG_ERRQUEUE)
--		return ipv6_recv_error(sk, msg, len);
-+		return ipv6_recv_error(sk, msg, len, addr_len);
- 
- 	if (np->rxpmtu && np->rxopt.bits.rxpmtu)
--		return ipv6_recv_rxpmtu(sk, msg, len);
-+		return ipv6_recv_rxpmtu(sk, msg, len, addr_len);
- 
- try_again:
- 	skb = __skb_recv_datagram(sk, flags | (noblock ? MSG_DONTWAIT : 0),
+ 		if (tb[FRA_PRIORITY] &&
 
 
