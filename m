@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161854Ab3LFWZJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:25:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60739 "EHLO
+	id S1161190Ab3LFVxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161196Ab3LFVxM (ORCPT
+	with ESMTP id S1759203Ab3LFVxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:12 -0500
+	Fri, 6 Dec 2013 16:53:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        Jens Axboe <axboe@kernel.dk>, Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.12 73/83] elevator: acquire q->sysfs_lock in elevator_change()
-Date: Fri,  6 Dec 2013 13:52:03 -0800
-Message-Id: <20131206214646.837772100@linuxfoundation.org>
+        Jan Tluka <jtluka@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 56/83] team: fix master carrier set when user linkup is enabled
+Date: Fri,  6 Dec 2013 13:51:46 -0800
+Message-Id: <20131206214645.262607641@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,63 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit 7c8a3679e3d8e9d92d58f282161760a0e247df97 upstream.
+[ Upstream commit f5e0d34382e18f396d7673a84df8e3342bea7eb6 ]
 
-Add locking of q->sysfs_lock into elevator_change() (an exported function)
-to ensure it is held to protect q->elevator from elevator_init(), even if
-elevator_change() is called from non-sysfs paths.
-sysfs path (elv_iosched_store) uses __elevator_change(), non-locking
-version, as the lock is already taken by elv_iosched_store().
+When user linkup is enabled and user sets linkup of individual port,
+we need to recompute linkup (carrier) of master interface so the change
+is reflected. Fix this by calling __team_carrier_check() which does the
+needed work.
 
-Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Please apply to all stable kernels as well. Thanks.
+
+Reported-by: Jan Tluka <jtluka@redhat.com>
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- block/elevator.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/team/team.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -965,7 +965,7 @@ fail_init:
- /*
-  * Switch this queue to the given IO scheduler.
-  */
--int elevator_change(struct request_queue *q, const char *name)
-+static int __elevator_change(struct request_queue *q, const char *name)
- {
- 	char elevator_name[ELV_NAME_MAX];
- 	struct elevator_type *e;
-@@ -987,6 +987,18 @@ int elevator_change(struct request_queue
- 
- 	return elevator_switch(q, e);
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -1366,6 +1366,8 @@ static int team_user_linkup_option_get(s
+ 	return 0;
  }
-+
-+int elevator_change(struct request_queue *q, const char *name)
-+{
-+	int ret;
-+
-+	/* Protect q->elevator from elevator_init() */
-+	mutex_lock(&q->sysfs_lock);
-+	ret = __elevator_change(q, name);
-+	mutex_unlock(&q->sysfs_lock);
-+
-+	return ret;
-+}
- EXPORT_SYMBOL(elevator_change);
  
- ssize_t elv_iosched_store(struct request_queue *q, const char *name,
-@@ -997,7 +1009,7 @@ ssize_t elv_iosched_store(struct request
- 	if (!q->elevator)
- 		return count;
++static void __team_carrier_check(struct team *team);
++
+ static int team_user_linkup_option_set(struct team *team,
+ 				       struct team_gsetter_ctx *ctx)
+ {
+@@ -1373,6 +1375,7 @@ static int team_user_linkup_option_set(s
  
--	ret = elevator_change(q, name);
-+	ret = __elevator_change(q, name);
- 	if (!ret)
- 		return count;
+ 	port->user.linkup = ctx->data.bool_val;
+ 	team_refresh_port_linkup(port);
++	__team_carrier_check(port->team);
+ 	return 0;
+ }
+ 
+@@ -1392,6 +1395,7 @@ static int team_user_linkup_en_option_se
+ 
+ 	port->user.linkup_enabled = ctx->data.bool_val;
+ 	team_refresh_port_linkup(port);
++	__team_carrier_check(port->team);
+ 	return 0;
+ }
  
 
 
