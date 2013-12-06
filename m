@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759526Ab3LFXgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:36:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48787 "EHLO
+	id S1759634Ab3LFXgd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:36:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48776 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759372Ab3LFXSm (ORCPT
+	with ESMTP id S1752227Ab3LFXSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:18:42 -0500
+	Fri, 6 Dec 2013 18:18:36 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 125/152] hwmon: (lm90) Fix max6696 alarm handling
-Date: Fri,  6 Dec 2013 15:10:49 -0800
-Message-Id: <1386371476-2477-126-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 129/152] rt2x00: fix a crash bug in the HT descriptor handling fix
+Date: Fri,  6 Dec 2013 15:10:53 -0800
+Message-Id: <1386371476-2477-130-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -27,66 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e41fae2b1ed8c78283d73651cd65be0228c0dd1c upstream.
+commit b4089d6d8e71a7293e2192025dfa507a04f661c4 upstream.
 
-Bit 2 of status register 2 on MAX6696 (external diode 2 open)
-sets ALERT; the bit thus has to be listed in alert_alarms.
-Also display a message in the alert handler if the condition
-is encountered.
+Commit "rt2x00: fix HT TX descriptor settings regression"
+assumes that the control parameter to rt2x00mac_tx is always non-NULL.
+There is an internal call in rt2x00lib_bc_buffer_iter where NULL is
+passed. Fix the resulting crash by adding an initialized dummy on-stack
+ieee80211_tx_control struct.
 
-Even though not all overtemperature conditions cause ALERT
-to be set, we should not ignore them in the alert handler.
-Display messages for all out-of-range conditions.
-
-Reported-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/lm90.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00dev.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-index 863412a..5181a76 100644
---- a/drivers/hwmon/lm90.c
-+++ b/drivers/hwmon/lm90.c
-@@ -278,7 +278,7 @@ static const struct lm90_params lm90_params[] = {
- 	[max6696] = {
- 		.flags = LM90_HAVE_EMERGENCY
- 		  | LM90_HAVE_EMERGENCY_ALARM | LM90_HAVE_TEMP3,
--		.alert_alarms = 0x187c,
-+		.alert_alarms = 0x1c7c,
- 		.max_convrate = 6,
- 		.reg_local_ext = MAX6657_REG_R_LOCAL_TEMPL,
- 	},
-@@ -1500,19 +1500,22 @@ static void lm90_alert(struct i2c_client *client, unsigned int flag)
- 	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
- 		dev_info(&client->dev, "Everything OK\n");
- 	} else {
--		if (alarms & 0x61)
-+		if ((alarms & 0x61) || (alarms2 & 0x80))
- 			dev_warn(&client->dev,
- 				 "temp%d out of range, please check!\n", 1);
--		if (alarms & 0x1a)
-+		if ((alarms & 0x1a) || (alarms2 & 0x20))
- 			dev_warn(&client->dev,
- 				 "temp%d out of range, please check!\n", 2);
- 		if (alarms & 0x04)
- 			dev_warn(&client->dev,
- 				 "temp%d diode open, please check!\n", 2);
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index cdbfc30..a1789f5 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -181,6 +181,7 @@ static void rt2x00lib_autowakeup(struct work_struct *work)
+ static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
+ 				     struct ieee80211_vif *vif)
+ {
++	struct ieee80211_tx_control control = {};
+ 	struct rt2x00_dev *rt2x00dev = data;
+ 	struct sk_buff *skb;
  
--		if (alarms2 & 0x18)
-+		if (alarms2 & 0x5a)
- 			dev_warn(&client->dev,
- 				 "temp%d out of range, please check!\n", 3);
-+		if (alarms2 & 0x04)
-+			dev_warn(&client->dev,
-+				 "temp%d diode open, please check!\n", 3);
- 
- 		/*
- 		 * Disable ALERT# output, because these chips don't implement
+@@ -195,7 +196,7 @@ static void rt2x00lib_bc_buffer_iter(void *data, u8 *mac,
+ 	 */
+ 	skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
+ 	while (skb) {
+-		rt2x00mac_tx(rt2x00dev->hw, NULL, skb);
++		rt2x00mac_tx(rt2x00dev->hw, &control, skb);
+ 		skb = ieee80211_get_buffered_bc(rt2x00dev->hw, vif);
+ 	}
+ }
 -- 
 1.8.3.2
 
