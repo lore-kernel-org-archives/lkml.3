@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161507Ab3LFXbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:31:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48890 "EHLO
+	id S1161709Ab3LFXcc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:32:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48876 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758483Ab3LFXTz (ORCPT
+	with ESMTP id S932596Ab3LFXTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:19:55 -0500
+	Fri, 6 Dec 2013 18:19:52 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 080/152] xen/blkback: fix reference counting
-Date: Fri,  6 Dec 2013 15:10:04 -0800
-Message-Id: <1386371476-2477-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 098/152] SUNRPC: fix races on PipeFS UMOUNT notifications
+Date: Fri,  6 Dec 2013 15:10:22 -0800
+Message-Id: <1386371476-2477-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -29,46 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vegard Nossum <vegard.nossum@oracle.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit ea5ec76d76da9279d12027c1828544c5ccbe7932 upstream.
+commit adb6fa7ffe9031857ec14b8aab75c9ab65556cbc upstream.
 
-If the permission check fails, we drop a reference to the blkif without
-having taken it in the first place. The bug was introduced in commit
-604c499cbbcc3d5fe5fb8d53306aa0fae1990109 (xen/blkback: Check device
-permissions before allowing OP_DISCARD).
+CPU#0                                   CPU#1
+-----------------------------           -----------------------------
+rpc_kill_sb
+sn->pipefs_sb = NULL                    rpc_release_client
+(UMOUNT_EVENT)                          rpc_free_auth
+rpc_pipefs_event
+rpc_get_client_for_event
+!atomic_inc_not_zero(cl_count)
+<skip the client>
+                                        atomic_inc(cl_count)
+                                        rpc_free_client
+                                        rpc_clnt_remove_pipedir
+                                        <skip client dir removing>
 
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+To fix this, this patch does the following:
+
+1) Calls RPC_PIPEFS_UMOUNT notification with sn->pipefs_sb_lock being held.
+2) Removes SUNRPC client from the list AFTER pipes destroying.
+3) Doesn't hold RPC client on notification: if client in the list, then it
+can't be destroyed while sn->pipefs_sb_lock in hold by notification caller.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/xen-blkback/blkback.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sunrpc/clnt.c     | 5 +----
+ net/sunrpc/rpc_pipe.c | 2 +-
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index bdee5f8..088f012 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -658,6 +658,8 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	unsigned long secure;
- 	struct phys_req preq;
- 
-+	xen_blkif_get(blkif);
-+
- 	preq.sector_number = req->u.discard.sector_number;
- 	preq.nr_sects      = req->u.discard.nr_sectors;
- 
-@@ -670,7 +672,6 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 716aa41..1a3bd4d 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -240,8 +240,6 @@ static struct rpc_clnt *rpc_get_client_for_event(struct net *net, int event)
+ 			continue;
+ 		if (rpc_clnt_skip_event(clnt, event))
+ 			continue;
+-		if (atomic_inc_not_zero(&clnt->cl_count) == 0)
+-			continue;
+ 		spin_unlock(&sn->rpc_client_lock);
+ 		return clnt;
  	}
- 	blkif->st_ds_req++;
+@@ -258,7 +256,6 @@ static int rpc_pipefs_event(struct notifier_block *nb, unsigned long event,
  
--	xen_blkif_get(blkif);
- 	secure = (blkif->vbd.discard_secure &&
- 		 (req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
- 		 BLKDEV_DISCARD_SECURE : 0;
+ 	while ((clnt = rpc_get_client_for_event(sb->s_fs_info, event))) {
+ 		error = __rpc_pipefs_event(clnt, event, sb);
+-		rpc_release_client(clnt);
+ 		if (error)
+ 			break;
+ 	}
+@@ -635,8 +632,8 @@ rpc_free_client(struct rpc_clnt *clnt)
+ 			rcu_dereference(clnt->cl_xprt)->servername);
+ 	if (clnt->cl_parent != clnt)
+ 		rpc_release_client(clnt->cl_parent);
+-	rpc_unregister_client(clnt);
+ 	rpc_clnt_remove_pipedir(clnt);
++	rpc_unregister_client(clnt);
+ 	rpc_free_iostats(clnt->cl_metrics);
+ 	kfree(clnt->cl_principal);
+ 	clnt->cl_metrics = NULL;
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index fd10981..05bd864 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -1157,12 +1157,12 @@ static void rpc_kill_sb(struct super_block *sb)
+ 		goto out;
+ 	}
+ 	sn->pipefs_sb = NULL;
+-	mutex_unlock(&sn->pipefs_sb_lock);
+ 	dprintk("RPC:       sending pipefs UMOUNT notification for net %p%s\n",
+ 		net, NET_NAME(net));
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
+ 					   sb);
++	mutex_unlock(&sn->pipefs_sb_lock);
+ 	put_net(net);
+ out:
+ 	kill_litter_super(sb);
 -- 
 1.8.3.2
 
