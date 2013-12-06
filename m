@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161451Ab3LFWFh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:05:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32808 "EHLO
+	id S1759662Ab3LFWGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:06:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759475Ab3LFVx6 (ORCPT
+	with ESMTP id S1759464Ab3LFVxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:58 -0500
+	Fri, 6 Dec 2013 16:53:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 51/58] HID: lg: fix Report Descriptor for Logitech MOMO Force (Black)
-Date: Fri,  6 Dec 2013 13:52:22 -0800
-Message-Id: <20131206214849.616015628@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Kim Phillips <kim.phillips@linaro.org>
+Subject: [PATCH 3.10 47/58] clockevents: Split out selection logic
+Date: Fri,  6 Dec 2013 13:52:18 -0800
+Message-Id: <20131206214849.251325104@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -26,102 +29,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 348cbaa800f8161168b20f85f72abb541c145132 upstream.
+commit 45cb8e01b2ecef1c2afb18333e95793fa1a90281 upstream.
 
-By default the Logitech MOMO Force (Black) presents a combined accel/brake
-axis ('Y'). This patch modifies the HID descriptor to present seperate
-accel/brake axes ('Y' and 'Z').
+Split out the clockevent device selection logic. Preparatory patch to
+allow unbinding active clockevent devices.
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Link: http://lkml.kernel.org/r/20130425143436.431796247@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kim Phillips <kim.phillips@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-lg.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+ kernel/time/tick-broadcast.c |   25 ++++++++++++---
+ kernel/time/tick-common.c    |   69 ++++++++++++++++++++++---------------------
+ 2 files changed, 56 insertions(+), 38 deletions(-)
 
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -47,6 +47,7 @@
- #define DFP_RDESC_ORIG_SIZE	97
- #define FV_RDESC_ORIG_SIZE	130
- #define MOMO_RDESC_ORIG_SIZE	87
-+#define MOMO2_RDESC_ORIG_SIZE	87
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -66,19 +66,34 @@ static void tick_broadcast_start_periodi
+ /*
+  * Check, if the device can be utilized as broadcast device:
+  */
++static bool tick_check_broadcast_device(struct clock_event_device *curdev,
++					struct clock_event_device *newdev)
++{
++	if ((newdev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (newdev->features & CLOCK_EVT_FEAT_C3STOP))
++		return false;
++
++	if (tick_broadcast_device.mode == TICKDEV_MODE_ONESHOT &&
++	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
++		return false;
++
++	return !curdev || newdev->rating > curdev->rating;
++}
++
++/*
++ * Conditionally install/replace broadcast device
++ */
+ void tick_install_broadcast_device(struct clock_event_device *dev)
+ {
+ 	struct clock_event_device *cur = tick_broadcast_device.evtdev;
  
- /* Fixed report descriptors for Logitech Driving Force (and Pro)
-  * wheel controllers
-@@ -284,6 +285,54 @@ static __u8 momo_rdesc_fixed[] = {
- 0xC0                /*  End Collection                      */
- };
+-	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
+-	    (tick_broadcast_device.evtdev &&
+-	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+-	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
++	if (!tick_check_broadcast_device(cur, dev))
+ 		return;
++
+ 	if (!try_module_get(dev->owner))
+ 		return;
  
-+static __u8 momo2_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),               */
-+0x09, 0x04,         /*  Usage (Joystik),                    */
-+0xA1, 0x01,         /*  Collection (Application),           */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x0A,         /*          Report Size (10),           */
-+0x15, 0x00,         /*          Logical Minimum (0),        */
-+0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),     */
-+0x35, 0x00,         /*          Physical Minimum (0),       */
-+0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),    */
-+0x09, 0x30,         /*          Usage (X),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x0A,         /*          Report Count (10),          */
-+0x75, 0x01,         /*          Report Size (1),            */
-+0x25, 0x01,         /*          Logical Maximum (1),        */
-+0x45, 0x01,         /*          Physical Maximum (1),       */
-+0x05, 0x09,         /*          Usage Page (Button),        */
-+0x19, 0x01,         /*          Usage Minimum (01h),        */
-+0x29, 0x0A,         /*          Usage Maximum (0Ah),        */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x95, 0x04,         /*          Report Count (4),           */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x08,         /*          Report Size (8),            */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),      */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),     */
-+0x09, 0x01,         /*          Usage (01h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x05, 0x01,         /*          Usage Page (Desktop),       */
-+0x09, 0x31,         /*          Usage (Y),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x09, 0x32,         /*          Usage (Z),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0xC0,               /*      End Collection,                 */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x09, 0x02,         /*          Usage (02h),                */
-+0x95, 0x07,         /*          Report Count (7),           */
-+0x91, 0x02,         /*          Output (Variable),          */
-+0xC0,               /*      End Collection,                 */
-+0xC0                /*  End Collection                      */
-+};
+-	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
++	clockevents_exchange_device(cur, dev);
+ 	if (cur)
+ 		cur->event_handler = clockevents_handle_noop;
+ 	tick_broadcast_device.evtdev = dev;
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -207,6 +207,37 @@ static void tick_setup_device(struct tic
+ 		tick_setup_oneshot(newdev, handler, next_event);
+ }
+ 
++static bool tick_check_percpu(struct clock_event_device *curdev,
++			      struct clock_event_device *newdev, int cpu)
++{
++	if (!cpumask_test_cpu(cpu, newdev->cpumask))
++		return false;
++	if (cpumask_equal(newdev->cpumask, cpumask_of(cpu)))
++		return true;
++	/* Check if irq affinity can be set */
++	if (newdev->irq >= 0 && !irq_can_set_affinity(newdev->irq))
++		return false;
++	/* Prefer an existing cpu local device */
++	if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
++		return false;
++	return true;
++}
++
++static bool tick_check_preferred(struct clock_event_device *curdev,
++				 struct clock_event_device *newdev)
++{
++	/* Prefer oneshot capable device */
++	if (!(newdev->features & CLOCK_EVT_FEAT_ONESHOT)) {
++		if (curdev && (curdev->features & CLOCK_EVT_FEAT_ONESHOT))
++			return false;
++		if (tick_oneshot_mode_active())
++			return false;
++	}
++
++	/* Use the higher rated one */
++	return !curdev || newdev->rating > curdev->rating;
++}
 +
  /*
-  * Certain Logitech keyboards send in report #3 keys which are far
-  * above the logical maximum described in descriptor. This extends
-@@ -343,6 +392,15 @@ static __u8 *lg_report_fixup(struct hid_
- 		}
- 		break;
+  * Check, if the new registered device should be used.
+  */
+@@ -227,40 +258,12 @@ void tick_check_new_device(struct clock_
+ 	curdev = td->evtdev;
  
-+	case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
-+		if (*rsize == MOMO2_RDESC_ORIG_SIZE) {
-+			hid_info(hdev,
-+				"fixing up Logitech Momo Racing Force (Black) report descriptor\n");
-+			rdesc = momo2_rdesc_fixed;
-+			*rsize = sizeof(momo2_rdesc_fixed);
-+		}
-+		break;
-+
- 	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
- 		if (*rsize == FV_RDESC_ORIG_SIZE) {
- 			hid_info(hdev,
+ 	/* cpu local device ? */
+-	if (!cpumask_equal(newdev->cpumask, cpumask_of(cpu))) {
+-
+-		/*
+-		 * If the cpu affinity of the device interrupt can not
+-		 * be set, ignore it.
+-		 */
+-		if (!irq_can_set_affinity(newdev->irq))
+-			goto out_bc;
+-
+-		/*
+-		 * If we have a cpu local device already, do not replace it
+-		 * by a non cpu local device
+-		 */
+-		if (curdev && cpumask_equal(curdev->cpumask, cpumask_of(cpu)))
+-			goto out_bc;
+-	}
++	if (!tick_check_percpu(curdev, newdev, cpu))
++		goto out_bc;
+ 
+-	/*
+-	 * If we have an active device, then check the rating and the oneshot
+-	 * feature.
+-	 */
+-	if (curdev) {
+-		/*
+-		 * Prefer one shot capable devices !
+-		 */
+-		if ((curdev->features & CLOCK_EVT_FEAT_ONESHOT) &&
+-		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+-			goto out_bc;
+-		/*
+-		 * Check the rating
+-		 */
+-		if (curdev->rating >= newdev->rating)
+-			goto out_bc;
+-	}
++	/* Preference decision */
++	if (!tick_check_preferred(curdev, newdev))
++		goto out_bc;
+ 
+ 	if (!try_module_get(newdev->owner))
+ 		return;
 
 
