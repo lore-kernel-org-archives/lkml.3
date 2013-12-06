@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab3LFScR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:32:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57743 "EHLO mx2.suse.de"
+	id S1755430Ab3LFSh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:37:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48076 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab3LFScQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:32:16 -0500
-Date: Fri, 6 Dec 2013 18:32:07 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: t@sgi.com, Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com
-Subject: Re: [PATCH 14/15] mm: numa: Flush TLB if NUMA hinting faults race
- with PTE scan update
-Message-ID: <20131206183207.GW11295@suse.de>
-References: <1386060721-3794-15-git-send-email-mgorman@suse.de>
- <529E641A.7040804@redhat.com>
- <20131203234637.GS11295@suse.de>
- <529F3D51.1090203@redhat.com>
- <20131204160741.GC11295@suse.de>
- <20131205104015.716ed0fe@annuminas.surriel.com>
- <20131205195446.GI11295@suse.de>
- <52A0DC7F.7050403@redhat.com>
- <20131206092400.GJ11295@suse.de>
- <20131206173843.GD3080@sgi.com>
+	id S1754021Ab3LFSh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 13:37:26 -0500
+Date: Fri, 6 Dec 2013 19:37:18 +0100
+From: Miroslav Lichvar <mlichvar@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
+Message-ID: <20131206183718.GL22878@localhost>
+References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
+ <528A7C88.1030801@linaro.org>
+ <20131120183900.GA25735@localhost>
+ <529D2BA6.5020005@linaro.org>
+ <529D5805.20903@linaro.org>
+ <20131206142602.GH22878@localhost>
+ <52A212BF.8060101@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131206173843.GD3080@sgi.com>
+In-Reply-To: <52A212BF.8060101@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 11:38:43AM -0600, Alex Thorlton wrote:
-> On Fri, Dec 06, 2013 at 09:24:00AM +0000, Mel Gorman wrote:
-> > Good. So far I have not been seeing any problems with it at least.
+On Fri, Dec 06, 2013 at 10:09:03AM -0800, John Stultz wrote:
+> On 12/06/2013 06:26 AM, Miroslav Lichvar wrote:
+> > It seems to fix the problem with stability, that's good. But the
+> > response seems to be very slow now. In the simulated test with 10Hz
+> > clock update it takes about 1000 updates (100 seconds!) for the loop
+> > to converge to the correct frequency.
 > 
-> I went through and tested all the different iterations of this patchset
-> last night, and have hit a few problems, but I *think* this has solved
-> the segfault problem.  I'm now hitting some rcu_sched stalls when
-> running my tests.
+> Yea. That was my concern that it over dampens the correction. In my
+> tests on actual systems it doesn't seem to cause much change in the
+> overall convergence picture with ntp, so I'll have to look more closely.
+
+In a few quick tests with phc2sys I didn't see any changes either.
+But I couldn't get the wakeup rate on my test system below 20 per
+second even after playing with powertop and killing everything, so I'm
+not sure if that means anything.
+
+What is the wakeup rate on your test system?
+
+My feeling is that the internal kernel loop should be faster than the
+application's loop.
+
+> Just to be clear, when you say 10Hz clock update, what exactly are you
+> changing, as that doesn't quite match to the terminology in the tktest
+> simulator (ie: are you changing the ticks count?).
+
+Yes, the second argument of advance_ticks(), 100 for 10 Hz (the
+current value) and 1000 for 1 Hz.
+
+> > When the sampling interval is changed to 100*50 ticks:
+> > n: 30, slope: 1.00 (1.00 GHz), dev: 2146.9 ns, max: 5446.5 ns, freq: -100.07928 ppm
+
+> I get the first and the last numbers, but the middle are different for
+> me. Are you just setting:
+
+> -       advance_ticks(freq, 100, 1, 20);
+> +       advance_ticks(freq, 100, 1, 50);
+>  
+>         for (i = 0; i < samples; i++) {
+>                 getnstimeofday(&ts);
+
+No, I'm setting the one in the loop:
+
+                ts_x[i] = simtsc;
+                ts_y[i] = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+ 
+-               advance_ticks(freq, 100, 1, 1);
++               advance_ticks(freq, 100, 1, 50);
+
+> > When the TSC frequency is set to 100 MHz, it becomes more pronounced:
+> > http://mlichvar.fedorapeople.org/tmp/tk_test2.png
+> >
+> > I'm worried about the artifacts in the response, is that a bug?
 > 
+> It does look strange. And again so I can reproduce this, how are you
+> generating the charts?
 
-Well that's news for the start of the weekend.
+I changed TSC_FREQ, added "printk("mult: %d\n", tk->mult);" to
+update_wall_time() in timekeeping.c, grepped the output for "^mult"
+and used this command in gnuplot on display the data:
 
-> Initially things were getting hung up on a lock in change_huge_pmd, so
-> I applied Kirill's patches to split up the PTL, which did manage to ease
-> the contention on that lock, but, now it appears that I'm hitting stalls
-> somewhere else.
-> 
-
-To check this, the next version of the series will be based on 3.13-rc2 which
-will include Kirill's patches. If the segfault is cleared up then at least
-that much will be in flight and in the process of being backported to 3.12.
-NUMA balancing in 3.12 is quite work intensive but the patches 3.13-rc2
-should substantially reduce that overhead. It'd be best to check them
-all in combination and seeing what falls out.
+plot [] [167755330:167755390] "log.mult" using 2
 
 -- 
-Mel Gorman
-SUSE Labs
+Miroslav Lichvar
