@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758790Ab3LFUQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:16:58 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36885 "EHLO comal.ext.ti.com"
+	id S1758810Ab3LFURF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:17:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61968 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753813Ab3LFUQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:16:56 -0500
-Date: Fri, 6 Dec 2013 14:15:30 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, Roger Quadros <rogerq@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, <gregkh@linuxfoundation.org>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <bcousson@baylibre.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 1/7] usb: dwc3: get "usb_phy" only if the platform
- indicates the presence of PHY's
-Message-ID: <20131206201530.GA21086@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1381866857-3861-1-git-send-email-kishon@ti.com>
- <1381866857-3861-2-git-send-email-kishon@ti.com>
- <525E8E93.9010503@ti.com>
- <525E9046.3090209@ti.com>
- <525E943E.3080706@ti.com>
- <20131017145425.GE11611@gimli>
- <20131203103950.GB26423@xps8300>
+	id S1758792Ab3LFURC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 15:17:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,842,1378882800"; 
+   d="scan'208";a="445934657"
+Message-ID: <52A23040.2000605@linux.intel.com>
+Date: Fri, 06 Dec 2013 12:14:56 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <20131203103950.GB26423@xps8300>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: balbi@ti.com
+CC: Michal Nazarewicz <mina86@mina86.com>, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/5] usb: gadget: add quirk_ep_out_aligned_size field
+ to struct usb_gadget
+References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com> <1384201011-11114-3-git-send-email-david.a.cohen@linux.intel.com> <xa1tzjpawl1x.fsf@mina86.com> <5281706F.5050507@linux.intel.com> <xa1t1u2ln5kr.fsf@mina86.com> <20131206201337.GD3889@saruman.home>
+In-Reply-To: <20131206201337.GD3889@saruman.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/06/2013 12:13 PM, Felipe Balbi wrote:
+> On Tue, Nov 12, 2013 at 01:54:28PM +0100, Michal Nazarewicz wrote:
+>> On Tue, Nov 12 2013, David Cohen wrote:
+>>> On 11/11/2013 03:55 PM, Michal Nazarewicz wrote:
+>>>> Come to think of it, perhaps even better helper would be:
+>>>>
+>>>> static inline size_t usb_ep_align_maybe(
+>>>> 	struct usb_gadget *gadget, struct usb_ep *ep, size_t len) {
+>>>> 	return gadget->quir_ep_out_aligned_size ?
+>>>> 		round_up(len, (size_t)ep->desc->wMaxPacketSize) : len;
+>>>> }
+>>>
+>>> The CPU time to check unsigned:1 and possibly jump is about the same as
+>>> round_up() itself. For readability matters, we can round_up() directly.
+>>
+>> I was proposing to have this function and than not have functions check
+>> for the flag.  I.e. instead of
+>>
+>> 	if (gadget->quirk_ep_out_aligned_size)
+>> 		len = usb_ep_align_maxpacketsize(ep, len);
+>>
+>> the code would just be:
+>>
+>> 	len = usb_ep_align_maybe(gadget, ep, len);
+> 
+> that looks very good to me, do we have a version with that already ?
 
-On Tue, Dec 03, 2013 at 12:39:50PM +0200, Heikki Krogerus wrote:
-> Hi,
->=20
-> On Thu, Oct 17, 2013 at 09:54:26AM -0500, Felipe Balbi wrote:
-> > On Wed, Oct 16, 2013 at 04:27:26PM +0300, Roger Quadros wrote:
-> > > On 10/16/2013 04:10 PM, Kishon Vijay Abraham I wrote:
-> > > Do you know if there are users of dwc3 other than exynos5250 and omap=
-5?
-> > > If not, we should get rid of the old USB PHY altogether.
-> >=20
-> > Intel's Baytrail, at least. But they don't use DT.
->=20
-> I don't see any use for the generic-phy when the device is enumerated
-> from PCI. If dwc3 can live without phys, there should not be any
-> problem dropping the old USB PHY support.
+Nope. But as soon as soon as you finish the whole review, I can resend
+new version with all changes at once.
 
-yeah, I don't want to drop PHY support, I want to require everybody to
-provide a PHY, otherwise we have too many options to handle and that's
-never clean.
-
---=20
-balbi
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSojBhAAoJEIaOsuA1yqREUR4QALLZQaPF8HS/RvsATcqHZ/Ez
-Uay3F7tSpIuxcQsJFoQVkXiS8Me49/I3fTUx6DIV84B68cVBqtpWq5+MMRZxt9dP
-5XBZgk+NWcfTto9q/4bU0BTRu3N6qNttL3bpH7jtofSV3k/zDfeNiKaQABSt9qfs
-/Mt66wLuIoh1e3qBmE1+b1BrBpBkVAn0uw4kWrCulG0mGdhtyh8GeaMDej3XE9eI
-xWEmX6uy0xhq2v7coFvAGjv1pyOBiovzKVeIazwLmfHEtT0QrR4JBZ9dRcrtV7IF
-Ay7N7ZSPR9wSuGB91e/Vb8qvAJIIi8birHMCIeRJ4DRo9x+cIYkThBUzQyl8MYSg
-1LtI2+8Jcn/YpEbHg/9ZFNni3ZdOgVVllCwsWKJ4aIfuEzkLtC9/8OYRux9y4CT9
-1+4rrM5LwnHBuLfIwNlfAcOddxakPMTbv0JFnuxvykIT6z1OwqDHUURkQ0k/zvFu
-hjeamvA8wa+IkEmVb+ya3n+VMEEPbXN4AjfBTYelSl6ElpxQchO6Xna+mW8jZVf+
-uowmIVoLIeMh0i61xsjNb+7WyKhS3o6ZG3wMwPNjwYAEJs78wWTt4OvqhnLuYZUm
-bLph99N4cwtANHtbfNvS68RfHSatjhSjjNkXKMYIt0zEQgW0qgsaSVx7NnClJdOV
-J6zOq19aM9RG+Ycc+BPa
-=Bozc
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
+Br, David
