@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab3LFSnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:43:40 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:53831 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3LFSni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:43:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131206183930.GC4379@kroah.com>
-References: <CA+5PVA6Mh=tRM5h=TCbg5yjkkFUg2OncJmHBdtBhG7jqf377rg@mail.gmail.com>
-	<CA+5PVA4pXtXHWzeSnx7d9eGEiOQ-jtL2RtBEyqxmz2DemT--jw@mail.gmail.com>
-	<20131206183930.GC4379@kroah.com>
-Date: Fri, 6 Dec 2013 13:43:38 -0500
-X-Google-Sender-Auth: ycPs44oNstCAtb-Ag0nfBYUYWk0
-Message-ID: <CA+5PVA7_iLoeJseApkeTcjch=ONU+ebUPk4G+oUy62mmp2RCTA@mail.gmail.com>
-Subject: Re: Nov. Fedora Kernel Patch Report
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Greg KH <greg@kroah.com>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kernel Fedora <kernel@lists.fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758130Ab3LFSoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:44:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19328 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754057Ab3LFSoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 13:44:07 -0500
+Date: Fri, 06 Dec 2013 13:43:57 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Message-ID: <1386355437-ly5a1ny8-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1386319310-28016-2-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1386319310-28016-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1386319310-28016-2-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 2/4] mm/mempolicy: correct putback method for isolate
+ pages if failed
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <1386319310-28016-2-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 1:39 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Dec 02, 2013 at 06:56:24PM -0500, Josh Boyer wrote:
->> > drm-radeon-24hz-audio-fixes.patch (rhbz 1010679)
->> > - Should be in 3.13
->>
->> Commits 908171aa738b5bbcc6241cec46f73fcd57dd00d4 and
->> 05e4776357fe7217e531cbaaa163e24f688d10ce
->
-> These commits don't match anything in Linus's tree, are you sure they
-> are correct?
+Hi Joonsoo,
 
-Sorry, they aren't.  Here are the commits from Linus' tree:
+On Fri, Dec 06, 2013 at 05:41:48PM +0900, Joonsoo Kim wrote:
+> queue_pages_range() isolates hugetlbfs pages and putback_lru_pages() can't
+> handle these. We should change it to putback_movable_pages().
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-a2098250fbda149cfad9e626afe80abe3b21e574 drm/radeon/audio: improve ACR
-calculation
-3e71985f2439d8c4090dc2820e497e6f3d72dcff drm/radeon/audio: correct ACR table
+Nice fix, thanks.
+I think that this patch is worth going into -stable 3.12,
+because it can break in-use hugepage list.
 
-josh
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index eca4a31..6d04d37 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1318,7 +1318,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+>  		if (nr_failed && (flags & MPOL_MF_STRICT))
+>  			err = -EIO;
+>  	} else
+> -		putback_lru_pages(&pagelist);
+> +		putback_movable_pages(&pagelist);
+>  
+>  	up_write(&mm->mmap_sem);
+>   mpol_out:
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
