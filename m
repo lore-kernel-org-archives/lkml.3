@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3LFCZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 21:25:01 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:36825 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756137Ab3LFCYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 21:24:49 -0500
+	id S1756845Ab3LFCZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 21:25:05 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:52202 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756710Ab3LFCY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 21:24:57 -0500
 From: Zhi Yong Wu <zwu.kernel@gmail.com>
 To: davem@davemloft.net
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [net-next PATCHv2 6/8] macvtap: remove unused parameter in macvtap_do_read()
-Date: Fri,  6 Dec 2013 10:24:07 +0800
-Message-Id: <1386296649-6453-7-git-send-email-zwu.kernel@gmail.com>
+Subject: [net-next PATCHv2 8/8] tun: remove unused parameter in tun_do_read()
+Date: Fri,  6 Dec 2013 10:24:09 +0800
+Message-Id: <1386296649-6453-9-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1386296649-6453-1-git-send-email-zwu.kernel@gmail.com>
 References: <1386296649-6453-1-git-send-email-zwu.kernel@gmail.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120602-0320-0000-0000-000001E73923
+x-cbid: 13120602-3532-0000-0000-00000399656F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,37 +28,38 @@ From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- drivers/net/macvtap.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/tun.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 4914d85..4a34bcb 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -819,7 +819,7 @@ done:
- 	return ret ? ret : copied;
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index e26cbea..fd8cc47 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1289,8 +1289,7 @@ done:
  }
  
--static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
-+static ssize_t macvtap_do_read(struct macvtap_queue *q,
- 			       const struct iovec *iv, unsigned long len,
- 			       int noblock)
+ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+-			   struct kiocb *iocb, const struct iovec *iv,
+-			   ssize_t len, int noblock)
++			   const struct iovec *iv, ssize_t len, int noblock)
  {
-@@ -870,7 +870,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	struct sk_buff *skb;
+@@ -1353,7 +1352,7 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
  		goto out;
  	}
  
--	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
-+	ret = macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
+-	ret = tun_do_read(tun, tfile, iocb, iv, len,
++	ret = tun_do_read(tun, tfile, iv, len,
+ 			  file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len);
  	if (ret > 0)
- 		iocb->ki_pos = ret;
-@@ -1104,7 +1104,7 @@ static int macvtap_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	int ret;
- 	if (flags & ~(MSG_DONTWAIT|MSG_TRUNC))
- 		return -EINVAL;
--	ret = macvtap_do_read(q, iocb, m->msg_iov, total_len,
-+	ret = macvtap_do_read(q, m->msg_iov, total_len,
+@@ -1454,7 +1453,7 @@ static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 					 SOL_PACKET, TUN_TX_TIMESTAMP);
+ 		goto out;
+ 	}
+-	ret = tun_do_read(tun, tfile, iocb, m->msg_iov, total_len,
++	ret = tun_do_read(tun, tfile, m->msg_iov, total_len,
  			  flags & MSG_DONTWAIT);
  	if (ret > total_len) {
  		m->msg_flags |= MSG_TRUNC;
