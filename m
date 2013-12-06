@@ -1,286 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162039Ab3LFWQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:16:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60873 "EHLO
+	id S1759312Ab3LFVxb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759326Ab3LFVxc (ORCPT
+	with ESMTP id S1758780Ab3LFVxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:32 -0500
+	Fri, 6 Dec 2013 16:53:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 16/58] connector: improved unaligned access error fix
-Date: Fri,  6 Dec 2013 13:51:47 -0800
-Message-Id: <20131206214846.425959123@linuxfoundation.org>
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.12 81/83] aio: clean up aio ring in the fail path
+Date: Fri,  6 Dec 2013 13:52:11 -0800
+Message-Id: <20131206214647.569365213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
-In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
-References: <20131206214844.906193530@linuxfoundation.org>
+In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
+References: <20131206214640.002320724@linuxfoundation.org>
 User-Agent: quilt/0.60-8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-[ Upstream commit 1ca1a4cf59ea343a1a70084fe7cc96f37f3cf5b1 ]
+commit d1b9432712a25eeb06114fb4b587133525a47de5 upstream.
 
-In af3e095a1fb4, Erik Jacobsen fixed one type of unaligned access
-bug for ia64 by converting a 64-bit write to use put_unaligned().
-Unfortunately, since gcc will convert a short memset() to a series
-of appropriately-aligned stores, the problem is now visible again
-on tilegx, where the memset that zeros out proc_event is converted
-to three 64-bit stores, causing an unaligned access panic.
+Clean up the aio ring file in the fail path of aio_setup_ring
+and ioctx_alloc. And maybe it can fix the GPF issue reported by
+Dave Jones:
+https://lkml.org/lkml/2013/11/25/898
 
-A better fix for the original problem is to ensure that proc_event
-is aligned to 8 bytes here.  We can do that relatively easily by
-arranging to start the struct cn_msg aligned to 8 bytes and then
-offset by 4 bytes.  Doing so means that the immediately following
-proc_event structure is then correctly aligned to 8 bytes.
-
-The result is that the memset() stores are now aligned, and as an
-added benefit, we can remove the put_unaligned() calls in the code.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/connector/cn_proc.c |   72 +++++++++++++++++++++++++-------------------
- 1 file changed, 42 insertions(+), 30 deletions(-)
 
---- a/drivers/connector/cn_proc.c
-+++ b/drivers/connector/cn_proc.c
-@@ -32,11 +32,23 @@
- #include <linux/atomic.h>
- #include <linux/pid_namespace.h>
+---
+ fs/aio.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -367,8 +367,10 @@ static int aio_setup_ring(struct kioctx
+ 	if (nr_pages > AIO_RING_PAGES) {
+ 		ctx->ring_pages = kcalloc(nr_pages, sizeof(struct page *),
+ 					  GFP_KERNEL);
+-		if (!ctx->ring_pages)
++		if (!ctx->ring_pages) {
++			put_aio_ring_file(ctx);
+ 			return -ENOMEM;
++		}
+ 	}
  
--#include <asm/unaligned.h>
--
- #include <linux/cn_proc.h>
+ 	ctx->mmap_size = nr_pages * PAGE_SIZE;
+@@ -645,7 +647,7 @@ static struct kioctx *ioctx_alloc(unsign
+ 	    aio_nr + nr_events < aio_nr) {
+ 		spin_unlock(&aio_nr_lock);
+ 		err = -EAGAIN;
+-		goto err;
++		goto err_ctx;
+ 	}
+ 	aio_nr += ctx->max_reqs;
+ 	spin_unlock(&aio_nr_lock);
+@@ -662,6 +664,8 @@ static struct kioctx *ioctx_alloc(unsign
  
--#define CN_PROC_MSG_SIZE (sizeof(struct cn_msg) + sizeof(struct proc_event))
-+/*
-+ * Size of a cn_msg followed by a proc_event structure.  Since the
-+ * sizeof struct cn_msg is a multiple of 4 bytes, but not 8 bytes, we
-+ * add one 4-byte word to the size here, and then start the actual
-+ * cn_msg structure 4 bytes into the stack buffer.  The result is that
-+ * the immediately following proc_event structure is aligned to 8 bytes.
-+ */
-+#define CN_PROC_MSG_SIZE (sizeof(struct cn_msg) + sizeof(struct proc_event) + 4)
-+
-+/* See comment above; we test our assumption about sizeof struct cn_msg here. */
-+static inline struct cn_msg *buffer_to_cn_msg(__u8 *buffer)
-+{
-+	BUILD_BUG_ON(sizeof(struct cn_msg) != 20);
-+	return (struct cn_msg *)(buffer + 4);
-+}
- 
- static atomic_t proc_event_num_listeners = ATOMIC_INIT(0);
- static struct cb_id cn_proc_event_id = { CN_IDX_PROC, CN_VAL_PROC };
-@@ -56,19 +68,19 @@ void proc_fork_connector(struct task_str
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 	struct task_struct *parent;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_FORK;
- 	rcu_read_lock();
- 	parent = rcu_dereference(task->real_parent);
-@@ -91,17 +103,17 @@ void proc_exec_connector(struct task_str
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_EXEC;
- 	ev->event_data.exec.process_pid = task->pid;
- 	ev->event_data.exec.process_tgid = task->tgid;
-@@ -117,14 +129,14 @@ void proc_id_connector(struct task_struc
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 	const struct cred *cred;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	ev->what = which_id;
-@@ -145,7 +157,7 @@ void proc_id_connector(struct task_struc
- 	rcu_read_unlock();
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 
- 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
- 	msg->ack = 0; /* not used */
-@@ -159,17 +171,17 @@ void proc_sid_connector(struct task_stru
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_SID;
- 	ev->event_data.sid.process_pid = task->pid;
- 	ev->event_data.sid.process_tgid = task->tgid;
-@@ -186,17 +198,17 @@ void proc_ptrace_connector(struct task_s
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_PTRACE;
- 	ev->event_data.ptrace.process_pid  = task->pid;
- 	ev->event_data.ptrace.process_tgid = task->tgid;
-@@ -221,17 +233,17 @@ void proc_comm_connector(struct task_str
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
- 	struct timespec ts;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_COMM;
- 	ev->event_data.comm.process_pid  = task->pid;
- 	ev->event_data.comm.process_tgid = task->tgid;
-@@ -248,18 +260,18 @@ void proc_coredump_connector(struct task
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_COREDUMP;
- 	ev->event_data.coredump.process_pid = task->pid;
- 	ev->event_data.coredump.process_tgid = task->tgid;
-@@ -275,18 +287,18 @@ void proc_exit_connector(struct task_str
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	get_seq(&msg->seq, &ev->cpu);
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->what = PROC_EVENT_EXIT;
- 	ev->event_data.exit.process_pid = task->pid;
- 	ev->event_data.exit.process_tgid = task->tgid;
-@@ -312,18 +324,18 @@ static void cn_proc_ack(int err, int rcv
- {
- 	struct cn_msg *msg;
- 	struct proc_event *ev;
--	__u8 buffer[CN_PROC_MSG_SIZE];
-+	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
- 	struct timespec ts;
- 
- 	if (atomic_read(&proc_event_num_listeners) < 1)
- 		return;
- 
--	msg = (struct cn_msg *)buffer;
-+	msg = buffer_to_cn_msg(buffer);
- 	ev = (struct proc_event *)msg->data;
- 	memset(&ev->event_data, 0, sizeof(ev->event_data));
- 	msg->seq = rcvd_seq;
- 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
--	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
-+	ev->timestamp_ns = timespec_to_ns(&ts);
- 	ev->cpu = -1;
- 	ev->what = PROC_EVENT_NONE;
- 	ev->event_data.ack.err = err;
+ err_cleanup:
+ 	aio_nr_sub(ctx->max_reqs);
++err_ctx:
++	aio_free_ring(ctx);
+ err:
+ 	free_percpu(ctx->cpu);
+ 	free_percpu(ctx->reqs.pcpu_count);
 
 
