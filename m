@@ -1,95 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab3LFSh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:37:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48076 "EHLO mx1.redhat.com"
+	id S1758097Ab3LFShs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:37:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021Ab3LFSh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:37:26 -0500
-Date: Fri, 6 Dec 2013 19:37:18 +0100
-From: Miroslav Lichvar <mlichvar@redhat.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
-Message-ID: <20131206183718.GL22878@localhost>
-References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
- <528A7C88.1030801@linaro.org>
- <20131120183900.GA25735@localhost>
- <529D2BA6.5020005@linaro.org>
- <529D5805.20903@linaro.org>
- <20131206142602.GH22878@localhost>
- <52A212BF.8060101@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757384Ab3LFShq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 13:37:46 -0500
+Date: Fri, 06 Dec 2013 13:37:26 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Rafael Aquini <aquini@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Message-ID: <1386355046-jja39cg0-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <52A1E248.1000204@suse.cz>
+References: <1386319310-28016-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <52A1E248.1000204@suse.cz>
+Subject: Re: [PATCH 1/4] mm/migrate: correct return value of migrate_pages()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <52A212BF.8060101@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <52A1E248.1000204@suse.cz>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 10:09:03AM -0800, John Stultz wrote:
-> On 12/06/2013 06:26 AM, Miroslav Lichvar wrote:
-> > It seems to fix the problem with stability, that's good. But the
-> > response seems to be very slow now. In the simulated test with 10Hz
-> > clock update it takes about 1000 updates (100 seconds!) for the loop
-> > to converge to the correct frequency.
-> 
-> Yea. That was my concern that it over dampens the correction. In my
-> tests on actual systems it doesn't seem to cause much change in the
-> overall convergence picture with ntp, so I'll have to look more closely.
-
-In a few quick tests with phc2sys I didn't see any changes either.
-But I couldn't get the wakeup rate on my test system below 20 per
-second even after playing with powertop and killing everything, so I'm
-not sure if that means anything.
-
-What is the wakeup rate on your test system?
-
-My feeling is that the internal kernel loop should be faster than the
-application's loop.
-
-> Just to be clear, when you say 10Hz clock update, what exactly are you
-> changing, as that doesn't quite match to the terminology in the tktest
-> simulator (ie: are you changing the ticks count?).
-
-Yes, the second argument of advance_ticks(), 100 for 10 Hz (the
-current value) and 1000 for 1 Hz.
-
-> > When the sampling interval is changed to 100*50 ticks:
-> > n: 30, slope: 1.00 (1.00 GHz), dev: 2146.9 ns, max: 5446.5 ns, freq: -100.07928 ppm
-
-> I get the first and the last numbers, but the middle are different for
-> me. Are you just setting:
-
-> -       advance_ticks(freq, 100, 1, 20);
-> +       advance_ticks(freq, 100, 1, 50);
->  
->         for (i = 0; i < samples; i++) {
->                 getnstimeofday(&ts);
-
-No, I'm setting the one in the loop:
-
-                ts_x[i] = simtsc;
-                ts_y[i] = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
- 
--               advance_ticks(freq, 100, 1, 1);
-+               advance_ticks(freq, 100, 1, 50);
-
-> > When the TSC frequency is set to 100 MHz, it becomes more pronounced:
-> > http://mlichvar.fedorapeople.org/tmp/tk_test2.png
+On Fri, Dec 06, 2013 at 03:42:16PM +0100, Vlastimil Babka wrote:
+> On 12/06/2013 09:41 AM, Joonsoo Kim wrote:
+> >migrate_pages() should return number of pages not migrated or error code.
+> >When unmap_and_move return -EAGAIN, outer loop is re-execution without
+> >initialising nr_failed. This makes nr_failed over-counted.
 > >
-> > I'm worried about the artifacts in the response, is that a bug?
+> >So this patch correct it by initialising nr_failed in outer loop.
+> >
+> >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >
+> >diff --git a/mm/migrate.c b/mm/migrate.c
+> >index 3747fcd..1f59ccc 100644
+> >--- a/mm/migrate.c
+> >+++ b/mm/migrate.c
+> >@@ -1102,6 +1102,7 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+> >
+> >  	for(pass = 0; pass < 10 && retry; pass++) {
+> >  		retry = 0;
+> >+		nr_failed = 0;
+> >
+> >  		list_for_each_entry_safe(page, page2, from, lru) {
+> >  			cond_resched();
+> >
 > 
-> It does look strange. And again so I can reproduce this, how are you
-> generating the charts?
+> If I'm reading the code correctly, unmap_and_move() (and
+> unmap_and_move_huge_page() as well) deletes all pages from the
+> 'from' list, unless it fails with -EAGAIN. So the only pages you see
+> in subsequent passes are those that failed with -EAGAIN and those
+> are not counted as nr_failed. So there shouldn't be over-count, but
+> your patch could result in under-count.
+> 
+> Perhaps a comment somewhere would clarify this.
 
-I changed TSC_FREQ, added "printk("mult: %d\n", tk->mult);" to
-update_wall_time() in timekeeping.c, grepped the output for "^mult"
-and used this command in gnuplot on display the data:
+I agree and suggest the one below.
+Joonsoo, feel free to append it to your series:)
 
-plot [] [167755330:167755390] "log.mult" using 2
+Thanks,
+Naoya Horiguchi
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Fri, 6 Dec 2013 13:08:15 -0500
+Subject: [PATCH] migrate: add comment about permanent failure path
 
+Let's add a comment about where the failed page goes to, which makes
+code more readable.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/migrate.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 661ff5f66591..c01caafa0a6f 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1118,7 +1118,12 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+ 				nr_succeeded++;
+ 				break;
+ 			default:
+-				/* Permanent failure */
++				/*
++				 * Permanent failure (-EBUSY, -ENOSYS, etc.):
++				 * unlike -EAGAIN case, the failed page is
++				 * removed from migration page list and not
++				 * retried in the next outer loop.
++				 */
+ 				nr_failed++;
+ 				break;
+ 			}
 -- 
-Miroslav Lichvar
+1.8.3.1
+
