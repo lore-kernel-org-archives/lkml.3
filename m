@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162694Ab3LFNdQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:33:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44372 "EHLO
+	id S1162699Ab3LFNdj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:33:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44368 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161720Ab3LFNDV (ORCPT
+	with ESMTP id S1161713Ab3LFNDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:21 -0500
+	Fri, 6 Dec 2013 08:03:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 172/272] [media] lirc_zilog: Don't use dynamic static allocation
-Date: Fri,  6 Dec 2013 12:57:41 +0000
-Message-Id: <1386334761-25517-173-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 171/272] [media] cx18: struct i2c_client is too big for stack
+Date: Fri,  6 Dec 2013 12:57:40 +0000
+Message-Id: <1386334761-25517-172-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,52 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit ac5b4b6bf0c84c48d7e2e3fce22e35b04282ba76 upstream.
+commit 1d212cf0c2d89adf3d0a6d62d729076f49f087dc upstream.
 
-Dynamic static allocation is evil, as Kernel stack is too low, and
-ompilation complains about it on some archs:
-	drivers/staging/media/lirc/lirc_zilog.c:967:1: warning: 'read' uses dynamic stack allocation [enabled by default]
-Instead, let's enforce a limit for the buffer to be 64. That should
-be more than enough.
+	drivers/media/pci/cx18/cx18-driver.c: In function 'cx18_read_eeprom':
+	drivers/media/pci/cx18/cx18-driver.c:357:1: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+That happens because the routine allocates 256 bytes for an eeprom buffer, plus
+the size of struct i2c_client, with is big.
+Change the logic to dynamically allocate/deallocate space for struct i2c_client,
+instead of  using the stack.
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/media/lirc/lirc_zilog.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/media/pci/cx18/cx18-driver.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index 11d5338..0feeaad 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -61,6 +61,9 @@
- #include <media/lirc_dev.h>
- #include <media/lirc.h>
+diff --git a/drivers/media/pci/cx18/cx18-driver.c b/drivers/media/pci/cx18/cx18-driver.c
+index 004d8ac..6386ced 100644
+--- a/drivers/media/pci/cx18/cx18-driver.c
++++ b/drivers/media/pci/cx18/cx18-driver.c
+@@ -324,23 +324,24 @@ static void cx18_eeprom_dump(struct cx18 *cx, unsigned char *eedata, int len)
+ /* Hauppauge card? get values from tveeprom */
+ void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
+ {
+-	struct i2c_client c;
++	struct i2c_client *c;
+ 	u8 eedata[256];
  
-+/* Max transfer size done by I2C transfer functions */
-+#define MAX_XFER_SIZE  64
+-	memset(&c, 0, sizeof(c));
+-	strlcpy(c.name, "cx18 tveeprom tmp", sizeof(c.name));
+-	c.adapter = &cx->i2c_adap[0];
+-	c.addr = 0xA0 >> 1;
++	c = kzalloc(sizeof(*c), GFP_KERNEL);
 +
- struct IR;
++	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
++	c->adapter = &cx->i2c_adap[0];
++	c->addr = 0xa0 >> 1;
  
- struct IR_rx {
-@@ -941,7 +944,14 @@ static ssize_t read(struct file *filep, char *outbuf, size_t n, loff_t *ppos)
- 			schedule();
- 			set_current_state(TASK_INTERRUPTIBLE);
- 		} else {
--			unsigned char buf[rbuf->chunk_size];
-+			unsigned char buf[MAX_XFER_SIZE];
+ 	memset(tv, 0, sizeof(*tv));
+-	if (tveeprom_read(&c, eedata, sizeof(eedata)))
+-		return;
++	if (tveeprom_read(c, eedata, sizeof(eedata)))
++		goto ret;
+ 
+ 	switch (cx->card->type) {
+ 	case CX18_CARD_HVR_1600_ESMT:
+ 	case CX18_CARD_HVR_1600_SAMSUNG:
+ 	case CX18_CARD_HVR_1600_S5H1411:
+-		tveeprom_hauppauge_analog(&c, tv, eedata);
++		tveeprom_hauppauge_analog(c, tv, eedata);
+ 		break;
+ 	case CX18_CARD_YUAN_MPC718:
+ 	case CX18_CARD_GOTVIEW_PCI_DVD3:
+@@ -354,6 +355,9 @@ void cx18_read_eeprom(struct cx18 *cx, struct tveeprom *tv)
+ 		cx18_eeprom_dump(cx, eedata, sizeof(eedata));
+ 		break;
+ 	}
 +
-+			if (rbuf->chunk_size > sizeof(buf)) {
-+				zilog_error("chunk_size is too big (%d)!\n",
-+					    rbuf->chunk_size);
-+				ret = -EINVAL;
-+				break;
-+			}
- 			m = lirc_buffer_read(rbuf, buf);
- 			if (m == rbuf->chunk_size) {
- 				ret = copy_to_user((void *)outbuf+written, buf,
++ret:
++	kfree(c);
+ }
+ 
+ static void cx18_process_eeprom(struct cx18 *cx)
 -- 
 1.8.3.2
 
