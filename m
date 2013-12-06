@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727Ab3LFOOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:14:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43711 "EHLO
+	id S1161211Ab3LFNAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:00:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43678 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161220Ab3LFNAZ (ORCPT
+	with ESMTP id S1161174Ab3LFNAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:00:25 -0500
+	Fri, 6 Dec 2013 08:00:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/272] ALSA: hda - Provide missing pin configs for VAIO with ALC260
-Date: Fri,  6 Dec 2013 12:55:31 +0000
-Message-Id: <1386334761-25517-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 034/272] powerpc/pseries: Duplicate dtl entries sometimes sent to userspace
+Date: Fri,  6 Dec 2013 12:55:23 +0000
+Message-Id: <1386334761-25517-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,67 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Anton Blanchard <anton@samba.org>
 
-commit d08c5ef2a039393eaf2ab2152db5f07790fa0f40 upstream.
+commit 84b073868b9d9e754ae48b828337633d1b386482 upstream.
 
-Some models (or maybe depending on BIOS version) of Sony VAIO with
-ALC260 give no proper pin configurations as default, resulting in the
-non-working speaker, etc.  Just provide the whole pin configurations
-via a fixup.
+When reading from the dispatch trace log (dtl) userspace interface, I
+sometimes see duplicate entries. One example:
 
-Reported-by: Matthew Markus <mmarkus@hearit.co>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+00000000  07 04 00 0c 00 00 48 44  00 00 00 00 00 00 00 00
+00000010  00 0c a0 b4 16 83 6d 68  00 00 00 00 00 00 00 00
+00000020  00 00 00 00 10 00 13 50  80 00 00 00 00 00 d0 32
+
+00000030  07 04 00 0c 00 00 48 44  00 00 00 00 00 00 00 00
+00000040  00 0c a0 b4 16 83 6d 68  00 00 00 00 00 00 00 00
+00000050  00 00 00 00 10 00 13 50  80 00 00 00 00 00 d0 32
+
+The problem is in scan_dispatch_log() where we call dtl_consumer()
+but bail out before incrementing the index.
+
+To fix this I moved dtl_consumer() after the timebase comparison.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/powerpc/kernel/time.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 3e133e7..084ec6c 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1477,6 +1477,7 @@ enum {
- 	ALC260_FIXUP_KN1,
- 	ALC260_FIXUP_FSC_S7020,
- 	ALC260_FIXUP_FSC_S7020_JWSE,
-+	ALC260_FIXUP_VAIO_PINS,
- };
- 
- static void alc260_gpio1_automute(struct hda_codec *codec)
-@@ -1617,6 +1618,24 @@ static const struct hda_fixup alc260_fixups[] = {
- 		.chained = true,
- 		.chain_id = ALC260_FIXUP_FSC_S7020,
- 	},
-+	[ALC260_FIXUP_VAIO_PINS] = {
-+		.type = HDA_FIXUP_PINS,
-+		.v.pins = (const struct hda_pintbl[]) {
-+			/* Pin configs are missing completely on some VAIOs */
-+			{ 0x0f, 0x01211020 },
-+			{ 0x10, 0x0001003f },
-+			{ 0x11, 0x411111f0 },
-+			{ 0x12, 0x01a15930 },
-+			{ 0x13, 0x411111f0 },
-+			{ 0x14, 0x411111f0 },
-+			{ 0x15, 0x411111f0 },
-+			{ 0x16, 0x411111f0 },
-+			{ 0x17, 0x411111f0 },
-+			{ 0x18, 0x411111f0 },
-+			{ 0x19, 0x411111f0 },
-+			{ }
-+		}
-+	},
- };
- 
- static const struct snd_pci_quirk alc260_fixup_tbl[] = {
-@@ -1625,6 +1644,7 @@ static const struct snd_pci_quirk alc260_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1025, 0x008f, "Acer", ALC260_FIXUP_GPIO1),
- 	SND_PCI_QUIRK(0x103c, 0x280a, "HP dc5750", ALC260_FIXUP_HP_DC5750),
- 	SND_PCI_QUIRK(0x103c, 0x30ba, "HP Presario B1900", ALC260_FIXUP_HP_B1900),
-+	SND_PCI_QUIRK(0x104d, 0x81bb, "Sony VAIO", ALC260_FIXUP_VAIO_PINS),
- 	SND_PCI_QUIRK(0x104d, 0x81e2, "Sony VAIO TX", ALC260_FIXUP_HP_PIN_0F),
- 	SND_PCI_QUIRK(0x10cf, 0x1326, "FSC LifeBook S7020", ALC260_FIXUP_FSC_S7020),
- 	SND_PCI_QUIRK(0x1509, 0x4540, "Favorit 100XS", ALC260_FIXUP_GPIO1),
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 65ab9e9..d1f90d3 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -213,8 +213,6 @@ static u64 scan_dispatch_log(u64 stop_tb)
+ 	if (i == vpa->dtl_idx)
+ 		return 0;
+ 	while (i < vpa->dtl_idx) {
+-		if (dtl_consumer)
+-			dtl_consumer(dtl, i);
+ 		dtb = dtl->timebase;
+ 		tb_delta = dtl->enqueue_to_dispatch_time +
+ 			dtl->ready_to_enqueue_time;
+@@ -227,6 +225,8 @@ static u64 scan_dispatch_log(u64 stop_tb)
+ 		}
+ 		if (dtb > stop_tb)
+ 			break;
++		if (dtl_consumer)
++			dtl_consumer(dtl, i);
+ 		stolen += tb_delta;
+ 		++i;
+ 		++dtl;
 -- 
 1.8.3.2
 
