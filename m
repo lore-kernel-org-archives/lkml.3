@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab3LFNDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:03:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44317 "EHLO
+	id S1758528Ab3LFNhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:37:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44322 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758248Ab3LFNDD (ORCPT
+	with ESMTP id S1758254Ab3LFNDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:03 -0500
+	Fri, 6 Dec 2013 08:03:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 159/272] HID:hid-lg4ff: Switch autocentering off when strength is set to zero.
-Date: Fri,  6 Dec 2013 12:57:28 +0000
-Message-Id: <1386334761-25517-160-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 160/272] HID: lg: fix ReportDescriptor for Logitech Formula Vibration
+Date: Fri,  6 Dec 2013 12:57:29 +0000
+Message-Id: <1386334761-25517-161-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -29,63 +29,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Simon Wood <simon@mungewell.org>
 
-commit d2c02da549b468bbb28e67d269bd3c9e10683ff5 upstream.
+commit 7f50547059bd55ac6a98c29fd1989421bdc36ec9 upstream.
 
-When the autocenter is set to zero, this patch issues a command to
-totally disable the autocenter - this results in less resistance
-in the wheel.
+By default the Logitech Formula Vibration presents a combined accel/brake
+axis ('Y'). This patch modifies the HID descriptor to present seperate
+accel/brake axes ('Y' and 'Z').
 
-Reported-by: Elias Vanderstuyft <elias.vds@gmail.com>
 Signed-off-by: Simon Wood <simon@mungewell.org>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-lg4ff.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ drivers/hid/hid-lg.c | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
-diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index 530fcd19..49f6cc0 100644
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -220,6 +220,20 @@ static void hid_lg4ff_set_autocenter_default(struct input_dev *dev, u16 magnitud
- 	__s32 *value = report->field[0]->value;
- 	__u32 expand_a, expand_b;
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index c2c7dab..1bfd292 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -45,6 +45,7 @@
+ /* Size of the original descriptors of the Driving Force (and Pro) wheels */
+ #define DF_RDESC_ORIG_SIZE	130
+ #define DFP_RDESC_ORIG_SIZE	97
++#define FV_RDESC_ORIG_SIZE	130
+ #define MOMO_RDESC_ORIG_SIZE	87
  
-+	/* De-activate Auto-Center */
-+	if (magnitude == 0) {
-+		value[0] = 0xf5;
-+		value[1] = 0x00;
-+		value[2] = 0x00;
-+		value[3] = 0x00;
-+		value[4] = 0x00;
-+		value[5] = 0x00;
-+		value[6] = 0x00;
-+
-+		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+		return;
-+	}
-+
- 	if (magnitude <= 0xaaaa) {
- 		expand_a = 0x0c * magnitude;
- 		expand_b = 0x80 * magnitude;
-@@ -237,6 +251,17 @@ static void hid_lg4ff_set_autocenter_default(struct input_dev *dev, u16 magnitud
- 	value[6] = 0x00;
+ /* Fixed report descriptors for Logitech Driving Force (and Pro)
+@@ -170,6 +171,73 @@ static __u8 dfp_rdesc_fixed[] = {
+ 0xC0                /*  End Collection                          */
+ };
  
- 	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
++static __u8 fv_rdesc_fixed[] = {
++0x05, 0x01,         /*  Usage Page (Desktop),                   */
++0x09, 0x04,         /*  Usage (Joystik),                        */
++0xA1, 0x01,         /*  Collection (Application),               */
++0xA1, 0x02,         /*      Collection (Logical),               */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x0A,         /*          Report Size (10),               */
++0x15, 0x00,         /*          Logical Minimum (0),            */
++0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),         */
++0x35, 0x00,         /*          Physical Minimum (0),           */
++0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),        */
++0x09, 0x30,         /*          Usage (X),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x0C,         /*          Report Count (12),              */
++0x75, 0x01,         /*          Report Size (1),                */
++0x25, 0x01,         /*          Logical Maximum (1),            */
++0x45, 0x01,         /*          Physical Maximum (1),           */
++0x05, 0x09,         /*          Usage Page (Button),            */
++0x19, 0x01,         /*          Usage Minimum (01h),            */
++0x29, 0x0C,         /*          Usage Maximum (0Ch),            */
++0x81, 0x02,         /*          Input (Variable),               */
++0x95, 0x02,         /*          Report Count (2),               */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
++0x09, 0x01,         /*          Usage (01h),                    */
++0x81, 0x02,         /*          Input (Variable),               */
++0x09, 0x02,         /*          Usage (02h),                    */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x81, 0x02,         /*          Input (Variable),               */
++0x05, 0x01,         /*          Usage Page (Desktop),           */
++0x25, 0x07,         /*          Logical Maximum (7),            */
++0x46, 0x3B, 0x01,   /*          Physical Maximum (315),         */
++0x75, 0x04,         /*          Report Size (4),                */
++0x65, 0x14,         /*          Unit (Degrees),                 */
++0x09, 0x39,         /*          Usage (Hat Switch),             */
++0x81, 0x42,         /*          Input (Variable, Null State),   */
++0x75, 0x01,         /*          Report Size (1),                */
++0x95, 0x04,         /*          Report Count (4),               */
++0x65, 0x00,         /*          Unit,                           */
++0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),             */
++0x09, 0x01,         /*          Usage (01h),                    */
++0x25, 0x01,         /*          Logical Maximum (1),            */
++0x45, 0x01,         /*          Physical Maximum (1),           */
++0x81, 0x02,         /*          Input (Variable),               */
++0x05, 0x01,         /*          Usage Page (Desktop),           */
++0x95, 0x01,         /*          Report Count (1),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x09, 0x31,         /*          Usage (Y),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0x09, 0x32,         /*          Usage (Z),                      */
++0x81, 0x02,         /*          Input (Variable),               */
++0xC0,               /*      End Collection,                     */
++0xA1, 0x02,         /*      Collection (Logical),               */
++0x26, 0xFF, 0x00,   /*          Logical Maximum (255),          */
++0x46, 0xFF, 0x00,   /*          Physical Maximum (255),         */
++0x95, 0x07,         /*          Report Count (7),               */
++0x75, 0x08,         /*          Report Size (8),                */
++0x09, 0x03,         /*          Usage (03h),                    */
++0x91, 0x02,         /*          Output (Variable),              */
++0xC0,               /*      End Collection,                     */
++0xC0                /*  End Collection                          */
++};
 +
-+	/* Activate Auto-Center */
-+	value[0] = 0x14;
-+	value[1] = 0x00;
-+	value[2] = 0x00;
-+	value[3] = 0x00;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- }
+ static __u8 momo_rdesc_fixed[] = {
+ 0x05, 0x01,         /*  Usage Page (Desktop),               */
+ 0x09, 0x04,         /*  Usage (Joystik),                    */
+@@ -275,6 +343,15 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		}
+ 		break;
  
- /* Sends autocentering command compatible with Formula Force EX */
++	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
++		if (*rsize == FV_RDESC_ORIG_SIZE) {
++			hid_info(hdev,
++				"fixing up Logitech Formula Vibration report descriptor\n");
++			rdesc = fv_rdesc_fixed;
++			*rsize = sizeof(fv_rdesc_fixed);
++		}
++		break;
++
+ 	case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
+ 		if (*rsize == DFP_RDESC_ORIG_SIZE) {
+ 			hid_info(hdev,
 -- 
 1.8.3.2
 
