@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442Ab3LFWh6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:37:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60511 "EHLO
+	id S1759535Ab3LFWij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:38:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60484 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759025Ab3LFVwi (ORCPT
+	with ESMTP id S1758991Ab3LFVwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:38 -0500
+	Fri, 6 Dec 2013 16:52:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 3.12 40/83] tcp: dont update snd_nxt, when a socket is switched from repair mode
-Date: Fri,  6 Dec 2013 13:51:30 -0800
-Message-Id: <20131206214643.784862993@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 29/83] ping: prevent NULL pointer dereference on write to msg_name
+Date: Fri,  6 Dec 2013 13:51:19 -0800
+Message-Id: <20131206214642.774749801@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -32,88 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit dbde497966804e63a38fdedc1e3815e77097efc2 ]
+[ Upstream commit cf970c002d270c36202bd5b9c2804d3097a52da0 ]
 
-snd_nxt must be updated synchronously with sk_send_head.  Otherwise
-tp->packets_out may be updated incorrectly, what may bring a kernel panic.
+A plain read() on a socket does set msg->msg_name to NULL. So check for
+NULL pointer first.
 
-Here is a kernel panic from my host.
-[  103.043194] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
-[  103.044025] IP: [<ffffffff815aaaaf>] tcp_rearm_rto+0xcf/0x150
-...
-[  146.301158] Call Trace:
-[  146.301158]  [<ffffffff815ab7f0>] tcp_ack+0xcc0/0x12c0
-
-Before this panic a tcp socket was restored. This socket had sent and
-unsent data in the write queue. Sent data was restored in repair mode,
-then the socket was switched from reapair mode and unsent data was
-restored. After that the socket was switched back into repair mode.
-
-In that moment we had a socket where write queue looks like this:
-snd_una    snd_nxt   write_seq
-   |_________|________|
-             |
-	  sk_send_head
-
-After a second switching from repair mode the state of socket was
-changed:
-
-snd_una          snd_nxt, write_seq
-   |_________ ________|
-             |
-	  sk_send_head
-
-This state is inconsistent, because snd_nxt and sk_send_head are not
-synchronized.
-
-Bellow you can find a call trace, how packets_out can be incremented
-twice for one skb, if snd_nxt and sk_send_head are not synchronized.
-In this case packets_out will be always positive, even when
-sk_write_queue is empty.
-
-tcp_write_wakeup
-	skb = tcp_send_head(sk);
-	tcp_fragment
-		if (!before(tp->snd_nxt, TCP_SKB_CB(buff)->end_seq))
-			tcp_adjust_pcount(sk, skb, diff);
-	tcp_event_new_data_sent
-		tp->packets_out += tcp_skb_pcount(skb);
-
-I think update of snd_nxt isn't required, when a socket is switched from
-repair mode.  Because it's initialized in tcp_connect_init. Then when a
-write queue is restored, snd_nxt is incremented in tcp_event_new_data_sent,
-so it's always is in consistent state.
-
-I have checked, that the bug is not reproduced with this patch and
-all tests about restoring tcp connections work fine.
-
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_output.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/ipv4/ping.c |   34 +++++++++++++++++++---------------
+ 1 file changed, 19 insertions(+), 15 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -3112,7 +3112,6 @@ void tcp_send_window_probe(struct sock *
- {
- 	if (sk->sk_state == TCP_ESTABLISHED) {
- 		tcp_sk(sk)->snd_wl1 = tcp_sk(sk)->rcv_nxt - 1;
--		tcp_sk(sk)->snd_nxt = tcp_sk(sk)->write_seq;
- 		tcp_xmit_probe_skb(sk, 0);
- 	}
- }
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -867,11 +867,13 @@ int ping_recvmsg(struct kiocb *iocb, str
+ 	if (family == AF_INET) {
+ 		struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
+ 
+-		sin->sin_family = AF_INET;
+-		sin->sin_port = 0 /* skb->h.uh->source */;
+-		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+-		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
+-		*addr_len = sizeof(*sin);
++		if (sin) {
++			sin->sin_family = AF_INET;
++			sin->sin_port = 0 /* skb->h.uh->source */;
++			sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
++			memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++			*addr_len = sizeof(*sin);
++		}
+ 
+ 		if (isk->cmsg_flags)
+ 			ip_cmsg_recv(msg, skb);
+@@ -883,16 +885,18 @@ int ping_recvmsg(struct kiocb *iocb, str
+ 		struct sockaddr_in6 *sin6 =
+ 			(struct sockaddr_in6 *)msg->msg_name;
+ 
+-		sin6->sin6_family = AF_INET6;
+-		sin6->sin6_port = 0;
+-		sin6->sin6_addr = ip6->saddr;
+-		sin6->sin6_flowinfo = 0;
+-		if (np->sndflow)
+-			sin6->sin6_flowinfo = ip6_flowinfo(ip6);
+-
+-		sin6->sin6_scope_id = ipv6_iface_scope_id(&sin6->sin6_addr,
+-							  IP6CB(skb)->iif);
+-		*addr_len = sizeof(*sin6);
++		if (sin6) {
++			sin6->sin6_family = AF_INET6;
++			sin6->sin6_port = 0;
++			sin6->sin6_addr = ip6->saddr;
++			sin6->sin6_flowinfo = 0;
++			if (np->sndflow)
++				sin6->sin6_flowinfo = ip6_flowinfo(ip6);
++			sin6->sin6_scope_id =
++				ipv6_iface_scope_id(&sin6->sin6_addr,
++						    IP6CB(skb)->iif);
++			*addr_len = sizeof(*sin6);
++		}
+ 
+ 		if (inet6_sk(sk)->rxopt.all)
+ 			pingv6_ops.ip6_datagram_recv_ctl(sk, msg, skb);
 
 
