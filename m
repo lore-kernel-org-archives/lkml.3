@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab3LFI71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 03:59:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:18600 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543Ab3LFI7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 03:59:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,839,1378882800"; 
-   d="scan'208";a="439618045"
-Message-ID: <52A191D7.9010106@intel.com>
-Date: Fri, 06 Dec 2013 16:59:03 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-Organization: Intel, Shanghai, PRC
-MIME-Version: 1.0
-To: Lan Tianyu <tianyu.lan@intel.com>, lenb@kernel.org, rjw@rjwysocki.net
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Update PATCH] ACPI/Button: Fix enable Button GPEs twice
-References: <1386318760-5887-1-git-send-email-tianyu.lan@intel.com>
-In-Reply-To: <1386318760-5887-1-git-send-email-tianyu.lan@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756148Ab3LFJBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:01:42 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:51670 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752727Ab3LFJBk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 04:01:40 -0500
+Date: Fri, 6 Dec 2013 10:01:17 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Olliver Schinagl <oliver+list@schinagl.nl>,
+        Oliver Schinagl <oliver@schinagl.nl>, grant.likely@linaro.org,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dev@linux-sunxi.org,
+        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
+        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
+ driver for the Allwinner SUNXi series of SoCs
+Message-ID: <20131206100117.59609a8a@skate>
+In-Reply-To: <20131204132312.GH3158@htj.dyndns.org>
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl>
+	<1386159055-10264-3-git-send-email-oliver@schinagl.nl>
+	<20131204123708.GD3158@htj.dyndns.org>
+	<529F2677.3070208@schinagl.nl>
+	<20131204131402.GG3158@htj.dyndns.org>
+	<529F2B41.8090009@schinagl.nl>
+	<20131204132312.GH3158@htj.dyndns.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 04:32 PM, Lan Tianyu wrote:
-> Button GPEs have been enabled in the acpi_wake_device_init() during
-> boot and Button driver enables these GPEs second time. This causes
-> disabling these gpes via sysfs interface requires twice "echo disable
->> /sys/firmware/acpi/interrupts/gpeXXX". This patch is to remove
-> related code in the Button driver.
-> 
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> ---
-> Update:
-> 	fix a typo, sorry for noise.
-> 
->  drivers/acpi/button.c | 12 +++---------
->  1 file changed, 3 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/acpi/button.c b/drivers/acpi/button.c
-> index 9e3a6cb..6643f2d 100644
-> --- a/drivers/acpi/button.c
-> +++ b/drivers/acpi/button.c
-> @@ -406,15 +406,9 @@ static int acpi_button_add(struct acpi_device *device)
->  		lid_device = device;
->  	}
->  
-> -	if (device->wakeup.flags.valid) {
-> -		/* Button's GPE is run-wake GPE */
-> -		acpi_enable_gpe(device->wakeup.gpe_device,
-> -				device->wakeup.gpe_number);
-> -		if (!device_may_wakeup(&device->dev)) {
-> -			device_set_wakeup_enable(&device->dev, true);
-> -			button->wakeup_enabled = true;
-> -		}
-> -	}
-> +	/* Button GPEs have been enabled in the acpi_wakeup_device_list()*/
-> +	if (device->wakeup.flags.valid)
-> +		button->wakeup_enabled = true;
+Dear Tejun Heo,
 
-It doesn't seem we need this wakeup_enabled flag anymore, since we want
-button/lid's GPE to be always enabled no matter if button driver is in
-use or not and we have already taken care of this in
-acpi_wakeup_device_init function, we can drop it from button driver.
+On Wed, 4 Dec 2013 08:23:12 -0500, Tejun Heo wrote:
 
-Thanks,
-Aaron
-
->  
->  	printk(KERN_INFO PREFIX "%s [%s]\n", name, acpi_device_bid(device));
->  	return 0;
+> > But again, point me (for dummies ;) in the right direction and I'll
+> > work on it with some help.
 > 
+> Richard and Shawn recently worked on ahci_imx.  Can you guys please
+> talk with each other and figure out what can be done to share as much
+> as possible among these new platform-specific drivers?  I'd really
+> like to see the common things factored out as much as possible with
+> only the actual hardware differences described for each device.
 
+Also, please Cc me on such discussions. I have a pending AHCI platform
+driver for another ARM SoC family. It is very similar to ahci_platform,
+but needs to do a few more things that are SoC specific (map an
+additional register area, and do some SoC-specific stuff with them).
+
+For the moment, we're left with two approaches:
+
+ * Do what Oliver did, where the ahci_<foo> driver will do its own
+   SoC-specific stuff, and then will register an additional
+   platform_device to trigger the ->probe() of the generic
+   ahci_platform driver. I must say I don't really like this solution,
+   since it involves having two platform_device registered for the same
+   piece of hardware (one platform_device to trigger the ->probe of
+   ahci_<foo>, and another one to trigger the ->probe of ahci_platform).
+
+ * Duplicate in ahci_<foo> the (relatively small) amount of code that
+   is present in ahci_platform.
+
+>From my point of view, ahci_platform should be turned into a small
+"library", that provides an API for ahci_<foo> drivers to 1/ do their
+own custom stuff and 2/ do the common ahci_platform stuff.
+
+This way we avoid the registration of two platform_device for the same
+piece of hardware, and we avoid the duplication of code.
+
+Want me to propose a RFC for this idea?
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
