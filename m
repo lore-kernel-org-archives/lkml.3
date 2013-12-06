@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab3LFV2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:28:55 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:37098 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab3LFV2x (ORCPT
+	id S1758450Ab3LFVbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:31:42 -0500
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:54266
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754730Ab3LFVbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:28:53 -0500
-Date: Fri, 6 Dec 2013 13:28:48 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] watchdog: s3c2410_wdt: Report when the watchdog reset
- the system
-Message-ID: <20131206212848.GA12283@roeck-us.net>
-References: <1386267329-9941-2-git-send-email-dianders@chromium.org>
- <1386364088-6220-1-git-send-email-dianders@chromium.org>
+	Fri, 6 Dec 2013 16:31:41 -0500
+Date: Fri, 6 Dec 2013 21:31:35 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        toshi.okajima@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        serge.hallyn@ubuntu.com, eparis@redhat.com, ebiederm@xmission.com,
+        sgrubb@redhat.com
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+Message-ID: <20131206213135.GA22445@mail.hallyn.com>
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386364088-6220-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 01:08:07PM -0800, Doug Anderson wrote:
-> A good watchdog driver is supposed to report when it was responsible
-> for resetting the system.  Implement this for the s3c2410, at least on
-> exynos5250 and exynos5420 where we already have a pointer to the PMU
-> registers to read the information.
+Quoting Gao feng (gaofeng@cn.fujitsu.com):
+> Here is the v1 patchset: http://lwn.net/Articles/549546/
 > 
-> Note that exynos4 SoCs also provide the reset status, but providing
-> that is left as an exercise for future changes and is not plumbed up
-> in this patch series.  Also note the exynos4 SoCs don't appear to need
-> any PMU config, which is why this patch separates the concepts of
-> having PMU Registers vs. needing PMU Config.
+> The main target of this patchset is allowing user in audit
+> namespace to generate the USER_MSG type of audit message,
+> some userspace tools need to generate audit message, or
+> these tools will broken.
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> And the login process in container may want to setup
+> /proc/<pid>/loginuid, right now this value is unalterable
+> once it being set. this will also broke the login problem
+> in container. After this patchset, we can reset this loginuid
+> to zero if task is running in a new audit namespace.
+> 
+> Same with v1 patchset, in this patchset, only the privileged
+> user in init_audit_ns and init_user_ns has rights to
+> add/del audit rules. and these rules are gloabl. all
+> audit namespace will comply with the rules.
+> 
+> Compared with v1, v2 patch has some big changes.
+> 1, the audit namespace is not assigned to user namespace.
+>    since there is no available bit of flags for clone, we
+>    create audit namespace through netlink, patch[18/20]
+>    introduces a new audit netlink type AUDIT_CREATE_NS.
+>    the privileged user in userns has rights to create a
+>    audit namespace, it means the unprivileged user can
+>    create auditns through create userns first. In order
+>    to prevent them from doing harm to host, the default
+>    audit_backlog_limit of un-init-audit-ns is zero(means
+>    audit is unavailable in audit namespace). and it can't
+>    be changed in auditns through netlink.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+So the unprivileged user can create an audit-ns, but can't
+then actually send any messages there?  I guess setting it
+to something small would just be hacky?
