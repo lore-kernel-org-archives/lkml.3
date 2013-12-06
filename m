@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161752Ab3LFW1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:27:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60692 "EHLO
+	id S1161400Ab3LFW1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:27:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161122Ab3LFVxG (ORCPT
+	with ESMTP id S1161131Ab3LFVxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:06 -0500
+	Fri, 6 Dec 2013 16:53:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>,
-        Shaohua Li <shli@kernel.org>
-Subject: [PATCH 3.12 63/83] md/raid5: Use conf->device_lock protect changing of multi-thread resources.
-Date: Fri,  6 Dec 2013 13:51:53 -0800
-Message-Id: <20131206214645.903841426@linuxfoundation.org>
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Eric Miao <eric.y.miao@gmail.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 54/83] net: smc91: fix crash regression on the versatile
+Date: Fri,  6 Dec 2013 13:51:44 -0800
+Message-Id: <20131206214645.081595241@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -27,200 +30,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 60aaf933854511630e16be4efe0f96485e132de4 upstream.
-and commit 0c775d5208284700de423e6746259da54a42e1f5
+[ Upstream commit a0c20fb02592d372e744d1d739cda3e1b3defaae ]
 
-When we change group_thread_cnt from sysfs entry, it can OOPS.
+After commit e9e4ea74f06635f2ffc1dffe5ef40c854faa0a90
+"net: smc91x: dont't use SMC_outw for fixing up halfword-aligned data"
+The Versatile SMSC LAN91C111 is crashing like this:
 
-The kernel messages are:
-[  135.299021] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  135.299073] IP: [<ffffffff815188ab>] handle_active_stripes+0x32b/0x440
-[  135.299107] PGD 0
-[  135.299122] Oops: 0000 [#1] SMP
-[  135.299144] Modules linked in: netconsole e1000e ptp pps_core
-[  135.299188] CPU: 3 PID: 2225 Comm: md0_raid5 Not tainted 3.12.0+ #24
-[  135.299214] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
-[  135.299255] task: ffff8800b9638f80 ti: ffff8800b77a4000 task.ti: ffff8800b77a4000
-[  135.299283] RIP: 0010:[<ffffffff815188ab>]  [<ffffffff815188ab>] handle_active_stripes+0x32b/0x440
-[  135.299323] RSP: 0018:ffff8800b77a5c48  EFLAGS: 00010002
-[  135.299344] RAX: ffff880037bb5c70 RBX: 0000000000000000 RCX: 0000000000000008
-[  135.299371] RDX: ffff880037bb5cb8 RSI: 0000000000000001 RDI: ffff880037bb5c00
-[  135.299398] RBP: ffff8800b77a5d08 R08: 0000000000000001 R09: 0000000000000000
-[  135.299425] R10: ffff8800b77a5c98 R11: 00000000ffffffff R12: ffff880037bb5c00
-[  135.299452] R13: 0000000000000000 R14: 0000000000000000 R15: ffff880037bb5c70
-[  135.299479] FS:  0000000000000000(0000) GS:ffff88013fd80000(0000) knlGS:0000000000000000
-[  135.299510] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  135.299532] CR2: 0000000000000000 CR3: 0000000001c0b000 CR4: 00000000000407e0
-[  135.299559] Stack:
-[  135.299570]  ffff8800b77a5c88 ffffffff8107383e ffff8800b77a5c88 ffff880037a64300
-[  135.299611]  000000000000ec08 ffff880037bb5cb8 ffff8800b77a5c98 ffffffffffffffd8
-[  135.299654]  000000000000ec08 ffff880037bb5c60 ffff8800b77a5c98 ffff8800b77a5c98
-[  135.299696] Call Trace:
-[  135.299711]  [<ffffffff8107383e>] ? __wake_up+0x4e/0x70
-[  135.299733]  [<ffffffff81518f88>] raid5d+0x4c8/0x680
-[  135.299756]  [<ffffffff817174ed>] ? schedule_timeout+0x15d/0x1f0
-[  135.299781]  [<ffffffff81524c9f>] md_thread+0x11f/0x170
-[  135.299804]  [<ffffffff81069cd0>] ? wake_up_bit+0x40/0x40
-[  135.299826]  [<ffffffff81524b80>] ? md_rdev_init+0x110/0x110
-[  135.299850]  [<ffffffff81069656>] kthread+0xc6/0xd0
-[  135.299871]  [<ffffffff81069590>] ? kthread_freezable_should_stop+0x70/0x70
-[  135.299899]  [<ffffffff81722ffc>] ret_from_fork+0x7c/0xb0
-[  135.299923]  [<ffffffff81069590>] ? kthread_freezable_should_stop+0x70/0x70
-[  135.299951] Code: ff ff ff 0f 84 d7 fe ff ff e9 5c fe ff ff 66 90 41 8b b4 24 d8 01 00 00 45 31 ed 85 f6 0f 8e 7b fd ff ff 49 8b 9c 24 d0 01 00 00 <48> 3b 1b 49 89 dd 0f 85 67 fd ff ff 48 8d 43 28 31 d2 eb 17 90
-[  135.300005] RIP  [<ffffffff815188ab>] handle_active_stripes+0x32b/0x440
-[  135.300005]  RSP <ffff8800b77a5c48>
-[  135.300005] CR2: 0000000000000000
-[  135.300005] ---[ end trace 504854e5bb7562ed ]---
-[  135.300005] Kernel panic - not syncing: Fatal exception
+------------[ cut here ]------------
+kernel BUG at /home/linus/linux/drivers/net/ethernet/smsc/smc91x.c:599!
+Internal error: Oops - BUG: 0 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 43 Comm: udhcpc Not tainted 3.13.0-rc1+ #24
+task: c6ccfaa0 ti: c6cd0000 task.ti: c6cd0000
+PC is at smc_hardware_send_pkt+0x198/0x22c
+LR is at smc_hardware_send_pkt+0x24/0x22c
+pc : [<c01be324>]    lr : [<c01be1b0>]    psr: 20000013
+sp : c6cd1d08  ip : 00000001  fp : 00000000
+r10: c02adb08  r9 : 00000000  r8 : c6ced802
+r7 : c786fba0  r6 : 00000146  r5 : c8800000  r4 : c78d6000
+r3 : 0000000f  r2 : 00000146  r1 : 00000000  r0 : 00000031
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 0005317f  Table: 06cf4000  DAC: 00000015
+Process udhcpc (pid: 43, stack limit = 0xc6cd01c0)
+Stack: (0xc6cd1d08 to 0xc6cd2000)
+1d00:                   00000010 c8800000 c78d6000 c786fba0 c78d6000 c01be868
+1d20: c01be7a4 00004000 00000000 c786fba0 c6c12b80 c0208554 000004d0 c780fc60
+1d40: 00000220 c01fb734 00000000 00000000 00000000 c6c9a440 c6c12b80 c78d6000
+1d60: c786fba0 c6c9a440 00000000 c021d1d8 00000000 00000000 c6c12b80 c78d6000
+1d80: c786fba0 00000001 c6c9a440 c02087f8 c6c9a4a0 00080008 00000000 00000000
+1da0: c78d6000 c786fba0 c78d6000 00000138 00000000 00000000 00000000 00000000
+1dc0: 00000000 c027ba74 00000138 00000138 00000001 00000010 c6cedc00 00000000
+1de0: 00000008 c7404400 c6cd1eec c6cd1f14 c067a73c c065c0b8 00000000 c067a740
+1e00: 01ffffff 002040d0 00000000 00000000 00000000 00000000 00000000 ffffffff
+1e20: 43004400 00110022 c6cdef20 c027ae8c c6ccfaa0 be82d65c 00000014 be82d3cc
+1e40: 00000000 00000000 00000000 c01f2870 00000000 00000000 00000000 c6cd1e88
+1e60: c6ccfaa0 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+1e80: 00000000 00000000 00000031 c7802310 c7802300 00000138 c7404400 c0771da0
+1ea0: 00000000 c6cd1eec c7800340 00000138 be82d65c 00000014 be82d3cc c6cd1f08
+1ec0: 00000014 00000000 c7404400 c7404400 00000138 c01f4628 c78d6000 00000000
+1ee0: 00000000 be82d3cc 00000138 c6cd1f08 00000014 c6cd1ee4 00000001 00000000
+1f00: 00000000 00000000 00080011 00000002 06000000 ffffffff 0000ffff 00000002
+1f20: 06000000 ffffffff 0000ffff c00928c8 c065c520 c6cd1f58 00000003 c009299c
+1f40: 00000003 c065c520 c7404400 00000000 c7404400 c01f2218 c78106b0 c7441cb0
+1f60: 00000000 00000006 c06799fc 00000000 00000000 00000006 00000000 c01f3ee0
+1f80: 00000000 00000000 be82d678 be82d65c 00000014 00000001 00000122 c00139c8
+1fa0: c6cd0000 c0013840 be82d65c 00000014 00000006 be82d3cc 00000138 00000000
+1fc0: be82d65c 00000014 00000001 00000122 00000000 00000000 00018cb1 00000000
+1fe0: 00003801 be82d3a8 0003a0c7 b6e9af08 60000010 00000006 00000000 00000000
+[<c01be324>] (smc_hardware_send_pkt+0x198/0x22c) from [<c01be868>] (smc_hard_start_xmit+0xc4/0x1e8)
+[<c01be868>] (smc_hard_start_xmit+0xc4/0x1e8) from [<c0208554>] (dev_hard_start_xmit+0x460/0x4cc)
+[<c0208554>] (dev_hard_start_xmit+0x460/0x4cc) from [<c021d1d8>] (sch_direct_xmit+0x94/0x18c)
+[<c021d1d8>] (sch_direct_xmit+0x94/0x18c) from [<c02087f8>] (dev_queue_xmit+0x238/0x42c)
+[<c02087f8>] (dev_queue_xmit+0x238/0x42c) from [<c027ba74>] (packet_sendmsg+0xbe8/0xd28)
+[<c027ba74>] (packet_sendmsg+0xbe8/0xd28) from [<c01f2870>] (sock_sendmsg+0x84/0xa8)
+[<c01f2870>] (sock_sendmsg+0x84/0xa8) from [<c01f4628>] (SyS_sendto+0xb8/0xdc)
+[<c01f4628>] (SyS_sendto+0xb8/0xdc) from [<c0013840>] (ret_fast_syscall+0x0/0x2c)
+Code: e3130002 1a000001 e3130001 0affffcd (e7f001f2)
+---[ end trace 81104fe70e8da7fe ]---
+Kernel panic - not syncing: Fatal exception in interrupt
 
-This is because raid5d() can be running when the multi-thread
-resources are changed via system. We see need to provide locking.
+This is because the macro operations in smc91x.h defined
+for Versatile are missing SMC_outsw() as used in this
+commit.
 
-mddev->device_lock is suitable, but we cannot simple call
-alloc_thread_groups under this lock as we cannot allocate memory
-while holding a spinlock.
-So change alloc_thread_groups() to allocate and return the data
-structures, then raid5_store_group_thread_cnt() can take the lock
-while updating the pointers to the data structures.
+The Versatile needs and uses the same accessors as the other
+platforms in the first if(...) clause, just switch it to using
+that and we have one problem less to worry about.
 
-This fixes a bug introduced in 3.12 and so is suitable for the 3.12.x
-stable series.
+This includes a hunk of a patch from Will Deacon fixin
+the other 32bit platforms as well: Innokom, Ramses, PXA,
+PCM027.
 
-Fixes: b721420e8719131896b009b11edbbd27
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Reviewed-by: Shaohua Li <shli@kernel.org>
+Checkpatch complains about spacing, but I have opted to
+follow the style of this .h-file.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: stable@vger.kernel.org
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/md/raid5.c |   63 ++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 39 insertions(+), 24 deletions(-)
+ drivers/net/ethernet/smsc/smc91x.h |   22 ++++------------------
+ 1 file changed, 4 insertions(+), 18 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -5214,15 +5214,18 @@ raid5_show_group_thread_cnt(struct mddev
- 		return 0;
- }
+--- a/drivers/net/ethernet/smsc/smc91x.h
++++ b/drivers/net/ethernet/smsc/smc91x.h
+@@ -46,7 +46,8 @@
+     defined(CONFIG_MACH_LITTLETON) ||\
+     defined(CONFIG_MACH_ZYLONITE2) ||\
+     defined(CONFIG_ARCH_VIPER) ||\
+-    defined(CONFIG_MACH_STARGATE2)
++    defined(CONFIG_MACH_STARGATE2) ||\
++    defined(CONFIG_ARCH_VERSATILE)
  
--static int alloc_thread_groups(struct r5conf *conf, int cnt);
-+static int alloc_thread_groups(struct r5conf *conf, int cnt,
-+			       int *group_cnt,
-+			       int *worker_cnt_per_group,
-+			       struct r5worker_group **worker_groups);
- static ssize_t
- raid5_store_group_thread_cnt(struct mddev *mddev, const char *page, size_t len)
- {
- 	struct r5conf *conf = mddev->private;
- 	unsigned long new;
- 	int err;
--	struct r5worker_group *old_groups;
--	int old_group_cnt;
-+	struct r5worker_group *new_groups, *old_groups;
-+	int group_cnt, worker_cnt_per_group;
+ #include <asm/mach-types.h>
  
- 	if (len >= PAGE_SIZE)
- 		return -EINVAL;
-@@ -5238,17 +5241,19 @@ raid5_store_group_thread_cnt(struct mdde
- 	mddev_suspend(mddev);
+@@ -154,6 +155,8 @@ static inline void SMC_outw(u16 val, voi
+ #define SMC_outl(v, a, r)	writel(v, (a) + (r))
+ #define SMC_insl(a, r, p, l)	readsl((a) + (r), p, l)
+ #define SMC_outsl(a, r, p, l)	writesl((a) + (r), p, l)
++#define SMC_insw(a, r, p, l)	readsw((a) + (r), p, l)
++#define SMC_outsw(a, r, p, l)	writesw((a) + (r), p, l)
+ #define SMC_IRQ_FLAGS		(-1)	/* from resource */
  
- 	old_groups = conf->worker_groups;
--	old_group_cnt = conf->worker_cnt_per_group;
+ /* We actually can't write halfwords properly if not word aligned */
+@@ -206,23 +209,6 @@ SMC_outw(u16 val, void __iomem *ioaddr,
+ #define RPC_LSA_DEFAULT		RPC_LED_TX_RX
+ #define RPC_LSB_DEFAULT		RPC_LED_100_10
+ 
+-#elif	defined(CONFIG_ARCH_VERSATILE)
 -
- 	if (old_groups)
- 		flush_workqueue(raid5_wq);
+-#define SMC_CAN_USE_8BIT	1
+-#define SMC_CAN_USE_16BIT	1
+-#define SMC_CAN_USE_32BIT	1
+-#define SMC_NOWAIT		1
+-
+-#define SMC_inb(a, r)		readb((a) + (r))
+-#define SMC_inw(a, r)		readw((a) + (r))
+-#define SMC_inl(a, r)		readl((a) + (r))
+-#define SMC_outb(v, a, r)	writeb(v, (a) + (r))
+-#define SMC_outw(v, a, r)	writew(v, (a) + (r))
+-#define SMC_outl(v, a, r)	writel(v, (a) + (r))
+-#define SMC_insl(a, r, p, l)	readsl((a) + (r), p, l)
+-#define SMC_outsl(a, r, p, l)	writesl((a) + (r), p, l)
+-#define SMC_IRQ_FLAGS		(-1)	/* from resource */
+-
+ #elif defined(CONFIG_MN10300)
  
--	conf->worker_groups = NULL;
--	err = alloc_thread_groups(conf, new);
--	if (err) {
--		conf->worker_groups = old_groups;
--		conf->worker_cnt_per_group = old_group_cnt;
--	} else {
-+	err = alloc_thread_groups(conf, new,
-+				  &group_cnt, &worker_cnt_per_group,
-+				  &new_groups);
-+	if (!err) {
-+		spin_lock_irq(&conf->device_lock);
-+		conf->group_cnt = group_cnt;
-+		conf->worker_cnt_per_group = worker_cnt_per_group;
-+		conf->worker_groups = new_groups;
-+		spin_unlock_irq(&conf->device_lock);
-+
- 		if (old_groups)
- 			kfree(old_groups[0].workers);
- 		kfree(old_groups);
-@@ -5278,33 +5283,36 @@ static struct attribute_group raid5_attr
- 	.attrs = raid5_attrs,
- };
- 
--static int alloc_thread_groups(struct r5conf *conf, int cnt)
-+static int alloc_thread_groups(struct r5conf *conf, int cnt,
-+			       int *group_cnt,
-+			       int *worker_cnt_per_group,
-+			       struct r5worker_group **worker_groups)
- {
- 	int i, j;
- 	ssize_t size;
- 	struct r5worker *workers;
- 
--	conf->worker_cnt_per_group = cnt;
-+	*worker_cnt_per_group = cnt;
- 	if (cnt == 0) {
--		conf->worker_groups = NULL;
-+		*group_cnt = 0;
-+		*worker_groups = NULL;
- 		return 0;
- 	}
--	conf->group_cnt = num_possible_nodes();
-+	*group_cnt = num_possible_nodes();
- 	size = sizeof(struct r5worker) * cnt;
--	workers = kzalloc(size * conf->group_cnt, GFP_NOIO);
--	conf->worker_groups = kzalloc(sizeof(struct r5worker_group) *
--				conf->group_cnt, GFP_NOIO);
--	if (!conf->worker_groups || !workers) {
-+	workers = kzalloc(size * *group_cnt, GFP_NOIO);
-+	*worker_groups = kzalloc(sizeof(struct r5worker_group) *
-+				*group_cnt, GFP_NOIO);
-+	if (!*worker_groups || !workers) {
- 		kfree(workers);
--		kfree(conf->worker_groups);
--		conf->worker_groups = NULL;
-+		kfree(*worker_groups);
- 		return -ENOMEM;
- 	}
- 
--	for (i = 0; i < conf->group_cnt; i++) {
-+	for (i = 0; i < *group_cnt; i++) {
- 		struct r5worker_group *group;
- 
--		group = &conf->worker_groups[i];
-+		group = &(*worker_groups)[i];
- 		INIT_LIST_HEAD(&group->handle_list);
- 		group->conf = conf;
- 		group->workers = workers + i * cnt;
-@@ -5462,6 +5470,8 @@ static struct r5conf *setup_conf(struct
- 	struct md_rdev *rdev;
- 	struct disk_info *disk;
- 	char pers_name[6];
-+	int group_cnt, worker_cnt_per_group;
-+	struct r5worker_group *new_group;
- 
- 	if (mddev->new_level != 5
- 	    && mddev->new_level != 4
-@@ -5496,7 +5506,12 @@ static struct r5conf *setup_conf(struct
- 	if (conf == NULL)
- 		goto abort;
- 	/* Don't enable multi-threading by default*/
--	if (alloc_thread_groups(conf, 0))
-+	if (!alloc_thread_groups(conf, 0, &group_cnt, &worker_cnt_per_group,
-+				 &new_group)) {
-+		conf->group_cnt = group_cnt;
-+		conf->worker_cnt_per_group = worker_cnt_per_group;
-+		conf->worker_groups = new_group;
-+	} else
- 		goto abort;
- 	spin_lock_init(&conf->device_lock);
- 	seqcount_init(&conf->gen_lock);
+ /*
 
 
