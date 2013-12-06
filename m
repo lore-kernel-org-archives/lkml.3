@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab3LFABG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:01:06 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:9252 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754427Ab3LFABC (ORCPT
+	id S1756247Ab3LFABW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:01:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49182 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab3LFABT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:01:02 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
-Message-ID: <1386288052.7375.100.camel@snotra.buserror.net>
-Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-From: Scott Wood <scottwood@freescale.com>
-To: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Yoder Stuart-B08248 <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 5 Dec 2013 18:00:52 -0600
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1384973243.2879.361.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1385066603.2879.414.camel@ul30vt.home>
-	 <1385066835.1403.489.camel@snotra.buserror.net>
-	 <1385067648.2879.421.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	Thu, 5 Dec 2013 19:01:19 -0500
+Date: Thu, 5 Dec 2013 16:01:17 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zdenek Kabelac <zkabelac@redhat.com>,
+        Matt Domsch <Matt_Domsch@dell.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] kobject: remove kset from sysfs immediately in
+ kset_unregister()
+Message-ID: <20131206000117.GA21358@kroah.com>
+References: <20131008201915.19377.34185.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20131008202016.19377.17182.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20131203180425.GC15279@kroah.com>
+ <20131203224143.GA19962@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203224143.GA19962@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-11-24 at 23:33 -0600, Bharat Bhushan wrote:
+On Tue, Dec 03, 2013 at 03:41:43PM -0700, Bjorn Helgaas wrote:
+> [+cc Matt, Tejun]
 > 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Friday, November 22, 2013 2:31 AM
-> > To: Wood Scott-B07421
-> > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org; agraf@suse.de; Yoder
-> > Stuart-B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
-> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-> >
-> > On Thu, 2013-11-21 at 14:47 -0600, Scott Wood wrote:
-> > > On Thu, 2013-11-21 at 13:43 -0700, Alex Williamson wrote:
-> > > > On Thu, 2013-11-21 at 11:20 +0000, Bharat Bhushan wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > > > Sent: Thursday, November 21, 2013 12:17 AM
-> > > > > > To: Bhushan Bharat-R65777
-> > > > > > Cc: joro@8bytes.org; bhelgaas@google.com; agraf@suse.de; Wood
-> > > > > > Scott-B07421; Yoder Stuart-B08248;
-> > > > > > iommu@lists.linux-foundation.org; linux- pci@vger.kernel.org;
-> > > > > > linuxppc-dev@lists.ozlabs.org; linux- kernel@vger.kernel.org;
-> > > > > > Bhushan Bharat-R65777
-> > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
-> > > > > > IOMMU (PAMU)
-> > > > > >
-> > > > > > Is VFIO_IOMMU_PAMU_GET_MSI_BANK_COUNT per aperture (ie. each
-> > > > > > vfio user has $COUNT regions at their disposal exclusively)?
-> > > > >
-> > > > > Number of msi-bank count is system wide and not per aperture, But will be
-> > setting windows for banks in the device aperture.
-> > > > > So say if we are direct assigning 2 pci device (both have different iommu
-> > group, so 2 aperture in iommu) to VM.
-> > > > > Now qemu can make only one call to know how many msi-banks are there but
-> > it must set sub-windows for all banks for both pci device in its respective
-> > aperture.
-> > > >
-> > > > I'm still confused.  What I want to make sure of is that the banks
-> > > > are independent per aperture.  For instance, if we have two separate
-> > > > userspace processes operating independently and they both chose to
-> > > > use msi bank zero for their device, that's bank zero within each
-> > > > aperture and doesn't interfere.  Or another way to ask is can a
-> > > > malicious user interfere with other users by using the wrong bank.
-> > > > Thanks,
-> > >
-> > > They can interfere.
+> On Tue, Dec 03, 2013 at 10:04:25AM -0800, Greg Kroah-Hartman wrote:
+> > On Tue, Oct 08, 2013 at 02:20:16PM -0600, Bjorn Helgaas wrote:
+> > > There's no explicit "unlink from sysfs" interface for ksets, so I think
+> > > callers of kset_unregister() expect the kset to be removed from sysfs
+> > > immediately, without waiting for the last reference to be released.
+> > > 
+> > > This patch makes the sysfs removal happen immediately, so the caller may
+> > > create a new kset with the same name as soon as kset_unregister() returns.
+> > > 
+> > > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> > 
+> > With the PCI MSI attribute change, this patch is no longer needed,
+> > right?
 > 
-> Want to be sure of how they can interfere?
+> Well, yes and no.  The attached patch extends Russell's delayed kobject
+> release to make the delay somewhat random.  I *think* that should be
+> valid, but correct me if I'm wrong.
 
-If more than one VFIO user shares the same MSI group, one of the users
-can send MSIs to another user, by using the wrong interrupt within the
-bank.  Unexpected MSIs could cause misbehavior or denial of service.
+Heh, I like it, mind if I queue it up?
 
-> >>  With this hardware, the only way to prevent that
-> > > is to make sure that a bank is not shared by multiple protection contexts.
-> > > For some of our users, though, I believe preventing this is less
-> > > important than the performance benefit.
+> With the random delay patch, it's easy to trigger the "sysfs: cannot
+> create duplicate filename" error, e.g., by unloading and reloading the
+> edd module, because the module unload only waits for the /sys/module/edd
+> object to be released.  Other objects, such as the /sys/firmware/edd
+> kset, may be released later.
 > 
-> So should we let this patch series in without protection?
-
-No, there should be some sort of opt-in mechanism similar to IOMMU-less
-VFIO -- but not the same exact one, since one is a much more serious
-loss of isolation than the other.
-
-> > I think we need some sort of ownership model around the msi banks then.
-> > Otherwise there's nothing preventing another userspace from attempting an MSI
-> > based attack on other users, or perhaps even on the host.  VFIO can't allow
-> > that.  Thanks,
+> Modules like edd could be changed to explicitly call kobject_del() on
+> the kset kobject.  Maybe that's a better approach, so we consistently
+> use kobject_del() to remove things from sysfs.  But I don't know whether
+> it's really useful to allow the kset to hang around in sysfs after
+> kset_unregister(), and it's sort of subtle to track down problems like
+> this.
 > 
-> We have very few (3 MSI bank on most of chips), so we can not assign
-> one to each userspace.
+> Several other kset_unregister() callers have this situation, so if we
+> don't change it to call kobject_del() internally, maybe we should add a
+> note to Documentation/kobject.txt about calling kobject_del() first.
+> The existing hint only talks about using it when you need a two-stage
+> delete, which isn't really the case here.
+> 
+> If we *do* decide to change kset_unregister(), I have an updated
+> documentation patch that makes it more clear that the release may
+> happen after kset_unregister() returns.
 
-That depends on how many users there are.
+Ok, I'll take this patch, it makes sense on the module unload path for
+example.  Thanks for the explanation.
 
--Scott
-
-
-
+greg k-h
