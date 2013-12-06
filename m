@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab3LFAuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:50:15 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:49012 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab3LFAuM (ORCPT
+	id S1755535Ab3LFAxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:53:24 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52669 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab3LFAxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:50:12 -0500
+	Thu, 5 Dec 2013 19:53:20 -0500
+Date: Fri, 6 Dec 2013 01:53:19 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Len Brown <lenb@kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 0/5] PM: Enable option of re-use runtime PM callbacks
+ at system suspend
+Message-ID: <20131206005318.GB27953@amd.pavel.ucw.cz>
+References: <CAJvTdKnqD3ccPUzh7kNMNqrEYFfD93Vh9hgFuKyHz+pjGNHdtA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1312051720330.869-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20131205154358.GB7460@kroah.com>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
-	<003101ceefb5$dc1b0380$94510a80$%han@samsung.com>
-	<CAAb+SYZh1KXHQV0GSeFtOkYC=3acZYRvSnqf-VR2rH=T69nWxg@mail.gmail.com>
-	<20131205154358.GB7460@kroah.com>
-Date: Fri, 6 Dec 2013 08:50:11 +0800
-Message-ID: <CAAb+SYYpELtb5+r93HR1KvF8U5AL2ZTD0cU9VXX+2Pb=A5fGbQ@mail.gmail.com>
-Subject: Re: [PATCH 28/39] staging: remove DEFINE_PCI_DEVICE_TABLE macro
-From: ZHAO Gang <gamerh2o@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jingoo Han <jg1.han@samsung.com>,
-        STAGING SUBSYSTEM <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1312051720330.869-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 11:43 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Dec 05, 2013 at 05:06:33PM +0800, ZHAO Gang wrote:
->> On Tue, Dec 3, 2013 at 7:26 AM, Jingoo Han <jg1.han@samsung.com> wrote:
->> > Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
->> > is not preferred.
->> >
->> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->> >
->>
->> I think you misunderstood the checkpatch.pl warning, it tells you what
->> to do, not what not to do.
->>
->> WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
->>
->> This means use DEFINE_PCI_DEVICE_TABLE to replace struct
->> pci_device_id, not reverse.
->
-> No, checkpatch is wrong, and is being fixed, this patch is correct.
+On Thu 2013-12-05 17:21:50, Alan Stern wrote:
+> On Thu, 5 Dec 2013, Len Brown wrote:
+> 
+> > This thread raises the question...
+> > 
+> > Do we still need to have PM_RUNTIME apart from PM_SLEEP?
+> > 
+> > What is the benefit of being able to build-in one one without the other?
+> > If that benefit is not significant, perhaps the time has come to
+> > replace them both with CONFIG_PM...
+> 
+> There are lots of embedded/SoC platforms that implement PM_RUNTIME but
+> not PM_SLEEP.
 
-Oh, I didn't notice the recent checkpatch update, sorry for the noise.
+And lots of PCs where PM_SLEEP is useful but PM_RUNTIME is not :-).
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
