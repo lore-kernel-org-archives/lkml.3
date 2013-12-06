@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161030Ab3LFUUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:20:47 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:55075 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754634Ab3LFUUp (ORCPT
+	id S1758574Ab3LFUWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:22:30 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42169 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab3LFUW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:20:45 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
-        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] ARM: dts: mxs: add #io-channel-cells to mx28 lradc
-Date: Fri,  6 Dec 2013 21:20:31 +0100
-Message-Id: <1386361231-20427-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 6 Dec 2013 15:22:29 -0500
+Date: Fri, 06 Dec 2013 15:22:27 -0500 (EST)
+Message-Id: <20131206.152227.1496961403659620861.davem@davemloft.net>
+To: zwu.kernel@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wuzhy@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 net-next 0/4] net: some cleanups
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1386360786-17687-1-git-send-email-zwu.kernel@gmail.com>
+References: <1386360786-17687-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 06 Dec 2013 12:22:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/boot/dts/imx28.dtsi | 1 +
- 1 file changed, 1 insertion(+)
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+Date: Sat,  7 Dec 2013 04:13:02 +0800
 
-diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-index cda19c8b0a47..92d9f9e33bf1 100644
---- a/arch/arm/boot/dts/imx28.dtsi
-+++ b/arch/arm/boot/dts/imx28.dtsi
-@@ -945,6 +945,7 @@
- 						20 21 22 23 24 25>;
- 				status = "disabled";
- 				clocks = <&clks 41>;
-+				#io-channel-cells = <1>;
- 			};
- 
- 			spdif: spdif@80054000 {
--- 
-1.8.3.2
+> Since net-next is open now, it's time to post them out again.
+> 
+> Changelog from v3:
+>  -combine the change that removes the return value check with
+> the change which adjusts the function return type to "void". [David Miller]
 
+Looks good, series applied, thanks.
