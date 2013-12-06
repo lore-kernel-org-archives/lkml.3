@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab3LFRfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:35:10 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44854 "EHLO zene.cmpxchg.org"
+	id S1758202Ab3LFRfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:35:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41577 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819Ab3LFRfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:35:08 -0500
-Date: Fri, 6 Dec 2013 12:34:38 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
- notifications to access reserves
-Message-ID: <20131206173438.GE21724@cmpxchg.org>
-References: <20131120152251.GA18809@dhcp22.suse.cz>
- <alpine.DEB.2.02.1311201917520.7167@chino.kir.corp.google.com>
- <20131128115458.GK2761@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
- <20131204054533.GZ3556@cmpxchg.org>
- <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
- <20131205025026.GA26777@htj.dyndns.org>
- <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
+	id S1754795Ab3LFRfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:35:32 -0500
+Message-ID: <52A20AD6.8080706@redhat.com>
+Date: Fri, 06 Dec 2013 18:35:18 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
+        Liu Jinsong <jinsong.liu@intel.com>
+Subject: Re: [PATCH v2 3/3] X86, mpx: Intel MPX xstate feature definition
+References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com> <1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 03:49:57PM -0800, David Rientjes wrote:
-> On Wed, 4 Dec 2013, Tejun Heo wrote:
+Il 07/12/2013 01:20, Qiaowei Ren ha scritto:
+> This patch defines xstate feature and extends struct xsave_hdr_struct
+> to support Intel MPX.
 > 
-> > Hello,
-> > 
+> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> ---
+>  arch/x86/include/asm/processor.h |   12 ++++++++++++
+>  arch/x86/include/asm/xsave.h     |    5 ++++-
+>  2 files changed, 16 insertions(+), 1 deletions(-)
 > 
-> Tejun, how are you?
-> 
-> > Umm.. without delving into details, aren't you basically creating a
-> > memory cgroup inside a memory cgroup?  Doesn't sound like a
-> > particularly well thought-out plan to me.
-> > 
-> 
-> I agree that we wouldn't need such support if we are only addressing memcg 
-> oom conditions.  We could do things like A/memory.limit_in_bytes == 128M 
-> and A/b/memory.limit_in_bytes == 126MB and then attach the process waiting 
-> on A/b/memory.oom_control to A and that would work perfect.
-> 
-> However, we also need to discuss system oom handling.  We have an interest 
-> in being able to allow userspace to handle system oom conditions since the 
-> policy will differ depending on machine and we can't encode every possible 
-> mechanism into the kernel.  For example, on system oom we want to kill a 
-> process from the lowest priority top-level memcg.  We lack that ability 
-> entirely in the kernel and since the sum of our top-level memcgs 
-> memory.limit_in_bytes exceeds the amount of present RAM, we run into these 
-> oom conditions a _lot_.
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 987c75e..2fe2e75 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -370,6 +370,15 @@ struct ymmh_struct {
+>  	u32 ymmh_space[64];
+>  };
+>  
+> +struct bndregs_struct {
+> +	u64 bndregs[8];
+> +} __packed;
+> +
+> +struct bndcsr_struct {
+> +	u64 cfg_reg_u;
+> +	u64 status_reg;
+> +} __packed;
+> +
+>  struct xsave_hdr_struct {
+>  	u64 xstate_bv;
+>  	u64 reserved1[2];
+> @@ -380,6 +389,9 @@ struct xsave_struct {
+>  	struct i387_fxsave_struct i387;
+>  	struct xsave_hdr_struct xsave_hdr;
+>  	struct ymmh_struct ymmh;
+> +	u8 lwp_area[128];
 
-A simple and natural solution to this is to have the global OOM killer
-respect cgroups.  You go through all the effort of carefully grouping
-tasks into bigger entities that you then arrange hierarchically.  The
-global OOM killer should not just treat all tasks as equal peers.
+Sorry for the back-and-forth, but I think this and the removal of
+XSTATE_FLEXIBLE (perhaps XSTATE_LAZY?) makes your v2 worse than v1.
 
-We can add a per-cgroup OOM priority knob and have the global OOM
-handler pick victim tasks from the one or more groups that have the
-lowest priority.
+Since Peter already said the same, please undo these changes.
 
-Out of the box, every cgroup has the same priority, which means we can
-add this feature without changing the default behavior.
+Also, how is XSTATE_EAGER used?  Should MPX be disabled when xsaveopt is
+disabled on the kernel command line?  (Liu, how would this affect the
+KVM patches, too?)
 
-> So the first step, in my opinion, is to add a system oom notification on 
-> the root memcg's memory.oom_control which currently allows registering an 
-> eventfd() notification but never actually triggers.  I did that in a patch 
-> and it is was merged into -mm but was pulled out for later discussion.
+Paolo
+
+> +#define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
+>  /*
+>   * These are the features that the OS can handle currently.
+>   */
+> -#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+> +#define XCNTXT_MASK    (XSTATE_FP | XSTATE_SSE | XSTATE_YMM | XSTATE_EAGER)
+>  
+>  #ifdef CONFIG_X86_64
+>  #define REX_PREFIX	"0x48, "
 > 
-> Then, we need to ensure that the userspace that is registered to handle 
-> such events and that is difficult to do when the system is oom.  The 
-> proposal is to allow such processes, now marked as PF_OOM_HANDLER, to be 
-> able to access pre-defined per-zone memory reserves in the page allocator.  
-> The only special handling for PF_OOM_HANDLER in the page allocator itself 
-> would be under such oom conditions (memcg oom conditions have no problem 
-> allocating the memory, only charging it).  The amount of reserves would be 
-> defined as memory.oom_reserve_in_bytes from within the root memcg as 
-> defined by this patch, i.e. allow this amount of memory to be allocated in 
-> the page allocator for PF_OOM_HANDLER below the per-zone min watermarks.
-> 
-> This, I believe, is the cleanest interface for users who choose to use a 
-> non-default policy by setting memory.oom_reserve_in_bytes and constrains 
-> all of the code to memcg which you have to configure for such support.
-> 
-> The system oom condition is not addressed in this patch series, although 
-> the PF_OOM_HANDLER bit can be used for that purpose.  I didn't post that 
-> patch because the notification on the root memcg's memory.oom_control in 
-> such conditions is currently being debated, so we need to solve that issue 
-> first.
+
