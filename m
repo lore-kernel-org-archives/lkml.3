@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab3LFBL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 20:11:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50848 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094Ab3LFBL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 20:11:57 -0500
-Message-ID: <52A12421.2040208@zytor.com>
-Date: Thu, 05 Dec 2013 17:10:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752192Ab3LFBMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 20:12:34 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50277 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750970Ab3LFBMd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 20:12:33 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] SFI: fix compilation warnings
+Date: Fri, 06 Dec 2013 02:25:33 +0100
+Message-ID: <1419818.3DzaCCe02K@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802494B32@SHSMSX101.ccr.corp.intel.com>
+References: <1386264397-27319-1-git-send-email-andriy.shevchenko@linux.intel.com> <4771886.zcelg2hCiB@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802494B32@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, Alexei Starovoitov <ast@plumgrid.com>
-CC: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com> <87fvq9cwlk.fsf@tassilo.jf.intel.com> <CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com> <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com> <20131206001454.GB21717@two.firstfloor.org>
-In-Reply-To: <20131206001454.GB21717@two.firstfloor.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 04:14 PM, Andi Kleen wrote:
+On Friday, December 06, 2013 01:08:45 AM Zheng, Lv wrote:
+> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > Sent: Friday, December 06, 2013 6:37 AM
+> > 
+> > On Thursday, December 05, 2013 07:26:37 PM Andy Shevchenko wrote:
+> > > When build kernel with make W=1 we get the following compiler error.
+> > >
+> > > In file included from drivers/sfi/sfi_acpi.c:66:0:
+> > > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
+> > > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
+> > >   if (!acpi_table_parse(signature, handler))
+> > >   ^
+> > >   cc1: some warnings being treated as errors
+> > >
+> > > The patch changes acpi/acpi.h inclusion to linux/acpi.h.
+> > >
+> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > 
+> > OK
+> > 
+> > Lv, I'm dropping your patch cleaning up the inclusions, please sort that thing
+> > out entirely for the next cycle.
 > 
-> In my experience there are roughly two groups of trace users:
-> kernel hackers and users. The kernel hackers want something
-> convenient and fast, but for anything complicated or performance
-> critical they can always hack the kernel to include custom 
-> instrumentation.
+> No, I think Andy's patch is wrong.
+
+His patch may be wrong, but the warning in his changelog surely is real. :-)
+
+> This warning is existing before merging my fixes.
 > 
+> Either we fix this warning or leave it as is.
+> 
+> To fix it, you need to add 1 line in sfi_acpi.h rather than change the line.
+> Let me post a fix for this.
 
-Not to mention that in that case we might as well -- since we need a
-compiler anyway -- generate the machine code in user space; the JIT
-solution really only is useful if it can provide something that we can't
-do otherwise, e.g. enable it in secure boot environments.
+Please do.  And I'm putting all ACPI header cleanups on hold until all warnings
+of this kind have been fixed by them.  Otherwise doing those cleanups makes a
+little sense in my opinion.
 
-	-hpa
+Thanks,
+Rafael
 
