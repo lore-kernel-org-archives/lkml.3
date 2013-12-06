@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759032Ab3LFOXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:23:35 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43568 "EHLO
+	id S1759116Ab3LFOYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:24:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43552 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757928Ab3LFM7p (ORCPT
+	with ESMTP id S1757893Ab3LFM7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:45 -0500
+	Fri, 6 Dec 2013 07:59:39 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Jiang <dave.jiang@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 012/272] ioatdma: fix selection of 16 vs 8 source path
-Date: Fri,  6 Dec 2013 12:55:01 +0000
-Message-Id: <1386334761-25517-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 006/272] slub: Handle NULL parameter in kmem_cache_flags
+Date: Fri,  6 Dec 2013 12:54:55 +0000
+Message-Id: <1386334761-25517-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,151 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Christoph Lameter <cl@linux.com>
 
-commit 21e96c7313486390c694919522a76dfea0a86c59 upstream.
+commit c6f58d9b362b45c52afebe4342c9137d0dabe47f upstream.
 
-When performing continuations there are implied sources that need to be
-added to the source count. Quoting dma_set_maxpq:
+Andreas Herrmann writes:
 
-/* dma_maxpq - reduce maxpq in the face of continued operations
- * @dma - dma device with PQ capability
- * @flags - to check if DMA_PREP_CONTINUE and DMA_PREP_PQ_DISABLE_P are set
- *
- * When an engine does not support native continuation we need 3 extra
- * source slots to reuse P and Q with the following coefficients:
- * 1/ {00} * P : remove P from Q', but use it as a source for P'
- * 2/ {01} * Q : use Q to continue Q' calculation
- * 3/ {00} * Q : subtract Q from P' to cancel (2)
- *
- * In the case where P is disabled we only need 1 extra source:
- * 1/ {01} * Q : use Q to continue Q' calculation
- */
+  When I've used slub_debug kernel option (e.g.
+  "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
+  seen a panic like:
 
-...fix the selection of the 16 source path to take these implied sources
-into account.
+    Highbank #setenv bootargs console=ttyAMA0 root=/dev/sda2 kgdboc.kgdboc=ttyAMA0,115200 slub_debug=,kmalloc-4096 earlyprintk=ttyAMA0
+    ...
+    Unable to handle kernel NULL pointer dereference at virtual address 00000000
+    pgd = c0004000
+    [00000000] *pgd=00000000
+    Internal error: Oops: 5 [#1] SMP ARM
+    Modules linked in:
+    CPU: 0 PID: 0 Comm: swapper Tainted: G        W    3.12.0-00048-gbe408cd #314
+    task: c0898360 ti: c088a000 task.ti: c088a000
+    PC is at strncmp+0x1c/0x84
+    LR is at kmem_cache_flags.isra.46.part.47+0x44/0x60
+    pc : [<c02c6da0>]    lr : [<c0110a3c>]    psr: 200001d3
+    sp : c088bea8  ip : c088beb8  fp : c088beb4
+    r10: 00000000  r9 : 413fc090  r8 : 00000001
+    r7 : 00000000  r6 : c2984a08  r5 : c0966e78  r4 : 00000000
+    r3 : 0000006b  r2 : 0000000c  r1 : 00000000  r0 : c2984a08
+    Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+    Control: 10c5387d  Table: 0000404a  DAC: 00000015
+    Process swapper (pid: 0, stack limit = 0xc088a248)
+    Stack: (0xc088bea8 to 0xc088c000)
+    bea0:                   c088bed4 c088beb8 c0110a3c c02c6d90 c0966e78 00000040
+    bec0: ef001f00 00000040 c088bf14 c088bed8 c0112070 c0110a04 00000005 c010fac8
+    bee0: c088bf5c c088bef0 c010fac8 ef001f00 00000040 00000000 00000040 00000001
+    bf00: 413fc090 00000000 c088bf34 c088bf18 c0839190 c0112040 00000000 ef001f00
+    bf20: 00000000 00000000 c088bf54 c088bf38 c0839200 c083914c 00000006 c0961c4c
+    bf40: c0961c28 00000000 c088bf7c c088bf58 c08392ac c08391c0 c08a2ed8 c0966e78
+    bf60: c086b874 c08a3f50 c0961c28 00000001 c088bfb4 c088bf80 c083b258 c0839248
+    bf80: 2f800000 0f000000 c08935b4 ffffffff c08cd400 ffffffff c08cd400 c0868408
+    bfa0: c29849c0 00000000 c088bff4 c088bfb8 c0824974 c083b1e4 ffffffff ffffffff
+    bfc0: c08245c0 00000000 00000000 c0868408 00000000 10c5387d c0892bcc c0868404
+    bfe0: c0899440 0000406a 00000000 c088bff8 00008074 c0824824 00000000 00000000
+    [<c02c6da0>] (strncmp+0x1c/0x84) from [<c0110a3c>] (kmem_cache_flags.isra.46.part.47+0x44/0x60)
+    [<c0110a3c>] (kmem_cache_flags.isra.46.part.47+0x44/0x60) from [<c0112070>] (__kmem_cache_create+0x3c/0x410)
+    [<c0112070>] (__kmem_cache_create+0x3c/0x410) from [<c0839190>] (create_boot_cache+0x50/0x74)
+    [<c0839190>] (create_boot_cache+0x50/0x74) from [<c0839200>] (create_kmalloc_cache+0x4c/0x88)
+    [<c0839200>] (create_kmalloc_cache+0x4c/0x88) from [<c08392ac>] (create_kmalloc_caches+0x70/0x114)
+    [<c08392ac>] (create_kmalloc_caches+0x70/0x114) from [<c083b258>] (kmem_cache_init+0x80/0xe0)
+    [<c083b258>] (kmem_cache_init+0x80/0xe0) from [<c0824974>] (start_kernel+0x15c/0x318)
+    [<c0824974>] (start_kernel+0x15c/0x318) from [<00008074>] (0x8074)
+    Code: e3520000 01a00002 089da800 e5d03000 (e5d1c000)
+    ---[ end trace 1b75b31a2719ed1d ]---
+    Kernel panic - not syncing: Fatal exception
 
-Note this also kills the BUG_ON(src_cnt < 9) check in
-__ioat3_prep_pq16_lock().  Besides not accounting for implied sources
-the check is redundant given we already made the path selection.
+  Problem is that slub_debug option is not parsed before
+  create_boot_cache is called. Solve this by changing slub_debug to
+  early_param.
 
-Cc: Dave Jiang <dave.jiang@intel.com>
-Acked-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+  Kernels 3.11, 3.10 are also affected.  I am not sure about older
+  kernels.
+
+Christoph Lameter explains:
+
+  kmem_cache_flags may be called with NULL parameter during early boot.
+  Skip the test in that case.
+
+Reported-by: Andreas Herrmann <andreas.herrmann@calxeda.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/dma/ioat/dma_v3.c | 30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+ mm/slub.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index 40aea58..2d8216b 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -1116,9 +1116,6 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
- 	u8 op;
- 	int i, s, idx, num_descs;
- 
--	/* this function only handles src_cnt 9 - 16 */
--	BUG_ON(src_cnt < 9);
--
- 	/* this function is only called with 9-16 sources */
- 	op = result ? IOAT_OP_PQ_VAL_16S : IOAT_OP_PQ_16S;
- 
-@@ -1204,13 +1201,21 @@ __ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
- 	return &desc->txd;
- }
- 
-+static int src_cnt_flags(unsigned int src_cnt, unsigned long flags)
-+{
-+	if (dmaf_p_disabled_continue(flags))
-+		return src_cnt + 1;
-+	else if (dmaf_continue(flags))
-+		return src_cnt + 3;
-+	else
-+		return src_cnt;
-+}
-+
- static struct dma_async_tx_descriptor *
- ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 	      unsigned int src_cnt, const unsigned char *scf, size_t len,
- 	      unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
--
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		dst[0] = dst[1];
-@@ -1230,7 +1235,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 		single_source_coef[0] = scf[0];
- 		single_source_coef[1] = 0;
- 
--		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		return src_cnt_flags(src_cnt, flags) > 8 ?
- 			__ioat3_prep_pq16_lock(chan, NULL, dst, single_source,
- 					       2, single_source_coef, len,
- 					       flags) :
-@@ -1238,7 +1243,7 @@ ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 					     single_source_coef, len, flags);
- 
- 	} else {
--		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		return src_cnt_flags(src_cnt, flags) > 8 ?
- 			__ioat3_prep_pq16_lock(chan, NULL, dst, src, src_cnt,
- 					       scf, len, flags) :
- 			__ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt,
-@@ -1251,8 +1256,6 @@ ioat3_prep_pq_val(struct dma_chan *chan, dma_addr_t *pq, dma_addr_t *src,
- 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
- 		  enum sum_check_flags *pqres, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
--
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		pq[0] = pq[1];
-@@ -1264,7 +1267,7 @@ ioat3_prep_pq_val(struct dma_chan *chan, dma_addr_t *pq, dma_addr_t *src,
+diff --git a/mm/slub.c b/mm/slub.c
+index e3ba1f2..71ad7c9 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1210,8 +1210,8 @@ static unsigned long kmem_cache_flags(unsigned long object_size,
+ 	/*
+ 	 * Enable debugging if selected on the kernel commandline.
  	 */
- 	*pqres = 0;
+-	if (slub_debug && (!slub_debug_slabs ||
+-		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
++	if (slub_debug && (!slub_debug_slabs || (name &&
++		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs)))))
+ 		flags |= slub_debug;
  
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, pqres, pq, src, src_cnt, scf, len,
- 				       flags) :
- 		__ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
-@@ -1275,7 +1278,6 @@ static struct dma_async_tx_descriptor *
- ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
- 		 unsigned int src_cnt, size_t len, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1284,7 +1286,7 @@ ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = dst; /* specify valid address for disabled result */
- 
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, NULL, pq, src, src_cnt, scf, len,
- 				       flags) :
- 		__ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
-@@ -1296,7 +1298,6 @@ ioat3_prep_pqxor_val(struct dma_chan *chan, dma_addr_t *src,
- 		     unsigned int src_cnt, size_t len,
- 		     enum sum_check_flags *result, unsigned long flags)
- {
--	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1310,8 +1311,7 @@ ioat3_prep_pqxor_val(struct dma_chan *chan, dma_addr_t *src,
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = pq[0]; /* specify valid address for disabled result */
- 
--
--	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+	return src_cnt_flags(src_cnt, flags) > 8 ?
- 		__ioat3_prep_pq16_lock(chan, result, pq, &src[1], src_cnt - 1,
- 				       scf, len, flags) :
- 		__ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1,
+ 	return flags;
 -- 
 1.8.3.2
 
