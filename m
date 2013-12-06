@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab3LFV0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:26:37 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:42698 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758763Ab3LFV0f (ORCPT
+	id S1758875Ab3LFV2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:28:55 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:37098 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab3LFV2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:26:35 -0500
-Date: Fri, 06 Dec 2013 16:26:33 -0500 (EST)
-Message-Id: <20131206.162633.125107323851595113.davem@davemloft.net>
-To: wens@csie.org
-Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org, rob.herring@calxeda.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        srinivas.kandagatla@st.com, maxime.ripard@free-electrons.com
-Subject: Re: [PATCH 03/10] net: stmmac: Use platform data tied with
- compatible strings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386350983-13281-4-git-send-email-wens@csie.org>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
-	<1386350983-13281-4-git-send-email-wens@csie.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 06 Dec 2013 13:26:35 -0800 (PST)
+	Fri, 6 Dec 2013 16:28:53 -0500
+Date: Fri, 6 Dec 2013 13:28:48 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] watchdog: s3c2410_wdt: Report when the watchdog reset
+ the system
+Message-ID: <20131206212848.GA12283@roeck-us.net>
+References: <1386267329-9941-2-git-send-email-dianders@chromium.org>
+ <1386364088-6220-1-git-send-email-dianders@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386364088-6220-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Sat,  7 Dec 2013 01:29:36 +0800
+On Fri, Dec 06, 2013 at 01:08:07PM -0800, Doug Anderson wrote:
+> A good watchdog driver is supposed to report when it was responsible
+> for resetting the system.  Implement this for the s3c2410, at least on
+> exynos5250 and exynos5420 where we already have a pointer to the PMU
+> registers to read the information.
+> 
+> Note that exynos4 SoCs also provide the reset status, but providing
+> that is left as an exercise for future changes and is not plumbed up
+> in this patch series.  Also note the exynos4 SoCs don't appear to need
+> any PMU config, which is why this patch separates the concepts of
+> having PMU Registers vs. needing PMU Config.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-> +	device = of_match_device(stmmac_dt_ids, &pdev->dev);
-> +	if (!device)
-> +		return -ENODEV;
-> +
-> +	if (device->data)
-> +	    memcpy(plat, device->data, sizeof(*plat));
-> +
-
-Don't invent your own indentation using spaces, this memcpy()
-call is not indented properly, it should be two TABs.
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
