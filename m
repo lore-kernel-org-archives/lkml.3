@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162605Ab3LFN2Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:28:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44448 "EHLO
+	id S1162424Ab3LFN2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:28:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161819Ab3LFNDq (ORCPT
+	with ESMTP id S1161810Ab3LFNDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:03:46 -0500
+	Fri, 6 Dec 2013 08:03:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 189/272] drm/radeon: re-enable sw ACR support on pre-DCE4
-Date: Fri,  6 Dec 2013 12:57:58 +0000
-Message-Id: <1386334761-25517-190-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 187/272] drm/radeon: fix N/CTS clock matching for audio
+Date: Fri,  6 Dec 2013 12:57:56 +0000
+Message-Id: <1386334761-25517-188-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,30 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b852c985010a77c850b7548d64bbb964ca462b02 upstream.
+commit e7d12c2f98ae1e68c7298e5028048d150fa553a1 upstream.
 
-HW ACR support may have issues on some older chips, so
-use SW ACR for now until we've tested further.
+The drm code that calculates the 1001 clocks rounds up
+rather than truncating.  This allows the table to match
+properly on those modes.
+
+See bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69675
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-CC: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/r600_hdmi.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index ffd02da..4140fe8 100644
+index 14e19aa..7fafcab 100644
 --- a/drivers/gpu/drm/radeon/r600_hdmi.c
 +++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -345,6 +345,7 @@ void r600_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode *mod
- 	}
- 
- 	WREG32(HDMI0_ACR_PACKET_CONTROL + offset,
-+	       HDMI0_ACR_SOURCE | /* select SW CTS value - XXX verify that hw CTS works on all families */
- 	       HDMI0_ACR_AUTO_SEND); /* allow hw to sent ACR packets when required */
- 
- 	WREG32(HDMI0_VBI_PACKET_CONTROL + offset,
+@@ -57,15 +57,15 @@ enum r600_hdmi_iec_status_bits {
+ static const struct radeon_hdmi_acr r600_hdmi_predefined_acr[] = {
+     /*	     32kHz	  44.1kHz	48kHz    */
+     /* Clock      N     CTS      N     CTS      N     CTS */
+-    {  25174,  4576,  28125,  7007,  31250,  6864,  28125 }, /*  25,20/1.001 MHz */
++    {  25175,  4576,  28125,  7007,  31250,  6864,  28125 }, /*  25,20/1.001 MHz */
+     {  25200,  4096,  25200,  6272,  28000,  6144,  25200 }, /*  25.20       MHz */
+     {  27000,  4096,  27000,  6272,  30000,  6144,  27000 }, /*  27.00       MHz */
+     {  27027,  4096,  27027,  6272,  30030,  6144,  27027 }, /*  27.00*1.001 MHz */
+     {  54000,  4096,  54000,  6272,  60000,  6144,  54000 }, /*  54.00       MHz */
+     {  54054,  4096,  54054,  6272,  60060,  6144,  54054 }, /*  54.00*1.001 MHz */
+-    {  74175, 11648, 210937, 17836, 234375, 11648, 140625 }, /*  74.25/1.001 MHz */
++    {  74176, 11648, 210937, 17836, 234375, 11648, 140625 }, /*  74.25/1.001 MHz */
+     {  74250,  4096,  74250,  6272,  82500,  6144,  74250 }, /*  74.25       MHz */
+-    { 148351, 11648, 421875,  8918, 234375,  5824, 140625 }, /* 148.50/1.001 MHz */
++    { 148352, 11648, 421875,  8918, 234375,  5824, 140625 }, /* 148.50/1.001 MHz */
+     { 148500,  4096, 148500,  6272, 165000,  6144, 148500 }, /* 148.50       MHz */
+     {      0,  4096,      0,  6272,      0,  6144,      0 }  /* Other */
+ };
 -- 
 1.8.3.2
 
