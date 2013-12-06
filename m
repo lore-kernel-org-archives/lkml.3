@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab3LFURF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 15:17:05 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61968 "EHLO mga01.intel.com"
+	id S1758615Ab3LFUTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 15:19:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46949 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758792Ab3LFURC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 15:17:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,842,1378882800"; 
-   d="scan'208";a="445934657"
-Message-ID: <52A23040.2000605@linux.intel.com>
-Date: Fri, 06 Dec 2013 12:14:56 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1753447Ab3LFUTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 15:19:22 -0500
+Date: Fri, 6 Dec 2013 14:18:39 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: David Cohen <david.a.cohen@linux.intel.com>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5.1 3/5] usb: gadget: f_fs: remove loop from I/O function
+Message-ID: <20131206201839.GC21086@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1384201011-11114-4-git-send-email-david.a.cohen@linux.intel.com>
+ <xa1twqkewkyl.fsf@mina86.com>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Michal Nazarewicz <mina86@mina86.com>, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 2/5] usb: gadget: add quirk_ep_out_aligned_size field
- to struct usb_gadget
-References: <1384201011-11114-1-git-send-email-david.a.cohen@linux.intel.com> <1384201011-11114-3-git-send-email-david.a.cohen@linux.intel.com> <xa1tzjpawl1x.fsf@mina86.com> <5281706F.5050507@linux.intel.com> <xa1t1u2ln5kr.fsf@mina86.com> <20131206201337.GD3889@saruman.home>
-In-Reply-To: <20131206201337.GD3889@saruman.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7gGkHNMELEOhSGF6"
+Content-Disposition: inline
+In-Reply-To: <xa1twqkewkyl.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 12:13 PM, Felipe Balbi wrote:
-> On Tue, Nov 12, 2013 at 01:54:28PM +0100, Michal Nazarewicz wrote:
->> On Tue, Nov 12 2013, David Cohen wrote:
->>> On 11/11/2013 03:55 PM, Michal Nazarewicz wrote:
->>>> Come to think of it, perhaps even better helper would be:
->>>>
->>>> static inline size_t usb_ep_align_maybe(
->>>> 	struct usb_gadget *gadget, struct usb_ep *ep, size_t len) {
->>>> 	return gadget->quir_ep_out_aligned_size ?
->>>> 		round_up(len, (size_t)ep->desc->wMaxPacketSize) : len;
->>>> }
->>>
->>> The CPU time to check unsigned:1 and possibly jump is about the same as
->>> round_up() itself. For readability matters, we can round_up() directly.
->>
->> I was proposing to have this function and than not have functions check
->> for the flag.  I.e. instead of
->>
->> 	if (gadget->quirk_ep_out_aligned_size)
->> 		len = usb_ep_align_maxpacketsize(ep, len);
->>
->> the code would just be:
->>
->> 	len = usb_ep_align_maybe(gadget, ep, len);
-> 
-> that looks very good to me, do we have a version with that already ?
+--7gGkHNMELEOhSGF6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Nope. But as soon as soon as you finish the whole review, I can resend
-new version with all changes at once.
+On Tue, Nov 12, 2013 at 12:57:22AM +0100, Michal Nazarewicz wrote:
+> When endpoint changes (due to it being disabled or alt setting changed),
+> mimic the action as if the change happened after the request has been
+> queued, instead of retrying with the new endpoint.
+>=20
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Cc: David Cohen <david.a.cohen@linux.intel.com>
 
-Br, David
+pretty obvious patch, looks good.
+
+--=20
+balbi
+
+--7gGkHNMELEOhSGF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSojEfAAoJEIaOsuA1yqRE3j0P/0upHkaafEpYSJoG8qFNaCpE
+GRxzUol7AahLaoGCifGsucGw4nbFWWqRE0IJ1//Ot+UcMfmklhuy0AenwRTzBpog
+m9rKB7LgAfGREaKndxdMFy8qv7JCGbTjsCMmuon1cZm2OIKgKErUwTDH+seEwUbq
+cKnoLdnW9YvmUcDj0xBmQi/jW7opbhr5jkF06h0y9JXsLXYICX4oFOKkGVaDuMtH
+6EhFmLyPyBmQdF4qS1wSOvLnZKTwTZZIAMiJi2kHzCOcnZZHraWU3BH078yJAAaK
+U68pO0/Ra+91iLYAvD+cM54Qz2fu3qXl+F9jZl5exUb901MtbknY1/h3R5KrztYc
+l87f4RavoqZVLXyJVzfHi4n3yyEoJFDlzHQTwZGe6pXGTwANbRozYqxAg60w3vbH
+fl3GIX67wqgCp1wx8/ceB/mwGEDFmBFrBFA6pU4aHn5H38ZoEWvT8EluYPRpcmMf
+ve5fljLxMJAWAfvtbuCYdHQN+9/PuqJPRrdGJ34t/RqL/AxFEh1efmzKhvxf9fms
+Aa+lj6sOsBGStOwKwqG55LPvsmkr9YTMZk2nYufdjPlwE10VvKqaAszTojr/IC/F
+oczKSL6MDyCpoDv6e/SrbnKj+qld5Smtj0OPV7aAOozR4sTCYOya3U5EqsuWy/AO
+gvABFrCHhr9tnmaVANFh
+=NFGr
+-----END PGP SIGNATURE-----
+
+--7gGkHNMELEOhSGF6--
