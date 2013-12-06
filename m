@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759581Ab3LFVyR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:54:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32870 "EHLO
+	id S1759061Ab3LFV55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:57:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758541Ab3LFVyJ (ORCPT
+	with ESMTP id S1759579Ab3LFVyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:54:09 -0500
+	Fri, 6 Dec 2013 16:54:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 19/32] packet: fix use after free race in send path when dev is released
-Date: Fri,  6 Dec 2013 13:52:29 -0800
-Message-Id: <20131206214958.593556171@linuxfoundation.org>
+Subject: [PATCH 3.4 08/32] connector: improved unaligned access error fix
+Date: Fri,  6 Dec 2013 13:52:18 -0800
+Message-Id: <20131206214957.611256751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214956.830407026@linuxfoundation.org>
 References: <20131206214956.830407026@linuxfoundation.org>
@@ -30,220 +27,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-[ Upstream commit e40526cb20b5ee53419452e1f03d97092f144418 ]
+[ Upstream commit 1ca1a4cf59ea343a1a70084fe7cc96f37f3cf5b1 ]
 
-Salam reported a use after free bug in PF_PACKET that occurs when
-we're sending out frames on a socket bound device and suddenly the
-net device is being unregistered. It appears that commit 827d9780
-introduced a possible race condition between {t,}packet_snd() and
-packet_notifier(). In the case of a bound socket, packet_notifier()
-can drop the last reference to the net_device and {t,}packet_snd()
-might end up suddenly sending a packet over a freed net_device.
+In af3e095a1fb4, Erik Jacobsen fixed one type of unaligned access
+bug for ia64 by converting a 64-bit write to use put_unaligned().
+Unfortunately, since gcc will convert a short memset() to a series
+of appropriately-aligned stores, the problem is now visible again
+on tilegx, where the memset that zeros out proc_event is converted
+to three 64-bit stores, causing an unaligned access panic.
 
-To avoid reverting 827d9780 and thus introducing a performance
-regression compared to the current state of things, we decided to
-hold a cached RCU protected pointer to the net device and maintain
-it on write side via bind spin_lock protected register_prot_hook()
-and __unregister_prot_hook() calls.
+A better fix for the original problem is to ensure that proc_event
+is aligned to 8 bytes here.  We can do that relatively easily by
+arranging to start the struct cn_msg aligned to 8 bytes and then
+offset by 4 bytes.  Doing so means that the immediately following
+proc_event structure is then correctly aligned to 8 bytes.
 
-In {t,}packet_snd() path, we access this pointer under rcu_read_lock
-through packet_cached_dev_get() that holds reference to the device
-to prevent it from being freed through packet_notifier() while
-we're in send path. This is okay to do as dev_put()/dev_hold() are
-per-cpu counters, so this should not be a performance issue. Also,
-the code simplifies a bit as we don't need need_rls_dev anymore.
+The result is that the memset() stores are now aligned, and as an
+added benefit, we can remove the put_unaligned() calls in the code.
 
-Fixes: 827d978037d7 ("af-packet: Use existing netdev reference for bound sockets.")
-Reported-by: Salam Noureddine <noureddine@aristanetworks.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Salam Noureddine <noureddine@aristanetworks.com>
-Cc: Ben Greear <greearb@candelatech.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/packet/af_packet.c |   60 ++++++++++++++++++++++++++++++-------------------
- 1 file changed, 37 insertions(+), 23 deletions(-)
+ drivers/connector/cn_proc.c |   66 ++++++++++++++++++++++++++------------------
+ 1 file changed, 39 insertions(+), 27 deletions(-)
 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -294,6 +294,7 @@ struct packet_sock {
- 	unsigned int		tp_reserve;
- 	unsigned int		tp_loss:1;
- 	unsigned int		tp_tstamp;
-+	struct net_device __rcu	*cached_dev;
- 	struct packet_type	prot_hook ____cacheline_aligned_in_smp;
- };
+--- a/drivers/connector/cn_proc.c
++++ b/drivers/connector/cn_proc.c
+@@ -31,11 +31,23 @@
+ #include <linux/ptrace.h>
+ #include <linux/atomic.h>
  
-@@ -349,11 +350,15 @@ static void __fanout_link(struct sock *s
- static void register_prot_hook(struct sock *sk)
- {
- 	struct packet_sock *po = pkt_sk(sk);
+-#include <asm/unaligned.h>
+-
+ #include <linux/cn_proc.h>
+ 
+-#define CN_PROC_MSG_SIZE (sizeof(struct cn_msg) + sizeof(struct proc_event))
++/*
++ * Size of a cn_msg followed by a proc_event structure.  Since the
++ * sizeof struct cn_msg is a multiple of 4 bytes, but not 8 bytes, we
++ * add one 4-byte word to the size here, and then start the actual
++ * cn_msg structure 4 bytes into the stack buffer.  The result is that
++ * the immediately following proc_event structure is aligned to 8 bytes.
++ */
++#define CN_PROC_MSG_SIZE (sizeof(struct cn_msg) + sizeof(struct proc_event) + 4)
 +
- 	if (!po->running) {
--		if (po->fanout)
-+		if (po->fanout) {
- 			__fanout_link(sk, po);
--		else
-+		} else {
- 			dev_add_pack(&po->prot_hook);
-+			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
-+		}
-+
- 		sock_hold(sk);
- 		po->running = 1;
- 	}
-@@ -371,10 +376,13 @@ static void __unregister_prot_hook(struc
- 	struct packet_sock *po = pkt_sk(sk);
- 
- 	po->running = 0;
--	if (po->fanout)
-+	if (po->fanout) {
- 		__fanout_unlink(sk, po);
--	else
-+	} else {
- 		__dev_remove_pack(&po->prot_hook);
-+		RCU_INIT_POINTER(po->cached_dev, NULL);
-+	}
-+
- 	__sock_put(sk);
- 
- 	if (sync) {
-@@ -2044,12 +2052,24 @@ static int tpacket_fill_skb(struct packe
- 	return tp_len;
- }
- 
-+static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++/* See comment above; we test our assumption about sizeof struct cn_msg here. */
++static inline struct cn_msg *buffer_to_cn_msg(__u8 *buffer)
 +{
-+	struct net_device *dev;
-+
-+	rcu_read_lock();
-+	dev = rcu_dereference(po->cached_dev);
-+	if (dev)
-+		dev_hold(dev);
-+	rcu_read_unlock();
-+
-+	return dev;
++	BUILD_BUG_ON(sizeof(struct cn_msg) != 20);
++	return (struct cn_msg *)(buffer + 4);
 +}
-+
- static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ 
+ static atomic_t proc_event_num_listeners = ATOMIC_INIT(0);
+ static struct cb_id cn_proc_event_id = { CN_IDX_PROC, CN_VAL_PROC };
+@@ -55,19 +67,19 @@ void proc_fork_connector(struct task_str
  {
- 	struct sk_buff *skb;
- 	struct net_device *dev;
- 	__be16 proto;
--	bool need_rls_dev = false;
- 	int err, reserve = 0;
- 	void *ph;
- 	struct sockaddr_ll *saddr = (struct sockaddr_ll *)msg->msg_name;
-@@ -2063,7 +2083,7 @@ static int tpacket_snd(struct packet_soc
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 	struct timespec ts;
+ 	struct task_struct *parent;
  
- 	err = -EBUSY;
- 	if (saddr == NULL) {
--		dev = po->prot_hook.dev;
-+		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
- 	} else {
-@@ -2077,19 +2097,17 @@ static int tpacket_snd(struct packet_soc
- 		proto	= saddr->sll_protocol;
- 		addr	= saddr->sll_addr;
- 		dev = dev_get_by_index(sock_net(&po->sk), saddr->sll_ifindex);
--		need_rls_dev = true;
- 	}
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
  
- 	err = -ENXIO;
- 	if (unlikely(dev == NULL))
- 		goto out;
--
--	reserve = dev->hard_header_len;
--
- 	err = -ENETDOWN;
- 	if (unlikely(!(dev->flags & IFF_UP)))
- 		goto out_put;
+-	msg = (struct cn_msg*)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event*)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->what = PROC_EVENT_FORK;
+ 	rcu_read_lock();
+ 	parent = rcu_dereference(task->real_parent);
+@@ -90,17 +102,17 @@ void proc_exec_connector(struct task_str
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	struct timespec ts;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
  
-+	reserve = dev->hard_header_len;
-+
- 	size_max = po->tx_ring.frame_size
- 		- (po->tp_hdrlen - sizeof(struct sockaddr_ll));
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
  
-@@ -2166,8 +2184,7 @@ out_status:
- 	__packet_set_status(po, ph, status);
- 	kfree_skb(skb);
- out_put:
--	if (need_rls_dev)
--		dev_put(dev);
-+	dev_put(dev);
- out:
- 	mutex_unlock(&po->pg_vec_lock);
- 	return err;
-@@ -2205,7 +2222,6 @@ static int packet_snd(struct socket *soc
- 	struct sk_buff *skb;
- 	struct net_device *dev;
- 	__be16 proto;
--	bool need_rls_dev = false;
- 	unsigned char *addr;
- 	int err, reserve = 0;
- 	struct virtio_net_hdr vnet_hdr = { 0 };
-@@ -2221,7 +2237,7 @@ static int packet_snd(struct socket *soc
- 	 */
+-	msg = (struct cn_msg*)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event*)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->what = PROC_EVENT_EXEC;
+ 	ev->event_data.exec.process_pid = task->pid;
+ 	ev->event_data.exec.process_tgid = task->tgid;
+@@ -116,14 +128,14 @@ void proc_id_connector(struct task_struc
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 	struct timespec ts;
+ 	const struct cred *cred;
  
- 	if (saddr == NULL) {
--		dev = po->prot_hook.dev;
-+		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
- 	} else {
-@@ -2233,19 +2249,17 @@ static int packet_snd(struct socket *soc
- 		proto	= saddr->sll_protocol;
- 		addr	= saddr->sll_addr;
- 		dev = dev_get_by_index(sock_net(sk), saddr->sll_ifindex);
--		need_rls_dev = true;
- 	}
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
  
- 	err = -ENXIO;
--	if (dev == NULL)
-+	if (unlikely(dev == NULL))
- 		goto out_unlock;
--	if (sock->type == SOCK_RAW)
--		reserve = dev->hard_header_len;
--
- 	err = -ENETDOWN;
--	if (!(dev->flags & IFF_UP))
-+	if (unlikely(!(dev->flags & IFF_UP)))
- 		goto out_unlock;
+-	msg = (struct cn_msg*)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event*)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	ev->what = which_id;
+@@ -144,7 +156,7 @@ void proc_id_connector(struct task_struc
+ 	rcu_read_unlock();
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
  
-+	if (sock->type == SOCK_RAW)
-+		reserve = dev->hard_header_len;
- 	if (po->has_vnet_hdr) {
- 		vnet_hdr_len = sizeof(vnet_hdr);
+ 	memcpy(&msg->id, &cn_proc_event_id, sizeof(msg->id));
+ 	msg->ack = 0; /* not used */
+@@ -158,17 +170,17 @@ void proc_sid_connector(struct task_stru
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	struct timespec ts;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
  
-@@ -2378,15 +2392,14 @@ static int packet_snd(struct socket *soc
- 	if (err > 0 && (err = net_xmit_errno(err)) != 0)
- 		goto out_unlock;
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
  
--	if (need_rls_dev)
--		dev_put(dev);
-+	dev_put(dev);
+-	msg = (struct cn_msg *)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->what = PROC_EVENT_SID;
+ 	ev->event_data.sid.process_pid = task->pid;
+ 	ev->event_data.sid.process_tgid = task->tgid;
+@@ -185,17 +197,17 @@ void proc_ptrace_connector(struct task_s
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	struct timespec ts;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
  
- 	return len;
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
  
- out_free:
- 	kfree_skb(skb);
- out_unlock:
--	if (dev && need_rls_dev)
-+	if (dev)
- 		dev_put(dev);
- out:
- 	return err;
-@@ -2603,6 +2616,7 @@ static int packet_create(struct net *net
- 	po = pkt_sk(sk);
- 	sk->sk_family = PF_PACKET;
- 	po->num = proto;
-+	RCU_INIT_POINTER(po->cached_dev, NULL);
+-	msg = (struct cn_msg *)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->what = PROC_EVENT_PTRACE;
+ 	ev->event_data.ptrace.process_pid  = task->pid;
+ 	ev->event_data.ptrace.process_tgid = task->tgid;
+@@ -220,17 +232,17 @@ void proc_comm_connector(struct task_str
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+ 	struct timespec ts;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
  
- 	sk->sk_destruct = packet_sock_destruct;
- 	sk_refcnt_debug_inc(sk);
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
+ 
+-	msg = (struct cn_msg *)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event *)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->what = PROC_EVENT_COMM;
+ 	ev->event_data.comm.process_pid  = task->pid;
+ 	ev->event_data.comm.process_tgid = task->tgid;
+@@ -247,18 +259,18 @@ void proc_exit_connector(struct task_str
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 	struct timespec ts;
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
+ 
+-	msg = (struct cn_msg*)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event*)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	get_seq(&msg->seq, &ev->cpu);
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->what = PROC_EVENT_EXIT;
+ 	ev->event_data.exit.process_pid = task->pid;
+ 	ev->event_data.exit.process_tgid = task->tgid;
+@@ -284,18 +296,18 @@ static void cn_proc_ack(int err, int rcv
+ {
+ 	struct cn_msg *msg;
+ 	struct proc_event *ev;
+-	__u8 buffer[CN_PROC_MSG_SIZE];
++	__u8 buffer[CN_PROC_MSG_SIZE] __aligned(8);
+ 	struct timespec ts;
+ 
+ 	if (atomic_read(&proc_event_num_listeners) < 1)
+ 		return;
+ 
+-	msg = (struct cn_msg*)buffer;
++	msg = buffer_to_cn_msg(buffer);
+ 	ev = (struct proc_event*)msg->data;
+ 	memset(&ev->event_data, 0, sizeof(ev->event_data));
+ 	msg->seq = rcvd_seq;
+ 	ktime_get_ts(&ts); /* get high res monotonic timestamp */
+-	put_unaligned(timespec_to_ns(&ts), (__u64 *)&ev->timestamp_ns);
++	ev->timestamp_ns = timespec_to_ns(&ts);
+ 	ev->cpu = -1;
+ 	ev->what = PROC_EVENT_NONE;
+ 	ev->event_data.ack.err = err;
 
 
