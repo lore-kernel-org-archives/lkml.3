@@ -1,120 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759116Ab3LFOYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 09:24:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43552 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab3LFM7j (ORCPT
+	id S932183Ab3LFOYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 09:24:37 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:59112 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161026Ab3LFM7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:59:39 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 006/272] slub: Handle NULL parameter in kmem_cache_flags
-Date: Fri,  6 Dec 2013 12:54:55 +0000
-Message-Id: <1386334761-25517-7-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Fri, 6 Dec 2013 07:59:36 -0500
+From: Roberto Sassu <roberto.sassu@polito.it>
+To: jmorris@namei.org, zohar@linux.vnet.ibm.com
+Cc: d.kasatkin@samsung.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ima-devel@lists.sourceforge.net,
+        Roberto Sassu <roberto.sassu@polito.it>
+Subject: [PATCH-v2 3/3] ima: added support for new kernel cmdline parameter ima_template_fmt
+Date: Fri,  6 Dec 2013 13:57:17 +0100
+Message-Id: <1386334640-31393-4-git-send-email-roberto.sassu@polito.it>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386334640-31393-1-git-send-email-roberto.sassu@polito.it>
+References: <1386334640-31393-1-git-send-email-roberto.sassu@polito.it>
+MIME-Version: 1.0
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----C42A3261EC0FA3944FFF94171C0160C9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
+This is an S/MIME signed message
 
-------------------
+------C42A3261EC0FA3944FFF94171C0160C9
 
-From: Christoph Lameter <cl@linux.com>
+This patch allows users to provide a custom template format through the
+new kernel command line parameter 'ima_template_fmt'. If the supplied
+format is not valid, IMA uses the default template descriptor.
 
-commit c6f58d9b362b45c52afebe4342c9137d0dabe47f upstream.
+Changelog:
+ - simplified code of ima_template_fmt_setup()
+   (Roberto Sassu, suggested by Mimi Zohar)
 
-Andreas Herrmann writes:
-
-  When I've used slub_debug kernel option (e.g.
-  "slub_debug=,skbuff_fclone_cache" or similar) on a debug session I've
-  seen a panic like:
-
-    Highbank #setenv bootargs console=ttyAMA0 root=/dev/sda2 kgdboc.kgdboc=ttyAMA0,115200 slub_debug=,kmalloc-4096 earlyprintk=ttyAMA0
-    ...
-    Unable to handle kernel NULL pointer dereference at virtual address 00000000
-    pgd = c0004000
-    [00000000] *pgd=00000000
-    Internal error: Oops: 5 [#1] SMP ARM
-    Modules linked in:
-    CPU: 0 PID: 0 Comm: swapper Tainted: G        W    3.12.0-00048-gbe408cd #314
-    task: c0898360 ti: c088a000 task.ti: c088a000
-    PC is at strncmp+0x1c/0x84
-    LR is at kmem_cache_flags.isra.46.part.47+0x44/0x60
-    pc : [<c02c6da0>]    lr : [<c0110a3c>]    psr: 200001d3
-    sp : c088bea8  ip : c088beb8  fp : c088beb4
-    r10: 00000000  r9 : 413fc090  r8 : 00000001
-    r7 : 00000000  r6 : c2984a08  r5 : c0966e78  r4 : 00000000
-    r3 : 0000006b  r2 : 0000000c  r1 : 00000000  r0 : c2984a08
-    Flags: nzCv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-    Control: 10c5387d  Table: 0000404a  DAC: 00000015
-    Process swapper (pid: 0, stack limit = 0xc088a248)
-    Stack: (0xc088bea8 to 0xc088c000)
-    bea0:                   c088bed4 c088beb8 c0110a3c c02c6d90 c0966e78 00000040
-    bec0: ef001f00 00000040 c088bf14 c088bed8 c0112070 c0110a04 00000005 c010fac8
-    bee0: c088bf5c c088bef0 c010fac8 ef001f00 00000040 00000000 00000040 00000001
-    bf00: 413fc090 00000000 c088bf34 c088bf18 c0839190 c0112040 00000000 ef001f00
-    bf20: 00000000 00000000 c088bf54 c088bf38 c0839200 c083914c 00000006 c0961c4c
-    bf40: c0961c28 00000000 c088bf7c c088bf58 c08392ac c08391c0 c08a2ed8 c0966e78
-    bf60: c086b874 c08a3f50 c0961c28 00000001 c088bfb4 c088bf80 c083b258 c0839248
-    bf80: 2f800000 0f000000 c08935b4 ffffffff c08cd400 ffffffff c08cd400 c0868408
-    bfa0: c29849c0 00000000 c088bff4 c088bfb8 c0824974 c083b1e4 ffffffff ffffffff
-    bfc0: c08245c0 00000000 00000000 c0868408 00000000 10c5387d c0892bcc c0868404
-    bfe0: c0899440 0000406a 00000000 c088bff8 00008074 c0824824 00000000 00000000
-    [<c02c6da0>] (strncmp+0x1c/0x84) from [<c0110a3c>] (kmem_cache_flags.isra.46.part.47+0x44/0x60)
-    [<c0110a3c>] (kmem_cache_flags.isra.46.part.47+0x44/0x60) from [<c0112070>] (__kmem_cache_create+0x3c/0x410)
-    [<c0112070>] (__kmem_cache_create+0x3c/0x410) from [<c0839190>] (create_boot_cache+0x50/0x74)
-    [<c0839190>] (create_boot_cache+0x50/0x74) from [<c0839200>] (create_kmalloc_cache+0x4c/0x88)
-    [<c0839200>] (create_kmalloc_cache+0x4c/0x88) from [<c08392ac>] (create_kmalloc_caches+0x70/0x114)
-    [<c08392ac>] (create_kmalloc_caches+0x70/0x114) from [<c083b258>] (kmem_cache_init+0x80/0xe0)
-    [<c083b258>] (kmem_cache_init+0x80/0xe0) from [<c0824974>] (start_kernel+0x15c/0x318)
-    [<c0824974>] (start_kernel+0x15c/0x318) from [<00008074>] (0x8074)
-    Code: e3520000 01a00002 089da800 e5d03000 (e5d1c000)
-    ---[ end trace 1b75b31a2719ed1d ]---
-    Kernel panic - not syncing: Fatal exception
-
-  Problem is that slub_debug option is not parsed before
-  create_boot_cache is called. Solve this by changing slub_debug to
-  early_param.
-
-  Kernels 3.11, 3.10 are also affected.  I am not sure about older
-  kernels.
-
-Christoph Lameter explains:
-
-  kmem_cache_flags may be called with NULL parameter during early boot.
-  Skip the test in that case.
-
-Reported-by: Andreas Herrmann <andreas.herrmann@calxeda.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
- mm/slub.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/kernel-parameters.txt      |  4 +++
+ Documentation/security/IMA-templates.txt | 29 +++++++++++----------
+ security/integrity/ima/ima_template.c    | 43 ++++++++++++++++++++++++++++++++
+ 3 files changed, 61 insertions(+), 15 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index e3ba1f2..71ad7c9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1210,8 +1210,8 @@ static unsigned long kmem_cache_flags(unsigned long object_size,
- 	/*
- 	 * Enable debugging if selected on the kernel commandline.
- 	 */
--	if (slub_debug && (!slub_debug_slabs ||
--		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
-+	if (slub_debug && (!slub_debug_slabs || (name &&
-+		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs)))))
- 		flags |= slub_debug;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 50680a5..bb45dbc 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1208,6 +1208,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Formats: { "ima" | "ima-ng" }
+ 			Default: "ima-ng"
  
- 	return flags;
++	ima_template_fmt=
++	                [IMA] Define a custom template format.
++			Format: { "field1|...|fieldN" }
++
+ 	init=		[KNL]
+ 			Format: <full_path>
+ 			Run specified binary instead of /sbin/init as init
+diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
+index a4e102d..7d065f0 100644
+--- a/Documentation/security/IMA-templates.txt
++++ b/Documentation/security/IMA-templates.txt
+@@ -27,25 +27,22 @@ Managing templates with these structures is very simple. To support
+ a new data type, developers define the field identifier and implement
+ two functions, init() and show(), respectively to generate and display
+ measurement entries. Defining a new template descriptor requires
+-specifying the template format, a string of field identifiers separated
+-by the '|' character. While in the current implementation it is possible
+-to define new template descriptors only by adding their definition in the
+-template specific code (ima_template.c), in a future version it will be
+-possible to register a new template on a running kernel by supplying to IMA
+-the desired format string. In this version, IMA initializes at boot time
+-all defined template descriptors by translating the format into an array
+-of template fields structures taken from the set of the supported ones.
++specifying the template format (a string of field identifiers separated
++by the '|' character) through the 'ima_template_fmt' kernel command line
++parameter. At boot time, IMA initializes all defined template descriptors
++by translating the format into an array of template fields structures taken
++from the set of the supported ones.
+ 
+ After the initialization step, IMA will call ima_alloc_init_template()
+ (new function defined within the patches for the new template management
+ mechanism) to generate a new measurement entry by using the template
+ descriptor chosen through the kernel configuration or through the newly
+-introduced 'ima_template=' kernel command line parameter. It is during this
+-phase that the advantages of the new architecture are clearly shown:
+-the latter function will not contain specific code to handle a given template
+-but, instead, it simply calls the init() method of the template fields
+-associated to the chosen template descriptor and store the result (pointer
+-to allocated data and data length) in the measurement entry structure.
++introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
++It is during this phase that the advantages of the new architecture are
++clearly shown: the latter function will not contain specific code to handle
++a given template but, instead, it simply calls the init() method of the template
++fields associated to the chosen template descriptor and store the result
++(pointer to allocated data and data length) in the measurement entry structure.
+ 
+ The same mechanism is employed to display measurements entries.
+ The functions ima[_ascii]_measurements_show() retrieve, for each entry,
+@@ -86,4 +83,6 @@ currently the following methods are supported:
+  - select a template descriptor among those supported in the kernel
+    configuration ('ima-ng' is the default choice);
+  - specify a template descriptor name from the kernel command line through
+-   the 'ima_template=' parameter.
++   the 'ima_template=' parameter;
++ - register a new template descriptor with custom format through the kernel
++   command line parameter 'ima_template_fmt='.
+diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+index a001477..11adf4a 100644
+--- a/security/integrity/ima/ima_template.c
++++ b/security/integrity/ima/ima_template.c
+@@ -21,6 +21,7 @@ static struct ima_template_desc defined_templates[] = {
+ 	{.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
+ 	{.name = "ima-ng",.fmt = "d-ng|n-ng"},
+ 	{.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
++	{.name = "",.fmt = ""},	/* placeholder for a custom format */
+ };
+ 
+ static struct ima_template_field supported_fields[] = {
+@@ -38,12 +39,16 @@ static struct ima_template_field supported_fields[] = {
+ 
+ static struct ima_template_desc *ima_template;
+ static struct ima_template_desc *lookup_template_desc(const char *name);
++static struct ima_template_field *lookup_template_field(const char *field_id);
+ 
+ static int __init ima_template_setup(char *str)
+ {
+ 	struct ima_template_desc *template_desc;
+ 	int template_len = strlen(str);
+ 
++	if (ima_template)
++		return 1;
++
+ 	/*
+ 	 * Verify that a template with the supplied name exists.
+ 	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+@@ -70,6 +75,41 @@ static int __init ima_template_setup(char *str)
+ }
+ __setup("ima_template=", ima_template_setup);
+ 
++static int __init ima_template_fmt_setup(char *str)
++{
++	int num_templates = ARRAY_SIZE(defined_templates);
++	char *str_ptr = str;
++
++	if (ima_template)
++		return 1;
++
++	while (str_ptr != NULL) {
++		char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
++		int len = strcspn(str_ptr, "|");
++
++		if (len >= IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
++			pr_err("IMA: field too long, using template %s\n",
++			       CONFIG_IMA_DEFAULT_TEMPLATE);
++			return 1;
++		}
++
++		memcpy(field_id, str_ptr, len);
++		field_id[len] = '\0';
++		if (lookup_template_field(field_id) == NULL) {
++			pr_err("IMA: field '%s' not found, using template %s\n",
++			       field_id, CONFIG_IMA_DEFAULT_TEMPLATE);
++			return 1;
++		}
++
++		str_ptr = (str_ptr[len] == '|') ? str_ptr + len + 1 : NULL;
++	}
++
++	defined_templates[num_templates - 1].fmt = str;
++	ima_template = defined_templates + num_templates - 1;
++	return 1;
++}
++__setup("ima_template_fmt=", ima_template_fmt_setup);
++
+ static struct ima_template_desc *lookup_template_desc(const char *name)
+ {
+ 	int i;
+@@ -162,6 +202,9 @@ static int init_defined_templates(void)
+ 	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
+ 		struct ima_template_desc *template = &defined_templates[i];
+ 
++		if (strlen(template->fmt) == 0)
++			continue;
++
+ 		result = template_desc_init_fields(template->fmt,
+ 						   &(template->fields),
+ 						   &(template->num_fields));
 -- 
-1.8.3.2
+1.8.1.4
+
+
+------C42A3261EC0FA3944FFF94171C0160C9
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
+VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
+Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
+HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
+MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
+ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
+NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
+TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
+XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
+da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
+yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
+BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
+BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
+HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
+GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
+qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
+cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
+CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
+BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
+AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
+NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
+X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
+LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
+S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
+oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
+JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
+YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
+MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
+aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
+Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMzEyMDYxMjU3NTRaMCMGCSqG
+SIb3DQEJBDEWBBSgWKK97hsdA8KfrmA7WUVtOvXXXjB5BgkqhkiG9w0BCQ8xbDBq
+MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
+DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBvfpkzWeYtZGvQQJAv1A/JZhPE
+Eq87EWnqDey6wlwucxf4sbLt2G5aybioUlp0eteC5VquZ2Dfmk8Yxv/CDVnQvKhb
+RvrpXPTpMsGjr7UkrxAGYyw9OSowe5Jr33e2YiDLRI6YsVdpHl8oHeqmzQkxF/BY
+y+Kpoy/kRWwEg17JVmpxl253wgBlOSroob8CXh4ekx29XYVhxfTQ2wpW2z464FgZ
+8tcp6MZhUOrZSaxNGJdDrrnDhVGIjrZWS5gvGSjaH5lr1G6T5wrruzCYXRs4g9mQ
+9VXi22OClHMlxjwtRff5dkjVvp6Dq4WOjHyYHIM7U80AKbk5NxoAWrkd6djs
+
+------C42A3261EC0FA3944FFF94171C0160C9--
+
 
