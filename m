@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3LFApY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:45:24 -0500
-Received: from ozlabs.org ([203.10.76.45]:33063 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab3LFApW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:45:22 -0500
-Date: Fri, 6 Dec 2013 11:45:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cesar Eduardo Barros <cesarb@cesarb.eti.br>
-Subject: linux-next: build failure after merge of the crypto tree
-Message-Id: <20131206114515.8bbe1dcd837ebc71924db3a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1756288Ab3LFApg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:45:36 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:61574 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755522Ab3LFApd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Dec 2013 19:45:33 -0500
+Date: Thu, 5 Dec 2013 19:45:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: linux-rt-users@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andreas Platschek <platschek@ict.tuwien.ac.at>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] make migrate disable/enable conditioned on
+ softirq_nestcnt transition
+Message-ID: <20131205194530.1c086844@gandalf.local.home>
+In-Reply-To: <20131205234222.GE15603@opentech.at>
+References: <20131205234222.GE15603@opentech.at>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Dec_2013_11_45_15_+1100_MjQhBemwyCiapGMX"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Dec_2013_11_45_15_+1100_MjQhBemwyCiapGMX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+BTW, Please Cc LKML when sending patches. It is the kernel you are
+modifying, not userspace.
 
-Hi Herbert,
+On Fri, 6 Dec 2013 00:42:22 +0100
+Nicholas Mc Guire <der.herr@hofr.at> wrote:
 
-After merging the crypto tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+> 
+>  This patch removes the recursive calls to migrate_disable/enable in 
+>  local_bh_disable/enable
+> 
+>  the softirq-local-lock.patch introduces local_bh_disable/enable wich 
+>  decrements/increments the current->softirq_nestcnt and disable/enables
+>  migration as well. as softirq_nestcnt (include/linux/sched.h conditioned
+>  on CONFIG_PREEMPT_RT_BASE) already is tracking the nesting level of the
+>  recursive calls to local_bh_disable/enable (all in kernel/softirq.c) - no 
+>  need to do it twice.
+> 
+>  migrate_disable/enable thus can be conditionsed on softirq_nestcnt making
+>  a transition from 0-1 to disable migration and 1-0 to re-enable it.
+> 
+>  patch on top of 3.12.1-rt4
+> 
+>  No change of functional behavior, this does noticably reduce the observed 
+>  nesting level of migrate_disable/enable 
+> 
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+>  kernel/softirq.c |   14 ++++++++------
+>  1 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> index 9a7268f..16ebbd9 100644
+> --- a/kernel/softirq.c
+> +++ b/kernel/softirq.c
+> @@ -569,8 +569,8 @@ static void do_current_softirqs(int need_rcu_bh_qs)
+>  
+>  void local_bh_disable(void)
+>  {
+> -	migrate_disable();
+> -	current->softirq_nestcnt++;
+> +	if (++current->softirq_nestcnt == 1)
+> +		migrate_disable();
+>  }
+>  EXPORT_SYMBOL(local_bh_disable);
+>  
+> @@ -584,8 +584,8 @@ void local_bh_enable(void)
+>  		do_current_softirqs(1);
+>  	local_irq_enable();
+>  
+> -	current->softirq_nestcnt--;
+> -	migrate_enable();
+> +	if (--current->softirq_nestcnt == 0)
+> +		migrate_enable();
 
-crypto/memneq.c: In function '__crypto_memneq_16':
-crypto/memneq.c:145:2: warning: no return statement in function returning n=
-on-void [-Wreturn-type]
-crypto/memneq.c: At top level:
-crypto/memneq.c:147:2: error: expected identifier or '(' before 'return'
-crypto/memneq.c:148:1: error: expected identifier or '(' before '}' token
+I wonder if we should add a:
 
-Caused by commit fe8c8a126806 ("crypto: more robust crypto_memneq").
+	BUG_ON(current->softirq_nestcnt < 0);
 
-I have used the crypto tree from next-20131205 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+As for the patch, I haven't found anything wrong with it.
 
---Signature=_Fri__6_Dec_2013_11_45_15_+1100_MjQhBemwyCiapGMX
-Content-Type: application/pgp-signature
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+-- Steve
 
-iQIcBAEBCAAGBQJSoR4fAAoJEMDTa8Ir7ZwVCiMP/2Ke9Q3xTjRLu3JWawDd+v4R
-oitIe0M+Y5/KwNE/oyr05A7d+BqJaO8SCPzzEFUNv7WLAPpI1x1Q7GXdFxArIXx/
-Vvy1KG1J/t/sbPhpeC1MFzvPWCEGvoYAX4MhMQhWg9Ig5jIeDPfHt/+nU7mAav5h
-qlUNCI8wrCH+9j1Tsu1JVMVBu/pRN09kVJsNGnrMLIUUcaeQNea4xt0/oG3YxgVu
-BEMDwDQThf8JAaYyZfXNWnDnvv6Cm2Yg1LIow306scelmQq11OaEtrJHfuw+72ET
-4bq7pmnKsYH11vyLCNvX1bXMqZiCPkWaMQ0eTZrqhfTNdKQ1tk5i6s9Y9nN0c3Yo
-M9tGYkGGi1DG7hbqRyYM7W2d3XI5OcqqHRve2eT4w10JoZmNDbstxId0DteUvrL2
-BxvvePumqmkOOgM53l6Q46l00w3Wm0odBBO/JfSI/Qd8kzWmSZ4NiZgPnOWEbnEB
-GpCytE5ynRx765InbTN/lN447J4JgiqTSSG3FNs4b0kpI5PEsxxuYK3k8rRqZ3R7
-lG5ALUgg8RNsWsD0UHL7Mezs3KWwBvQAeUhnh9SPmmMjKBpJfITTad1NcKP735vc
-hLfx/MoZ6sijB1vzWN69u6MVpSe4GFzRE0yZDsmtY5HJ2TZDvuA5Fg8Q5BAoaz7s
-Rt9HrtTIZdYtRK+cQ8Ln
-=sEeM
------END PGP SIGNATURE-----
+>  }
+>  EXPORT_SYMBOL(local_bh_enable);
+>  
+> @@ -597,8 +597,10 @@ EXPORT_SYMBOL(local_bh_enable_ip);
+>  
+>  void _local_bh_enable(void)
+>  {
+> -	current->softirq_nestcnt--;
+> -	migrate_enable();
+> +	if (WARN_ON(current->softirq_nestcnt == 0))
+> +		return;
+> +	if (--current->softirq_nestcnt == 0)
+> +		migrate_enable();
+>  }
+>  EXPORT_SYMBOL(_local_bh_enable);
+>  
 
---Signature=_Fri__6_Dec_2013_11_45_15_+1100_MjQhBemwyCiapGMX--
