@@ -1,141 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162650Ab3LFNaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:30:22 -0500
-Received: from infra.glanzmann.de ([78.47.70.69]:55239 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161772Ab3LFNaR (ORCPT
+	id S1162658Ab3LFNbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:31:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44401 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161766Ab3LFNDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:30:17 -0500
-Date: Fri, 6 Dec 2013 14:30:15 +0100
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Ben Skeggs <bskeggs@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-Subject: Re: Regression: drm/nouveau/clk: implement power state and engine
- clock control in core (7c856522069755ab9d163a24ac332cd3cb35fe30) breaks
- GeForce 9400 on Intel Mac Mini Model November 2010 model
-Message-ID: <20131206133015.GA27211@glanzmann.de>
-Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
-	Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>
-References: <20131206074455.GB21029@glanzmann.de>
- <CAKb7Uvht8=ydSgCe-mKpoR3LRvf1KJw2_CAV_0zeh2t4nt9nww@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKb7Uvht8=ydSgCe-mKpoR3LRvf1KJw2_CAV_0zeh2t4nt9nww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Dec 2013 08:03:32 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 179/272] [media] dvb-frontends: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:48 +0000
+Message-Id: <1386334761-25517-180-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ilia,
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-> > [    7.569394] nouveau  [  DEVICE][0000:02:00.0] BOOT0  : 0x0ac080b1
-> > [    7.569460] nouveau  [  DEVICE][0000:02:00.0] Chipset: MCP79/MCP7A (NVAC)
-> > [    7.569530] nouveau  [  DEVICE][0000:02:00.0] Family : NV50
-> > [    7.571151] nouveau  [   VBIOS][0000:02:00.0] checking PRAMIN for image...
-> > [    7.633082] nouveau  [   VBIOS][0000:02:00.0] ... appears to be valid
-> > [    7.633155] nouveau  [   VBIOS][0000:02:00.0] using image from PRAMIN
-> > [    7.633468] nouveau  [   VBIOS][0000:02:00.0] BIT signature found
-> > [    7.633533] nouveau  [   VBIOS][0000:02:00.0] version 62.79.4e.00.01
-> > [    7.654309] nouveau  [     PMC][0000:02:00.0] MSI interrupts enabled
-> > [    7.654417] nouveau  [     PFB][0000:02:00.0] RAM type: stolen system memory
-> > [    7.654481] nouveau  [     PFB][0000:02:00.0] RAM size: 256 MiB
-> > [    7.654546] nouveau  [     PFB][0000:02:00.0]    ZCOMP: 0 tags
-> > [    7.687282] nouveau  [  PTHERM][0000:02:00.0] FAN control: none / external
-> > [    7.687366] nouveau  [  PTHERM][0000:02:00.0] fan management: automatic
-> > [    7.687429] nouveau  [  PTHERM][0000:02:00.0] internal sensor: yes
-> > [    7.687500] nouveau  [     CLK][0000:02:00.0] 03: core 150 MHz shader 300 MHz
-> > [    7.687575] nouveau  [     CLK][0000:02:00.0] 05: core 150 MHz shader 300 MHz
-> > [    7.687648] nouveau  [     CLK][0000:02:00.0] 0e: core 350 MHz shader 800 MHz
-> > [    7.687721] nouveau  [     CLK][0000:02:00.0] 0f: core 450 MHz shader 1100 MHz
-> > [    7.687806] nouveau E[     CLK][0000:02:00.0] 17 freq unknown
-> > [    7.687867] nouveau E[     CLK][0000:02:00.0] init failed, -22
+------------------
 
-> http://lists.freedesktop.org/archives/nouveau/2013-December/015304.html
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-thank you. I tried to cherry pick this patch on top of Linux tip, but
-was not able to:
+commit 8393796dfa4cf5dffcceec464c7789bec3a2f471 upstream.
 
-  CC [M]  drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.o
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:478:8: error: redefinition of 'struct nvaa_clock_priv'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:33:8: note: originally defined here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:488:1: error: redefinition of 'read_div'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:43:1: note: previous definition of 'read_div' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:494:1: error: redefinition of 'read_pll'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:49:1: note: previous definition of 'read_pll' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:525:1: error: redefinition of 'nvaa_clock_read'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:80:1: note: previous definition of 'nvaa_clock_read' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:607:1: error: conflicting types for 'calc_pll'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:162:1: note: previous definition of 'calc_pll' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:628:1: error: redefinition of 'calc_P'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:183:1: note: previous definition of 'calc_P' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:646:1: error: redefinition of 'nvaa_clock_calc'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:201:1: note: previous definition of 'nvaa_clock_calc' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:744:1: error: redefinition of 'nvaa_clock_prog'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:299:1: note: previous definition of 'nvaa_clock_prog' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:847:1: error: redefinition of 'nvaa_clock_tidy'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:402:1: note: previous definition of 'nvaa_clock_tidy' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:852:1: error: redefinition of 'nvaa_domains'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:407:1: note: previous definition of 'nvaa_domains' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:862:1: error: redefinition of 'nvaa_clock_ctor'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:417:1: note: previous definition of 'nvaa_clock_ctor' was here
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:882:1: error: redefinition of 'nvaa_clock_oclass'
-drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.c:437:1: note: previous definition of 'nvaa_clock_oclass' was here
-make[4]: *** [drivers/gpu/drm/nouveau/core/subdev/clock/nvaa.o] Error 1
-make[3]: *** [drivers/gpu/drm/nouveau] Error 2
-make[2]: *** [drivers/gpu/drm] Error 2
-make[1]: *** [drivers/gpu] Error 2
-make: *** [drivers] Error 2
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/dvb-frontends/bcm3510.c:230:1: warning: 'bcm3510_do_hab_cmd' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/itd1000.c:69:1: warning: 'itd1000_write_regs.constprop.0' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/mt312.c:126:1: warning: 'mt312_write' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/nxt200x.c:111:1: warning: 'nxt200x_writebytes' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/stb6100.c:216:1: warning: 'stb6100_write_reg_range.constprop.3' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/stv6110.c:98:1: warning: 'stv6110_write_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/stv6110x.c:85:1: warning: 'stv6110x_write_regs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/tda18271c2dd.c:147:1: warning: 'WriteRegs' uses dynamic stack allocation [enabled by default]
+	drivers/media/dvb-frontends/zl10039.c:119:1: warning: 'zl10039_write' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer. Considering that I2C
+transfers are generally limited, and that devices used on USB has a
+max data length of 64 bytes for the control URBs.
+So, it seem safe to use 64 bytes as the hard limit for all those devices.
+ On most cases, the limit is a way lower than that, but this limit
+is small enough to not affect the Kernel stack, and it is a no brain
+limit, as using smaller ones would require to either carefully each
+driver or to take a look on each datasheet.
 
-Probably I'm missing a dependency.
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/dvb-frontends/bcm3510.c      | 15 ++++++++++++++-
+ drivers/media/dvb-frontends/itd1000.c      | 13 ++++++++++++-
+ drivers/media/dvb-frontends/mt312.c        | 10 +++++++++-
+ drivers/media/dvb-frontends/nxt200x.c      | 11 ++++++++++-
+ drivers/media/dvb-frontends/stb6100.c      | 11 ++++++++++-
+ drivers/media/dvb-frontends/stv6110.c      | 12 +++++++++++-
+ drivers/media/dvb-frontends/stv6110x.c     | 13 ++++++++++++-
+ drivers/media/dvb-frontends/tda18271c2dd.c | 14 ++++++++++++--
+ drivers/media/dvb-frontends/zl10039.c      | 12 +++++++++++-
+ 9 files changed, 101 insertions(+), 10 deletions(-)
 
-Than I checked out drm-nouveau-next of
-git://anongit.freedesktop.org/nouveau/linux-2.6 and tried again. This time it
-worked. Thank you. Will the fix wander to upstream before v3.13?
-Otherwise I would appreciate a heads-up when it wanders upstream, so
-that I can test again.
+diff --git a/drivers/media/dvb-frontends/bcm3510.c b/drivers/media/dvb-frontends/bcm3510.c
+index 1b77909..39a29dd 100644
+--- a/drivers/media/dvb-frontends/bcm3510.c
++++ b/drivers/media/dvb-frontends/bcm3510.c
+@@ -44,6 +44,9 @@
+ #include "bcm3510.h"
+ #include "bcm3510_priv.h"
+ 
++/* Max transfer size done by bcm3510_do_hab_cmd() function */
++#define MAX_XFER_SIZE	128
++
+ struct bcm3510_state {
+ 
+ 	struct i2c_adapter* i2c;
+@@ -201,9 +204,19 @@ static int bcm3510_hab_send_request(struct bcm3510_state *st, u8 *buf, int len)
+ 
+ static int bcm3510_do_hab_cmd(struct bcm3510_state *st, u8 cmd, u8 msgid, u8 *obuf, u8 olen, u8 *ibuf, u8 ilen)
+ {
+-	u8 ob[olen+2],ib[ilen+2];
++	u8 ob[MAX_XFER_SIZE], ib[MAX_XFER_SIZE];
+ 	int ret = 0;
+ 
++	if (ilen + 2 > sizeof(ib)) {
++		deb_hab("do_hab_cmd: ilen=%d is too big!\n", ilen);
++		return -EINVAL;
++	}
++
++	if (olen + 2 > sizeof(ob)) {
++		deb_hab("do_hab_cmd: olen=%d is too big!\n", olen);
++		return -EINVAL;
++	}
++
+ 	ob[0] = cmd;
+ 	ob[1] = msgid;
+ 	memcpy(&ob[2],obuf,olen);
+diff --git a/drivers/media/dvb-frontends/itd1000.c b/drivers/media/dvb-frontends/itd1000.c
+index c1c3400..cadcae4 100644
+--- a/drivers/media/dvb-frontends/itd1000.c
++++ b/drivers/media/dvb-frontends/itd1000.c
+@@ -31,6 +31,9 @@
+ #include "itd1000.h"
+ #include "itd1000_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ static int debug;
+ module_param(debug, int, 0644);
+ MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
+@@ -52,10 +55,18 @@ MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
+ /* don't write more than one byte with flexcop behind */
+ static int itd1000_write_regs(struct itd1000_state *state, u8 reg, u8 v[], u8 len)
+ {
+-	u8 buf[1+len];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr = state->cfg->i2c_address, .flags = 0, .buf = buf, .len = len+1
+ 	};
++
++	if (1 + len > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "itd1000: i2c wr reg=%04x: len=%d is too big!\n",
++		       reg, len);
++		return -EINVAL;
++	}
++
+ 	buf[0] = reg;
+ 	memcpy(&buf[1], v, len);
+ 
+diff --git a/drivers/media/dvb-frontends/mt312.c b/drivers/media/dvb-frontends/mt312.c
+index ec388c1d..a74ac0d 100644
+--- a/drivers/media/dvb-frontends/mt312.c
++++ b/drivers/media/dvb-frontends/mt312.c
+@@ -36,6 +36,8 @@
+ #include "mt312_priv.h"
+ #include "mt312.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
+ 
+ struct mt312_state {
+ 	struct i2c_adapter *i2c;
+@@ -96,9 +98,15 @@ static int mt312_write(struct mt312_state *state, const enum mt312_reg_addr reg,
+ 		       const u8 *src, const size_t count)
+ {
+ 	int ret;
+-	u8 buf[count + 1];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg;
+ 
++	if (1 + count > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "mt312: write: len=%zd is too big!\n", count);
++		return -EINVAL;
++	}
++
+ 	if (debug) {
+ 		int i;
+ 		dprintk("W(%d):", reg & 0x7f);
+diff --git a/drivers/media/dvb-frontends/nxt200x.c b/drivers/media/dvb-frontends/nxt200x.c
+index 8e28894..fbca985 100644
+--- a/drivers/media/dvb-frontends/nxt200x.c
++++ b/drivers/media/dvb-frontends/nxt200x.c
+@@ -39,6 +39,9 @@
+  */
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ #define NXT2002_DEFAULT_FIRMWARE "dvb-fe-nxt2002.fw"
+ #define NXT2004_DEFAULT_FIRMWARE "dvb-fe-nxt2004.fw"
+ #define CRC_CCIT_MASK 0x1021
+@@ -95,10 +98,16 @@ static int i2c_readbytes(struct nxt200x_state *state, u8 addr, u8 *buf, u8 len)
+ static int nxt200x_writebytes (struct nxt200x_state* state, u8 reg,
+ 			       const u8 *buf, u8 len)
+ {
+-	u8 buf2 [len+1];
++	u8 buf2[MAX_XFER_SIZE];
+ 	int err;
+ 	struct i2c_msg msg = { .addr = state->config->demod_address, .flags = 0, .buf = buf2, .len = len + 1 };
+ 
++	if (1 + len > sizeof(buf2)) {
++		pr_warn("%s: i2c wr reg=%04x: len=%d is too big!\n",
++			 __func__, reg, len);
++		return -EINVAL;
++	}
++
+ 	buf2[0] = reg;
+ 	memcpy(&buf2[1], buf, len);
+ 
+diff --git a/drivers/media/dvb-frontends/stb6100.c b/drivers/media/dvb-frontends/stb6100.c
+index 45f9523..cea175d 100644
+--- a/drivers/media/dvb-frontends/stb6100.c
++++ b/drivers/media/dvb-frontends/stb6100.c
+@@ -31,6 +31,8 @@
+ static unsigned int verbose;
+ module_param(verbose, int, 0644);
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
+ 
+ #define FE_ERROR		0
+ #define FE_NOTICE		1
+@@ -183,7 +185,7 @@ static int stb6100_read_reg(struct stb6100_state *state, u8 reg)
+ static int stb6100_write_reg_range(struct stb6100_state *state, u8 buf[], int start, int len)
+ {
+ 	int rc;
+-	u8 cmdbuf[len + 1];
++	u8 cmdbuf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr	= state->config->tuner_address,
+ 		.flags	= 0,
+@@ -191,6 +193,13 @@ static int stb6100_write_reg_range(struct stb6100_state *state, u8 buf[], int st
+ 		.len	= len + 1
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, len);
++		return -EINVAL;
++	}
++
+ 	if (unlikely(start < 1 || start + len > STB6100_NUMREGS)) {
+ 		dprintk(verbose, FE_ERROR, 1, "Invalid register range %d:%d",
+ 			start, len);
+diff --git a/drivers/media/dvb-frontends/stv6110.c b/drivers/media/dvb-frontends/stv6110.c
+index 20b5fa9..b142583 100644
+--- a/drivers/media/dvb-frontends/stv6110.c
++++ b/drivers/media/dvb-frontends/stv6110.c
+@@ -30,6 +30,9 @@
+ 
+ #include "stv6110.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ static int debug;
+ 
+ struct stv6110_priv {
+@@ -68,7 +71,7 @@ static int stv6110_write_regs(struct dvb_frontend *fe, u8 buf[],
+ {
+ 	struct stv6110_priv *priv = fe->tuner_priv;
+ 	int rc;
+-	u8 cmdbuf[len + 1];
++	u8 cmdbuf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr	= priv->i2c_address,
+ 		.flags	= 0,
+@@ -78,6 +81,13 @@ static int stv6110_write_regs(struct dvb_frontend *fe, u8 buf[],
+ 
+ 	dprintk("%s\n", __func__);
+ 
++	if (1 + len > sizeof(cmdbuf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, len);
++		return -EINVAL;
++	}
++
+ 	if (start + len > 8)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/media/dvb-frontends/stv6110x.c b/drivers/media/dvb-frontends/stv6110x.c
+index f36cab1..e66154e 100644
+--- a/drivers/media/dvb-frontends/stv6110x.c
++++ b/drivers/media/dvb-frontends/stv6110x.c
+@@ -32,6 +32,9 @@
+ #include "stv6110x.h"
+ #include "stv6110x_priv.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ static unsigned int verbose;
+ module_param(verbose, int, 0644);
+ MODULE_PARM_DESC(verbose, "Set Verbosity level");
+@@ -61,7 +64,8 @@ static int stv6110x_write_regs(struct stv6110x_state *stv6110x, int start, u8 da
+ {
+ 	int ret;
+ 	const struct stv6110x_config *config = stv6110x->config;
+-	u8 buf[len + 1];
++	u8 buf[MAX_XFER_SIZE];
++
+ 	struct i2c_msg msg = {
+ 		.addr = config->addr,
+ 		.flags = 0,
+@@ -69,6 +73,13 @@ static int stv6110x_write_regs(struct stv6110x_state *stv6110x, int start, u8 da
+ 		.len = len + 1
+ 	};
+ 
++	if (1 + len > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, len);
++		return -EINVAL;
++	}
++
+ 	if (start + len > 8)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/media/dvb-frontends/tda18271c2dd.c b/drivers/media/dvb-frontends/tda18271c2dd.c
+index d281f77..2c54586 100644
+--- a/drivers/media/dvb-frontends/tda18271c2dd.c
++++ b/drivers/media/dvb-frontends/tda18271c2dd.c
+@@ -34,6 +34,9 @@
+ #include "dvb_frontend.h"
+ #include "tda18271c2dd.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ struct SStandardParam {
+ 	s32   m_IFFrequency;
+ 	u32   m_BandWidth;
+@@ -139,11 +142,18 @@ static int i2c_write(struct i2c_adapter *adap, u8 adr, u8 *data, int len)
+ static int WriteRegs(struct tda_state *state,
+ 		     u8 SubAddr, u8 *Regs, u16 nRegs)
+ {
+-	u8 data[nRegs+1];
++	u8 data[MAX_XFER_SIZE];
++
++	if (1 + nRegs > sizeof(data)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr: len=%d is too big!\n",
++		       KBUILD_MODNAME, nRegs);
++		return -EINVAL;
++	}
+ 
+ 	data[0] = SubAddr;
+ 	memcpy(data + 1, Regs, nRegs);
+-	return i2c_write(state->i2c, state->adr, data, nRegs+1);
++	return i2c_write(state->i2c, state->adr, data, nRegs + 1);
+ }
+ 
+ static int WriteReg(struct tda_state *state, u8 SubAddr, u8 Reg)
+diff --git a/drivers/media/dvb-frontends/zl10039.c b/drivers/media/dvb-frontends/zl10039.c
+index eff9c5f..91b6b2e 100644
+--- a/drivers/media/dvb-frontends/zl10039.c
++++ b/drivers/media/dvb-frontends/zl10039.c
+@@ -30,6 +30,9 @@
+ 
+ static int debug;
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ #define dprintk(args...) \
+ 	do { \
+ 		if (debug) \
+@@ -98,7 +101,7 @@ static int zl10039_write(struct zl10039_state *state,
+ 			const enum zl10039_reg_addr reg, const u8 *src,
+ 			const size_t count)
+ {
+-	u8 buf[count + 1];
++	u8 buf[MAX_XFER_SIZE];
+ 	struct i2c_msg msg = {
+ 		.addr = state->i2c_addr,
+ 		.flags = 0,
+@@ -106,6 +109,13 @@ static int zl10039_write(struct zl10039_state *state,
+ 		.len = count + 1,
+ 	};
+ 
++	if (1 + count > sizeof(buf)) {
++		printk(KERN_WARNING
++		       "%s: i2c wr reg=%04x: len=%zd is too big!\n",
++		       KBUILD_MODNAME, reg, count);
++		return -EINVAL;
++	}
++
+ 	dprintk("%s\n", __func__);
+ 	/* Write register address and data in one go */
+ 	buf[0] = reg;
+-- 
+1.8.3.2
 
-[    7.964230] nouveau  [  DEVICE][0000:02:00.0] BOOT0  : 0x0ac080b1
-[    7.964232] nouveau  [  DEVICE][0000:02:00.0] Chipset: MCP79/MCP7A (NVAC)
-[    7.964233] nouveau  [  DEVICE][0000:02:00.0] Family : NV50
-[    7.965828] nouveau  [   VBIOS][0000:02:00.0] checking PRAMIN for image...
-[    8.027695] nouveau  [   VBIOS][0000:02:00.0] ... appears to be valid
-[    8.027769] nouveau  [   VBIOS][0000:02:00.0] using image from PRAMIN
-[    8.028070] nouveau  [   VBIOS][0000:02:00.0] BIT signature found
-[    8.028134] nouveau  [   VBIOS][0000:02:00.0] version 62.79.4e.00.01
-[    8.061976] nouveau  [     PFB][0000:02:00.0] RAM type: stolen system memory
-[    8.062051] nouveau  [     PFB][0000:02:00.0] RAM size: 256 MiB
-[    8.062122] nouveau  [     PFB][0000:02:00.0]    ZCOMP: 0 tags
-[    8.086562] [TTM] Zone  kernel: Available graphics memory: 1887908 kiB
-[    8.086633] [TTM] Initializing pool allocator
-[    8.086707] [TTM] Initializing DMA pool allocator
-[    8.088703] nouveau  [     DRM] VRAM: 256 MiB
-[    8.088774] nouveau  [     DRM] GART: 512 MiB
-[    8.088843] nouveau  [     DRM] BIT BIOS found
-[    8.088902] nouveau  [     DRM] Bios version 62.79.4e.00
-[    8.088969] nouveau  [     DRM] TMDS table version 2.0
-[    8.089030] nouveau  [     DRM] DCB version 4.0
-[    8.089096] nouveau  [     DRM] DCB outp 00: 02021286 0f220010
-[    8.089157] nouveau  [     DRM] DCB outp 01: 01000122 00000010
-[    8.089222] nouveau  [     DRM] DCB outp 02: 01000120 0000001e
-[    8.089283] nouveau  [     DRM] DCB outp 03: 02021232 00000010
-[    8.089349] nouveau  [     DRM] DCB conn 00: 00001020
-[    8.089459] nouveau  [     DRM] DCB conn 01: 0000a146
-[    8.089565] nouveau  [     DRM] DCB conn 02: 00005246
-[    8.099341] nouveau W[     DRM] unknown connector type 20
-[    8.100025] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[    8.100090] [drm] No driver support for vblank timestamp query.
-[    8.300673] nouveau  [     DRM] 4 available performance level(s)
-[    8.300759] nouveau  [     DRM] 0: core 150MHz shader 300MHz voltage 900mV fanspeed 100%
-[    8.300839] nouveau  [     DRM] 1: core 150MHz shader 300MHz voltage 900mV fanspeed 100%
-[    8.300921] nouveau  [     DRM] 2: core 350MHz shader 800MHz voltage 900mV fanspeed 100%
-[    8.301001] nouveau  [     DRM] 3: core 450MHz shader 1100MHz voltage 1010mV fanspeed 100%
-[    8.301080] nouveau  [     DRM] c:
-[    8.325812] nouveau  [     DRM] MM: using M2MF for buffer copies
-
-Cheers,
-        Thomas
