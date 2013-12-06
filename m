@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161748Ab3LFWYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:24:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60756 "EHLO
+	id S1161217Ab3LFVxO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 16:53:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60666 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161220Ab3LFVxP (ORCPT
+	with ESMTP id S1161061Ab3LFVxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:53:15 -0500
+	Fri, 6 Dec 2013 16:53:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Wood <simon@mungewell.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.12 67/83] HID: lg: fix Report Descriptor for Logitech MOMO Force (Black)
-Date: Fri,  6 Dec 2013 13:51:57 -0800
-Message-Id: <20131206214646.281701516@linuxfoundation.org>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 58/83] ipv6: fix possible seqlock deadlock in ip6_finish_output2
+Date: Fri,  6 Dec 2013 13:51:48 -0800
+Message-Id: <20131206214645.454325635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -26,102 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wood <simon@mungewell.org>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 348cbaa800f8161168b20f85f72abb541c145132 upstream.
+[ Upstream commit 7f88c6b23afbd31545c676dea77ba9593a1a14bf ]
 
-By default the Logitech MOMO Force (Black) presents a combined accel/brake
-axis ('Y'). This patch modifies the HID descriptor to present seperate
-accel/brake axes ('Y' and 'Z').
+IPv6 stats are 64 bits and thus are protected with a seqlock. By not
+disabling bottom-half we could deadlock here if we don't disable bh and
+a softirq reentrantly updates the same mib.
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/hid/hid-lg.c |   58 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+ net/ipv6/ip6_output.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -47,6 +47,7 @@
- #define DFP_RDESC_ORIG_SIZE	97
- #define FV_RDESC_ORIG_SIZE	130
- #define MOMO_RDESC_ORIG_SIZE	87
-+#define MOMO2_RDESC_ORIG_SIZE	87
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -116,8 +116,8 @@ static int ip6_finish_output2(struct sk_
+ 	}
+ 	rcu_read_unlock_bh();
  
- /* Fixed report descriptors for Logitech Driving Force (and Pro)
-  * wheel controllers
-@@ -284,6 +285,54 @@ static __u8 momo_rdesc_fixed[] = {
- 0xC0                /*  End Collection                      */
- };
- 
-+static __u8 momo2_rdesc_fixed[] = {
-+0x05, 0x01,         /*  Usage Page (Desktop),               */
-+0x09, 0x04,         /*  Usage (Joystik),                    */
-+0xA1, 0x01,         /*  Collection (Application),           */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x0A,         /*          Report Size (10),           */
-+0x15, 0x00,         /*          Logical Minimum (0),        */
-+0x26, 0xFF, 0x03,   /*          Logical Maximum (1023),     */
-+0x35, 0x00,         /*          Physical Minimum (0),       */
-+0x46, 0xFF, 0x03,   /*          Physical Maximum (1023),    */
-+0x09, 0x30,         /*          Usage (X),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x0A,         /*          Report Count (10),          */
-+0x75, 0x01,         /*          Report Size (1),            */
-+0x25, 0x01,         /*          Logical Maximum (1),        */
-+0x45, 0x01,         /*          Physical Maximum (1),       */
-+0x05, 0x09,         /*          Usage Page (Button),        */
-+0x19, 0x01,         /*          Usage Minimum (01h),        */
-+0x29, 0x0A,         /*          Usage Maximum (0Ah),        */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x95, 0x04,         /*          Report Count (4),           */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x95, 0x01,         /*          Report Count (1),           */
-+0x75, 0x08,         /*          Report Size (8),            */
-+0x26, 0xFF, 0x00,   /*          Logical Maximum (255),      */
-+0x46, 0xFF, 0x00,   /*          Physical Maximum (255),     */
-+0x09, 0x01,         /*          Usage (01h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x05, 0x01,         /*          Usage Page (Desktop),       */
-+0x09, 0x31,         /*          Usage (Y),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x09, 0x32,         /*          Usage (Z),                  */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0x06, 0x00, 0xFF,   /*          Usage Page (FF00h),         */
-+0x09, 0x00,         /*          Usage (00h),                */
-+0x81, 0x02,         /*          Input (Variable),           */
-+0xC0,               /*      End Collection,                 */
-+0xA1, 0x02,         /*      Collection (Logical),           */
-+0x09, 0x02,         /*          Usage (02h),                */
-+0x95, 0x07,         /*          Report Count (7),           */
-+0x91, 0x02,         /*          Output (Variable),          */
-+0xC0,               /*      End Collection,                 */
-+0xC0                /*  End Collection                      */
-+};
-+
- /*
-  * Certain Logitech keyboards send in report #3 keys which are far
-  * above the logical maximum described in descriptor. This extends
-@@ -343,6 +392,15 @@ static __u8 *lg_report_fixup(struct hid_
- 		}
- 		break;
- 
-+	case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
-+		if (*rsize == MOMO2_RDESC_ORIG_SIZE) {
-+			hid_info(hdev,
-+				"fixing up Logitech Momo Racing Force (Black) report descriptor\n");
-+			rdesc = momo2_rdesc_fixed;
-+			*rsize = sizeof(momo2_rdesc_fixed);
-+		}
-+		break;
-+
- 	case USB_DEVICE_ID_LOGITECH_VIBRATION_WHEEL:
- 		if (*rsize == FV_RDESC_ORIG_SIZE) {
- 			hid_info(hdev,
+-	IP6_INC_STATS_BH(dev_net(dst->dev),
+-			 ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
++	IP6_INC_STATS(dev_net(dst->dev),
++		      ip6_dst_idev(dst), IPSTATS_MIB_OUTNOROUTES);
+ 	kfree_skb(skb);
+ 	return -EINVAL;
+ }
 
 
