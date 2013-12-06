@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab3LFJ4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 04:56:46 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:47594 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757755Ab3LFJ4e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 04:56:34 -0500
-Date: Fri, 6 Dec 2013 09:56:26 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3] checkpatch: add DT compatible string documentation
- checks
-Message-ID: <20131206095626.GD3248@bark>
-References: <1386173031-17867-1-git-send-email-robherring2@gmail.com>
- <1386173563.30493.72.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386173563.30493.72.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757708Ab3LFJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 04:58:35 -0500
+Received: from asix.com.tw ([113.196.140.82]:65386 "EHLO freebsd1.asix.com.tw"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756253Ab3LFJ6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 04:58:31 -0500
+From: freddy@asix.com.tw
+To: davem@davemloft.net, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        louis@asix.com.tw, allan@asix.com.tw
+Cc: Freddy Xin <freddy@asix.com.tw>
+Subject: [PATCH 1/1] AX88179_178A: Enable the hardware pseudo header in case of the NET_IP_ALIGN equals 0
+Date: Fri,  6 Dec 2013 17:58:18 +0800
+Message-Id: <1386323898-2246-1-git-send-email-freddy@asix.com.tw>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 08:12:43AM -0800, Joe Perches wrote:
-> On Wed, 2013-12-04 at 10:03 -0600, Rob Herring wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> > 
-> > This adds a simple check that any compatible strings in DeviceTree dts
-> > files are present in Documentation/devicetree/bindings. Vendor prefixes
-> > are also checked for existing in vendor-prefixes.txt These should be
-> > temporary checks until we have more sophisticated binding schema checking.
-> > 
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Andy Whitcroft <apw@canonical.com>
-> > Cc: Joe Perches <joe@perches.com>
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> 
-> > ---
-> > v3:
-> > - Use a single message type UNDOCUMENTED_DT_STRING
-> > - Ensure '+' is at beginning of the line
-> > - Move vendor-prefixes.txt to variable
-> > 
-> > v2:
-> > - Add vendor string checking against vendor-prefixes.txt
-> > - Add '_', '.' and '+' as valid compatible string characters
-> > - Use 'grep -E' instead of egrep
-> > 
-> >  scripts/checkpatch.pl | 25 +++++++++++++++++++++++++
-> >  1 file changed, 25 insertions(+)
-> > 
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > index 9c98100..3696366 100755
-> > --- a/scripts/checkpatch.pl
-> > +++ b/scripts/checkpatch.pl
-> > @@ -2034,6 +2034,31 @@ sub process {
-> >  			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
-> >  		}
-> >  
-> > +# check for DT compatible documentation
-> > +		if ($realfile =~ /\.dts/ && $rawline =~ /^\+\s*compatible\s*=/) {
-> > +			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
-> > +
-> > +			foreach my $compat (@compats) {
-> > +				my $compat2 = $compat;
-> > +				my $dt_path = "Documentation/devicetree/bindings/";
-> > +				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
-> > +				`grep -Erq "$compat|$compat2" $dt_path`;
-> > +				if ( $? >> 8 ) {
-> > +					WARN("UNDOCUMENTED_DT_STRING",
-> > +					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
-> > +				}
-> > +
-> > +				my $vendor = $compat;
-> > +				my $vendor_path = $dt_path . "vendor-prefixes.txt";
-> > +				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-> > +				`grep -Eq "$vendor" $vendor_path`;
-> > +				if ( $? >> 8 ) {
-> > +					WARN("UNDOCUMENTED_DT_STRING",
-> > +					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
-> > +				}
-> > +			}
-> > +		}
+From: Freddy Xin <freddy@asix.com.tw>
 
-So this only works if you are in the top of the tree at the time when
-you run it (unless I've missed something).  So it might be appropraite
-to suppress this when the vendor-prefixes.txt file is not found.
+The AX88179_178A has a hardware feature that it can insert a 2-bytes pseudo
+header in front of each received frame by setting the AX_RX_CTL_IPE bit.
+This feature is used to let the IP header be aligned on a doubleword-aligned address,
+but the NET_IP_ALIGN may equals to 2 and the __netdev_alloc_skb_ip_align in USBNET will
+reserve 2 bytes also, so in this case the driver shouldn't enable this bit.
 
--apw
+This patch modifies the driver to set AX_RX_CTL_IPE just in case of the NET_IP_ALIGN equals 0.
+
+Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+---
+ drivers/net/usb/ax88179_178a.c | 28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/usb/ax88179_178a.c b/drivers/net/usb/ax88179_178a.c
+index 8e8d0fc..d84f0e0 100644
+--- a/drivers/net/usb/ax88179_178a.c
++++ b/drivers/net/usb/ax88179_178a.c
+@@ -473,8 +473,10 @@ static int ax88179_resume(struct usb_interface *intf)
+ 	msleep(100);
+ 
+ 	/* Configure RX control register => start operation */
+-	tmp16 = AX_RX_CTL_DROPCRCERR | AX_RX_CTL_IPE | AX_RX_CTL_START |
+-		AX_RX_CTL_AP | AX_RX_CTL_AMALL | AX_RX_CTL_AB;
++	tmp16 = AX_RX_CTL_DROPCRCERR | AX_RX_CTL_START | AX_RX_CTL_AP |
++		AX_RX_CTL_AMALL | AX_RX_CTL_AB;
++	if (NET_IP_ALIGN == 0)
++		tmp16 |= AX_RX_CTL_IPE;
+ 	ax88179_write_cmd_nopm(dev, AX_ACCESS_MAC, AX_RX_CTL, 2, 2, &tmp16);
+ 
+ 	return usbnet_resume(intf);
+@@ -599,7 +601,9 @@ static void ax88179_set_multicast(struct net_device *net)
+ 	struct ax88179_data *data = (struct ax88179_data *)dev->data;
+ 	u8 *m_filter = ((u8 *)dev->data) + 12;
+ 
+-	data->rxctl = (AX_RX_CTL_START | AX_RX_CTL_AB | AX_RX_CTL_IPE);
++	data->rxctl = (AX_RX_CTL_START | AX_RX_CTL_AB);
++	if (NET_IP_ALIGN == 0)
++		data->rxctl |= AX_RX_CTL_IPE;
+ 
+ 	if (net->flags & IFF_PROMISC) {
+ 		data->rxctl |= AX_RX_CTL_PRO;
+@@ -1054,8 +1058,10 @@ static int ax88179_bind(struct usbnet *dev, struct usb_interface *intf)
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, tmp);
+ 
+ 	/* Configure RX control register => start operation */
+-	*tmp16 = AX_RX_CTL_DROPCRCERR | AX_RX_CTL_IPE | AX_RX_CTL_START |
+-		 AX_RX_CTL_AP | AX_RX_CTL_AMALL | AX_RX_CTL_AB;
++	*tmp16 = AX_RX_CTL_DROPCRCERR | AX_RX_CTL_START | AX_RX_CTL_AP |
++		 AX_RX_CTL_AMALL | AX_RX_CTL_AB;
++	if (NET_IP_ALIGN == 0)
++		*tmp16 |= AX_RX_CTL_IPE;
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_RX_CTL, 2, 2, tmp16);
+ 
+ 	*tmp = AX_MONITOR_MODE_PMETYPE | AX_MONITOR_MODE_PMEPOL |
+@@ -1143,7 +1149,8 @@ static int ax88179_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 
+ 		if (pkt_cnt == 0) {
+ 			/* Skip IP alignment psudo header */
+-			skb_pull(skb, 2);
++			if (NET_IP_ALIGN == 0)
++				skb_pull(skb, 2);
+ 			skb->len = pkt_len;
+ 			skb_set_tail_pointer(skb, pkt_len);
+ 			skb->truesize = pkt_len + sizeof(struct sk_buff);
+@@ -1154,7 +1161,8 @@ static int ax88179_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 		ax_skb = skb_clone(skb, GFP_ATOMIC);
+ 		if (ax_skb) {
+ 			ax_skb->len = pkt_len;
+-			ax_skb->data = skb->data + 2;
++			if (NET_IP_ALIGN == 0)
++				ax_skb->data = skb->data + 2;
+ 			skb_set_tail_pointer(ax_skb, pkt_len);
+ 			ax_skb->truesize = pkt_len + sizeof(struct sk_buff);
+ 			ax88179_rx_checksum(ax_skb, pkt_hdr);
+@@ -1328,8 +1336,10 @@ static int ax88179_reset(struct usbnet *dev)
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_TXCOE_CTL, 1, 1, tmp);
+ 
+ 	/* Configure RX control register => start operation */
+-	*tmp16 = AX_RX_CTL_DROPCRCERR | AX_RX_CTL_IPE | AX_RX_CTL_START |
+-		 AX_RX_CTL_AP | AX_RX_CTL_AMALL | AX_RX_CTL_AB;
++	*tmp16 = AX_RX_CTL_DROPCRCERR | AX_RX_CTL_START | AX_RX_CTL_AP |
++		 AX_RX_CTL_AMALL | AX_RX_CTL_AB;
++	if (NET_IP_ALIGN == 0)
++		*tmp16 |= AX_RX_CTL_IPE;
+ 	ax88179_write_cmd(dev, AX_ACCESS_MAC, AX_RX_CTL, 2, 2, tmp16);
+ 
+ 	*tmp = AX_MONITOR_MODE_PMETYPE | AX_MONITOR_MODE_PMEPOL |
+-- 
+1.8.3.2
+
