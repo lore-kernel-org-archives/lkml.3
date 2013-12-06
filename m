@@ -1,109 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203Ab3LFFT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 00:19:56 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:50665 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab3LFFTx (ORCPT
+	id S1751167Ab3LFFbD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 00:31:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40955 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3LFFa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 00:19:53 -0500
+	Fri, 6 Dec 2013 00:30:58 -0500
+Message-ID: <52A16104.3080704@ti.com>
+Date: Fri, 6 Dec 2013 11:00:44 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
-	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
-	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-Date: Fri, 6 Dec 2013 13:19:52 +0800
-Message-ID: <CAGdX0WEnZhtAJ_gKCFQK3p1wwd5x17zvViU6FRfAGieSKQfZEQ@mail.gmail.com>
-Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Eric Dumazet <edumazet@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kamil Debski <k.debski@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+CC: <kyungmin.park@samsung.com>, <t.figa@samsung.com>,
+        <s.nawrocki@samsung.com>, <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
+        <galak@codeaurora.org>, <matt.porter@linaro.org>
+Subject: Re: [PATCH 1/9] phy: core: Change the way of_phy_get is called
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com> <1386246579-25141-2-git-send-email-k.debski@samsung.com>
+In-Reply-To: <1386246579-25141-2-git-send-email-k.debski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexei,
+Hi,
 
-On Thu, Dec 5, 2013 at 12:40 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> On Tue, Dec 3, 2013 at 4:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
->>>
->>> Can you do some performance comparison compared to e.g. ktap?
->>> How much faster is it?
->
-> Did simple ktap test with 1M alloc_skb/kfree_skb toy test from earlier email:
-> trace skb:kfree_skb {
->         if (arg2 == 0x100) {
->                 printf("%x %x\n", arg1, arg2)
->         }
-> }
-> 1M skb alloc/free 350315 (usecs)
->
-> baseline without any tracing:
-> 1M skb alloc/free 145400 (usecs)
->
-> then equivalent bpf test:
-> void filter(struct bpf_context *ctx)
-> {
->         void *loc = (void *)ctx->regs.dx;
->         if (loc == 0x100) {
->                 struct sk_buff *skb = (struct sk_buff *)ctx->regs.si;
->                 char fmt[] = "skb %p loc %p\n";
->                 bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)loc, 0);
->         }
-> }
-> 1M skb alloc/free 183214 (usecs)
->
-> so with one 'if' condition the difference ktap vs bpf is 350-145 vs 183-145
->
-> obviously ktap is an interpreter, so it's not really fair.
->
-> To make it really unfair I did:
-> trace skb:kfree_skb {
->         if (arg2 == 0x100 || arg2 == 0x200 || arg2 == 0x300 || arg2 == 0x400 ||
->             arg2 == 0x500 || arg2 == 0x600 || arg2 == 0x700 || arg2 == 0x800 ||
->             arg2 == 0x900 || arg2 == 0x1000) {
->                 printf("%x %x\n", arg1, arg2)
->         }
-> }
-> 1M skb alloc/free 484280 (usecs)
->
-> and corresponding bpf:
-> void filter(struct bpf_context *ctx)
-> {
->         void *loc = (void *)ctx->regs.dx;
->         if (loc == 0x100 || loc == 0x200 || loc == 0x300 || loc == 0x400 ||
->             loc == 0x500 || loc == 0x600 || loc == 0x700 || loc == 0x800 ||
->             loc == 0x900 || loc == 0x1000) {
->                 struct sk_buff *skb = (struct sk_buff *)ctx->regs.si;
->                 char fmt[] = "skb %p loc %p\n";
->                 bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)loc, 0);
->         }
-> }
-> 1M skb alloc/free 185660 (usecs)
->
-> the difference is bigger now: 484-145 vs 185-145
->
-There have big differences for compare arg2(in ktap) with direct register
-access(ctx->regs.dx).
+On Thursday 05 December 2013 05:59 PM, Kamil Debski wrote:
+> Previously the of_phy_get function took a struct device * and
+> was declared static. It was impossible to call it from
+> another driver and thus it was impossible to get phy defined
 
-The current argument fetching(arg2 in above testcase) implementation in ktap
-is very inefficient, see ktap/interpreter/lib_kdebug.c:kp_event_getarg.
-The only way to speedup is kernel tracing code change, let external tracing
-module access event field not through list lookup. This work is not
-started yet. :)
+It was never intended to be called from other drivers. What's up with the
+wrapper of of_phy_get, phy_get()/devm_phy_get()? Why isn't that enough?
 
-Of course, I'm not saying this argument fetching issue is the performance
-root cause compared with bpf and Systemtap, the bytecode executing speed
-wouldn't compare with raw machine code.
-(There have a plan to use JIT in ktap core, like luajit project, but
-it need some
-time to work on)
+Thanks
+Kishon
+> for a given node.
+> 
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/phy/phy-core.c  |   12 +++++-------
+>  include/linux/phy/phy.h |    1 +
+>  2 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index 03cf8fb..7fb3474 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -250,20 +250,17 @@ EXPORT_SYMBOL_GPL(phy_power_off);
+>   * not yet loaded. This function uses of_xlate call back function provided
+>   * while registering the phy_provider to find the phy instance.
+>   */
+> -static struct phy *of_phy_get(struct device *dev, int index)
+> +struct phy *of_phy_get(struct device_node *np, int index)
+>  {
+>  	int ret;
+>  	struct phy_provider *phy_provider;
+>  	struct phy *phy = NULL;
+>  	struct of_phandle_args args;
+>  
+> -	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+> +	ret = of_parse_phandle_with_args(np, "phys", "#phy-cells",
+>  		index, &args);
+> -	if (ret) {
+> -		dev_dbg(dev, "failed to get phy in %s node\n",
+> -			dev->of_node->full_name);
+> +	if (ret)
+>  		return ERR_PTR(-ENODEV);
+> -	}
+>  
+>  	mutex_lock(&phy_provider_mutex);
+>  	phy_provider = of_phy_provider_lookup(args.np);
+> @@ -281,6 +278,7 @@ err0:
+>  
+>  	return phy;
+>  }
+> +EXPORT_SYMBOL_GPL(of_phy_get);
+>  
+>  /**
+>   * phy_put() - release the PHY
+> @@ -370,7 +368,7 @@ struct phy *phy_get(struct device *dev, const char *string)
+>  	if (dev->of_node) {
+>  		index = of_property_match_string(dev->of_node, "phy-names",
+>  			string);
+> -		phy = of_phy_get(dev, index);
+> +		phy = of_phy_get(dev->of_node, index);
+>  		if (IS_ERR(phy)) {
+>  			dev_err(dev, "unable to find phy\n");
+>  			return phy;
+> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+> index 6d72269..169f572 100644
+> --- a/include/linux/phy/phy.h
+> +++ b/include/linux/phy/phy.h
+> @@ -131,6 +131,7 @@ struct phy *phy_get(struct device *dev, const char *string);
+>  struct phy *devm_phy_get(struct device *dev, const char *string);
+>  void phy_put(struct phy *phy);
+>  void devm_phy_put(struct device *dev, struct phy *phy);
+> +struct phy *of_phy_get(struct device_node *np, int index);
+>  struct phy *of_phy_simple_xlate(struct device *dev,
+>  	struct of_phandle_args *args);
+>  struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+> 
+
