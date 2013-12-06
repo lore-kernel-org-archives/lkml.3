@@ -1,153 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab3LFQIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 11:08:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:17906 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab3LFQIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 11:08:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,841,1378882800"; 
-   d="scan'208";a="420521225"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Xudong Hao <xudong.hao@intel.com>,
-        "Liu, Jinsong" <jinsong.liu@intel.com>
-Subject: RE: [PATCH 3/3] X86, mpx: Intel MPX xstate feature definition
-Thread-Topic: [PATCH 3/3] X86, mpx: Intel MPX xstate feature definition
-Thread-Index: AQHO8nebMlvXPHXMtk+dmceDygSpLppGqBiAgACsPhA=
-Date: Fri, 6 Dec 2013 16:08:45 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014A4374@SHSMSX102.ccr.corp.intel.com>
-References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com>
- <1386355976-11732-3-git-send-email-qiaowei.ren@intel.com>
- <20131206134631.GD6694@pd.tnic>
-In-Reply-To: <20131206134631.GD6694@pd.tnic>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1758013Ab3LFQJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 11:09:44 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:50403 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753458Ab3LFQJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 11:09:42 -0500
+Date: Fri, 6 Dec 2013 11:09:40 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Petr Mladek <pmladek@suse.cz>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [GIT PULL] tracing: Only run synchronize_sched() at instance
+ deletion time
+Message-ID: <20131206110940.173e8f0c@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB6G8xI3020265
 
 
-> -----Original Message-----
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> Sent: Friday, December 06, 2013 9:47 PM
-> To: Ren, Qiaowei
-> Cc: Paolo Bonzini; H. Peter Anvin; Ingo Molnar; Thomas Gleixner;
-> x86@kernel.org; linux-kernel@vger.kernel.org; qemu-devel@nongnu.org;
-> kvm@vger.kernel.org; Xudong Hao; Liu, Jinsong
-> Subject: Re: [PATCH 3/3] X86, mpx: Intel MPX xstate feature definition
-> 
-> On Sat, Dec 07, 2013 at 02:52:56AM +0800, Qiaowei Ren wrote:
-> 
-> Commit message please.
-> 
-> > Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> > Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-> > ---
-> >  arch/x86/include/asm/processor.h |   23 +++++++++++++++++++++++
-> >  arch/x86/include/asm/xsave.h     |    6 +++++-
-> >  2 files changed, 28 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/processor.h
-> > b/arch/x86/include/asm/processor.h
-> > index 987c75e..43be6f6 100644
-> > --- a/arch/x86/include/asm/processor.h
-> > +++ b/arch/x86/include/asm/processor.h
-> > @@ -370,6 +370,26 @@ struct ymmh_struct {
-> >  	u32 ymmh_space[64];
-> >  };
-> >
-> > +struct lwp_struct {
-> > +	u64 lwpcb_addr;
-> > +	u32 flags;
-> > +	u32 buf_head_offset;
-> > +	u64 buf_base;
-> > +	u32 buf_size;
-> > +	u32 filters;
-> > +	u64 saved_event_record[4];
-> > +	u32 event_counter[16];
-> > +};
-> > +
-> > +struct bndregs_struct {
-> > +	u64 bndregs[8];
-> > +} __packed;
-> > +
-> > +struct bndcsr_struct {
-> > +	u64 cfg_reg_u;
-> > +	u64 status_reg;
-> > +} __packed;
-> > +
-> >  struct xsave_hdr_struct {
-> >  	u64 xstate_bv;
-> >  	u64 reserved1[2];
-> > @@ -380,6 +400,9 @@ struct xsave_struct {
-> >  	struct i387_fxsave_struct i387;
-> >  	struct xsave_hdr_struct xsave_hdr;
-> >  	struct ymmh_struct ymmh;
-> > +	struct lwp_struct lwp;
-> 
-> I'm guessing this and the struct lwp_struct above is being added so that you
-> can have the LWP XSAVE area size? If so, you don't need it: LWP XSAVE area is
-> 128 bytes at offset 832 according to my manuals so I'd guess having a u8
-> lwp_area[128] should be fine.
-> 
-Yes, currently it is only for the LWP XSAVE area size. I will directly use a u8 lwp_area[128].
+Linus,
 
-> 
-> > +	struct bndregs_struct bndregs;
-> > +	struct bndcsr_struct bndcsr;
-> >  	/* new processor state extensions will go here */  } __attribute__
-> > ((packed, aligned (64)));
-> >
-> > diff --git a/arch/x86/include/asm/xsave.h
-> > b/arch/x86/include/asm/xsave.h index 0415cda..5cd9de3 100644
-> > --- a/arch/x86/include/asm/xsave.h
-> > +++ b/arch/x86/include/asm/xsave.h
-> > @@ -9,6 +9,8 @@
-> >  #define XSTATE_FP	0x1
-> >  #define XSTATE_SSE	0x2
-> >  #define XSTATE_YMM	0x4
-> > +#define XSTATE_BNDREGS	0x8
-> > +#define XSTATE_BNDCSR	0x10
-> >
-> >  #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
-> >
-> > @@ -20,10 +22,12 @@
-> >  #define XSAVE_YMM_SIZE	    256
-> >  #define XSAVE_YMM_OFFSET    (XSAVE_HDR_SIZE +
-> XSAVE_HDR_OFFSET)
-> >
-> > +#define XSTATE_FLEXIBLE (XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-> 
-> What's the use of that macro if it is used only once?
-> 
-Yes. Maybe it is best to use previous pattern.
+A regression showed up that there's a large delay when enabling
+all events. This was prevalent when FTRACE_SELFTEST was enabled which
+enables all events several times, and caused the system bootup to
+pause for over a minute.
 
-> > +#define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
-> >  /*
-> >   * These are the features that the OS can handle currently.
-> >   */
-> > -#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-> > +#define XCNTXT_MASK	(XSTATE_FLEXIBLE | XSTATE_EAGER)
-> >
-> >  #ifdef CONFIG_X86_64
-> >  #define REX_PREFIX	"0x48, "
-> 
-Thanks,
-Qiaowei
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+This was tracked down to an addition of a synchronize_sched() performed
+when system call tracepoints are unregistered.
+
+The synchronize_sched() is needed between the unregistering of the
+system call tracepoint and a deletion of a tracing instance buffer.
+But placing the synchronize_sched() in the unreg of *every* system call
+tracepoint is a bit overboard. A single synchronize_sched() before
+the deletion of the instance is sufficient.
+
+Please pull the latest trace-fixes-3.13-rc2 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-3.13-rc2
+
+Tag SHA1: c1bd293f5ee07cf4426e54f8124dd3eb2bff450a
+Head SHA1: 3ccb01239201af06a07482ec686b14cd148102a5
+
+
+Steven Rostedt (1):
+      tracing: Only run synchronize_sched() at instance deletion time
+
+----
+ kernel/trace/trace_events.c   |  3 +++
+ kernel/trace/trace_syscalls.c | 10 ----------
+ 2 files changed, 3 insertions(+), 10 deletions(-)
+---------------------------
+commit 3ccb01239201af06a07482ec686b14cd148102a5
+Author: Steven Rostedt <rostedt@goodmis.org>
+Date:   Tue Dec 3 12:41:20 2013 -0500
+
+    tracing: Only run synchronize_sched() at instance deletion time
+    
+    It has been reported that boot up with FTRACE_SELFTEST enabled can take a
+    very long time. There can be stalls of over a minute.
+    
+    This was tracked down to the synchronize_sched() called when a system call
+    event is disabled. As the self tests enable and disable thousands of events,
+    this makes the synchronize_sched() get called thousands of times.
+    
+    The synchornize_sched() was added with d562aff93bfb53 "tracing: Add support
+    for SOFT_DISABLE to syscall events" which caused this regression (added
+    in 3.13-rc1).
+    
+    The synchronize_sched() is to protect against the events being accessed
+    when a tracer instance is being deleted. When an instance is being deleted
+    all the events associated to it are unregistered. The synchronize_sched()
+    makes sure that no more users are running when it finishes.
+    
+    Instead of calling synchronize_sched() for all syscall events, we only
+    need to call it once, after the events are unregistered and before the
+    instance is deleted. The event_mutex is held during this action to
+    prevent new users from enabling events.
+    
+    Link: http://lkml.kernel.org/r/20131203124120.427b9661@gandalf.local.home
+    
+    Reported-by: Petr Mladek <pmladek@suse.cz>
+    Acked-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+    Acked-by: Petr Mladek <pmladek@suse.cz>
+    Tested-by: Petr Mladek <pmladek@suse.cz>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index f919a2e..a11800a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -2314,6 +2314,9 @@ int event_trace_del_tracer(struct trace_array *tr)
+ 	/* Disable any running events */
+ 	__ftrace_set_clr_event_nolock(tr, NULL, NULL, NULL, 0);
+ 
++	/* Access to events are within rcu_read_lock_sched() */
++	synchronize_sched();
++
+ 	down_write(&trace_event_sem);
+ 	__trace_remove_event_dirs(tr);
+ 	debugfs_remove_recursive(tr->event_dir);
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index e4b6d11..ea90eb5 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -431,11 +431,6 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+ 	if (!tr->sys_refcount_enter)
+ 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+ 	mutex_unlock(&syscall_trace_lock);
+-	/*
+-	 * Callers expect the event to be completely disabled on
+-	 * return, so wait for current handlers to finish.
+-	 */
+-	synchronize_sched();
+ }
+ 
+ static int reg_event_syscall_exit(struct ftrace_event_file *file,
+@@ -474,11 +469,6 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+ 	if (!tr->sys_refcount_exit)
+ 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+ 	mutex_unlock(&syscall_trace_lock);
+-	/*
+-	 * Callers expect the event to be completely disabled on
+-	 * return, so wait for current handlers to finish.
+-	 */
+-	synchronize_sched();
+ }
+ 
+ static int __init init_syscall_trace(struct ftrace_event_call *call)
