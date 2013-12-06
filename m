@@ -1,132 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab3LFSbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:31:24 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:38760 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3LFSbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:31:23 -0500
+	id S1758102Ab3LFScR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:32:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57743 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab3LFScQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 13:32:16 -0500
+Date: Fri, 6 Dec 2013 18:32:07 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: t@sgi.com, Rik van Riel <riel@redhat.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, hhuang@redhat.com
+Subject: Re: [PATCH 14/15] mm: numa: Flush TLB if NUMA hinting faults race
+ with PTE scan update
+Message-ID: <20131206183207.GW11295@suse.de>
+References: <1386060721-3794-15-git-send-email-mgorman@suse.de>
+ <529E641A.7040804@redhat.com>
+ <20131203234637.GS11295@suse.de>
+ <529F3D51.1090203@redhat.com>
+ <20131204160741.GC11295@suse.de>
+ <20131205104015.716ed0fe@annuminas.surriel.com>
+ <20131205195446.GI11295@suse.de>
+ <52A0DC7F.7050403@redhat.com>
+ <20131206092400.GJ11295@suse.de>
+ <20131206173843.GD3080@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1312061459190.30673@ionos.tec.linutronix.de>
-References: <1360163901.24670.13.camel@cliu38-desktop-build>
-	<1361023075.11130.12.camel@cliu38-desktop-build>
-	<1361023812.11130.15.camel@cliu38-desktop-build>
-	<alpine.DEB.2.02.1307051548430.32106@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1307051615100.32106@ionos.tec.linutronix.de>
-	<52A1286E.9000606@gmail.com>
-	<alpine.DEB.2.02.1312061459190.30673@ionos.tec.linutronix.de>
-Date: Fri, 6 Dec 2013 22:31:22 +0400
-Message-ID: <CAMo8BfLC6eeRb8Qpx=_fh9U8Ve1exJb4a+RzPp8u=gWi6i4Crw@mail.gmail.com>
-Subject: Re: [PATCH V2] smp: Give WARN()ing when calling smp_call_function_many()/single()
- in serving irq
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>, mingo@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, jbeulich@suse.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, jun.zhang@intel.com,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Alex Nemirovsky <Alex.Nemirovsky@cortina-systems.com>,
-        Artemi Ivanov <artemi.ivanov@cogentembedded.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131206173843.GD3080@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 6:02 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 6 Dec 2013, Max Filippov wrote:
->> Hi Thomas,
->
->> On Fri, Jul 5, 2013 at 6:37 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > On Fri, 5 Jul 2013, Thomas Gleixner wrote:
->> >> On Sat, 16 Feb 2013, Chuansheng Liu wrote:
->> >> > Currently the functions smp_call_function_many()/single() will
->> >> > give a WARN()ing only in the case of irqs_disabled(), but that
->> >> > check is not enough to guarantee execution of the SMP
->> >> > cross-calls.
->> >> >
->> >> > In many other cases such as softirq handling/interrupt handling,
->> >> > the two APIs still can not be called, just as the
->> >> > smp_call_function_many() comments say:
->> >> >
->> >> >   * You must not call this function with disabled interrupts or from a
->> >> >   * hardware interrupt handler or from a bottom half handler. Preemption
->> >> >   * must be disabled when calling this function.
->> >> >
->> >> > There is a real case for softirq DEADLOCK case:
->> >> >
->> >> > CPUA                            CPUB
->> >> >                                 spin_lock(&spinlock)
->> >> >                                 Any irq coming, call the irq handler
->> >> >                                 irq_exit()
->> >> > spin_lock_irq(&spinlock)
->> >> > <== Blocking here due to
->> >> > CPUB hold it
->> >> >                                   __do_softirq()
->> >> >                                     run_timer_softirq()
->> >> >                                       timer_cb()
->> >> >                                         call smp_call_function_many()
->> >> >                                           send IPI interrupt to CPUA
->> >> >                                             wait_csd()
->> >> >
->> >> > Then both CPUA and CPUB will be deadlocked here.
->> >>
->> >> That's not true if called with wait = 0 as we won't wait for the csd
->> >> in that case. The function will be invoked on cpuA after it reenables
->> >> interrupt. So for callers who don't care about synchronous execution
->> >> it should not warn in softirq context.
->> >
->> > Hmm, even there it matters, because of the following scenario:
->> >
->> > CPU 0
->> > smp_call_function_single(CPU 1)
->> >     csd_lock(CPU 1)
->> >     irq_enter()
->> >     irq_exit()
->> >     __do_softirq()
->> >     smp_call_function_many()
->> >       setup csd (CPU 1)
->> >         csd_lock(CPU 1) ==> CPU 0 deadlocked itself.
->> >
->> > And this is even more likely to happen than the lock issue.
->>
->> I've observed similar deadlock in a real system which has network
->> driver that uses smp_call_function_single in the softirq context.
->>
->> The proposed fix below keeps IRQs disabled on the sending CPU
->> during the period between marking csd locked and sending IPI,
->> making it possible to use smp_call_function_single from the softirq
->> context. What do you think?
->
-> I'm not really exited to encourage IPIs from irq context. Just because
-> some network driver uses it, is definitely not a good argument. If we
-> really want to support that, then we need a proper justification why
-> it is necessary in the first place.
+On Fri, Dec 06, 2013 at 11:38:43AM -0600, Alex Thorlton wrote:
+> On Fri, Dec 06, 2013 at 09:24:00AM +0000, Mel Gorman wrote:
+> > Good. So far I have not been seeing any problems with it at least.
+> 
+> I went through and tested all the different iterations of this patchset
+> last night, and have hit a few problems, but I *think* this has solved
+> the segfault problem.  I'm now hitting some rcu_sched stalls when
+> running my tests.
+> 
 
-Then there should be at least a comment for smp_call_function_single
-similar to the one for smp_call_function_many, for those who still
-believe it's possible?
+Well that's news for the start of the weekend.
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index 0564571..fe31b77 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -208,6 +208,10 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(struct
-call_single_data, csd_data);
-  * @wait: If true, wait until function has completed on other CPUs.
-  *
-  * Returns 0 on success, else a negative status code.
-+ *
-+ * You must not call this function with disabled interrupts or from a
-+ * hardware interrupt handler or from a bottom half handler. Preemption
-+ * must be disabled when calling this function.
-  */
- int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
-                             int wait)
+> Initially things were getting hung up on a lock in change_huge_pmd, so
+> I applied Kirill's patches to split up the PTL, which did manage to ease
+> the contention on that lock, but, now it appears that I'm hitting stalls
+> somewhere else.
+> 
+
+To check this, the next version of the series will be based on 3.13-rc2 which
+will include Kirill's patches. If the segfault is cleared up then at least
+that much will be in flight and in the process of being backported to 3.12.
+NUMA balancing in 3.12 is quite work intensive but the patches 3.13-rc2
+should substantially reduce that overhead. It'd be best to check them
+all in combination and seeing what falls out.
 
 -- 
-Thanks.
--- Max
+Mel Gorman
+SUSE Labs
