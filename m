@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161945Ab3LFNEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:04:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44516 "EHLO
+	id S1162190Ab3LFNTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:19:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44607 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161855Ab3LFNED (ORCPT
+	with ESMTP id S1161941Ab3LFNE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:04:03 -0500
+	Fri, 6 Dec 2013 08:04:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Norris <computersforpeace@gmail.com>,
+Cc: Daniel Mack <zonque@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 202/272] mtd: m25p80: fix allocation size
-Date: Fri,  6 Dec 2013 12:58:11 +0000
-Message-Id: <1386334761-25517-203-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 221/272] usb: musb: call musb_start() only once in OTG mode
+Date: Fri,  6 Dec 2013 12:58:30 +0000
+Message-Id: <1386334761-25517-222-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
 References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
@@ -27,85 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 778d226a1462572b51d6777cdb1d611543410cb4 upstream.
+commit ae44df2e21b50f9fff28ac75c57e399c04df812c upstream.
 
-This patch fixes two memory errors:
+In commit 001dd84 ("usb: musb: start musb on the udc side, too") it was
+ensured that the state engine is started also in OTG mode after a
+removal / insertion of the gadget.
+Unfortunately this change also introduced a bug: If the device is
+configured as OTG and it connected with a remote host _without_ loading
+a gadget then we bug() later (because musb->otg->gadget is not
+initialized).
+Initially I assumed it might be nice to have the host part of musb in
+OTG mode working without having a gadget loaded. This bug and fact that
+it wasn't working like this before the host/gadget split made me realize
+that this was a silly idea.
+This patch now introduces back the old behavior where in OTG mode the
+host mode is only working after the gadget has been loaded.
 
-1. During a probe failure (in mtd_device_parse_register?) the command
-   buffer would not be freed.
-
-2. The command buffer's size is determined based on the 'fast_read'
-   boolean, but the assignment of fast_read is made after this
-   allocation. Thus, the buffer may be allocated "too small".
-
-To fix the first, just switch to the devres version of kzalloc.
-
-To fix the second, increase MAX_CMD_SIZE unconditionally. It's not worth
-saving a byte to fiddle around with the conditions here.
-
-This problem was reported by Yuhang Wang a while back.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Reported-by: Yuhang Wang <wangyuhang2014@gmail.com>
-Reviewed-by: Sourav Poddar <sourav.poddar@ti.com>
-[ luis: backported to 3.11: adjusted context ]
+Cc: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mtd/devices/m25p80.c | 20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ drivers/usb/musb/musb_virthub.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 2f3d2a5..a81ac5c 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -71,7 +71,7 @@
- 
- /* Define max times to check status register before we give up. */
- #define	MAX_READY_WAIT_JIFFIES	(40 * HZ)	/* M25P16 specs 40s max chip erase */
--#define	MAX_CMD_SIZE		5
-+#define	MAX_CMD_SIZE		6
- 
- #define JEDEC_MFR(_jedec_id)	((_jedec_id) >> 16)
- 
-@@ -960,15 +960,13 @@ static int m25p_probe(struct spi_device *spi)
- 		}
- 	}
- 
--	flash = kzalloc(sizeof *flash, GFP_KERNEL);
-+	flash = devm_kzalloc(&spi->dev, sizeof(*flash), GFP_KERNEL);
- 	if (!flash)
- 		return -ENOMEM;
--	flash->command = kmalloc(MAX_CMD_SIZE + (flash->fast_read ? 1 : 0),
--					GFP_KERNEL);
--	if (!flash->command) {
--		kfree(flash);
-+
-+	flash->command = devm_kzalloc(&spi->dev, MAX_CMD_SIZE, GFP_KERNEL);
-+	if (!flash->command)
- 		return -ENOMEM;
--	}
- 
- 	flash->spi = spi;
- 	mutex_init(&flash->lock);
-@@ -1081,14 +1079,10 @@ static int m25p_probe(struct spi_device *spi)
- static int m25p_remove(struct spi_device *spi)
- {
- 	struct m25p	*flash = dev_get_drvdata(&spi->dev);
--	int		status;
- 
- 	/* Clean up MTD stuff. */
--	status = mtd_device_unregister(&flash->mtd);
--	if (status == 0) {
--		kfree(flash->command);
--		kfree(flash);
--	}
-+	mtd_device_unregister(&flash->mtd);
-+
- 	return 0;
+diff --git a/drivers/usb/musb/musb_virthub.c b/drivers/usb/musb/musb_virthub.c
+index d1d6b83..9af6bba 100644
+--- a/drivers/usb/musb/musb_virthub.c
++++ b/drivers/usb/musb/musb_virthub.c
+@@ -220,6 +220,23 @@ int musb_hub_status_data(struct usb_hcd *hcd, char *buf)
+ 	return retval;
  }
  
++static int musb_has_gadget(struct musb *musb)
++{
++	/*
++	 * In host-only mode we start a connection right away. In OTG mode
++	 * we have to wait until we loaded a gadget. We don't really need a
++	 * gadget if we operate as a host but we should not start a session
++	 * as a device without a gadget or else we explode.
++	 */
++#ifdef CONFIG_USB_MUSB_HOST
++	return 1;
++#else
++	if (musb->port_mode == MUSB_PORT_MODE_HOST)
++		return 1;
++	return musb->g.dev.driver != NULL;
++#endif
++}
++
+ int musb_hub_control(
+ 	struct usb_hcd	*hcd,
+ 	u16		typeReq,
+@@ -362,7 +379,7 @@ int musb_hub_control(
+ 			 * initialization logic, e.g. for OTG, or change any
+ 			 * logic relating to VBUS power-up.
+ 			 */
+-			if (!hcd->self.is_b_host)
++			if (!hcd->self.is_b_host && musb_has_gadget(musb))
+ 				musb_start(musb);
+ 			break;
+ 		case USB_PORT_FEAT_RESET:
 -- 
 1.8.3.2
 
