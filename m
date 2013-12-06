@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162715Ab3LFNdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 08:33:47 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58498 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161713Ab3LFNdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 08:33:44 -0500
-Date: Fri, 6 Dec 2013 14:33:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        kvm@vger.kernel.org, Xudong Hao <xudong.hao@intel.com>,
-        Liu Jinsong <jinsong.liu@intel.com>
-Subject: Re: [PATCH 2/3] X86, mpx: Intel MPX definition
-Message-ID: <20131206133339.GC6694@pd.tnic>
-References: <1386355976-11732-1-git-send-email-qiaowei.ren@intel.com>
- <1386355976-11732-2-git-send-email-qiaowei.ren@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1386355976-11732-2-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1161711Ab3LFNDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 08:03:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44356 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758243Ab3LFNDQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 08:03:16 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 168/272] [media] cxusb: Don't use dynamic static allocation
+Date: Fri,  6 Dec 2013 12:57:37 +0000
+Message-Id: <1386334761-25517-169-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+References: <1386334761-25517-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 07, 2013 at 02:52:55AM +0800, Qiaowei Ren wrote:
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/include/asm/cpufeature.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+3.11.10.1 -stable review patch.  If anyone has any objections, please let me know.
 
-This patch should probably be merged with the next one...
+------------------
 
-> 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index d3f5c63..6c2738d 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -216,6 +216,7 @@
->  #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
->  #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
->  #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
-> +#define X86_FEATURE_MPX		(9*32+14) /* Memory Protection Extension */
->  #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
->  #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
->  #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
-> @@ -330,6 +331,7 @@ extern const char * const x86_power_flags[32];
->  #define cpu_has_perfctr_l2	boot_cpu_has(X86_FEATURE_PERFCTR_L2)
->  #define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
->  #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
-> +#define cpu_has_mpx		boot_cpu_has(X86_FEATURE_MPX)
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-... and we're trying to not have more of those macros so people should be simply
-using boot_cpu_has(X86_FEATURE_YYY).
+commit 64f7ef8afbf89f3c72c4d2472e4914ca198c0668 upstream.
 
+Dynamic static allocation is evil, as Kernel stack is too low, and
+compilation complains about it on some archs:
+	drivers/media/usb/dvb-usb/cxusb.c:209:1: warning: 'cxusb_i2c_xfer' uses dynamic stack allocation [enabled by default]
+	drivers/media/usb/dvb-usb/cxusb.c:69:1: warning: 'cxusb_ctrl_msg' uses dynamic stack allocation [enabled by default]
+Instead, let's enforce a limit for the buffer to be the max size of
+a control URB payload data (64 bytes).
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/usb/dvb-usb/cxusb.c | 41 +++++++++++++++++++++++++++++++++++----
+ 1 file changed, 37 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/usb/dvb-usb/cxusb.c b/drivers/media/usb/dvb-usb/cxusb.c
+index 3940bb0..20e345d 100644
+--- a/drivers/media/usb/dvb-usb/cxusb.c
++++ b/drivers/media/usb/dvb-usb/cxusb.c
+@@ -43,6 +43,9 @@
+ #include "lgs8gxx.h"
+ #include "atbm8830.h"
+ 
++/* Max transfer size done by I2C transfer functions */
++#define MAX_XFER_SIZE  64
++
+ /* debug */
+ static int dvb_usb_cxusb_debug;
+ module_param_named(debug, dvb_usb_cxusb_debug, int, 0644);
+@@ -57,7 +60,14 @@ static int cxusb_ctrl_msg(struct dvb_usb_device *d,
+ 			  u8 cmd, u8 *wbuf, int wlen, u8 *rbuf, int rlen)
+ {
+ 	int wo = (rbuf == NULL || rlen == 0); /* write-only */
+-	u8 sndbuf[1+wlen];
++	u8 sndbuf[MAX_XFER_SIZE];
++
++	if (1 + wlen > sizeof(sndbuf)) {
++		warn("i2c wr: len=%d is too big!\n",
++		     wlen);
++		return -EOPNOTSUPP;
++	}
++
+ 	memset(sndbuf, 0, 1+wlen);
+ 
+ 	sndbuf[0] = cmd;
+@@ -158,7 +168,13 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 
+ 		if (msg[i].flags & I2C_M_RD) {
+ 			/* read only */
+-			u8 obuf[3], ibuf[1+msg[i].len];
++			u8 obuf[3], ibuf[MAX_XFER_SIZE];
++
++			if (1 + msg[i].len > sizeof(ibuf)) {
++				warn("i2c rd: len=%d is too big!\n",
++				     msg[i].len);
++				return -EOPNOTSUPP;
++			}
+ 			obuf[0] = 0;
+ 			obuf[1] = msg[i].len;
+ 			obuf[2] = msg[i].addr;
+@@ -172,7 +188,18 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 		} else if (i+1 < num && (msg[i+1].flags & I2C_M_RD) &&
+ 			   msg[i].addr == msg[i+1].addr) {
+ 			/* write to then read from same address */
+-			u8 obuf[3+msg[i].len], ibuf[1+msg[i+1].len];
++			u8 obuf[MAX_XFER_SIZE], ibuf[MAX_XFER_SIZE];
++
++			if (3 + msg[i].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[i].len);
++				return -EOPNOTSUPP;
++			}
++			if (1 + msg[i + 1].len > sizeof(ibuf)) {
++				warn("i2c rd: len=%d is too big!\n",
++				     msg[i + 1].len);
++				return -EOPNOTSUPP;
++			}
+ 			obuf[0] = msg[i].len;
+ 			obuf[1] = msg[i+1].len;
+ 			obuf[2] = msg[i].addr;
+@@ -191,7 +218,13 @@ static int cxusb_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 			i++;
+ 		} else {
+ 			/* write only */
+-			u8 obuf[2+msg[i].len], ibuf;
++			u8 obuf[MAX_XFER_SIZE], ibuf;
++
++			if (2 + msg[i].len > sizeof(obuf)) {
++				warn("i2c wr: len=%d is too big!\n",
++				     msg[i].len);
++				return -EOPNOTSUPP;
++			}
+ 			obuf[0] = msg[i].addr;
+ 			obuf[1] = msg[i].len;
+ 			memcpy(&obuf[2], msg[i].buf, msg[i].len);
 -- 
-Regards/Gruss,
-    Boris.
+1.8.3.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
