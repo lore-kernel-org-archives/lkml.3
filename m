@@ -1,63 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3LFKT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 05:19:56 -0500
-Received: from smtp01.online.nl ([194.134.41.31]:45093 "EHLO smtp01.online.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757241Ab3LFKTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 05:19:53 -0500
-X-Greylist: delayed 523 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Dec 2013 05:19:53 EST
-Message-ID: <52A1A297.9010208@meshcoding.com>
-Date: Fri, 06 Dec 2013 11:10:31 +0100
-From: Antonio Quartulli <antonio@meshcoding.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1160999Ab3LFK3m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 05:29:42 -0500
+Received: from smtp-69.nebula.fi ([83.145.220.69]:33308 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757198Ab3LFK3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 05:29:38 -0500
+Date: Fri, 6 Dec 2013 12:28:29 +0200
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org, linux@openrisc.net
+Cc: jonas@southpole.se
+Subject: Re: [PATCH] openrisc: tlb miss handler optimizations
+Message-ID: <20131206102828.GA1369@chokladfabriken.org>
+References: <1375343170-17848-1-git-send-email-stefan.kristiansson@saunalahti.fi>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>
-CC: "David S. Miller" <davem@davemloft.net>, b.a.t.m.a.n@lists.open-mesh.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] batadv: Slight optimization of batadv_compare_eth
-References: <1386317890.31845.26.camel@joe-AO722>
-In-Reply-To: <1386317890.31845.26.camel@joe-AO722>
-X-Enigmail-Version: 1.6
-OpenPGP: id=43FD7307
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Online-Scanned: by Cloudmark authority (on smtp01.online.nl)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375343170-17848-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Hi Jonas,
 
-On 06/12/13 09:18, Joe Perches wrote:
-> Use CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to check if this
-> function can be optimized by using the generic ether_addr_equal.
+I realised that this haven't been picked up nor commented on (and that I missed
+CC you on it).
+Could you take a look at it?
+
+Stefan
+
+On Thu, Aug 01, 2013 at 10:46:10AM +0300, Stefan Kristiansson wrote:
+> By slightly reorganizing the code, the number of registers
+> used in the tlb miss handlers can be reduced by two,
+> thus removing the need to save them to memory.
 > 
-> Remove the unnecessary ?: after the unoptimized memcmp.
+> Also, some dead and commented out code is removed.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-
-Acked-by: Antonio Quartulli <antonio@meshcoding.com>
-
-
-- -- 
-Antonio Quartulli
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSoaKXAAoJEEKTMo6mOh1VMjoP/3GqGy0TQG1yXRzbrzAbbklJ
-8Oa6DHQd2pSN/cJkR501JYwSUnCGh3m7eh7qc1HZYrEIgxIrJDLHWSqBL3FPtgap
-gQ92BBQG/pd38ZmmWSeZob44bEMEGAn00B1kgFx+Xb4YW4bP2rDAlvPxjjaqjT3U
-tBNbNYxUTBY2JMftI7WwEOwMWgLPVoHR1PhAbBTpbXMXCRrGp/vXN1xXam1xIDNx
-kahFmHA1Dc91dwr8ev4bcUjfGO2tXkQOEoqKRkwc1SEzuKTjgJNDxdbFNqG6vMAm
-k/aXhMvf3DOUkaCeslRQIkwefbKmzN69c1x2ND7S8mLEMIKyBuhKUFcf6PebD9SK
-Dc+KdwIx0lsaS2vGqOt6mUSie1KfY8QNAc74eF6XjDhKyJynYXe6S3L40uT4eLXR
-8fwGClJmyYVIiYD65NOtiIx6C2uHFchjDpXjlz0X8N9oQ2Azr4e2RMTGkkoihvOh
-94r1dmAaBrnRiAu6AkImhgN+lWgLglHWD5trmmRCxNEJf0iW+x9ZaR4yAQFDUP3k
-mrk5AN8JuRZkOeY5QK4AIZ0bFUh8tKW6JaNb8VHQGsLqjhAB/HPS6VljyRgMalyQ
-c/kLlEOIIZ9dsjMwKMgyoJ9bMtTYUTxrriKz12mQbx8mWvm4CMFEQglljQiuTyvh
-J+UsjAHs/ffW59JIGCfB
-=8xL7
------END PGP SIGNATURE-----
+> No functional change.
+> 
+> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> ---
+>  arch/openrisc/kernel/head.S | 141 +++++++++++++++-----------------------------
+>  1 file changed, 46 insertions(+), 95 deletions(-)
+> 
+> diff --git a/arch/openrisc/kernel/head.S b/arch/openrisc/kernel/head.S
+> index 1d3c9c2..eecc8df 100644
+> --- a/arch/openrisc/kernel/head.S
+> +++ b/arch/openrisc/kernel/head.S
+> @@ -976,8 +976,6 @@ ENTRY(dtlb_miss_handler)
+>  	EXCEPTION_STORE_GPR2
+>  	EXCEPTION_STORE_GPR3
+>  	EXCEPTION_STORE_GPR4
+> -	EXCEPTION_STORE_GPR5
+> -	EXCEPTION_STORE_GPR6
+>  	/*
+>  	 * get EA of the miss
+>  	 */
+> @@ -985,91 +983,70 @@ ENTRY(dtlb_miss_handler)
+>  	/*
+>  	 * pmd = (pmd_t *)(current_pgd + pgd_index(daddr));
+>  	 */
+> -	GET_CURRENT_PGD(r3,r5)		// r3 is current_pgd, r5 is temp
+> +	GET_CURRENT_PGD(r3,r4)		// r3 is current_pgd, r4 is temp
+>  	l.srli	r4,r2,0x18		// >> PAGE_SHIFT + (PAGE_SHIFT - 2)
+>  	l.slli	r4,r4,0x2		// to get address << 2
+> -	l.add	r5,r4,r3		// r4 is pgd_index(daddr)
+> +	l.add	r3,r4,r3		// r4 is pgd_index(daddr)
+>  	/*
+>  	 * if (pmd_none(*pmd))
+>  	 *   goto pmd_none:
+>  	 */
+> -	tophys	(r4,r5)
+> +	tophys	(r4,r3)
+>  	l.lwz	r3,0x0(r4)		// get *pmd value
+>  	l.sfne	r3,r0
+>  	l.bnf	d_pmd_none
+> -	 l.andi	r3,r3,~PAGE_MASK //0x1fff		// ~PAGE_MASK
+> -	/*
+> -	 * if (pmd_bad(*pmd))
+> -	 *   pmd_clear(pmd)
+> -	 *   goto pmd_bad:
+> -	 */
+> -//	l.sfeq	r3,r0			// check *pmd value
+> -//	l.bf	d_pmd_good
+> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+> -//	l.j	d_pmd_bad
+> -//	l.sw	0x0(r4),r0		// clear pmd
+> +	 l.addi	r3,r0,0xffffe000	// PAGE_MASK
+> +
+>  d_pmd_good:
+>  	/*
+>  	 * pte = *pte_offset(pmd, daddr);
+>  	 */
+>  	l.lwz	r4,0x0(r4)		// get **pmd value
+>  	l.and	r4,r4,r3		// & PAGE_MASK
+> -	l.srli	r5,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
+> -	l.andi	r3,r5,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
+> +	l.srli	r2,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
+> +	l.andi	r3,r2,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
+>  	l.slli	r3,r3,0x2		// to get address << 2
+>  	l.add	r3,r3,r4
+> -	l.lwz	r2,0x0(r3)		// this is pte at last
+> +	l.lwz	r3,0x0(r3)		// this is pte at last
+>  	/*
+>  	 * if (!pte_present(pte))
+>  	 */
+> -	l.andi	r4,r2,0x1
+> +	l.andi	r4,r3,0x1
+>  	l.sfne	r4,r0			// is pte present
+>  	l.bnf	d_pte_not_present
+> -	l.addi	r3,r0,0xffffe3fa	// PAGE_MASK | DTLB_UP_CONVERT_MASK
+> +	l.addi	r4,r0,0xffffe3fa	// PAGE_MASK | DTLB_UP_CONVERT_MASK
+>  	/*
+>  	 * fill DTLB TR register
+>  	 */
+> -	l.and	r4,r2,r3		// apply the mask
+> +	l.and	r4,r3,r4		// apply the mask
+>  	// Determine number of DMMU sets
+> -	l.mfspr r6, r0, SPR_DMMUCFGR
+> -	l.andi	r6, r6, SPR_DMMUCFGR_NTS
+> -	l.srli	r6, r6, SPR_DMMUCFGR_NTS_OFF
+> +	l.mfspr r2, r0, SPR_DMMUCFGR
+> +	l.andi	r2, r2, SPR_DMMUCFGR_NTS
+> +	l.srli	r2, r2, SPR_DMMUCFGR_NTS_OFF
+>  	l.ori	r3, r0, 0x1
+> -	l.sll	r3, r3, r6 	// r3 = number DMMU sets DMMUCFGR
+> -	l.addi	r6, r3, -1  	// r6 = nsets mask
+> -	l.and	r5, r5, r6	// calc offset:	 & (NUM_TLB_ENTRIES-1)
+> +	l.sll	r3, r3, r2 	// r3 = number DMMU sets DMMUCFGR
+> +	l.addi	r2, r3, -1  	// r2 = nsets mask
+> +	l.mfspr	r3, r0, SPR_EEAR_BASE
+> +	l.srli	r3, r3, 0xd	// >> PAGE_SHIFT
+> +	l.and	r2, r3, r2	// calc offset:	 & (NUM_TLB_ENTRIES-1)
+>  	                                                   //NUM_TLB_ENTRIES
+> -	l.mtspr	r5,r4,SPR_DTLBTR_BASE(0)
+> +	l.mtspr	r2,r4,SPR_DTLBTR_BASE(0)
+>  	/*
+>  	 * fill DTLB MR register
+>  	 */
+> -	l.mfspr	r2,r0,SPR_EEAR_BASE
+> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+> -	l.and	r4,r2,r3		// apply PAGE_MASK to EA (__PHX__ do we really need this?)
+> -	l.ori	r4,r4,0x1		// set hardware valid bit: DTBL_MR entry
+> -	l.mtspr	r5,r4,SPR_DTLBMR_BASE(0)
+> +	l.slli	r3, r3, 0xd		/* << PAGE_SHIFT => EA & PAGE_MASK */
+> +	l.ori	r4,r3,0x1		// set hardware valid bit: DTBL_MR entry
+> +	l.mtspr	r2,r4,SPR_DTLBMR_BASE(0)
+>  
+>  	EXCEPTION_LOAD_GPR2
+>  	EXCEPTION_LOAD_GPR3
+>  	EXCEPTION_LOAD_GPR4
+> -	EXCEPTION_LOAD_GPR5
+> -	EXCEPTION_LOAD_GPR6
+> -	l.rfe
+> -d_pmd_bad:
+> -	l.nop	1
+> -	EXCEPTION_LOAD_GPR2
+> -	EXCEPTION_LOAD_GPR3
+> -	EXCEPTION_LOAD_GPR4
+> -	EXCEPTION_LOAD_GPR5
+> -	EXCEPTION_LOAD_GPR6
+>  	l.rfe
+>  d_pmd_none:
+>  d_pte_not_present:
+>  	EXCEPTION_LOAD_GPR2
+>  	EXCEPTION_LOAD_GPR3
+>  	EXCEPTION_LOAD_GPR4
+> -	EXCEPTION_LOAD_GPR5
+> -	EXCEPTION_LOAD_GPR6
+>  	EXCEPTION_HANDLE(_dtlb_miss_page_fault_handler)
+>  
+>  /* ==============================================[ ITLB miss handler ]=== */
+> @@ -1077,8 +1054,6 @@ ENTRY(itlb_miss_handler)
+>  	EXCEPTION_STORE_GPR2
+>  	EXCEPTION_STORE_GPR3
+>  	EXCEPTION_STORE_GPR4
+> -	EXCEPTION_STORE_GPR5
+> -	EXCEPTION_STORE_GPR6
+>  	/*
+>  	 * get EA of the miss
+>  	 */
+> @@ -1088,30 +1063,19 @@ ENTRY(itlb_miss_handler)
+>  	 * pmd = (pmd_t *)(current_pgd + pgd_index(daddr));
+>  	 *
+>  	 */
+> -	GET_CURRENT_PGD(r3,r5)		// r3 is current_pgd, r5 is temp
+> +	GET_CURRENT_PGD(r3,r4)		// r3 is current_pgd, r5 is temp
+>  	l.srli	r4,r2,0x18		// >> PAGE_SHIFT + (PAGE_SHIFT - 2)
+>  	l.slli	r4,r4,0x2		// to get address << 2
+> -	l.add	r5,r4,r3		// r4 is pgd_index(daddr)
+> +	l.add	r3,r4,r3		// r4 is pgd_index(daddr)
+>  	/*
+>  	 * if (pmd_none(*pmd))
+>  	 *   goto pmd_none:
+>  	 */
+> -	tophys	(r4,r5)
+> +	tophys	(r4,r3)
+>  	l.lwz	r3,0x0(r4)		// get *pmd value
+>  	l.sfne	r3,r0
+>  	l.bnf	i_pmd_none
+> -	l.andi	r3,r3,0x1fff		// ~PAGE_MASK
+> -	/*
+> -	 * if (pmd_bad(*pmd))
+> -	 *   pmd_clear(pmd)
+> -	 *   goto pmd_bad:
+> -	 */
+> -
+> -//	l.sfeq	r3,r0			// check *pmd value
+> -//	l.bf	i_pmd_good
+> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+> -//	l.j	i_pmd_bad
+> -//	l.sw	0x0(r4),r0		// clear pmd
+> +	 l.addi	r3,r0,0xffffe000	// PAGE_MASK
+>  
+>  i_pmd_good:
+>  	/*
+> @@ -1120,35 +1084,36 @@ i_pmd_good:
+>  	 */
+>  	l.lwz	r4,0x0(r4)		// get **pmd value
+>  	l.and	r4,r4,r3		// & PAGE_MASK
+> -	l.srli	r5,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
+> -	l.andi	r3,r5,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
+> +	l.srli	r2,r2,0xd		// >> PAGE_SHIFT, r2 == EEAR
+> +	l.andi	r3,r2,0x7ff		// (1UL << PAGE_SHIFT - 2) - 1
+>  	l.slli	r3,r3,0x2		// to get address << 2
+>  	l.add	r3,r3,r4
+> -	l.lwz	r2,0x0(r3)		// this is pte at last
+> +	l.lwz	r3,0x0(r3)		// this is pte at last
+>  	/*
+>  	 * if (!pte_present(pte))
+>  	 *
+>  	 */
+> -	l.andi	r4,r2,0x1
+> +	l.andi	r4,r3,0x1
+>  	l.sfne	r4,r0			// is pte present
+>  	l.bnf	i_pte_not_present
+> -	l.addi	r3,r0,0xffffe03a	// PAGE_MASK | ITLB_UP_CONVERT_MASK
+> +	 l.addi	r4,r0,0xffffe03a	// PAGE_MASK | ITLB_UP_CONVERT_MASK
+>  	/*
+>  	 * fill ITLB TR register
+>  	 */
+> -	l.and	r4,r2,r3		// apply the mask
+> -	l.andi	r3,r2,0x7c0		// _PAGE_EXEC | _PAGE_SRE | _PAGE_SWE |  _PAGE_URE | _PAGE_UWE
+> -//	l.andi	r3,r2,0x400		// _PAGE_EXEC
+> +	l.and	r4,r3,r4		// apply the mask
+> +	l.andi	r3,r3,0x7c0		// _PAGE_EXEC | _PAGE_SRE | _PAGE_SWE |  _PAGE_URE | _PAGE_UWE
+>  	l.sfeq	r3,r0
+>  	l.bf	itlb_tr_fill //_workaround
+>  	// Determine number of IMMU sets
+> -	l.mfspr r6, r0, SPR_IMMUCFGR
+> -	l.andi	r6, r6, SPR_IMMUCFGR_NTS
+> -	l.srli	r6, r6, SPR_IMMUCFGR_NTS_OFF
+> +	l.mfspr r2, r0, SPR_IMMUCFGR
+> +	l.andi	r2, r2, SPR_IMMUCFGR_NTS
+> +	l.srli	r2, r2, SPR_IMMUCFGR_NTS_OFF
+>  	l.ori	r3, r0, 0x1
+> -	l.sll	r3, r3, r6 	// r3 = number IMMU sets IMMUCFGR
+> -	l.addi	r6, r3, -1  	// r6 = nsets mask
+> -	l.and	r5, r5, r6	// calc offset:	 & (NUM_TLB_ENTRIES-1)
+> +	l.sll	r3, r3, r2 	// r3 = number IMMU sets IMMUCFGR
+> +	l.addi	r2, r3, -1  	// r2 = nsets mask
+> +	l.mfspr	r3, r0, SPR_EEAR_BASE
+> +	l.srli	r3, r3, 0xd	// >> PAGE_SHIFT
+> +	l.and	r2, r3, r2	// calc offset:	 & (NUM_TLB_ENTRIES-1)
+>  
+>  /*
+>   * __PHX__ :: fixme
+> @@ -1160,38 +1125,24 @@ i_pmd_good:
+>  itlb_tr_fill_workaround:
+>  	l.ori	r4,r4,0xc0		// | (SPR_ITLBTR_UXE | ITLBTR_SXE)
+>  itlb_tr_fill:
+> -	l.mtspr	r5,r4,SPR_ITLBTR_BASE(0)
+> +	l.mtspr	r2,r4,SPR_ITLBTR_BASE(0)
+>  	/*
+>  	 * fill DTLB MR register
+>  	 */
+> -	l.mfspr	r2,r0,SPR_EEAR_BASE
+> -	l.addi	r3,r0,0xffffe000	// PAGE_MASK
+> -	l.and	r4,r2,r3		// apply PAGE_MASK to EA (__PHX__ do we really need this?)
+> -	l.ori	r4,r4,0x1		// set hardware valid bit: DTBL_MR entry
+> -	l.mtspr	r5,r4,SPR_ITLBMR_BASE(0)
+> +	l.slli	r3, r3, 0xd		/* << PAGE_SHIFT => EA & PAGE_MASK */
+> +	l.ori	r4,r3,0x1		// set hardware valid bit: ITBL_MR entry
+> +	l.mtspr	r2,r4,SPR_ITLBMR_BASE(0)
+>  
+>  	EXCEPTION_LOAD_GPR2
+>  	EXCEPTION_LOAD_GPR3
+>  	EXCEPTION_LOAD_GPR4
+> -	EXCEPTION_LOAD_GPR5
+> -	EXCEPTION_LOAD_GPR6
+>  	l.rfe
+>  
+> -i_pmd_bad:
+> -	l.nop	1
+> -	EXCEPTION_LOAD_GPR2
+> -	EXCEPTION_LOAD_GPR3
+> -	EXCEPTION_LOAD_GPR4
+> -	EXCEPTION_LOAD_GPR5
+> -	EXCEPTION_LOAD_GPR6
+> -	l.rfe
+>  i_pmd_none:
+>  i_pte_not_present:
+>  	EXCEPTION_LOAD_GPR2
+>  	EXCEPTION_LOAD_GPR3
+>  	EXCEPTION_LOAD_GPR4
+> -	EXCEPTION_LOAD_GPR5
+> -	EXCEPTION_LOAD_GPR6
+>  	EXCEPTION_HANDLE(_itlb_miss_page_fault_handler)
+>  
+>  /* ==============================================[ boot tlb handlers ]=== */
+> -- 
+> 1.8.1.2
+> 
