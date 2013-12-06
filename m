@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3LFAfu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Dec 2013 19:35:50 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40192 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3LFAfp (ORCPT
+	id S1755616Ab3LFAfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Dec 2013 19:35:53 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:49414 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3LFAfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:35:45 -0500
-To: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-Cc: "'Martin K. Petersen'" <martin.petersen@oracle.com>,
-        "'open list'" <linux-kernel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: 3.12.0: sda2: WRITE SAME failed. Manually zeroing. with 3w-xxxx driver
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <CAO9zADw-k+Qghk79yzwzaiYiPSoQnKwjjTBwrhcOrJxTWc-fOQ@mail.gmail.com>
-	<yq1iovclm0m.fsf@sermon.lab.mkp.net>
-	<00c701ceec3a$c8bcfc90$5a36f5b0$@lucidpixels.com>
-	<yq1d2lkllek.fsf@sermon.lab.mkp.net>
-	<010b01ceec84$27643580$762ca080$@lucidpixels.com>
-	<018b01cef213$d34d1df0$79e759d0$@lucidpixels.com>
-Date: Thu, 05 Dec 2013 19:35:38 -0500
-In-Reply-To: <018b01cef213$d34d1df0$79e759d0$@lucidpixels.com> (Justin
-	Piszcz's message of "Thu, 5 Dec 2013 18:43:39 -0500")
-Message-ID: <yq1ob4uhl45.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	Thu, 5 Dec 2013 19:35:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Date: Thu, 5 Dec 2013 16:35:50 -0800
+Message-ID: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+Subject: XFS security fix never sent to -stable?
+From: Kees Cook <keescook@google.com>
+To: Dwight Engen <dwight.engen@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Justin" == Justin Piszcz <jpiszcz@lucidpixels.com> writes:
+Hi,
 
-Justin> Update: System uptime with the patch is 7+ days under extensive
-Justin> load at times and I've had no issues to date.  I just checked
-Justin> the current linux git repo (3.13-rc2) and found this patch has
-Justin> not been included.
+It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
+capability check to free eofblocks ioctl") is a security fix that was
+never sent to -stable? From what I can see, it was introduced in 3.8
+by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+XFS_IOC_FREE_EOFBLOCKS ioctl").
 
-James has it queued in scsi/fixes. It'll make it to Linus on the next
-pull and it has been tagged for inclusion in stable.
+I don't see this in the 3.8.y tree. Should it be added there and newer?
+
+Thanks,
+
+-Kees
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Kees Cook
+Chrome OS Security
