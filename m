@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161034Ab3LFMVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 07:21:39 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:54595 "EHLO bear.ext.ti.com"
+	id S1161020Ab3LFMVi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 07:21:38 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46447 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757660Ab3LFMV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 07:21:29 -0500
+	id S1757569Ab3LFMV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 07:21:27 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
-CC: <kishon@ti.com>, Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 2/3] drivers: phy: tweaks to phy_create()
-Date: Fri, 6 Dec 2013 17:51:19 +0530
-Message-ID: <1386332480-31671-3-git-send-email-kishon@ti.com>
+CC: <kishon@ti.com>, Sachin Kamat <sachin.kamat@linaro.org>
+Subject: [PATCH 1/3] drivers: phy: Fix memory leak
+Date: Fri, 6 Dec 2013 17:51:18 +0530
+Message-ID: <1386332480-31671-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386332480-31671-1-git-send-email-kishon@ti.com>
 References: <1386332480-31671-1-git-send-email-kishon@ti.com>
@@ -21,87 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sachin Kamat <sachin.kamat@linaro.org>
 
-If this was called with a NULL "dev" then it lead to a NULL dereference
-when we called dev_WARN().  I have changed it to WARN_ON() so that we
-get a stack dump and can fix the caller.
+'phy' was not being freed upon error in one of the cases.
+Adjust the 'goto's to fix this.
 
-The rest of this patch is just cleanup like returning directly instead
-of having do-nothing gotos.  Using descriptive labels instead of
-GW-BASIC style "err0" and "err1".  I also flipped the order of
-put_device() and ida_remove() so they are a mirror reflection of the
-order they were allocated.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-core.c |   26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
+ drivers/phy/phy-core.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 712b358..58e0e97 100644
+index 03cf8fb..712b358 100644
 --- a/drivers/phy/phy-core.c
 +++ b/drivers/phy/phy-core.c
-@@ -437,23 +437,18 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 	int id;
- 	struct phy *phy;
- 
--	if (!dev) {
--		dev_WARN(dev, "no device provided for PHY\n");
--		ret = -EINVAL;
--		goto err0;
--	}
-+	if (WARN_ON(!dev))
-+		return ERR_PTR(-EINVAL);
- 
- 	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
--	if (!phy) {
--		ret = -ENOMEM;
--		goto err0;
--	}
-+	if (!phy)
-+		return ERR_PTR(-ENOMEM);
- 
- 	id = ida_simple_get(&phy_ida, 0, 0, GFP_KERNEL);
+@@ -453,7 +453,7 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
  	if (id < 0) {
  		dev_err(dev, "unable to get id\n");
  		ret = id;
--		goto err1;
-+		goto free_phy;
+-		goto err0;
++		goto err1;
  	}
  
  	device_initialize(&phy->dev);
-@@ -468,11 +463,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+@@ -468,11 +468,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
  
  	ret = dev_set_name(&phy->dev, "phy-%s.%d", dev_name(dev), id);
  	if (ret)
--		goto err2;
-+		goto put_dev;
+-		goto err1;
++		goto err2;
  
  	ret = device_add(&phy->dev);
  	if (ret)
--		goto err2;
-+		goto put_dev;
+-		goto err1;
++		goto err2;
  
  	if (pm_runtime_enabled(dev)) {
  		pm_runtime_enable(&phy->dev);
-@@ -481,12 +476,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+@@ -481,11 +481,11 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
  
  	return phy;
  
--err2:
--	ida_remove(&phy_ida, phy->id);
-+put_dev:
- 	put_device(&phy->dev);
 -err1:
-+	ida_remove(&phy_ida, phy->id);
-+free_phy:
++err2:
+ 	ida_remove(&phy_ida, phy->id);
+ 	put_device(&phy->dev);
++err1:
  	kfree(phy);
--err0:
+-
+ err0:
  	return ERR_PTR(ret);
  }
- EXPORT_SYMBOL_GPL(phy_create);
 -- 
 1.7.10.4
 
