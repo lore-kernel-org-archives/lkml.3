@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162622Ab3LFXox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:44:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48542 "EHLO
+	id S1162635Ab3LFXpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 18:45:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48536 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162054Ab3LFXPV (ORCPT
+	with ESMTP id S1162005Ab3LFXPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:15:21 -0500
+	Fri, 6 Dec 2013 18:15:19 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Puneet Kumar <puneetster@chromium.org>, Olof Johansson <olof@lixom.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 134/152] ACPI / EC: Ensure lock is acquired before accessing ec struct members
-Date: Fri,  6 Dec 2013 15:10:58 -0800
-Message-Id: <1386371476-2477-135-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 145/152] powerpc/signals: Mark VSX not saved with small contexts
+Date: Fri,  6 Dec 2013 15:11:09 -0800
+Message-Id: <1386371476-2477-146-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386371476-2477-1-git-send-email-kamal@canonical.com>
 References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
@@ -28,45 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Puneet Kumar <puneetster@chromium.org>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 36b15875a7819a2ec4cb5748ff7096ad7bd86cbb upstream.
+commit c13f20ac48328b05cd3b8c19e31ed6c132b44b42 upstream.
 
-A bug was introduced by commit b76b51ba0cef ('ACPI / EC: Add more debug
-info and trivial code cleanup') that erroneously caused the struct member
-to be accessed before acquiring the required lock.  This change fixes
-it by ensuring the lock acquisition is done first.
+The VSX MSR bit in the user context indicates if the context contains VSX
+state.  Currently we set this when the process has touched VSX at any stage.
 
-Found by Aaron Durbin <adurbin@chromium.org>
+Unfortunately, if the user has not provided enough space to save the VSX state,
+we can't save it but we currently still set the MSR VSX bit.
 
-Fixes: b76b51ba0cef ('ACPI / EC: Add more debug info and trivial code cleanup')
-References: http://crbug.com/319019
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Reviewed-by: Aaron Durbin <adurbin@chromium.org>
-[olof: Commit message reworded a bit]
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch changes this to clear the MSR VSX bit when the user doesn't provide
+enough space.  This indicates that there is no valid VSX state in the user
+context.
+
+This is needed to support get/set/make/swapcontext for applications that use
+VSX but only provide a small context.  For example, getcontext in glibc
+provides a smaller context since the VSX registers don't need to be saved over
+the glibc function call.  But since the program calling getcontext may have
+used VSX, the kernel currently says the VSX state is valid when it's not.  If
+the returned context is then used in setcontext (ie. a small context without
+VSX but with MSR VSX set), the kernel will refuse the context.  This situation
+has been reported by the glibc community.
+
+Based on patch from Carlos O'Donell.
+
+Tested-by: Haren Myneni <haren@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/ec.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/signal_32.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 0b58c9d..97fcfb0 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -175,9 +175,10 @@ static void start_transaction(struct acpi_ec *ec)
- static void advance_transaction(struct acpi_ec *ec, u8 status)
- {
- 	unsigned long flags;
--	struct transaction *t = ec->curr;
-+	struct transaction *t;
- 
- 	spin_lock_irqsave(&ec->lock, flags);
-+	t = ec->curr;
- 	if (!t)
- 		goto unlock;
- 	if (t->wlen > t->wi) {
+diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
+index 804e323..d344c036 100644
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -449,7 +449,15 @@ static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
+ 		if (copy_vsx_to_user(&frame->mc_vsregs, current))
+ 			return 1;
+ 		msr |= MSR_VSX;
+-	}
++	} else if (!ctx_has_vsx_region)
++		/*
++		 * With a small context structure we can't hold the VSX
++		 * registers, hence clear the MSR value to indicate the state
++		 * was not saved.
++		 */
++		msr &= ~MSR_VSX;
++
++
+ #endif /* CONFIG_VSX */
+ #ifdef CONFIG_SPE
+ 	/* save spe registers */
 -- 
 1.8.3.2
 
