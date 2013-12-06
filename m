@@ -1,50 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161041Ab3LFSEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 13:04:21 -0500
-Received: from relay.parallels.com ([195.214.232.42]:33035 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758256Ab3LFSET (ORCPT
+	id S1758166Ab3LFSG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 13:06:59 -0500
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:38806 "EHLO
+	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab3LFSG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 13:04:19 -0500
-Message-ID: <52A211A1.8040809@parallels.com>
-Date: Fri, 6 Dec 2013 22:04:17 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Li Zefan <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH cgroup/for-3.13-fixes] cgroup: fix oops in cgroup init
- failure path
-References: <1386234006-1633-1-git-send-email-vdavydov@parallels.com> <20131205211814.GA29598@mtj.dyndns.org> <52A1766F.5090808@parallels.com> <20131206161312.GC13373@htj.dyndns.org> <20131206162503.GD13373@htj.dyndns.org>
-In-Reply-To: <20131206162503.GD13373@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.5.110.170]
+	Fri, 6 Dec 2013 13:06:57 -0500
+X-Greylist: delayed 2177 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Dec 2013 13:06:57 EST
+From: Chen-Yu Tsai <wens@csie.org>
+To: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing hardware
+Date: Sat,  7 Dec 2013 01:29:34 +0800
+Message-Id: <1386350983-13281-2-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1386350983-13281-1-git-send-email-wens@csie.org>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 08:25 PM, Tejun Heo wrote:
-> On Fri, Dec 06, 2013 at 11:13:12AM -0500, Tejun Heo wrote:
->>> Second, it's not clear to me why we need the CSS_ONLINE flag at all if
->>> we never assign css's that we fail to online to a cgroup. AFAIU we will
->>> never see such css's, because in all places we call offline_css(),
->>> namely cgroup_destroy_locked() (via kill_css()) and
->>> cgroup_unload_subsys(), we use cgroup_css() which will return NULL for them.
->> The whole thing is in flux and will look very different in near
->> future.  I actually had patches queued which deal with the issue you
->> spotted but they are being blocked on other changes ATM.  So, yeah,
->> there are some spurious stuff now.
-> LOL, I found the patch.  It was posted and acked I just forgot to
-> apply the whole series.  I'm a moron.
->
->   http://permalink.gmane.org/gmane.linux.kernel.containers/26804
->
-> This should do it, right?  I'll update the patch description and
-> repost the series.
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
 
-If combined with the patch you've sent recently, this should do the trick.
+Guiseppe previously stated that the "stmmaceth" clock is the
+main clock that drives the IP. The stmmac driver does not
+enable this clock during the probe phase. When the driver is
+built in to the kernel, this is fine because the clock maybe
+on by default, or the boot loader had enabled it.
 
-Thanks.
+If stmmac is built as a module, when the module is loaded,
+the clock may be found unused and disabled by the kernel.
+
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 24 +++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 8d4ccd3..7da71ed 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -2688,10 +2688,17 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 	if ((phyaddr >= 0) && (phyaddr <= 31))
+ 		priv->plat->phy_addr = phyaddr;
+ 
++	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
++	if (IS_ERR(priv->stmmac_clk)) {
++		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
++		goto error_clk_get;
++	}
++	clk_prepare_enable(priv->stmmac_clk);
++
+ 	/* Init MAC and get the capabilities */
+ 	ret = stmmac_hw_init(priv);
+ 	if (ret)
+-		goto error_free_netdev;
++		goto error_hw_init;
+ 
+ 	ndev->netdev_ops = &stmmac_netdev_ops;
+ 
+@@ -2729,12 +2736,6 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 		goto error_netdev_register;
+ 	}
+ 
+-	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
+-	if (IS_ERR(priv->stmmac_clk)) {
+-		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
+-		goto error_clk_get;
+-	}
+-
+ 	/* If a specific clk_csr value is passed from the platform
+ 	 * this means that the CSR Clock Range selection cannot be
+ 	 * changed at run-time and it is fixed. Viceversa the driver'll try to
+@@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+ 		}
+ 	}
+ 
++	clk_disable_unprepare(priv->stmmac_clk);
++
+ 	return priv;
+ 
+ error_mdio_register:
+-	clk_put(priv->stmmac_clk);
+-error_clk_get:
+ 	unregister_netdev(ndev);
+ error_netdev_register:
+ 	netif_napi_del(&priv->napi);
+-error_free_netdev:
++error_hw_init:
++	clk_disable_unprepare(priv->stmmac_clk);
++	clk_put(priv->stmmac_clk);
++error_clk_get:
+ 	free_netdev(ndev);
+ 
+ 	return NULL;
+-- 
+1.8.5.1
+
