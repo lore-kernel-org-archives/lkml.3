@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161986Ab3LFWOr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 17:14:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60905 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab3LFVxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759356Ab3LFVxh (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Dec 2013 16:53:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60883 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab3LFVxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 16:53:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fan Du <fan.du@windriver.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 26/58] xfrm: Release dst if this dst is improper for vti tunnel
-Date: Fri,  6 Dec 2013 13:51:57 -0800
-Message-Id: <20131206214847.332976575@linuxfoundation.org>
+        mpb <mpb.mail@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 18/58] inet: prevent leakage of uninitialized memory to user in recv syscalls
+Date: Fri,  6 Dec 2013 13:51:49 -0800
+Message-Id: <20131206214846.610730603@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214844.906193530@linuxfoundation.org>
 References: <20131206214844.906193530@linuxfoundation.org>
@@ -26,33 +28,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "fan.du" <fan.du@windriver.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 236c9f84868534c718b6889aa624de64763281f9 ]
+[ Upstream commit bceaa90240b6019ed73b49965eac7d167610be69 ]
 
-After searching rt by the vti tunnel dst/src parameter,
-if this rt has neither attached to any transformation
-nor the transformation is not tunnel oriented, this rt
-should be released back to ip layer.
+Only update *addr_len when we actually fill in sockaddr, otherwise we
+can return uninitialized memory from the stack to the caller in the
+recvfrom, recvmmsg and recvmsg syscalls. Drop the the (addr_len == NULL)
+checks because we only get called with a valid addr_len pointer either
+from sock_common_recvmsg or inet_recvmsg.
 
-otherwise causing dst memory leakage.
+If a blocking read waits on a socket which is concurrently shut down we
+now return zero and set msg_msgnamelen to 0.
 
-Signed-off-by: Fan Du <fan.du@windriver.com>
+Reported-by: mpb <mpb.mail@gmail.com>
+Suggested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_vti.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ieee802154/dgram.c |    3 +--
+ net/ipv4/ping.c        |    9 ++++-----
+ net/ipv4/raw.c         |    4 +---
+ net/ipv4/udp.c         |    7 +------
+ net/ipv6/raw.c         |    4 +---
+ net/ipv6/udp.c         |    5 +----
+ net/l2tp/l2tp_ip.c     |    4 +---
+ net/phonet/datagram.c  |    9 ++++-----
+ 8 files changed, 14 insertions(+), 31 deletions(-)
 
---- a/net/ipv4/ip_vti.c
-+++ b/net/ipv4/ip_vti.c
-@@ -350,6 +350,7 @@ static netdev_tx_t vti_tunnel_xmit(struc
- 	if (!rt->dst.xfrm ||
- 	    rt->dst.xfrm->props.mode != XFRM_MODE_TUNNEL) {
- 		dev->stats.tx_carrier_errors++;
-+		ip_rt_put(rt);
- 		goto tx_error_icmp;
+--- a/net/ieee802154/dgram.c
++++ b/net/ieee802154/dgram.c
+@@ -315,9 +315,8 @@ static int dgram_recvmsg(struct kiocb *i
+ 	if (saddr) {
+ 		saddr->family = AF_IEEE802154;
+ 		saddr->addr = mac_cb(skb)->sa;
+-	}
+-	if (addr_len)
+ 		*addr_len = sizeof(*saddr);
++	}
+ 
+ 	if (flags & MSG_TRUNC)
+ 		copied = skb->len;
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -626,7 +626,6 @@ static int ping_recvmsg(struct kiocb *io
+ 			size_t len, int noblock, int flags, int *addr_len)
+ {
+ 	struct inet_sock *isk = inet_sk(sk);
+-	struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
+ 	struct sk_buff *skb;
+ 	int copied, err;
+ 
+@@ -636,9 +635,6 @@ static int ping_recvmsg(struct kiocb *io
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ip_recv_error(sk, msg, len);
+ 
+@@ -660,11 +656,14 @@ static int ping_recvmsg(struct kiocb *io
+ 	sock_recv_timestamp(msg, sk, skb);
+ 
+ 	/* Copy the address. */
+-	if (sin) {
++	if (msg->msg_name) {
++		struct sockaddr_in *sin = (struct sockaddr_in *)msg->msg_name;
++
+ 		sin->sin_family = AF_INET;
+ 		sin->sin_port = 0 /* skb->h.uh->source */;
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
  	}
- 	tdev = rt->dst.dev;
+ 	if (isk->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/ipv4/raw.c
++++ b/net/ipv4/raw.c
+@@ -692,9 +692,6 @@ static int raw_recvmsg(struct kiocb *ioc
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	if (flags & MSG_ERRQUEUE) {
+ 		err = ip_recv_error(sk, msg, len);
+ 		goto out;
+@@ -722,6 +719,7 @@ static int raw_recvmsg(struct kiocb *ioc
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		sin->sin_port = 0;
+ 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (inet->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1207,12 +1207,6 @@ int udp_recvmsg(struct kiocb *iocb, stru
+ 	int is_udplite = IS_UDPLITE(sk);
+ 	bool slow;
+ 
+-	/*
+-	 *	Check any passed addresses
+-	 */
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ip_recv_error(sk, msg, len);
+ 
+@@ -1274,6 +1268,7 @@ try_again:
+ 		sin->sin_port = udp_hdr(skb)->source;
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		memset(sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (inet->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -459,9 +459,6 @@ static int rawv6_recvmsg(struct kiocb *i
+ 	if (flags & MSG_OOB)
+ 		return -EOPNOTSUPP;
+ 
+-	if (addr_len)
+-		*addr_len=sizeof(*sin6);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ipv6_recv_error(sk, msg, len);
+ 
+@@ -500,6 +497,7 @@ static int rawv6_recvmsg(struct kiocb *i
+ 		sin6->sin6_flowinfo = 0;
+ 		sin6->sin6_scope_id = ipv6_iface_scope_id(&sin6->sin6_addr,
+ 							  IP6CB(skb)->iif);
++		*addr_len = sizeof(*sin6);
+ 	}
+ 
+ 	sock_recv_ts_and_drops(msg, sk, skb);
+--- a/net/ipv6/udp.c
++++ b/net/ipv6/udp.c
+@@ -373,9 +373,6 @@ int udpv6_recvmsg(struct kiocb *iocb, st
+ 	int is_udp4;
+ 	bool slow;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(struct sockaddr_in6);
+-
+ 	if (flags & MSG_ERRQUEUE)
+ 		return ipv6_recv_error(sk, msg, len);
+ 
+@@ -461,7 +458,7 @@ try_again:
+ 				ipv6_iface_scope_id(&sin6->sin6_addr,
+ 						    IP6CB(skb)->iif);
+ 		}
+-
++		*addr_len = sizeof(*sin6);
+ 	}
+ 	if (is_udp4) {
+ 		if (inet->cmsg_flags)
+--- a/net/l2tp/l2tp_ip.c
++++ b/net/l2tp/l2tp_ip.c
+@@ -518,9 +518,6 @@ static int l2tp_ip_recvmsg(struct kiocb
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(*sin);
+-
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb)
+ 		goto out;
+@@ -543,6 +540,7 @@ static int l2tp_ip_recvmsg(struct kiocb
+ 		sin->sin_addr.s_addr = ip_hdr(skb)->saddr;
+ 		sin->sin_port = 0;
+ 		memset(&sin->sin_zero, 0, sizeof(sin->sin_zero));
++		*addr_len = sizeof(*sin);
+ 	}
+ 	if (inet->cmsg_flags)
+ 		ip_cmsg_recv(msg, skb);
+--- a/net/phonet/datagram.c
++++ b/net/phonet/datagram.c
+@@ -139,9 +139,6 @@ static int pn_recvmsg(struct kiocb *iocb
+ 			MSG_CMSG_COMPAT))
+ 		goto out_nofree;
+ 
+-	if (addr_len)
+-		*addr_len = sizeof(sa);
+-
+ 	skb = skb_recv_datagram(sk, flags, noblock, &rval);
+ 	if (skb == NULL)
+ 		goto out_nofree;
+@@ -162,8 +159,10 @@ static int pn_recvmsg(struct kiocb *iocb
+ 
+ 	rval = (flags & MSG_TRUNC) ? skb->len : copylen;
+ 
+-	if (msg->msg_name != NULL)
+-		memcpy(msg->msg_name, &sa, sizeof(struct sockaddr_pn));
++	if (msg->msg_name != NULL) {
++		memcpy(msg->msg_name, &sa, sizeof(sa));
++		*addr_len = sizeof(sa);
++	}
+ 
+ out:
+ 	skb_free_datagram(sk, skb);
 
 
