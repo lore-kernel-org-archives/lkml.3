@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758650Ab3LFVwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 16:52:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60360 "EHLO
+	id S1759962Ab3LFWnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 17:43:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60406 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab3LFVwP (ORCPT
+	with ESMTP id S1758819Ab3LFVwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 16:52:15 -0500
+	Fri, 6 Dec 2013 16:52:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnaud Ebalard <arno@natisbad.org>,
+        Nicolas HICHER <nhicher@avencall.com>,
+        Andreas Henriksson <andreas@fatal.se>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 01/83] net: mv643xx_eth: Add missing phy_addr_set in DT mode
-Date: Fri,  6 Dec 2013 13:50:51 -0800
-Message-Id: <20131206214640.198508936@linuxfoundation.org>
+Subject: [PATCH 3.12 07/83] net: Fix "ip rule delete table 256"
+Date: Fri,  6 Dec 2013 13:50:57 -0800
+Message-Id: <20131206214640.759617950@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.67.gb00d244
 In-Reply-To: <20131206214640.002320724@linuxfoundation.org>
 References: <20131206214640.002320724@linuxfoundation.org>
@@ -29,37 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+From: Andreas Henriksson <andreas@fatal.se>
 
-Commit cc9d4598 'net: mv643xx_eth: use of_phy_connect if phy_node
-present' made the call to phy_scan optional, if the DT has a link to
-the phy node.
+[ Upstream commit 13eb2ab2d33c57ebddc57437a7d341995fc9138c ]
 
-However phy_scan has the side effect of calling phy_addr_set, which
-writes the phy MDIO address to the ethernet controller. If phy_addr_set
-is not called, and the bootloader has not set the correct address then
-the driver will fail to function.
+When trying to delete a table >= 256 using iproute2 the local table
+will be deleted.
+The table id is specified as a netlink attribute when it needs more then
+8 bits and iproute2 then sets the table field to RT_TABLE_UNSPEC (0).
+Preconditions to matching the table id in the rule delete code
+doesn't seem to take the "table id in netlink attribute" into condition
+so the frh_get_table helper function never gets to do its job when
+matching against current rule.
+Use the helper function twice instead of peaking at the table value directly.
 
-Tested on Kirkwood.
+Originally reported at: http://bugs.debian.org/724783
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Reported-by: Nicolas HICHER <nhicher@avencall.com>
+Signed-off-by: Andreas Henriksson <andreas@fatal.se>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mv643xx_eth.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/core/fib_rules.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2890,6 +2890,7 @@ static int mv643xx_eth_probe(struct plat
- 					 PHY_INTERFACE_MODE_GMII);
- 		if (!mp->phy)
- 			err = -ENODEV;
-+		phy_addr_set(mp, mp->phy->addr);
- 	} else if (pd->phy_addr != MV643XX_ETH_PHY_NONE) {
- 		mp->phy = phy_scan(mp, pd->phy_addr);
+--- a/net/core/fib_rules.c
++++ b/net/core/fib_rules.c
+@@ -460,7 +460,8 @@ static int fib_nl_delrule(struct sk_buff
+ 		if (frh->action && (frh->action != rule->action))
+ 			continue;
  
+-		if (frh->table && (frh_get_table(frh, tb) != rule->table))
++		if (frh_get_table(frh, tb) &&
++		    (frh_get_table(frh, tb) != rule->table))
+ 			continue;
+ 
+ 		if (tb[FRA_PRIORITY] &&
 
 
