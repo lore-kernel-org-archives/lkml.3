@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3LGC1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 21:27:46 -0500
-Received: from dmz-mailsec-scanner-1.mit.edu ([18.9.25.12]:45960 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752029Ab3LGC1p (ORCPT
+	id S1754869Ab3LGC15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 21:27:57 -0500
+Received: from dmz-mailsec-scanner-3.mit.edu ([18.9.25.14]:45370 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754229Ab3LGC1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 21:27:45 -0500
-X-AuditID: 1209190c-b7f7f6d000000bbd-1e-52a287a0a1eb
-Date: Fri, 6 Dec 2013 21:27:42 -0500
+	Fri, 6 Dec 2013 21:27:55 -0500
+X-AuditID: 1209190e-b7efb6d000000bb9-1d-52a287aa9cd2
+Date: Fri, 6 Dec 2013 21:27:52 -0500
 From: Greg Price <price@MIT.EDU>
 To: "Theodore Ts'o" <tytso@MIT.EDU>
 Cc: linux-kernel@vger.kernel.org
-Subject: [3.13 PATCH 0/2] random: bytes vs. bits
-Message-ID: <cover.1386382885.git.price@mit.edu>
+Subject: [3.13 PATCH 1/2] random: entropy_bytes is actually bits
+Message-ID: <20131207022751.GY16018@ringworld.MIT.EDU>
+References: <cover.1386382885.git.price@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1386382885.git.price@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsUixG6nrrugfVGQwaNmeYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJVx6u8M1oK9nBVbFixlaWC8wt7FyMkhIWAicfDhXxYIW0ziwr31
-	bF2MXBxCArOZJNb/2gDlbGCUOLP0PzuE85NRYn5DIxNIC4uAisTmXceZQWw2AQWJH/PXgdki
-	AsoSq2ZuAqthBor/ureJFcQWFjCQaLgxiw3E5gWypx9sZYSwBSVOznzCAlGvJXHj30ugXg4g
-	W1pi+T8OkLAo0KopJ7exTWDkn4WkYxaSjlkIHQsYmVcxyqbkVunmJmbmFKcm6xYnJ+blpRbp
-	GurlZpbopaaUbmIEBR6nJM8OxjcHlQ4xCnAwKvHwXrBaFCTEmlhWXJl7iFGSg0lJlNe9DSjE
-	l5SfUpmRWJwRX1Sak1p8iFGCg1lJhHenGlCONyWxsiq1KB8mJc3BoiTOe5PDPkhIID2xJDU7
-	NbUgtQgmK8PBoSTB2wsyVLAoNT21Ii0zpwQhzcTBCTKcB2h4IkgNb3FBYm5xZjpE/hSjopQ4
-	bztIQgAkkVGaB9cLSwyvGMWBXhHmXQBSxQNMKnDdr4AGMwENbn4wD2RwSSJCSqqB0e7rvNqz
-	PH0/fh7kMC1bUTu5enORQvOaI6drS/bv7A37eH7eg2eN3tzTr297uWtzg/+W2/6yf2PsZqat
-	tNR9z9v17UL/Lqf6xWzl0o71x+ZEyX34xhhULeLBzqzitfvE/u+37d6osc4QXB7D83XiZr9z
-	a9+VmjEyLfwo+2z2HvcMN+7Cux8KVJVYijMSDbWYi4oTARBXax3nAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsUixCmqrbuqfVGQQdtaPovLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJWx6OpL1oIOrorPjyayNDB2cnQxcnJICJhInJz4jB3CFpO4cG89
+	WxcjF4eQwGwmiX83HjGCJIQENjBKTOrjhbB/Mkqsv+AMYrMIqEi8X7WXDcRmE1CQ+DF/HTOI
+	LSKgLLFq5iYmEJsZKP7r3iZWEFtYwEHi8Z6tYPW8AmYSSzuXsUHMNJBom3GPHSIuKHFy5hMW
+	iF4tiRv/XgLN4QCypSWW/wO7mVPAUKL321GwElGgE6ac3MY2gVFwFpLuWUi6ZyF0L2BkXsUo
+	m5JbpZubmJlTnJqsW5ycmJeXWqRrrJebWaKXmlK6iREcpJJ8Oxi/HlQ6xCjAwajEw1thsShI
+	iDWxrLgy9xCjJAeTkiivextQiC8pP6UyI7E4I76oNCe1+BCjBAezkgjvTjWgHG9KYmVValE+
+	TEqag0VJnPcmh32QkEB6YklqdmpqQWoRTFaGg0NJgrcXZKhgUWp6akVaZk4JQpqJgxNkOA/Q
+	cFWQGt7igsTc4sx0iPwpRkUpcd4DIAkBkERGaR5cLyyJvGIUB3pFmFcDpIoHmIDgul8BDWYC
+	Gtz8YB7I4JJEhJRUA2PjlhcbZS2D32gx53y/VLdLpG/2o8S1cw4Wl8ox3hYx4/wyd0EO4w8G
+	2e7+PXY/m3eukS+7f3cTX+BFNquoC+c/iXh2561SXBd4YM977S7uGEMD7d1aXF3znuVYpH+6
+	eUPR4eyDR3fCvnvOzpK3zq0LWrSpufru2w1zNzkcqG1pEmcXnBJ2zlOJpTgj0VCLuag4EQAN
+	Gqq0/QIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new when-to-push logic in v3.13-rc1~61^2~6 "random: push extra
-entropy to the output pools" uses the name "entropy_bytes" for a
-quantity that's actually in bits.  This results in confusing,
-buggy-looking lines both where the variable is set and where it's
-used.  Fortunately it's all consistent if the variable is understood
-as counting bits, so the behavior is fine.
+The variable 'entropy_bytes' is set from an expression that actually
+counts bits.  Fortunately it's also only compared to values that also
+count bits.  Rename it accordingly.
 
-This code is new in v3.13-rc1, so fixing the name seems in order for
-3.13.  The first patch here just does that.
+Signed-off-by: Greg Price <price@mit.edu>
+---
+ drivers/char/random.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-One cause of the mistake is probably that the names of
-random_read_wakeup_thresh and random_write_wakeup_thresh don't
-indicate what units they're in.  This is an especially acute issue now
-that we have three units for entropy in different places -- bytes,
-bits, and 1 / (1 << ENTROPY_SHIFT) fractions of a bit.  The second
-patch clarifies the units in both names.  (Maybe other names should be
-clarified too.)  This may as well be post-3.13.
-
-Cheers,
-Greg
-
-
-Greg Price (2):
-  random: entropy_bytes is actually bits
-  random: clarify bits/bytes in wakeup thresholds
-
- drivers/char/random.c | 36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
-
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 429b75bb6..dc9b9af20 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -666,10 +666,10 @@ retry:
+ 				  r->entropy_total, _RET_IP_);
+ 
+ 	if (r == &input_pool) {
+-		int entropy_bytes = entropy_count >> ENTROPY_SHIFT;
++		int entropy_bits = entropy_count >> ENTROPY_SHIFT;
+ 
+ 		/* should we wake readers? */
+-		if (entropy_bytes >= random_read_wakeup_thresh) {
++		if (entropy_bits >= random_read_wakeup_thresh) {
+ 			wake_up_interruptible(&random_read_wait);
+ 			kill_fasync(&fasync, SIGIO, POLL_IN);
+ 		}
+@@ -678,7 +678,7 @@ retry:
+ 		 * forth between them, until the output pools are 75%
+ 		 * full.
+ 		 */
+-		if (entropy_bytes > random_write_wakeup_thresh &&
++		if (entropy_bits > random_write_wakeup_thresh &&
+ 		    r->initialized &&
+ 		    r->entropy_total >= 2*random_read_wakeup_thresh) {
+ 			static struct entropy_store *last = &blocking_pool;
 -- 
 1.8.3.2
+
