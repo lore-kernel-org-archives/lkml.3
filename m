@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab3LGIkX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 03:40:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51217 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab3LGIkW (ORCPT
+	id S1753942Ab3LGIll (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 03:41:41 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:33886 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab3LGIlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 03:40:22 -0500
-Message-ID: <1386405590.5673.96.camel@marge.simpson.net>
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-From: Mike Galbraith <bitbucket@online.de>
-To: Len Brown <lenb@kernel.org>
-Cc: tglx@linutronix.de, Peter Zijlstra <peterz@infradead.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Date: Sat, 07 Dec 2013 09:39:50 +0100
-In-Reply-To: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
-References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sat, 7 Dec 2013 03:41:40 -0500
+Message-ID: <52A2DF40.9070707@gmail.com>
+Date: Sat, 07 Dec 2013 10:41:36 +0200
+From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>, pavel@ucw.cz,
+        pali.rohar@gmail.com, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
+References: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com> <52A16932.8020909@gmail.com> <20131206151030.GA22559@kroah.com>
+In-Reply-To: <20131206151030.GA22559@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:tLwg913UNXw3XnAC2CRRtBXUkRnnDMXc3QCGGDCf8Ye
- P+GZYy4mzS15kNjRWDqeUky5iHIAs6pKqtXAWc3l1t4NYrQPW9
- BkDmKBekljRqdFTrqOPrxfyIwKQpZ3QL1RXcxY4SpeIvz2fQIO
- PN0S6syed6YoNRUtipdu4M0DShP4MKF5LotCl4Gm5xsF3ThAbX
- oFaPCGSDHaMITINUtyVZQagYOvCOT8GxsfxmnufwfI92eekjgr
- eKWXABmKx/oo87QQq8ynx0ZEHSuNeYbBlrkG93U7mfca87/sao
- Xc4fGUQEf40qqB7zjsKB0RIcyLZMKR46EV7gg5NZro5FT4S5Qc
- xk5UjvM9gyuTmEeiLd83ZfAfha75Xi60XnRjiMK8ctUzfttPXU
- OvlAYqQzq481g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-12-07 at 03:00 -0500, Len Brown wrote:
 
-> No, Linux-3.13-rc3 does not fix this issue, even though it contains
-> the following patch, claiming to address an issue with the commit above:
-> 
-> commit ea8117478918a4734586d35ff530721b682425be
-> Author: Peter Zijlstra <peterz@infradead.org>
-> Date:   Wed Sep 11 12:43:13 2013 +0200
-> 
->     sched, idle: Fix the idle polling state logic
-> 
->     Mike reported that commit 7d1a9417 ("x86: Use generic idle loop")
->     regressed several workloads and caused excessive reschedule
->     interrupts.
+On 06.12.2013 17:10, gregkh@linuxfoundation.org wrote:
+> On Fri, Dec 06, 2013 at 08:05:38AM +0200, Ivajlo Dimitrov wrote:
+>> Hi Greg,
+>>
+>> On 01.12.2013 19:07, Ivaylo DImitrov wrote:
+>>> From: Ivaylo Dimitrov <freemangordon@abv.bg>
+>>>
+>>> Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+>>> need to be exported. It can also be made way simpler by using sscanf.
+>>>
+>>> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+>>> ---
+>>>    drivers/staging/tidspbridge/Makefile               |    2 +-
+>>>    drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
+>>>    .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
+>>>    drivers/staging/tidspbridge/rmgr/dbdcd.c           |   42 +++++++++-
+>>>    4 files changed, 39 insertions(+), 108 deletions(-)
+>>>    delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
+>>>
+>> I guess the initial mail somehow didn't make it through your spam filter:
+>> https://lkml.org/lkml/2013/12/1/70
+> It did, but I thought that people asked for it to be changed in the
+> thread afterwards, so I was expecting an updated version from you.
+>
+> Care to fix things up and resend it?
+>
+> thanks,
+>
+> greg k-h
 
-It fixes that, except for my Q6600 box.  Too bad mwait_idle() went away,
-beloved old box doesn't play hints game, so it continues to flog itself.
+Sure, the change I was asked for is trivial, but I didn't get the reason 
+why it is needed. Neither there is a reply to my follow-up comment [0]. 
+Sorry, I am pretty much new on LKML and could miss things that are 
+supposed to be clear from the start, but my impression is that when 
+someone says "it is better", he/she should explain why it is better or 
+at least what is wrong with the patch he/she wants  to be changed.
 
--Mike
+However, I don't want to enter some arguing loop, so if you think I 
+should change the code as per Joe's comment, just confirm it and I'll do it.
 
+Thanks,
+Ivo
+
+[0] https://lkml.org/lkml/2013/12/1/113
