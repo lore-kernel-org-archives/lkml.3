@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab3LGJBd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 04:01:33 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:45872 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3LGJBN (ORCPT
+	id S1754443Ab3LGJCP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 04:02:15 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:36545 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab3LGJCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 04:01:13 -0500
+	Sat, 7 Dec 2013 04:02:11 -0500
+Date: Sat, 7 Dec 2013 04:01:02 -0500 (EST)
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
+        toshi kani <toshi.kani@hp.com>, matt@console-pimps.org, greg@kroah.com,
+        x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        horms@verge.net.au, ebiederm@xmission.com, hpa@zytor.com,
+        vgoyal@redhat.com
+Message-ID: <2141297830.13051543.1386406862068.JavaMail.root@redhat.com>
+In-Reply-To: <20131202094020.GA7380@pd.tnic>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com> <1385445477-9665-7-git-send-email-dyoung@redhat.com> <20131127114402.GB32267@pd.tnic> <20131129094034.GI4186@dhcp-16-126.nay.redhat.com> <20131129115029.GB4266@pd.tnic> <20131202025942.GF3999@dhcp-16-126.nay.redhat.com> <20131202094020.GA7380@pd.tnic>
+Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to
+ sysfs
 MIME-Version: 1.0
-In-Reply-To: <CAOZdJXWukOZt9KCjph3wWPkt5NO166syL1BKS6CZHExxc=edGA@mail.gmail.com>
-References: <529CEA30.8010805@infradead.org>
-	<CAOZdJXWukOZt9KCjph3wWPkt5NO166syL1BKS6CZHExxc=edGA@mail.gmail.com>
-Date: Sat, 7 Dec 2013 10:01:12 +0100
-X-Google-Sender-Auth: x3zdgr9CLvTEs_DimhxJnjLfptw
-Message-ID: <CAMuHMdUOyQhky0Df5NoUF4a8etz5gKxjQBzXdVwrcL8kCCv=0A@mail.gmail.com>
-Subject: Re: [PATCH] init.h: add missing initcall variants
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Timur Tabi <timur@tabi.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Timur Tabi <timur@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF12 (Linux)/8.0.3_GA_5664)
+Thread-Topic: export efi runtime memory mapping to sysfs
+Thread-Index: MaP0Dy7ViMa4RTVJDoUDKObn9Z4RBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 7, 2013 at 4:31 AM, Timur Tabi <timur@tabi.org> wrote:
-> On Mon, Dec 2, 2013 at 2:14 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->> From: Randy Dunlap <rdunlap@infradead.org>
->>
->> Add missing initcall variants when building for loadable modules.
->> This fixes this build error on powerpc allmodconfig:
->>
->> drivers/tty/ehv_bytechan.c: error: type defaults to 'int' in declaration of 'console_initcall' [-Werror=implicit-int]
->
-> Acked-by: Timur Tabi <timur@tabi.org>
->
-> However, I wonder if it makes sense to have a console_initcall in a
-> module at all.  Is it possible to load and use a console driver as a
-> module?
+Hi, all
 
-Of course.
+Update my status:
 
-Its use for debugging is limited though, as you obviously won't get output
-from it before the module is loaded and the console is registered.
+I have finished most of thecode related changes including the krealloc
+fixes (both for original code and my new code). And I'm slowly
+moving the kexec related stuff to efi_kexec.c, this involves
+some other cleanups, such as:
+efi_systab_init:
+ -> move 64bit code to efi_64.c, move 32bit code to efi_32.c
 
-As long as it's e.g. autoloaded from an initramfs, it'll work.
+efi_setup global variable is changing to physical address, ioremapping
+it when necessary instead of directly using the virt addr because
+previously the virt addr will be freed until entering virtual mode,
+it's possible a leak in case something is wrong in the middle also it
+occupies the ioremap slot a little bit long.
 
-Gr{oetje,eeting}s,
+There's also other problems, so I still need a few days probably
+a week to carefully restructure the code.
 
-                        Geert
+Thanks
+Dave
 
+Sending from web interface so sorry for the email format.
+----- Original Message -----
+From: "Borislav Petkov" <bp@alien8.de>
+To: "Dave Young" <dyoung@redhat.com>
+Cc: mjg59@srcf.ucam.org, linux-efi@vger.kernel.org, "toshi kani" <toshi.kani@hp.com>, matt@console-pimps.org, greg@kroah.com, x86@kernel.org, kexec@lists.infradead.org, linux-kernel@vger.kernel.org, "James Bottomley" <James.Bottomley@HansenPartnership.com>, horms@verge.net.au, ebiederm@xmission.com, hpa@zytor.com, vgoyal@redhat.com
+Sent: Monday, December 2, 2013 5:40:20 PM
+Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
+
+On Mon, Dec 02, 2013 at 10:59:42AM +0800, Dave Young wrote:
+> They are only called if there's setup_data SETUP_EFI passed in. Yes, I
+> think only kexec need that part of code. But I hesitated to mess the
+> code with a lot of #if. Will think about it.
+
+Well, the accepted strategy with the efi code is to have function calls
+in efi.c and then have different versions of those functions defined for
+32 and 64-bit, i.e. efi_32.c and efi_64.c.
+
+I can imagine adding an efi_kexec.c could make the whole deal very
+clearly arranged without ifdeffery.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+_______________________________________________
+kexec mailing list
+kexec@lists.infradead.org
+http://lists.infradead.org/mailman/listinfo/kexec
