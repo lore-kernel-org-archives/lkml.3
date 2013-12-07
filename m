@@ -1,176 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745Ab3LGSGL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 13:06:11 -0500
-Received: from mout.gmx.net ([212.227.15.19]:63660 "EHLO mout.gmx.net"
+	id S1758945Ab3LGTHZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 14:07:25 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:45124 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073Ab3LGSGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 13:06:07 -0500
-Message-ID: <52A36389.7010103@gmx.de>
-Date: Sat, 07 Dec 2013 19:06:01 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1755694Ab3LGTHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 14:07:23 -0500
+Date: Sat, 7 Dec 2013 14:06:53 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Tim Hockin <thockin@hockin.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
+ notifications to access reserves
+Message-ID: <20131207190653.GI21724@cmpxchg.org>
+References: <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
+ <20131204054533.GZ3556@cmpxchg.org>
+ <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
+ <20131205025026.GA26777@htj.dyndns.org>
+ <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
+ <20131206173438.GE21724@cmpxchg.org>
+ <CAAAKZwsh3erB7PyG6FnvJRgrZhf2hDQCZDx3rMM7NdOdYNCzJw@mail.gmail.com>
+ <20131207174039.GH21724@cmpxchg.org>
+ <CAAAKZwvanMiz8QZVOU0-SUKYzqcaJAXn0HxYs5+=Zakmnbcfbg@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: UML devel <user-mode-linux-devel@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: why does index in truncate_inode_pages_range() grows so much
- ?
-References: <529217CD.1000204@gmx.de> <20131203140214.GB31128@quack.suse.cz> <529E3450.9000700@gmx.de> <20131203230058.GA24037@quack.suse.cz> <20131204130639.GA31973@quack.suse.cz>
-In-Reply-To: <20131204130639.GA31973@quack.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:O2zazEFKtq1PbqqNahvrD3Tu/HCL6TtBgZzYNrav2Wi44PNmpKb
- FDOR5/E+SHEFDiUrIoxvf244J//++LBa52HzTtznklT5PmDMkaJ8S/qz5IvEOjEt3BF0f0q
- zJHv+pWgYV+lSpW7xNRr2BcJpdMc56tqtjolikkCGtAc2SdJmZ5e/Wc3abOYKFchxC+wrgI
- b0mGw+8x+UQqy9GxCl5ag==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwvanMiz8QZVOU0-SUKYzqcaJAXn0HxYs5+=Zakmnbcfbg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2013 02:06 PM, Jan Kara wrote:
->   One idea: Can you add
-> WARN_ON(offset > 10000000);
->   into mm/filemap.c:add_to_page_cache_locked() ? That should tell us
-> whether someone is indeed inserting pages with strange indices into page
-> cache or if page->index got somehow corrupted.
+On Sat, Dec 07, 2013 at 10:12:19AM -0800, Tim Hockin wrote:
+> You more or less described the fundamental change - a score per memcg, with
+> a recursive OOM killer which evaluates scores between siblings at the same
+> level.
 > 
->  								Honza
->> > 
+> It gets a bit complicated because we have need if wider scoring ranges than
+> are provided by default
 
-With this diff :
+If so, I'm sure you can make a convincing case to widen the internal
+per-task score ranges.  The per-memcg score ranges have not even be
+defined, so this is even easier.
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b7749a9..e95d90c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -463,6 +463,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+> and because we score PIDs against mcgs at a given scope.
 
-        VM_BUG_ON(!PageLocked(page));
-        VM_BUG_ON(PageSwapBacked(page));
-+       WARN_ON(offset > 10000000);
+You are describing bits of a solution, not a problem.  And I can't
+possibly infer a problem from this.
 
-        error = mem_cgroup_cache_charge(page, current->mm,
-                                        gfp_mask & GFP_RECLAIM_MASK);
+> We also have some tiebreaker heuristic (age).
 
+Either periodically update the per-memcg score from userspace or
+implement this in the kernel.  We have considered CPU usage
+history/runtime etc. in the past when picking an OOM victim task.
 
+But I'm again just speculating what your problem is, so this may or
+may not be a feasible solution.
 
-I do get such things :
+> We also have a handful of features that depend on OOM handling like the
+> aforementioned automatically growing and changing the actual OOM score
+> depending on usage in relation to various thresholds ( e.g. we sold you X,
+> and we allow you to go over X but if you do, your likelihood of death in
+> case of system OOM goes up.
 
-Dec  7 18:01:29 trinity tfoerste: M=1
-Dec  7 18:01:36 trinity kernel: type=1006 audit(1386435689.994:3): pid=1260 uid=0 old auid=4294967295 new auid=1000 old ses=4294967295 new ses=2 res=1
-Dec  7 18:01:42 trinity kernel: warning: process `trinity-child0' used the deprecated sysctl system call with
-Dec  7 18:01:42 trinity kernel: VFS: Warning: trinity-child0 using old stat() call. Recompile your binary.
-Dec  7 18:01:44 trinity kernel: ------------[ cut here ]------------
-Dec  7 18:01:44 trinity kernel: WARNING: CPU: 0 PID: 1478 at mm/filemap.c:466 add_to_page_cache_locked+0x34/0xf0()
-Dec  7 18:01:44 trinity kernel: CPU: 0 PID: 1478 Comm: trinity-child0 Not tainted 3.13.0-rc3-dirty #16
-Dec  7 18:01:44 trinity kernel: Stack:
-Dec  7 18:01:44 trinity kernel: 084c0773 084c0773 49be7ca8 00000004 085d0547 49be0000 00000000 084ce2d4
-Dec  7 18:01:44 trinity kernel: 49be7cb8 08425f7f 00000000 00000000 49be7cf0 0807d43b 084cc244 00000000
-Dec  7 18:01:44 trinity kernel: 000005c6 084ce2d4 000001d2 080cb714 080cb714 000001d2 49be7cfc 0b811b60
-Dec  7 18:01:44 trinity kernel: Call Trace:
-Dec  7 18:01:44 trinity kernel: [<08425f7f>] dump_stack+0x26/0x28
-Dec  7 18:01:44 trinity kernel: [<0807d43b>] warn_slowpath_common+0x7b/0xa0
-Dec  7 18:01:44 trinity kernel: [<080cb714>] ? add_to_page_cache_locked+0x34/0xf0
-Dec  7 18:01:44 trinity kernel: [<080cb714>] ? add_to_page_cache_locked+0x34/0xf0
-Dec  7 18:01:44 trinity kernel: [<0807d503>] warn_slowpath_null+0x23/0x30
-Dec  7 18:01:44 trinity kernel: [<080cb714>] add_to_page_cache_locked+0x34/0xf0
-Dec  7 18:01:44 trinity kernel: [<080cb7fb>] add_to_page_cache_lru+0x2b/0x50
-Dec  7 18:01:44 trinity kernel: [<080cd38b>] generic_file_aio_read+0x57b/0x710
-Dec  7 18:01:44 trinity kernel: [<081035ee>] do_sync_read+0x6e/0xa0
-Dec  7 18:01:44 trinity kernel: [<08104199>] vfs_read+0xa9/0x180
-Dec  7 18:01:44 trinity kernel: [<081047cc>] SyS_pread64+0x6c/0xa0
-Dec  7 18:01:44 trinity kernel: [<08062a94>] handle_syscall+0x64/0x80
-Dec  7 18:01:44 trinity kernel: [<083d8831>] ? ptrace+0x31/0x80
-Dec  7 18:01:44 trinity kernel: [<0807a072>] ? get_fp_registers+0x22/0x40
-Dec  7 18:01:44 trinity kernel: [<080750f5>] userspace+0x475/0x5f0
-Dec  7 18:01:44 trinity kernel: [<083d8831>] ? ptrace+0x31/0x80
-Dec  7 18:01:44 trinity kernel: [<0807a5d6>] ? os_set_thread_area+0x26/0x40
-Dec  7 18:01:44 trinity kernel: [<080795a0>] ? do_set_thread_area+0x20/0x50
-Dec  7 18:01:44 trinity kernel: [<08079718>] ? arch_switch_tls+0xb8/0x100
-Dec  7 18:01:44 trinity kernel: [<0805f750>] fork_handler+0x60/0x70
-Dec  7 18:01:44 trinity kernel:
-Dec  7 18:01:44 trinity kernel: ---[ end trace 7ce562aa9f07d154 ]---
+You can trivially monitor threshold events from userspace with the
+existing infrastructure and accordingly update the per-memcg score.
 
+> Do you really want us to teach the kernel policies like this?  It would be
+> way easier to do and test in userspace.
 
-
-
-
-
-
-
-Just FWIW in addition I do have these diffs :
-
-diff --git a/mm/truncate.c b/mm/truncate.c
-index 353b683..41eecba 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -244,6 +244,11 @@ void truncate_inode_pages_range(struct address_space *mapping,
-                for (i = 0; i < pagevec_count(&pvec); i++) {
-                        struct page *page = pvec.pages[i];
-
-+                       if (index > 1000)       {
-+                               printk (" page->index:%ld  ->flags:%lu  ->s_id:%s  ->i_no:%lu \n",
-+                                       page->index , page->flags, page->mapping->host->i_sb->s_id, page->mapping->host->i_ino);
-+                       }
-+
-                        /* We rely upon deletion not changing page->index */
-                        index = page->index;
-                        if (index >= end)
-@@ -259,6 +264,9 @@ void truncate_inode_pages_range(struct address_space *mapping,
-                        truncate_inode_page(mapping, page);
-                        unlock_page(page);
-                }
-+               if (index > 1000)       {
-+                       printk (" index:%lu  i:%i  start:%lu \n", index, i, start);
-+               }
-                pagevec_release(&pvec);
-                mem_cgroup_uncharge_end();
-                cond_resched();
-
-
-producing these results :
-
-Dec  7 18:00:59 trinity kernel: ubda: unknown partition table
-Dec  7 18:00:59 trinity kernel: ubdb: unknown partition table
-Dec  7 18:00:59 trinity kernel: Netdevice 0 (72:ef:3d:9f:c3:5a) :
-Dec  7 18:00:59 trinity kernel: TUN/TAP backend -
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): INFO: recovery required on readonly filesystem
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): write access will be enabled during recovery
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): orphan cleanup on readonly fs
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): 1 orphan inode deleted
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): recovery complete
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): mounted filesystem with ordered data mode. Opts: (null)
-Dec  7 18:00:59 trinity kernel: VFS: Mounted root (ext4 filesystem) readonly on device 98:0.
-Dec  7 18:00:59 trinity kernel: devtmpfs: mounted
-Dec  7 18:00:59 trinity kernel[537]: starting version 204
-Dec  7 18:00:59 trinity kernel: random: nonblocking pool is initialized
-Dec  7 18:00:59 trinity kernel: page->index:65503  ->flags:2092  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65504  ->flags:2152  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65520  ->flags:2092  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65528  ->flags:2092  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65534  ->flags:2152  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65535  ->flags:2156  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: index:65535  i:13  start:0
-Dec  7 18:00:59 trinity kernel: EXT4-fs (ubda): re-mounted. Opts: (null)
-Dec  7 18:00:59 trinity kernel: [sched_delayed] sched: RT throttling activated
-Dec  7 18:00:59 trinity kernel: bio: create slab <bio-1> at 1
-Dec  7 18:00:59 trinity kernel: page->index:65503  ->flags:2152  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65504  ->flags:2156  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65520  ->flags:2152  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65528  ->flags:2152  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65534  ->flags:2156  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: page->index:65535  ->flags:2156  ->s_id:bdev  ->i_no:0
-Dec  7 18:00:59 trinity kernel: index:65535  i:13  start:0
-Dec  7 18:00:59 trinity kernel: Adding 262140k swap on /dev/mapper/crypt-swap.  Priority:-1 extents:1 across:262140k FS
-Dec  7 18:00:59 trinity kernel: type=1006 audit(1386435658.554:2): pid=1069 uid=0 old auid=4294967295 new auid=0 old ses=4294967295 new ses=1 res=1
-Dec  7 18:00:59 trinity kernel: Virtual console 12 assigned device '/dev/pts/5'
-Dec  7 18:01:00 trinity dhcpcd[1094]: version 5.6.4 starting
-Dec  7 18:01:00 trinity dhcpcd[1094]: sit0: unsupported interface type 308, falling back to ethernet
-
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print:1A37 6F99 4A9D 026F 13E2 4DCF C4EA CDDE 0076 E94E
+Maybe.  Providing fragments of your solution is not an efficient way
+to communicate the problem.  And you have to sell the problem before
+anybody can be expected to even consider your proposal as one of the
+possible solutions.
