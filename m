@@ -1,134 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3LGKa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 05:30:59 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:57182 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752838Ab3LGKa4 (ORCPT
+	id S1754854Ab3LGKe7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 05:34:59 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49487 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab3LGKe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 05:30:56 -0500
-Date: Sat, 7 Dec 2013 11:27:10 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>, Mike Turquette <mturquette@linaro.org>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 04/10] net: stmmac: sunxi platfrom extensions for GMAC in
- Allwinner A20 SoC's
-Message-ID: <20131207102710.GK24519@lukather>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <1386350983-13281-5-git-send-email-wens@csie.org>
+	Sat, 7 Dec 2013 05:34:57 -0500
+Message-ID: <52A2F9CD.1030305@kernel.org>
+Date: Sat, 07 Dec 2013 10:34:53 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x1F0m3RQhDZyj8sd"
-Content-Disposition: inline
-In-Reply-To: <1386350983-13281-5-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
+        brian@crystalfontz.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCHv2] iio: mxs-lradc: compute temperature from channel 8
+ and 9
+References: <1386358279-25474-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1386358279-25474-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/06/13 19:31, Alexandre Belloni wrote:
+> The mxs LRADC is able to read an internal die temperature sensor. The
+> temperature has to be calculated from the value read on channel 8 and channel 9.
+> To be able to expose the result to hwmon, implement iio channel 8 as
+> (channel 9 - channel 8). Then, implement IIO_CHAN_INFO_SCALE and
+> IIO_CHAN_INFO_OFFSET so that it can be processed by hwmon through the in kernel
+> provider/consumer mechanism.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+Thanks for doing the rebase. Applied to the togreg branch (initially pushed out as testing)
+of iio.git
 
---x1F0m3RQhDZyj8sd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Chen-Yu, Mike,
-
-On Sat, Dec 07, 2013 at 01:29:37AM +0800, Chen-Yu Tsai wrote:
-> The Allwinner A20 has an ethernet controller that seems to be
-> an early version of Synopsys DesignWare MAC 10/100/1000 Universal,
-> which is supported by the stmmac driver.
->=20
-> Allwinner's GMAC requires setting additional registers in the SoC's
-> clock control unit.
->=20
-> The exact version of the DWMAC IP that Allwinner uses is unknown,
-> thus the exact feature set is unknown.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 > ---
->  .../bindings/net/allwinner,sun7i-gmac.txt          | 22 +++++++
->  drivers/net/ethernet/stmicro/stmmac/Kconfig        | 12 ++++
->  drivers/net/ethernet/stmicro/stmmac/Makefile       |  1 +
->  drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c  | 76 ++++++++++++++++=
-++++++
->  drivers/net/ethernet/stmicro/stmmac/stmmac.h       |  3 +
->  .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |  3 +
->  6 files changed, 117 insertions(+)
->=20
-> diff --git a/Documentation/devicetree/bindings/net/allwinner,sun7i-gmac.t=
-xt b/Documentation/devicetree/bindings/net/allwinner,sun7i-gmac.txt
-> new file mode 100644
-> index 0000000..271554a
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/allwinner,sun7i-gmac.txt
-> @@ -0,0 +1,22 @@
-> +* Allwinner GMAC ethernet controller
+> Changes in v2:
+>   - rebased on v3.13.0-rc3
+> 
+>  drivers/staging/iio/adc/mxs-lradc.c | 91 +++++++++++++++++++++++++++++++------
+>  1 file changed, 78 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
+> index e2dd7830b320..5a4499c3d22a 100644
+> --- a/drivers/staging/iio/adc/mxs-lradc.c
+> +++ b/drivers/staging/iio/adc/mxs-lradc.c
+> @@ -759,20 +759,11 @@ static void mxs_lradc_handle_touch(struct mxs_lradc *lradc)
+>  /*
+>   * Raw I/O operations
+>   */
+> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+> -			const struct iio_chan_spec *chan,
+> -			int *val, int *val2, long m)
+> +static int mxs_lradc_read_single(struct iio_dev *iio_dev, int chan, int *val)
+>  {
+>  	struct mxs_lradc *lradc = iio_priv(iio_dev);
+>  	int ret;
+>  
+> -	if (m != IIO_CHAN_INFO_RAW)
+> -		return -EINVAL;
+> -
+> -	/* Check for invalid channel */
+> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
+> -		return -EINVAL;
+> -
+>  	/*
+>  	 * See if there is no buffered operation in progess. If there is, simply
+>  	 * bail out. This can be improved to support both buffered and raw IO at
+> @@ -797,7 +788,7 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+>  
+>  	/* Clean the slot's previous content, then set new one. */
+>  	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0), LRADC_CTRL4);
+> -	mxs_lradc_reg_set(lradc, chan->channel, LRADC_CTRL4);
+> +	mxs_lradc_reg_set(lradc, chan, LRADC_CTRL4);
+>  
+>  	mxs_lradc_reg_wrt(lradc, 0, LRADC_CH(0));
+>  
+> @@ -824,6 +815,71 @@ err:
+>  	return ret;
+>  }
+>  
+> +static int mxs_lradc_read_temp(struct iio_dev *iio_dev, int *val)
+> +{
+> +	int ret, min, max;
 > +
-> +This device is a platform glue layer for stmmac.
-> +Please see stmmac.txt for the other unchanged properties.
+> +	ret = mxs_lradc_read_single(iio_dev, 8, &min);
+> +	if (ret != IIO_VAL_INT)
+> +		return ret;
 > +
-> +Required properties:
-> + - compatible:  Should be "allwinner,sun7i-gmac"
-
-Please use sun7i-a20-gmac here.
-
-> + - reg: Address and length of register set for the device and correspond=
-ing
-> +   clock control
->
-> +Examples:
+> +	ret = mxs_lradc_read_single(iio_dev, 9, &max);
+> +	if (ret != IIO_VAL_INT)
+> +		return ret;
 > +
-> +	gmac: ethernet@01c50000 {
-> +		compatible =3D "allwinner,sun7i-gmac";
-> +		reg =3D <0x01c50000 0x10000>,
-> +		      <0x01c20164 0x4>;
-
-This is actually a clock, and should probably be registered in the
-common clock framework.
-
-Mike: This small register actually is a regular muxer/divider, except
-that it has some bits that are of interest to the ethernet controller
-(for example to set wether it's using GMII or RGMII to communicate
-with the phy), that, as far as I'm aware of, aren't really fitting
-into the CCF.
-
-Do you have some recommendation on how to proceed?
-
-Maybe make a thin "real" clock driver in this hardware glue, that
-provides !exported function to set this *GMII thing.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---x1F0m3RQhDZyj8sd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSovf+AAoJEBx+YmzsjxAgmLYP/i+4bA6/Pq8zePu32ercVzgm
-XcayM1KRlainfKB0wOXDJdvUAQnVz8oBADWZgDdzVngBnl0I/dSYBaQIRSP+qymT
-Hb9FVSaGu41ElmIGYY2/qZm+a1uve7JxUWFoYlBCEanhnupBsMrGS9JrzF2BGauy
-4wW/Mr6VQccgd2H3dJ3EQ1Gx+8zy352Ro4/7XaAQWRWzHdv8IfVPP6qn+00irOAU
-TXWmqyfbYINGYspW614II9CgWd35r108Mm2teLQZeXf+3drFzAsbJ9bykirZWldy
-CG6puozWsEQdLQKKJ9WCwbyFOAXm7nhRRa0ZpnRRlkHxTPf3Tr3AKr2VKe7nqCd+
-oo1larxPvveFw1uPYEgnQ74PSAj6WImrt/803RDb6uyj4oPaGoZkxg7pG7bw19mC
-bSQXA/ZUc3e3gqe+ZP5bnAh2NnyaRNJEBr1hcPfa+A2J834aVzxvT2m8W4OjoiZb
-XE3m0cnp6WusKQlZfD+kg+8oCY8B2TVV+MQ5SfF6zGGhPjq2ZTzx6xOdQNqNnIE6
-1c7XaiSHLmvvTiec0S5Xuh7Z3Tkaz+3xdujV1sjN/4xW7iK6O2E1YwcI79uF7sPe
-CyenDvQ8NVvMyvCjNbJjIueIn81JGr0J1JaTCLUh79hB4qwmzi1Zc8VHRyC7Huii
-U9dh4gNPJfUW3/dVISU+
-=M5vb
------END PGP SIGNATURE-----
-
---x1F0m3RQhDZyj8sd--
+> +	*val = max - min;
+> +
+> +	return IIO_VAL_INT;
+> +}
+> +
+> +static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
+> +			const struct iio_chan_spec *chan,
+> +			int *val, int *val2, long m)
+> +{
+> +	/* Check for invalid channel */
+> +	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
+> +		return -EINVAL;
+> +
+> +	switch (m) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		if (chan->type == IIO_TEMP)
+> +			return mxs_lradc_read_temp(iio_dev, val);
+> +
+> +		return mxs_lradc_read_single(iio_dev, chan->channel, val);
+> +
+> +	case IIO_CHAN_INFO_SCALE:
+> +		if (chan->type == IIO_TEMP) {
+> +			/* From the datasheet, we have to multiply by 1.012 and
+> +			 * divide by 4
+> +			 */
+> +			*val = 0;
+> +			*val2 = 253000;
+> +			return IIO_VAL_INT_PLUS_MICRO;
+> +		}
+> +
+> +		return -EINVAL;
+> +
+> +	case IIO_CHAN_INFO_OFFSET:
+> +		if (chan->type == IIO_TEMP) {
+> +			/* The calculated value from the ADC is in Kelvin, we
+> +			 * want Celsius for hwmon so the offset is
+> +			 * -272.15 * scale
+> +			 */
+> +			*val = -1075;
+> +			*val2 = 691699;
+> +
+> +			return IIO_VAL_INT_PLUS_MICRO;
+> +		}
+> +
+> +		return -EINVAL;
+> +
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+>  static const struct iio_info mxs_lradc_iio_info = {
+>  	.driver_module		= THIS_MODULE,
+>  	.read_raw		= mxs_lradc_read_raw,
+> @@ -1151,8 +1207,17 @@ static const struct iio_chan_spec mxs_lradc_chan_spec[] = {
+>  	MXS_ADC_CHAN(5, IIO_VOLTAGE),
+>  	MXS_ADC_CHAN(6, IIO_VOLTAGE),
+>  	MXS_ADC_CHAN(7, IIO_VOLTAGE),	/* VBATT */
+> -	MXS_ADC_CHAN(8, IIO_TEMP),	/* Temp sense 0 */
+> -	MXS_ADC_CHAN(9, IIO_TEMP),	/* Temp sense 1 */
+> +	/* Combined Temperature sensors */
+> +	{
+> +		.type = IIO_TEMP,
+> +		.indexed = 1,
+> +		.scan_index = 8,
+> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+> +				      BIT(IIO_CHAN_INFO_OFFSET) |
+> +				      BIT(IIO_CHAN_INFO_SCALE),
+> +		.channel = 8,
+> +		.scan_type = {.sign = 'u', .realbits = 18, .storagebits = 32,},
+> +	},
+>  	MXS_ADC_CHAN(10, IIO_VOLTAGE),	/* VDDIO */
+>  	MXS_ADC_CHAN(11, IIO_VOLTAGE),	/* VTH */
+>  	MXS_ADC_CHAN(12, IIO_VOLTAGE),	/* VDDA */
+> 
