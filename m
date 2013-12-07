@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759030Ab3LGARp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 19:17:45 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59308 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab3LGARo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 19:17:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,843,1378882800"; 
-   d="scan'208";a="446030182"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org, kvm@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>, Xudong Hao <xudong.hao@intel.com>,
-        Liu Jinsong <jinsong.liu@intel.com>
-Subject: [PATCH v3 3/3] X86, mpx: Intel MPX xstate feature definition
-Date: Sat,  7 Dec 2013 15:32:43 +0800
-Message-Id: <1386401563-3609-1-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1759227Ab3LGAXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 19:23:17 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:20678
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753653Ab3LGAXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 19:23:15 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dI9371I936eI542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+Message-ID: <1386375778.7375.203.camel@snotra.buserror.net>
+Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+From: Scott Wood <scottwood@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "agraf@suse.de" <agraf@suse.de>,
+        Yoder Stuart-B08248 <stuart.yoder@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 6 Dec 2013 18:22:58 -0600
+In-Reply-To: <1386358226.25738.506.camel@ul30vt.home>
+References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
+	 <1384973243.2879.361.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385066603.2879.414.camel@ul30vt.home>
+	 <1385066835.1403.489.camel@snotra.buserror.net>
+	 <1385067648.2879.421.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1385397493.2879.557.camel@ul30vt.home>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D0723624C@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1386289316.7375.107.camel@snotra.buserror.net>
+	 <6A3DF150A5B70D4F9B66A25E3F7C888D07251EE4@039-SN2MPN1-012.039d.mgd.msft.net>
+	 <1386356393.7375.118.camel@snotra.buserror.net>
+	 <1386358226.25738.506.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines xstate feature and extends struct xsave_hdr_struct
-to support Intel MPX.
+On Fri, 2013-12-06 at 12:30 -0700, Alex Williamson wrote:
+> On Fri, 2013-12-06 at 12:59 -0600, Scott Wood wrote:
+> > On Thu, 2013-12-05 at 22:11 -0600, Bharat Bhushan wrote:
+> > > 
+> > > > -----Original Message-----
+> > > > From: Wood Scott-B07421
+> > > > Sent: Friday, December 06, 2013 5:52 AM
+> > > > To: Bhushan Bharat-R65777
+> > > > Cc: Alex Williamson; linux-pci@vger.kernel.org; agraf@suse.de; Yoder Stuart-
+> > > > B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
+> > > > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
+> > > >
+> > > > On Thu, 2013-11-28 at 03:19 -0600, Bharat Bhushan wrote:
+> > > > >
+> > > > > > -----Original Message-----
+> > > > > > From: Bhushan Bharat-R65777
+> > > > > > Sent: Wednesday, November 27, 2013 9:39 PM
+> > > > > > To: 'Alex Williamson'
+> > > > > > Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de;
+> > > > > > Yoder Stuart- B08248; iommu@lists.linux-foundation.org;
+> > > > > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
+> > > > > > linux-kernel@vger.kernel.org
+> > > > > > Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale
+> > > > > > IOMMU (PAMU)
+> > > > > >
+> > > > > > If we just provide the size of MSI bank to userspace then userspace
+> > > > > > cannot do anything wrong.
+> > > > >
+> > > > > So userspace does not know address, so it cannot mmap and cause any
+> > > > interference by directly reading/writing.
+> > > >
+> > > > That's security through obscurity...  Couldn't the malicious user find out the
+> > > > address via other means, such as experimentation on another system over which
+> > > > they have full control?  What would happen if the user reads from their device's
+> > > > PCI config space?  Or gets the information via some back door in the PCI device
+> > > > they own?  Or pokes throughout the address space looking for something that
+> > > > generates an interrupt to its own device?
+> > > 
+> > > So how to solve this problem, Any suggestion ?
+> > > 
+> > > We have to map one window in PAMU for MSIs and a malicious user can ask
+> > > its device to do DMA to MSI window region with any pair of address and
+> > > data, which can lead to unexpected MSIs in system?
+> > 
+> > I don't think there are any solutions other than to limit each bank to
+> > one user, unless the admin turns some knob that says they're OK with the
+> > partial loss of isolation.
+> 
+> Even if the admin does opt-in to an allow_unsafe_interrupts options, it
+> should still be reasonably difficult for one guest to interfere with the
+> other.  I don't think we want to rely on the blind luck of making the
+> full MSI bank accessible to multiple guests and hoping they don't step
+> on each other.  That probably means that vfio needs to manage the space
+> rather than the guest.  Thanks,
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
----
- arch/x86/include/asm/processor.h |   12 ++++++++++++
- arch/x86/include/asm/xsave.h     |    6 +++++-
- 2 files changed, 17 insertions(+), 1 deletions(-)
+Yes, the MSIs within a given bank would be allocated by the host kernel
+in any case (presumably by the MSI driver, not VFIO itself).  This is
+just about what happens if the MSI page is written to outside of the
+normal mechanism.
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 987c75e..2fe2e75 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -370,6 +370,15 @@ struct ymmh_struct {
- 	u32 ymmh_space[64];
- };
- 
-+struct bndregs_struct {
-+	u64 bndregs[8];
-+} __packed;
-+
-+struct bndcsr_struct {
-+	u64 cfg_reg_u;
-+	u64 status_reg;
-+} __packed;
-+
- struct xsave_hdr_struct {
- 	u64 xstate_bv;
- 	u64 reserved1[2];
-@@ -380,6 +389,9 @@ struct xsave_struct {
- 	struct i387_fxsave_struct i387;
- 	struct xsave_hdr_struct xsave_hdr;
- 	struct ymmh_struct ymmh;
-+	u8 lwp_area[128];
-+	struct bndregs_struct bndregs;
-+	struct bndcsr_struct bndcsr;
- 	/* new processor state extensions will go here */
- } __attribute__ ((packed, aligned (64)));
- 
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 0415cda..5cd9de3 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -9,6 +9,8 @@
- #define XSTATE_FP	0x1
- #define XSTATE_SSE	0x2
- #define XSTATE_YMM	0x4
-+#define XSTATE_BNDREGS	0x8
-+#define XSTATE_BNDCSR	0x10
- 
- #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
- 
-@@ -20,10 +22,12 @@
- #define XSAVE_YMM_SIZE	    256
- #define XSAVE_YMM_OFFSET    (XSAVE_HDR_SIZE + XSAVE_HDR_OFFSET)
- 
-+#define XSTATE_FLEXIBLE (XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define XSTATE_EAGER	(XSTATE_BNDREGS | XSTATE_BNDCSR)
- /*
-  * These are the features that the OS can handle currently.
-  */
--#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
-+#define XCNTXT_MASK	(XSTATE_FLEXIBLE | XSTATE_EAGER)
- 
- #ifdef CONFIG_X86_64
- #define REX_PREFIX	"0x48, "
--- 
-1.7.1
+-Scott
+
+
 
