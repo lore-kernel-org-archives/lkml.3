@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab3LGBOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 20:14:51 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61297 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754145Ab3LGBOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 20:14:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	id S1758188Ab3LGBQj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 20:16:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25844 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752729Ab3LGBQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 20:16:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,843,1378882800"; 
+   d="scan'208";a="448269385"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Xudong Hao <xudong.hao@intel.com>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Myron Stowe <myron.stowe@gmail.com>
-Subject: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once
-Date: Sat, 07 Dec 2013 02:27:51 +0100
-Message-ID: <1519414.GDlGZFCTSR@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAE9FiQV1KvpzfTmzbERS8heAE1z5zf=CjXnnjS9ZMBqmhY7rkw@mail.gmail.com>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <33026900.FbCAopDPFz@vostro.rjw.lan> <CAE9FiQV1KvpzfTmzbERS8heAE1z5zf=CjXnnjS9ZMBqmhY7rkw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+        Ingo Molnar <mingo@kernel.org>, "Thomas Gleixner" <tglx@linutronix.de>
+Subject: RE: [Qemu-devel] [PATCH v2 3/3] X86,	mpx: Intel MPX xstate feature
+ definition
+Thread-Topic: [Qemu-devel] [PATCH v2 3/3] X86,	mpx: Intel MPX xstate feature
+ definition
+Thread-Index: AQHO8r59I/URrjaMpE23f485Fe4/QppHKhsAgAAKzQCAAKpGYP//hooAgACIpVA=
+Date: Sat, 7 Dec 2013 01:16:33 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE014A61BE@SHSMSX102.ccr.corp.intel.com>
+References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>
+	<1386375658-2191-3-git-send-email-qiaowei.ren@intel.com>
+ <52A20AD6.8080706@redhat.com>
+ <DE8DF0795D48FD4CA783C40EC82923350140B3B6@SHSMSX101.ccr.corp.intel.com>
+ <52A242BE.3010701@zytor.com>
+ <DE8DF0795D48FD4CA783C40EC82923350140BB62@SHSMSX101.ccr.corp.intel.com>
+ <9E0BE1322F2F2246BD820DA9FC397ADE014A6115@SHSMSX102.ccr.corp.intel.com>
+ <52A274C0.4010509@zytor.com>
+In-Reply-To: <52A274C0.4010509@zytor.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB71GiFK026178
 
-On Thursday, December 05, 2013 10:52:36 PM Yinghai Lu wrote:
-> On Mon, Dec 2, 2013 at 6:49 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >
-> > Scenario 5: pci_stop_and_remove_bus_device() is run concurrently
-> >   for a device and its parent bridge via remove_callback().
-> >
-> >   In that case both code paths attempt to acquire
-> >   pci_remove_rescan_mutex.  If the child device removal acquires
-> >   it first, there will be no problems.  However, if the parent
-> >   bridge removal acquires it first, it will eventually execute
-> >   pci_destroy_dev() for the child device, but that device will
-> >   not be freed yet due to the reference held by the concurrent
-> >   child removal.  Consequently, both pci_stop_bus_device() and
-> >   pci_remove_bus_device() will be executed for that device
-> >   unnecessarily and pci_destroy_dev() will see a corrupted list
-> >   head in that object.  Moreover, an excess put_device() will
-> >   be executed for that device in that case which may lead to a
-> >   use-after-free in the final kobject_put() done by
-> >   sysfs_schedule_callback_work().
-> >
-> > Index: linux-pm/include/linux/pci.h
-> > ===================================================================
-> > --- linux-pm.orig/include/linux/pci.h
-> > +++ linux-pm/include/linux/pci.h
-> > @@ -321,6 +321,7 @@ struct pci_dev {
-> >         unsigned int    multifunction:1;/* Part of multi-function device */
-> >         /* keep track of device state */
-> >         unsigned int    is_added:1;
-> > +       unsigned int    is_gone:1;
-> >         unsigned int    is_busmaster:1; /* device is busmaster */
-> >         unsigned int    no_msi:1;       /* device may not use msi */
-> >         unsigned int    block_cfg_access:1;     /* config space access is blocked */
-> > Index: linux-pm/drivers/pci/remove.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/remove.c
-> > +++ linux-pm/drivers/pci/remove.c
-> > @@ -34,6 +34,7 @@ static void pci_stop_dev(struct pci_dev
-> >
-> >  static void pci_destroy_dev(struct pci_dev *dev)
-> >  {
-> > +       dev->is_gone = 1;
-> >         device_del(&dev->dev);
-> >
-> >         down_write(&pci_bus_sem);
-> > @@ -109,8 +110,10 @@ static void pci_remove_bus_device(struct
-> >   */
-> >  void pci_stop_and_remove_bus_device(struct pci_dev *dev)
-> >  {
-> > -       pci_stop_bus_device(dev);
-> > -       pci_remove_bus_device(dev);
-> > +       if (!dev->is_gone) {
-> > +               pci_stop_bus_device(dev);
-> > +               pci_remove_bus_device(dev);
-> > +       }
-> >  }
-> >  EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
+
+
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Saturday, December 07, 2013 9:07 AM
+> To: Ren, Qiaowei; Liu, Jinsong; Paolo Bonzini
+> Cc: kvm@vger.kernel.org; x86@kernel.org; Xudong Hao;
+> qemu-devel@nongnu.org; linux-kernel@vger.kernel.org; Ingo Molnar; Thomas
+> Gleixner
+> Subject: Re: [Qemu-devel] [PATCH v2 3/3] X86, mpx: Intel MPX xstate feature
+> definition
+> 
+> On 12/06/2013 04:23 PM, Ren, Qiaowei wrote:
+> >>>
+> >>> We need to either disable these features in lazy mode, or we need to
+> >>> force eager mode if these features are to be supported.  The problem
+> >>> with the latter is that it means forcing eager mode regardless of if
+> >>> anything actually *uses* these features.
+> >>>
+> >>> A third option would be to require applications to use a prctl() or
+> >>> similar to enable eager-save features.
+> >>>
+> >>
+> >> The third option seems better -- how does native mpx patches work,
+> >> force eager?
+> >>
+> > It should be the second option, as you can see xsave.c which we remove
+> > from this patch. :)
 > >
 > 
-> Yes, above change should address sys double remove problem.
-
-I've just realized that we don't need a new flag for that, though.
-
-It looks like we only need to check dev->dev.kobj.parent and return if that is
-NULL, because that means pci_destroy_dev() has run for that device already
-(I'm wondering why device_del() doesn't clear dev->parent, BTW, it looks like
-it should do that?).
-
-Of course, that still is going to be racy if we don't hold
-pci_remove_rescan_mutex around pci_stop_and_remove_bus_device() in every code
-path using it (or use another similar synchronization mechanism).
+> Ah yes... I missed the fact that that chunk had been dropped from this patch.
+> It really shouldn't be.
+> 
+> I'll substitute the previous version of the patch.
+> 
+Jinsong think that both kvm and host depend on these feature definition header file, so we firstly submit these files depended on.
 
 Thanks,
-Rafael
+Qiaowei
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
