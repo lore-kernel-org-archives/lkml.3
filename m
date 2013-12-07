@@ -1,142 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab3LGXy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 18:54:58 -0500
-Received: from nm5-vm6.access.bullet.mail.gq1.yahoo.com ([216.39.63.153]:48162
-	"HELO nm5-vm6.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754848Ab3LGXyz (ORCPT
+	id S1759233Ab3LGX6o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 18:58:44 -0500
+Received: from qmta03.westchester.pa.mail.comcast.net ([76.96.62.32]:45220
+	"EHLO qmta03.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754303Ab3LGX6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 18:54:55 -0500
-X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Dec 2013 18:54:55 EST
-X-Yahoo-Newman-Id: 751213.5595.bm@smtp111.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: VfXScUwVM1mxAu6pqqf.tEhghOCfUoLni.a5a5aFdb__0aq
- _cjeseg04DORJBhGYLVJbEnQAd7RqRtXw8Cn97mwIwDCB_c4W7RovHt76Ovp
- mkXeGIk29ulaUXfWeKg2K1jTBcprkKX_vHmShCSGKUgbESeWhw5TPAs9dX7A
- F9PQTx3.5QRoY3fXhFtNiiUYhZDa7DIU4gTIy3kb43X2gwBHABFHmgbMNy0l
- FLLtkzVowxm4t6MUHC1GU0lugglfk9Ptlfrl0GoSg1X6eQZ9YBKiGhIeO7RC
- 7uoE7sLZ3LzWPaONUzEpW2ZPd3WS6WHIjQLLqQL9Ul9tk2P_SK73mw9WEH81
- rsmGWQ9GZ3vHqKdmejuWLYQi0n9m8tkReeYxB3z4tDPFDGuA0JaCyn9FdTz2
- mcUwILITTwNIb_zQDhtjFLP2pRTTQOb1ODy1srJ6.38xjfc1BXazo4dAGd1e
- CZApE0aAHP9y46lpjsfdFh3HDTKUe3jYZTZMARXXP5_4CJaTgZ_uPH_pWhUP
- Qmq4KWoO05cDEvPsz1g4554Xz033p3ySgTUpLL1FfnyMuePIRZiN5PJ6ORD_
- JFKZgEzci.yI-
-X-Yahoo-SMTP: Y7o5YpyswBBHhc3nmZojVAb_njS6isj_ExStQZr.uIjYoAwP
-X-Rocket-Received: from carmel.steven676.net (steven@99.189.118.176 with plain [67.195.15.66])
-        by smtp111.sbc.mail.gq1.yahoo.com with SMTP; 07 Dec 2013 23:49:14 +0000 UTC
-Date: Sat, 7 Dec 2013 15:49:12 -0800
-From: Steven Luo <steven@steven676.net>
-To: ?????? ???????? <ivo.g.dimitrov.75@gmail.com>
-Cc: gregkh@linuxfoundation.org, nico@ngolde.de, fabs@goesec.de,
-        omar.ramirez@copitl.com, pali.rohar@gmail.com, pavel@ucw.cz,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        tony@atomide.com, felipe.contreras@gmail.com,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Use vm_iomap_memory for mmap-ing
- instead of remap_pfn_range
-Message-ID: <20131207234912.GA1245@steven676.net>
-References: <1386014416-4556-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386014416-4556-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 7 Dec 2013 18:58:41 -0500
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Dec 2013 18:58:41 EST
+To: linux-kernel@vger.kernel.org
+From: Karl Dahlke <eklhad@comcast.net>
+Reply-to: Karl Dahlke <eklhad@comcast.net>
+User-Agent: edbrowse/3.4.9
+Subject: Bug in tty cooked mode kernel 3.12.3
+Date: Sat, 07 Dec 2013 18:46:07 -0500
+Message-ID: <20131107184607.eklhad@comcast.net>
+Mime-Version: 1.0
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch causes problems with DSP codecs on OMAP3 devices running
-Android -- specifically, when the decoder is cleaning up after itself,
-munmap() of the mapped area fails, leading to a memory leak which
-eventually crashes the system.
+This may have appeared in 3.9.11 with the changes to tty.
+Don't know; I just started running 3.12 from kernel.org.
+Perhaps nobody saw it before because nobody runs command line programs,
+we're all on desktops or x or whatever,
+and even those in the command line are still raw.
+bash is raw by default, but I run it cooked.
+You can supress its readline functions like this.
 
-As far as I can tell, the code with this patch applied reduces to
-(ignoring checks and such)
+set +o emacs
+set +o vi
+set +o histexpand
+set +o history
 
-remap_pfn_range(vma, vma->vm_start,
-	(pdata->phys_mempool_base >> PAGE_SHIFT) + vma->vm_pgoff,
-	vma->vm_end - vma->vm_start,
-	vma->vm_page_prot);
+That puts its tty back into cooked mode.
 
-whereas the original was
+Come up in run level 3, command line mode,
+and bring up two consoles with bash in cooked mode as above.
+Set a simple prompt like this.
 
-> -	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
-> -				 vma->vm_end - vma->vm_start,
-> -				 vma->vm_page_prot);
+PS1='$ '
 
-We're subtracting (pdata->phys_mempool_base >> PAGE_SHIFT) from
-vma->vm_pgoff before calling vm_iomap_memory() to address the issue --
-if that's satisfactory to everyone involved, I can submit the following
-patch.
+Switch to console 2 via alt-f2.
+Hit return.
+The cursor should drop to a new line then give you the $ prompt.
+But it puts the $ prompt next too the old one, then drops down
+to a blank line.
+The $ prompt and the crlf are out of sequence.
+Hit return a few more times and it will straighten itself out.
+Then switch back to console 1 alt-f1
+Hit return and the same bug,
+$ $
 
--Steven Luo
+hit return a few more times to straighten it out.
+Switch back to console 2 and the same problem.
+For me it's repeatable.
 
-(please cc, not subscribed)
+It's also very confusing when I'm running other command line programs with cooked tty.
+For unknown reasons the crlf can come out at the wrong time,
+breaking lines or leaving lines together.
+My editor can run either way, so I've switched it over to readline mode
+and I haven't noticed any problems this way, yet.
+But I would prefer the cooked mode.
 
-From: Steven Luo <steven@steven676.net>
-Date: Sat, 7 Dec 2013 02:11:20 -0800
-Subject: [PATCH] tidspbridge: fix last patch to map same region of physical
- memory as before
+I looked through MAINTAINERS but couldn't find
+a clear maintainer for drivers/tty/tty*.c
+Please forward this to the appropriate people.
 
-Commit 559c71fe5dc3 ("Staging: TIDSPBRIDGE: Use vm_iomap_memory for
-mmap-ing instead of remap_pfn_range") had the effect of inadvertently
-shifting the start of the physical memory area mapped by
-pdata->phys_mempool_base.  Correct this by subtracting that shift before
-calling vm_iomap_memory() and adding it back afterwards.
+Thank you.
 
-Reported-by: Dheeraj CVR <cvr.dheeraj@gmail.com>
-Signed-off-by: Steven Luo <steven@steven676.net>
----
- drivers/staging/tidspbridge/rmgr/drv_interface.c |   29 +++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index 83cc3a5..d7f7d04 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -258,6 +258,9 @@ err:
- /* This function maps kernel space memory to user space memory. */
- static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
- {
-+	unsigned long base_pgoff;
-+	int status;
-+
- 	struct omap_dsp_platform_data *pdata =
- 	    omap_dspbridge_dev->dev.platform_data;
- 	
-@@ -269,9 +272,29 @@ static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
- 		vma->vm_start, vma->vm_end, vma->vm_page_prot,
- 		vma->vm_flags);
- 
--	return vm_iomap_memory(vma,
--			       pdata->phys_mempool_base,
--			       pdata->phys_mempool_size);
-+	/*
-+	 * vm_iomap_memory() expects vma->vm_pgoff to be expressed as an offset
-+	 * from the start of the physical memory pool, but we're called with
-+	 * a pfn (physical page number) stored there instead.
-+	 *
-+	 * To avoid duplicating lots of tricky overflow checking logic,
-+	 * temporarily convert vma->vm_pgoff to the offset vm_iomap_memory()
-+	 * expects, but restore the original value once the mapping has been
-+	 * created.
-+	 */
-+	base_pgoff = pdata->phys_mempool_base >> PAGE_SHIFT;
-+	if (vma->vm_pgoff < base_pgoff)
-+		return -EINVAL;
-+	vma->vm_pgoff -= base_pgoff;
-+
-+	status = vm_iomap_memory(vma,
-+				 pdata->phys_mempool_base,
-+				 pdata->phys_mempool_size);
-+
-+	/* Restore the original value of vma->vm_pgoff */
-+	vma->vm_pgoff += base_pgoff;
-+
-+	return status;
- }
- 
- static const struct file_operations bridge_fops = {
--- 
-1.7.10.4
-
+Karl Dahlke
