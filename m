@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab3LGVso (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 16:48:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43612 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755098Ab3LGVsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 16:48:41 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131207133048.GA4183@pd.tnic>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com> <1385445477-9665-7-git-send-email-dyoung@redhat.com> <20131127114402.GB32267@pd.tnic> <20131129094034.GI4186@dhcp-16-126.nay.redhat.com> <20131129115029.GB4266@pd.tnic> <20131202025942.GF3999@dhcp-16-126.nay.redhat.com> <20131202094020.GA7380@pd.tnic> <2141297830.13051543.1386406862068.JavaMail.root@redhat.com> <20131207133048.GA4183@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 07 Dec 2013 13:46:33 -0800
-To: Borislav Petkov <bp@alien8.de>, Dave Young <dyoung@redhat.com>
-CC: mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
-        toshi kani <toshi.kani@hp.com>, matt@console-pimps.org, greg@kroah.com,
-        x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        horms@verge.net.au, ebiederm@xmission.com, vgoyal@redhat.com
-Message-ID: <e42e2c5d-98cc-4375-8ff9-1448989fdb73@email.android.com>
+	id S1758757Ab3LGWPc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 17:15:32 -0500
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:32092 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754213Ab3LGWP2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 17:15:28 -0500
+X-AuditID: cbfec37b-b7fef6d0000049cb-b0-52a39dff4e99
+Message-id: <52A39DF5.2060803@samsung.com>
+Date: Sat, 07 Dec 2013 15:15:17 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.12 00/83] 3.12.4-stable review
+References: <20131206214640.002320724@linuxfoundation.org>
+In-reply-to: <20131206214640.002320724@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hP93/cxcHGdz6z2UxZ/0aNovmxevZ
+	LC7vmsNm8fWng8WCjY8YLR71vWV3YPPYOesuu8eJGb9ZPPbPXcPu8XmTXABLFJdNSmpOZllq
+	kb5dAlfGwy/bGAvOclac2KTZwHiSvYuRk0NCwERi9sv5jBC2mMSFe+vZuhi5OIQEljFKtH08
+	xQ7h9DJJfPmwgwnC2cQo8eLodiaQFl4BLYnjO6+C2SwCqhIzjmxhBrHZBNQlPr/eAbZCSEBO
+	omnJarC4qECExNHVz1ghegUlfky+xwJiiwgES6z9upARZAGzwApGieMvX7KBJISB7pt/fTcb
+	xCArifatG8AaOAWsJd48OQRmMwuYSTxqWccMYctLbF7zlhmiXlniz+VTQMdxAP2mKLF9tdUE
+	RpFZSFbPQtI9C0n3AkbmVYxipcXJBcVJ6akVRnrFibnFpXnpesn5uZsYITFTvYPx7lebQ4wC
+	HIxKPLwVFouChFgTy4orcw8xSnAwK4nwht8ECvGmJFZWpRblxxeV5qQWH2Jk4uCUamC03Pr5
+	+/n958LFjRMD1rXu2fvKcZJvavOVf5VlKpfK3Zq31nZuOCvON5tVJNPqxqXju8UDJQMiEz5y
+	SQQGaXU53JH4ovl7Y983M3Or3fV86+dNY2X1nBaj+bk6+nRGuVRaWEP97eXTU5+ITl/vIWbD
+	e5b30Zp68W0xDu0hmoveHtS+t21SwgwlluKMREMt5qLiRAAzYFPPdwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is very good advice indeed.
+On 12/06/2013 02:50 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.12.4 release.
+> There are 83 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Dec  8 21:44:41 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.4-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
 
-Borislav Petkov <bp@alien8.de> wrote:
->On Sat, Dec 07, 2013 at 04:01:02AM -0500, Dave Young wrote:
->> Hi, all
->> 
->> Update my status:
->> 
->> I have finished most of thecode related changes including the
->krealloc
->> fixes (both for original code and my new code). And I'm slowly
->> moving the kexec related stuff to efi_kexec.c, this involves
->> some other cleanups, such as:
->> efi_systab_init:
->>  -> move 64bit code to efi_64.c, move 32bit code to efi_32.c
->> 
->> efi_setup global variable is changing to physical address,
->ioremapping
->> it when necessary instead of directly using the virt addr because
->> previously the virt addr will be freed until entering virtual mode,
->> it's possible a leak in case something is wrong in the middle also it
->> occupies the ioremap slot a little bit long.
->> 
->> There's also other problems, so I still need a few days probably
->> a week to carefully restructure the code.
->
->Those are all lofty goals but beware that trying to solve it all at
->once can be very painful and can cause unnecessary work for both coders
->and reviewers. Especially if the patchset grows out of proportion which
->makes it much harder to review and deal with.
->
->So, from my experience and if I were you, I'd try to address the most
->important issue I'm trying to fix, have 10ish nice clean patches and
->put
->the rest on the TODO list. This is much easier to deal with for
->everyone
->involved than trying to solve it all at once.
->
->Besides, if you solve it all at once, what are you going to work on
->afterwards? :-)
->
->HTH.
+patch applied cleanly.
+Compile testing - passed
+Boot testing - passed
+dmesg regression testing - passed
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
+
+Test systems
+
+     Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+     HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+     Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
+
+-- Shuah	
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
