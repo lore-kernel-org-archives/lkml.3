@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab3LGAZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 19:25:47 -0500
-Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:51935 "EHLO
-	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754334Ab3LGAZq (ORCPT
+	id S1754484Ab3LGAbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 19:31:41 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34418 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab3LGAbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 19:25:46 -0500
-Date: Sat, 7 Dec 2013 00:25:44 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Rik van Riel <riel@redhat.com>
-cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 14/15] mm: fix TLB flush race between migration, and
- change_protection_range
-In-Reply-To: <52A23FD1.3040102@redhat.com>
-Message-ID: <00000142ca7218fe-a5566a24-0ef5-4545-8a98-d33116b7d703-000000@email.amazonses.com>
-References: <1386060721-3794-1-git-send-email-mgorman@suse.de> <1386060721-3794-15-git-send-email-mgorman@suse.de> <529E641A.7040804@redhat.com> <20131203234637.GS11295@suse.de> <529F3D51.1090203@redhat.com> <20131204160741.GC11295@suse.de>
- <20131206141331.10880d2b@annuminas.surriel.com> <00000142c99cf5b0-69cc9987-aa36-4889-af6a-1a45032d0d13-000000@email.amazonses.com> <52A23FD1.3040102@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 6 Dec 2013 19:31:39 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.07-54.240.10.51
+In-Reply-To: <5548535.pYirbknue4@radagast>
+References: <1380647888-32473-1-git-send-email-tim.kryger@linaro.org>
+	<20131126183559.GA18570@localhost>
+	<4548523.McqEijQYrs@radagast>
+	<5548535.pYirbknue4@radagast>
+Date: Fri, 6 Dec 2013 16:31:38 -0800
+Message-ID: <CAAYSxhpR664Od7AaWZrX0rE=iDUHo0h+4=uY=gvkFps4Hz4aew@mail.gmail.com>
+Subject: Re: [PATCH v2] serial: 8250_dw: Improve unwritable LCR workaround
+From: Tim Kryger <tim.kryger@linaro.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Dec 2013, Rik van Riel wrote:
-
-> > When you start migrating a page a special page migration entry is
-> > created that will trap all accesses to the page. You can safely flush when
-> > the migration entry is there. Only allow a new PTE/PMD to be put there
-> > *after* the tlb flush.
+On Fri, Dec 6, 2013 at 3:51 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> On Friday 06 December 2013 23:29:02 James Hogan wrote:
+>> So it looks like the LCR does always change immediately for me in this case
+>> (obviously it hasn't hit the BUSY case), but not all the bits can be
+>> written. In particular bit 5 and bit 7 at the least. If I do this (sorry
+>> for whitespace munging):
+>>
+>> diff --git a/drivers/tty/serial/8250/8250_dw.c
+>> b/drivers/tty/serial/8250/8250_dw.c
+>> index 4658e3e..722d448 100644
+>> --- a/drivers/tty/serial/8250/8250_dw.c
+>> +++ b/drivers/tty/serial/8250/8250_dw.c
+>> @@ -96,7 +96,7 @@ static void dw8250_serial_out(struct uart_port *p, int
+>> offset, int value)
+>>       if (offset == UART_LCR) {
+>>               int tries = 1000;
+>>               while (tries--) {
+>> -                     if (value == p->serial_in(p, UART_LCR))
+>> +                     if (value & ~0xa0 == p->serial_in(p, UART_LCR) & ~0xa0)
+>>                               return;
+>>                       dw8250_force_idle(p);
+>>                       writeb(value, p->membase + (UART_LCR << p->regshift));
+>> @@ -132,7 +132,7 @@ static void dw8250_serial_out32(struct uart_port *p, int
+>> offset, int value)
+>>       if (offset == UART_LCR) {
+>>               int tries = 1000;
+>>               while (tries--) {
+>> -                     if (value == p->serial_in(p, UART_LCR))
+>> +                     if (value & ~0xa0 == p->serial_in(p, UART_LCR) & ~0xa0)
 >
-> A PROT_NONE or NUMA pte is just as effective as a migration pte.
-> The only problem is, the TLB flush was not always done...
-
-Ok then what are you trying to fix?
-
-> > Dont do that. We have migration entries for a reason.
+> My appologies, that should have had some more brackets (I should have retested
+> after cleaning up my debugging). I.e.
+> +                       if ((value & ~0xa0) == (p->serial_in(p, UART_LCR) & ~0xa0))
 >
-> We do not have migration entries for hugepages, do we?
+> Cheers
+> James
 
-Dunno.
+James,
 
-> >
-> > Should cause a page fault which should put the process to sleep. Process
-> > will safely read the page after the migration entry is removed.
-> >
-> >> flush TLB
-> >
-> > Establish the new PTE/PMD after the flush removing the migration pte
-> > entry and thereby avoiding the race.
->
-> That is what this patch does.
+Thanks for the information.  This is really helpful.
 
-If that is the case then this patch would not be needed and the tracking
-of state in the mm_struct would not be necessary.
+You are right about bit 5 being a problem.  Its behavior differs
+between IP versions 3.00a and 3.14c per the docs.
+
+As for bit 7, when it doesn't change this indicates the UART was busy
+and we need to do the workaround.
+
+Would you mind testing it again using a mask of ~0x20?
+
+Thanks,
+Tim
