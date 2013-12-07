@@ -1,152 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3LGFCv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 00:02:51 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:37540 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3LGFCu (ORCPT
+	id S1751071Ab3LGFUd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 00:20:33 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:56338 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab3LGFUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 00:02:50 -0500
-From: Gary Rookard <garyrookard@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Gary Rookard <garyrookard@gmail.com>
-Subject: [PATCH 9/9] Staging: bcm: DDRInit: removed space from front of semicolon.
-Date: Sat,  7 Dec 2013 00:02:45 -0500
-Message-Id: <1386392565-11991-1-git-send-email-garyrookard@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Sat, 7 Dec 2013 00:20:32 -0500
+Date: Sat, 7 Dec 2013 06:20:29 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>, lenb@kernel.org,
+        tglx@linutronix.de, peterz@infradead.org
+Subject: Re: [PATCH] Trace idle entry and exit times
+Message-ID: <20131207052029.GC21717@two.firstfloor.org>
+References: <1386377164-2223-1-git-send-email-andi@firstfloor.org>
+ <1386392252.5673.31.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386392252.5673.31.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the ninth patch of a series.
+On Sat, Dec 07, 2013 at 05:57:32AM +0100, Mike Galbraith wrote:
+> On Fri, 2013-12-06 at 16:46 -0800, Andi Kleen wrote: 
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > This patch creates 4 new trace points: one at the beginning of idle,
+> > one before entering mwait, one after exiting mwait, and one after
+> > finishing the idle code. This is useful to trace down any
+> > additional latencies caused by the ever-growing idle code.
+> > 
+> > Idle latencies are a common source of performance problems, so it's
+> > important to be able to measure them.
+> 
+> You mean stuff like.. oh, say 60 cores doing zero work every 12ms
+> munching ~20% cpu?
 
-Signed-off-by: Gary Alan Rookard <garyrookard@gmail.com>
+Well that one is obvious. I mean more the subtle problems.
 
----
-On branch staging-next
- drivers/staging/bcm/DDRInit.c | 30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
+BTW the timer problem is fixed on Westmere and later (always running APIC
+timer), but yes it's a problem before that. I looked at it some time ago,
+but eventually gave up after only fixing low hanging fruit. There are likely 
+some more tricks that could be done here (see the old patches from back then)
 
-diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
-index c808bc5..1b73819 100644
---- a/drivers/staging/bcm/DDRInit.c
-+++ b/drivers/staging/bcm/DDRInit.c
-@@ -3,7 +3,7 @@
- 
- 
- #define DDR_DUMP_INTERNAL_DEVICE_MEMORY 0xBFC02B00
--#define MIPS_CLOCK_REG 	0x0f000820
-+#define MIPS_CLOCK_REG 0x0f000820
- 
-     /* DDR INIT-133Mhz */
- #define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  /* index for 0x0F007000 */
-@@ -1005,20 +1005,20 @@ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
- 		case DDR_80_MHZ:
- 			psDDRSetting = asT3LP_DDRSetting80MHz;
- 			RegCount = ARRAY_SIZE(asT3LP_DDRSetting80MHz);
--			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
-+			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			break;
- 		case DDR_100_MHZ:
- 			psDDRSetting = asT3LP_DDRSetting100MHz;
- 			RegCount = ARRAY_SIZE(asT3LP_DDRSetting100MHz);
--			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
-+			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			break;
- 		case DDR_133_MHZ:
- 			bOverrideSelfRefresh = TRUE;
- 			psDDRSetting = asT3LP_DDRSetting133MHz;
- 			RegCount = ARRAY_SIZE(asT3LP_DDRSetting133MHz);
--			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
-+			RegCount -= T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			psDDRSetting += T3LP_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			break;
- 		default:
-@@ -1034,20 +1034,20 @@ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
- 		case DDR_80_MHZ:
- 			psDDRSetting = asT3LPB_DDRSetting80MHz;
- 			RegCount = ARRAY_SIZE(asT3LPB_DDRSetting80MHz);
--			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
-+			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			break;
- 		case DDR_100_MHZ:
- 			psDDRSetting = asT3LPB_DDRSetting100MHz;
- 			RegCount = ARRAY_SIZE(asT3LPB_DDRSetting100MHz);
--			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
-+			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			break;
- 		case DDR_133_MHZ:
- 			bOverrideSelfRefresh = TRUE;
- 			psDDRSetting = asT3LPB_DDRSetting133MHz;
- 			RegCount = ARRAY_SIZE(asT3LPB_DDRSetting133MHz);
--			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
-+			RegCount -= T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			psDDRSetting += T3LPB_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			break;
- 		case DDR_160_MHZ:
-@@ -1066,20 +1066,20 @@ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
- 		case DDR_80_MHZ:
- 			psDDRSetting = asT3_DDRSetting80MHz;
- 			RegCount = ARRAY_SIZE(asT3_DDRSetting80MHz);
--			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
-+			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			break;
- 		case DDR_100_MHZ:
- 			psDDRSetting = asT3_DDRSetting100MHz;
- 			RegCount = ARRAY_SIZE(asT3_DDRSetting100MHz);
--			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
-+			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			break;
- 		case DDR_133_MHZ:
- 			psDDRSetting = asT3_DDRSetting133MHz;
- 			RegCount = ARRAY_SIZE(asT3_DDRSetting133MHz);
--			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
--			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
-+			RegCount -= T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
-+			psDDRSetting += T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			break;
- 		default:
- 			return -EINVAL;
-@@ -1090,20 +1090,20 @@ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
- 		case DDR_80_MHZ:
- 			psDDRSetting = asT3B_DDRSetting80MHz;
- 			RegCount = ARRAY_SIZE(asT3B_DDRSetting80MHz);
--			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ ;
-+			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_80MHZ;
- 			break;
- 		case DDR_100_MHZ:
- 			psDDRSetting = asT3B_DDRSetting100MHz;
- 			RegCount = ARRAY_SIZE(asT3B_DDRSetting100MHz);
--			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ ;
-+			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_100MHZ;
- 			break;
- 		case DDR_133_MHZ:
- 			bOverrideSelfRefresh = TRUE;
- 			psDDRSetting = asT3B_DDRSetting133MHz;
- 			RegCount = ARRAY_SIZE(asT3B_DDRSetting133MHz);
--			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ ;
-+			RegCount -= T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			psDDRSetting += T3B_SKIP_CLOCK_PROGRAM_DUMP_133MHZ;
- 			break;
- 		}
-@@ -1130,7 +1130,7 @@ int download_ddr_settings(struct bcm_mini_adapter *Adapter)
- 	ul_ddr_setting_load_addr += sizeof(ULONG);
- 	RegCount *= (sizeof(struct bcm_ddr_setting)/sizeof(ULONG));
- 	while (RegCount && !retval) {
--		value = psDDRSetting->ulRegAddress ;
-+		value = psDDRSetting->ulRegAddress;
- 		retval = wrmalt(Adapter, ul_ddr_setting_load_addr, &value, sizeof(value));
- 		ul_ddr_setting_load_addr += sizeof(ULONG);
- 		if (!retval) {
--- 
-1.8.4
-
+-Andi
