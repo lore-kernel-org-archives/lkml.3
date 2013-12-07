@@ -1,217 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3LGJ6V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 04:58:21 -0500
-Received: from fm2nodo1.polito.it ([130.192.180.12]:38131 "EHLO
-	fm2nodo1.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab3LGJ6S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 04:58:18 -0500
-X-ExtScanner: Niversoft's FindAttachments (free)
-Message-ID: <52A2F116.7090707@polito.it>
-Date: Sat, 07 Dec 2013 10:57:42 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754499Ab3LGKEA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 05:04:00 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:20630 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752838Ab3LGKD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 05:03:57 -0500
+Message-ID: <52A2ECE4.3050407@c-s.fr>
+Date: Sat, 07 Dec 2013 10:39:48 +0100
+From: christophe leroy <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: jmorris@namei.org, d.kasatkin@samsung.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net
-Subject: Re: [PATCH-v2 3/3] ima: added support for new kernel cmdline parameter
- ima_template_fmt
-References: <1386334640-31393-1-git-send-email-roberto.sassu@polito.it>	 <1386334640-31393-4-git-send-email-roberto.sassu@polito.it> <1386358596.11096.5.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1386358596.11096.5.camel@dhcp-9-2-203-236.watson.ibm.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] powerpc 8xx: Loading kernels over 8Mbytes without CONFIG_PIN_TLB
+References: <20131127110406.6DC8E1A504F@localhost.localdomain> <1386356996.7375.120.camel@snotra.buserror.net>
+In-Reply-To: <1386356996.7375.120.camel@snotra.buserror.net>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-FEAS-SYSTEM-WL: 130.192.180.42
+Content-Transfer-Encoding: 8bit
+X-Antivirus: avast! (VPS 131206-1, 06/12/2013), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 08:36 PM, Mimi Zohar wrote:
-> On Fri, 2013-12-06 at 13:57 +0100, Roberto Sassu wrote:
->> This patch allows users to provide a custom template format through the
->> new kernel command line parameter 'ima_template_fmt'. If the supplied
->> format is not valid, IMA uses the default template descriptor.
->>
->> Changelog:
->>   - simplified code of ima_template_fmt_setup()
->>     (Roberto Sassu, suggested by Mimi Zohar)
->>
->> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
->> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
->> ---
->>   Documentation/kernel-parameters.txt      |  4 +++
->>   Documentation/security/IMA-templates.txt | 29 +++++++++++----------
->>   security/integrity/ima/ima_template.c    | 43 ++++++++++++++++++++++++++++++++
->>   3 files changed, 61 insertions(+), 15 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 50680a5..bb45dbc 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -1208,6 +1208,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>   			Formats: { "ima" | "ima-ng" }
->>   			Default: "ima-ng"
->>
->> +	ima_template_fmt=
->> +	                [IMA] Define a custom template format.
->> +			Format: { "field1|...|fieldN" }
->> +
->>   	init=		[KNL]
->>   			Format: <full_path>
->>   			Run specified binary instead of /sbin/init as init
->> diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
->> index a4e102d..7d065f0 100644
->> --- a/Documentation/security/IMA-templates.txt
->> +++ b/Documentation/security/IMA-templates.txt
->> @@ -27,25 +27,22 @@ Managing templates with these structures is very simple. To support
->>   a new data type, developers define the field identifier and implement
->>   two functions, init() and show(), respectively to generate and display
->>   measurement entries. Defining a new template descriptor requires
->> -specifying the template format, a string of field identifiers separated
->> -by the '|' character. While in the current implementation it is possible
->> -to define new template descriptors only by adding their definition in the
->> -template specific code (ima_template.c), in a future version it will be
->> -possible to register a new template on a running kernel by supplying to IMA
->> -the desired format string. In this version, IMA initializes at boot time
->> -all defined template descriptors by translating the format into an array
->> -of template fields structures taken from the set of the supported ones.
->> +specifying the template format (a string of field identifiers separated
->> +by the '|' character) through the 'ima_template_fmt' kernel command line
->> +parameter. At boot time, IMA initializes all defined template descriptors
->> +by translating the format into an array of template fields structures taken
->> +from the set of the supported ones.
->>
->>   After the initialization step, IMA will call ima_alloc_init_template()
->>   (new function defined within the patches for the new template management
->>   mechanism) to generate a new measurement entry by using the template
->>   descriptor chosen through the kernel configuration or through the newly
->> -introduced 'ima_template=' kernel command line parameter. It is during this
->> -phase that the advantages of the new architecture are clearly shown:
->> -the latter function will not contain specific code to handle a given template
->> -but, instead, it simply calls the init() method of the template fields
->> -associated to the chosen template descriptor and store the result (pointer
->> -to allocated data and data length) in the measurement entry structure.
->> +introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
->> +It is during this phase that the advantages of the new architecture are
->> +clearly shown: the latter function will not contain specific code to handle
->> +a given template but, instead, it simply calls the init() method of the template
->> +fields associated to the chosen template descriptor and store the result
->> +(pointer to allocated data and data length) in the measurement entry structure.
->>
->>   The same mechanism is employed to display measurements entries.
->>   The functions ima[_ascii]_measurements_show() retrieve, for each entry,
->> @@ -86,4 +83,6 @@ currently the following methods are supported:
->>    - select a template descriptor among those supported in the kernel
->>      configuration ('ima-ng' is the default choice);
->>    - specify a template descriptor name from the kernel command line through
->> -   the 'ima_template=' parameter.
->> +   the 'ima_template=' parameter;
->> + - register a new template descriptor with custom format through the kernel
->> +   command line parameter 'ima_template_fmt='.
->> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
->> index a001477..11adf4a 100644
->> --- a/security/integrity/ima/ima_template.c
->> +++ b/security/integrity/ima/ima_template.c
->> @@ -21,6 +21,7 @@ static struct ima_template_desc defined_templates[] = {
->>   	{.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
->>   	{.name = "ima-ng",.fmt = "d-ng|n-ng"},
->>   	{.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
->> +	{.name = "",.fmt = ""},	/* placeholder for a custom format */
->>   };
->>
->>   static struct ima_template_field supported_fields[] = {
->> @@ -38,12 +39,16 @@ static struct ima_template_field supported_fields[] = {
->>
->>   static struct ima_template_desc *ima_template;
->>   static struct ima_template_desc *lookup_template_desc(const char *name);
->> +static struct ima_template_field *lookup_template_field(const char *field_id);
->>
->>   static int __init ima_template_setup(char *str)
->>   {
->>   	struct ima_template_desc *template_desc;
->>   	int template_len = strlen(str);
->>
->> +	if (ima_template)
->> +		return 1;
->> +
->>   	/*
->>   	 * Verify that a template with the supplied name exists.
->>   	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
->> @@ -70,6 +75,41 @@ static int __init ima_template_setup(char *str)
->>   }
->>   __setup("ima_template=", ima_template_setup);
->>
->> +static int __init ima_template_fmt_setup(char *str)
->> +{
->> +	int num_templates = ARRAY_SIZE(defined_templates);
->> +	char *str_ptr = str;
->> +
->> +	if (ima_template)
->> +		return 1;
->> +
->> +	while (str_ptr != NULL) {
->> +		char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
->> +		int len = strcspn(str_ptr, "|");
->> +
->> +		if (len >= IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
->> +			pr_err("IMA: field too long, using template %s\n",
->> +			       CONFIG_IMA_DEFAULT_TEMPLATE);
->> +			return 1;
->> +		}
->> +
->> +		memcpy(field_id, str_ptr, len);
->> +		field_id[len] = '\0';
->> +		if (lookup_template_field(field_id) == NULL) {
->> +			pr_err("IMA: field '%s' not found, using template %s\n",
->> +			       field_id, CONFIG_IMA_DEFAULT_TEMPLATE);
->> +			return 1;
->> +		}
->> +
->> +		str_ptr = (str_ptr[len] == '|') ? str_ptr + len + 1 : NULL;
+
+Le 06/12/2013 20:09, Scott Wood a écrit :
+> On Wed, 2013-11-27 at 12:04 +0100, Christophe Leroy wrote:
+>> Today, the only way to load kernels whose size is greater than 8Mbytes is to
+>> activate CONFIG_PIN_TLB. Otherwise, the physical memory initially mapped is
+>> limited to 8Mbytes. This patch sets up 24 Mbytes of initial memory regardless
+>> of whether CONFIG_PIN_TLB is active or not. It allows to load "big" kernels
+>> (for instance when activating CONFIG_LOCKDEP_SUPPORT) without having
+>> to activate CONFIG_PIN_TLB.
+> So, what happens on boards with less than 24M memory present?  Even if
+> you avoid explicitly referencing those addresses, what if there is a
+> speculative access -- or does 8xx not do that?
 >
-> Personally, I think it would be cleaner to use a 'for' loop.  Something
-> like: for (bufp = buf; bufp < bufend; bufp += len + 1)
+> -Scott
 >
 
-Hi Mimi
+Function setup_initial_memory_limit() in mm/init_32.c defines the limits 
+based on the parameters given by the bootloader.
+As far as I know, the 8xx doesn't do speculative access just because an 
+area is loaded in a TLB Entry.
 
-this solution will not work because it does not properly
-handle a string like 'validfield|'. Indeed, at the second
-iteration, you already reached the end of the string and
-exit without detecting a field identifier of length zero.
+Christophe
 
-Thanks
-
-Roberto Sassu
-
-
-> thanks,
->
-> Mimi
->
->> +	}
->> +
->> +	defined_templates[num_templates - 1].fmt = str;
->> +	ima_template = defined_templates + num_templates - 1;
->> +	return 1;
->> +}
->> +__setup("ima_template_fmt=", ima_template_fmt_setup);
->> +
->>   static struct ima_template_desc *lookup_template_desc(const char *name)
->>   {
->>   	int i;
->> @@ -162,6 +202,9 @@ static int init_defined_templates(void)
->>   	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
->>   		struct ima_template_desc *template = &defined_templates[i];
->>
->> +		if (strlen(template->fmt) == 0)
->> +			continue;
->> +
->>   		result = template_desc_init_fields(template->fmt,
->>   						   &(template->fields),
->>   						   &(template->num_fields));
->
->
+---
+Ce courrier électronique ne contient aucun virus ou logiciel malveillant parce que la protection avast! Antivirus est active.
+http://www.avast.com
 
