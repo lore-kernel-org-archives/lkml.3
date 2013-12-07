@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3LGLlx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 06:41:53 -0500
-Received: from mout.gmx.net ([212.227.17.20]:63061 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754263Ab3LGLlv convert rfc822-to-8bit (ORCPT
+	id S1757988Ab3LGLnD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 06:43:03 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:56173 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab3LGLm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 06:41:51 -0500
-From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: [PATCH] char: tpm: nuvoton: remove unused variable
-Date: Sat, 7 Dec 2013 12:42:29 +0100
-User-Agent: KMail/1.13.7 (Linux/3.12.0; KDE/4.10.5; x86_64; ; )
-Cc: Michal Nazarewicz <mpn@google.com>, Dan Morav <dmorav@nuvoton.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <1385744418-9516-1-git-send-email-mpn@google.com> <20131129211252.GB25451@obsidianresearch.com>
-In-Reply-To: <20131129211252.GB25451@obsidianresearch.com>
+	Sat, 7 Dec 2013 06:42:59 -0500
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzEuKuQfw==
+X-RZG-CLASS-ID: mo00
+Message-ID: <52A309BE.7000602@hartkopp.net>
+Date: Sat, 07 Dec 2013 12:42:54 +0100
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201312071242.29947.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:aqLExuowDIAVx5z9js+hR2w9C/0pNDtvpjypqQgQGT80qR3zqtL
- QnodcdAC2TjRL04DEqwGCAyckMiWPK3Nest5ReOHFY7O9VugluIMEnF2g98YkKASlKDu4ma
- m+yym7qIstc9DqRWFgPh4sS+CfhWltdXt4oXY51SpZpAA16tkeu1wQcpgZMWuy5mYybHuTj
- AaIhNGEagJ3yaVmYkzUVQ==
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Sebastian Haas <dev@sebastianhaas.info>
+CC: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] can: ems_usb: fix urb leaks on failure paths
+References: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 29. November 2013, 22:12:52 schrieb Jason Gunthorpe:
-> On Fri, Nov 29, 2013 at 06:00:18PM +0100, Michal Nazarewicz wrote:
-> > From: Michal Nazarewicz <mina86@mina86.com>
-> > 
-> > “wait” wait queue is defined but never used in the function, thus
-> > it can be removed.
-> > 
-> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> > 
-> >  drivers/char/tpm/tpm_i2c_nuvoton.c | 1 -
-> >  1 file changed, 1 deletion(-)
+Hello Alexey,
+
+looks better :-)
+
+I added the author of this driver to double check the patch and for his
+Acked-by ...
+
+@Sebastian: Would you like to update your e-mail address too?
+
+Best regards,
+Oliver
+
+
+On 07.12.2013 00:10, Alexey Khoroshilov wrote:
+> There are a couple failure paths where urb leaks.
+> Is spare code within ems_usb_start_xmit(),
+> usb_free_urb() should be used to deallocate urb instead of usb_unanchor_urb().
+> In ems_usb_start() there is no usb_free_urb() if usb_submit_urb() fails.
 > 
-> Acked-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Found by Linux Driver Verification project (linuxtesting.org).
 > 
-> Thanks,
-> Jason
-
-
-Applied.
-
-https://github.com/PeterHuewe/linux-tpmdd/commits/for-james
-
-Thanks
-Peter
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/net/can/usb/ems_usb.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/can/usb/ems_usb.c b/drivers/net/can/usb/ems_usb.c
+> index 5f9a7ad9b964..8aeec0b4601a 100644
+> --- a/drivers/net/can/usb/ems_usb.c
+> +++ b/drivers/net/can/usb/ems_usb.c
+> @@ -625,6 +625,7 @@ static int ems_usb_start(struct ems_usb *dev)
+>  			usb_unanchor_urb(urb);
+>  			usb_free_coherent(dev->udev, RX_BUFFER_SIZE, buf,
+>  					  urb->transfer_dma);
+> +			usb_free_urb(urb);
+>  			break;
+>  		}
+>  
+> @@ -798,8 +799,8 @@ static netdev_tx_t ems_usb_start_xmit(struct sk_buff *skb, struct net_device *ne
+>  	 * allowed (MAX_TX_URBS).
+>  	 */
+>  	if (!context) {
+> -		usb_unanchor_urb(urb);
+>  		usb_free_coherent(dev->udev, size, buf, urb->transfer_dma);
+> +		usb_free_urb(urb);
+>  
+>  		netdev_warn(netdev, "couldn't find free context\n");
+>  
+> 
