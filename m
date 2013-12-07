@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab3LGCe4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 21:34:56 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47247 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab3LGCez (ORCPT
+	id S1758032Ab3LGCir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 21:38:47 -0500
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:46079 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab3LGCiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 21:34:55 -0500
-Message-ID: <52A28945.1080904@hitachi.com>
-Date: Sat, 07 Dec 2013 11:34:45 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 6 Dec 2013 21:38:46 -0500
+Message-ID: <52A28A33.4080306@gmail.com>
+Date: Fri, 06 Dec 2013 21:38:43 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
- fixes crash bugs
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <y0mvbz3pd3z.fsf@fche.csb> <52A16AD7.6040500@hitachi.com> <20131206190753.GA3201@redhat.com> <52A25B71.3090108@hitachi.com> <20131207013249.GC3201@redhat.com>
-In-Reply-To: <20131207013249.GC3201@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Zhi Yong Wu <zwu.kernel@gmail.com>, davem@davemloft.net
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH 1/2] macvtap: remove useless codes in macvtap_aio_read()
+ and macvtap_recvmsg()
+References: <1386363300-19040-1-git-send-email-zwu.kernel@gmail.com>
+In-Reply-To: <1386363300-19040-1-git-send-email-zwu.kernel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/07 10:32), Frank Ch. Eigler wrote:
-> Hi -
+On 12/06/2013 03:54 PM, Zhi Yong Wu wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> On Sat, Dec 07, 2013 at 08:19:13AM +0900, Masami Hiramatsu wrote:
+> By checking related codes, it is impossible that ret > len or total_len,
+> so we should remove some useless coeds in both above functions.
+
+Looks like commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
+Author: Jason Wang <jasowang@redhat.com>
+Date:   Thu Jul 25 13:00:33 2013 +0800
+
+    tuntap: hardware vlan tx support
+
+Introduced a change in tun_put_user() where we can
+never return a length longer then len or total_len.
+This has an effect that is now impossible to signal
+truncated status.  It seems like a potential loss
+of functionality and it might make sense to restore it.
+
+-vlad
 > 
->> [...]
->>> Would you plan to limit kprobes (or just the perf-probe frontend) to
->>> only function-entries also?
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  drivers/net/macvtap.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
 > 
->> Exactly, yes :). Currently I have a patch for kprobe-tracer
->> implementation (not only for perf-probe, but doesn't limit kprobes
->> itself).
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index 4c6f84c..7f4ccdd 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -871,7 +871,6 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+>  	}
+>  
+>  	ret = macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
+> -	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
+>  out:
+>  	return ret;
+>  }
+> @@ -1104,10 +1103,6 @@ static int macvtap_recvmsg(struct kiocb *iocb, struct socket *sock,
+>  		return -EINVAL;
+>  	ret = macvtap_do_read(q, m->msg_iov, total_len,
+>  			  flags & MSG_DONTWAIT);
+> -	if (ret > total_len) {
+> -		m->msg_flags |= MSG_TRUNC;
+> -		ret = flags & MSG_TRUNC ? ret : total_len;
+> -	}
+>  	return ret;
+>  }
+>  
 > 
-> Interesting option.  It sounds like a restrictive expedient that could
-> result in kprobes never being made sufficiently robust.
-
-the raw-kprobes users like systemtap can also implement its own
-whitelist. :) ftrace-based whitelist is only useful for ftrace/perf.
-Anyway, the list is open via debugfs as available_filter_functions.
-
->>> If not, and if intra-function statement-granularity kprobes remain
->>> allowed within a function-granularity whitelist, then you might
->>> still have those "quantitative" problems.
-> 
->> Yes, but as far as I've tested, the performance overhead is not
->> high, especially as far as putting kprobes at the entry of those
->> functions because of ftrace-based optimization.
-> 
-> (Would that also make CONFIG_KPROBE_EVENT require KPROBES_ON_FTRACE?)
-
-Ah, no but a good point. at least the whitelist requires
-CONFIG_FUNCTION_TRACER.
-
->>> Even worse, kprobes robustness problems can bite even with a small
->>> whitelist, unless you can test the countless subset selections
->>> cartesian-product the aggrevating factors (like other tracing
->>> facilities being in use at the same time, limited memory, high irq
->>> rates, debugging sessions, architectures, whatever).
->>
->> And also, what script will run on each probe, right? :)
-> 
-> In the perf-probe world, the closest analogue could be varying the
-> contextual data that's being extracted (stack traces, parameters, ...).
-
-Yes, it should be verified before accessing it (and already done).
-
->>>> [...]  For the long term solution, I think we can introduce some
->>>> kind of performance gatekeeper as systemtap does. Counting the
->>>> miss-hit rate per second and if it go over a threshold, disable next
->>>> miss-hit (or most miss-hit) probe (as OOM killer does).
->>>
->>> That would make sense, but again it would not help deal with kprobes
->>> robustness (in the kernel-crashing rather than kernel-slowdown sense).
->>
->> Why would you think so? Is there any hidden path for calling kprobes
->> mechanism?? The kernel crash problem just comes from bugs, not the
->> quantitative issue.
-> 
-> I don't think we're disagreeing.  A performance-gatekeeper in
-> perf-probe or nearby would be useful (and manage the kprobe-quantity
-> problem).  It would not be sufficient to prevent the kernel-crashing
-> bugs.
-
-Right. Ah, I just meant that we'd better add those features, not
-replacing the blacklist. And the blacklist should be maintained
-anyway. :)
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
 
