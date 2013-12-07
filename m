@@ -1,39 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab3LGRKv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 12:10:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38172 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3LGRKs (ORCPT
+	id S1758970Ab3LGRMX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 12:12:23 -0500
+Received: from smtp-out-165.synserver.de ([212.40.185.165]:1044 "EHLO
+	smtp-out-151.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758718Ab3LGRMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 12:10:48 -0500
-Date: Sat, 7 Dec 2013 09:12:17 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Thomas Hellstrom <thellstrom@vmware.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: serio - fix sysfs layout
-Message-ID: <20131207171217.GA19016@kroah.com>
-References: <20131207154116.GA9902@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131207154116.GA9902@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 7 Dec 2013 12:12:18 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 3230
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH resend 2/2] pwm: jz4740: Use devm_clk_get()
+Date: Sat,  7 Dec 2013 18:13:16 +0100
+Message-Id: <1386436396-2307-2-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386436396-2307-1-git-send-email-lars@metafoo.de>
+References: <1386436396-2307-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 07, 2013 at 07:41:19AM -0800, Dmitry Torokhov wrote:
-> Restore previous layout of sysfs attributes that was broken by commit
-> 3778a2129bcce84f684cc0017ed20d2524afd289 (input: serio: remove bus usage of
-> dev_attrs) which moved all serio device attributes into 'id' group, when
-> only 'type', 'proto', 'id', and 'extra' should be in 'id' group and the
-> rest of attributes should be attached directly to the device.
+Using the managed version of clk_get() makes the code a bit shorter and the
+error paths less complicated.
 
-Ick, sorry about that.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/pwm/pwm-jz4740.c |   20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-> Reported-by: Thomas Hellstrom <thellstrom@vmware.com>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+diff --git a/drivers/pwm/pwm-jz4740.c b/drivers/pwm/pwm-jz4740.c
+index a44d890..9c46209 100644
+--- a/drivers/pwm/pwm-jz4740.c
++++ b/drivers/pwm/pwm-jz4740.c
+@@ -165,13 +165,12 @@ static const struct pwm_ops jz4740_pwm_ops = {
+ static int jz4740_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct jz4740_pwm_chip *jz4740;
+-	int ret;
+ 
+ 	jz4740 = devm_kzalloc(&pdev->dev, sizeof(*jz4740), GFP_KERNEL);
+ 	if (!jz4740)
+ 		return -ENOMEM;
+ 
+-	jz4740->clk = clk_get(&pdev->dev, "ext");
++	jz4740->clk = devm_clk_get(&pdev->dev, "ext");
+ 	if (IS_ERR(jz4740->clk))
+ 		return PTR_ERR(jz4740->clk);
+ 
+@@ -180,29 +179,16 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
+ 	jz4740->chip.npwm = NUM_PWM;
+ 	jz4740->chip.base = -1;
+ 
+-	ret = pwmchip_add(&jz4740->chip);
+-	if (ret < 0) {
+-		clk_put(jz4740->clk);
+-		return ret;
+-	}
+-
+ 	platform_set_drvdata(pdev, jz4740);
+ 
+-	return 0;
++	return pwmchip_add(&jz4740->chip);
+ }
+ 
+ static int jz4740_pwm_remove(struct platform_device *pdev)
+ {
+ 	struct jz4740_pwm_chip *jz4740 = platform_get_drvdata(pdev);
+-	int ret;
+-
+-	ret = pwmchip_remove(&jz4740->chip);
+-	if (ret < 0)
+-		return ret;
+ 
+-	clk_put(jz4740->clk);
+-
+-	return 0;
++	return pwmchip_remove(&jz4740->chip);
+ }
+ 
+ static struct platform_driver jz4740_pwm_driver = {
+-- 
+1.7.10.4
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
