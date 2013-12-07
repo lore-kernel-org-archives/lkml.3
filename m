@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3LGCOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 21:14:11 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:47714 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752164Ab3LGCOJ (ORCPT
+	id S1754475Ab3LGCPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 21:15:50 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30012 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752164Ab3LGCPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 21:14:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131206.162633.125107323851595113.davem@davemloft.net>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <1386350983-13281-4-git-send-email-wens@csie.org> <20131206.162633.125107323851595113.davem@davemloft.net>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Sat, 7 Dec 2013 10:13:44 +0800
-X-Google-Sender-Auth: X-H9VNK_fl1LgPQBKZvaztJSAr4
-Message-ID: <CAGb2v64eeq0v+nZ0gNOVTvWbEuk52DOX-aX0K=jO6tvSun8uCQ@mail.gmail.com>
-Subject: Re: [PATCH 03/10] net: stmmac: Use platform data tied with compatible strings
-To: David Miller <davem@davemloft.net>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
-        "rob.herring" <rob.herring@calxeda.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
-        "maxime.ripard" <maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Dec 2013 21:15:49 -0500
+Date: Fri, 6 Dec 2013 21:15:47 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.10.22-rt19
+Message-ID: <20131206211547.1bf0cdb8@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 7, 2013 at 5:26 AM, David Miller <davem@davemloft.net> wrote:
-> From: Chen-Yu Tsai <wens@csie.org>
-> Date: Sat,  7 Dec 2013 01:29:36 +0800
->
->> +     device = of_match_device(stmmac_dt_ids, &pdev->dev);
->> +     if (!device)
->> +             return -ENODEV;
->> +
->> +     if (device->data)
->> +         memcpy(plat, device->data, sizeof(*plat));
->> +
->
-> Don't invent your own indentation using spaces, this memcpy()
-> call is not indented properly, it should be two TABs.
 
-Noted. Will fix.
+Dear RT Folks,
+
+I'm pleased to announce the 3.10.22-rt19 stable release.
+
+
+This release is just an update to the new stable 3.10.22 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.10-rt
+  Head SHA1: db032a99380944df86b1c708eb5c0a81088505ba
+
+
+Or to build 3.10.22-rt19 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.22.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.22-rt19.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
