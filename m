@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab3LGUwC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 15:52:02 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:53647 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754637Ab3LGUwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 15:52:00 -0500
-Message-ID: <52A38A6C.6040005@vmware.com>
-Date: Sat, 07 Dec 2013 21:51:56 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: serio - fix sysfs layout
-References: <20131207154116.GA9902@core.coreip.homeip.net>
-In-Reply-To: <20131207154116.GA9902@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1759098Ab3LGU7T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 15:59:19 -0500
+Received: from gate.crashing.org ([63.228.1.57]:56532 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755538Ab3LGU7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 15:59:17 -0500
+Message-ID: <1386449914.21910.109.camel@pasglop>
+Subject: Re: [PATCH] powerpc 8xx: Loading kernels over 8Mbytes without
+ CONFIG_PIN_TLB
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: christophe leroy <christophe.leroy@c-s.fr>
+Cc: Scott Wood <scottwood@freescale.com>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Date: Sun, 08 Dec 2013 07:58:34 +1100
+In-Reply-To: <52A2ECE4.3050407@c-s.fr>
+References: <20131127110406.6DC8E1A504F@localhost.localdomain>
+	 <1386356996.7375.120.camel@snotra.buserror.net> <52A2ECE4.3050407@c-s.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2013 04:41 PM, Dmitry Torokhov wrote:
-> Restore previous layout of sysfs attributes that was broken by commit
-> 3778a2129bcce84f684cc0017ed20d2524afd289 (input: serio: remove bus usage of
-> dev_attrs) which moved all serio device attributes into 'id' group, when
-> only 'type', 'proto', 'id', and 'extra' should be in 'id' group and the
-> rest of attributes should be attached directly to the device.
+On Sat, 2013-12-07 at 10:39 +0100, christophe leroy wrote:
+> Function setup_initial_memory_limit() in mm/init_32.c defines the
+> limits 
+> based on the parameters given by the bootloader.
+> As far as I know, the 8xx doesn't do speculative access just because
+> an area is loaded in a TLB Entry.
 
-Thanks for doing this. Makes vmmouse work again.
+Speculative accesses are ... speculative :-) The address used for such
+an access can be anything really. So yes, architecturally, powerpc
+processors can access *anything* speculatively just because there's a
+valid non-garded translation.
 
->
-> Reported-by: Thomas Hellstrom <thellstrom@vmware.com>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Whether the 8xx does it at all, I don't know. 44x originally did but
+that was so buggy that we had to force G on all mappings (until later
+versions of the core just burned the feature out). Pretty much all other
+powerpc's do it.
 
-Tested-by: Thomas Hellstrom <thellstrom@vmware.com>
+Cheers,
+Ben.
 
 
-> ---
->   drivers/input/serio/serio.c | 24 +++++++++++++++++-------
->   1 file changed, 17 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-> index 98707fb..8f4c4ab 100644
-> --- a/drivers/input/serio/serio.c
-> +++ b/drivers/input/serio/serio.c
-> @@ -455,16 +455,26 @@ static DEVICE_ATTR_RO(type);
->   static DEVICE_ATTR_RO(proto);
->   static DEVICE_ATTR_RO(id);
->   static DEVICE_ATTR_RO(extra);
-> -static DEVICE_ATTR_RO(modalias);
-> -static DEVICE_ATTR_WO(drvctl);
-> -static DEVICE_ATTR(description, S_IRUGO, serio_show_description, NULL);
-> -static DEVICE_ATTR(bind_mode, S_IWUSR | S_IRUGO, serio_show_bind_mode, serio_set_bind_mode);
->   
->   static struct attribute *serio_device_id_attrs[] = {
->   	&dev_attr_type.attr,
->   	&dev_attr_proto.attr,
->   	&dev_attr_id.attr,
->   	&dev_attr_extra.attr,
-> +	NULL
-> +};
-> +
-> +static struct attribute_group serio_id_attr_group = {
-> +	.name	= "id",
-> +	.attrs	= serio_device_id_attrs,
-> +};
-> +
-> +static DEVICE_ATTR_RO(modalias);
-> +static DEVICE_ATTR_WO(drvctl);
-> +static DEVICE_ATTR(description, S_IRUGO, serio_show_description, NULL);
-> +static DEVICE_ATTR(bind_mode, S_IWUSR | S_IRUGO, serio_show_bind_mode, serio_set_bind_mode);
-> +
-> +static struct attribute *serio_device_attrs[] = {
->   	&dev_attr_modalias.attr,
->   	&dev_attr_description.attr,
->   	&dev_attr_drvctl.attr,
-> @@ -472,13 +482,13 @@ static struct attribute *serio_device_id_attrs[] = {
->   	NULL
->   };
->   
-> -static struct attribute_group serio_id_attr_group = {
-> -	.name	= "id",
-> -	.attrs	= serio_device_id_attrs,
-> +static struct attribute_group serio_device_attr_group = {
-> +	.attrs	= serio_device_attrs,
->   };
->   
->   static const struct attribute_group *serio_device_attr_groups[] = {
->   	&serio_id_attr_group,
-> +	&serio_device_attr_group,
->   	NULL
->   };
->   
