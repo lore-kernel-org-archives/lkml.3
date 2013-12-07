@@ -1,40 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab3LGNVG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 08:21:06 -0500
-Received: from mout.gmx.net ([212.227.17.22]:60982 "EHLO mout.gmx.net"
+	id S1756869Ab3LGNay (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 08:30:54 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53172 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab3LGNVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 08:21:04 -0500
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: tpm: Remainder of earlier clean up
-Date: Sat, 7 Dec 2013 14:21:43 +0100
-User-Agent: KMail/1.13.7 (Linux/3.12.0; KDE/4.10.5; x86_64; ; )
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Ashley Lai <ashley@ashleylai.com>
-References: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
-In-Reply-To: <1383536326-28772-1-git-send-email-jgunthorpe@obsidianresearch.com>
+	id S1754750Ab3LGNav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 08:30:51 -0500
+Date: Sat, 7 Dec 2013 14:30:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
+        toshi kani <toshi.kani@hp.com>, matt@console-pimps.org, greg@kroah.com,
+        x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        horms@verge.net.au, ebiederm@xmission.com, hpa@zytor.com,
+        vgoyal@redhat.com
+Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131207133048.GA4183@pd.tnic>
+References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
+ <1385445477-9665-7-git-send-email-dyoung@redhat.com>
+ <20131127114402.GB32267@pd.tnic>
+ <20131129094034.GI4186@dhcp-16-126.nay.redhat.com>
+ <20131129115029.GB4266@pd.tnic>
+ <20131202025942.GF3999@dhcp-16-126.nay.redhat.com>
+ <20131202094020.GA7380@pd.tnic>
+ <2141297830.13051543.1386406862068.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312071421.43218.PeterHuewe@gmx.de>
-X-Provags-ID: V03:K0:Y6r2kqv/21cs3ASSn/3KMbhEIjq2sxJTgAcLimoaJQ7mA4gafYr
- E8BS+ZaFcZCVFUlHma00oGfQ4wzxDbSL2rrex5ExMqEo70jZlrERXvyNcJxd+QnQMwmzA22
- UMnuZPVOTzJdyeyjaGi6YBfQ2RPG3uXCV5xX3Y8YC3/bjh8YyOMvIsPQjLEgB6LlZSpWG16
- qE9iulHfQsUTnoXai1t0g==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <2141297830.13051543.1386406862068.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason
+On Sat, Dec 07, 2013 at 04:01:02AM -0500, Dave Young wrote:
+> Hi, all
+> 
+> Update my status:
+> 
+> I have finished most of thecode related changes including the krealloc
+> fixes (both for original code and my new code). And I'm slowly
+> moving the kexec related stuff to efi_kexec.c, this involves
+> some other cleanups, such as:
+> efi_systab_init:
+>  -> move 64bit code to efi_64.c, move 32bit code to efi_32.c
+> 
+> efi_setup global variable is changing to physical address, ioremapping
+> it when necessary instead of directly using the virt addr because
+> previously the virt addr will be freed until entering virtual mode,
+> it's possible a leak in case something is wrong in the middle also it
+> occupies the ioremap slot a little bit long.
+> 
+> There's also other problems, so I still need a few days probably
+> a week to carefully restructure the code.
 
-did push everything to 
-	https://github.com/PeterHuewe/linux-tpmdd/tree/testing-and-review
-against latest rc, with alls signed-offs and reviewed-bys
+Those are all lofty goals but beware that trying to solve it all at
+once can be very painful and can cause unnecessary work for both coders
+and reviewers. Especially if the patchset grows out of proportion which
+makes it much harder to review and deal with.
 
-I'll move it to for-james after giving it a final test run.
+So, from my experience and if I were you, I'd try to address the most
+important issue I'm trying to fix, have 10ish nice clean patches and put
+the rest on the TODO list. This is much easier to deal with for everyone
+involved than trying to solve it all at once.
 
-Thanks,
-Peter
+Besides, if you solve it all at once, what are you going to work on
+afterwards? :-)
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
