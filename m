@@ -1,112 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab3LGJhU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 04:37:20 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:33145 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab3LGJhQ (ORCPT
+	id S1754404Ab3LGJ6V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 04:58:21 -0500
+Received: from fm2nodo1.polito.it ([130.192.180.12]:38131 "EHLO
+	fm2nodo1.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab3LGJ6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 04:37:16 -0500
-Date: Sat, 7 Dec 2013 01:37:10 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.13-rc3
-Message-ID: <20131207093710.GA9563@core.coreip.homeip.net>
+	Sat, 7 Dec 2013 04:58:18 -0500
+X-ExtScanner: Niversoft's FindAttachments (free)
+Message-ID: <52A2F116.7090707@polito.it>
+Date: Sat, 07 Dec 2013 10:57:42 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: jmorris@namei.org, d.kasatkin@samsung.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ima-devel@lists.sourceforge.net
+Subject: Re: [PATCH-v2 3/3] ima: added support for new kernel cmdline parameter
+ ima_template_fmt
+References: <1386334640-31393-1-git-send-email-roberto.sassu@polito.it>	 <1386334640-31393-4-git-send-email-roberto.sassu@polito.it> <1386358596.11096.5.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-Reply-To: <1386358596.11096.5.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FEAS-SYSTEM-WL: 130.192.180.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/06/2013 08:36 PM, Mimi Zohar wrote:
+> On Fri, 2013-12-06 at 13:57 +0100, Roberto Sassu wrote:
+>> This patch allows users to provide a custom template format through the
+>> new kernel command line parameter 'ima_template_fmt'. If the supplied
+>> format is not valid, IMA uses the default template descriptor.
+>>
+>> Changelog:
+>>   - simplified code of ima_template_fmt_setup()
+>>     (Roberto Sassu, suggested by Mimi Zohar)
+>>
+>> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+>> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+>> ---
+>>   Documentation/kernel-parameters.txt      |  4 +++
+>>   Documentation/security/IMA-templates.txt | 29 +++++++++++----------
+>>   security/integrity/ima/ima_template.c    | 43 ++++++++++++++++++++++++++++++++
+>>   3 files changed, 61 insertions(+), 15 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 50680a5..bb45dbc 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -1208,6 +1208,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>   			Formats: { "ima" | "ima-ng" }
+>>   			Default: "ima-ng"
+>>
+>> +	ima_template_fmt=
+>> +	                [IMA] Define a custom template format.
+>> +			Format: { "field1|...|fieldN" }
+>> +
+>>   	init=		[KNL]
+>>   			Format: <full_path>
+>>   			Run specified binary instead of /sbin/init as init
+>> diff --git a/Documentation/security/IMA-templates.txt b/Documentation/security/IMA-templates.txt
+>> index a4e102d..7d065f0 100644
+>> --- a/Documentation/security/IMA-templates.txt
+>> +++ b/Documentation/security/IMA-templates.txt
+>> @@ -27,25 +27,22 @@ Managing templates with these structures is very simple. To support
+>>   a new data type, developers define the field identifier and implement
+>>   two functions, init() and show(), respectively to generate and display
+>>   measurement entries. Defining a new template descriptor requires
+>> -specifying the template format, a string of field identifiers separated
+>> -by the '|' character. While in the current implementation it is possible
+>> -to define new template descriptors only by adding their definition in the
+>> -template specific code (ima_template.c), in a future version it will be
+>> -possible to register a new template on a running kernel by supplying to IMA
+>> -the desired format string. In this version, IMA initializes at boot time
+>> -all defined template descriptors by translating the format into an array
+>> -of template fields structures taken from the set of the supported ones.
+>> +specifying the template format (a string of field identifiers separated
+>> +by the '|' character) through the 'ima_template_fmt' kernel command line
+>> +parameter. At boot time, IMA initializes all defined template descriptors
+>> +by translating the format into an array of template fields structures taken
+>> +from the set of the supported ones.
+>>
+>>   After the initialization step, IMA will call ima_alloc_init_template()
+>>   (new function defined within the patches for the new template management
+>>   mechanism) to generate a new measurement entry by using the template
+>>   descriptor chosen through the kernel configuration or through the newly
+>> -introduced 'ima_template=' kernel command line parameter. It is during this
+>> -phase that the advantages of the new architecture are clearly shown:
+>> -the latter function will not contain specific code to handle a given template
+>> -but, instead, it simply calls the init() method of the template fields
+>> -associated to the chosen template descriptor and store the result (pointer
+>> -to allocated data and data length) in the measurement entry structure.
+>> +introduced 'ima_template' and 'ima_template_fmt' kernel command line parameters.
+>> +It is during this phase that the advantages of the new architecture are
+>> +clearly shown: the latter function will not contain specific code to handle
+>> +a given template but, instead, it simply calls the init() method of the template
+>> +fields associated to the chosen template descriptor and store the result
+>> +(pointer to allocated data and data length) in the measurement entry structure.
+>>
+>>   The same mechanism is employed to display measurements entries.
+>>   The functions ima[_ascii]_measurements_show() retrieve, for each entry,
+>> @@ -86,4 +83,6 @@ currently the following methods are supported:
+>>    - select a template descriptor among those supported in the kernel
+>>      configuration ('ima-ng' is the default choice);
+>>    - specify a template descriptor name from the kernel command line through
+>> -   the 'ima_template=' parameter.
+>> +   the 'ima_template=' parameter;
+>> + - register a new template descriptor with custom format through the kernel
+>> +   command line parameter 'ima_template_fmt='.
+>> diff --git a/security/integrity/ima/ima_template.c b/security/integrity/ima/ima_template.c
+>> index a001477..11adf4a 100644
+>> --- a/security/integrity/ima/ima_template.c
+>> +++ b/security/integrity/ima/ima_template.c
+>> @@ -21,6 +21,7 @@ static struct ima_template_desc defined_templates[] = {
+>>   	{.name = IMA_TEMPLATE_IMA_NAME, .fmt = IMA_TEMPLATE_IMA_FMT},
+>>   	{.name = "ima-ng",.fmt = "d-ng|n-ng"},
+>>   	{.name = "ima-sig",.fmt = "d-ng|n-ng|sig"},
+>> +	{.name = "",.fmt = ""},	/* placeholder for a custom format */
+>>   };
+>>
+>>   static struct ima_template_field supported_fields[] = {
+>> @@ -38,12 +39,16 @@ static struct ima_template_field supported_fields[] = {
+>>
+>>   static struct ima_template_desc *ima_template;
+>>   static struct ima_template_desc *lookup_template_desc(const char *name);
+>> +static struct ima_template_field *lookup_template_field(const char *field_id);
+>>
+>>   static int __init ima_template_setup(char *str)
+>>   {
+>>   	struct ima_template_desc *template_desc;
+>>   	int template_len = strlen(str);
+>>
+>> +	if (ima_template)
+>> +		return 1;
+>> +
+>>   	/*
+>>   	 * Verify that a template with the supplied name exists.
+>>   	 * If not, use CONFIG_IMA_DEFAULT_TEMPLATE.
+>> @@ -70,6 +75,41 @@ static int __init ima_template_setup(char *str)
+>>   }
+>>   __setup("ima_template=", ima_template_setup);
+>>
+>> +static int __init ima_template_fmt_setup(char *str)
+>> +{
+>> +	int num_templates = ARRAY_SIZE(defined_templates);
+>> +	char *str_ptr = str;
+>> +
+>> +	if (ima_template)
+>> +		return 1;
+>> +
+>> +	while (str_ptr != NULL) {
+>> +		char field_id[IMA_TEMPLATE_FIELD_ID_MAX_LEN];
+>> +		int len = strcspn(str_ptr, "|");
+>> +
+>> +		if (len >= IMA_TEMPLATE_FIELD_ID_MAX_LEN) {
+>> +			pr_err("IMA: field too long, using template %s\n",
+>> +			       CONFIG_IMA_DEFAULT_TEMPLATE);
+>> +			return 1;
+>> +		}
+>> +
+>> +		memcpy(field_id, str_ptr, len);
+>> +		field_id[len] = '\0';
+>> +		if (lookup_template_field(field_id) == NULL) {
+>> +			pr_err("IMA: field '%s' not found, using template %s\n",
+>> +			       field_id, CONFIG_IMA_DEFAULT_TEMPLATE);
+>> +			return 1;
+>> +		}
+>> +
+>> +		str_ptr = (str_ptr[len] == '|') ? str_ptr + len + 1 : NULL;
+>
+> Personally, I think it would be cleaner to use a 'for' loop.  Something
+> like: for (bufp = buf; bufp < bufend; bufp += len + 1)
+>
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Mimi
 
-Hi Linus,
+this solution will not work because it does not properly
+handle a string like 'validfield|'. Indeed, at the second
+iteration, you already reached the end of the string and
+exit without detecting a field identifier of length zero.
 
-Please pull from:
+Thanks
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem. You will get an update to
-ALPS to support devices on Dell XT2 (hopefully working better this time
-around and although it is largish it should not affect any other ALPS
-devices) and a tiny update to Elantech driver to support newer devices
-as well. Also a coupe of new input event codes have been defined.
-
-Changelog:
----------
-
-Andrew Liu (1):
-      Input: keyboard - "keycode & KEY_MAX" changes some keycode values
-
-Christian Engelmayer (1):
-      Input: usbtouchscreen - separate report and transmit buffer size hand=
-ling
-
-Dmitry Torokhov (1):
-      Input: sur40 - suppress false uninitialized variable warning
-
-Matt Walker (1):
-      Input: elantech - add support for newer (August 2013) devices
-
-Pali Roh=E1r (1):
-      Input: add key code for ambient light sensor button
-
-Ping Cheng (1):
-      Input: add SW_MUTE_DEVICE switch definition
-
-Yunkang Tang (1):
-      Input: ALPS - add support for DualPoint device on Dell XT2 model
+Roberto Sassu
 
 
-Diffstat:
---------
+> thanks,
+>
+> Mimi
+>
+>> +	}
+>> +
+>> +	defined_templates[num_templates - 1].fmt = str;
+>> +	ima_template = defined_templates + num_templates - 1;
+>> +	return 1;
+>> +}
+>> +__setup("ima_template_fmt=", ima_template_fmt_setup);
+>> +
+>>   static struct ima_template_desc *lookup_template_desc(const char *name)
+>>   {
+>>   	int i;
+>> @@ -162,6 +202,9 @@ static int init_defined_templates(void)
+>>   	for (i = 0; i < ARRAY_SIZE(defined_templates); i++) {
+>>   		struct ima_template_desc *template = &defined_templates[i];
+>>
+>> +		if (strlen(template->fmt) == 0)
+>> +			continue;
+>> +
+>>   		result = template_desc_init_fields(template->fmt,
+>>   						   &(template->fields),
+>>   						   &(template->num_fields));
+>
+>
 
- drivers/input/keyboard/adp5588-keys.c      |   3 +-
- drivers/input/keyboard/adp5589-keys.c      |   3 +-
- drivers/input/keyboard/bf54x-keys.c        |   3 +-
- drivers/input/misc/pcf8574_keypad.c        |   7 +-
- drivers/input/mouse/alps.c                 | 206 +++++++++++++++++++++++++=
-+++-
- drivers/input/mouse/alps.h                 |   1 +
- drivers/input/mouse/elantech.c             |   1 +
- drivers/input/touchscreen/sur40.c          |   4 +-
- drivers/input/touchscreen/usbtouchscreen.c |  22 ++-
- include/uapi/linux/input.h                 |   3 +
- 10 files changed, 239 insertions(+), 14 deletions(-)
-
---=20
-Dmitry
-
-
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSouxGAAoJEH70+W8r6ZYqwQgP/iFBoLsTIoEOKcapKcmH6ekp
-c1+XiuX1CXjWBQBTWOZSuMTsLqhe8pVGIzmsV9IQLXSmoxyehzbJ4Aa6cM3iDfWb
-tHizHpJMdy/H27k6ys1OnnwSNe0ODFO38JMFLJ6e+wy91ifC9DrCKWhdzQ06wB3F
-EHqCMsf7QF66sFvGMIOj3Le/bMp4QYjHCFLNAhLhNUHM+7TKddGfL8sbM/m+EIWu
-DiHkxisTFe27a0/Z5WLYyzCVTMNtrYalBSEy3oLN9C7QX3D/ytOrdz5qHt7OIqvm
-TyF3I6xd3js4Tuoj95TjY1GTR1KF+EBUak9izqftMMk55kFeME7spQai1owWiACE
-YCU5/TvI8JxD0gq6hkadHzNxZrFeC7EoB9YdvggeNa8HmEk500817TD/0aWCf4m+
-QzeJrkzMsgDLhGYZIbQ3kOYo71III8Vejcp4fIf26yRgFBWq/ZmunPg53fKLHoyU
-68SE8buCSwsUsNglkWol3ekgtYy4gwE6I2wV/Fpbl2ySoZSOG/mxr+VGjhAzBaju
-UBG+ynmyItCxmj7xy8IbCypSmd5IBNH3M3eWqL2ZdTxN+TbGcRh5EHMfvtU4p2Sx
-hO9DWu0mewP2FBVp3jFTWGY9P2IlUKQr31Ussq98T9/bdlAugxo181KGRnyZvVEs
-NiGtkqQMjMauJjkooAiX
-=L/QC
------END PGP SIGNATURE-----
-
---9jxsPFA5p3P2qPhR--
