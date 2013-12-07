@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab3LGGDD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 01:03:03 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:42311 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab3LGGDC (ORCPT
+	id S1751464Ab3LGGHi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 01:07:38 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45215 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3LGGHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 01:03:02 -0500
+	Sat, 7 Dec 2013 01:07:37 -0500
 MIME-Version: 1.0
-Date: Sat, 7 Dec 2013 14:03:00 +0800
-Message-ID: <CAPgLHd88PwtNx0mjdzGe1K+uFafpxQwZhfDiJNfXPcBCKFA1Bg@mail.gmail.com>
-Subject: [PATCH -next] mfd: sta2x11-mfd: fix return value check in sta2x11_mfd_platform_probe()
+Date: Sat, 7 Dec 2013 14:07:36 +0800
+Message-ID: <CAPgLHd8YaiM_VQZ=6N_ujfJJKWeYVK6S96w5Kv3ikj1b3jyoLA@mail.gmail.com>
+Subject: [PATCH -next] sysfs, kernfs: remove duplicated include from file.c
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
+To: gregkh@linuxfoundation.org, tj@kernel.org
 Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,26 +21,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-In case of error, the function devm_regmap_init_mmio() returns
-ERR_PTR() and never returns NULL. The NULL test in the return
-value check should be replaced with IS_ERR().
+Remove duplicated include.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/mfd/sta2x11-mfd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/kernfs/file.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
-index 53ab686..0d42e40 100644
---- a/drivers/mfd/sta2x11-mfd.c
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -339,7 +339,7 @@ static int sta2x11_mfd_platform_probe(struct platform_device *dev,
- 	regmap_config->cache_type = REGCACHE_NONE;
- 	mfd->regmap[index] = devm_regmap_init_mmio(&dev->dev, mfd->regs[index],
- 						   regmap_config);
--	WARN_ON(!mfd->regmap[index]);
-+	WARN_ON(IS_ERR(mfd->regmap[index]));
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index 990c97f..4a5863b 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -13,7 +13,6 @@
+ #include <linux/slab.h>
+ #include <linux/poll.h>
+ #include <linux/pagemap.h>
+-#include <linux/poll.h>
+ #include <linux/sched.h>
  
- 	return 0;
- }
+ #include "kernfs-internal.h"
 
