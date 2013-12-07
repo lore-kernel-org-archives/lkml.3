@@ -1,127 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506Ab3LGAYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 19:24:44 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:56255 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759434Ab3LGAY3 (ORCPT
+	id S1759544Ab3LGAZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 19:25:47 -0500
+Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:51935 "EHLO
+	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754334Ab3LGAZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 19:24:29 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: lars@metafoo.de, Marek Vasut <marex@denx.de>, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv4 3/3] iio: mxs-lradc: add write_raw function to modify scale
-Date: Sat,  7 Dec 2013 01:24:00 +0100
-Message-Id: <1386375840-24984-4-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386375840-24984-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1386375840-24984-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 6 Dec 2013 19:25:46 -0500
+Date: Sat, 7 Dec 2013 00:25:44 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Rik van Riel <riel@redhat.com>
+cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/15] mm: fix TLB flush race between migration, and
+ change_protection_range
+In-Reply-To: <52A23FD1.3040102@redhat.com>
+Message-ID: <00000142ca7218fe-a5566a24-0ef5-4545-8a98-d33116b7d703-000000@email.amazonses.com>
+References: <1386060721-3794-1-git-send-email-mgorman@suse.de> <1386060721-3794-15-git-send-email-mgorman@suse.de> <529E641A.7040804@redhat.com> <20131203234637.GS11295@suse.de> <529F3D51.1090203@redhat.com> <20131204160741.GC11295@suse.de>
+ <20131206141331.10880d2b@annuminas.surriel.com> <00000142c99cf5b0-69cc9987-aa36-4889-af6a-1a45032d0d13-000000@email.amazonses.com> <52A23FD1.3040102@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.07-54.240.10.51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hector Palacios <hector.palacios@digi.com>
+On Fri, 6 Dec 2013, Rik van Riel wrote:
 
-Added write_raw function to manipulate the optional divider_by_two
-through the scaling attribute out of the available scales.
+> > When you start migrating a page a special page migration entry is
+> > created that will trap all accesses to the page. You can safely flush when
+> > the migration entry is there. Only allow a new PTE/PMD to be put there
+> > *after* the tlb flush.
+>
+> A PROT_NONE or NUMA pte is just as effective as a migration pte.
+> The only problem is, the TLB flush was not always done...
 
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/staging/iio/adc/mxs-lradc.c | 56 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 55 insertions(+), 1 deletion(-)
+Ok then what are you trying to fix?
 
-diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-index eca766dce644..a58c6aaa94d3 100644
---- a/drivers/staging/iio/adc/mxs-lradc.c
-+++ b/drivers/staging/iio/adc/mxs-lradc.c
-@@ -301,6 +301,7 @@ struct mxs_lradc {
- #define	LRADC_CTRL1_LRADC_IRQ_OFFSET		0
- 
- #define	LRADC_CTRL2				0x20
-+#define	LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET	24
- #define	LRADC_CTRL2_TEMPSENSE_PWD		(1 << 15)
- 
- #define	LRADC_STATUS				0x40
-@@ -918,7 +919,8 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 		}
- 
- 		*val = lradc->vref_mv[chan->channel];
--		*val2 = chan->scan_type.realbits;
-+		*val2 = chan->scan_type.realbits -
-+			lradc->is_divided[chan->channel];
- 		return IIO_VAL_FRACTIONAL_LOG2;
- 
- 	case IIO_CHAN_INFO_OFFSET:
-@@ -942,6 +944,56 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
- 	return -EINVAL;
- }
- 
-+static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
-+			       const struct iio_chan_spec *chan,
-+			       int val, int val2, long m)
-+{
-+	struct mxs_lradc *lradc = iio_priv(iio_dev);
-+	struct mxs_lradc_scale *scale_avail =
-+			lradc->scale_avail[chan->channel];
-+	int ret;
-+
-+	ret = mutex_trylock(&lradc->lock);
-+	if (!ret)
-+		return -EBUSY;
-+
-+	switch (m) {
-+	case IIO_CHAN_INFO_SCALE:
-+		ret = -EINVAL;
-+		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
-+		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
-+			/* divider by two disabled */
-+			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-+			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
-+			lradc->is_divided[chan->channel] = 0;
-+			ret = 0;
-+		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
-+			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
-+			/* divider by two enabled */
-+			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-+			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
-+			lradc->is_divided[chan->channel] = 1;
-+			ret = 0;
-+		}
-+
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	mutex_unlock(&lradc->lock);
-+
-+	return ret;
-+}
-+
-+static int mxs_lradc_write_raw_get_fmt(struct iio_dev *iio_dev,
-+				       const struct iio_chan_spec *chan,
-+				       long m)
-+{
-+	return IIO_VAL_INT_PLUS_NANO;
-+}
-+
- static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
- 		struct device_attribute *attr,
- 		char *buf,
-@@ -1019,6 +1071,8 @@ static const struct attribute_group mxs_lradc_attribute_group = {
- static const struct iio_info mxs_lradc_iio_info = {
- 	.driver_module		= THIS_MODULE,
- 	.read_raw		= mxs_lradc_read_raw,
-+	.write_raw		= mxs_lradc_write_raw,
-+	.write_raw_get_fmt	= mxs_lradc_write_raw_get_fmt,
- 	.attrs			= &mxs_lradc_attribute_group,
- };
- 
--- 
-1.8.3.2
+> > Dont do that. We have migration entries for a reason.
+>
+> We do not have migration entries for hugepages, do we?
 
+Dunno.
+
+> >
+> > Should cause a page fault which should put the process to sleep. Process
+> > will safely read the page after the migration entry is removed.
+> >
+> >> flush TLB
+> >
+> > Establish the new PTE/PMD after the flush removing the migration pte
+> > entry and thereby avoiding the race.
+>
+> That is what this patch does.
+
+If that is the case then this patch would not be needed and the tracking
+of state in the mm_struct would not be necessary.
