@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab3LFRA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 12:00:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63095 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575Ab3LFRA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 12:00:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marc C <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v2 1/6] ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
-Date: Fri, 6 Dec 2013 18:00:42 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>, Christian Daudt <bcm@fixthebug.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1385511748-27869-1-git-send-email-marc.ceeeee@gmail.com> <201312031601.04997.arnd@arndb.de> <52A1717D.7000001@gmail.com>
-In-Reply-To: <52A1717D.7000001@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312061800.42563.arnd@arndb.de>
-X-Provags-ID: V02:K0:PraTg/CQhlRnbvI+EhjcTPWLi6SuXodtgTGUeeja5RH
- wivXN2QA5TGl6CoyXUq8JBFN+GzqCSOEfSKVbQx780vG+zBhZy
- Rc5dpT5y6sQ2jfuQIRwVzXHHJiveWRM81sNKZLwhIPgQ/HemBL
- hCwZLn9l9wowhpQXQI1DMyFV0VUMYctu16sMcn5ZLXBwSln7qD
- 0BXp1xdlbnyq+evD6MxbvzaUR2d3Qc34cU54LMeBrM4NllVkYc
- dBUXUw+2qjKQnGR9LYmqzjnkmEYeOc7OwL4TcOFkB/LMttKpu9
- QFtSmLc09oZ0RhCFZ2cTJUJ1rLV8uj/cR79WY2VcpEBGtqQIMo
- WW6wJx7V1V9VX0+beiTk=
+	id S1757424Ab3LFRFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 12:05:55 -0500
+Received: from mga01.intel.com ([192.55.52.88]:39098 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752827Ab3LFRFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 12:05:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,841,1378882800"; 
+   d="scan'208";a="445842010"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org, kvm@vger.kernel.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>, Xudong Hao <xudong.hao@intel.com>,
+        Liu Jinsong <jinsong.liu@intel.com>
+Subject: [PATCH v2 1/3] x86, mpx: add documentation on Intel MPX
+Date: Sat,  7 Dec 2013 08:20:56 +0800
+Message-Id: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 December 2013, Marc C wrote:
+This patch adds the Documentation/intel_mpx.txt file with some
+information about Intel MPX.
 
-> > This seems like stuff that should go into the device drivers for the
-> > respective hardware blocks, not into platform code.
-> 
-> Understood. I'm not sure if you recall this [1] conversation, but short
-> of having a big array of registers offsets per chip ID (which will
-> probably grow to 10 or more), leveraging the DT to let the bootloader
-> tell the kernel these randomly-located registers are proved to be very
-> lightweight.
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+---
+ Documentation/x86/intel_mpx.txt |   76 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 76 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/x86/intel_mpx.txt
 
-Right, but I didn't expect the code to look at these registers to be
-outside of a device-driver context.
- 
-> Seems like there's one thing I could possibly factor out into a separate
-> driver... the registers that assert a chip reset (sw-master-reset-reg).
-> Maybe I could register a reset-controller driver specifically for this
-> purpose?
+diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
+new file mode 100644
+index 0000000..778d06e
+--- /dev/null
++++ b/Documentation/x86/intel_mpx.txt
+@@ -0,0 +1,76 @@
++Intel(R) MPX Overview:
++=====================
++
++Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
++capability introduced into Intel Architecture. Intel MPX can
++increase the robustness of software when it is used in conjunction
++with compiler changes to check that memory references intended
++at compile time do not become unsafe at runtime.
++
++Two of the most important goals of Intel MPX are to provide
++this capability at very low performance overhead for newly
++compiled code, and to provide compatibility mechanisms with
++legacy software components. A direct benefit Intel MPX provides
++is hardening software against malicious attacks designed to
++cause or exploit buffer overruns.
++
++For details about the Intel MPX instructions, see "Intel(R)
++Architecture Instruction Set Extensions Programming Reference".
++
++Intel(R) MPX Programming Model
++------------------------------
++
++Intel MPX introduces new registers and new instructions that
++operate on these registers. Some of the registers added are
++bounds registers which store a pointer's lower bound and upper
++bound limits. Whenever the pointer is used, the requested
++reference is checked against the pointer's associated bounds,
++thereby preventing out-of-bound memory access (such as buffer
++overflows and overruns). Out-of-bounds memory references
++initiate a #BR exception which can then be handled in an
++appropriate manner.
++
++Loading and Storing Bounds using Translation
++--------------------------------------------
++
++Intel MPX defines two instructions for load/store of the linear
++address of a pointer to a buffer, along with the bounds of the
++buffer into a paging structure of extended bounds. Specifically
++when storing extended bounds, the processor will perform address
++translation of the address where the pointer is stored to an
++address in the Bound Table (BT) to determine the store location
++of extended bounds. Loading of an extended bounds performs the
++reverse sequence.
++
++The structure in memory to load/store an extended bound is a
++4-tuple consisting of lower bound, upper bound, pointer value
++and a reserved field. Bound loads and stores access 32-bit or
++64-bit operand size according to the operation mode. Thus,
++a bound table entry is 4*32 bits in 32-bit mode and 4*64 bits
++in 64-bit mode.
++
++The linear address of a bound table is stored in a Bound
++Directory (BD) entry. And the linear address of the bound
++directory is derived from either BNDCFGU or BNDCFGS registers.
++Bounds in memory are stored in Bound Tables (BT) as an extended
++bound, which are accessed via Bound Directory (BD) and address
++translation performed by BNDLDX/BNDSTX instructions.
++
++Bounds Directory (BD) and Bounds Tables (BT) are stored in
++application memory and are allocated by the application (in case
++of kernel use, the structures will be in kernel memory). The
++bound directory and each instance of bound table are in contiguous
++linear memory.
++
++XSAVE/XRESTOR Support of Intel MPX State
++----------------------------------------
++
++Enabling Intel MPX requires an OS to manage two bits in XCR0:
++  - BNDREGS for saving and restoring registers BND0-BND3,
++  - BNDCSR for saving and restoring the user-mode configuration
++(BNDCFGU) and the status register (BNDSTATUS).
++
++The reason for having two separate bits is that BND0-BND3 is
++likely to be volatile state, while BNDCFGU and BNDSTATUS are not.
++Therefore, an OS has flexibility in handling these two states
++differently in saving or restoring them.
+-- 
+1.7.1
 
-I have not followed the latest developments regarding system-reset and
-where that is supposed to be handled, but I'm sure it's in some driver,
-probably drivers/power or drivers/reset.
-
-> > We try hard to avoid having register available this early and outside
-> > of device drivers. Can you try to make at least some (if not all) of
-> > these more regular, and provide specific comments in the code why this
-> > is not possible for the others?
-> 
-> Just to be sure, you're asking to reduce our dependence on touching
-> these machine-specific registers?
-
-Not touching them at all would be preferred (e.g. if the boot loader
-could set them up to the correct per-board setting), but of course that
-doesn't work for run-time settings or system-reset.
-
-The most important part of my comment above is to have as little as
-possible done "early", i.e. before init_machine(). Beyond that, the
-preferred way to do any kind of register access from a device driver
-with an abstract platform-independent interface. We have added a number
-of new subsystems in the past few years (clk, irqchip, pinctrl, reset,
-clocksource, regmap, syscon, ...) along these lines, to the extent where
-most new platforms can now have an empty machine descriptor (if they
-can use the standard psci_smp_ops, I mentioned already that we need
-some more work to get non-standard smp_ops merged with cpuidle).
-
-Chances are that a lot of the registers you are trying to map here
-already have a subsystem that they can fit in as a device driver,
-or that they do something generic enough that we should add another
-subsystem to abstract them. If you need help figuring out which
-subsystem they should use, we should take a closer look at the actual
-register descriptions together. Is there a manual that is publically
-available?
-
-	Arnd
