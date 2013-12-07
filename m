@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab3LGF6P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 00:58:15 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:56611 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750799Ab3LGF6N (ORCPT
+	id S1751416Ab3LGGCS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 01:02:18 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:44429 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab3LGGCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 00:58:13 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] ARM: footbridge: remove obsolete IRQF_DISABLED
-Date: Sat,  7 Dec 2013 06:57:45 +0100
-Message-Id: <1386395865-11910-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1378270741-24785-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1378270741-24785-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Sat, 7 Dec 2013 01:02:17 -0500
+MIME-Version: 1.0
+Date: Sat, 7 Dec 2013 14:02:15 +0800
+Message-ID: <CAPgLHd_=CTR36ye=YvRW81kpzb12Q-pNzbd8Ja-46DXbGD2_Uw@mail.gmail.com>
+Subject: [PATCH -next] mfd: sec: fix sparse NULL pointer warning
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: sbkim73@samsung.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from footbridge
-code. It's a NOOP since 2.6.35.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Fixes the following sparse warning:
+
+drivers/mfd/sec-core.c:202:16: warning: Using plain integer as NULL pointer
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- arch/arm/mach-footbridge/dc21285-timer.c |  2 +-
- arch/arm/mach-footbridge/dc21285.c       | 10 +++++-----
- arch/arm/mach-footbridge/isa-timer.c     |  2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/mfd/sec-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-footbridge/dc21285-timer.c b/arch/arm/mach-footbridge/dc21285-timer.c
-index 9ee78f7b4990..892d5501366c 100644
---- a/arch/arm/mach-footbridge/dc21285-timer.c
-+++ b/arch/arm/mach-footbridge/dc21285-timer.c
-@@ -86,7 +86,7 @@ static irqreturn_t timer1_interrupt(int irq, void *dev_id)
- static struct irqaction footbridge_timer_irq = {
- 	.name		= "dc21285_timer1",
- 	.handler	= timer1_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.dev_id		= &ckevt_dc21285,
- };
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 3a20b47..87fa1e6 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -199,7 +199,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
+ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
+ 					struct device *dev)
+ {
+-	return 0;
++	return NULL;
+ }
+ #endif
  
-diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
-index 7c2fdae9a38b..96a3d73ef4bf 100644
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -334,15 +334,15 @@ void __init dc21285_preinit(void)
- 	/*
- 	 * We don't care if these fail.
- 	 */
--	dc21285_request_irq(IRQ_PCI_SERR, dc21285_serr_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_SERR, dc21285_serr_irq, 0,
- 			    "PCI system error", &serr_timer);
--	dc21285_request_irq(IRQ_PCI_PERR, dc21285_parity_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_PERR, dc21285_parity_irq, 0,
- 			    "PCI parity error", &perr_timer);
--	dc21285_request_irq(IRQ_PCI_ABORT, dc21285_abort_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_ABORT, dc21285_abort_irq, 0,
- 			    "PCI abort", NULL);
--	dc21285_request_irq(IRQ_DISCARD_TIMER, dc21285_discard_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_DISCARD_TIMER, dc21285_discard_irq, 0,
- 			    "Discard timer", NULL);
--	dc21285_request_irq(IRQ_PCI_DPERR, dc21285_dparity_irq, IRQF_DISABLED,
-+	dc21285_request_irq(IRQ_PCI_DPERR, dc21285_dparity_irq, 0,
- 			    "PCI data parity", NULL);
- 
- 	if (cfn_mode) {
-diff --git a/arch/arm/mach-footbridge/isa-timer.c b/arch/arm/mach-footbridge/isa-timer.c
-index d9301dd56354..b73f52e196b9 100644
---- a/arch/arm/mach-footbridge/isa-timer.c
-+++ b/arch/arm/mach-footbridge/isa-timer.c
-@@ -27,7 +27,7 @@ static irqreturn_t pit_timer_interrupt(int irq, void *dev_id)
- static struct irqaction pit_timer_irq = {
- 	.name		= "pit",
- 	.handler	= pit_timer_interrupt,
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.dev_id		= &i8253_clockevent,
- };
- 
--- 
-1.8.3.2
 
