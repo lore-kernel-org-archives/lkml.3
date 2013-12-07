@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759156Ab3LGWQG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 17:16:06 -0500
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:13918 "EHLO
+	id S1759247Ab3LGWQt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 17:16:49 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:13931 "EHLO
 	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3LGWQD (ORCPT
+	with ESMTP id S1754213Ab3LGWQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 17:16:03 -0500
-X-AuditID: cbfec37a-b7f426d000003112-15-52a39e21059a
-Message-id: <52A39E1F.3070905@samsung.com>
-Date: Sat, 07 Dec 2013 15:15:59 -0700
+	Sat, 7 Dec 2013 17:16:45 -0500
+X-AuditID: cbfec37d-b7fa86d000003175-91-52a39e4c4407
+Message-id: <52A39E4A.2080708@samsung.com>
+Date: Sat, 07 Dec 2013 15:16:42 -0700
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
@@ -20,38 +20,38 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.10 00/58] 3.10.23-stable review
-References: <20131206214844.906193530@linuxfoundation.org>
-In-reply-to: <20131206214844.906193530@linuxfoundation.org>
+Subject: Re: [PATCH 3.4 00/32] 3.4.73-stable review
+References: <20131206214956.830407026@linuxfoundation.org>
+In-reply-to: <20131206214956.830407026@linuxfoundation.org>
 Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9hX13FeYuDDC6u17WYs34Nm0Xz4vVs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hX12feYuDDDbcNbGYs34Nm0Xz4vVs
 	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
-	SN8ugStjyuxW9oJznBXHPwU2MJ5m72Lk5JAQMJFoPnOcCcIWk7hwbz1bFyMXh5DAMkaJS70T
-	2CGcXiaJx0uns0I4mxglbm1dAtTCwcEroCWxe14aSDeLgKpE0/zHzCA2m4C6xOfXO8A2CAnI
-	STQtWQ0WFxWIkDi6+hkriM0rICjxY/I9FhBbRCBYYu3XhYwg85kFVjBKHH/5kg0kISxgKtF8
-	9A0jxCAriYP958DinALWEjturAGzmYHslZO2MULY8hKb17xlhqhXlvhz+RTYnRICihLbV1tN
-	YBSZhWT1LCTds5B0L2BkXsUoVlqcXFCclJ5aYahXnJhbXJqXrpecn7uJERIxVTsY73y1OcQo
-	wMGoxMNbYbEoSIg1say4MvcQowQHs5IIb/hNoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG+u2s
-	Rqxe+jK1MYyuUhkvPxkb295e8drzkW/jy/O1FzZ47Sj+4za/QUtx/5SXluuulHMe/i/yl2Pn
-	iax5q1qSe5ncbe1FvVkcpX56aEv3tfl9EW1LTNnfk3r1gdh/DvurkSvMQh2Xut37onPgTUdD
-	FLcB/6eP24syZSU2vlKt2fezIj9daJoSS3FGoqEWc1FxIgA9OUXLdgIAAA==
+	SN8ugSvj8/FprAVnOCvefb/E2MB4kr2LkZNDQsBEYmXzRjYIW0ziwr31QDYXh5DAMkaJO38W
+	MoEkhAR6mSS2b5OBSGxilHi9/z9YgldAS2L7hmYwm0VAVeL308tgU9kE1CU+v97BDtEsJ9G0
+	ZDUziC0qECFxdPUzVoheQYkfk++xgNgiAsESa78uZARZwCywglHi+MuXYCcJCxhL3H9wkQVi
+	kJXEljOzwGxOAWuJZ/t2gA1iBrJXTtrGCGHLS2xe85YZol5Z4s/lU0DHcQC9piixfbXVBEaR
+	WUhWz0LSPQtJ9wJG5lWMYqXFyQXFSempFSZ6xYm5xaV56XrJ+bmbGCExU7uD8f5Xm0OMAhyM
+	Sjy8FRaLgoRYE8uKK3MPMUpwMCuJ8IbfBArxpiRWVqUW5ccXleakFh9iZOLglGpg1JDiUBNW
+	lLu9vNDwfGhOYcdyF/Z11f4HGlevE4hcz6M8w/TcvNXp601FbGrcRDgnJj2InCYlEPHDRVkg
+	48zTE8u4kxz2Wa1OXyzVEX1lxZ49ic2evpfinn9kWFw6J5r3f5ZfBsuHzZfOLPqz89G9yM/L
+	Yn+sOZH20bNhQ/w2yaT5qsf0kiI3KbEUZyQaajEXFScCAOI79sR3AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 02:51 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.23 release.
-> There are 58 patches in this series, all will be posted as a response
+On 12/06/2013 02:52 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.73 release.
+> There are 32 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sun Dec  8 21:47:53 UTC 2013.
+> Responses should be made by Sun Dec  8 21:49:13 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.23-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.73-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
