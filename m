@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161399Ab3LGAmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 19:42:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60359 "EHLO mx1.redhat.com"
+	id S1759038Ab3LGAmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 19:42:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758839Ab3LGAl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758879Ab3LGAl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Dec 2013 19:41:26 -0500
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: linux-kernel@vger.kernel.org
@@ -12,9 +12,9 @@ Cc: kvm@vger.kernel.org, linux-arch@vger.kernel.org, rostedt@goodmis.org,
         pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
         hpa@zytor.com, x86@kernel.org, arnd@arndb.de, rusty@rustcorp.com.au,
         =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-Subject: [PATCH v2 2/5] static_key: cancel rate limit timer on rmmod
-Date: Sat,  7 Dec 2013 01:40:03 +0100
-Message-Id: <1386376806-924-3-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH v2 3/5] static_key: add static_key_slow_inc_deferred()
+Date: Sat,  7 Dec 2013 01:40:04 +0100
+Message-Id: <1386376806-924-4-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1386376806-924-1-git-send-email-rkrcmar@redhat.com>
 References: <1386376806-924-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -24,66 +24,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a bug when we free module's memory while a timer is pending by
-canceling all deferred timers from the unloaded module.
-
-static_key_rate_limit() still can't be called more than once.
-
-Reproducer: (host crasher)
-  modprobe kvm_intel
-  (sleep 1; echo quit) \
-    | qemu-kvm -kernel /dev/null -monitor stdio &
-  sleep 0.5
-  until modprobe -rv kvm_intel 2>/dev/null; do :; done
+Complement the static_key_slow_dec_deferred().
+This avoids asymmetrical API, and prepares us for future optimizations
+and bug fixes.
 
 Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
-I decided not to post a patch that uses __deferred_key in kernel/module init,
-so these three functions might seem like an overkill.
+ arch/x86/kvm/lapic.c                 | 7 ++++---
+ include/linux/jump_label_ratelimit.h | 5 +++++
+ kernel/events/core.c                 | 6 +++---
+ kernel/jump_label.c                  | 7 +++++++
+ 4 files changed, 19 insertions(+), 6 deletions(-)
 
- kernel/jump_label.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 5f01547..86973ac 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -121,7 +121,7 @@ static inline void apic_set_spiv(struct kvm_lapic *apic, u32 val)
+ 		if (val & APIC_SPIV_APIC_ENABLED)
+ 			static_key_slow_dec_deferred(&apic_sw_disabled);
+ 		else
+-			static_key_slow_inc(&apic_sw_disabled.key);
++			static_key_slow_inc_deferred(&apic_sw_disabled);
+ 	}
+ 	apic_set_reg(apic, APIC_SPIV, val);
+ }
+@@ -1351,7 +1351,7 @@ void kvm_lapic_set_base(struct kvm_vcpu *vcpu, u64 value)
+ 		if (value & MSR_IA32_APICBASE_ENABLE)
+ 			static_key_slow_dec_deferred(&apic_hw_disabled);
+ 		else
+-			static_key_slow_inc(&apic_hw_disabled.key);
++			static_key_slow_inc_deferred(&apic_hw_disabled);
+ 		recalculate_apic_map(vcpu->kvm);
+ 	}
+ 
+@@ -1546,7 +1546,8 @@ int kvm_create_lapic(struct kvm_vcpu *vcpu)
+ 	kvm_lapic_set_base(vcpu,
+ 			APIC_DEFAULT_PHYS_BASE | MSR_IA32_APICBASE_ENABLE);
+ 
+-	static_key_slow_inc(&apic_sw_disabled.key); /* sw disabled at reset */
++	/* sw disabled at reset */
++	static_key_slow_inc_deferred(&apic_sw_disabled);
+ 	kvm_lapic_reset(vcpu);
+ 	kvm_iodevice_init(&apic->dev, &apic_mmio_ops);
+ 
+diff --git a/include/linux/jump_label_ratelimit.h b/include/linux/jump_label_ratelimit.h
+index 112ba5f..a18aded 100644
+--- a/include/linux/jump_label_ratelimit.h
++++ b/include/linux/jump_label_ratelimit.h
+@@ -18,6 +18,7 @@ struct static_key_deferred {
+ #endif
+ 
+ #ifdef HAVE_JUMP_LABEL
++extern void static_key_slow_inc_deferred(struct static_key_deferred *key);
+ extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
+ extern void
+ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+@@ -26,6 +27,10 @@ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+ struct static_key_deferred {
+ 	struct static_key  key;
+ };
++static inline void static_key_slow_inc_deferred(struct static_key_deferred *key)
++{
++	static_key_slow_inc(&key->key);
++}
+ static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
+ {
+ 	STATIC_KEY_CHECK_USE();
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index ee64d26..b3fb4c2 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6597,7 +6597,7 @@ static void account_event(struct perf_event *event)
+ 		return;
+ 
+ 	if (event->attach_state & PERF_ATTACH_TASK)
+-		static_key_slow_inc(&perf_sched_events.key);
++		static_key_slow_inc_deferred(&perf_sched_events);
+ 	if (event->attr.mmap || event->attr.mmap_data)
+ 		atomic_inc(&nr_mmap_events);
+ 	if (event->attr.comm)
+@@ -6609,9 +6609,9 @@ static void account_event(struct perf_event *event)
+ 			tick_nohz_full_kick_all();
+ 	}
+ 	if (has_branch_stack(event))
+-		static_key_slow_inc(&perf_sched_events.key);
++		static_key_slow_inc_deferred(&perf_sched_events);
+ 	if (is_cgroup_event(event))
+-		static_key_slow_inc(&perf_sched_events.key);
++		static_key_slow_inc_deferred(&perf_sched_events);
+ 
+ 	account_event_cpu(event, event->cpu);
+ }
 diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 9019f15..02d610a 100644
+index 02d610a..41592ba 100644
 --- a/kernel/jump_label.c
 +++ b/kernel/jump_label.c
-@@ -125,6 +125,27 @@ void jump_label_rate_limit(struct static_key_deferred *key,
+@@ -74,6 +74,13 @@ void static_key_slow_inc(struct static_key *key)
  }
- EXPORT_SYMBOL_GPL(jump_label_rate_limit);
+ EXPORT_SYMBOL_GPL(static_key_slow_inc);
  
-+/* could (should?) be abstracted more */
-+static void with_deferred_keys(struct static_key_deferred *entry,
-+                               struct static_key_deferred *stop,
-+                               void (*op)(struct static_key_deferred *))
++void static_key_slow_inc_deferred(struct static_key_deferred *key)
 +{
-+	struct static_key_deferred *iter;
-+
-+	for (iter = entry; iter < stop; iter++)
-+		op(iter);
++	STATIC_KEY_CHECK_USE();
++	static_key_slow_inc(&key->key);
 +}
++EXPORT_SYMBOL_GPL(static_key_slow_inc_deferred);
 +
-+#define with_module_deferred_keys(mod, op) \
-+	with_deferred_keys(mod->deferred_keys, \
-+	                   mod->deferred_keys + mod->num_deferred_keys, \
-+	                   op)
-+
-+static void deferred_key_cancel_work(struct static_key_deferred *dkey)
-+{
-+	cancel_delayed_work_sync(&dkey->work);
-+}
-+
- static int addr_conflict(struct jump_entry *entry, void *start, void *end)
+ static void __static_key_slow_dec(struct static_key *key,
+ 		unsigned long rate_limit, struct delayed_work *work)
  {
- 	if (entry->code <= (unsigned long)end &&
-@@ -385,6 +406,7 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
- 		jump_label_unlock();
- 		break;
- 	case MODULE_STATE_GOING:
-+		with_module_deferred_keys(mod, deferred_key_cancel_work);
- 		jump_label_lock();
- 		jump_label_del_module(mod);
- 		jump_label_unlock();
 -- 
 1.8.4.2
 
