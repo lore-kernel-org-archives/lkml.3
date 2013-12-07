@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051Ab3LGRpu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 12:45:50 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:34962 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073Ab3LGRpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 12:45:45 -0500
-Date: Sat, 7 Dec 2013 18:45:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: rui wang <ruiv.wang@gmail.com>, Lance Ortiz <lance.ortiz@hp.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, lance_ortiz@hotmail.com,
-        jiang.liu@intel.com, tony.luck@intel.com, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, gong.chen@intel.com
-Subject: Re: [PATCH v10 1/3] aerdrv: Trace Event for AER
-Message-ID: <20131207174542.GB4183@pd.tnic>
-References: <CANVTcTYJS3eAUA4bHVCrKgz=7rQpJZHCiBcw3JM=j0FbCsgQJw@mail.gmail.com>
- <CABawtvPz5sZxhFnQru8Uc6UwF-O8HyGred_RWqBBeT615Qj8sQ@mail.gmail.com>
+	id S1758973Ab3LGR4Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 12:56:24 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:64979 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758759Ab3LGR4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 12:56:22 -0500
+Date: Sat, 7 Dec 2013 18:56:11 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Miroslav Lichvar <mlichvar@redhat.com>, linux-kernel@vger.kernel.org,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
+Message-ID: <20131207175610.GA7198@netboy>
+References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
+ <528A7C88.1030801@linaro.org>
+ <20131120183900.GA25735@localhost>
+ <529D2BA6.5020005@linaro.org>
+ <529D5805.20903@linaro.org>
+ <20131206142602.GH22878@localhost>
+ <52A27D51.1040805@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABawtvPz5sZxhFnQru8Uc6UwF-O8HyGred_RWqBBeT615Qj8sQ@mail.gmail.com>
+In-Reply-To: <52A27D51.1040805@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 11:11:07PM +0800, Ethan Zhao wrote:
-> > @@ -63,10 +63,10 @@ TRACE_EVENT(aer_event,
-> >
-> >         TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
-> >                 __get_str(dev_name),
-> > -               __entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
-> > -                       __entry->severity == HW_EVENT_ERR_FATAL ?
-> > +               __entry->severity == AER_CORRECTABLE ? "Corrected" :
-> > +                       __entry->severity == AER_FATAL ?
-> >                         "Fatal" : "Uncorrected",
+On Fri, Dec 06, 2013 at 05:43:45PM -0800, John Stultz wrote:
+> Anyway, let me know what you think and I'll run some tests on it this
+> weekend.
 > 
-> Why not             "Fatal" : "Non-fatal",   ?  per the PCIe spec,
-> 'Fatal' and 'Non-fatal' are sub-category of "
-> Uncorrected". But here "Uncorrected" means "Non-fatal".
+> thanks
+> -john
+> 
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 3abf534..bfb36fd 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1056,42 +1056,24 @@ static __always_inline int
+> timekeeping_bigadjust(struct timekeeper *tk,
+>                           s64 *offset)
 
-... and just to denote that, it'll probably be best to say:
+John,
 
-		__entry->severity == AER_CORRECTABLE ? "Corrected" :
-			__entry->severity == AER_FATAL ?
-			   "Fatal" : "Uncorrected, non-fatal"
+Any chance of posting this against a normal kernel?  I am preparing
+"real" tests comparing the three different patches in this thread on
+v3.12.3, but this one does not apply.
 
-right?
-
-Btw, Rui, you patch is whitespace-damaged so next time please try
-sending from a real mail client which doesn't mangle whitespace and not
-from the gmail web interface. Sending the patch to yourself and trying
-to apply it is always a good test for that.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Richard
