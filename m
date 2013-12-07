@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3LGBTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 20:19:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34867 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab3LGBTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 20:19:51 -0500
-Message-ID: <52A277A1.6000505@zytor.com>
-Date: Fri, 06 Dec 2013 17:19:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756420Ab3LGBUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 20:20:25 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:48208 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986Ab3LGBUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 20:20:23 -0500
+Message-ID: <52A277CE.4080900@hitachi.com>
+Date: Sat, 07 Dec 2013 10:20:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>,
-        "Liu, Jinsong" <jinsong.liu@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Xudong Hao <xudong.hao@intel.com>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Qemu-devel] [PATCH v2 3/3] X86,	mpx: Intel MPX xstate feature
- definition
-References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>	<1386375658-2191-3-git-send-email-qiaowei.ren@intel.com> <52A20AD6.8080706@redhat.com> <DE8DF0795D48FD4CA783C40EC82923350140B3B6@SHSMSX101.ccr.corp.intel.com> <52A242BE.3010701@zytor.com> <DE8DF0795D48FD4CA783C40EC82923350140BB62@SHSMSX101.ccr.corp.intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE014A6115@SHSMSX102.ccr.corp.intel.com> <52A274C0.4010509@zytor.com> <9E0BE1322F2F2246BD820DA9FC397ADE014A61BE@SHSMSX102.ccr.corp.intel.com>
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE014A61BE@SHSMSX102.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v5 1/8] x86: allow to handle errors in text_poke function
+ family
+References: <1386076887-2655-1-git-send-email-pmladek@suse.cz> <1386076887-2655-2-git-send-email-pmladek@suse.cz>
+In-Reply-To: <1386076887-2655-2-git-send-email-pmladek@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 05:16 PM, Ren, Qiaowei wrote:
-> Jinsong think that both kvm and host depend on these feature definition header file, so we firstly submit these files depended on.
+(2013/12/03 22:21), Petr Mladek wrote:
+> The text_poke functions called BUG() in case of error. This was too strict.
+> There are situations when the system is still usable even when the patching
+> has failed, for example when enabling the dynamic ftrace.
+> 
+> This commit modifies text_poke, text_poke_early, and text_poke_bp functions
+> to return an error code instead calling BUG(). The code is returned instead
+> of the patched address. The address was just copied from the first parameter,
+> so it was no extra information. It has not been used anywhere yet.
 
-Yes, but we can't turn on the feature without proper protection.  Either
-way, they are now in tip:x86/cpufeature.
+Hmm, this change basically good for me. However, from the maintenance point
+of view, I'd like to recommend you to introduce some wrappers for them
+to check return code and just do BUG() instead of changing all call-site,
+because except for the text_poke_bp, we can not rollback the code safely.
+(e.g. text_poke() returns an error but text_poke_or_die() just calls BUG
+when it fails)
 
-	-hpa
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
