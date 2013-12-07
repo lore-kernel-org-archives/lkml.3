@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab3LGLCa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 06:02:30 -0500
-Received: from canardo.mork.no ([148.122.252.1]:55366 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab3LGLC1 convert rfc822-to-8bit (ORCPT
+	id S1754927Ab3LGLGM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 06:06:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54004 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119Ab3LGLGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 06:02:27 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq\@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH V4] cpufreq: suspend governors on system suspend/hibernate
-Organization: m
-References: <28d493f20239a242a7b26dfe1efed40d83bf1e10.1385523340.git.viresh.kumar@linaro.org>
-	<3057132.zHNVNQZ8pP@vostro.rjw.lan>
-	<CAKohpondYbBeObUJJqNZLe04dmN9tLMZv9KrjzqLr2NDorRtLw@mail.gmail.com>
-	<1781198.iCUX9ZdW7W@vostro.rjw.lan>
-	<CAKohpomA9r5a4GkfA-Huh0ectc-hXjSxcdLkJhF6DZvL22yY4w@mail.gmail.com>
-Date: Sat, 07 Dec 2013 12:01:54 +0100
-In-Reply-To: <CAKohpomA9r5a4GkfA-Huh0ectc-hXjSxcdLkJhF6DZvL22yY4w@mail.gmail.com>
-	(Viresh Kumar's message of "Fri, 29 Nov 2013 08:56:08 +0530")
-Message-ID: <87vbz0j55p.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Sat, 7 Dec 2013 06:06:10 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: "maxime.ripard" <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, David Miller <davem@davemloft.net>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        "rob.herring" <rob.herring@calxeda.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH 02/10] net: stmmac: Honor DT parameter to force DMA store and forward mode
+Date: Sat, 07 Dec 2013 12:06:03 +0100
+Message-ID: <2994980.boLDbkkER8@flatron>
+User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <20131207100737.GI24519@lukather>
+References: <1386350983-13281-1-git-send-email-wens@csie.org> <CAGb2v67ZNtbQm+ZW5v_3wNbz1=oLhXks6gbTSjLYa=Nnoz8w-A@mail.gmail.com> <20131207100737.GI24519@lukather>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh Kumar <viresh.kumar@linaro.org> writes:
+On Saturday 07 of December 2013 11:07:37 maxime.ripard wrote:
+> On Sat, Dec 07, 2013 at 09:23:27AM +0800, Chen-Yu Tsai wrote:
+> > Point taken. The current implementation will override settings passed from
+> > platform data. ORing the two would be better.
+> 
+> Platform_data and DT-based configuration are pretty unlikely to be
+> used together, so ORing it doesn't have much sense.
 
-> On 29 November 2013 01:59, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> So I'm reading this as "the version of the patch in bleeding-edge is OK".
->>
->> I hope that really is the case. :-)
->
-> Yeah, that's correct.
+In fact, the recommended way is to always use platform data alone if it is
+present or try to parse DT otherwise, so no mixing of data from these two
+sources should be done.
 
-Sorry to be making noise here again, but I was eager to verify that the
-fixes in v3.13-rc3 were OK on my system.  Unfortunately it seems this
-patch completely broke suspend for me.  Hibernete ended up with a blank
-console and no visible activity, without ever writing any image to disk.
+Best regards,
+Tomasz
 
-There really weren't that many suspects between v3.13-rc2 and v3.13-rc3,
-so I went directly to reverting 5a87182aa21d ("cpufreq: suspend
-governors on system suspend/hibernate") which fixed the problem. I
-didn't bother debugging it further from there. I don't think there is
-anything magic about my system which should make this problem specific
-to it.
-
-I am still using the acpi-cpufreq driver on an old x86_64 laptop if that
-matters.
-
-
-Bjørn
