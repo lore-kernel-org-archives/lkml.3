@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3LGH6S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 02:58:18 -0500
-Received: from relay.parallels.com ([195.214.232.42]:46411 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab3LGH6Q (ORCPT
+	id S1752944Ab3LGH65 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 02:58:57 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:56829 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751667Ab3LGH64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 02:58:16 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <cgroups@vger.kernel.org>, <devel@openvz.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] cgroup: fix fail path in cgroup_load_subsys()
-Date: Sat, 7 Dec 2013 11:58:05 +0400
-Message-ID: <1386403085-24866-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.78]
+	Sat, 7 Dec 2013 02:58:56 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: dhowells@redhat.com, yasutake.koichi@jp.panasonic.com
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] mn10300: remove deprecated IRQF_DISABLED
+Date: Sat,  7 Dec 2013 08:58:40 +0100
+Message-Id: <1386403120-12927-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1378538998-7467-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1378538998-7467-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not call cgroup_unload_subsys() if online_css() fails, because
-online_css() does not assign css to cgroup on failure, while
-offline_css() called from cgroup_unload_subsys() expects it is assigned.
-So let's call everything we need to rollback inline without involving
-cgroup_unload_subsys().
+This patch proposes to remove the IRQF_DISABLED flag from mn10300 architecture
+code. It's a NOOP since 2.6.35 and it will be removed one day.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- kernel/cgroup.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ arch/mn10300/kernel/cevt-mn10300.c   | 2 +-
+ arch/mn10300/kernel/mn10300-serial.c | 6 +++---
+ arch/mn10300/kernel/smp.c            | 2 +-
+ arch/mn10300/unit-asb2364/irq-fpga.c | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 8b729c2..3cd7247 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4861,10 +4861,8 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	 */
- 	css = ss->css_alloc(cgroup_css(cgroup_dummy_top, ss));
- 	if (IS_ERR(css)) {
--		/* failure case - need to deassign the cgroup_subsys[] slot. */
--		cgroup_subsys[ss->subsys_id] = NULL;
--		mutex_unlock(&cgroup_mutex);
--		return PTR_ERR(css);
-+		ret = PTR_ERR(css);
-+		goto out_err;
- 	}
+diff --git a/arch/mn10300/kernel/cevt-mn10300.c b/arch/mn10300/kernel/cevt-mn10300.c
+index ccce35e3e179..60f64ca1752a 100644
+--- a/arch/mn10300/kernel/cevt-mn10300.c
++++ b/arch/mn10300/kernel/cevt-mn10300.c
+@@ -113,7 +113,7 @@ int __init init_clockevents(void)
+ 	cd->set_next_event	= next_event;
  
- 	list_add(&ss->sibling, &cgroup_dummy_root.subsys_list);
-@@ -4873,6 +4871,10 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	/* our new subsystem will be attached to the dummy hierarchy. */
- 	init_css(css, ss, cgroup_dummy_top);
+ 	iact = &per_cpu(timer_irq, cpu);
+-	iact->flags = IRQF_DISABLED | IRQF_SHARED | IRQF_TIMER;
++	iact->flags = IRQF_SHARED | IRQF_TIMER;
+ 	iact->handler = timer_interrupt;
  
-+	ret = online_css(css);
-+	if (ret)
-+		goto free_css;
-+
- 	/*
- 	 * Now we need to entangle the css into the existing css_sets. unlike
- 	 * in cgroup_init_subsys, there are now multiple css_sets, so each one
-@@ -4896,18 +4898,17 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	}
- 	write_unlock(&css_set_lock);
+ 	clockevents_register_device(cd);
+diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
+index bf6e949a2f87..7ecf69879e2d 100644
+--- a/arch/mn10300/kernel/mn10300-serial.c
++++ b/arch/mn10300/kernel/mn10300-serial.c
+@@ -985,17 +985,17 @@ static int mn10300_serial_startup(struct uart_port *_port)
+ 	irq_set_chip(port->tm_irq, &mn10300_serial_pic);
  
--	ret = online_css(css);
--	if (ret)
--		goto err_unload;
--
- 	/* success! */
- 	mutex_unlock(&cgroup_mutex);
- 	return 0;
+ 	if (request_irq(port->rx_irq, mn10300_serial_interrupt,
+-			IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_NOBALANCING,
+ 			port->rx_name, port) < 0)
+ 		goto error;
  
--err_unload:
-+free_css:
-+	list_del(&ss->sibling);
-+	ss->css_free(css);
-+out_err:
-+	/* failure case - need to deassign the cgroup_subsys[] slot. */
-+	cgroup_subsys[ss->subsys_id] = NULL;
- 	mutex_unlock(&cgroup_mutex);
--	/* @ss can't be mounted here as try_module_get() would fail */
--	cgroup_unload_subsys(ss);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(cgroup_load_subsys);
+ 	if (request_irq(port->tx_irq, mn10300_serial_interrupt,
+-			IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_NOBALANCING,
+ 			port->tx_name, port) < 0)
+ 		goto error2;
+ 
+ 	if (request_irq(port->tm_irq, mn10300_serial_interrupt,
+-			IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_NOBALANCING,
+ 			port->tm_name, port) < 0)
+ 		goto error3;
+ 	mn10300_serial_mask_ack(port->tm_irq);
+diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
+index a17f9c9c14c9..f984193718b1 100644
+--- a/arch/mn10300/kernel/smp.c
++++ b/arch/mn10300/kernel/smp.c
+@@ -143,7 +143,7 @@ static struct irqaction call_function_ipi = {
+ static irqreturn_t smp_ipi_timer_interrupt(int irq, void *dev_id);
+ static struct irqaction local_timer_ipi = {
+ 	.handler	= smp_ipi_timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_NOBALANCING,
++	.flags		= IRQF_NOBALANCING,
+ 	.name		= "smp local timer IPI"
+ };
+ #endif
+diff --git a/arch/mn10300/unit-asb2364/irq-fpga.c b/arch/mn10300/unit-asb2364/irq-fpga.c
+index e16c216f31dc..073e2ccc4a44 100644
+--- a/arch/mn10300/unit-asb2364/irq-fpga.c
++++ b/arch/mn10300/unit-asb2364/irq-fpga.c
+@@ -76,7 +76,7 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
+ static struct irqaction fpga_irq[]  = {
+ 	[0] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga",
+ 	},
+ };
 -- 
-1.7.10.4
+1.8.3.2
 
