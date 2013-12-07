@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759004Ab3LGTUj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 14:20:39 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:38270 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab3LGTUf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 14:20:35 -0500
-From: Roman Kuznetsov <kuznetsov24@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Roman Kuznetsov <kuznetsov24@gmail.com>
-Subject: [PATCH] ipc/mqueue.c: fixed a brace coding style issue
-Date: Sat,  7 Dec 2013 23:20:26 +0400
-Message-Id: <1386444026-14771-1-git-send-email-kuznetsov24@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1759103Ab3LGTUt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 14:20:49 -0500
+Received: from imap.thunk.org ([74.207.234.97]:37535 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759036Ab3LGTUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 14:20:46 -0500
+Date: Sat, 7 Dec 2013 14:20:40 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Greg Price <price@mit.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] random: clarify bits/bytes in wakeup thresholds
+Message-ID: <20131207192040.GA13776@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Greg Price <price@MIT.EDU>,
+	linux-kernel@vger.kernel.org
+References: <cover.1386382885.git.price@mit.edu>
+ <20131207022803.GZ16018@ringworld.MIT.EDU>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131207022803.GZ16018@ringworld.MIT.EDU>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue.
+On Fri, Dec 06, 2013 at 09:28:03PM -0500, Greg Price wrote:
+> These are a recurring cause of confusion, so rename them to
+> hopefully be clearer.
+> 
+> Signed-off-by: Greg Price <price@mit.edu>
 
-Signed-off-by: Roman Kuznetsov <kuznetsov24@gmail.com>
----
- ipc/mqueue.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Thanks, applied with some merge fix ups to get the patch to apply.
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 95827ce..9346238 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -1303,11 +1303,10 @@ retry:
- out_fput:
- 	fdput(f);
- out:
--	if (sock) {
-+	if (sock)
- 		netlink_detachskb(sock, nc);
--	} else if (nc) {
-+	else if (nc)
- 		dev_kfree_skb(nc);
--	}
- 	return ret;
- }
- 
--- 
-1.8.1.2
-
+		     	  	    	- Ted
