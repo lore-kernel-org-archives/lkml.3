@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab3LGWgG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 17:36:06 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:47601 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab3LGWgD (ORCPT
+	id S1759197Ab3LGWid (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 17:38:33 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:55837 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753637Ab3LGWic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 17:36:03 -0500
-Date: Sat, 7 Dec 2013 15:35:57 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 04/12] PCI/portdrv: Remove superfluous name cast
-Message-ID: <20131207223557.GA7901@google.com>
-References: <1384283245-9419-1-git-send-email-geert@linux-m68k.org>
- <1384283245-9419-5-git-send-email-geert@linux-m68k.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1384283245-9419-5-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 7 Dec 2013 17:38:32 -0500
+From: "Preetam D'Souza" <preetamjdsouza@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: swetland@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        "Preetam D'Souza" <preetamjdsouza@gmail.com>
+Subject: [PATCH] Staging: android: fix parantheses coding style issue in alarm-dev.c
+Date: Sat,  7 Dec 2013 14:35:52 -0800
+Message-Id: <1386455752-17600-1-git-send-email-preetamjdsouza@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 12, 2013 at 08:07:17PM +0100, Geert Uytterhoeven wrote:
-> device_driver.name is "const char *"
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: linux-pci@vger.kernel.org
+This patch fixes an unecessary return statement parantheses error
+found in alarm-dev.c by the checkpatch.pl tool -- alarm-dev.c now has
+no more errors/warnings!
 
-Applied to pci/misc for v3.14, thanks!
+Signed-off-by: Preetam D'Souza <preetamjdsouza@gmail.com>
+---
+ drivers/staging/android/alarm-dev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> ---
->  drivers/pci/pcie/portdrv_core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-> index 31063ac30992..833c18c3eb96 100644
-> --- a/drivers/pci/pcie/portdrv_core.c
-> +++ b/drivers/pci/pcie/portdrv_core.c
-> @@ -553,7 +553,7 @@ int pcie_port_service_register(struct pcie_port_service_driver *new)
->  	if (pcie_ports_disabled)
->  		return -ENODEV;
->  
-> -	new->driver.name = (char *)new->name;
-> +	new->driver.name = new->name;
->  	new->driver.bus = &pcie_port_bus_type;
->  	new->driver.probe = pcie_port_probe_service;
->  	new->driver.remove = pcie_port_remove_service;
-> -- 
-> 1.7.9.5
-> 
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index 647694f..ccf74ee 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -68,8 +68,8 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
+  */
+ static int is_wakeup(enum android_alarm_type type)
+ {
+-	return (type == ANDROID_ALARM_RTC_WAKEUP ||
+-		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
++	return type == ANDROID_ALARM_RTC_WAKEUP ||
++		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP;
+ }
+ 
+ 
+-- 
+1.7.10.4
+
