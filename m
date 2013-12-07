@@ -1,80 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988Ab3LGLnD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 06:43:03 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:56173 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955Ab3LGLm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 06:42:59 -0500
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzEuKuQfw==
-X-RZG-CLASS-ID: mo00
-Message-ID: <52A309BE.7000602@hartkopp.net>
-Date: Sat, 07 Dec 2013 12:42:54 +0100
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1755213Ab3LGLtT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 06:49:19 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:33893 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab3LGLtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 06:49:15 -0500
+Message-ID: <52A30ADB.7090106@schinagl.nl>
+Date: Sat, 07 Dec 2013 12:47:39 +0100
+From: Olliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Sebastian Haas <dev@sebastianhaas.info>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] can: ems_usb: fix urb leaks on failure paths
-References: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: oliver@schinagl.nl, tj@kernel.org, grant.likely@linaro.org,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dev@linux-sunxi.org, ijc@hellion.org.uk,
+        hdegoede@redhat.com
+Subject: Re: [PATCH 3/3] ARM: sunxi: dts: Add ahci support to a few A10 and
+ A20 boards
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-4-git-send-email-oliver@schinagl.nl> <20131206183339.GG24519@lukather>
+In-Reply-To: <20131206183339.GG24519@lukather>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alexey,
+Hey maxime,
+On 06-12-13 19:33, Maxime Ripard wrote:
+> Hi Oliver,
+>
+> On Wed, Dec 04, 2013 at 01:10:55PM +0100, oliver@schinagl.nl wrote:
+>> From: Oliver Schinagl <oliver@schinagl.nl>
+>>
+>> This patch adds sunxi sata support to A10 and A20 boards that have such
+>> a connector. Some boards also feature a regulator via a GPIO and support
+>> for this is also added.
+>>
+>> Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
+>
+> Your git setup seems to be pretty uncertain about how your first name is spelled :)
+I should have formally mention it to confuse less people,
 
-looks better :-)
+This is how officially my name is spelled (I left out any 'middle' 
+letters. I never really used it as such, as it confuses people and they 
+always write it wrong anyway. After years I decided that at least on 
+these patches, I should write it down properly (googleability etc in the 
+future). So formally it's Olliver 'oliver' M. Schinagl.
 
-I added the author of this driver to double check the patch and for his
-Acked-by ...
+And no, I won't share my middle name :p
 
-@Sebastian: Would you like to update your e-mail address too?
+There! :)
+>
+>> ---
+>>   arch/arm/boot/dts/sun4i-a10-cubieboard.dts      | 26 +++++++++++++++++++++++++
+>>   arch/arm/boot/dts/sun4i-a10.dtsi                |  9 +++++++++
+>>   arch/arm/boot/dts/sun7i-a20-cubieboard2.dts     | 26 +++++++++++++++++++++++++
+>>   arch/arm/boot/dts/sun7i-a20-cubietruck.dts      | 26 +++++++++++++++++++++++++
+>>   arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts | 26 +++++++++++++++++++++++++
+>>   arch/arm/boot/dts/sun7i-a20.dtsi                |  9 +++++++++
+>>   6 files changed, 122 insertions(+)
+>
+> Could you split this into several patches please?
+Yes, appologies, will take care of this! Sorry,
 
-Best regards,
 Oliver
+>
+> At least one per SoC.
+>
+>> diff --git a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
+>> index 425a7db..b620084 100644
+>> --- a/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
+>> +++ b/arch/arm/boot/dts/sun4i-a10-cubieboard.dts
+>> @@ -42,7 +42,18 @@
+>>   			};
+>>   		};
+>>
+>> +		sata: ahci@01c18000 {
+>> +			pwr-supply = <&reg_ahci_5v>;
+>> +			status = "okay";
+>> +		};
+>> +
+>>   		pinctrl@01c20800 {
+>> +			ahci_pwr_pin: ahci_pwr_pin@0 {
+>
+> Please prefix it with name of the board.
+>
+>> +				allwinner,pins = "PB8";
+>> +				allwinner,function = "gpio_out";
+>> +				allwinner,driver = <0>;
+>> +				allwinner,pull = <0>;
+>> +			};
+>
+> Please add a newline here.
+>
+>>   			led_pins_cubieboard: led_pins@0 {
+>>   				allwinner,pins = "PH20", "PH21";
+>>   				allwinner,function = "gpio_out";
+>> @@ -86,4 +97,19 @@
+>>   			linux,default-trigger = "heartbeat";
+>>   		};
+>>   	};
+>> +
+>> +	regulators {
+>> +		compatible = "simple-bus";
+>> +		pinctrl-names = "default";
+>> +
+>> +		reg_ahci_5v: ahci-5v {
+>> +			compatible = "regulator-fixed";
+>> +			regulator-name = "ahci-5v";
+>> +			regulator-min-microvolt = <5000000>;
+>> +			regulator-max-microvolt = <5000000>;
+>> +			pinctrl-0 = <&ahci_pwr_pin>;
+>> +			gpio = <&pio 1 8 0>;
+>> +			enable-active-high;
+>> +		};
+>> +	};
+>>   };
+>> diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+>> index 4dccdb0..53c6cdb 100644
+>> --- a/arch/arm/boot/dts/sun4i-a10.dtsi
+>> +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+>> @@ -306,6 +306,15 @@
+>>   			#size-cells = <0>;
+>>   		};
+>>
+>> +		sata: ahci@01c18000 {
+>> +			compatible = "allwinner,sun4i-a10-ahci";
+>
+> Please use sun4i-ahci for consistency.
+>
+>> +			reg = <0x01c18000 0x1000>;
+>> +			interrupts = <0 56 1>;
+>
+> The interrupt here doesn't seem right. Is it actually working at all?
+>
+>> +			clocks = <&ahb_gates 25>, <&pll6 0>;
+>> +			clock-names = "ahb_sata", "pll6_sata";
+>> +			status = "disabled";
+>> +		};
+>> +
+>>   		intc: interrupt-controller@01c20400 {
+>>   			compatible = "allwinner,sun4i-ic";
+>>   			reg = <0x01c20400 0x400>;
+>> diff --git a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+>> index 5c51cb8..99c5e78 100644
+>> --- a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+>> +++ b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+>> @@ -34,7 +34,18 @@
+>>   			};
+>>   		};
+>>
+>> +		sata: ahci@01c18000 {
+>> +			pwr-supply = <&reg_ahci_5v>;
+>> +			status = "okay";
+>> +		};
+>> +
+>>   		pinctrl@01c20800 {
+>> +			ahci_pwr_pin: ahci_pwr_pin@0 {
+>> +				allwinner,pins = "PB8";
+>> +				allwinner,function = "gpio_out";
+>> +				allwinner,drive = <0>;
+>> +				allwinner,pull = <0>;
+>> +			};
+>
+> Please add a newline here.
+>
+>>   			led_pins_cubieboard2: led_pins@0 {
+>>   				allwinner,pins = "PH20", "PH21";
+>>   				allwinner,function = "gpio_out";
+>> @@ -77,4 +88,19 @@
+>>   			gpios = <&pio 7 20 0>;
+>>   		};
+>>   	};
+>> +
+>> +	regulators {
+>> +		compatible = "simple-bus";
+>> +		pinctrl-names = "default";
+>> +
+>> +		reg_ahci_5v: ahci-5v {
+>> +			compatible = "regulator-fixed";
+>> +			regulator-name = "ahci-5v";
+>> +			regulator-min-microvolt = <5000000>;
+>> +			regulator-max-microvolt = <5000000>;
+>> +			pinctrl-0 = <&ahci_pwr_pin>;
+>> +			gpio = <&pio 1 8 0>;
+>> +			enable-active-high;
+>> +		};
+>> +	};
+>>   };
+>> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>> index 8a1009d..19af23e 100644
+>> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>> @@ -19,7 +19,18 @@
+>>   	compatible = "cubietech,cubietruck", "allwinner,sun7i-a20";
+>>
+>>   	soc@01c00000 {
+>> +		sata: ahci@01c18000 {
+>> +			pwr-supply = <&reg_ahci_5v>;
+>> +			status = "okay";
+>> +		};
+>> +
+>>   		pinctrl@01c20800 {
+>> +			ahci_pwr_pin: ahci_pwr_pin@0 {
+>> +				allwinner,pins = "PH12";
+>> +				allwinner,function = "gpio_out";
+>> +				allwinner,driver = <0>;
+>> +				allwinner,pull = <0>;
+>> +			};
+>
+> Please add a newline here.
+>
+>>   			led_pins_cubietruck: led_pins@0 {
+>>   				allwinner,pins = "PH7", "PH11", "PH20", "PH21";
+>>   				allwinner,function = "gpio_out";
+>> @@ -60,4 +71,19 @@
+>>   			gpios = <&pio 7 7 0>;
+>>   		};
+>>   	};
+>> +
+>> +	regulators {
+>> +		compatible = "simple-bus";
+>> +		pinctrl-names = "default";
+>> +
+>> +		reg_ahci_5v: ahci-5v {
+>> +			compatible = "regulator-fixed";
+>> +			regulator-name = "ahci-5v";
+>> +			regulator-min-microvolt = <5000000>;
+>> +			regulator-max-microvolt = <5000000>;
+>> +			pinctrl-0 = <&ahci_pwr_pin>;
+>> +			gpio = <&pio 7 12 0>;
+>> +			enable-active-high;
+>> +		};
+>> +	};
+>>   };
+>> diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+>> index ead3013..23ed708 100644
+>> --- a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+>> +++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+>> @@ -34,7 +34,19 @@
+>>   			};
+>>   		};
+>>
+>> +		sata: ahci@01c18000 {
+>> +			pwr-supply = <&reg_ahci_5v>;
+>> +			status = "okay";
+>> +		};
+>> +
+>>   		pinctrl@01c20800 {
+>> +			ahci_pwr_pin: ahci_pwr_pin@0 {
+>> +				allwinner,pins = "PB8";
+>> +				allwinner,function = "gpio_out";
+>> +				allwinner,drive = <0>;
+>> +				allwinner,pull = <0>;
+>> +			};
+>> +
+>>   			led_pins_olinuxino: led_pins@0 {
+>>   				allwinner,pins = "PH2";
+>>   				allwinner,function = "gpio_out";
+>> @@ -91,4 +103,18 @@
+>>   			default-state = "on";
+>>   		};
+>>   	};
+>> +
+>> +	regulators {
+>> +		compatible = "simple-bus";
+>> +
+>> +		reg_ahci_5v: ahci-5v {
+>> +			compatible = "regulator-fixed";
+>> +			regulator-name = "ahci-5v";
+>> +			regulator-min-microvolt = <5000000>;
+>> +			regulator-max-microvolt = <5000000>;
+>> +			pinctrl-0 = <&ahci_pwr_pin>;
+>> +			gpio = <&pio 1 8 0>;
+>> +			enable-active-high;
+>> +		};
+>> +	};
+>>   };
+>> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+>> index 0552a64..b72c69e 100644
+>> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+>> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+>> @@ -368,6 +368,15 @@
+>>   			};
+>>   		};
+>>
+>> +		sata: ahci@01c18000 {
+>> +			compatible = "allwinner,sun4i-a10-ahci";
+>> +			reg = <0x01c18000 0x1000>;
+>> +			interrupts = <0 56 1>;
+Will always fix this to <0 56 4> if i'm not mistaken.
 
+oliver
+>> +			clocks = <&ahb_gates 25>, <&pll6 0>;
+>> +			clock-names = "ahb_sata", "pll6_sata";
+>> +			status = "disabled";
+>> +		};
+>> +
+>>   		timer@01c20c00 {
+>>   			compatible = "allwinner,sun4i-timer";
+>>   			reg = <0x01c20c00 0x90>;
+>> --
+>> 1.8.3.2
+>>
+>
+> Thanks,
+> Maxime
+>
 
-On 07.12.2013 00:10, Alexey Khoroshilov wrote:
-> There are a couple failure paths where urb leaks.
-> Is spare code within ems_usb_start_xmit(),
-> usb_free_urb() should be used to deallocate urb instead of usb_unanchor_urb().
-> In ems_usb_start() there is no usb_free_urb() if usb_submit_urb() fails.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/net/can/usb/ems_usb.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/can/usb/ems_usb.c b/drivers/net/can/usb/ems_usb.c
-> index 5f9a7ad9b964..8aeec0b4601a 100644
-> --- a/drivers/net/can/usb/ems_usb.c
-> +++ b/drivers/net/can/usb/ems_usb.c
-> @@ -625,6 +625,7 @@ static int ems_usb_start(struct ems_usb *dev)
->  			usb_unanchor_urb(urb);
->  			usb_free_coherent(dev->udev, RX_BUFFER_SIZE, buf,
->  					  urb->transfer_dma);
-> +			usb_free_urb(urb);
->  			break;
->  		}
->  
-> @@ -798,8 +799,8 @@ static netdev_tx_t ems_usb_start_xmit(struct sk_buff *skb, struct net_device *ne
->  	 * allowed (MAX_TX_URBS).
->  	 */
->  	if (!context) {
-> -		usb_unanchor_urb(urb);
->  		usb_free_coherent(dev->udev, size, buf, urb->transfer_dma);
-> +		usb_free_urb(urb);
->  
->  		netdev_warn(netdev, "couldn't find free context\n");
->  
-> 
