@@ -1,116 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162258Ab3LFX6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 18:58:50 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:59559 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758198Ab3LFX6s (ORCPT
+	id S1758243Ab3LGAK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 19:10:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39728 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752729Ab3LGAK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 18:58:48 -0500
-Message-ID: <52A264B1.1030605@hitachi.com>
-Date: Sat, 07 Dec 2013 08:58:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 6 Dec 2013 19:10:27 -0500
+Date: Sat, 7 Dec 2013 00:10:24 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, "David S. Miller" <davem@davemloft.net>
+Message-ID: <20131207001024.GT31504@decadent.org.uk>
+References: <1386371476-2477-1-git-send-email-kamal@canonical.com>
+ <1386371476-2477-4-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Eric Dumazet <edumazet@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com> <87fvq9cwlk.fsf@tassilo.jf.intel.com> <CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com> <CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com> <CAGdX0WEnZhtAJ_gKCFQK3p1wwd5x17zvViU6FRfAGieSKQfZEQ@mail.gmail.com>
-In-Reply-To: <CAGdX0WEnZhtAJ_gKCFQK3p1wwd5x17zvViU6FRfAGieSKQfZEQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386371476-2477-4-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH 3.8 003/152] cxgb3: Fix length calculation in
+ write_ofld_wr() on 32-bit architectures
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/06 14:19), Jovi Zhangwei wrote:
-> Hi Alexei,
+On Fri, Dec 06, 2013 at 03:08:47PM -0800, Kamal Mostafa wrote:
+> 3.8.13.14 -stable review patch.  If anyone has any objections, please let me know.
 > 
-> On Thu, Dec 5, 2013 at 12:40 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> On Tue, Dec 3, 2013 at 4:01 PM, Andi Kleen <andi@firstfloor.org> wrote:
->>>>
->>>> Can you do some performance comparison compared to e.g. ktap?
->>>> How much faster is it?
->>
->> Did simple ktap test with 1M alloc_skb/kfree_skb toy test from earlier email:
->> trace skb:kfree_skb {
->>         if (arg2 == 0x100) {
->>                 printf("%x %x\n", arg1, arg2)
->>         }
->> }
->> 1M skb alloc/free 350315 (usecs)
->>
->> baseline without any tracing:
->> 1M skb alloc/free 145400 (usecs)
->>
->> then equivalent bpf test:
->> void filter(struct bpf_context *ctx)
->> {
->>         void *loc = (void *)ctx->regs.dx;
->>         if (loc == 0x100) {
->>                 struct sk_buff *skb = (struct sk_buff *)ctx->regs.si;
->>                 char fmt[] = "skb %p loc %p\n";
->>                 bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)loc, 0);
->>         }
->> }
->> 1M skb alloc/free 183214 (usecs)
->>
->> so with one 'if' condition the difference ktap vs bpf is 350-145 vs 183-145
->>
->> obviously ktap is an interpreter, so it's not really fair.
->>
->> To make it really unfair I did:
->> trace skb:kfree_skb {
->>         if (arg2 == 0x100 || arg2 == 0x200 || arg2 == 0x300 || arg2 == 0x400 ||
->>             arg2 == 0x500 || arg2 == 0x600 || arg2 == 0x700 || arg2 == 0x800 ||
->>             arg2 == 0x900 || arg2 == 0x1000) {
->>                 printf("%x %x\n", arg1, arg2)
->>         }
->> }
->> 1M skb alloc/free 484280 (usecs)
->>
->> and corresponding bpf:
->> void filter(struct bpf_context *ctx)
->> {
->>         void *loc = (void *)ctx->regs.dx;
->>         if (loc == 0x100 || loc == 0x200 || loc == 0x300 || loc == 0x400 ||
->>             loc == 0x500 || loc == 0x600 || loc == 0x700 || loc == 0x800 ||
->>             loc == 0x900 || loc == 0x1000) {
->>                 struct sk_buff *skb = (struct sk_buff *)ctx->regs.si;
->>                 char fmt[] = "skb %p loc %p\n";
->>                 bpf_trace_printk(fmt, sizeof(fmt), (long)skb, (long)loc, 0);
->>         }
->> }
->> 1M skb alloc/free 185660 (usecs)
->>
->> the difference is bigger now: 484-145 vs 185-145
->>
-> There have big differences for compare arg2(in ktap) with direct register
-> access(ctx->regs.dx).
+> ------------------
 > 
-> The current argument fetching(arg2 in above testcase) implementation in ktap
-> is very inefficient, see ktap/interpreter/lib_kdebug.c:kp_event_getarg.
-> The only way to speedup is kernel tracing code change, let external tracing
-> module access event field not through list lookup. This work is not
-> started yet. :)
+> From: Ben Hutchings <ben@decadent.org.uk>
+> 
+> [ Upstream commit 262e827fe745642589450ae241b7afd3912c3f25 ]
+> 
+> The length calculation here is now invalid on 32-bit architectures,
+> since sk_buff::tail is a pointer and sk_buff::transport_header is
+> an integer offset:
+> 
+> drivers/net/ethernet/chelsio/cxgb3/sge.c: In function 'write_ofld_wr':
+> drivers/net/ethernet/chelsio/cxgb3/sge.c:1603:9: warning: passing argument 4 of 'make_sgl' makes integer from pointer without a cast [enabled by default]
+>          adap->pdev);
+>          ^
+> drivers/net/ethernet/chelsio/cxgb3/sge.c:964:28: note: expected 'unsigned int' but argument is of type 'sk_buff_data_t'
+>  static inline unsigned int make_sgl(const struct sk_buff *skb,
+>                             ^
+> 
+> Use the appropriate skb accessor functions.
+> 
+> Compile-tested only.
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Fixes: 1a37e412a022 ('net: Use 16bits for *_headers fields of struct skbuff')
+[...]
 
-I'm not sure why you can't access it directly from ftrace-event buffer.
-There is just a packed data structure and it is exposed via debugfs.
-You can decode it and can get an offset/size by using libtraceevent.
+This is only needed for 3.11+, though it should be harmless for
+older versions.
 
-Thank you,
+Ben.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Ben Hutchings
+Design a system any fool can use, and only a fool will want to use it.
