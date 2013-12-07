@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161181Ab3LGBBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 20:01:09 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:41895 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161033Ab3LGBBH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 20:01:07 -0500
+	id S1757933Ab3LGBHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 20:07:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34765 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab3LGBHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Dec 2013 20:07:48 -0500
+Message-ID: <52A274C0.4010509@zytor.com>
+Date: Fri, 06 Dec 2013 17:07:12 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <52A263BD.2090107@hitachi.com>
-References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
-	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
-	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
-	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
-	<20131206001454.GB21717@two.firstfloor.org>
-	<52A12421.2040208@zytor.com>
-	<871u1qwzae.fsf@tassilo.jf.intel.com>
-	<CAMEtUuz93gN3vQ7K8yVFquSabLXjW=OXj8RFjAkAO9vgY26Hrg@mail.gmail.com>
-	<52A263BD.2090107@hitachi.com>
-Date: Fri, 6 Dec 2013 17:01:05 -0800
-Message-ID: <CAMEtUux_UsVHDVNcwi0On3PMwPPyuc+jqktXGCz=gcdNGMVjpw@mail.gmail.com>
-Subject: Re: Re: [RFC PATCH tip 0/5] tracing filters with BPF
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: "Ren, Qiaowei" <qiaowei.ren@intel.com>,
+        "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Xudong Hao <xudong.hao@intel.com>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Qemu-devel] [PATCH v2 3/3] X86,	mpx: Intel MPX xstate feature
+ definition
+References: <1386375658-2191-1-git-send-email-qiaowei.ren@intel.com>	<1386375658-2191-3-git-send-email-qiaowei.ren@intel.com> <52A20AD6.8080706@redhat.com> <DE8DF0795D48FD4CA783C40EC82923350140B3B6@SHSMSX101.ccr.corp.intel.com> <52A242BE.3010701@zytor.com> <DE8DF0795D48FD4CA783C40EC82923350140BB62@SHSMSX101.ccr.corp.intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE014A6115@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE014A6115@SHSMSX102.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 3:54 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2013/12/06 14:16), Alexei Starovoitov wrote:
->> On Thu, Dec 5, 2013 at 5:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
->>>> the difference is bigger now: 484-145 vs 185-145
+On 12/06/2013 04:23 PM, Ren, Qiaowei wrote:
 >>>
->>> This is a obvious improvement, but imho not big enough to be extremely
->>> compelling (< cost 1-2 cache misses, no orders of magnitude improvements
->>> that would justify a lot of code)
->>
->> hmm. we're comparing against ktap here…
->> which has 5x more kernel code and 8x slower in this test...
->>
->>> Your code requires a compiler, so from my perspective it
->>> wouldn't be a lot easier or faster to use than just changing
->>> the code directly and recompile.
+>>> We need to either disable these features in lazy mode, or we need to
+>>> force eager mode if these features are to be supported.  The problem
+>>> with the latter is that it means forcing eager mode regardless of if
+>>> anything actually *uses* these features.
 >>>
->>> The users want something simple too that shields them from
->>> having to learn all the internals. They don't want to recompile.
->>> As far as I can tell your code is a bit too low level for that,
->>> and the requirement for the compiler may also scare them.
+>>> A third option would be to require applications to use a prctl() or
+>>> similar to enable eager-save features.
 >>>
->>> Where exactly does it fit?
 >>
->> the goal is to have llvm compiler next to perf, wrapped in a user friendly way.
+>> The third option seems better -- how does native mpx patches work, force
+>> eager?
 >>
->> compiling small filter vs recompiling full kernel…
->> inserting into live kernel vs rebooting …
->> not sure how you're saying it's equivalent.
->>
->> In my kernel debugging experience current tools (tracing, systemtap)
->> were rarely enough.
->> I always had to add my own printks through the code, recompile and reboot.
->> Often just to see that it's not the place where I want to print things
->> or it's too verbose.
->> Then I would adjust printks, recompile and reboot again.
->> That was slow and tedious, since I would be crashing things from time to time
->> just because skb doesn't always have a valid dev or I made a typo.
->> For debugging I do really need something quick and dirty that lets me
->> add my own printk
->> of whatever structs I want anywhere in the kernel without crashing it.
->> That's exactly what bpf tracing filters do.
->
-> I recommend you to use perf-probe. That will give you an easy solution. :)
+> It should be the second option, as you can see xsave.c which we remove from this patch. :)
+> 
 
-it is indeed very cool.
-Thanks!
+Ah yes... I missed the fact that that chunk had been dropped from this
+patch.  It really shouldn't be.
+
+I'll substitute the previous version of the patch.
+
+	-hpa
+
