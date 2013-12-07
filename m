@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3LGKKO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 05:10:14 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:57122 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752838Ab3LGKKL (ORCPT
+	id S1754613Ab3LGKRI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 05:17:08 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:56296 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab3LGKRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 05:10:11 -0500
-Date: Sat, 7 Dec 2013 11:07:37 +0100
-From: "maxime.ripard" <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: David Miller <davem@davemloft.net>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
-        "rob.herring" <rob.herring@calxeda.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 02/10] net: stmmac: Honor DT parameter to force DMA store
- and forward mode
-Message-ID: <20131207100737.GI24519@lukather>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <1386350983-13281-3-git-send-email-wens@csie.org>
- <20131206.162606.2277176361893801778.davem@davemloft.net>
- <CAGb2v67ZNtbQm+ZW5v_3wNbz1=oLhXks6gbTSjLYa=Nnoz8w-A@mail.gmail.com>
+	Sat, 7 Dec 2013 05:17:04 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nEsDIrWrg+hrB7l1"
-Content-Disposition: inline
-In-Reply-To: <CAGb2v67ZNtbQm+ZW5v_3wNbz1=oLhXks6gbTSjLYa=Nnoz8w-A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFrcx1nbGjCoUXs_9RkZA7jPr1t8ndXDZOTtkVtOYdLy0Tvmmg@mail.gmail.com>
+References: <1385583394-3703-1-git-send-email-acme@infradead.org>
+	<1385583394-3703-35-git-send-email-acme@infradead.org>
+	<20131127224323.GB1350@krava.redhat.com>
+	<20131128095801.GA1245@krava.brq.redhat.com>
+	<20131128125619.GA12292@ghostprotocols.net>
+	<20131128134642.GB12292@ghostprotocols.net>
+	<CAFrcx1mr0AYdNJ04jSVV+y0KfHSF13Qx1BnpdUb++1bvhH2f0g@mail.gmail.com>
+	<20131129154549.GA28562@krava.brq.redhat.com>
+	<CAFrcx1nbGjCoUXs_9RkZA7jPr1t8ndXDZOTtkVtOYdLy0Tvmmg@mail.gmail.com>
+Date: Sat, 7 Dec 2013 11:17:02 +0100
+Message-ID: <CAFrcx1nRrjyzX__1TkW9ntTCbDm8pn0JayJ1nw5oA_adJ2OoVQ@mail.gmail.com>
+Subject: Re: [PATCH 34/34] perf tools unwinding: Use the per-feature check flags
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---nEsDIrWrg+hrB7l1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 3 December 2013 17:15, Jean Pihet <jean.pihet@linaro.org> wrote:
+> I just resent the patches as v2.
+>
+> I tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR=
+> set in 'make -C tools/perf'. Can you check on your build setup?
+I just found that the linker options may not work on some distros (in
+my case Ubuntu on ARMv7). The fix is here below.
+v3 is on its way.
 
-On Sat, Dec 07, 2013 at 09:23:27AM +0800, Chen-Yu Tsai wrote:
-> Point taken. The current implementation will override settings passed from
-> platform data. ORing the two would be better.
+Can you please check?
 
-Platform_data and DT-based configuration are pretty unlikely to be
-used together, so ORing it doesn't have much sense.
+diff --git a/tools/perf/config/feature-checks/Makefile
+b/tools/perf/config/feature-checks/Makefile
+index 87e7900..0bf3af7 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -33,7 +33,7 @@ CC := $(CC) -MD
 
-Maxime
+ all: $(FILES)
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+-BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
++BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
 
---nEsDIrWrg+hrB7l1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ ###############################
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSovNpAAoJEBx+YmzsjxAgVS0P/AyW/lt3PWZIfXjd0qY32uvA
-jj3QPwucvqo0KzQQezdUWX65TXHGLwpWTkduTsFw8pHqUz3YTpiY9KD9GrrSMICn
-WB/Xd4AWcNTimFdLsoIHv8dcLUuK0iPNKyxjd5g+IxV+Py5dRkpXy1KTV+yL6T+8
-D1AQY1gL9efBgYEiiOrPAILVKe2QfXr9PTsdV9gcMDFPbsfAW+XBGZBgYsmA98GP
-Y0EshDP1XClbP4JY+PRzRAXoggPTK2bIDkVelObU8+75w8LOlPbiUu80W/Ji63vH
-R+EzeZ+gjhwdEMP2utdDgFWuZUWIC7F4es3OIaSBRwInWcAuokd3BeqlH2JB556J
-7jIdU8CSRbttr7I+mAzAmIPC8GYwc6aEvNTrR0yPge4ZmF4tz7bjNRpwk1mLDtxv
-xOJ4u2TtnCjb8LRkIoLblTfb62MBz49vAy/ZOtoCbtUP169c5ltthX7c6WDYexk+
-t/rLW5X9NO+DJ88TU8OP+75HqkrEi/5PLZyr0+aobTWaQLuDuMrIlq40Zl7wnL2A
-kG3nFDdqNtnoeoCLxohRNb8ofHNcG9ozysZtUgYKNm9oF6HIyWXs9pZuJ9Hi0+RK
-qJ0ZlVgDFPw31OzMSE8FuJ/ibFvU79pe56UuFnEDPKVX6dnBAI2B64K7EESrKxMp
-xcdYffxuMaVhA4EbMHTB
-=6Wxl
------END PGP SIGNATURE-----
 
---nEsDIrWrg+hrB7l1--
+Thanks,
+Jean
+
+>
+> On 29 November 2013 16:45, Jiri Olsa <jolsa@redhat.com> wrote:
+>> On Thu, Nov 28, 2013 at 09:02:23PM +0100, Jean Pihet wrote:
+>>> On 28 November 2013 14:46, Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+>>> > Em Thu, Nov 28, 2013 at 09:56:19AM -0300, Arnaldo Carvalho de Melo escreveu:
+>>> >> Em Thu, Nov 28, 2013 at 10:58:01AM +0100, Jiri Olsa escreveu:
+>>> >> > On Wed, Nov 27, 2013 at 11:43:23PM +0100, Jiri Olsa wrote:
+>>> >> > > On Wed, Nov 27, 2013 at 05:16:34PM -0300, Arnaldo Carvalho de Melo wrote:
+>>> >> > >   LINK     perf
+>>> >> > > /bin/ld: cannot find -lunwind
+>>> >> > > /bin/ld: cannot find -lunwind-x86_64
+>>> >> > > collect2: error: ld returned 1 exit status
+>>> >> > > make[1]: *** [perf] Error 1
+>>> >> > > make[1]: *** Waiting for unfinished jobs....
+>>> >> > > make: *** [all] Error 2
+>>> >>
+>>> >> > > I haven't checked this one.. will do tomorrow
+>>> >>
+>>> >> > we need to plug libunwind flags/libs only if
+>>> >> > the $(feature-libunwind) is enabled..
+>>> >>
+>>> >> > NO_LIBUNWIND - user's decision not to link with libunwind or
+>>> >> >                architecture that does not support it
+>>> >>
+>>> >> > $(feature-libunwind) - if it's actually installed
+>>> >>
+>>> >> > attached change fixies that for me, feel free to use/merge it
+>>> >>
+>>> >> Argh, I used tests/make on one machine where those two patches by Jean
+>>> >> were not applied, then rebased on another, the one I use to submit,
+>>> >> those got included but not tests/make tested, which probably explains
+>>> >> why this got thru :-\
+>>> >>
+>>> >> Jean, can you please check that this works for you on ARM too?
+>>> >
+>>> > I just noticed that this patch breaks the feature detection mechanism,
+>>> > after it is applied it is back performing all tests at every make call,
+>>> > this needs rethinking, so I'm dropping both.
+>>> Oh I am sorry about that. I tested on ARM with and without the
+>>> LIBUNWIND_DIR option set.
+>>> Let me rethink/rework this and come back to you with a proper fix.
+>>>
+>>> >
+>>> > Ingo, please disregard, yet again, my latest pull request, sigh.
+>>> >
+>>> > Jiri, this could be something for tests/make, till then I'll try
+>>> > to check this manually.
+>>>
+>>> One question though: are you OK with the principle of having
+>>> per-feature check flags? This brings two things to the feature
+>>> detection and build:
+>>> 1. the ability to specify specific flags for the feature check, which
+>>> is not possible on the current code,
+>>> 2. a simplification in the Makefiles.
+>>
+>> looks good to me
+>>
+>> jirka
