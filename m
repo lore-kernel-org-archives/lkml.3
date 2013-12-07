@@ -1,182 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab3LGKe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 05:34:59 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49487 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3LGKe5 (ORCPT
+	id S1755024Ab3LGKfK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 05:35:10 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:57201 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752838Ab3LGKfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 05:34:57 -0500
-Message-ID: <52A2F9CD.1030305@kernel.org>
-Date: Sat, 07 Dec 2013 10:34:53 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sat, 7 Dec 2013 05:35:07 -0500
+Date: Sat, 7 Dec 2013 11:33:35 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing
+ hardware
+Message-ID: <20131207103335.GL24519@lukather>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-2-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCHv2] iio: mxs-lradc: compute temperature from channel 8
- and 9
-References: <1386358279-25474-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1386358279-25474-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eWbcAUUbgrfSEG1c"
+Content-Disposition: inline
+In-Reply-To: <1386350983-13281-2-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/13 19:31, Alexandre Belloni wrote:
-> The mxs LRADC is able to read an internal die temperature sensor. The
-> temperature has to be calculated from the value read on channel 8 and channel 9.
-> To be able to expose the result to hwmon, implement iio channel 8 as
-> (channel 9 - channel 8). Then, implement IIO_CHAN_INFO_SCALE and
-> IIO_CHAN_INFO_OFFSET so that it can be processed by hwmon through the in kernel
-> provider/consumer mechanism.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-Thanks for doing the rebase. Applied to the togreg branch (initially pushed out as testing)
-of iio.git
 
+--eWbcAUUbgrfSEG1c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
+
+On Sat, Dec 07, 2013 at 01:29:34AM +0800, Chen-Yu Tsai wrote:
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 > ---
-> Changes in v2:
->   - rebased on v3.13.0-rc3
-> 
->  drivers/staging/iio/adc/mxs-lradc.c | 91 +++++++++++++++++++++++++++++++------
->  1 file changed, 78 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index e2dd7830b320..5a4499c3d22a 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -759,20 +759,11 @@ static void mxs_lradc_handle_touch(struct mxs_lradc *lradc)
->  /*
->   * Raw I/O operations
->   */
-> -static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
-> -			const struct iio_chan_spec *chan,
-> -			int *val, int *val2, long m)
-> +static int mxs_lradc_read_single(struct iio_dev *iio_dev, int chan, int *val)
->  {
->  	struct mxs_lradc *lradc = iio_priv(iio_dev);
->  	int ret;
->  
-> -	if (m != IIO_CHAN_INFO_RAW)
-> -		return -EINVAL;
-> -
-> -	/* Check for invalid channel */
-> -	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
-> -		return -EINVAL;
-> -
->  	/*
->  	 * See if there is no buffered operation in progess. If there is, simply
->  	 * bail out. This can be improved to support both buffered and raw IO at
-> @@ -797,7 +788,7 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->  
->  	/* Clean the slot's previous content, then set new one. */
->  	mxs_lradc_reg_clear(lradc, LRADC_CTRL4_LRADCSELECT_MASK(0), LRADC_CTRL4);
-> -	mxs_lradc_reg_set(lradc, chan->channel, LRADC_CTRL4);
-> +	mxs_lradc_reg_set(lradc, chan, LRADC_CTRL4);
->  
->  	mxs_lradc_reg_wrt(lradc, 0, LRADC_CH(0));
->  
-> @@ -824,6 +815,71 @@ err:
->  	return ret;
->  }
->  
-> +static int mxs_lradc_read_temp(struct iio_dev *iio_dev, int *val)
-> +{
-> +	int ret, min, max;
-> +
-> +	ret = mxs_lradc_read_single(iio_dev, 8, &min);
-> +	if (ret != IIO_VAL_INT)
-> +		return ret;
-> +
-> +	ret = mxs_lradc_read_single(iio_dev, 9, &max);
-> +	if (ret != IIO_VAL_INT)
-> +		return ret;
-> +
-> +	*val = max - min;
-> +
-> +	return IIO_VAL_INT;
-> +}
-> +
-> +static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
-> +			const struct iio_chan_spec *chan,
-> +			int *val, int *val2, long m)
-> +{
-> +	/* Check for invalid channel */
-> +	if (chan->channel > LRADC_MAX_TOTAL_CHANS)
-> +		return -EINVAL;
-> +
-> +	switch (m) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		if (chan->type == IIO_TEMP)
-> +			return mxs_lradc_read_temp(iio_dev, val);
-> +
-> +		return mxs_lradc_read_single(iio_dev, chan->channel, val);
-> +
-> +	case IIO_CHAN_INFO_SCALE:
-> +		if (chan->type == IIO_TEMP) {
-> +			/* From the datasheet, we have to multiply by 1.012 and
-> +			 * divide by 4
-> +			 */
-> +			*val = 0;
-> +			*val2 = 253000;
-> +			return IIO_VAL_INT_PLUS_MICRO;
-> +		}
-> +
-> +		return -EINVAL;
-> +
-> +	case IIO_CHAN_INFO_OFFSET:
-> +		if (chan->type == IIO_TEMP) {
-> +			/* The calculated value from the ADC is in Kelvin, we
-> +			 * want Celsius for hwmon so the offset is
-> +			 * -272.15 * scale
-> +			 */
-> +			*val = -1075;
-> +			*val2 = 691699;
-> +
-> +			return IIO_VAL_INT_PLUS_MICRO;
-> +		}
-> +
-> +		return -EINVAL;
-> +
-> +	default:
-> +		break;
+>=20
+> Guiseppe previously stated that the "stmmaceth" clock is the
+> main clock that drives the IP. The stmmac driver does not
+> enable this clock during the probe phase. When the driver is
+> built in to the kernel, this is fine because the clock maybe
+> on by default, or the boot loader had enabled it.
+>=20
+> If stmmac is built as a module, when the module is loaded,
+> the clock may be found unused and disabled by the kernel.
+
+This should be your commit log.
+
+And this is actually not related to the fact that we are building it
+as a module or not. You'd face the same issue with a statically built
+kernel if the bootloader didn't enable it.
+
+>=20
+>  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 24 +++++++++++++----=
+------
+>  1 file changed, 14 insertions(+), 10 deletions(-)
+>=20
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/=
+net/ethernet/stmicro/stmmac/stmmac_main.c
+> index 8d4ccd3..7da71ed 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -2688,10 +2688,17 @@ struct stmmac_priv *stmmac_dvr_probe(struct devic=
+e *device,
+>  	if ((phyaddr >=3D 0) && (phyaddr <=3D 31))
+>  		priv->plat->phy_addr =3D phyaddr;
+> =20
+> +	priv->stmmac_clk =3D clk_get(priv->device, STMMAC_RESOURCE_NAME);
+
+You can probably use devm_clk_get to make the exit path smaller.
+
+> +	if (IS_ERR(priv->stmmac_clk)) {
+> +		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
+
+And dev_warn here.
+
+> +		goto error_clk_get;
 > +	}
+> +	clk_prepare_enable(priv->stmmac_clk);
 > +
-> +	return -EINVAL;
-> +}
+>  	/* Init MAC and get the capabilities */
+>  	ret =3D stmmac_hw_init(priv);
+>  	if (ret)
+> -		goto error_free_netdev;
+> +		goto error_hw_init;
+>  	ndev->netdev_ops =3D &stmmac_netdev_ops;
+> =20
+> @@ -2729,12 +2736,6 @@ struct stmmac_priv *stmmac_dvr_probe(struct device=
+ *device,
+>  		goto error_netdev_register;
+>  	}
+> =20
+> -	priv->stmmac_clk =3D clk_get(priv->device, STMMAC_RESOURCE_NAME);
+> -	if (IS_ERR(priv->stmmac_clk)) {
+> -		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
+> -		goto error_clk_get;
+> -	}
+> -
+>  	/* If a specific clk_csr value is passed from the platform
+>  	 * this means that the CSR Clock Range selection cannot be
+>  	 * changed at run-time and it is fixed. Viceversa the driver'll try to
+> @@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct devic=
+e *device,
+>  		}
+>  	}
+> =20
+> +	clk_disable_unprepare(priv->stmmac_clk);
 > +
->  static const struct iio_info mxs_lradc_iio_info = {
->  	.driver_module		= THIS_MODULE,
->  	.read_raw		= mxs_lradc_read_raw,
-> @@ -1151,8 +1207,17 @@ static const struct iio_chan_spec mxs_lradc_chan_spec[] = {
->  	MXS_ADC_CHAN(5, IIO_VOLTAGE),
->  	MXS_ADC_CHAN(6, IIO_VOLTAGE),
->  	MXS_ADC_CHAN(7, IIO_VOLTAGE),	/* VBATT */
-> -	MXS_ADC_CHAN(8, IIO_TEMP),	/* Temp sense 0 */
-> -	MXS_ADC_CHAN(9, IIO_TEMP),	/* Temp sense 1 */
-> +	/* Combined Temperature sensors */
-> +	{
-> +		.type = IIO_TEMP,
-> +		.indexed = 1,
-> +		.scan_index = 8,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
-> +				      BIT(IIO_CHAN_INFO_OFFSET) |
-> +				      BIT(IIO_CHAN_INFO_SCALE),
-> +		.channel = 8,
-> +		.scan_type = {.sign = 'u', .realbits = 18, .storagebits = 32,},
-> +	},
->  	MXS_ADC_CHAN(10, IIO_VOLTAGE),	/* VDDIO */
->  	MXS_ADC_CHAN(11, IIO_VOLTAGE),	/* VTH */
->  	MXS_ADC_CHAN(12, IIO_VOLTAGE),	/* VDDA */
-> 
+
+Hu? Why do you disable the clock? don't you need it afterwards?
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--eWbcAUUbgrfSEG1c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSovl/AAoJEBx+YmzsjxAg4IMP/0a6ZjbG+/bFr5lURTXqytO1
+Cl6bdgZafg0esKykQ/w8PDfArBmVnSwKOydrVTQ5j6Hyr7HwdvKgboxG2Vzas1oT
+i0Besj+nwJskNNKD+KSuARQtz0bKfS8EkWhicj4D8209tMCYvroB0Z1Lj79dIJOm
+O+t6o1+vrr78y37n7UbKFVhtOXqIgCQ5kjf5BZJOC5gDuwFunjitDaWfsrfADe9R
+i8RuI6R5UKDGmxKIGXbFxAyH1g7lrMHgr2WBz3QdjWSEmtHQp+ihEvZzpjEk7sxo
+HzmgT8HSrwOqIHuPaP0dSYGktjdaIbO7AAnAyahJpQz4I8YHnjGBUVtaJLcOHvFp
+LnZ8ZqZYT+bGGn2jyxS2M6mTwff+vkc/+zq8pRbeTpmbCN0m7wcfJ19PiLfDgG6b
++mB7KC124f2cBI5oJSm+2/escvUvrvRk1OY4ibEVvVRm3tTxP0efoF1B6LyBZFnL
+EX5hTjB/P2XTaZ591B8IQ839c98JPHpFwqCiDZfRdh53wpE9YjUxWA9qLcN7JSVh
+4kwOYwdsuiRhA/kn51Np9UsZxPgeSEK3u6PV1vVp+4X/MlFx4dVM//3CBll8Fa81
+IQcl0/rQt/qHUGqQ4FHLkMb2O8dJSlT1bpZqffs4MFGegyYgsD5slX1SGIpeTxKm
++Nxb+FwMupJ9qHbTj/nz
+=H37h
+-----END PGP SIGNATURE-----
+
+--eWbcAUUbgrfSEG1c--
