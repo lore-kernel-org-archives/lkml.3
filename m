@@ -1,144 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3LGKFh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 05:05:37 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:57083 "EHLO
+	id S1754590Ab3LGKKO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 05:10:14 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:57122 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754563Ab3LGKFI (ORCPT
+	with ESMTP id S1752838Ab3LGKKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 05:05:08 -0500
-Date: Fri, 6 Dec 2013 19:37:57 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: srinivas kandagatla <srinivas.kandagatla@st.com>
-Cc: linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, stephen.gallimore@st.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, linux-pm@vger.kernel.org
-Subject: Re: [PATCH RFC 08/10] net: stmmac:sti: Add STi SOC glue driver.
-Message-ID: <20131206183757.GH24519@lukather>
-References: <1384264311-7308-1-git-send-email-srinivas.kandagatla@st.com>
- <1384264383-7653-1-git-send-email-srinivas.kandagatla@st.com>
- <20131129193715.GA3441@lukather>
- <529C8198.7000106@st.com>
+	Sat, 7 Dec 2013 05:10:11 -0500
+Date: Sat, 7 Dec 2013 11:07:37 +0100
+From: "maxime.ripard" <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: David Miller <davem@davemloft.net>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        "rob.herring" <rob.herring@calxeda.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH 02/10] net: stmmac: Honor DT parameter to force DMA store
+ and forward mode
+Message-ID: <20131207100737.GI24519@lukather>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-3-git-send-email-wens@csie.org>
+ <20131206.162606.2277176361893801778.davem@davemloft.net>
+ <CAGb2v67ZNtbQm+ZW5v_3wNbz1=oLhXks6gbTSjLYa=Nnoz8w-A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dMyqICaxQaaUjrCL"
+	protocol="application/pgp-signature"; boundary="nEsDIrWrg+hrB7l1"
 Content-Disposition: inline
-In-Reply-To: <529C8198.7000106@st.com>
+In-Reply-To: <CAGb2v67ZNtbQm+ZW5v_3wNbz1=oLhXks6gbTSjLYa=Nnoz8w-A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---dMyqICaxQaaUjrCL
+--nEsDIrWrg+hrB7l1
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Srinivas,
+On Sat, Dec 07, 2013 at 09:23:27AM +0800, Chen-Yu Tsai wrote:
+> Point taken. The current implementation will override settings passed from
+> platform data. ORing the two would be better.
 
-On Mon, Dec 02, 2013 at 12:48:24PM +0000, srinivas kandagatla wrote:
-> Hi Maxime,
->=20
-> Thankyou for the comments.
->=20
-> On 29/11/13 19:37, Maxime Ripard wrote:
-> >> +
-> >> > +ethernet0: ethernet0{
-> >> > +	#address-cells =3D <1>;
-> >> > +	#size-cells =3D <1>;
-> >> > +	compatible		=3D "st,stih415-dwmac";
-> >> > +	reg			=3D <0x148 0x4>;
-> >> > +	resets			=3D <&softreset STIH415_ETH0_SOFTRESET>;
-> >> > +	st,syscon		=3D <&syscfg_rear>;
-> >> > +	st,tx-retime-src	=3D "clk_125";
-> >> > +	ranges;
-> >> > +
-> >> > +	dwmac0:dwmac@fe810000 {
-> >> > +		device_type 	=3D "network";
-> >> > +		compatible	=3D "snps,dwmac", "snps,dwmac-3.610";
-> >> > +		reg 		=3D <0xfe810000 0x8000>;
-> >> > +		interrupts 	=3D <0 147 0>;
-> >> > +		interrupt-names =3D "macirq";
-> >> > +		...
-> >> > +	};
-> >> > +};
-> > Sorry for stepping up so late, but I dont' think this is the right way
-> > to do it.
-> >=20
-> Not a issue.
->=20
-> > DT is to describe how the hardware is laid out in a system agnostic
-> > way, hence, it should not be impacted by the implementation details.
-> >=20
-> If "hardware is laid out" means at SoC level? Then I attempted to do
-> describe it in system agnostic way.
->=20
-> On ST SoCs "snps,dwmac" IP always has a hw glue layer on top of it.
->=20
-> > The fact that you use a glue to the dwmac driver *is* an
-> > implementation detail.
->=20
-> Glue layer described here is actually a hardware glue on ST SoCs.
+Platform_data and DT-based configuration are pretty unlikely to be
+used together, so ORing it doesn't have much sense.
 
-Ho, ok, it makes sense then :)
-
-Sorry for the noise.
-
-> > I think you'd rather have something like:
-> >=20
-> > dwmac0: ethernet@fe810000 {
-> > 	compatible		=3D "st,stih415-dwmac";
-> > 	reg 			=3D <0xfe810000 0x8000 0x148 0x4>;
-> > 	resets			=3D <&softreset STIH415_ETH0_SOFTRESET>;
-> > 	st,syscon		=3D <&syscfg_rear>;
-> > 	st,tx-retime-src	=3D "clk_125";
-> > 	interrupts 		=3D <0 147 0>;
-> > 	interrupt-names 	=3D "macirq";Am happy to go with=20
-> > 	...
-> > };
-> >=20
-> > Then, the driver can have its init functions associated to the
-> > compatible you're using, through the .data field of the of_device_id
-> > structure, and you just call it in the generic driver at probe's time.
->=20
-> This is changing the device tree bindings for the generic driver.
-> Is this something Acceptable?
-
-It really depends. As long as these are based on new compatibles, and
-you require these new properties only for this new compatible, it's
-fine most of the time.
-
-> Peppe, are you Ok with such intrusive changes to the driver?
->=20
-> I did try few things before I sent this patch,
->=20
-> 1> Doing it via AUXDATA which was discouraged by Arnd.
->=20
-> 2> Doing it the way you suggested which did not fit in very neatly,
-> which looked like lot of SOC specific changes are added to generic driver.
->=20
-> 3> Doing it as this patch, influenced by dwc3 code drivers/usb/dwc3/,
-> Which fitted in very neatly without touching the existing generic driver.
->=20
-> stmmac driver is a generic synopsis driver which ST has written the
-> driver, so I did not want to pollute this driver with ST specific glue
-> logic bindings.
-
-Yeah, I didn't know that. My apologies.
-
-Thanks,
 Maxime
 
 --=20
@@ -146,26 +55,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---dMyqICaxQaaUjrCL
+--nEsDIrWrg+hrB7l1
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSohmFAAoJEBx+YmzsjxAgOdoQALD1sk4bw2m1nD5sUeasviJK
-ho2hpWgijyP1cS9+4t7FAbY5mOc10Rxa2p40j0owP/vFGGTpSJL7t94kr8VjXDGj
-g+04Z/ooP3ljC/rjzMQ4KtLfI4USVJ98lhTsv9sswI3rt37AQ3jkayLBmzXDS1yV
-mriLLeWUk9r9DVbVyF+y7poLDAQbZNrRVR3+KcmICiq0OTZ9+2+Jp5Wfm+M40OSq
-y+0iOT5a6xad4ELW63mhDKzs+dL61FxycgsEEE2E9ygsEwLtAz4hXENUNsDBZ+yo
-z7zZUzgBpmlR8sPdIJsDEnmrg3ebMke/LTg8CigX0S9W27uGn0OzkjaVRwUYcUV1
-mouM9HOf774vl3ZVJW6Kq34xU0/WrCupLSsT3tvKWuFNCnJ5RKVeONz6I8G8rAy/
-jX52DP4DGgqdrE7TqI1mDtbL67/nD3M/9QQSNiNvfrUwBlbM0+VcJY7BnNMJpGya
-faoWLBWrQ0nwiNwDYhLYAMjSeEQcpqmqZhH4MGknZ5Q9oV/xNZjOyYwAOOS1Jl1O
-pSJ3gLz1fW+F0kemAUs3rYtIezZi29HyXe8YG0w0qakIJKl3bo3jRcb5qUcZA3lD
-4wYdto+B5uV5GcSZKS+XF9VqB8yc7SrnjEHRyUWs2977557glYUcnU9CZdUwFwP3
-q5vfPrJUel6INnPCsJXp
-=EKC6
+iQIcBAEBAgAGBQJSovNpAAoJEBx+YmzsjxAgVS0P/AyW/lt3PWZIfXjd0qY32uvA
+jj3QPwucvqo0KzQQezdUWX65TXHGLwpWTkduTsFw8pHqUz3YTpiY9KD9GrrSMICn
+WB/Xd4AWcNTimFdLsoIHv8dcLUuK0iPNKyxjd5g+IxV+Py5dRkpXy1KTV+yL6T+8
+D1AQY1gL9efBgYEiiOrPAILVKe2QfXr9PTsdV9gcMDFPbsfAW+XBGZBgYsmA98GP
+Y0EshDP1XClbP4JY+PRzRAXoggPTK2bIDkVelObU8+75w8LOlPbiUu80W/Ji63vH
+R+EzeZ+gjhwdEMP2utdDgFWuZUWIC7F4es3OIaSBRwInWcAuokd3BeqlH2JB556J
+7jIdU8CSRbttr7I+mAzAmIPC8GYwc6aEvNTrR0yPge4ZmF4tz7bjNRpwk1mLDtxv
+xOJ4u2TtnCjb8LRkIoLblTfb62MBz49vAy/ZOtoCbtUP169c5ltthX7c6WDYexk+
+t/rLW5X9NO+DJ88TU8OP+75HqkrEi/5PLZyr0+aobTWaQLuDuMrIlq40Zl7wnL2A
+kG3nFDdqNtnoeoCLxohRNb8ofHNcG9ozysZtUgYKNm9oF6HIyWXs9pZuJ9Hi0+RK
+qJ0ZlVgDFPw31OzMSE8FuJ/ibFvU79pe56UuFnEDPKVX6dnBAI2B64K7EESrKxMp
+xcdYffxuMaVhA4EbMHTB
+=6Wxl
 -----END PGP SIGNATURE-----
 
---dMyqICaxQaaUjrCL--
+--nEsDIrWrg+hrB7l1--
