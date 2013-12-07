@@ -1,35 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab3LGM2a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 07:28:30 -0500
-Received: from ns.connova.ru ([193.25.11.102]:30620 "EHLO connova.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754296Ab3LGM23 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 07:28:29 -0500
-X-Greylist: delayed 14168 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Dec 2013 07:28:29 EST
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Reply Please
-To: Recipients <sunzhi@hotmail.com>
-From: "Mr. SUN Zhijun" <sunzhi@hotmail.com>
-Date: Fri, 06 Dec 2013 20:58:12 +0100
-Reply-To: zhijunsun66@yahoo.com.hk
-Message-ID: <MAINSERVERRacUtI9dm000018be@connova.ru>
-X-OriginalArrivalTime: 06 Dec 2013 19:58:31.0250 (UTC) FILETIME=[89A73320:01CEF2BD]
+	id S1755258Ab3LGMpL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 07:45:11 -0500
+Received: from mail.nic.cz ([217.31.204.67]:43129 "EHLO mail.nic.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754612Ab3LGMpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Dec 2013 07:45:07 -0500
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Dec 2013 07:45:07 EST
+From: Jan Vcelak <jan.vcelak@nic.cz>
+To: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI: full battery charge cannot exceed current one
+Date: Sat,  7 Dec 2013 13:36:41 +0100
+Message-Id: <1386419801-10091-1-git-send-email-jan.vcelak@nic.cz>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag,
+Some degraded batteries report maximal capacity to be smaller than
+current charge of the battery. This can confuse some user space
+applications (like upower).
 
-Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: zhijunsun66@yahoo.com.hk
+This patch handles the situation by increasing maximal capacity
+of the battery if it exceedes current charge.
 
-1. Vollständiger Name
-2.Private Telefonnummer
-3.Current Wohnadresse
+Signed-off-by: Jan Vcelak <jan.vcelak@nic.cz>
+---
 
-Mit freundlichen Grüßen,
-Mr.SUN Zhijun
+upower: fully charged battery reported as 0% charged
+https://bugzilla.redhat.com/show_bug.cgi?id=1025980
+
+ drivers/acpi/battery.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index fbf1ace..71ec1f6 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -494,6 +494,11 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
+ 		battery->capacity_now = battery->capacity_now *
+ 		    10000 / battery->design_voltage;
+ 	}
++
++	/* Some degraded batteries report lower full charge than current one. */
++	if (battery->capacity_now > battery->full_charge_capacity)
++		battery->full_charge_capacity = battery->capacity_now;
++
+ 	return result;
+ }
+ 
+-- 
+1.8.4.2
+
