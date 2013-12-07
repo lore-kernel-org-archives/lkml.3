@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab3LGIQu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 03:16:50 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:41283 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab3LGIQs (ORCPT
+	id S1753389Ab3LGIWh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 03:22:37 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56117 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab3LGIWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 03:16:48 -0500
-Message-ID: <52A2D96D.5010407@linux.com>
-Date: Sat, 07 Dec 2013 09:16:45 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Gary Rookard <garyrookard@gmail.com>, gregkh@linuxfoundation.org
-CC: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] Staging: bcm: DDRInit: replaced C99 comments.
-References: <1386391955-11713-1-git-send-email-garyrookard@gmail.com>
-In-Reply-To: <1386391955-11713-1-git-send-email-garyrookard@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+	Sat, 7 Dec 2013 03:22:36 -0500
+Message-ID: <1386404544.5673.88.camel@marge.simpson.net>
+Subject: Re: [PATCH] Trace idle entry and exit times
+From: Mike Galbraith <bitbucket@online.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, lenb@kernel.org, tglx@linutronix.de,
+        peterz@infradead.org
+Date: Sat, 07 Dec 2013 09:22:24 +0100
+In-Reply-To: <20131207052029.GC21717@two.firstfloor.org>
+References: <1386377164-2223-1-git-send-email-andi@firstfloor.org>
+	 <1386392252.5673.31.camel@marge.simpson.net>
+	 <20131207052029.GC21717@two.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:DinOpTPZ98tbWvIQaKE5oxNyx/N4qJgZiO96kuNC687
+ kwGzBqfVbXUOaEEoCono43W41fNW7yJAnR6Isyr9QYI48frjHn
+ lEGMzCP2PCk6yLu3wI4lJimj3fu2hpGY1YX828MlbBjKUNrt2w
+ 5uIqW0z/S+5GjjWZ8XMaVuCL68RFy88d3rvL7ZmSATeowi5qEs
+ aNAl8vGIxnXNODvOppwXsLqAuvX3+jqO7TyycVDwNEn8YP1I3i
+ y2jt2QKZVyBQ2u0vEIMdVAoTFV01lY89psA6QMkhiKOSqxb2ld
+ vF7PGzM8u5/Rk+N1ACLReJWpifoKa1lMmSFN7Du9FNgTLmF9jo
+ azDrzwRQR57ZzATDYk+olvJpZoR/HS+Qp/sPuOlWzZo4wrnMBE
+ RLvb8o02/NnKw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 2013-12-07 at 06:20 +0100, Andi Kleen wrote: 
+> On Sat, Dec 07, 2013 at 05:57:32AM +0100, Mike Galbraith wrote:
+> > On Fri, 2013-12-06 at 16:46 -0800, Andi Kleen wrote: 
+> > > From: Andi Kleen <ak@linux.intel.com>
+> > > 
+> > > This patch creates 4 new trace points: one at the beginning of idle,
+> > > one before entering mwait, one after exiting mwait, and one after
+> > > finishing the idle code. This is useful to trace down any
+> > > additional latencies caused by the ever-growing idle code.
+> > > 
+> > > Idle latencies are a common source of performance problems, so it's
+> > > important to be able to measure them.
+> > 
+> > You mean stuff like.. oh, say 60 cores doing zero work every 12ms
+> > munching ~20% cpu?
+> 
+> Well that one is obvious. I mean more the subtle problems.
 
-A few comments, see below please.
+Yeah, not subtle.  SGI could use C2 as power supply stress tester.
 
-2013-12-07 05:52, Gary Rookard:
-> This is the fifth patch of a series.
->
-> Signed-off-by: Gary Alan Rookard <garyrookard@gmail.com>
-> ---
-> On branch staging-next
->   drivers/staging/bcm/DDRInit.c | 270 +++++++++++++++++++++---------------------
->   1 file changed, 135 insertions(+), 135 deletions(-)
->
-> diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
-> index cb4dd53..1a08b17 100644
-> --- a/drivers/staging/bcm/DDRInit.c
-> +++ b/drivers/staging/bcm/DDRInit.c
-> @@ -5,15 +5,15 @@
->   #define DDR_DUMP_INTERNAL_DEVICE_MEMORY 0xBFC02B00
->   #define MIPS_CLOCK_REG 	0x0f000820
->
-> -    //DDR INIT-133Mhz
-> -#define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  //index for 0x0F007000
-> -static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {//      # DPLL Clock Setting
-> +    /* DDR INIT-133Mhz */
-> +#define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  /* index for 0x0F00700 */0
-> +static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {     /* # DPLL Clock Setting */
+-Mike
 
-Why not remove the '#'? It is useless and never used anywhere else.
-There is a /0 after... Have you build-test it?
-
-> @@ -29,17 +29,17 @@ static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {//      # DPLL Clock Se
->   	{0x0F007010, 0x01000000},
->   	{0x0F007014, 0x01000100},
->   	{0x0F007018, 0x01000000},
-> -	{0x0F00701c, 0x01020001},// POP - 0x00020001 Normal 0x01020001
-> -	{0x0F007020, 0x04030107}, //Normal - 0x04030107 POP - 0x05030107
-> +	{0x0F00701c, 0x01020001},/*  POP - 0x00020001 Normal 0x01020001 */
-> +	{0x0F007020, 0x04030107}, /* Normal - 0x04030107 POP - 0x05030107 */
->   	{0x0F007024, 0x02000007},
->   	{0x0F007028, 0x02020202},
-> -	{0x0F00702c, 0x0206060a},//ROB- 0x0205050a,//0x0206060a
-> +	{0x0F00702c, 0x0206060a},/* ROB- 0x0205050a,0x0206060a */
->   	{0x0F007030, 0x05000000},
->   	{0x0F007034, 0x00000003};
-> -	{0x0F007038, 0x110a0200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
-> -	{0x0F00703C, 0x02101010},//ROB - 0x02101010,//0x02101018},
-> -	{0x0F007040, 0x45751200},//ROB - 0x45751200,//0x450f1200},
-> -	{0x0F007044, 0x110a0d00},//ROB - 0x110a0d00//0x111f0d00
-> +	{0x0F007038, 0x110a0200},/* ROB - 0x110a0200,0x180a0200,0x1f0a0200 */
-> +	{0x0F00703C, 0x02101010},/* ROB - 0x02101010,0x02101018}, */
-> +	{0x0F007040, 0x45751200},/* ROB - 0x45751200,0x450f1200}, */
-> +	{0x0F007044, 0x110a0d00},/*ROB - 0x110a0d00.0x111f0d00 */
-
-No space after '/*'
-
-> @@ -112,19 +112,19 @@ static struct bcm_ddr_setting asT3_DDRSetting80MHz[] = {//   # DPLL Clock Settin
->   	{0x0F007080, 0x00000000},
->   	{0x0F007084, 0x00000000},
->   	{0x0F007094, 0x00000104},
-> -                                        //# Enable start bit within memory controller
-> +                                        /*# Enable start bit within memory controller */
-
-Again, no space and there is that '#' which looks pretty bad.
-
-
--- 
-Regards,
-Levente Kurusa
