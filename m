@@ -1,153 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab3LGINX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 03:13:23 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:48581 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab3LGINW (ORCPT
+	id S1753972Ab3LGIQu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 03:16:50 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:41283 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab3LGIQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 03:13:22 -0500
+	Sat, 7 Dec 2013 03:16:48 -0500
+Message-ID: <52A2D96D.5010407@linux.com>
+Date: Sat, 07 Dec 2013 09:16:45 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131206121149.GA4897@e103592.cambridge.arm.com>
-References: <1386310193-6434-1-git-send-email-a.anurag@samsung.com>
-	<20131206121149.GA4897@e103592.cambridge.arm.com>
-Date: Sat, 7 Dec 2013 13:43:21 +0530
-Message-ID: <CAPoNrtsHOXJMUsgUE_MET298n_H2sC2P+RbfUoG=kqK9chTTHw@mail.gmail.com>
-Subject: Re: [PATCH] ARM : unwinder : Prevent data abort due to stack overflow
-From: Anurag Aggarwal <anurag19aggarwal@gmail.com>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Anurag Aggarwal <a.anurag@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "cpgs@samsung.com" <cpgs@samsung.com>,
-        "narendra.m1@samsung.com" <narendra.m1@samsung.com>,
-        "poorva.s@samsung.com" <poorva.s@samsung.com>,
-        "naveen.sel@samsung.com" <naveen.sel@samsung.com>,
-        "ashish.kalra@samsung.com" <ashish.kalra@samsung.com>,
-        "mohammad.a2@samsung.com" <mohammad.a2@samsung.com>,
-        "rajat.suri@samsung.com" <rajat.suri@samsung.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>, "nico@linaro.org" <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gary Rookard <garyrookard@gmail.com>, gregkh@linuxfoundation.org
+CC: lisa@xenapiadmin.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] Staging: bcm: DDRInit: replaced C99 comments.
+References: <1386391955-11713-1-git-send-email-garyrookard@gmail.com>
+In-Reply-To: <1386391955-11713-1-git-send-email-garyrookard@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> +     /* we are just starting, initialize last register set as 0 */
->> +     ctrl.last_register_set = 0;
->> +
->>       while (ctrl.entries > 0) {
->> -             int urc = unwind_exec_insn(&ctrl);
->> +             int urc;
->> +             if ((ctrl.sp_high - ctrl.vrs[SP]) < TOTAL_REGISTERS)
->> +                     ctrl.last_register_set = 1;
->
->If this is done once per unwind_exec_insn(), I think it would be better
->to put the check at the start of unwind_exec_insn() instead of outside.
+Hi,
 
-I think it is better to do the above check here only because this check
-is strictly not a part of decoder and execution cycle.
+A few comments, see below please.
 
-I think uniwnd_exec_insn(), should only be used for decoding and
-execution of instruction, as you have suggested earlier. So, it makes
-sense to keep it in unwind_frame only().
+2013-12-07 05:52, Gary Rookard:
+> This is the fifth patch of a series.
+>
+> Signed-off-by: Gary Alan Rookard <garyrookard@gmail.com>
+> ---
+> On branch staging-next
+>   drivers/staging/bcm/DDRInit.c | 270 +++++++++++++++++++++---------------------
+>   1 file changed, 135 insertions(+), 135 deletions(-)
+>
+> diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
+> index cb4dd53..1a08b17 100644
+> --- a/drivers/staging/bcm/DDRInit.c
+> +++ b/drivers/staging/bcm/DDRInit.c
+> @@ -5,15 +5,15 @@
+>   #define DDR_DUMP_INTERNAL_DEVICE_MEMORY 0xBFC02B00
+>   #define MIPS_CLOCK_REG 	0x0f000820
+>
+> -    //DDR INIT-133Mhz
+> -#define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  //index for 0x0F007000
+> -static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {//      # DPLL Clock Setting
+> +    /* DDR INIT-133Mhz */
+> +#define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  /* index for 0x0F00700 */0
+> +static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {     /* # DPLL Clock Setting */
 
+Why not remove the '#'? It is useless and never used anywhere else.
+There is a /0 after... Have you build-test it?
 
-On Fri, Dec 6, 2013 at 5:41 PM, Dave Martin <Dave.Martin@arm.com> wrote:
-> On Fri, Dec 06, 2013 at 06:09:53AM +0000, Anurag Aggarwal wrote:
->> While unwinding backtrace, stack overflow is possible. This stack
->> overflow can sometimes lead to data abort in system if the area after
->> stack is not mapped to physical memory.
->>
->> To prevent this problem from happening, execute the instructions that
->> can cause a data abort in separate helper functions, where a check for
->> feasibility is made before reading each word from the stack.
->>
->> Signed-off-by: Anurag Aggarwal <a.anurag@samsung.com>
->> ---
->>  arch/arm/kernel/unwind.c | 138 ++++++++++++++++++++++++++++++++++-------------
->>  1 file changed, 100 insertions(+), 38 deletions(-)
->>
->> diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
->> index 00df012..6d854f8 100644
->> --- a/arch/arm/kernel/unwind.c
->> +++ b/arch/arm/kernel/unwind.c
->> @@ -49,6 +49,8 @@
->>  #include <asm/traps.h>
->>  #include <asm/unwind.h>
->>
->> +#define TOTAL_REGISTERS 16
->> +
->>  /* Dummy functions to avoid linker complaints */
->>  void __aeabi_unwind_cpp_pr0(void)
->>  {
->> @@ -66,9 +68,11 @@ void __aeabi_unwind_cpp_pr2(void)
->>  EXPORT_SYMBOL(__aeabi_unwind_cpp_pr2);
->>
->>  struct unwind_ctrl_block {
->> -     unsigned long vrs[16];          /* virtual register set */
->> +     unsigned long vrs[TOTAL_REGISTERS];     /* virtual register set */
->>       const unsigned long *insn;      /* pointer to the current instructions word */
->> +     unsigned long sp_high;          /* highest value of sp allowed*/
->>       int entries;                    /* number of entries left to interpret */
->> +     int last_register_set;          /* store if we are at the last set */
->
-> I find the name and comment a bit confusing here.  Also, strictly
-> speaking it can be a bool.
->
-> Maybe:
->
->         /*
->          * true: check for stack overflow for each register pop;
->          * false: save overhead if there is plenty of stack remaining.
->          */
->         bool check_each_pop;
->
->
-> It shouldn't be too hard to understand from reading the code though, so
-> I'm happy with your version if you prefer.
->
-> [...]
->
->> @@ -382,11 +438,17 @@ int unwind_frame(struct stackframe *frame)
->>               return -URC_FAILURE;
->>       }
->>
->> +     /* we are just starting, initialize last register set as 0 */
->> +     ctrl.last_register_set = 0;
->> +
->>       while (ctrl.entries > 0) {
->> -             int urc = unwind_exec_insn(&ctrl);
->> +             int urc;
->> +             if ((ctrl.sp_high - ctrl.vrs[SP]) < TOTAL_REGISTERS)
->> +                     ctrl.last_register_set = 1;
->
-> If this is done once per unwind_exec_insn(), I think it would be better
-> to put the check at the start of unwind_exec_insn() instead of outside.
->
->
-> The check still looks wrong too?
->
-> ctrl.sp_high - ctrl.vrs[SP] gives the available space in bytes, but
-> TOTAL_REGISTERS is measured in words.
->
->
-> One way to get the correct value would be simply
->
->         sizeof ctrl.vrs
->
-> since that's the array we're trying to fill from the stack.
->
-> (in that case I guess that the TOTAL_REGISTERS macro might not be needed
-> again)
->
-> Cheers
-> ---Dave
+> @@ -29,17 +29,17 @@ static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {//      # DPLL Clock Se
+>   	{0x0F007010, 0x01000000},
+>   	{0x0F007014, 0x01000100},
+>   	{0x0F007018, 0x01000000},
+> -	{0x0F00701c, 0x01020001},// POP - 0x00020001 Normal 0x01020001
+> -	{0x0F007020, 0x04030107}, //Normal - 0x04030107 POP - 0x05030107
+> +	{0x0F00701c, 0x01020001},/*  POP - 0x00020001 Normal 0x01020001 */
+> +	{0x0F007020, 0x04030107}, /* Normal - 0x04030107 POP - 0x05030107 */
+>   	{0x0F007024, 0x02000007},
+>   	{0x0F007028, 0x02020202},
+> -	{0x0F00702c, 0x0206060a},//ROB- 0x0205050a,//0x0206060a
+> +	{0x0F00702c, 0x0206060a},/* ROB- 0x0205050a,0x0206060a */
+>   	{0x0F007030, 0x05000000},
+>   	{0x0F007034, 0x00000003};
+> -	{0x0F007038, 0x110a0200},//ROB - 0x110a0200,//0x180a0200,// 0x1f0a0200
+> -	{0x0F00703C, 0x02101010},//ROB - 0x02101010,//0x02101018},
+> -	{0x0F007040, 0x45751200},//ROB - 0x45751200,//0x450f1200},
+> -	{0x0F007044, 0x110a0d00},//ROB - 0x110a0d00//0x111f0d00
+> +	{0x0F007038, 0x110a0200},/* ROB - 0x110a0200,0x180a0200,0x1f0a0200 */
+> +	{0x0F00703C, 0x02101010},/* ROB - 0x02101010,0x02101018}, */
+> +	{0x0F007040, 0x45751200},/* ROB - 0x45751200,0x450f1200}, */
+> +	{0x0F007044, 0x110a0d00},/*ROB - 0x110a0d00.0x111f0d00 */
 
+No space after '/*'
+
+> @@ -112,19 +112,19 @@ static struct bcm_ddr_setting asT3_DDRSetting80MHz[] = {//   # DPLL Clock Settin
+>   	{0x0F007080, 0x00000000},
+>   	{0x0F007084, 0x00000000},
+>   	{0x0F007094, 0x00000104},
+> -                                        //# Enable start bit within memory controller
+> +                                        /*# Enable start bit within memory controller */
+
+Again, no space and there is that '#' which looks pretty bad.
 
 
 -- 
-Anurag Aggarwal
+Regards,
+Levente Kurusa
