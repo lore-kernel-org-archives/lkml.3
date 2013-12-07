@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab3LGE5P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Dec 2013 23:57:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36565 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756727Ab3LGE5O (ORCPT
+	id S1758225Ab3LGE5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Dec 2013 23:57:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63115 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758126Ab3LGE5h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Dec 2013 23:57:14 -0500
-Message-ID: <52A2AAA4.7010306@infradead.org>
-Date: Fri, 06 Dec 2013 20:57:08 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, Stefan Weil <sw@weilnetz.de>,
-        linux-kernel@vger.kernel.org
-CC: Jiri Kosina <trivial@kernel.org>, linux-rpi-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: bcm2835: Fix grammar in help message
-References: <1386271060-2375-1-git-send-email-sw@weilnetz.de> <52A2A6EB.8040207@wwwdotorg.org>
-In-Reply-To: <52A2A6EB.8040207@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Dec 2013 23:57:37 -0500
+Message-ID: <1386392252.5673.31.camel@marge.simpson.net>
+Subject: Re: [PATCH] Trace idle entry and exit times
+From: Mike Galbraith <bitbucket@online.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, lenb@kernel.org, tglx@linutronix.de,
+        peterz@infradead.org
+Date: Sat, 07 Dec 2013 05:57:32 +0100
+In-Reply-To: <1386377164-2223-1-git-send-email-andi@firstfloor.org>
+References: <1386377164-2223-1-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:buA2JQ3px43uW9GhtIt5KTyNRhwDOygrwYaksURfRkL
+ nk9KicR6wlcQfEq8FaTGqjSvvOxyScTQeoBFRLAejnKCsyvsdf
+ qBnLB3A0KR+zXD/gzf5ZFLMZFPoJnC2x7OpcEJ88I9S+F1gg6i
+ uQXFkQI2P08QT3ZsqTvJ/FTtzwjx0lLDpofUChneWm7R7O3LNU
+ s1TN7WdCjE8blHg+mXY6N1Nz19KtRGp4dMPMefmOIwtu4Kfs9j
+ S7gLUd6lj8vXkl2EzTbyOatwRzh+M1zkVamR4rFM5yq/8MVGSi
+ FF6ffS/q8fATKU1Z13+U9+3mSpIdivr34lSq3Rxvz7eLzXiTcR
+ ct0KjBfgVzHgiY12ym+dDk2J9/UA4ZA33qHrmGRk3u5M3GxLVX
+ lMdzHzjxHE3aQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/13 20:41, Stephen Warren wrote:
-> On 12/05/2013 12:17 PM, Stefan Weil wrote:
->> Replace "is use" by "is used" and remove a comma.
+On Fri, 2013-12-06 at 16:46 -0800, Andi Kleen wrote: 
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Applied to bcm2835's for-3.14/soc branch.
+> This patch creates 4 new trace points: one at the beginning of idle,
+> one before entering mwait, one after exiting mwait, and one after
+> finishing the idle code. This is useful to trace down any
+> additional latencies caused by the ever-growing idle code.
 > 
-> (I'm not convinced about the
-> serial-comma-applies-to-lists-of-three-or-more-items rule, since two
-> items are clearly a list, and it's inconsistent with what I recall
-> seeing in practice, but anyway).
+> Idle latencies are a common source of performance problems, so it's
+> important to be able to measure them.
 
-I agree with Arnd's comments -- serial comma is not for use just to
-separate <a> and <b>.
+You mean stuff like.. oh, say 60 cores doing zero work every 12ms
+munching ~20% cpu?
 
+-  97.57%  [kernel]          [k] _raw_spin_lock_irqsave                                                                                                                                                                                    ▒
+   - _raw_spin_lock_irqsave                                                                                                                                                                                                                ▒
+      - 97.02% clockevents_notify                                                                                                                                                                                                          ◆
+           intel_idle                                                                                                                                                                                                                      ▒
+           cpuidle_idle_call                                                                                                                                                                                                               ▒
+           cpu_idle                                                                                                                                                                                                                        ▒
+      - 2.97% tick_broadcast_oneshot_control                                                                                                                                                                                               ▒
+           tick_notify                                                                                                                                                                                                                     ▒
+           notifier_call_chain                                                                                                                                                                                                             ▒
+           clockevents_notify                                                                                                                                                                                                              ▒
+           intel_idle                                                                                                                                                                                                                      ▒
+           cpuidle_idle_call                                                                                                                                                                                                               ▒
+           cpu_idle
 
--- 
-~Randy
+C2 is super green, it's hug'n the sh*t outta them trees :)
+
+	-Mike
+
