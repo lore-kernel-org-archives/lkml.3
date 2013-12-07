@@ -1,160 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab3LGF5W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 00:57:22 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:43730 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab3LGF5U (ORCPT
+	id S1751701Ab3LGF6P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 00:58:15 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:56611 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750799Ab3LGF6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 00:57:20 -0500
-Date: Fri, 6 Dec 2013 21:57:20 -0800 (PST)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Mark Doffman <mark.doffman@codethink.co.uk>
-cc: ceph-devel@vger.kernel.org, Rob Taylor <rob.taylor@codethink.co.uk>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 2/4] Documentation: Document the cephroot functionality
-In-Reply-To: <1385000024-23463-3-git-send-email-mark.doffman@codethink.co.uk>
-Message-ID: <alpine.DEB.2.00.1312062154530.1560@cobra.newdream.net>
-References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk> <1385000024-23463-3-git-send-email-mark.doffman@codethink.co.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 7 Dec 2013 00:58:13 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] ARM: footbridge: remove obsolete IRQF_DISABLED
+Date: Sat,  7 Dec 2013 06:57:45 +0100
+Message-Id: <1386395865-11910-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1378270741-24785-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1378270741-24785-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Nov 2013, mark.doffman@codethink.co.uk wrote:
-> From: Rob Taylor <rob.taylor@codethink.co.uk>
-> 
-> Document using the cephfs as a root device, its purpose,
-> functionality and use.
-> 
-> Signed-off-by: Mark Doffman <mark.doffman@codethink.co.uk>
-> Signed-off-by: Rob Taylor <rob.taylor@codethink.co.uk>
-> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
-> ---
->  Documentation/filesystems/{ => ceph}/ceph.txt |  0
->  Documentation/filesystems/ceph/cephroot.txt   | 81 +++++++++++++++++++++++++++
->  2 files changed, 81 insertions(+)
->  rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
->  create mode 100644 Documentation/filesystems/ceph/cephroot.txt
-> 
-> diff --git a/Documentation/filesystems/ceph.txt b/Documentation/filesystems/ceph/ceph.txt
-> similarity index 100%
-> rename from Documentation/filesystems/ceph.txt
-> rename to Documentation/filesystems/ceph/ceph.txt
-> diff --git a/Documentation/filesystems/ceph/cephroot.txt b/Documentation/filesystems/ceph/cephroot.txt
-> new file mode 100644
-> index 0000000..ae0f5bb
-> --- /dev/null
-> +++ b/Documentation/filesystems/ceph/cephroot.txt
-> @@ -0,0 +1,81 @@
-> +Mounting the root filesystem via Ceph (cephroot)
-> +===============================================
-> +
-> +Written 2013 by Rob Taylor <rob.taylor@codethink.co.uk>
-> +
-> +derived from nfsroot.txt:
-> +
-> +Written 1996 by Gero Kuhlmann <gero@gkminix.han.de>
-> +Updated 1997 by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
-> +Updated 2006 by Nico Schottelius <nico-kernel-nfsroot@schottelius.org>
-> +Updated 2006 by Horms <horms@verge.net.au>
-> +
-> +
-> +
-> +In order to use a diskless system, such as an X-terminal or printer server
-> +for example, it is necessary for the root filesystem to be present on a
-> +non-disk device. This may be an initramfs (see Documentation/filesystems/
-> +ramfs-rootfs-initramfs.txt), a ramdisk (see Documentation/initrd.txt), a
-> +filesystem mounted via NFS or a filesystem mounted via Ceph. The following
-> +text describes on how to use Ceph for the root filesystem.
-> +
-> +For the rest of this text 'client' means the diskless system, and 'server'
-> +means the Ceph server.
-> +
-> +
-> +1.) Enabling cephroot capabilities
-> +    -----------------------------
-> +
-> +In order to use cephroot, CEPH_FS needs to be selected as
-> +built-in during configuration. Once this has been selected, the cephroot
-> +option will become available, which should also be selected.
-> +
-> +In the networking options, kernel level autoconfiguration can be selected,
-> +along with the types of autoconfiguration to support. Selecting all of
-> +DHCP, BOOTP and RARP is safe.
-> +
-> +
-> +2.) Kernel command line
-> +    -------------------
-> +
-> +When the kernel has been loaded by a boot loader (see below) it needs to be
-> +told what root fs device to use. And in the case of cephroot, where to find
-> +both the server and the name of the directory on the server to mount as root.
-> +This can be established using the following kernel command line parameters:
-> +
-> +root=/dev/ceph
-> +
-> +This is necessary to enable the pseudo-Ceph-device. Note that it's not a
-> +real device but just a synonym to tell the kernel to use Ceph instead of
-> +a real device.
-> +
-> +cephroot=<monaddr>:/[<subdir>],<ceph-opts>
-> +
-> +  <monaddr>     Monitor address. Each takes the form host[:port]. If the port
-> +		is not specified, the Ceph default of 6789 is assumed.
-> +
-> +  <subdir>	A subdirectory subdir may be specified if a subset of the file
-> +		system is to be mounted
-> +
-> +  <ceph-opts>	Standard Ceph options. All options are separated by commas.
-> +		See Documentation/filesystems/ceph/ceph.txt for options and
-> +		their defaults.
+This patch proposes to remove the IRQF_DISABLED flag from footbridge
+code. It's a NOOP since 2.6.35.
 
-Maybe there is an existing convention here, but: it seems like it would be 
-simpler to do something like
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/arm/mach-footbridge/dc21285-timer.c |  2 +-
+ arch/arm/mach-footbridge/dc21285.c       | 10 +++++-----
+ arch/arm/mach-footbridge/isa-timer.c     |  2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
- cephroot=<ip[:<port>][,...]>:/[<subdir>]
+diff --git a/arch/arm/mach-footbridge/dc21285-timer.c b/arch/arm/mach-footbridge/dc21285-timer.c
+index 9ee78f7b4990..892d5501366c 100644
+--- a/arch/arm/mach-footbridge/dc21285-timer.c
++++ b/arch/arm/mach-footbridge/dc21285-timer.c
+@@ -86,7 +86,7 @@ static irqreturn_t timer1_interrupt(int irq, void *dev_id)
+ static struct irqaction footbridge_timer_irq = {
+ 	.name		= "dc21285_timer1",
+ 	.handler	= timer1_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+ 	.dev_id		= &ckevt_dc21285,
+ };
+ 
+diff --git a/arch/arm/mach-footbridge/dc21285.c b/arch/arm/mach-footbridge/dc21285.c
+index 7c2fdae9a38b..96a3d73ef4bf 100644
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -334,15 +334,15 @@ void __init dc21285_preinit(void)
+ 	/*
+ 	 * We don't care if these fail.
+ 	 */
+-	dc21285_request_irq(IRQ_PCI_SERR, dc21285_serr_irq, IRQF_DISABLED,
++	dc21285_request_irq(IRQ_PCI_SERR, dc21285_serr_irq, 0,
+ 			    "PCI system error", &serr_timer);
+-	dc21285_request_irq(IRQ_PCI_PERR, dc21285_parity_irq, IRQF_DISABLED,
++	dc21285_request_irq(IRQ_PCI_PERR, dc21285_parity_irq, 0,
+ 			    "PCI parity error", &perr_timer);
+-	dc21285_request_irq(IRQ_PCI_ABORT, dc21285_abort_irq, IRQF_DISABLED,
++	dc21285_request_irq(IRQ_PCI_ABORT, dc21285_abort_irq, 0,
+ 			    "PCI abort", NULL);
+-	dc21285_request_irq(IRQ_DISCARD_TIMER, dc21285_discard_irq, IRQF_DISABLED,
++	dc21285_request_irq(IRQ_DISCARD_TIMER, dc21285_discard_irq, 0,
+ 			    "Discard timer", NULL);
+-	dc21285_request_irq(IRQ_PCI_DPERR, dc21285_dparity_irq, IRQF_DISABLED,
++	dc21285_request_irq(IRQ_PCI_DPERR, dc21285_dparity_irq, 0,
+ 			    "PCI data parity", NULL);
+ 
+ 	if (cfn_mode) {
+diff --git a/arch/arm/mach-footbridge/isa-timer.c b/arch/arm/mach-footbridge/isa-timer.c
+index d9301dd56354..b73f52e196b9 100644
+--- a/arch/arm/mach-footbridge/isa-timer.c
++++ b/arch/arm/mach-footbridge/isa-timer.c
+@@ -27,7 +27,7 @@ static irqreturn_t pit_timer_interrupt(int irq, void *dev_id)
+ static struct irqaction pit_timer_irq = {
+ 	.name		= "pit",
+ 	.handler	= pit_timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+ 	.dev_id		= &i8253_clockevent,
+ };
+ 
+-- 
+1.8.3.2
 
-i.e., the existing syntax used by mount, that (among other things) can 
-also include a port, or be a list of mon ips, so that the parsing code 
-can be re-used.  Then,
-
- cephopts=<ceph-opts>
-
-Hopefully this would avoid the parsing in root.c and make things behave 
-more consistently with respect to how mount(8) is used?
-
-sage
-
-> +
-> +4.) References
-> +    ----------
-> +
-> +
-> +5.) Credits
-> +    -------
-> +
-> +  cephroot was derived from nfsroot by Rob Taylor <rob.taylor@codethink.co.uk>
-> +  and Mark Doffman <mark.doffman@codethink.co.uk>
-> +
-> +  The nfsroot code in the kernel and the RARP support have been written
-> +  by Gero Kuhlmann <gero@gkminix.han.de>.
-> +
-> +  The rest of the IP layer autoconfiguration code has been written
-> +  by Martin Mares <mj@atrey.karlin.mff.cuni.cz>.
-> +
-> +  In order to write the initial version of nfsroot I would like to thank
-> +  Jens-Uwe Mager <jum@anubis.han.de> for his help.
-> -- 
-> 1.8.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
