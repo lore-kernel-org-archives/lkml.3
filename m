@@ -1,51 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751071Ab3LGFUd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 00:20:33 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:56338 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab3LGFUc (ORCPT
+	id S1751431Ab3LGF5W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 00:57:22 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:43730 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3LGF5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 00:20:32 -0500
-Date: Sat, 7 Dec 2013 06:20:29 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Andi Kleen <ak@linux.intel.com>, lenb@kernel.org,
-        tglx@linutronix.de, peterz@infradead.org
-Subject: Re: [PATCH] Trace idle entry and exit times
-Message-ID: <20131207052029.GC21717@two.firstfloor.org>
-References: <1386377164-2223-1-git-send-email-andi@firstfloor.org>
- <1386392252.5673.31.camel@marge.simpson.net>
+	Sat, 7 Dec 2013 00:57:20 -0500
+Date: Fri, 6 Dec 2013 21:57:20 -0800 (PST)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Mark Doffman <mark.doffman@codethink.co.uk>
+cc: ceph-devel@vger.kernel.org, Rob Taylor <rob.taylor@codethink.co.uk>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 2/4] Documentation: Document the cephroot functionality
+In-Reply-To: <1385000024-23463-3-git-send-email-mark.doffman@codethink.co.uk>
+Message-ID: <alpine.DEB.2.00.1312062154530.1560@cobra.newdream.net>
+References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk> <1385000024-23463-3-git-send-email-mark.doffman@codethink.co.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386392252.5673.31.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 07, 2013 at 05:57:32AM +0100, Mike Galbraith wrote:
-> On Fri, 2013-12-06 at 16:46 -0800, Andi Kleen wrote: 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > This patch creates 4 new trace points: one at the beginning of idle,
-> > one before entering mwait, one after exiting mwait, and one after
-> > finishing the idle code. This is useful to trace down any
-> > additional latencies caused by the ever-growing idle code.
-> > 
-> > Idle latencies are a common source of performance problems, so it's
-> > important to be able to measure them.
+On Wed, 20 Nov 2013, mark.doffman@codethink.co.uk wrote:
+> From: Rob Taylor <rob.taylor@codethink.co.uk>
 > 
-> You mean stuff like.. oh, say 60 cores doing zero work every 12ms
-> munching ~20% cpu?
+> Document using the cephfs as a root device, its purpose,
+> functionality and use.
+> 
+> Signed-off-by: Mark Doffman <mark.doffman@codethink.co.uk>
+> Signed-off-by: Rob Taylor <rob.taylor@codethink.co.uk>
+> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+> ---
+>  Documentation/filesystems/{ => ceph}/ceph.txt |  0
+>  Documentation/filesystems/ceph/cephroot.txt   | 81 +++++++++++++++++++++++++++
+>  2 files changed, 81 insertions(+)
+>  rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
+>  create mode 100644 Documentation/filesystems/ceph/cephroot.txt
+> 
+> diff --git a/Documentation/filesystems/ceph.txt b/Documentation/filesystems/ceph/ceph.txt
+> similarity index 100%
+> rename from Documentation/filesystems/ceph.txt
+> rename to Documentation/filesystems/ceph/ceph.txt
+> diff --git a/Documentation/filesystems/ceph/cephroot.txt b/Documentation/filesystems/ceph/cephroot.txt
+> new file mode 100644
+> index 0000000..ae0f5bb
+> --- /dev/null
+> +++ b/Documentation/filesystems/ceph/cephroot.txt
+> @@ -0,0 +1,81 @@
+> +Mounting the root filesystem via Ceph (cephroot)
+> +===============================================
+> +
+> +Written 2013 by Rob Taylor <rob.taylor@codethink.co.uk>
+> +
+> +derived from nfsroot.txt:
+> +
+> +Written 1996 by Gero Kuhlmann <gero@gkminix.han.de>
+> +Updated 1997 by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
+> +Updated 2006 by Nico Schottelius <nico-kernel-nfsroot@schottelius.org>
+> +Updated 2006 by Horms <horms@verge.net.au>
+> +
+> +
+> +
+> +In order to use a diskless system, such as an X-terminal or printer server
+> +for example, it is necessary for the root filesystem to be present on a
+> +non-disk device. This may be an initramfs (see Documentation/filesystems/
+> +ramfs-rootfs-initramfs.txt), a ramdisk (see Documentation/initrd.txt), a
+> +filesystem mounted via NFS or a filesystem mounted via Ceph. The following
+> +text describes on how to use Ceph for the root filesystem.
+> +
+> +For the rest of this text 'client' means the diskless system, and 'server'
+> +means the Ceph server.
+> +
+> +
+> +1.) Enabling cephroot capabilities
+> +    -----------------------------
+> +
+> +In order to use cephroot, CEPH_FS needs to be selected as
+> +built-in during configuration. Once this has been selected, the cephroot
+> +option will become available, which should also be selected.
+> +
+> +In the networking options, kernel level autoconfiguration can be selected,
+> +along with the types of autoconfiguration to support. Selecting all of
+> +DHCP, BOOTP and RARP is safe.
+> +
+> +
+> +2.) Kernel command line
+> +    -------------------
+> +
+> +When the kernel has been loaded by a boot loader (see below) it needs to be
+> +told what root fs device to use. And in the case of cephroot, where to find
+> +both the server and the name of the directory on the server to mount as root.
+> +This can be established using the following kernel command line parameters:
+> +
+> +root=/dev/ceph
+> +
+> +This is necessary to enable the pseudo-Ceph-device. Note that it's not a
+> +real device but just a synonym to tell the kernel to use Ceph instead of
+> +a real device.
+> +
+> +cephroot=<monaddr>:/[<subdir>],<ceph-opts>
+> +
+> +  <monaddr>     Monitor address. Each takes the form host[:port]. If the port
+> +		is not specified, the Ceph default of 6789 is assumed.
+> +
+> +  <subdir>	A subdirectory subdir may be specified if a subset of the file
+> +		system is to be mounted
+> +
+> +  <ceph-opts>	Standard Ceph options. All options are separated by commas.
+> +		See Documentation/filesystems/ceph/ceph.txt for options and
+> +		their defaults.
 
-Well that one is obvious. I mean more the subtle problems.
+Maybe there is an existing convention here, but: it seems like it would be 
+simpler to do something like
 
-BTW the timer problem is fixed on Westmere and later (always running APIC
-timer), but yes it's a problem before that. I looked at it some time ago,
-but eventually gave up after only fixing low hanging fruit. There are likely 
-some more tricks that could be done here (see the old patches from back then)
+ cephroot=<ip[:<port>][,...]>:/[<subdir>]
 
--Andi
+i.e., the existing syntax used by mount, that (among other things) can 
+also include a port, or be a list of mon ips, so that the parsing code 
+can be re-used.  Then,
+
+ cephopts=<ceph-opts>
+
+Hopefully this would avoid the parsing in root.c and make things behave 
+more consistently with respect to how mount(8) is used?
+
+sage
+
+> +
+> +4.) References
+> +    ----------
+> +
+> +
+> +5.) Credits
+> +    -------
+> +
+> +  cephroot was derived from nfsroot by Rob Taylor <rob.taylor@codethink.co.uk>
+> +  and Mark Doffman <mark.doffman@codethink.co.uk>
+> +
+> +  The nfsroot code in the kernel and the RARP support have been written
+> +  by Gero Kuhlmann <gero@gkminix.han.de>.
+> +
+> +  The rest of the IP layer autoconfiguration code has been written
+> +  by Martin Mares <mj@atrey.karlin.mff.cuni.cz>.
+> +
+> +  In order to write the initial version of nfsroot I would like to thank
+> +  Jens-Uwe Mager <jum@anubis.han.de> for his help.
+> -- 
+> 1.8.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
