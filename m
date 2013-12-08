@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab3LHJkd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 04:40:33 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:46064 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab3LHJk1 (ORCPT
+	id S1754950Ab3LHJuW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 04:50:22 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:42000 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab3LHJuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 04:40:27 -0500
-From: "ethan.zhao" <ethan.kernel@gmail.com>
-To: hristoph@lameter.com, alokk@calsoftinc.com, shobhit@calsoftinc.com,
-        shai@scalex86.org, cl@linux.com
-Cc: linux-kernel@vger.kernel.org, "ethan.zhao" <ethan.kernel@gmail.com>
-Subject: [PATCH] mm/slab.c: check pointer slabp before using it in alloc_slabmgmt()
-Date: Sun,  8 Dec 2013 17:38:53 +0800
-Message-Id: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Sun, 8 Dec 2013 04:50:06 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/3] m68k/atari: Hide RTC_PORT() macro from rtc-cmos
+Date: Sun,  8 Dec 2013 10:49:56 +0100
+Message-Id: <1386496197-20669-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386496197-20669-1-git-send-email-geert@linux-m68k.org>
+References: <1386496197-20669-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the NULL check of slabp to the right place before refer its memeber in
-function alloc_slabmgmt().
+Rename RTC_PORT() to ATARI_RTC_PORT(), as the rtc-cmos RTC driver uses the
+presence of this macro to enable support for the second NVRAM bank, which
+Atari doesn't have ("Unable to handle kernel access at virtual address
+00ff8965").
 
-This bug may be introduced by rewriting of funcion kmemleak_scan_area(),
-the first parameter changed from slabp to &slabp->list.
-
-Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- mm/slab.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/m68k/include/asm/mc146818rtc.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 2580db0..b6d27bc 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2612,6 +2612,8 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep, void *objp,
- 		/* Slab management obj is off-slab. */
- 		slabp = kmem_cache_alloc_node(cachep->slabp_cache,
- 					      local_flags, nodeid);
-+		if (!slabp)
-+			return NULL;
- 		/*
- 		 * If the first object in the slab is leaked (it's allocated
- 		 * but no one has a reference to it), we want to make sure
-@@ -2620,8 +2622,6 @@ static struct slab *alloc_slabmgmt(struct kmem_cache *cachep, void *objp,
- 		 */
- 		kmemleak_scan_area(&slabp->list, sizeof(struct list_head),
- 				   local_flags);
--		if (!slabp)
--			return NULL;
- 	} else {
- 		slabp = objp + colour_off;
- 		colour_off += cachep->slab_size;
+diff --git a/arch/m68k/include/asm/mc146818rtc.h b/arch/m68k/include/asm/mc146818rtc.h
+index 9f70a01f73dc..05b43bf5cdf3 100644
+--- a/arch/m68k/include/asm/mc146818rtc.h
++++ b/arch/m68k/include/asm/mc146818rtc.h
+@@ -10,16 +10,16 @@
+ 
+ #include <asm/atarihw.h>
+ 
+-#define RTC_PORT(x)	(TT_RTC_BAS + 2*(x))
++#define ATARI_RTC_PORT(x)	(TT_RTC_BAS + 2*(x))
+ #define RTC_ALWAYS_BCD	0
+ 
+ #define CMOS_READ(addr) ({ \
+-atari_outb_p((addr),RTC_PORT(0)); \
+-atari_inb_p(RTC_PORT(1)); \
++atari_outb_p((addr), ATARI_RTC_PORT(0)); \
++atari_inb_p(ATARI_RTC_PORT(1)); \
+ })
+ #define CMOS_WRITE(val, addr) ({ \
+-atari_outb_p((addr),RTC_PORT(0)); \
+-atari_outb_p((val),RTC_PORT(1)); \
++atari_outb_p((addr), ATARI_RTC_PORT(0)); \
++atari_outb_p((val), ATARI_RTC_PORT(1)); \
+ })
+ #endif /* CONFIG_ATARI */
+ 
 -- 
-1.8.3.4 (Apple Git-47)
+1.7.9.5
 
