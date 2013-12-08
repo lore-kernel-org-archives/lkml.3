@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759533Ab3LHOB3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 09:01:29 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:56075 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab3LHOBZ (ORCPT
+	id S1759573Ab3LHOBm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 09:01:42 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:35023 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649Ab3LHOBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 09:01:25 -0500
+	Sun, 8 Dec 2013 09:01:38 -0500
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: viro@zeniv.linux.org.uk, dchinner@fromorbit.com, bpm@sgi.com,
         tytso@mit.edu, adilger.kernel@dilger.ca, jack@suse.cz
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v4 7/10] xfstest: shared/003: Multi collapse range tests
-Date: Sun,  8 Dec 2013 23:01:16 +0900
-Message-Id: <1386511276-3489-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v4 8/10] xfstest: shared/004: Delayed allocation multi collapse
+Date: Sun,  8 Dec 2013 23:01:30 +0900
+Message-Id: <1386511290-3523-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,29 +24,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-This testcase(003) tries to test various corner cases with pre-existing holes
-for fcollapse range functionality over different type of extents.
+This testcase(004) tries to test various corner cases with delayed extents and
+pre-existing holes for fcollapse range functionality
+over different type of extents.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- tests/shared/003     |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tests/shared/003.out |   53 ++++++++++++++++++++++++++++++++++++++++
+ tests/shared/004     |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/shared/004.out |   53 ++++++++++++++++++++++++++++++++++++++++
  tests/shared/group   |    1 +
  3 files changed, 119 insertions(+)
- create mode 100755 tests/shared/003
- create mode 100644 tests/shared/003.out
+ create mode 100755 tests/shared/004
+ create mode 100644 tests/shared/004.out
 
-diff --git a/tests/shared/003 b/tests/shared/003
+diff --git a/tests/shared/004 b/tests/shared/004
 new file mode 100755
-index 0000000..7b7f2df
+index 0000000..5902b9f
 --- /dev/null
-+++ b/tests/shared/003
++++ b/tests/shared/004
 @@ -0,0 +1,65 @@
 +#! /bin/bash
-+# FS QA Test No. 3
++# FS QA Test No. 4
 +#
-+# Multi collapse range tests
++# Delayed allocation multi collapse range tests
 +# This testcase is one of the 4 testcases (shared 001 - 004) which tries to
 +# test various corner cases for fcollapse range functionality over different
 +# type of extents. These tests are based on generic/255 test case.
@@ -103,18 +104,18 @@ index 0000000..7b7f2df
 +
 +testfile=$TEST_DIR/$seq.$$
 +
-+_test_generic_punch -k falloc fpunch fcollapse fiemap _filter_hole_fiemap $testfile
++_test_generic_punch -d -k falloc fpunch fcollapse fiemap _filter_hole_fiemap $testfile
 +_check_test_fs
 +
 +status=0
 +exit
-diff --git a/tests/shared/003.out b/tests/shared/003.out
+diff --git a/tests/shared/004.out b/tests/shared/004.out
 new file mode 100644
-index 0000000..545304e
+index 0000000..a7d0f52
 --- /dev/null
-+++ b/tests/shared/003.out
++++ b/tests/shared/004.out
 @@ -0,0 +1,53 @@
-+QA output created by 003
++QA output created by 004
 +	1. into a hole
 +f4f35d60b3cc18aaa6d8d92f0cd3708a
 +	2. into allocated space
@@ -168,14 +169,14 @@ index 0000000..545304e
 +0: [0..95]: extent
 +f1894a71ac539f6f90426d98a4990a47
 diff --git a/tests/shared/group b/tests/shared/group
-index 7230b28..9226032 100644
+index 9226032..fb1d6d0 100644
 --- a/tests/shared/group
 +++ b/tests/shared/group
-@@ -5,6 +5,7 @@
- #
+@@ -6,6 +6,7 @@
  001 auto prealloc
  002 auto prealloc
-+003 auto prealloc
+ 003 auto prealloc
++004 auto prealloc
  032 mkfs auto quick
  051 acl udf auto quick
  218 auto fsr quick
