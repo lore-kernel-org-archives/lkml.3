@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760018Ab3LHWRO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 17:17:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755417Ab3LHWRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 17:17:10 -0500
-Date: Sun, 8 Dec 2013 17:17:03 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] smack: call WARN_ONCE() instead of calling
- audit_log_start()
-Message-ID: <20131208221703.GB10279@madcap2.tricolour.ca>
-References: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
- <f18b900087454601b1431183f705f61acd4932c7.1386206544.git.rgb@redhat.com>
- <52A21A38.40802@schaufler-ca.com>
+	id S1760052Ab3LHWyN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 17:54:13 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47190 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760024Ab3LHWyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 17:54:10 -0500
+From: Sergei Ianovich <ynvich@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 0/9] ARM: support for ICP DAS LP-8x4x (with dts)
+Date: Mon,  9 Dec 2013 02:53:40 +0400
+Message-Id: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+X-Mailer: git-send-email 1.8.4.3
+In-Reply-To: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A21A38.40802@schaufler-ca.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 10:40:56AM -0800, Casey Schaufler wrote:
-> On 12/4/2013 6:45 PM, Richard Guy Briggs wrote:
-> > Remove the call to audit_log() (which call audit_log_start()) and deal with
-> > the errors in the caller, logging only once if the condition is met.  Calling
-> > audit_log_start() in this location makes buffer allocation and locking more
-> > complicated in the calling tree (audit_filter_user()).
-> >
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> 
-> I'm not opposed to this change, but have you actually tried it?
+Except for defconfig, this is a completely new series. The first
+eight patches fix outstanding issues with device tree support
+in PXA. The 9th boots ICP DAS LP-8x4x.
 
-No, do you have concerns?
+Daniel chose to add a lot of selects for his MACH_PXA3XX_DT config
+option. I feel that it will be easier to create multi-machine kernel
+configurations and support per-machine workaround, if those selects
+reside in separate machine options.
 
-It is a projection based on the selinux_audit_match_rule() patch in the
-same set.
+If Daniel agrees with my arguments, MACH_PXA3XX_DT and MACH_PXA27X_DT
+could be merged into a single MACH_PXA_DT option.
 
-> > ---
-> >  security/smack/smack_lsm.c |    5 ++---
-> >  1 files changed, 2 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> > index 8825375..185e2e7 100644
-> > --- a/security/smack/smack_lsm.c
-> > +++ b/security/smack/smack_lsm.c
-> > @@ -3615,9 +3615,8 @@ static int smack_audit_rule_match(u32 secid, u32 field, u32 op, void *vrule,
-> >  	struct smack_known *skp;
-> >  	char *rule = vrule;
-> >  
-> > -	if (!rule) {
-> > -		audit_log(actx, GFP_ATOMIC, AUDIT_SELINUX_ERR,
-> > -			  "Smack: missing rule\n");
-> > +	if (unlikely(!rule)) {
-> > +		WARN_ONCE(1, "Smack: missing rule\n");
-> >  		return -ENOENT;
-> >  	}
-> >  
-> 
+CC: Daniel Mack <zonque@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>
 
-- RGB
+Sergei Ianovich (9):
+  ARM: dts: pxa2xx fix compatible strings
+  ARM: dts: fix pxa27x-gpio interrupts
+  ARM: fix ohci-pxa27x build error with OF enabled
+  ARM: pxa: remove unused variable
+  ARM: dts: provide DMA config to pxamci
+  ARM: dts: pxa3xx: move declaration to header
+  ARM: dts: pxa27x: skip static platform devices
+  ARM: dts: pxa27x: device tree irq init
+  ARM: pxa27x: device tree support ICP DAS LP-8x4x
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+ Documentation/devicetree/bindings/mmc/pxa-mmc.txt |   2 +
+ arch/arm/boot/dts/Makefile                        |   1 +
+ arch/arm/boot/dts/pxa27x-lp8x4x.dts               | 111 +++++++++++++++
+ arch/arm/boot/dts/pxa27x.dtsi                     |  10 ++
+ arch/arm/boot/dts/pxa2xx.dtsi                     |   5 +-
+ arch/arm/configs/lp8x4x_defconfig                 | 162 ++++++++++++++++++++++
+ arch/arm/mach-pxa/Kconfig                         |  31 +++++
+ arch/arm/mach-pxa/Makefile                        |   1 +
+ arch/arm/mach-pxa/include/mach/irqs.h             |   4 +
+ arch/arm/mach-pxa/include/mach/pxa27x.h           |   4 +
+ arch/arm/mach-pxa/irq.c                           |   2 -
+ arch/arm/mach-pxa/pxa27x-dt.c                     |  97 +++++++++++++
+ arch/arm/mach-pxa/pxa27x.c                        |  17 +++
+ arch/arm/mach-pxa/pxa3xx.c                        |   2 -
+ drivers/mmc/host/pxamci.c                         |  50 +++++--
+ drivers/usb/host/ohci-pxa27x.c                    |   1 +
+ 16 files changed, 482 insertions(+), 18 deletions(-)
+ create mode 100644 arch/arm/boot/dts/pxa27x-lp8x4x.dts
+ create mode 100644 arch/arm/configs/lp8x4x_defconfig
+ create mode 100644 arch/arm/mach-pxa/pxa27x-dt.c
+
+-- 
+1.8.4.3
+
