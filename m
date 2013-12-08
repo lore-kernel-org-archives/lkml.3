@@ -1,89 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab3LHBw0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 20:52:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48227 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219Ab3LHBwZ (ORCPT
+	id S1755066Ab3LHCVa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 21:21:30 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49965 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab3LHCV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 20:52:25 -0500
-Message-ID: <52A3D0C3.1080504@oracle.com>
-Date: Sat, 07 Dec 2013 20:52:03 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sat, 7 Dec 2013 21:21:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 02/11] arm: pxa27x: support ICP DAS LP-8x4x
+Date: Sun, 8 Dec 2013 03:21:11 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+References: <1385879185-22455-3-git-send-email-ynvich@gmail.com> <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+In-Reply-To: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: vbabka@suse.cz, joern@logfs.org, mgorman@suse.de,
-        Michel Lespinasse <walken@google.com>, riel@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: kernel BUG in munlock_vma_pages_range
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Message-Id: <201312080321.12001.arnd@arndb.de>
+X-Provags-ID: V02:K0:NlKifb2oEV3uNYOQWhHVc2uQszorb09re1lTNIW/xHI
+ qE030P4vIKOdBdYjKXmPGLPWGY61uZa6dSoA85HAcO6NUcWBzG
+ Zl/2dzK1hfD/CSGQmaZ7GkDohR8ssUVHGiDT6oqfWhuYsXgo1y
+ uRZ/GrW8y+pWigdUmwvYRyGs1D9WvcEqnMDRmUvqOfhs1/D2qx
+ jwRd2yLzAAwphZTZN5943WuuEiVtIoMkcIgguGchDJLVE+r09q
+ CkL1jcmEUqj3F7EEYn7pSmZv2PGT6OAfY+e+NFIIZAZjjZSaey
+ OgVqNerCW37qaB7B9ZSj9AuneVMv60HPPm9kTs7ZI7tFOVRfgQ
+ WPMLW717/mTPY0DM+NTg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Friday 06 December 2013, Sergei Ianovich wrote:
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-I've stumbled on the following spew.
+> new file mode 100644
+> index 0000000..2612e60
+> --- /dev/null
+> +++ b/arch/arm/configs/lp8x4x_defconfig
+> @@ -0,0 +1,235 @@
+> +CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
 
-The code seems to be in munlock_vma_pages_range():
+This will break some build bots, please remove it here and add it to your
+build environment instead.
 
-         page = follow_page_mask(vma, start, FOLL_GET | FOLL_DUMP,
-                         &page_mask);
+> +# CONFIG_LBDAF is not set
+> +CONFIG_BLK_CMDLINE_PARSER=y
+> +CONFIG_PARTITION_ADVANCED=y
+> +CONFIG_BSD_DISKLABEL=y
+> +CONFIG_MINIX_SUBPARTITION=y
+> +CONFIG_SOLARIS_X86_PARTITION=y
+> +CONFIG_UNIXWARE_DISKLABEL=y
+> +CONFIG_LDM_PARTITION=y
 
-         if (page && !IS_ERR(page)) {
-                 if (PageTransHuge(page)) {		<<==== HERE
-                         lock_page(page);
+You have some rather unusual options in here. I'd suggest you go through
+the reduced defconfig file and remove all options that look like they
+are unnecessary for your system.
 
+It's probably based on some distro config that enables lots of modules
+you don't actually want.
 
-This is new code added in "mm: munlock: batch non-THP page isolation and munlock+putback
-using pagevec". I've Cc'ed involved parties.
+> +#define LP8X4X_FPGA_PHYS	0x17000000
+> +#define LP8X4X_FPGA_VIRT	((void *) 0xf1000000)
+> +#define LP8X4X_P2V(x)		IOMEM((x) - LP8X4X_FPGA_PHYS + LP8X4X_FPGA_VIRT)
+> +#define LP8X4X_V2P(x)		((x) - LP8X4X_FPGA_VIRT + LP8X4X_FPGA_PHYS)
 
-[  356.390309] kernel BUG at include/linux/page-flags.h:415!
-[  356.390309] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  356.395160] Dumping ftrace buffer:
-[  356.395160]    (ftrace buffer empty)
-[  356.395160] Modules linked in:
-[  356.395160] CPU: 36 PID: 10919 Comm: trinity-child74 Not tainted 
-3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4045
-[  356.395160] task: ffff880f731e0000 ti: ffff880f731e8000 task.ti: ffff880f731e8000
-[  356.395160] RIP: 0010:[<ffffffff812636c9>]  [<ffffffff812636c9>] munlock_vma_pages_range+0x89/0x1b0
-[  356.395160] RSP: 0018:ffff880f731e9b58  EFLAGS: 00010286
-[  356.395160] RAX: 002fffff80008000 RBX: 00007f91cd801000 RCX: 0000000000000000
-[  356.395160] RDX: ffffea003ded0040 RSI: 00000000000013f1 RDI: 00000000ffffffff
-[  356.395160] RBP: ffff880f731e9c18 R08: 00000000e26e4584 R09: 0000000000000001
-[  356.395160] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea003ded0040
-[  356.395160] R13: ffff880f733a8400 R14: 00007f91cdeea000 R15: ffff880f731e9be4
-[  356.395160] FS:  0000000000000000(0000) GS:ffff880fdba00000(0000) knlGS:0000000000000000
-[  356.395160] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  356.395160] CR2: 0000000000000000 CR3: 0000000f7314a000 CR4: 00000000000006e0
-[  356.395160] Stack:
-[  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-[  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-[  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-[  356.395160] Call Trace:
-[  356.395160]  [<ffffffff81264c89>] exit_mmap+0x59/0x170
-[  356.395160]  [<ffffffff8129a4a0>] ? __khugepaged_exit+0xe0/0x150
-[  356.395160]  [<ffffffff81292d2b>] ? kmem_cache_free+0x24b/0x310
-[  356.395160]  [<ffffffff8129a4a0>] ? __khugepaged_exit+0xe0/0x150
-[  356.395160]  [<ffffffff81127eec>] mmput+0x7c/0xf0
-[  356.395160]  [<ffffffff8112c18d>] exit_mm+0x18d/0x1a0
-[  356.395160]  [<ffffffff811c8d85>] ? acct_collect+0x175/0x1b0
-[  356.395160]  [<ffffffff8112ceef>] do_exit+0x26f/0x4e0
-[  356.395160]  [<ffffffff8112d209>] do_group_exit+0xa9/0xe0
-[  356.395160]  [<ffffffff81311ff0>] get_signal_to_deliver+0x460/0x4b0
-[  356.395160]  [<ffffffff81067c3b>] do_signal+0x4b/0x120
-[  356.395160]  [<ffffffff842a4405>] ? _raw_spin_unlock+0x35/0x60
-[  356.395160]  [<ffffffff81168d36>] ? vtime_account_user+0x96/0xb0
-[  356.395160]  [<ffffffff8122ccbf>] ? context_tracking_user_exit+0xaf/0x160
-[  356.395160]  [<ffffffff81067f9a>] do_notify_resume+0x5a/0xe0
-[  356.395160]  [<ffffffff842ad0f0>] int_signal+0x12/0x17
-[  356.395160] Code: 48 89 de 4c 89 ef e8 17 7f ff ff 49 89 c4 48 85 c0 0f 84 eb 00 00 00 48 3d 00 
-f0 ff ff 0f 87 df 00 00 00 48 8b 00 66 85 c0 79 0f <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 49 
-8b 04 24 f6 c4
-[  356.395160] RIP  [<ffffffff812636c9>] munlock_vma_pages_range+0x89/0x1b0
-[  356.395160]  RSP <ffff880f731e9b58>
+I think you misunderstood my comment, the point was that you should
+move the IOMEM() to the LP8X4X_FPGA_VIRT definition, like
+
+#define LP8X4X_FPGA_VIRT	((void __iomem *) 0xf1000000)
+#define LP8X4X_P2V(x)		(x) - LP8X4X_FPGA_PHYS + LP8X4X_FPGA_VIRT)
+
+which would result in the correct type because of pointer arithmetics.
+
+> +/* board level registers in the FPGA */
+> +
+> +#define LP8X4X_EOI		LP8X4X_P2V(0x17009006)
+> +#define LP8X4X_INSINT		LP8X4X_P2V(0x17009008)
+> +#define LP8X4X_ENSYSINT		LP8X4X_P2V(0x1700900A)
+> +#define LP8X4X_PRIMINT		LP8X4X_P2V(0x1700900C)
+> +#define LP8X4X_SECOINT		LP8X4X_P2V(0x1700900E)
+> +#define LP8X4X_ENRISEINT	LP8X4X_P2V(0x17009010)
+> +#define LP8X4X_CLRRISEINT	LP8X4X_P2V(0x17009012)
+> +#define LP8X4X_ENHILVINT	LP8X4X_P2V(0x17009014)
+> +#define LP8X4X_CLRHILVINT	LP8X4X_P2V(0x17009016)
+> +#define LP8X4X_ENFALLINT	LP8X4X_P2V(0x17009018)
+> +#define LP8X4X_CLRFALLINT	LP8X4X_P2V(0x1700901a)
+
+Thinking about this again, it's actually better if you just get rid of
+LP8X4X_P2V() entirely and redefine these to
+
+#define LP8X4X_EOI		0x0006
+#define LP8X4X_INSINT		0x0008
+...
+
+and change the users to do e.g.
+
+	readl(LP8X4X_FPGA_VIRT + LP8X4X_INSINT);
+
+This is closer to the normal way of adding the offset to an __iomem
+pointer returned from ioremap.
+
+> +	platform_device_register_resndata(NULL, "pxa2xx-flash", 0,
+> +			&lp8x4x_flash_resources[0], 1,
+> +			&lp8x4x_flash_data[0], sizeof(lp8x4x_flash_data[0]));
+> +	platform_device_register_resndata(NULL, "pxa2xx-flash", 1,
+> +			&lp8x4x_flash_resources[1], 1,
+> +			&lp8x4x_flash_data[1], sizeof(lp8x4x_flash_data[1]));
+> +	platform_device_register_simple("dm9000", 0,
+> +			&lp8x4x_dm9000_resources[0], 3);
+> +	platform_device_register_simple("dm9000", 1,
+> +			&lp8x4x_dm9000_resources[3], 3);
+
+This looks much better than the first version, a slight improvement IMHO would
+be to split the resource arrays into one symbol per device to turn this into
+
+platform_device_register_resndata(NULL, "pxa2xx-flash", 0,
+			&lp8x4x_flash_resources0, 1,
+			&lp8x4x_flash_data0, sizeof(lp8x4x_flash_data0));
+platform_device_register_resndata(NULL, "pxa2xx-flash", 1,
+			&lp8x4x_flash_resources1, 1,
+			&lp8x4x_flash_data1, sizeof(lp8x4x_flash_data1));
+
+It's not important though if you have a strong preference for the way you
+did this, it just seems unusual.
+
+	Arnd
