@@ -1,163 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759567Ab3LHONN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 09:13:13 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:42500 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759217Ab3LHONK (ORCPT
+	id S1759607Ab3LHOOS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 09:14:18 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:39046 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab3LHOOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 09:13:10 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: viro@zeniv.linux.org.uk, david@fromorbit.com, bpm@sgi.com, tytso@mit.edu,
-        adilger.kernel@dilger.ca, jack@suse.cz
-Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH v4 9/10] xfstest: shared/005: Test multiple fallocate collapse
-Date: Sun,  8 Dec 2013 23:13:01 +0900
-Message-Id: <1386511981-3974-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 8 Dec 2013 09:14:16 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 2/9] MAINTAINERS: add ARM Marvell Berlin SoC
+Date: Sun,  8 Dec 2013 15:13:59 +0100
+Message-Id: <1386512047-874-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+This adds Marvell Berlin SoC to the list of maintainers. I am taking
+maintainership for arch/arm/mach-berlin/.
 
-We execute collapse range multiple times on same file.
-Each collapse range call collapses a single alternate block.
-After the test execution, file will be left with 80 blocks and
-as much number of extents.
-We also check for file system consistency after the completion.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
 ---
- tests/shared/005     |   90 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tests/shared/005.out |    4 +++
- tests/shared/group   |    1 +
- 3 files changed, 95 insertions(+)
- create mode 100644 tests/shared/005
- create mode 100644 tests/shared/005.out
+Changelog:
+any->v4:
+- none
 
-diff --git a/tests/shared/005 b/tests/shared/005
-new file mode 100644
-index 0000000..1347e7f
---- /dev/null
-+++ b/tests/shared/005
-@@ -0,0 +1,90 @@
-+#! /bin/bash
-+# FS QA Test No. 5
-+#
-+# Test multiple fallocate collapse range calls on same file.
-+# For different blocksizes, collapse a single alternate block multiple times
-+# until the file is left with 80 blocks and as much number of extents.
-+# Also check for file system consistency after completing this operation
-+# for each blocksize.
-+#-----------------------------------------------------------------------
-+# Copyright (c) 2013 Samsung Electronics.  All Rights Reserved.
-+#
-+# This program is free software; you can redistribute it and/or
-+# modify it under the terms of the GNU General Public License as
-+# published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope that it would be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write the Free Software Foundation,
-+# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+#
-+#-----------------------------------------------------------------------
-+#
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ MAINTAINERS | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8285ed4..33c7187 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1032,6 +1032,12 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ F:	arch/arm/mach-mvebu/
+ 
++ARM/Marvell Berlin SoC support
++M:	Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++F:	arch/arm/mach-berlin/
 +
-+seq=`basename $0`
-+seqres=$RESULT_DIR/$seq
-+echo "QA output created by $seq"
-+
-+here=`pwd`
-+tmp=/tmp/$$
-+status=1	# failure is the default!
-+trap "rm -f $tmp.*; exit \$status" 0 1 2 3 15
-+
-+# get standard environment, filters and checks
-+. ./common/rc
-+. ./common/filter
-+
-+# real QA test starts here
-+_supported_fs xfs ext4
-+_supported_os Linux
-+
-+_require_scratch
-+_require_xfs_io_fiemap
-+_require_xfs_io_falloc_collapse
-+_do_die_on_error=y
-+testfile=$SCRATCH_MNT/$seq.$$
-+BLOCKS=10240
-+
-+for (( BSIZE = 1024; BSIZE <= 4096; BSIZE *= 2 )); do
-+
-+	length=$(($BLOCKS * $BSIZE))
-+	case $FSTYP in
-+	xfs)
-+	_scratch_mkfs -b size=$BSIZE >> $seqres.full 2>&1
-+	;;
-+	ext4)
-+	_scratch_mkfs -b $BSIZE >> $seqres.full 2>&1
-+	;;
-+	esac
-+	_scratch_mount >> $seqres.full 2>&1
-+
-+	# Write file
-+	$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
-+
-+	# Collapse alternate blocks 
-+	for (( i = 1; i <= 7; i++ )); do
-+		for (( j=0; j < $(($BLOCKS/(2**$i))); j++ )); do
-+			offset=$(($j*$BSIZE))
-+			$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
-+		done
-+	done
-+
-+	# Check if 80 extents are present
-+	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
-+
-+	_check_scratch_fs
-+	if [ $? -ne 0 ]; then
-+		status=1
-+		exit
-+	fi
-+
-+	umount $SCRATCH_MNT
-+done
-+
-+# success, all done
-+status=0
-+exit
-diff --git a/tests/shared/005.out b/tests/shared/005.out
-new file mode 100644
-index 0000000..8d30b9d
---- /dev/null
-+++ b/tests/shared/005.out
-@@ -0,0 +1,4 @@
-+QA output created by 005
-+80
-+80
-+80
-diff --git a/tests/shared/group b/tests/shared/group
-index fb1d6d0..22f1d3a 100644
---- a/tests/shared/group
-+++ b/tests/shared/group
-@@ -7,6 +7,7 @@
- 002 auto prealloc
- 003 auto prealloc
- 004 auto prealloc
-+005 auto prealloc
- 032 mkfs auto quick
- 051 acl udf auto quick
- 218 auto fsr quick
+ ARM/Marvell Dove/Kirkwood/MV78xx0/Orion SOC support
+ M:	Jason Cooper <jason@lakedaemon.net>
+ M:	Andrew Lunn <andrew@lunn.ch>
 -- 
-1.7.9.5
+1.8.4.rc3
 
