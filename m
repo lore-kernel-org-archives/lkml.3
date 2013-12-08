@@ -1,156 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab3LHXiQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 18:38:16 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:9009 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab3LHXiN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 18:38:13 -0500
-X-AuditID: cbfee68e-b7fee6d000003b32-f3-52a502e42dd0
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <1386545831.2101.67.camel@kjgkr>
-Subject: Re: [f2fs-dev] [PATCH 3/3 V2] f2fs: introduce f2fs_cache_node_page()
- to add page into node_inode cache
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Date: Mon, 09 Dec 2013 08:37:11 +0900
-In-reply-to: <000501cef263$1c57e710$5507b530$@samsung.com>
-References: <000501cef263$1c57e710$5507b530$@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zA90nTEuDDC7/FbX43/SRzeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlbH2wC62guMiFV3n
-	DrA2ME4V6GLk5JAQMJG4+3UZK4QtJnHh3nq2LkYuDiGBZYwSy1bPZIMp2nViDytEYjqjxL6b
-	h9hBErwCghI/Jt9jAbGZBdQlJs1bxAxhi0gcb74JFdeWWLbwNTNE8ytGie59G9ggmnUkzs2f
-	wwhiCwsUSmyb28HUxcjBwQbUsHm/AUhYSEBR4u3+u2DXiQgoSfyav4gVYmamxJzXk1lBylkE
-	VCU+XOcECXMKWElMnTuBGaLVUuLrinawE/gFRCUOL9zODPGLksTu9k52kHMkBE6xS2y9PIsJ
-	JMEiICDxbfIhFpCZEgKyEpsOQNVLShxccYNlAqPkLCQfz0Ly8SwkH89C8vECRpZVjKKpBckF
-	xUnpRUZ6xYm5xaV56XrJ+bmbGCER2reD8eYB60OMyUDrJzJLiSbnAyM8ryTe0NjMyMLUxNTY
-	yNzSjDRhJXHeRQ+TgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwzm1Quu8mIS/wa8W6TVOu
-	/OHkW1EqXRvoZ/5MdmF+2J23j4MYljX4cb7VSlKyrjp4IJ1hchGX5Zs1Fxt5Ej33e3xUcmH4
-	oFjXtluNoW5pisOsI/tkX/z9YqS72WplTzIX04yQ4wumrdJSutHMGzU75urrfNbpIZoxjVF6
-	ky2vV3nLJnZ9dj+ixFKckWioxVxUnAgANES0wOYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t9jQd0nTEuDDJo+Clr8b/rIZnFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8xY1XSfuWCjSMXmbZNZGhj/83cxcnJICJhI7DqxhxXCFpO4cG89WxcjF4eQ
-	wHRGiX03D7GDJHgFBCV+TL7H0sXIwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxgluvdtYIOo15E4
-	N38OI4gtLFAosW1uBxNIL5uAtsTm/QYgYSEBRYm3+++C7RURUJL4NX8RK8TMTIk5ryezgpSz
-	CKhKfLjOCRLmFLCSmDp3AjNEq6XE1xXtLCA2v4CoxOGF25khzleS2N3eyT6BUWgWkqNnIRw9
-	C8nRCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx/Iz6R2MqxosDjEKcDAq8fDe2LE4
-	SIg1say4MvcQowQHs5IIr9KJJUFCvCmJlVWpRfnxRaU5qcWHGJOB7p7ILCWanA9MM3kl8YbG
-	JmZGlkZmFkYm5uakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwGjKycja3ztvSnJm97L3
-	fMZmVdrXOVy8Q6dNm3+v3zloriHH677MP7sOZv5hVmMOfFFlMKf778zUGQUlfIpPGxyLp7XI
-	LBIJ3RG26LB/2W3Zja91pn3/uHaG0c85l/YYvop7K5ibUmxx+oux3fvpMaEhC9apSdqmz5qX
-	OuHI2gC32a8EXwdUKyuxFGckGmoxFxUnAgCd0fdRKQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1760081Ab3LHXnP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 18:43:15 -0500
+Received: from nm9-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.154]:34311 "HELO
+	nm9-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755574Ab3LHXnN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 18:43:13 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 787012.68817.bm@omp1023.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=A8HCmHUUkBfiSq9MXCspczNROE4EsqJgwzllYPqBUpvJ+JHNdWP19jSji7nVuQhIYPnxkXjwJ8SUXxctg7i5LqFKIymSBPy/+MdhxLemN0jdC7n3CH4rq3vm8D8BuIbd//zaTCZBqXBj5EMwfjGTVfMUy3wdAlSei+/Vo7WLIC4=;
+X-YMail-OSG: 1wpTLNEVM1mFDPX8NY2w3tcxnfxPz09WLdXmguTZI3Duq7d
+ a9nhjtqjkQjFjQ9mMrDovqtMJjABi9v.M7FlB9.PCLyIdsMSMlzTJu.f8KYA
+ rBIr1Kc12XJkS8ZleaXYRPl3tAPoKt9CP3o2UWd0CdjxcNWTnga_lW0z8xO0
+ .DDs1tDkHsEF7MPwVhteqbJC53.Pd9rLesooem9OcI7WUahzYSXTmdb4yHII
+ Il1Zc1WFXq2cQGReUdToLUb5vW6d6PTFwOumk3zIthbFXvTr8nI_UqvfzvVF
+ VkzQHO8phonZWrDdnLdkfdsJJrP4OQiGeyKQxlNrOpQBzNpuAhGZtXDOx6bk
+ HJZEGipq3n2KI.g0ygngURnDqO9wWLK.3YjzjN6fztStFhj1VQjIFD2AbRZ.
+ 8vV6jIsmwpIqScylfVkvq8KemDN.3druLrVxwX_lkTXJ5_lPe6JWB.aYojtL
+ l6Uoboe5Fw3mnv2XNB9e8lw0UI1USFHdlIhCU_BcQni_fRHvy2t6S4vOGI_B
+ kshnuNaIXH9a2iG_SFxiFbIEQD8IKFlU8V5NAkm7nnnV21YblhZxlbL2ibZu
+ PSIxb1RyM.Q--
+X-Rocket-MIMEInfo: 002.001,DQpJIGNvZGUsIHRoZXJlZm9yZSBJIGFtDQoNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQpPbiBTdW4sIDEyLzgvMTMsIEFsZXggRGF2aXMgPGFsZXgxNDY0MUB5YWhvby5jb20.IHdyb3RlOg0KDQogU3ViamVjdDogUmU6IFtQQVRDSF0gZGVsbC1sYXB0b3A6IGFkZCBwYXJhbWV0ZXIgdG8gZGlzYWJsZSB0aGUgYmFja2xpZ2h0IGRldmljZS4NCiBUbzogIm1qZzU5QHNyY2YudWNhbS5vcmciIDxtamc1OUBzcmNmLnVjYW0ub3JnPiwgImxpbnV4LWtlcm5lbEB2Z2VyLmtlcm4BMAEBAQE-
+X-Mailer: YahooMailClassic/379 YahooMailWebService/0.8.169.609
+Message-ID: <1386546191.74980.YahooMailBasic@web160402.mail.bf1.yahoo.com>
+Date: Sun, 8 Dec 2013 15:43:11 -0800 (PST)
+From: Alex Davis <alex14641@yahoo.com>
+Subject: Re: [PATCH] dell-laptop: add parameter to disable the backlight device.
+To: "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Levente Kurusa <levex@linux.com>
+In-Reply-To: <1386535096.90326.YahooMailBasic@web160402.mail.bf1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-12-06 (ê¸ˆ), 17:10 +0800, Chao Yu:
-> This patch introduces f2fs_cache_node_page(), in this function, page which is
-> readed ahead will be copy to node_inode's mapping cache.
-> It will avoid rereading these node pages.
-> 
-> change log:
->  o check validity of grabbed page suggested by Jaegeuk Kim.
-> 
-> Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/node.c |   35 +++++++++++++++++++++++++++++++++++
->  1 file changed, 35 insertions(+)
-> 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 099f06f..3ff98fa 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1600,6 +1600,39 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
->  	return 0;
->  }
->  
-> +/*
-> + * f2fs_cache_node_page() copy updated page data to node_inode cache page.
-> + */
-> +void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
-> +						nid_t nid)
-> +{
-> +	struct address_space *mapping = sbi->node_inode->i_mapping;
-> +	struct page *npage;
 
+I code, therefore I am
 
-What I meant for the validity was to check the block address to figure
-out this node page is up-to-date or not.
-IOW, something like this.
+--------------------------------------------
+On Sun, 12/8/13, Alex Davis <alex14641@yahoo.com> wrote:
 
-  get_node_info(sbi, nid, &ni);
+ Subject: Re: [PATCH] dell-laptop: add parameter to disable the backlight device.
+ To: "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "Levente Kurusa" <levex@linux.com>
+ Date: Sunday, December 8, 2013, 3:38 PM
  
-  if (ni.blk_addr != current block address))
-    goto out;
-
-  npage = grab_cache_page(mapping, nid);
-  if (unlikely(!npage))
-    return;
-
-  if (unlikely(PageUptodate(npage))) {
-    f2fs_put_page(npage, 1);
-    return;
-  }
-  memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
-
-  SetPageUptodate(npage);
-  f2fs_put_page(npage, 1);
-out:
-  return;
  
-> +
-> +	npage = find_get_page(mapping, nid);
-> +	if (unlikely(npage && PageUptodate(npage))) {
-> +		f2fs_put_page(npage, 0);
-> +		return;
-> +	}
-> +	f2fs_put_page(npage, 0);
-> +
-> +	npage = grab_cache_page(mapping, nid);
-> +	if (unlikely(!npage))
-> +		return;
-> +
-> +	if (unlikely(PageUptodate(npage))) {
-> +		f2fs_put_page(npage, 1);
-> +		return;
-> +	}
-> +
-> +	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
-> +
-> +	SetPageUptodate(npage);
-> +	f2fs_put_page(npage, 1);
-> +
-> +	return;
-> +}
-> +
->  int restore_node_summary(struct f2fs_sb_info *sbi,
->  			unsigned int segno, struct f2fs_summary_block *sum)
->  {
-> @@ -1633,6 +1666,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
->  				sum_entry->version = 0;
->  				sum_entry->ofs_in_node = 0;
->  				sum_entry++;
-> +				f2fs_cache_node_page(sbi, page,
-> +					le32_to_cpu(rn->footer.nid));
->  			} else {
->  				err = -EIO;
->  			}
-
--- 
-Jaegeuk Kim
-Samsung
-
+ 
+ --------------------------------------------
+ On Sun, 12/8/13, Levente Kurusa <levex@linux.com>
+ wrote:
+ 
+ > Subject: Re: [PATCH] dell-laptop: add parameter to
+ disable the backlight device.
+ > To: "Alex Davis" <alex14641@yahoo.com>,
+ "mjg59@srcf.ucam.org"
+ <mjg59@srcf.ucam.org>,
+ >"linux->kernel@vger.kernel.org"
+ <linux-kernel@vger.kernel.org>
+ > Date: Sunday, December 8, 2013, 9:06 AM
+  
+  
+  >>2013-12-08 14:40, Alex Davis:
+  >> I have a Dell Inspiron N7010 Laptop with Intel
+  graphics. When the dell-laptop module is loaded,
+  >> two backlight device devices are created;
+  dell_backlight, and intel_backlight from the Intel
+  >> graphics driver. The dell_backlight device is
+  non-functional, but the graphics subsystem uses
+  >> it instead of the functioning intel_backlight
+ device.
+  The result is that, when running KDE,
+  >> screen brightness cannot be controlled. I've added
+ a
+  module parameter, disable_backlight
+  >> which, when true, will disable the dell_backlight
+  device, and leave only the intel_backlight:
+  >> with this, screen brightness can be controlled.
+  >> 
+  
+ > Hi,
+  
+  >I think it would be better if we could figure out why
+ the
+  >dell_blacklight device is not working rather than
+ disabling
+  >it.
+  
+  
+ > Regarding your patch, it creates a memory leak as you:
+ >  * allocate a platform device
+ >  * you add it
+ >  * you allocated a page for SMI
+ > 
+ > Your if(disable_blacklight) code should go
+ > where it checks the DMI.
+ > 
+ > -- Regards,
+ > Levente Kurusa
+ 
+ Levante,
+ 
+ >You are correct. The existing code also has a memory leak. I
+ >will submit a patch for that.
+ 
+Upon further investigation, I'm not seeing the memory leak. I see the objects being allocated, but they are deallocated in the dell_exit method. 
+ 
+  
+ 
