@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759189Ab3LHPAY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 10:00:24 -0500
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:33814 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754916Ab3LHPAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 10:00:21 -0500
-Date: Sun, 8 Dec 2013 17:00:16 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
+	id S1759319Ab3LHPAt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 10:00:49 -0500
+Received: from 14.mo1.mail-out.ovh.net ([178.32.97.215]:59678 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759219Ab3LHPA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 10:00:28 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: Slab BUG with DEBUG_* options
-In-Reply-To: <00000142ba77e59d-3e002746-996d-4843-b8f1-51d1431b47a9-000000@email.amazonses.com>
-Message-ID: <alpine.SOC.1.00.1312040005350.25191@math.ut.ee>
-References: <alpine.SOC.1.00.1311300125490.6363@math.ut.ee> <alpine.DEB.2.02.1312030930450.4115@gentwo.org> <00000142ba22e43b-99d8d7cb-9ecd-4f18-9609-8805270843d4-000000@email.amazonses.com> <alpine.SOC.1.00.1312032314040.25191@math.ut.ee>
- <00000142ba77e59d-3e002746-996d-4843-b8f1-51d1431b47a9-000000@email.amazonses.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [PATCH v4] usb: ohci-at91: fix irq and iomem resource retrieval
+Date: Sun,  8 Dec 2013 15:59:59 +0100
+Message-Id: <1386514799-6295-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 9903978531195812095
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Added 3 addresses to CC from my RED state exception thread since this 
-is related)
+When using dt resources retrieval (interrupts and reg properties) there is
+no predefined order for these resources in the platform dev resources
+table.
 
-> On Tue, 3 Dec 2013, Meelis Roos wrote:
-> 
-> > Tested it. seems to hang after switching to another console. Before
-> > that, slabs are initialized successfully, I verified it with my previous
-> > debug printk sprinkle patch. Many allocations are still off slab - is
-> > that OK?
-> 
-> Yes that was the intend. Only exempt the small ones.
-> 
-> > console [tty0] enabled, bootconsole disabled
-> 
-> Looks like the bootstrap worked.
+Retrieve resources using platform_get_resource and platform_get_irq
+functions instead of direct resource table entries to avoid resource type
+mismatch.
 
-But the configuration should work fine with this console setup - with no 
-slab debug options, it booted fine... I decided to do more tests.
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reviewed-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+Changes since v3:
+ - replace platform_get_resource call with IORESOURCE_IRQ argument by
+   platform_get_irq
 
-In short, tests about 3.11-rc2-00058:
+Changes since v2:
+ - split the patch series to isolate the urgent fix provided by this patch
 
-clean kernel: boots OK, RED state on shutdown (the actual problem I am 
-chasing)
+Changes since v1:
+ - none
 
-clean kernel, slab debug: mm crash
+ drivers/usb/host/ohci-at91.c |   26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
-your second slab patch, slab debug: OK - this one shows that the RED 
-state problem went away too which is good but strange
-
-clean kernel, your second slab patch: OK - no RED state
-
-Following another lead I had discovered that I can make the RED state 
-problem go away if I switch tty ldata allocation from vmalloc to 
-kmalloc. Tests with that:
-
-ldata alloc change only, no slab debug: OK (works around RED state 
-somehow)
-
-ldata alloc change + slab debug: mm crash, can not test for RED state
-
-ldata alloc change + your second slab patch + slab debug: hang on boot 
-after
-console [tty0] enabled, bootconsole disabled
-(after that, I should see all the dmesg again on serial but I do not).
-
-ldata alloc change + your second slab patch + no slab debug: OK
-
-So, in short:
-
-your slab patch 2 seems to cure both slab debug startup crash and the 
-RED state problem in this specific version of the kernel. However, it is 
-still mystery to me why tty ldata alloc change vmalloc->kmalloc would 
-break but that may to be in the serial field - will do more tests with 
-this patch applied and newer kernels.
-
+diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
+index 418444e..8c356af 100644
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@ -136,23 +136,27 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 	struct ohci_hcd *ohci;
+ 	int retval;
+ 	struct usb_hcd *hcd = NULL;
+-
+-	if (pdev->num_resources != 2) {
+-		pr_debug("hcd probe: invalid num_resources");
+-		return -ENODEV;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
++	int irq;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_dbg(dev, "hcd probe: missing memory resource\n");
++		return -ENXIO;
+ 	}
+ 
+-	if ((pdev->resource[0].flags != IORESOURCE_MEM)
+-			|| (pdev->resource[1].flags != IORESOURCE_IRQ)) {
+-		pr_debug("hcd probe: invalid resource type\n");
+-		return -ENODEV;
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_dbg(dev, "hcd probe: missing irq resource\n");
++		return irq;
+ 	}
+ 
+ 	hcd = usb_create_hcd(driver, &pdev->dev, "at91");
+ 	if (!hcd)
+ 		return -ENOMEM;
+-	hcd->rsrc_start = pdev->resource[0].start;
+-	hcd->rsrc_len = resource_size(&pdev->resource[0]);
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = resource_size(res);
+ 
+ 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+ 		pr_debug("request_mem_region failed\n");
+@@ -199,7 +203,7 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
+ 	ohci->num_ports = board->ports;
+ 	at91_start_hc(pdev);
+ 
+-	retval = usb_add_hcd(hcd, pdev->resource[1].start, IRQF_SHARED);
++	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (retval == 0)
+ 		return retval;
+ 
 -- 
-Meelis Roos (mroos@linux.ee)
+1.7.9.5
+
