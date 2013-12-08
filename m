@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760082Ab3LHWyZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 17:54:25 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:62102 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760024Ab3LHWyT (ORCPT
+	id S1760123Ab3LHWyd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 17:54:33 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:59333 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760024Ab3LHWy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 17:54:19 -0500
+	Sun, 8 Dec 2013 17:54:27 -0500
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
-Subject: [PATCH 1/9] ARM: dts: pxa2xx fix compatible strings
-Date: Mon,  9 Dec 2013 02:53:41 +0400
-Message-Id: <1386543229-1542-2-git-send-email-ynvich@gmail.com>
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [PATCH 4/9] ARM: pxa: remove unused variable
+Date: Mon,  9 Dec 2013 02:53:44 +0400
+Message-Id: <1386543229-1542-5-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.8.4.3
 In-Reply-To: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
 References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
@@ -29,40 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
 CC: Daniel Mack <zonque@gmail.com>
-CC: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/boot/dts/pxa2xx.dtsi | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/mach-pxa/irq.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/pxa2xx.dtsi b/arch/arm/boot/dts/pxa2xx.dtsi
-index a5e90f0..3419f87 100644
---- a/arch/arm/boot/dts/pxa2xx.dtsi
-+++ b/arch/arm/boot/dts/pxa2xx.dtsi
-@@ -18,7 +18,6 @@
- 		serial1 = &btuart;
- 		serial2 = &stuart;
- 		serial3 = &hwuart;
--		i2c0 = &pwri2c;
- 		i2c1 = &pxai2c1;
- 	};
+diff --git a/arch/arm/mach-pxa/irq.c b/arch/arm/mach-pxa/irq.c
+index b6cc181..432842c 100644
+--- a/arch/arm/mach-pxa/irq.c
++++ b/arch/arm/mach-pxa/irq.c
+@@ -236,7 +236,6 @@ void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int))
+ {
+ 	struct device_node *node;
+ 	const struct of_device_id *of_id;
+-	struct pxa_intc_conf *conf;
+ 	struct resource res;
+ 	int n, ret;
  
-@@ -113,14 +112,14 @@
- 		};
+@@ -246,7 +245,6 @@ void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int))
+ 		return;
+ 	}
+ 	of_id = of_match_node(intc_ids, node);
+-	conf = of_id->data;
  
- 		usb0: ohci@4c000000 {
--			compatible = "mrvl,pxa-ohci";
-+			compatible = "marvell,pxa-ohci";
- 			reg = <0x4c000000 0x10000>;
- 			interrupts = <3>;
- 			status = "disabled";
- 		};
- 
- 		mmc0: mmc@41100000 {
--			compatible = "mrvl,pxa-mmc";
-+			compatible = "marvell,pxa-mmc";
- 			reg = <0x41100000 0x1000>;
- 			interrupts = <23>;
- 			status = "disabled";
+ 	ret = of_property_read_u32(node, "marvell,intc-nr-irqs",
+ 				   &pxa_internal_irq_nr);
 -- 
 1.8.4.3
 
