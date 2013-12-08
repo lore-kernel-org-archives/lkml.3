@@ -1,111 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759882Ab3LHTdM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 14:33:12 -0500
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:59939 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755051Ab3LHTdI (ORCPT
+	id S1759890Ab3LHTlP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 14:41:15 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44443 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab3LHTlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 14:33:08 -0500
-Message-ID: <1386531185.13421.6.camel@x220.thuisdomein>
-Subject: Re: Regression with suspend resume
- 5a87182aa21d6d5d306840feab9321818dd3e2a3
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        LKML <linux-kernel@vger.kernel.org>, viresh.kumar@linaro.org,
-        tianyu.lan@intel.com, jinchoi@broadcom.com
-Date: Sun, 08 Dec 2013 20:33:05 +0100
-In-Reply-To: <52A4C6D2.3020208@redhat.com>
-References: <52A448F2.4010208@redhat.com>
-	 <1386501189.28599.5.camel@x220.thuisdomein> <52A4C6D2.3020208@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Dec 2013 19:33:06.0721 (UTC) FILETIME=[51CA0910:01CEF44C]
-X-RcptDomain: vger.kernel.org
+	Sun, 8 Dec 2013 14:41:10 -0500
+Date: Sun, 8 Dec 2013 19:40:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linaro-kernel@lists.linaro.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, patches@linaro.org,
+        Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Hanjun Guo <hanjun.guo@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20131208194040.GN29268@sirena.org.uk>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
+ <201312052325.02603.arnd@arndb.de>
+ <20131206135825.GG29268@sirena.org.uk>
+ <201312080344.56317.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEFDyIIeORe/70g6"
+Content-Disposition: inline
+In-Reply-To: <201312080344.56317.arnd@arndb.de>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC part1 PATCH 0/7] Make ACPI core running on ARM64
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-08 at 20:21 +0100, Zdenek Kabelac wrote:
-> Dne 8.12.2013 12:13, Paul Bolle napsal(a):
-> > Rafael just asked Linus to pull a revert of that commit (see
-> > https://lkml.org/lkml/2013/12/7/126 ).
-> >
-> I'm not sure - but it also could be related with another warning I'm getting
-> during resume:
-> 
-> But possibly this is result in  i915 update ?
 
-I don't think that's likely. See a recent LKML thread
-( https://lkml.org/lkml/2013/11/30/148 ). There are two patches
-mentioned in that thread. I had to apply both patches to make that
-WARNING go away (on a 32 bit ThinkPad).
+--PEFDyIIeORe/70g6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(These two patches are now in my local stash, on top of v3.13-rc3. I'm
-not sure what their status is and whether these will end up in
-mainline.)
+On Sun, Dec 08, 2013 at 03:44:56AM +0100, Arnd Bergmann wrote:
+> On Friday 06 December 2013, Mark Brown wrote:
 
-> PM: Syncing filesystems ... done.
-> Freezing user space processes ... (elapsed 0.005 seconds) done.
-> Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
-> Suspending console(s) (use no_console_suspend to debug)
-> sd 0:0:0:0: [sda] Synchronizing SCSI cache
-> sd 0:0:0:0: [sda] Stopping disk
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 2042 at drivers/gpu/drm/i915/intel_display.c:9948 
-> intel_get_pipe_from_connector+0x49/0x50 [i915]()
-> Modules linked in: i915 i2c_algo_bit drm_kms_helper drm ctr ccm ipt_MASQUERADE 
-> iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack 
-> nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp tun bridge stp 
-> llc ipv6 ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables 
-> bnep btusb bluetooth snd_hda_codec_analog iTCO_wdt iTCO_vendor_support arc4 
-> coretemp kvm_intel kvm microcode iwl3945 iwlegacy psmouse serio_raw mac80211 
-> i2c_i801 i2c_core sdhci_pci r852 sm_common sdhci nand cfg80211 nand_ecc 
-> snd_hda_intel nand_ids mmc_core mtd snd_hda_codec r592 snd_hwdep snd_seq 
-> memstick snd_seq_device snd_pcm lpc_ich mfd_core e1000e snd_page_alloc 
-> snd_timer ptp pps_core thinkpad_acpi wmi nvram snd soundcore evdev binfmt_misc 
-> nfsd auth_rpcgss oid_registry exportfs loop nfs_acl lockd sunrpc pcmcia sr_mod 
-> yenta_socket cdrom ehci_pci ehci_hcd uhci_hcd usbcore usb_common video 
-> backlight autofs4
-> CPU: 0 PID: 2042 Comm: kworker/u4:3 Tainted: G        W 
-> 3.13.0-rc3-00006-gee4645c #186
-> Hardware name: LENOVO 6464CTO/6464CTO, BIOS 7LETC9WW (2.29 ) 03/18/2011
-> Workqueue: events_unbound async_run_entry_fn
->   0000000000000009 ffff88009ad21af8 ffffffff815a3bfe 0000000000000000
->   ffff88009ad21b30 ffffffff8104924d ffff8800b5f4fe00 ffff8800aa408000
->   ffffffffffffffff ffff8800b5f4fe00 ffff8800b5f4fe00 ffff88009ad21b40
-> Call Trace:
->   [<ffffffff815a3bfe>] dump_stack+0x4e/0x7a
->   [<ffffffff8104924d>] warn_slowpath_common+0x7d/0xa0
->   [<ffffffff8104932a>] warn_slowpath_null+0x1a/0x20
->   [<ffffffffa0c27f59>] intel_get_pipe_from_connector+0x49/0x50 [i915]
->   [<ffffffffa0c41e05>] intel_panel_disable_backlight+0x25/0x180 [i915]
->   [<ffffffffa0c2cfad>] intel_disable_lvds+0x4d/0x180 [i915]
->   [<ffffffffa0c1ceda>] i9xx_crtc_disable+0x28a/0x380 [i915]
->   [<ffffffffa0be50ca>] i915_drm_freeze+0xca/0x150 [i915]
->   [<ffffffffa0be54cd>] i915_pm_suspend+0x3d/0x90 [i915]
->   [<ffffffff813668bc>] pci_pm_suspend+0x6c/0x150
->   [<ffffffff81366850>] ? pci_pm_freeze+0xe0/0xe0
->   [<ffffffff81433e89>] dpm_run_callback+0x49/0xa0
->   [<ffffffff8143428d>] __device_suspend+0xdd/0x280
->   [<ffffffff8143444f>] async_suspend+0x1f/0xa0
->   [<ffffffff81079e87>] async_run_entry_fn+0x37/0x130
->   [<ffffffff8106a8ed>] process_one_work+0x1fd/0x6d0
->   [<ffffffff8106a88b>] ? process_one_work+0x19b/0x6d0
->   [<ffffffff8106aee1>] worker_thread+0x121/0x3a0
->   [<ffffffff8106adc0>] ? process_one_work+0x6d0/0x6d0
->   [<ffffffff81072fc0>] kthread+0xf0/0x110
->   [<ffffffff81072ed0>] ? insert_kthread_work+0x70/0x70
->   [<ffffffff815b402c>] ret_from_fork+0x7c/0xb0
->   [<ffffffff81072ed0>] ? insert_kthread_work+0x70/0x70
-> ---[ end trace 7517bdfd550790cc ]---
-> PM: suspend of devices complete after 797.599 msecs
-> PM: late suspend of devices complete after 3.960 msecs
+> > OTOH if it's well encapsulated, is going to be required for any kind of
+> > ACPI use and gets to the point where people are OK with it by itself
+> > then I'm not sure what we'd gain by keeping it out of tree - it'd make
+> > the real system patch sets bigger and harder to review.
 
+> I'd agree as soon as someone can convince me that we actually want ACPI
+> support in the kernel for ARM64 servers. As far as I'm concerned it's qui=
+te
+> possible that the people who have worked on this for the past couple of
+> years behind closed doors know what they are doing and it will all be
+> good, but it's also possible that it turns into a huge trainwreck once
+> we see multiple implementations that have fundamentally incompatible
+> requirements regarding what they want from ACPI and we end up not doing
+> it at all. I just don't have enough information at this point to know whi=
+ch
+> of the two is true and I'd like to ensure that accepting the patches
+> that meet your criteria above would not be seen as an endorsement to do
+> crazy stuff later.
 
-Paul Bolle
+I do share all your concerns about the closed door stuff, and I'm also
+not convinced that they'll be able to control the things people try to
+do with it if it does become at all successful. =20
 
+That said I don't think anyone could be in any reasonable doubt as to
+the concerns that people have at this point and I do worry that keeping
+everything out of tree will both increase reviwer fatigue if it does end
+up getting merged and increase the chances that we end up with a
+deployed fiat accomplait being submitted.  We can always add dire
+warnings and so on to the code and Kconfig to try to remind people but
+so long as it's neither getting in the way of anything else nor making
+any real decisions (as opposed to basics for the core spec) I'm not sure
+how much we gain, if it never goes anywhere it can just sit and rot
+quietly in a corner until it gets in the way.
+
+--PEFDyIIeORe/70g6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpMs1AAoJELSic+t+oim9c7oP/jzTkeve1eLG+2mPnFcqXN8M
+mc5vM6s2PIC3HfLAe1UilKSy+73FFlZ8mXcwE+8Xv+xQrzhnTlTiLj9rwez+CH3l
+SQ2fqZS3+Xuwg++Mp5tVPMlYBS94z908lvvjdvdG9pq63jrK25Sq9KgaspFPsRa/
+BX7EGp21V20z0WjCuo+AY4kNqOVL2ZhcKlpdsJZk0Ls/niaL45mk4As5+Sv+j5OE
+rSTs90o1Pg5fMq3WOQjuaItN2/u29Wz8onhy5N5pi2AboJoVvw40ZlAKLOE2e25X
+kdW6c93sAdvi8NMhnmdidLt78EtrXgmwf2GkVU81Lfukx6eSFiEuCnfFT/Apf0J1
+Oo2X22OJnS9kR70nRDLZ7U/ntL2H2fhqJQN/aQVclAxkmk3IbpBDMgZb7TasPV+C
+zVnBNGmAo1RVCPYNDrlGiJHB1dGZyJNqCGkz9FcE9T0HGFc/MsZ/4FfoFFBW1t8d
+tGZYTUDFrfEVvcXZA0V3E9gS+cP4JZIzN9yEZRizkXI1v5BzBzlafOPJh7pHQaJi
++lxZE9OL9RQ9sS7Nw/d3sY0cStGhH1GDIgSaUy9BQjXLrNiBk0oqIDoHrj49POlO
+T9gt2klIAndLloCCPBARiI72KCTG5Kf1vdlRrknMFZkB15P7EDHOs0Pw2u88wbch
+8UWhPdVWfjk9Ciz6xgdG
+=F/wQ
+-----END PGP SIGNATURE-----
+
+--PEFDyIIeORe/70g6--
