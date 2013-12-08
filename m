@@ -1,96 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874Ab3LHUXP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 15:23:15 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:40616 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755302Ab3LHUXL (ORCPT
+	id S1759927Ab3LHUkP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 15:40:15 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:56713 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab3LHUkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 15:23:11 -0500
-From: Feng Kan <fkan@apm.com>
-To: patches@apm.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: [PATCH 1/1] gic: change access of gicc_ctrl register to read modify write.
-Date: Sun,  8 Dec 2013 12:22:37 -0800
-Message-Id: <1386534157-17366-1-git-send-email-fkan@apm.com>
-X-Mailer: git-send-email 1.7.6.1
+	Sun, 8 Dec 2013 15:40:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386478624.4748.19.camel@marge.simpson.net>
+References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
+	<1386478624.4748.19.camel@marge.simpson.net>
+Date: Sun, 8 Dec 2013 15:40:08 -0500
+X-Google-Sender-Auth: Cj4rIKHXBCWxim1r9a5M6L7RtSc
+Message-ID: <CAJvTdKn_2mihtMLiQVNCOp_zokx8CsSr2c5NhbkbfJ-qvma-8Q@mail.gmail.com>
+Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
+From: Len Brown <lenb@kernel.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is made to preserve the GIC v2 releated bits in the
-GIC_CPU_CTRL register (also known as the GICC_CTLR register in spec).
-The original code only set the enable/disable group bit in this register.
-This code will preserve all other bits configured by the bootload except
-the enable/disable bit. The main reason for this change is to allow the
-bypass bits specified in the v2 spec to remain untouched by the current
-GIC code. In the X-Gene platform, the bypass functionality is not used
-and bypass must be disabled at all time.
+> FWIW, my little x3550 (E5620) box is spending ~99% of its time in C3 per
+> powertop, deepest state it has.
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
-Acked-by: Anup Patel <apatel@apm.com>
-Signed-off-by: Feng Kan <fkan@apm.com>
----
- drivers/irqchip/irq-gic.c |   19 ++++++++++++++++---
- 1 files changed, 16 insertions(+), 3 deletions(-)
+Please run turbostat, which always describes what the hardware does.
+Depending on the version of powertop and the hardware involved,
+it may be describing that the OS requested -- which is not always the same.
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index d0e9480..6550ac9 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -419,6 +419,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 	void __iomem *dist_base = gic_data_dist_base(gic);
- 	void __iomem *base = gic_data_cpu_base(gic);
- 	unsigned int cpu_mask, cpu = smp_processor_id();
-+	unsigned int ctrl_mask;
- 	int i;
- 
- 	/*
-@@ -450,13 +451,21 @@ static void gic_cpu_init(struct gic_chip_data *gic)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4 / 4);
- 
- 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, base + GIC_CPU_CTRL);
-+
-+	ctrl_mask = readl(base + GIC_CPU_CTRL);
-+	ctrl_mask |= 0x1;
-+	writel_relaxed(ctrl_mask, base + GIC_CPU_CTRL);
- }
- 
- void gic_cpu_if_down(void)
- {
-+	unsigned int ctrl_mask;
-+
- 	void __iomem *cpu_base = gic_data_cpu_base(&gic_data[0]);
--	writel_relaxed(0, cpu_base + GIC_CPU_CTRL);
-+
-+	ctrl_mask = readl(base + GIC_CPU_CTRL);
-+	ctrl_mask &= 0xfffffffe;
-+	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
- }
- 
- #ifdef CONFIG_CPU_PM
-@@ -567,6 +576,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
- {
- 	int i;
- 	u32 *ptr;
-+	unsigned int ctrl_mask;
- 	void __iomem *dist_base;
- 	void __iomem *cpu_base;
- 
-@@ -591,7 +601,10 @@ static void gic_cpu_restore(unsigned int gic_nr)
- 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
- 
- 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
--	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-+
-+	ctrl_mask = readl(base + GIC_CPU_CTRL);
-+	ctrl_mask |= 0x1;
-+	writel_relaxed(ctrl_mask, cpu_base + GIC_CPU_CTRL);
- }
- 
- static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
--- 
-1.7.6.1
+The hardware reserves the right to demote any requested C-state to a
+shallower one.  Also, it is the hardware decision whether to promote
+core c-states requested by the OS into power saving package C-states.
 
+cheers,
+Len Brown, Intel Open Source Technology Center
