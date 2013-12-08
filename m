@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758853Ab3LHMix (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 07:38:53 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53290 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617Ab3LHMit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 07:38:49 -0500
-Date: Sun, 8 Dec 2013 13:38:48 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove unnecessarily gendered language
-Message-ID: <20131208123848.GC14108@amd.pavel.ucw.cz>
-References: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com>
- <20131205104808.GA6455@amd.pavel.ucw.cz>
- <1386261314.14035.8.camel@x230>
+	id S1755341Ab3LHMlR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 07:41:17 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39767 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617Ab3LHMlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 07:41:12 -0500
+Date: Sun, 8 Dec 2013 13:41:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Paul Bolle <pebolle@tiscali.nl>, =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Kgene Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Sebastian Capella <sebastian.capella@linaro.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH V4] cpufreq: suspend governors on system suspend/hibernate
+Message-ID: <20131208124108.GA4286@pd.tnic>
+References: <28d493f20239a242a7b26dfe1efed40d83bf1e10.1385523340.git.viresh.kumar@linaro.org>
+ <87vbz0j55p.fsf@nemi.mork.no>
+ <1386429849.9737.7.camel@x41.thuisdomein>
+ <3466098.C5M665z3nb@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1386261314.14035.8.camel@x230>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <3466098.C5M665z3nb@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2013-12-05 16:35:15, Matthew Garrett wrote:
-> On Thu, 2013-12-05 at 11:48 +0100, Pavel Machek wrote:
-> > On Mon 2013-12-02 20:18:52, Matthew Garrett wrote:
-> > > The kernel as a number of cases of gendered language. The majority of these
-> > > refer to objects that don't have gender in English, and so I've replaced
-> > > them with "it" and "its". Some refer to people (developers or users), and
-> > > I've replaced these with the singular "they" variant. Some are simply
-> > > typos that I've fixed up.
+On Sun, Dec 08, 2013 at 01:34:36AM +0100, Rafael J. Wysocki wrote:
+> On Saturday, December 07, 2013 04:24:09 PM Paul Bolle wrote:
+> > On Sat, 2013-12-07 at 12:01 +0100, Bjørn Mork wrote:
+> > > Sorry to be making noise here again, but I was eager to verify that the
+> > > fixes in v3.13-rc3 were OK on my system.  Unfortunately it seems this
+> > > patch completely broke suspend for me.  Hibernete ended up with a blank
+> > > console and no visible activity, without ever writing any image to disk.
+> > > 
+> > > There really weren't that many suspects between v3.13-rc2 and v3.13-rc3,
+> > > so I went directly to reverting 5a87182aa21d ("cpufreq: suspend
+> > > governors on system suspend/hibernate") which fixed the problem. I
+> > > didn't bother debugging it further from there. I don't think there is
+> > > anything magic about my system which should make this problem specific
+> > > to it.
+> > > 
+> > > I am still using the acpi-cpufreq driver on an old x86_64 laptop if that
+> > > matters.
 > > 
-> > Why is this good idea?
+> > On an x86 (32 bits) laptop hibernate also broke in v3.13-rc3. On that
+> > machine hibernation itself worked, or at least seemed to work, but the
+> > machine would basically stop after thawing (directly after loading the
+> > hibernation image).
+> > 
+> > And reverting commit 5a87182aa21d ("cpufreq: suspend governors on system
+> > suspend/hibernate"), on top of v3.13-rc3, also lead to a successful
+> > hibernation/thaw cycle.
 > 
-> Using "he" to refer to objects without gender is (with some exceptions)
-> incorrect in English, so that set should be uncontroversial. "He" is
-> usually considered acceptable when referring to an individual of unknown
-> gender, but so is "they". The latter version has the advantage of not
-> giving the impression that we believe all our users are male.
+> OK, reverted.
 
-As you said, "he" is acceptable when referring to an individual of
-unknown gender. Disadvantage of "they" is that it makes the text
-confusing if not done carefuly. And random sample of 3 changes made it
-clear you were not careful...
++1.
 
-> > NAK, FWIW.
-> 
-> Why?
+Grrr, I just wasted a whole morning bisecting the same issue as reported
+above and can confirm the revert is the right thing to do.
 
-...thus, I believe you are doing the patch for wrong reasons.
-									Pavel
+Well, almost: the box almost suspends until I hear the clicking sound of
+the mainboard trying to turn stuff off but then the fan remains on. When
+I hit a button on the keyboard, it then turns off completely. This is
+probably some nasty BIOS SMI crap which we don't have control over and
+I'd guess unrelated to the issue at hand.
+
+Anyway, Rafael, I was wondering: I have a couple of boxes here and it
+would probably make a good sense to help out with testing this stuff
+more - I just can't have suspend breakages.
+
+Maybe you'd like me to give a run of your tree now and then to check
+whether someone has sent you a quickly rushed brownpaper bag of
+questionable nature and we can fish it out before it hits Linus. :)
+
+So let me know.
+
+Thanks.
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
