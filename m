@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab3LHAVg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Dec 2013 19:21:36 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:49372 "HELO
+	id S1755694Ab3LHAua (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Dec 2013 19:50:30 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:62788 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752811Ab3LHAVd convert rfc822-to-8bit (ORCPT
+	with SMTP id S1754195Ab3LHAu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Dec 2013 19:21:33 -0500
+	Sat, 7 Dec 2013 19:50:28 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Kgene Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org, jinchoi@broadcom.com,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH V4] cpufreq: suspend governors on system suspend/hibernate
-Date: Sun, 08 Dec 2013 01:34:36 +0100
-Message-ID: <3466098.C5M665z3nb@vostro.rjw.lan>
+        Paul Bolle <pebolle@tiscali.nl>,
+        Martin Ziegler <ziegler@uni-freiburg.de>
+Subject: [GIT PULL] Post-v3.13-rc3 power management fixup
+Date: Sun, 08 Dec 2013 02:03:31 +0100
+Message-ID: <8261350.avSs2HnPeX@vostro.rjw.lan>
 User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1386429849.9737.7.camel@x41.thuisdomein>
-References: <28d493f20239a242a7b26dfe1efed40d83bf1e10.1385523340.git.viresh.kumar@linaro.org> <87vbz0j55p.fsf@nemi.mork.no> <1386429849.9737.7.camel@x41.thuisdomein>
+In-Reply-To: <2062235.VIUAclBWFD@vostro.rjw.lan>
+References: <2062235.VIUAclBWFD@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 07, 2013 04:24:09 PM Paul Bolle wrote:
-> On Sat, 2013-12-07 at 12:01 +0100, Bjørn Mork wrote:
-> > Sorry to be making noise here again, but I was eager to verify that the
-> > fixes in v3.13-rc3 were OK on my system.  Unfortunately it seems this
-> > patch completely broke suspend for me.  Hibernete ended up with a blank
-> > console and no visible activity, without ever writing any image to disk.
-> > 
-> > There really weren't that many suspects between v3.13-rc2 and v3.13-rc3,
-> > so I went directly to reverting 5a87182aa21d ("cpufreq: suspend
-> > governors on system suspend/hibernate") which fixed the problem. I
-> > didn't bother debugging it further from there. I don't think there is
-> > anything magic about my system which should make this problem specific
-> > to it.
-> > 
-> > I am still using the acpi-cpufreq driver on an old x86_64 laptop if that
-> > matters.
-> 
-> On an x86 (32 bits) laptop hibernate also broke in v3.13-rc3. On that
-> machine hibernation itself worked, or at least seemed to work, but the
-> machine would basically stop after thawing (directly after loading the
-> hibernation image).
-> 
-> And reverting commit 5a87182aa21d ("cpufreq: suspend governors on system
-> suspend/hibernate"), on top of v3.13-rc3, also lead to a successful
-> hibernation/thaw cycle.
+Hi Linus,
 
-OK, reverted.
+Please pull from the git repository at
 
-I'll send a pull request with that revert shortly.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-3.13-rc3-fixup
 
-Thanks,
-Rafael
+to receive reverts of two recent cpufreq fixes that broke more
+than they fixed for v3.13-rc4 with top-most commit d4faadd5d5b3
+
+  Revert "cpufreq: fix garbage kobjects on errors during suspend/resume"
+
+on top of commit 374b105797c3d4f29c685f3be535c35f5689b30e
+
+  Linux 3.13-rc3
+
+This reverts commits that fixed issues for some people, but broke
+things for others, so revert them and we'll need to fix the original
+problems differently.
+
+Thanks!
+
+
+---------------
+
+Rafael J. Wysocki (2):
+      Revert "cpufreq: suspend governors on system suspend/hibernate"
+      Revert "cpufreq: fix garbage kobjects on errors during suspend/resume"
+
+---------------
+
+ drivers/base/power/main.c |    3 ---
+ drivers/cpufreq/cpufreq.c |   46 +++------------------------------------------
+ include/linux/cpufreq.h   |    8 --------
+ 3 files changed, 3 insertions(+), 54 deletions(-)
 
