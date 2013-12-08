@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759144Ab3LHJ2a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 04:28:30 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:45486 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754524Ab3LHJ10 (ORCPT
+	id S1755155Ab3LHJcx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 04:32:53 -0500
+Received: from zimbra13.linbit.com ([212.69.166.240]:39850 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759154Ab3LHJ2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 04:27:26 -0500
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        David Gnedt <david.gnedt@davizone.at>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH v2 08/16] wl1251: disable power saving in monitor mode
-Date: Sun,  8 Dec 2013 10:25:06 +0100
-Message-Id: <1386494714-21070-9-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
- <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
+	Sun, 8 Dec 2013 04:28:32 -0500
+X-Greylist: delayed 534 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Dec 2013 04:28:32 EST
+Date: Sun, 8 Dec 2013 10:19:31 +0100 (CET)
+From: Andreas Gruenbacher <andreas.gruenbacher@linbit.com>
+To: Martin Quinson <martin.quinson@loria.fr>
+Cc: Christoph Lameter <cl@linux.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>
+Message-ID: <1587122162.1690.1386494371840.JavaMail.zimbra@linbit.com>
+In-Reply-To: <20131206081816.GQ9578@alphonse.loria.fr>
+References: <20131203233232.928771708@linux.com> <20131203233250.717784556@linux.com> <1386115809.2166.126.camel@dabdike.int.hansenpartnership.com> <alpine.DEB.2.02.1312051244540.26098@gentwo.org> <00000142c48e1f2a-fd398f0b-8726-4cec-a939-2c3a823bff39-000000@email.amazonses.com> <20131206081816.GQ9578@alphonse.loria.fr>
+Subject: Re: quilt 0.60 does not include CCed email without name
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [85.127.247.122]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF25 (Linux)/8.0.5_GA_5839)
+Thread-Topic: quilt 0.60 does not include CCed email without name
+Thread-Index: V/Qvty8jVq/wi/oH9Ybi6s3LNgRG5w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Gnedt <david.gnedt@davizone.at>
+Martin,
 
-Force power saving off while monitor interface is present.
+> [...] bug seems to be caused by:
+> http://git.savannah.gnu.org/cgit/quilt.git/commit/?id=02f15444278eb3a854acae0192124153e0c6d9d4
+> 
+> I think that the last lines should be changed as follows (and same for
+> the one before):
+> - -e 's/^\('"$*"'\):\(.*<.*@.*>\)/Recipient-Cc:\2/Ip' \
+> + -e 's/^\('"$*"'\):\(.*@.*\)/Recipient-Cc:\2/Ip' \
 
-Signed-off-by: David Gnedt <david.gnedt@davizone.at>
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- drivers/net/wireless/ti/wl1251/main.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+or something similar like .\+@.\+ for the email address part, yes. 
 
-diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
-index ee318c8..1223bc6 100644
---- a/drivers/net/wireless/ti/wl1251/main.c
-+++ b/drivers/net/wireless/ti/wl1251/main.c
-@@ -570,6 +570,11 @@ static int wl1251_build_qos_null_data(struct wl1251 *wl)
- 				       sizeof(template));
- }
- 
-+static bool wl1251_can_do_pm(struct ieee80211_conf *conf, struct wl1251 *wl)
-+{
-+	return (conf->flags & IEEE80211_CONF_PS) && !wl->monitor_present;
-+}
-+
- static int wl1251_op_config(struct ieee80211_hw *hw, u32 changed)
- {
- 	struct wl1251 *wl = hw->priv;
-@@ -617,7 +622,7 @@ static int wl1251_op_config(struct ieee80211_hw *hw, u32 changed)
- 			goto out_sleep;
- 	}
- 
--	if (conf->flags & IEEE80211_CONF_PS && !wl->psm_requested) {
-+	if (wl1251_can_do_pm(conf, wl) && !wl->psm_requested) {
- 		wl1251_debug(DEBUG_PSM, "psm enabled");
- 
- 		wl->psm_requested = true;
-@@ -633,8 +638,7 @@ static int wl1251_op_config(struct ieee80211_hw *hw, u32 changed)
- 		ret = wl1251_ps_set_mode(wl, STATION_POWER_SAVE_MODE);
- 		if (ret < 0)
- 			goto out_sleep;
--	} else if (!(conf->flags & IEEE80211_CONF_PS) &&
--		   wl->psm_requested) {
-+	} else if (!wl1251_can_do_pm(conf, wl) && wl->psm_requested) {
- 		wl1251_debug(DEBUG_PSM, "psm disabled");
- 
- 		wl->psm_requested = false;
--- 
-1.7.9.5
-
+Thanks,
+Andreas
