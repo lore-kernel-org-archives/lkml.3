@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3LHLNN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 06:13:13 -0500
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:62809 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752846Ab3LHLNM (ORCPT
+	id S1754211Ab3LHLcg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 06:32:36 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:39423 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921Ab3LHLce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 06:13:12 -0500
-Message-ID: <1386501189.28599.5.camel@x220.thuisdomein>
-Subject: Re: Regression with suspend resume
- 5a87182aa21d6d5d306840feab9321818dd3e2a3
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        LKML <linux-kernel@vger.kernel.org>, viresh.kumar@linaro.org,
-        tianyu.lan@intel.com, jinchoi@broadcom.com
-Date: Sun, 08 Dec 2013 12:13:09 +0100
-In-Reply-To: <52A448F2.4010208@redhat.com>
-References: <52A448F2.4010208@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Dec 2013 11:13:10.0409 (UTC) FILETIME=[7A980F90:01CEF406]
-X-RcptDomain: vger.kernel.org
+	Sun, 8 Dec 2013 06:32:34 -0500
+From: "ethan.zhao" <ethan.kernel@gmail.com>
+To: gregkh@linuxfoundation.org, konrad.wilk@oracle.com,
+        raghavendra.kt@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, "ethan.zhao" <ethan.kernel@gmail.com>
+Subject: [PATCH] xen/debugfs: Check debugfs initialization before using it
+Date: Sun,  8 Dec 2013 19:31:02 +0800
+Message-Id: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-08 at 11:24 +0100, Zdenek Kabelac wrote:
-> I'm testing recent 3.13-rc kernel - and I've notice my Lenovo T61 is not able 
-> to resume.  After bisect I've found commit:
-> 
-> 5a87182aa21d6d5d306840feab9321818dd3e2a3
+Should check debugfs initialization with debugfs_initialized() before using it,
+Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
+functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
 
-That's "cpufreq: suspend governors on system suspend/hibernate".
+Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+---
+ arch/x86/xen/debugfs.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> When I just revert this commit with 374b105797c3d4f29c685f3be535c35f5689b30e 
-> (3.13-rc3)   suspend/resume works again.
-> (I'm using  ondemand CPU governor)
-
-Rafael just asked Linus to pull a revert of that commit (see
-https://lkml.org/lkml/2013/12/7/126 ).
-
-
-Paul Bolle
+diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
+index c8377fb..85c0e0e 100644
+--- a/arch/x86/xen/debugfs.c
++++ b/arch/x86/xen/debugfs.c
+@@ -9,12 +9,18 @@ static struct dentry *d_xen_debug;
+ 
+ struct dentry * __init xen_init_debugfs(void)
+ {
++	if (!debugfs_initialized()) {
++		d_xen_debug = NULL;
++		goto nodebugfs;
++	}
++
+ 	if (!d_xen_debug) {
+ 		d_xen_debug = debugfs_create_dir("xen", NULL);
+ 
+ 		if (!d_xen_debug)
+ 			pr_warning("Could not create 'xen' debugfs directory\n");
+ 	}
++nodebugfs:
+ 
+ 	return d_xen_debug;
+ }
+-- 
+1.8.3.4 (Apple Git-47)
 
