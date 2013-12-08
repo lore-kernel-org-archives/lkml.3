@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab3LHNwh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 08:52:37 -0500
-Received: from mout.gmx.net ([74.208.4.200]:56538 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754130Ab3LHNwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 08:52:35 -0500
-Content-Type: text/plain; charset="utf-8"
-Date: Sun, 08 Dec 2013 08:52:30 -0500
-From: "Ida Schmid" <Ida81687@aircraftmail.com>
-Message-ID: <20131208135231.117420@gmx.com>
+	id S1755935Ab3LHN7d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 08:59:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42892 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab3LHN7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 08:59:30 -0500
+Date: Sun, 8 Dec 2013 06:01:00 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
+Message-ID: <20131208140100.GA22793@kroah.com>
+References: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
 MIME-Version: 1.0
-Subject: =?iso-8859-1?Q?Ohne_=5E=5ESchufa=5E=5E_-_Kreditkarte_mit_gro=DFz=FCgigem_=DCberziehungsrahmen_von_bis_zu_=5E=5E20000=5EEuro=5E=5E?=
-To: linux-kernel@vger.kernel.org
-X-Flags: 0001
-X-Mailer: GMX.com Web Mailer
-x-registered: 0
-Content-Transfer-Encoding: 8bit
-X-GMX-UID: yBzWcrpM3zOl2lQiHX8hIBd+IGRvb8AC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo,
+On Sun, Dec 08, 2013 at 07:31:02PM +0800, ethan.zhao wrote:
+> Should check debugfs initialization with debugfs_initialized() before using it,
+> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
+> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
 
-aus Südamerika bekommen Sie jetzt die schufafreie Kreditkarte gegen Einkommensnachweis.
+So?  It should "just work" without this check, right?  What happens if
+your patch isn't applied and debugfs isn't enabled?
 
-Ihre genehmigte Überziehung auf der Karte ist sofort bis zu *20.ooo*EUR. 
+greg k-h
 
-Also ideal für Unternehmer, Angestellte und Rentner.
-Bestellen Sie jetzt sofort Ihr Konto mit Karte. 
-Lesen Sie nach, welche weiteren Vorteile Ihnen die ausländische Bankverbindung bringt:   UNICASHCARD und fügen Sie an ohne die Füllzeichen: 
-c-o-m.
+> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
 
-Mit freundlichem Gruß 
+Please put your "real" name here, not one with a '.' in it.
 
-Christoph Schmidt
-Kundenberater
+thanks,
+
+greg k-h
