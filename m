@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636Ab3LLIxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:53:21 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:34699 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3LLIxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:53:17 -0500
-Message-ID: <52A97979.1030205@monstr.eu>
-Date: Thu, 12 Dec 2013 09:53:13 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/9] arm: dt: zynq: Remove 'clock-ranges' from TTC
- nodes
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-2-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1385514296-26702-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="OjAdEDEBDNadJWo2w2aQl0EAdPDBqucPa"
+	id S1751414Ab3LLI7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:59:08 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:46747 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230Ab3LLI7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 03:59:05 -0500
+X-Spam-Check-By: orbis-terrarum.net
+From: "Robin H. Johnson" <robbat2@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ide@vger.kernel.org, "Robin H. Johnson" <robbat2@gentoo.org>
+Subject: [PATCH] libata: provide the ability to disable a disk via the params.
+Date: Sat,  7 Dec 2013 16:56:27 -0800
+Message-Id: <1386464187-6993-1-git-send-email-robbat2@gentoo.org>
+X-Mailer: git-send-email 1.8.4.3
+X-Virus-Checked: Checked by ClamAV on orbis-terrarum.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---OjAdEDEBDNadJWo2w2aQl0EAdPDBqucPa
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+This was posted by a user on StackExchange, who has a failing SSD that's
+soldered directly onto the motherboard of his system. The BIOS does not
+give any option to disable it at all, so he can't just hide it that way.
 
-On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
-> The bindings for the TTC changed in commit 'arm: zynq: Use standard
-> timer binding' (e932900a3279b5dbb6d8f43c7b369003620e137c). That change
-> removed possible subnodes from this driver rendering the 'clock-ranges'=
+The old IDE layer had hdX=noprobe override for situations like this, but
+that was never ported to the libata layer.
 
-> property invalid for this node.
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  arch/arm/boot/dts/zynq-7000.dtsi | 2 --
->  1 file changed, 2 deletions(-)
+Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+X-URL: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
+X-URL: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
+X-URL: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+---
+ Documentation/kernel-parameters.txt | 2 ++
+ drivers/ata/libata-core.c           | 2 ++
+ 2 files changed, 4 insertions(+)
 
-I think this is completely unrelated to cpufreq and should just go
-directly via arm-soc tree.
-If yes, I will add 1/9 and 2/9 to zynq/dt branch.
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 50680a5..40bf5ff 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1529,6 +1529,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 			* atapi_dmadir: Enable ATAPI DMADIR bridge support
+ 
++			* [no]disable: Enable or disable this device.
++
+ 			If there are multiple matching configurations changing
+ 			the same attribute, the last one is used.
+ 
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 75b9367..5069a96 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6519,6 +6519,8 @@ static int __init ata_parse_force_one(char **cur,
+ 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
+ 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
+ 		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
++		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
++		{ "nodisable",	.horkage_off	= ATA_HORKAGE_DISABLE },
+ 	};
+ 	char *start = *cur, *p = *cur;
+ 	char *id, *val, *endp;
+-- 
+1.8.4.3
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---OjAdEDEBDNadJWo2w2aQl0EAdPDBqucPa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKpeXkACgkQykllyylKDCHxYQCfSFe9fVvZqdzQ/938oJmripDg
-gS8AnRZaMbXh1iwJuab7ocmgtZZ+RjDB
-=rSGA
------END PGP SIGNATURE-----
-
---OjAdEDEBDNadJWo2w2aQl0EAdPDBqucPa--
