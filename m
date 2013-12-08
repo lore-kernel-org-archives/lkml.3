@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab3LHHQp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 02:16:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41375 "EHLO
+	id S1754122Ab3LHHR2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 02:17:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41379 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab3LHHQl (ORCPT
+	with ESMTP id S1751047Ab3LHHR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 02:16:41 -0500
-Date: Sat, 7 Dec 2013 23:18:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Karl Dahlke <eklhad@comcast.net>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: Bug in tty cooked mode kernel 3.12.3
-Message-ID: <20131208071811.GA12028@kroah.com>
-References: <20131107184607.eklhad@comcast.net>
- <20131208053621.GA6445@kroah.com>
- <20131108011609.eklhad@comcast.net>
+	Sun, 8 Dec 2013 02:17:26 -0500
+Date: Sat, 7 Dec 2013 23:18:57 -0800
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>, pavel@ucw.cz,
+        pali.rohar@gmail.com, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Remove UUID helper
+Message-ID: <20131208071857.GA12104@kroah.com>
+References: <1385917660-2676-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+ <52A16932.8020909@gmail.com>
+ <20131206151030.GA22559@kroah.com>
+ <52A2DF40.9070707@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131108011609.eklhad@comcast.net>
+In-Reply-To: <52A2DF40.9070707@gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 08, 2013 at 01:16:09AM -0500, Karl Dahlke wrote:
-> As per your direction, I applied Peters patch to n_tty.c,
-> which looked like it was in the ballpark, echoing newline etc,
-> but it did not fix the problem.
-> It is still reproducible on my system as below.
+On Sat, Dec 07, 2013 at 10:41:36AM +0200, Ivajlo Dimitrov wrote:
 > 
-> > Come up in run level 3, command line mode,
-> > and bring up two consoles with bash in cooked mode.
-> > Set a simple prompt like this.
+> On 06.12.2013 17:10, gregkh@linuxfoundation.org wrote:
+> > On Fri, Dec 06, 2013 at 08:05:38AM +0200, Ivajlo Dimitrov wrote:
+> >> Hi Greg,
+> >>
+> >> On 01.12.2013 19:07, Ivaylo DImitrov wrote:
+> >>> From: Ivaylo Dimitrov <freemangordon@abv.bg>
+> >>>
+> >>> Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+> >>> need to be exported. It can also be made way simpler by using sscanf.
+> >>>
+> >>> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> >>> ---
+> >>>    drivers/staging/tidspbridge/Makefile               |    2 +-
+> >>>    drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
+> >>>    .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
+> >>>    drivers/staging/tidspbridge/rmgr/dbdcd.c           |   42 +++++++++-
+> >>>    4 files changed, 39 insertions(+), 108 deletions(-)
+> >>>    delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
+> >>>
+> >> I guess the initial mail somehow didn't make it through your spam filter:
+> >> https://lkml.org/lkml/2013/12/1/70
+> > It did, but I thought that people asked for it to be changed in the
+> > thread afterwards, so I was expecting an updated version from you.
 > >
-> > PS1='$ '
+> > Care to fix things up and resend it?
 > >
-> > Switch to console 2 via alt-f2.
-> > Hit return.
-> > The cursor should drop to a new line then give you the $ prompt.
-> > But it puts the $ prompt next too the old one, then drops down
-> > to a blank line.
-> > The $ prompt and the crlf are out of sequence.
-> > Hit return a few more times and it will straighten itself out.
-> > Then switch back to console 1 alt-f1
-> > Hit return and the same bug,
-> > $ $
+> > thanks,
 > >
-> > hit return a few more times to straighten it out.
-> > Switch back to console 2 and the same problem.
+> > greg k-h
 > 
-> Thank you for your quick reply,and the patch to try.
-> I'm afraid however this is still an unsolved problem.
-> Realize that it pops up rarely and randomly in just about any cooked program;
-> I chose the console switch example because it most reliably reproduces the bug.
+> Sure, the change I was asked for is trivial, but I didn't get the reason 
+> why it is needed. Neither there is a reply to my follow-up comment [0]. 
+> Sorry, I am pretty much new on LKML and could miss things that are 
+> supposed to be clear from the start, but my impression is that when 
+> someone says "it is better", he/she should explain why it is better or 
+> at least what is wrong with the patch he/she wants  to be changed.
+> 
+> However, I don't want to enter some arguing loop, so if you think I 
+> should change the code as per Joe's comment, just confirm it and I'll do it.
 
-Ah, sorry, wrong patch series.
-
-Search lkml for:
-	Subject: [PATCH tty-next 0/4] tty: Fix ^C echo
-for a 4 patch series that should resolve this issue.  If you could test
-that out, and let us know, that would be great.
-
-thanks,
-
-greg k-h
+Please try.
