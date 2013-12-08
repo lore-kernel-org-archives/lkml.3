@@ -1,73 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260Ab3LHPJK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 10:09:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59198 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755254Ab3LHPJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 10:09:07 -0500
-Date: Sun, 8 Dec 2013 16:09:04 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Rui Wang <ruiv.wang@gmail.com>, lance.ortiz@hp.com,
-        lance_ortiz@hotmail.com, jiang.liu@intel.com, tony.luck@intel.com,
-        rostedt@goodmis.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gong.chen@linux.intel.com, m.chehab@samsung.com,
-        Rui Wang <rui.y.wang@intel.com>
-Subject: Re: [PATCH] aerdrv: Fix severity usage in aer trace event
-Message-ID: <20131208150904.GD4338@pd.tnic>
-References: <1386476273-2418-1-git-send-email-rui.y.wang@intel.com>
- <20131208144312.GC4338@pd.tnic>
+	id S1759378Ab3LHPKv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 10:10:51 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:37277 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab3LHPKs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 10:10:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131208144312.GC4338@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131122172036.169467a4@nehalam.linuxnetplumber.net>
+References: <20131122172036.169467a4@nehalam.linuxnetplumber.net>
+Date: Sun, 8 Dec 2013 23:10:45 +0800
+Message-ID: <CAEH94Lh1cgMbTOgp_Td2SSE=UQ+XzdPmifS58BgcrQTR7HpL+w@mail.gmail.com>
+Subject: Re: [ANNOUNCE] iproute2 3.12.0 release
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: netdev@vger.kernel.org, linux-kernel mlist <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 08, 2013 at 03:43:12PM +0100, Borislav Petkov wrote:
-> On Sun, Dec 08, 2013 at 12:17:53PM +0800, Rui Wang wrote:
-> > There's inconsistency between dmesg and the trace event output.
-> > When dmesg says "severity=Corrected", the trace event says
-> > "severity=Fatal". What happens is that HW_EVENT_ERR_CORRECTED is
-> > defined in edac.h:
-> > 
-> > enum hw_event_mc_err_type {
-> >         HW_EVENT_ERR_CORRECTED,
-> >         HW_EVENT_ERR_UNCORRECTED,
-> >         HW_EVENT_ERR_FATAL,
-> >         HW_EVENT_ERR_INFO,
-> > };
-> > 
-> > while aer_print_error() uses aer_error_severity_string[] defined as:
-> > 
-> > static const char *aer_error_severity_string[] = {
-> >         "Uncorrected (Non-Fatal)",
-> >         "Uncorrected (Fatal)",
-> >         "Corrected"
-> > };
-> > 
-> > In this case dmesg is correct because info->severity is assigned in
-> > aer_isr_one_error() using the definitions in include/linux/ras.h:
-> > 
-> > Signed-off-by: Rui Wang <rui.y.wang@intel.com>
-> 
-> Applied, thanks.
+HI
 
-I said "Applied" but this is Bjorn's area: Bjorn, wanna take this one or
-are you fine with it going over the RAS tree?
+The manpage of tc hasn't any info related to "tc action", is there any
+plan to add it recently? or do i miss anything?
 
-Btw, I have a 2 trivial cleanups for aerdrv_errprint.c which are
-following...
+On Sat, Nov 23, 2013 at 9:20 AM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+> A little late but ready and toasty warm here is iproute2 to go with
+> 3.12.0 (aka One Giant Leap for Frogkind).
+>
+> In addition to the usual build  documentation fixes, this
+> version includes support for ipv6 on vxlan and GRE.
+> As well as fair queue packet scheduler.
+>
+> If you have been sitting on changes to iproute2 that are in
+> net-next for 3.12 merge window, please submit them now.
+>
+> Iproute2 package is available at:
+>   http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.12.0.tar.gz
+>
+> You can download the source from:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+>
+> Stay Warm!
+>
+> ---
+> Andreas Henriksson (1):
+>       ss: avoid passing negative numbers to malloc
+>
+> Christophe Gouault (1):
+>       xfrm: enable to set non-wildcard mark 0 on SAs and SPs
+>
+> Eric Dumazet (3):
+>       pkt_sched: fq: Fair Queue packet scheduler
+>       tc: support TCA_STATS_RATE_EST64
+>       htb: add support for direct_qlen attribute
+>
+> Fan Du (1):
+>       xfrm: use memcpy to suppress gcc phony buffer overflow warning.
+>
+> Hangbin Liu (1):
+>       ipaddrlabel: use uint32_t instead of int32_t
+>
+> Jamal Hadi Salim (2):
+>       tc: introduce simple action
+>       action: typo nat fix
+>
+> Nicolas Dichtel (1):
+>       iplink: update available type list
+>
+> Nigel Kukard (1):
+>       Fix tc stats when using -batch mode
+>
+> Petr Písař (2):
+>       iproute2: bridge: document mdb
+>       iproute2: bridge: Close file with bridge monitor file
+>
+> Sami Kerola (1):
+>       ip: make -resolve addr to print names rather than addresses
+>
+> Stefan Tomanek (1):
+>       ip rule: add route suppression options
+>
+> Stephen Hemminger (14):
+>       Update kernel headers to net-next for 3.12
+>       Update to 3.11 net-next kernel headers
+>       nstat: add json output format
+>       Update to 3.12-rc1 headers
+>       nstat: revise json output
+>       ifstat: add json output format
+>       lnstat: add json output format
+>       lnstat, nstat, ifstat: update man pages
+>       tc: add default action to kernel headers
+>       ipv6 gre: add entry to ether types
+>       Fix handling of qdis without options
+>       htb: remove old unused duplicate qdisc name
+>       update kernel headers
+>       v3.12.0
+>
+> WANG Cong (1):
+>       vxlan: add ipv6 support
+>
+> xeb@mail.ru (2):
+>       iproute2: GRE over IPv6 tunnel support.
+>       iproute2: ip6gre: update man pages
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks.
+
 
 -- 
-Regards/Gruss,
-    Boris.
+Regards,
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Zhi Yong Wu
