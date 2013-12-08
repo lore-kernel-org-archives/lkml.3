@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab3LHTIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 14:08:38 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:21915 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755036Ab3LHTIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 14:08:37 -0500
-Message-ID: <1386529714.9478.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc/mqueue.c: fixed a brace coding style issue
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Roman Kuznetsov <kuznetsov24@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Sun, 08 Dec 2013 11:08:34 -0800
-In-Reply-To: <1386444026-14771-1-git-send-email-kuznetsov24@gmail.com>
-References: <1386444026-14771-1-git-send-email-kuznetsov24@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759822Ab3LHTJI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 14:09:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43541 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755036Ab3LHTIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 14:08:52 -0500
+Date: Sun, 8 Dec 2013 13:07:39 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/15] mfd: menelaus: Drop __exit section annotation
+Message-ID: <20131208190739.GA18977@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1386042188-12246-1-git-send-email-balbi@ti.com>
+ <20131203095136.GF11828@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+In-Reply-To: <20131203095136.GF11828@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-12-07 at 23:20 +0400, Roman Kuznetsov wrote:
-> Fixed a coding style issue.
-> 
-> Signed-off-by: Roman Kuznetsov <kuznetsov24@gmail.com>
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, fine.
+On Tue, Dec 03, 2013 at 09:51:36AM +0000, Lee Jones wrote:
+> The code looks mostly fine, but the implementation of the commit logs
+> seems lazy. Please submit a v3 using coherent sentences with full
+> explanations and correct punctuation.
 
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+example ?
 
-> ---
->  ipc/mqueue.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> index 95827ce..9346238 100644
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -1303,11 +1303,10 @@ retry:
->  out_fput:
->  	fdput(f);
->  out:
-> -	if (sock) {
-> +	if (sock)
->  		netlink_detachskb(sock, nc);
-> -	} else if (nc) {
-> +	else if (nc)
->  		dev_kfree_skb(nc);
-> -	}
->  	return ret;
->  }
->  
+--=20
+balbi
 
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpMN7AAoJEIaOsuA1yqRE7dEQAKVbmUQ5fRPtXYvD7JgugARs
+UuPuBUZoz7d5y+E/i4aDuzkEzWZpA4BSNq9d1UKkGwPKidWS+g5PSlyWJVy2QXq2
+iolo4+Yc43jHLPsXi1qLo2V0ISbBgSVr9U6uUVymcCKs/ING93cu44EIa+xetwFI
+0fNxSTIZi5y+0bPTOEJ1NJ5HqlGxt8qy4EAiLAP5qCp9OJydLSE/MqSDHclm/wFq
+aV20GEndEt+4c/as/FLp0ubXuxvDN0Lqs+dd2qm/EFD5H62kDdXJVNhM9A5zAzfP
+tRYpd6hZ7qMtXbXqNxX/wUxWrU5F9tqJz+uQxto26IzPCXOhbgoUQUhS9qqmXXip
+bBVdA4RblSb8YRbrznasaRlitXLHplFubtYRnyW7+wzmMOjX9Fb37wUhDXHS8eF1
+f/Kw+IZustIb0rwxul8nmkmv7cTAPZQO89/LSalN5coRxmA5+ninpHgSFhjVl8Ln
+XQYMPKMGjcIjDqS60vI4XoeU+pFHHICu9gTWrtJXPwn/NVzu9jws9lVZl80G7bJ5
+Bq8z6pjEulwzLtf9rCYhsbjkQ8OMrSQoPOQQ5hDpgAYmC6h2U0Uu9iVFA/OvHPaw
+4xKMFQHNnzDSCxl0SLze66ZQZBoeA9n5dthWDo6WVbECbrNDpT9JBcMhE2/Dz2oh
+FSTqJkw6HKQsHJSMqusc
+=bcs4
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
