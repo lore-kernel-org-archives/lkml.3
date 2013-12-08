@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348Ab3LHJ2v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 04:28:51 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:45412 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab3LHJ1Q (ORCPT
+	id S1759304Ab3LHJ2o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 04:28:44 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:45439 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab3LHJ1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 04:27:16 -0500
+	Sun, 8 Dec 2013 04:27:30 -0500
 From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Luciano Coelho <luca@coelho.fi>,
         "John W. Linville" <linville@tuxdriver.com>
@@ -17,9 +17,9 @@ Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         Felipe Contreras <felipe.contreras@gmail.com>,
         David Gnedt <david.gnedt@davizone.at>,
         =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
-Date: Sun,  8 Dec 2013 10:24:59 +0100
-Message-Id: <1386494714-21070-2-git-send-email-pali.rohar@gmail.com>
+Subject: [PATCH v2 11/16] wl1251: disable retry and ACK policy for injected packets
+Date: Sun,  8 Dec 2013 10:25:09 +0100
+Message-Id: <1386494714-21070-12-git-send-email-pali.rohar@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
 References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
@@ -33,92 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Gnedt <david.gnedt@davizone.at>
 
-With a dissacociated card I often encoutered very long scan delays.
-
-My guess is that it has something to do with the cards DTIM handling and
-another firmware bug mentioned in the TI WLAN driver, which is described as
-the card may never end scanning if the channel is overloaded because it
-can't send probe requests. I think the firmware somehow also tries to
-receive DTIM messages when the BSSID is not set. Therefore most of the time
-it waits for DTIM messages and can't do scanning work.
-
-Anyway we can workaround this misbehaviour by setting the HIGH_PRIORITY
-bit for scans in disassociated state.
+Set the retry limit to 0 and disable the ACK policy for injected packets.
 
 Signed-off-by: David Gnedt <david.gnedt@davizone.at>
 Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 ---
- drivers/net/wireless/ti/wl1251/cmd.c  |   13 ++++++++++++-
- drivers/net/wireless/ti/wl1251/cmd.h  |    5 +++++
- drivers/net/wireless/ti/wl1251/main.c |    1 +
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ti/wl1251/acx.c |    8 +++++++-
+ drivers/net/wireless/ti/wl1251/tx.c  |    7 ++++++-
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti/wl1251/cmd.c
-index 6822b84..16b6479 100644
---- a/drivers/net/wireless/ti/wl1251/cmd.c
-+++ b/drivers/net/wireless/ti/wl1251/cmd.c
-@@ -3,6 +3,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/crc7.h>
-+#include <linux/etherdevice.h>
- 
- #include "wl1251.h"
- #include "reg.h"
-@@ -410,7 +411,10 @@ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t ssid_len,
- 	struct wl1251_cmd_scan *cmd;
- 	int i, ret = 0;
- 
--	wl1251_debug(DEBUG_CMD, "cmd scan");
-+	wl1251_debug(DEBUG_CMD, "cmd scan channels %d ssid(%d) '%s'",
-+		     n_channels, (int)ssid_len, ssid);
-+
-+	WARN_ON(n_channels > SCAN_MAX_NUM_OF_CHANNELS);
- 
- 	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
- 	if (!cmd)
-@@ -421,6 +425,13 @@ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t ssid_len,
- 						    CFG_RX_MGMT_EN |
- 						    CFG_RX_BCN_EN);
- 	cmd->params.scan_options = 0;
-+	/*
-+	 * Use high priority scan when not associated to prevent fw issue
-+	 * causing never-ending scans (sometimes 20+ minutes).
-+	 * Note: This bug may be caused by the fw's DTIM handling.
-+	 */
-+	if (is_zero_ether_addr(wl->bssid))
-+		cmd->params.scan_options |= WL1251_SCAN_OPT_PRIORITY_HIGH;
- 	cmd->params.num_channels = n_channels;
- 	cmd->params.num_probe_requests = n_probes;
- 	cmd->params.tx_rate = cpu_to_le16(1 << 1); /* 2 Mbps */
-diff --git a/drivers/net/wireless/ti/wl1251/cmd.h b/drivers/net/wireless/ti/wl1251/cmd.h
-index ee4f2b3..126f273 100644
---- a/drivers/net/wireless/ti/wl1251/cmd.h
-+++ b/drivers/net/wireless/ti/wl1251/cmd.h
-@@ -167,6 +167,11 @@ struct cmd_read_write_memory {
- #define CMDMBOX_HEADER_LEN 4
- #define CMDMBOX_INFO_ELEM_HEADER_LEN 4
- 
-+#define WL1251_SCAN_OPT_PASSIVE		1
-+#define WL1251_SCAN_OPT_5GHZ_BAND	2
-+#define WL1251_SCAN_OPT_TRIGGERD_SCAN	4
-+#define WL1251_SCAN_OPT_PRIORITY_HIGH	8
-+
- #define WL1251_SCAN_MIN_DURATION 30000
- #define WL1251_SCAN_MAX_DURATION 60000
- 
-diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
-index 3291ffa..4d89ac8 100644
---- a/drivers/net/wireless/ti/wl1251/main.c
-+++ b/drivers/net/wireless/ti/wl1251/main.c
-@@ -930,6 +930,7 @@ static int wl1251_op_hw_scan(struct ieee80211_hw *hw,
- 	ret = wl1251_cmd_scan(wl, ssid, ssid_len, req->channels,
- 			      req->n_channels, WL1251_SCAN_NUM_PROBES);
- 	if (ret < 0) {
-+		wl1251_debug(DEBUG_SCAN, "scan failed %d", ret);
- 		wl->scanning = false;
- 		goto out_idle;
+diff --git a/drivers/net/wireless/ti/wl1251/acx.c b/drivers/net/wireless/ti/wl1251/acx.c
+index f772e62..8f420d0 100644
+--- a/drivers/net/wireless/ti/wl1251/acx.c
++++ b/drivers/net/wireless/ti/wl1251/acx.c
+@@ -943,12 +943,18 @@ int wl1251_acx_rate_policies(struct wl1251 *wl)
  	}
+ 
+ 	/* configure one default (one-size-fits-all) rate class */
+-	acx->rate_class_cnt = 1;
++	acx->rate_class_cnt = 2;
+ 	acx->rate_class[0].enabled_rates = ACX_RATE_MASK_UNSPECIFIED;
+ 	acx->rate_class[0].short_retry_limit = ACX_RATE_RETRY_LIMIT;
+ 	acx->rate_class[0].long_retry_limit = ACX_RATE_RETRY_LIMIT;
+ 	acx->rate_class[0].aflags = 0;
+ 
++	/* no-retry rate class */
++	acx->rate_class[1].enabled_rates = ACX_RATE_MASK_UNSPECIFIED;
++	acx->rate_class[1].short_retry_limit = 0;
++	acx->rate_class[1].long_retry_limit = 0;
++	acx->rate_class[1].aflags = 0;
++
+ 	ret = wl1251_cmd_configure(wl, ACX_RATE_POLICY, acx, sizeof(*acx));
+ 	if (ret < 0) {
+ 		wl1251_warning("Setting of rate policies failed: %d", ret);
+diff --git a/drivers/net/wireless/ti/wl1251/tx.c b/drivers/net/wireless/ti/wl1251/tx.c
+index 216334d..4516180 100644
+--- a/drivers/net/wireless/ti/wl1251/tx.c
++++ b/drivers/net/wireless/ti/wl1251/tx.c
+@@ -90,8 +90,12 @@ static void wl1251_tx_control(struct tx_double_buffer_desc *tx_hdr,
+ 	/* 802.11 packets */
+ 	tx_hdr->control.packet_type = 0;
+ 
+-	if (control->flags & IEEE80211_TX_CTL_NO_ACK)
++	/* Also disable retry and ACK policy for injected packets */
++	if ((control->flags & IEEE80211_TX_CTL_NO_ACK) ||
++	    (control->flags & IEEE80211_TX_CTL_INJECTED)) {
++		tx_hdr->control.rate_policy = 1;
+ 		tx_hdr->control.ack_policy = 1;
++	}
+ 
+ 	tx_hdr->control.tx_complete = 1;
+ 
+@@ -422,6 +426,7 @@ static void wl1251_tx_packet_cb(struct wl1251 *wl,
+ 	info = IEEE80211_SKB_CB(skb);
+ 
+ 	if (!(info->flags & IEEE80211_TX_CTL_NO_ACK) &&
++	    !(info->flags & IEEE80211_TX_CTL_INJECTED) &&
+ 	    (result->status == TX_SUCCESS))
+ 		info->flags |= IEEE80211_TX_STAT_ACK;
+ 
 -- 
 1.7.9.5
 
