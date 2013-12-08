@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759771Ab3LHOmk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 09:42:40 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:37644 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759124Ab3LHOme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 09:42:34 -0500
+	id S1759785Ab3LHOnS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 09:43:18 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49872 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754918Ab3LHOnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 09:43:15 -0500
+Date: Sun, 8 Dec 2013 15:43:12 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Rui Wang <ruiv.wang@gmail.com>
+Cc: lance.ortiz@hp.com, bhelgaas@google.com, lance_ortiz@hotmail.com,
+        jiang.liu@intel.com, tony.luck@intel.com, rostedt@goodmis.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gong.chen@linux.intel.com,
+        m.chehab@samsung.com, Rui Wang <rui.y.wang@intel.com>
+Subject: Re: [PATCH] aerdrv: Fix severity usage in aer trace event
+Message-ID: <20131208144312.GC4338@pd.tnic>
+References: <1386476273-2418-1-git-send-email-rui.y.wang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1385061348-13153-1-git-send-email-dh.herrmann@gmail.com>
-References: <1385061348-13153-1-git-send-email-dh.herrmann@gmail.com>
-Date: Sun, 8 Dec 2013 15:42:33 +0100
-Message-ID: <CANq1E4TcjmcPbj2GvgUcXA7_+AaevbMTC6+2CsbrugJjjC755A@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix device_create() error path
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1386476273-2418-1-git-send-email-rui.y.wang@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg
+On Sun, Dec 08, 2013 at 12:17:53PM +0800, Rui Wang wrote:
+> There's inconsistency between dmesg and the trace event output.
+> When dmesg says "severity=Corrected", the trace event says
+> "severity=Fatal". What happens is that HW_EVENT_ERR_CORRECTED is
+> defined in edac.h:
+> 
+> enum hw_event_mc_err_type {
+>         HW_EVENT_ERR_CORRECTED,
+>         HW_EVENT_ERR_UNCORRECTED,
+>         HW_EVENT_ERR_FATAL,
+>         HW_EVENT_ERR_INFO,
+> };
+> 
+> while aer_print_error() uses aer_error_severity_string[] defined as:
+> 
+> static const char *aer_error_severity_string[] = {
+>         "Uncorrected (Non-Fatal)",
+>         "Uncorrected (Fatal)",
+>         "Corrected"
+> };
+> 
+> In this case dmesg is correct because info->severity is assigned in
+> aer_isr_one_error() using the definitions in include/linux/ras.h:
+> 
+> Signed-off-by: Rui Wang <rui.y.wang@intel.com>
 
-Ping?
+Applied, thanks.
 
-Thanks
-David
+-- 
+Regards/Gruss,
+    Boris.
 
-On Thu, Nov 21, 2013 at 8:15 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> We call put_device() in the error path, which is fine for dev==NULL.
-> However, in case kobject_set_name_vargs() fails, we have dev!=NULL but
-> device_initialized() wasn't called, yet.
->
-> Fix this by splitting device_register() into explicit calls to
-> device_add() and an early call to device_initialize().
->
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-> ---
->  drivers/base/core.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 34abf4d..4be8911 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1676,6 +1676,7 @@ device_create_groups_vargs(struct class *class, struct device *parent,
->                 goto error;
->         }
->
-> +       device_initialize(dev);
->         dev->devt = devt;
->         dev->class = class;
->         dev->parent = parent;
-> @@ -1687,7 +1688,7 @@ device_create_groups_vargs(struct class *class, struct device *parent,
->         if (retval)
->                 goto error;
->
-> -       retval = device_register(dev);
-> +       retval = device_add(dev);
->         if (retval)
->                 goto error;
->
-> --
-> 1.8.4.2
->
+Sent from a fat crate under my desk. Formatting is fine.
+--
