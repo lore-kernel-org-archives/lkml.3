@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759891Ab3LHOPQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 09:15:16 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:36473 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759625Ab3LHOOV (ORCPT
+	id S1759870Ab3LHOPO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 09:15:14 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:35769 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759626Ab3LHOOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Dec 2013 09:14:21 -0500
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
         Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 7/9] ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
-Date: Sun,  8 Dec 2013 15:14:04 +0100
-Message-Id: <1386512047-874-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v4 9/9] ARM: add initial support for Marvell Berlin SoCs
+Date: Sun,  8 Dec 2013 15:14:06 +0100
+Message-Id: <1386512047-874-10-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
  <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -23,106 +22,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds very basic device tree files for the Marvell Armada 1500 SoC
-(Berlin BG2) and the Sony NSZ-GS7 GoogleTV board. Currently, SoC only has
-nodes for cpus, some clocks, l2 cache controller, local timer, apb timers,
-uart, and interrupt controllers. The Sony NSZ-GS7 is a GoogleTV consumer
-device comprising the Armada 1500 SoC above.
+This adds initial support for the Marvell Berlin SoC family with
+Armada 1500 (88DE3100) and Armada 1500-mini (88DE3005) SoCs.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Reviewed-by: Jason Cooper <jason@lakedaemon.net>
 Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Jisheng Zhang <jszhang@marvell.com>
 ---
 Changelog:
 v3->v4:
-- rename dts/dtsi to vendor,name.dts[i] (Suggested by Kumar Gala)
+- move ARM_GIC to ARCH_BERLIN (Suggested by Jisheng Zhang)
+- re-add 'if SMP' dependency for HAVE_ARM_TWD as it still depends on
+  SMP
+- Note: I did not move l2x0_of_init to init_early, as it is too early
+  for current l2x0_of_init.
 v2->v3:
-- none
+- add Armada 1500-mini (BG2CD) Kconfig
 v1->v2:
-- add "arm,pl310-cache" compatible to l2cc (Suggested by Mark Rutland)
 - replace 88DE3xxx numbering with SoC variant name
   (Requested by Jisheng Zhang)
-RCFv2->v1:
-- switch to (soon to be) correct "marvell,pj4b" cpu compatible
-- reference fixed-clock for uarts instead of hard-coded clock-frequency
-- disable timers except two for clksrc and clkevt
+- remove LOCAL_TIMERS dependency (Suggested by Dinh Nguyen)
+RFCv2->v1:
+- remove custom .init_time, adds dependency for arch-wide of_clk_init call
 RFCv1->RFCv2:
-- add binding documentation (Reported by Jason Cooper)
-- change l2cc from aurora to tauros3 (Reported by Thomas Petazzoni)
+- nuke .map_io (Reported by Arnd Bergmann)
 - add copyright reference
-- adapt compatibles to mach-berlin instead of mach-mvebu
+- switch to mach-berlin instead of mach-mvebu
 
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Kevin Hilman <khilman@linaro.org>
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- .../devicetree/bindings/arm/marvell,berlin.txt     |  24 +++
- arch/arm/boot/dts/Makefile                         |   2 +
- arch/arm/boot/dts/marvell,berlin2.dtsi             | 227 +++++++++++++++++++++
- arch/arm/boot/dts/sony,nsz-gs7.dts                 |  29 +++
- 4 files changed, 282 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/marvell,berlin.txt
- create mode 100644 arch/arm/boot/dts/marvell,berlin2.dtsi
- create mode 100644 arch/arm/boot/dts/sony,nsz-gs7.dts
+ arch/arm/Kconfig              |  2 ++
+ arch/arm/Makefile             |  1 +
+ arch/arm/mach-berlin/Kconfig  | 29 +++++++++++++++++++++++++++++
+ arch/arm/mach-berlin/Makefile |  1 +
+ arch/arm/mach-berlin/berlin.c | 39 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 72 insertions(+)
+ create mode 100644 arch/arm/mach-berlin/Kconfig
+ create mode 100644 arch/arm/mach-berlin/Makefile
+ create mode 100644 arch/arm/mach-berlin/berlin.c
 
-diff --git a/Documentation/devicetree/bindings/arm/marvell,berlin.txt b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c1f1a7e..121153f 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -911,6 +911,8 @@ source "arch/arm/mach-bcm/Kconfig"
+ 
+ source "arch/arm/mach-bcm2835/Kconfig"
+ 
++source "arch/arm/mach-berlin/Kconfig"
++
+ source "arch/arm/mach-clps711x/Kconfig"
+ 
+ source "arch/arm/mach-cns3xxx/Kconfig"
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index c99b108..483abc7 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -148,6 +148,7 @@ textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
+ machine-$(CONFIG_ARCH_AT91)		+= at91
+ machine-$(CONFIG_ARCH_BCM)		+= bcm
+ machine-$(CONFIG_ARCH_BCM2835)		+= bcm2835
++machine-$(CONFIG_ARCH_BERLIN)		+= berlin
+ machine-$(CONFIG_ARCH_CLPS711X)		+= clps711x
+ machine-$(CONFIG_ARCH_CNS3XXX)		+= cns3xxx
+ machine-$(CONFIG_ARCH_DAVINCI)		+= davinci
+diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
 new file mode 100644
-index 0000000..737afa5
+index 0000000..7a02d22
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/marvell,berlin.txt
-@@ -0,0 +1,24 @@
-+Marvell Berlin SoC Family Device Tree Bindings
-+---------------------------------------------------------------
++++ b/arch/arm/mach-berlin/Kconfig
+@@ -0,0 +1,29 @@
++config ARCH_BERLIN
++	bool "Marvell Berlin SoCs" if ARCH_MULTI_V7
++	select ARM_GIC
++	select GENERIC_CLOCKEVENTS
++	select GENERIC_IRQ_CHIP
++	select COMMON_CLK
++	select DW_APB_ICTL
++	select DW_APB_TIMER_OF
 +
-+Boards with a SoC of the Marvell Berlin family, e.g. Armada 1500
-+shall have the following properties:
++if ARCH_BERLIN
 +
-+* Required root node properties:
-+compatible: must contain "marvell,berlin"
++menu "Marvell Berlin SoC variants"
 +
-+In addition, the above compatible shall be extended with the specific
-+SoC and board used. Currently known SoC compatibles are:
-+    "marvell,berlin2"      for Marvell Armada 1500 (BG2, 88DE3100),
-+    "marvell,berlin2cd"    for Marvell Armada 1500-mini (BG2CD, 88DE3005)
-+    "marvell,berlin2ct"    for Marvell Armada ? (BG2CT, 88DE????)
-+    "marvell,berlin3"      for Marvell Armada ? (BG3, 88DE????)
++config MACH_BERLIN_BG2
++	bool "Marvell Armada 1500 (BG2)"
++	select CACHE_L2X0
++	select CPU_PJ4B
++	select HAVE_ARM_TWD if SMP
++	select HAVE_SMP
 +
-+* Example:
++config MACH_BERLIN_BG2CD
++	bool "Marvell Armada 1500-mini (BG2CD)"
++	select CACHE_L2X0
++	select CPU_V7
++	select HAVE_ARM_TWD if SMP
 +
-+/ {
-+	model = "Sony NSZ-GS7";
-+	compatible = "sony,nsz-gs7", "marvell,berlin2", "marvell,berlin";
++endmenu
 +
-+	...
-+}
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index d57c1a6..f742800 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -45,6 +45,8 @@ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
- dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm11351-brt.dtb \
- 	bcm28155-ap.dtb
- dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
-+dtb-$(CONFIG_ARCH_BERLIN) += \
-+	sony,nsz-gs7.dtb
- dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
- 	da850-evm.dtb
- dtb-$(CONFIG_ARCH_DOVE) += dove-cm-a510.dtb \
-diff --git a/arch/arm/boot/dts/marvell,berlin2.dtsi b/arch/arm/boot/dts/marvell,berlin2.dtsi
++endif
+diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
 new file mode 100644
-index 0000000..56a1af2
+index 0000000..ab69fe9
 --- /dev/null
-+++ b/arch/arm/boot/dts/marvell,berlin2.dtsi
-@@ -0,0 +1,227 @@
++++ b/arch/arm/mach-berlin/Makefile
+@@ -0,0 +1 @@
++obj-y += berlin.o
+diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
+new file mode 100644
+index 0000000..025bcb5
+--- /dev/null
++++ b/arch/arm/mach-berlin/berlin.c
+@@ -0,0 +1,39 @@
 +/*
-+ * Device Tree Include file for Marvell Armada 1500 (Berlin BG2) SoC
++ * Device Tree support for Marvell Berlin SoCs.
 + *
 + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 + *
@@ -134,255 +153,32 @@ index 0000000..56a1af2
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include "skeleton.dtsi"
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/of_platform.h>
++#include <asm/hardware/cache-l2x0.h>
++#include <asm/mach/arch.h>
 +
-+/ {
-+	model = "Marvell Armada 1500 (BG2) SoC";
-+	compatible = "marvell,berlin2", "marvell,berlin";
++static void __init berlin_init_machine(void)
++{
++	/*
++	 * with DT probing for L2CCs, berlin_init_machine can be removed.
++	 * Note: 88DE3005 (Armada 1500-mini) uses pl310 l2cc
++	 */
++	l2x0_of_init(0x70c00000, 0xfeffffff);
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			compatible = "marvell,pj4b";
-+			device_type = "cpu";
-+			next-level-cache = <&l2>;
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			compatible = "marvell,pj4b";
-+			device_type = "cpu";
-+			next-level-cache = <&l2>;
-+			reg = <1>;
-+		};
-+	};
-+
-+	clocks {
-+		smclk: sysmgr-clock {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <25000000>;
-+		};
-+
-+		cfgclk: cfg-clock {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <100000000>;
-+		};
-+
-+		sysclk: system-clock {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <400000000>;
-+		};
-+	};
-+
-+	soc {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		interrupt-parent = <&gic>;
-+
-+		ranges = <0 0xf7000000 0x1000000>;
-+
-+		l2: l2-cache-controller@ac0000 {
-+			compatible = "marvell,tauros3-cache", "arm,pl310-cache";
-+			reg = <0xac0000 0x1000>;
-+			cache-unified;
-+			cache-level = <2>;
-+		};
-+
-+		gic: interrupt-controller@ad1000 {
-+			compatible = "arm,cortex-a9-gic";
-+			reg = <0xad1000 0x1000>, <0xad0100 0x0100>;
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+		};
-+
-+		local-timer@ad0600 {
-+			compatible = "arm,cortex-a9-twd-timer";
-+			reg = <0xad0600 0x20>;
-+			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&sysclk>;
-+		};
-+
-+		apb@e80000 {
-+			compatible = "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			ranges = <0 0xe80000 0x10000>;
-+			interrupt-parent = <&aic>;
-+
-+			timer0: timer@2c00 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c00 0x14>;
-+				interrupts = <8>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "okay";
-+			};
-+
-+			timer1: timer@2c14 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c14 0x14>;
-+				interrupts = <9>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "okay";
-+			};
-+
-+			timer2: timer@2c28 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c28 0x14>;
-+				interrupts = <10>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "disabled";
-+			};
-+
-+			timer3: timer@2c3c {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c3c 0x14>;
-+				interrupts = <11>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "disabled";
-+			};
-+
-+			timer4: timer@2c50 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c50 0x14>;
-+				interrupts = <12>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "disabled";
-+			};
-+
-+			timer5: timer@2c64 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c64 0x14>;
-+				interrupts = <13>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "disabled";
-+			};
-+
-+			timer6: timer@2c78 {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c78 0x14>;
-+				interrupts = <14>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "disabled";
-+			};
-+
-+			timer7: timer@2c8c {
-+				compatible = "snps,dw-apb-timer";
-+				reg = <0x2c8c 0x14>;
-+				interrupts = <15>;
-+				clocks = <&cfgclk>;
-+				clock-names = "timer";
-+				status = "disabled";
-+			};
-+
-+			aic: interrupt-controller@3000 {
-+				compatible = "snps,dw-apb-ictl";
-+				reg = <0x3000 0xc00>;
-+				interrupt-controller;
-+				#interrupt-cells = <1>;
-+				interrupt-parent = <&gic>;
-+				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
-+			};
-+		};
-+
-+		apb@fc0000 {
-+			compatible = "simple-bus";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			ranges = <0 0xfc0000 0x10000>;
-+			interrupt-parent = <&sic>;
-+
-+			uart0: serial@9000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0x9000 0x100>;
-+				reg-shift = <2>;
-+				reg-io-width = <1>;
-+				interrupts = <8>;
-+				clocks = <&smclk>;
-+				status = "disabled";
-+			};
-+
-+			uart1: serial@a000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0xa000 0x100>;
-+				reg-shift = <2>;
-+				reg-io-width = <1>;
-+				interrupts = <9>;
-+				clocks = <&smclk>;
-+				status = "disabled";
-+			};
-+
-+			uart2: serial@b000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0xb000 0x100>;
-+				reg-shift = <2>;
-+				reg-io-width = <1>;
-+				interrupts = <10>;
-+				clocks = <&smclk>;
-+				status = "disabled";
-+			};
-+
-+			sic: interrupt-controller@e000 {
-+				compatible = "snps,dw-apb-ictl";
-+				reg = <0xe000 0x400>;
-+				interrupt-controller;
-+				#interrupt-cells = <1>;
-+				interrupt-parent = <&gic>;
-+				interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+			};
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/sony,nsz-gs7.dts b/arch/arm/boot/dts/sony,nsz-gs7.dts
-new file mode 100644
-index 0000000..a6b1482
---- /dev/null
-+++ b/arch/arm/boot/dts/sony,nsz-gs7.dts
-@@ -0,0 +1,29 @@
-+/*
-+ * Device Tree file for Sony NSZ-GS7
-+ *
-+ * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+/dts-v1/;
-+
-+#include "marvell,berlin2.dtsi"
-+
-+/ {
-+	model = "Sony NSZ-GS7";
-+	compatible = "sony,nsz-gs7", "marvell,berlin2", "marvell,berlin";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 earlyprintk";
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x40000000>; /* 1 GB */
-+	};
++static const char * const berlin_dt_compat[] = {
++	"marvell,berlin",
++	NULL,
 +};
 +
-+&uart0 { status = "okay"; };
++DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
++	.dt_compat	= berlin_dt_compat,
++	.init_machine	= berlin_init_machine,
++MACHINE_END
 -- 
 1.8.4.rc3
 
