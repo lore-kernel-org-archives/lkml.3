@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505Ab3LHJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 04:29:41 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:62279 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784Ab3LHJ1g (ORCPT
+	id S1161086Ab3LHJ3T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 04:29:19 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:50958 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab3LHJ1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 04:27:36 -0500
+	Sun, 8 Dec 2013 04:27:20 -0500
 From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Luciano Coelho <luca@coelho.fi>,
         "John W. Linville" <linville@tuxdriver.com>
@@ -15,10 +15,11 @@ Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
         joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
         Felipe Contreras <felipe.contreras@gmail.com>,
+        David Gnedt <david.gnedt@davizone.at>,
         =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent mac address
-Date: Sun,  8 Dec 2013 10:25:13 +0100
-Message-Id: <1386494714-21070-16-git-send-email-pali.rohar@gmail.com>
+Subject: [PATCH v2 04/16] wl1251: implement hardware ARP filtering
+Date: Sun,  8 Dec 2013 10:25:02 +0100
+Message-Id: <1386494714-21070-5-git-send-email-pali.rohar@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
 References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
@@ -30,93 +31,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver wl1251 generating mac address randomly at startup and there is no way to
-set permanent mac address via SET_IEEE80211_PERM_ADDR. This patch export sysfs
-file which can set permanent mac address by userspace helper program. Patch is
-needed for devices which do not store mac address in internal wl1251 eeprom.
+From: David Gnedt <david.gnedt@davizone.at>
 
+Update hardware ARP filter configuration on BSS_CHANGED_ARP_FILTER
+notification from mac80211.
+Ported from wl1271 driver.
+
+Signed-off-by: David Gnedt <david.gnedt@davizone.at>
 Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 ---
- drivers/net/wireless/ti/wl1251/main.c |   52 +++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+ drivers/net/wireless/ti/wl1251/acx.c  |   26 ++++++++++++++++++++++++++
+ drivers/net/wireless/ti/wl1251/acx.h  |   15 +++++++++++++++
+ drivers/net/wireless/ti/wl1251/main.c |   12 ++++++++++++
+ 3 files changed, 53 insertions(+)
 
-diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
-index 42730b7..a69b741 100644
---- a/drivers/net/wireless/ti/wl1251/main.c
-+++ b/drivers/net/wireless/ti/wl1251/main.c
-@@ -1377,6 +1377,46 @@ static const struct ieee80211_ops wl1251_ops = {
- 	.get_survey = wl1251_op_get_survey,
- };
- 
-+static ssize_t wl1251_sysfs_show_address(struct device *dev,
-+					 struct device_attribute *attr,
-+					 char *buf)
-+{
-+	struct wl1251 *wl = dev_get_drvdata(dev);
-+	ssize_t len;
-+
-+	/* FIXME: what's the maximum length of buf? page size?*/
-+	len = 500;
-+
-+	len = snprintf(buf, len, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
-+		       wl->mac_addr[0], wl->mac_addr[1], wl->mac_addr[2],
-+		       wl->mac_addr[3], wl->mac_addr[4], wl->mac_addr[5]);
-+
-+	return len;
-+}
-+
-+static ssize_t wl1251_sysfs_store_address(struct device *dev,
-+					  struct device_attribute *attr,
-+					  const char *buf, size_t count)
-+{
-+	struct wl1251 *wl = dev_get_drvdata(dev);
-+	unsigned int addr[6];
-+	int ret, i;
-+
-+	ret = sscanf(buf, "%2x:%2x:%2x:%2x:%2x:%2x\n",
-+			&addr[0], &addr[1], &addr[2],
-+			&addr[3], &addr[4], &addr[5]);
-+
-+	if (ret != 6)
-+		return -EINVAL;
-+
-+	for (i = 0; i < 6; i++)
-+		wl->mac_addr[i] = addr[i] & 0xff;
-+
-+	SET_IEEE80211_PERM_ADDR(wl->hw, wl->mac_addr);
-+
-+	return count;
-+}
-+
- static ssize_t wl1251_sysfs_show_tx_mgmt_frm_rate(struct device *dev,
- 						  struct device_attribute *attr,
- 						  char *buf)
-@@ -1586,6 +1626,10 @@ out:
- 	return count;
+diff --git a/drivers/net/wireless/ti/wl1251/acx.c b/drivers/net/wireless/ti/wl1251/acx.c
+index cce50e2..5f4a552 100644
+--- a/drivers/net/wireless/ti/wl1251/acx.c
++++ b/drivers/net/wireless/ti/wl1251/acx.c
+@@ -1062,6 +1062,32 @@ out:
+ 	return ret;
  }
  
-+static DEVICE_ATTR(address, S_IRUGO | S_IWUSR,
-+		   wl1251_sysfs_show_address,
-+		   wl1251_sysfs_store_address);
++int wl1251_acx_arp_ip_filter(struct wl1251 *wl, bool enable, __be32 address)
++{
++	struct wl1251_acx_arp_filter *acx;
++	int ret;
 +
- static DEVICE_ATTR(tx_mgmt_frm_rate, S_IRUGO | S_IWUSR,
- 		   wl1251_sysfs_show_tx_mgmt_frm_rate,
- 		   wl1251_sysfs_store_tx_mgmt_frm_rate);
-@@ -1730,6 +1774,14 @@ int wl1251_init_ieee80211(struct wl1251 *wl)
- 	}
- 	dev_set_drvdata(&wl1251_device.dev, wl);
++	wl1251_debug(DEBUG_ACX, "acx arp ip filter, enable: %d", enable);
++
++	acx = kzalloc(sizeof(*acx), GFP_KERNEL);
++	if (!acx)
++		return -ENOMEM;
++
++	acx->version = ACX_IPV4_VERSION;
++	acx->enable = enable;
++
++	if (enable)
++		memcpy(acx->address, &address, ACX_IPV4_ADDR_SIZE);
++
++	ret = wl1251_cmd_configure(wl, ACX_ARP_IP_FILTER,
++				   acx, sizeof(*acx));
++	if (ret < 0)
++		wl1251_warning("failed to set arp ip filter: %d", ret);
++
++	kfree(acx);
++	return ret;
++}
++
+ int wl1251_acx_ac_cfg(struct wl1251 *wl, u8 ac, u8 cw_min, u16 cw_max,
+ 		      u8 aifs, u16 txop)
+ {
+diff --git a/drivers/net/wireless/ti/wl1251/acx.h b/drivers/net/wireless/ti/wl1251/acx.h
+index 99ea80e..4444cd0 100644
+--- a/drivers/net/wireless/ti/wl1251/acx.h
++++ b/drivers/net/wireless/ti/wl1251/acx.h
+@@ -1233,6 +1233,20 @@ struct wl1251_acx_bet_enable {
+ 	u8 padding[2];
+ } __packed;
  
-+	/* Create sysfs file address */
-+	ret = device_create_file(&wl1251_device.dev,
-+				 &dev_attr_address);
-+	if (ret < 0) {
-+		wl1251_error("failed to create sysfs file address");
-+		goto out;
++#define ACX_IPV4_VERSION 4
++#define ACX_IPV6_VERSION 6
++#define ACX_IPV4_ADDR_SIZE 4
++struct wl1251_acx_arp_filter {
++	struct acx_header header;
++	u8 version;	/* The IP version: 4 - IPv4, 6 - IPv6.*/
++	u8 enable;	/* 1 - ARP filtering is enabled, 0 - disabled */
++	u8 padding[2];
++	u8 address[16];	/* The IP address used to filter ARP packets.
++			   ARP packets that do not match this address are
++			   dropped. When the IP Version is 4, the last 12
++			   bytes of the the address are ignored. */
++} __attribute__((packed));
++
+ struct wl1251_acx_ac_cfg {
+ 	struct acx_header header;
+ 
+@@ -1475,6 +1489,7 @@ int wl1251_acx_mem_cfg(struct wl1251 *wl);
+ int wl1251_acx_wr_tbtt_and_dtim(struct wl1251 *wl, u16 tbtt, u8 dtim);
+ int wl1251_acx_bet_enable(struct wl1251 *wl, enum wl1251_acx_bet_mode mode,
+ 			  u8 max_consecutive);
++int wl1251_acx_arp_ip_filter(struct wl1251 *wl, bool enable, __be32 address);
+ int wl1251_acx_ac_cfg(struct wl1251 *wl, u8 ac, u8 cw_min, u16 cw_max,
+ 		      u8 aifs, u16 txop);
+ int wl1251_acx_tid_cfg(struct wl1251 *wl, u8 queue,
+diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
+index 46a2494..0e27f1f 100644
+--- a/drivers/net/wireless/ti/wl1251/main.c
++++ b/drivers/net/wireless/ti/wl1251/main.c
+@@ -980,6 +980,7 @@ static void wl1251_op_bss_info_changed(struct ieee80211_hw *hw,
+ {
+ 	struct wl1251 *wl = hw->priv;
+ 	struct sk_buff *beacon, *skb;
++	bool enable;
+ 	int ret;
+ 
+ 	wl1251_debug(DEBUG_MAC80211, "mac80211 bss info changed");
+@@ -1078,6 +1079,17 @@ static void wl1251_op_bss_info_changed(struct ieee80211_hw *hw,
+ 		}
+ 	}
+ 
++	if (changed & BSS_CHANGED_ARP_FILTER) {
++		__be32 addr = bss_conf->arp_addr_list[0];
++		WARN_ON(wl->bss_type != BSS_TYPE_STA_BSS);
++
++		enable = bss_conf->arp_addr_cnt == 1 && bss_conf->assoc;
++		wl1251_acx_arp_ip_filter(wl, enable, addr);
++
++		if (ret < 0)
++			goto out_sleep;
 +	}
 +
- 	/* Create sysfs file tx_mgmt_frm_rate */
- 	ret = device_create_file(&wl1251_device.dev,
- 				 &dev_attr_tx_mgmt_frm_rate);
+ 	if (changed & BSS_CHANGED_BEACON) {
+ 		beacon = ieee80211_beacon_get(hw, vif);
+ 		if (!beacon)
 -- 
 1.7.9.5
 
