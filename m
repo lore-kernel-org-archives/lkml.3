@@ -1,140 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760090Ab3LHXyg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 18:54:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23126 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760091Ab3LHXya (ORCPT
+	id S1760154Ab3LHXyy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 18:54:54 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36139 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760093Ab3LHXyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 18:54:30 -0500
+	Sun, 8 Dec 2013 18:54:35 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>, stable@vger.kernel.org
-Subject: [PATCH 1/2] PCI: pcibus address to resource converting take bus instead of dev
-Date: Sun,  8 Dec 2013 15:54:28 -0800
-Message-Id: <1386546869-31900-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+Date: Sun,  8 Dec 2013 15:54:29 -0800
+Message-Id: <1386546869-31900-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
 References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For allocating resource under bus path, we do not have dev to pass along,
-and we only have bus to use instead.
+Joseph found
+| commit b07f2ebc109b607789f648dedcff4b125f9afec6
+| Date:   Thu Feb 23 19:23:32 2012 -0800
+|
+|    PCI: add a PCI resource reallocation config option
 
--v2: drop pcibios_bus_addr_to_resource().
+cause one system can not load driver for Intel x520 NIC's.
 
+The root resource:
+[    1.212470] PCI host bridge to bus 0000:20
+[    1.212475] pci_bus 0000:20: root bus resource [bus 20-3e]
+[    1.212479] pci_bus 0000:20: root bus resource [io  0xc000-0xdfff]
+[    1.212483] pci_bus 0000:20: root bus resource [mem 0xfecc0000-0xfecfffff]
+[    1.212487] pci_bus 0000:20: root bus resource [mem 0xe9400000-0xe97fffff]
+
+and bios does not assign sriov, also have two function ROM bar point to same
+position.
+[    1.213197] pci 0000:22:00.0: [8086:10fb] type 00 class 0x020000
+...
+[    1.213240] pci 0000:22:00.0: reg 0x30: [mem 0xe9500000-0xe957ffff pref]
+[    1.213303] pci 0000:22:00.0: reg 0x184: [mem 0x00000000-0x00003fff 64bit]
+[    1.213317] pci 0000:22:00.0: reg 0x190: [mem 0x00000000-0x00003fff 64bit]
+[    1.213366] pci 0000:22:00.1: [8086:10fb] type 00 class 0x020000
+...
+[    1.213408] pci 0000:22:00.1: reg 0x30: [mem 0xe9500000-0xe957ffff pref]
+[    1.213468] pci 0000:22:00.1: reg 0x184: [mem 0x00000000-0x00003fff 64bit]
+[    1.213481] pci 0000:22:00.1: reg 0x190: [mem 0x00000000-0x00003fff 64bit]
+[    1.218527] pci 0000:20:03.0: PCI bridge to [bus 22]
+[    1.218534] pci 0000:20:03.0:   bridge window [io  0xd000-0xdfff]
+[    1.218537] pci 0000:20:03.0:   bridge window [mem 0xe9400000-0xe95fffff]
+...
+[    1.254103] pci 0000:22:00.1: address space collision: [mem 0xe9500000-0xe957ffff pref] conflicts with 0000:22:00.0 [mem 0xe9500000-0xe957ffff pref]
+[    1.254111] pci 0000:23:00.1: address space collision: [mem 0xe9700000-0xe977ffff pref] conflicts with 0000:23:00.0 [mem 0xe9700000-0xe977ffff pref]
+
+We don't need to enable realloc for this case, as we can not alter root bus mmio
+range to get big one to hold two rom bar, and sriov under 4G.
+
+Add checking if pci root bus have 4G above mmio res, and don't enable
+realloc auto accordingly.
+
+bug report at: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1245938
+
+Reported-by: Joseph Salisbury <joseph.salisbury@canonical.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: stable@vger.kernel.org
 ---
- drivers/pci/host-bridge.c | 34 +++++++++++++++++++++-------------
- include/linux/pci.h       |  5 +++++
- 2 files changed, 26 insertions(+), 13 deletions(-)
+ drivers/pci/setup-bus.c | 32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index a68dc61..c988a30 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -9,22 +9,19 @@
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 219a410..f9e6efb 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -1432,17 +1432,39 @@ static int iov_resources_unassigned(struct pci_dev *dev, void *data)
+ 	return 0;
+ }
  
- #include "pci.h"
- 
--static struct pci_bus *find_pci_root_bus(struct pci_dev *dev)
-+static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
++static bool pci_bus_mem_above_4g(struct pci_bus *bus)
++{
++	int i;
++	struct resource *res;
++
++	pci_bus_for_each_resource(bus, res, i) {
++		struct pci_bus_region region;
++
++		if (!res || !(res->flags & IORESOURCE_MEM))
++			continue;
++
++		__pcibios_resource_to_bus(bus, &region, res);
++		if (region.end > 0xffffffff)
++			return true;
++	}
++
++	return false;
++}
++
+ static enum enable_type pci_realloc_detect(struct pci_bus *bus,
+ 			 enum enable_type enable_local)
  {
--	struct pci_bus *bus;
+-	bool unassigned = false;
 -
--	bus = dev->bus;
- 	while (bus->parent)
- 		bus = bus->parent;
+ 	if (enable_local != undefined)
+ 		return enable_local;
  
- 	return bus;
+-	pci_walk_bus(bus, iov_resources_unassigned, &unassigned);
+-	if (unassigned)
+-		return auto_enabled;
++	/* only enable auto when root bus does support 64bit mmio */
++	if (pci_bus_mem_above_4g(bus)) {
++		bool unassigned = false;
++
++		pci_walk_bus(bus, iov_resources_unassigned, &unassigned);
++		if (unassigned)
++			return auto_enabled;
++	}
+ 
+ 	return enable_local;
  }
- 
--static struct pci_host_bridge *find_pci_host_bridge(struct pci_dev *dev)
-+static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
- {
--	struct pci_bus *bus = find_pci_root_bus(dev);
-+	struct pci_bus *root_bus = find_pci_root_bus(bus);
- 
--	return to_pci_host_bridge(bus->bridge);
-+	return to_pci_host_bridge(root_bus->bridge);
- }
- 
- void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-@@ -40,10 +37,11 @@ static bool resource_contains(struct resource *res1, struct resource *res2)
- 	return res1->start <= res2->start && res1->end >= res2->end;
- }
- 
--void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
--			     struct resource *res)
-+void __pcibios_resource_to_bus(struct pci_bus *bus,
-+				      struct pci_bus_region *region,
-+				      struct resource *res)
- {
--	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
-+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
- 	struct pci_host_bridge_window *window;
- 	resource_size_t offset = 0;
- 
-@@ -60,6 +58,11 @@ void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
- 	region->start = res->start - offset;
- 	region->end = res->end - offset;
- }
-+void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
-+			     struct resource *res)
-+{
-+	__pcibios_resource_to_bus(dev->bus, region, res);
-+}
- EXPORT_SYMBOL(pcibios_resource_to_bus);
- 
- static bool region_contains(struct pci_bus_region *region1,
-@@ -68,10 +71,10 @@ static bool region_contains(struct pci_bus_region *region1,
- 	return region1->start <= region2->start && region1->end >= region2->end;
- }
- 
--void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
--			     struct pci_bus_region *region)
-+void __pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
-+				      struct pci_bus_region *region)
- {
--	struct pci_host_bridge *bridge = find_pci_host_bridge(dev);
-+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
- 	struct pci_host_bridge_window *window;
- 	resource_size_t offset = 0;
- 
-@@ -93,4 +96,9 @@ void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
- 	res->start = region->start + offset;
- 	res->end = region->end + offset;
- }
-+void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
-+			     struct pci_bus_region *region)
-+{
-+	__pcibios_bus_to_resource(dev->bus, res, region);
-+}
- EXPORT_SYMBOL(pcibios_bus_to_resource);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 1084a15..5c2cf8e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -737,8 +737,13 @@ void pci_fixup_cardbus(struct pci_bus *);
- 
- /* Generic PCI functions used internally */
- 
-+void __pcibios_resource_to_bus(struct pci_bus *bus,
-+			       struct pci_bus_region *region,
-+			       struct resource *res);
- void pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
- 			     struct resource *res);
-+void __pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
-+				      struct pci_bus_region *region);
- void pcibios_bus_to_resource(struct pci_dev *dev, struct resource *res,
- 			     struct pci_bus_region *region);
- void pcibios_scan_specific_bus(int busn);
 -- 
 1.8.4
 
