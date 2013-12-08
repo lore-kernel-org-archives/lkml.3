@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261Ab3LHJ2i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 04:28:38 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:44405 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab3LHJ12 (ORCPT
+	id S1161003Ab3LHJ3F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 04:29:05 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:60911 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab3LHJ1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 04:27:28 -0500
+	Sun, 8 Dec 2013 04:27:32 -0500
 From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Luciano Coelho <luca@coelho.fi>,
         "John W. Linville" <linville@tuxdriver.com>
@@ -17,9 +17,9 @@ Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         Felipe Contreras <felipe.contreras@gmail.com>,
         David Gnedt <david.gnedt@davizone.at>,
         =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH v2 09/16] wl1251: fix channel switching in monitor mode
-Date: Sun,  8 Dec 2013 10:25:07 +0100
-Message-Id: <1386494714-21070-10-git-send-email-pali.rohar@gmail.com>
+Subject: [PATCH v2 12/16] wl1251: enforce changed hw encryption support on monitor state change
+Date: Sun,  8 Dec 2013 10:25:10 +0100
+Message-Id: <1386494714-21070-13-git-send-email-pali.rohar@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
 References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
@@ -33,44 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Gnedt <david.gnedt@davizone.at>
 
-Use the ENABLE_RX command for channel switching when no interface is present
-(monitor mode only).
-The advantage of ENABLE_RX is that it leaves the tx data path disabled in
-firmware, whereas the usual JOIN command seems to transmit some frames at
-firmware level.
+The firmware doesn't support per packet encryption selection, so disable hw
+encryption support completely while a monitor interface is present to support
+injection of packets (which shouldn't get encrypted by hw).
+To enforce the changed hw encryption support force a disassociation on
+non-monitor interfaces.
+For disassociation a workaround using hw connection monitor is employed,
+which temporary enables hw connection manager flag.
 
 Signed-off-by: David Gnedt <david.gnedt@davizone.at>
 Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 ---
- drivers/net/wireless/ti/wl1251/main.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ti/wl1251/main.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
 diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
-index 1223bc6..b6f11b8 100644
+index bb6e873..1ef264c 100644
 --- a/drivers/net/wireless/ti/wl1251/main.c
 +++ b/drivers/net/wireless/ti/wl1251/main.c
-@@ -616,8 +616,19 @@ static int wl1251_op_config(struct ieee80211_hw *hw, u32 changed)
- 	if (channel != wl->channel) {
- 		wl->channel = channel;
- 
--		ret = wl1251_join(wl, wl->bss_type, wl->channel,
--				  wl->beacon_int, wl->dtim_period);
-+		/*
-+		 * Use ENABLE_RX command for channel switching when no
-+		 * interface is present (monitor mode only).
-+		 * This leaves the tx path disabled in firmware, whereas
-+		 * the usual JOIN command seems to transmit some frames
-+		 * at firmware level.
-+		 */
-+		if (wl->vif == NULL) {
-+			ret = wl1251_cmd_data_path_rx(wl, wl->channel, 1);
-+		} else {
-+			ret = wl1251_join(wl, wl->bss_type, wl->channel,
-+					  wl->beacon_int, wl->dtim_period);
-+		}
- 		if (ret < 0)
- 			goto out_sleep;
+@@ -688,6 +688,16 @@ static int wl1251_op_config(struct ieee80211_hw *hw, u32 changed)
+ 		wl->power_level = conf->power_level;
  	}
+ 
++	/*
++	 * Tell stack that connection is lost because hw encryption isn't
++	 * supported in monitor mode.
++	 * This requires temporary enabling of the hw connection monitor flag
++	 */
++	if ((changed & IEEE80211_CONF_CHANGE_MONITOR) && wl->vif) {
++		wl->hw->flags |= IEEE80211_HW_CONNECTION_MONITOR;
++		ieee80211_connection_loss(wl->vif);
++	}
++
+ out_sleep:
+ 	wl1251_ps_elp_sleep(wl);
+ 
+@@ -1120,6 +1130,9 @@ static void wl1251_op_bss_info_changed(struct ieee80211_hw *hw,
+ 	}
+ 
+ 	if (changed & BSS_CHANGED_ASSOC) {
++		/* Disable temporary enabled hw connection monitor flag */
++		wl->hw->flags &= ~IEEE80211_HW_CONNECTION_MONITOR;
++
+ 		if (bss_conf->assoc) {
+ 			wl->beacon_int = bss_conf->beacon_int;
+ 
 -- 
 1.7.9.5
 
