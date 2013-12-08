@@ -1,137 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab3LHNfY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 08:35:24 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:33501 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3LHNfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 08:35:20 -0500
-Message-ID: <52A47596.10406@kernel.org>
-Date: Sun, 08 Dec 2013 13:35:18 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1754998Ab3LHNrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 08:47:35 -0500
+Received: from nm36-vm0.bullet.mail.bf1.yahoo.com ([72.30.238.136]:20050 "HELO
+	nm36-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753522Ab3LHNrd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 08:47:33 -0500
+X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Dec 2013 08:47:33 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 463723.79272.bm@omp1022.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=G1+POU66UK0CGcR0RSyXoeXO8eYW9wS1GaEEnQdkzLOMIpFOveQeJi5ZrCGZLsm7iBIX8lWEBL7s0Mf2VxRY9tGtq8OB8RrncSCTuQnVq8p+roVb00qu/yn7c3/TFAvaHpI2rpDrretWbwxJA/nRw0IPoZwl+QOqnM2ablSoGpw=;
+X-YMail-OSG: nyL1I.AVM1l.11JA19tcHCO8phseoqMHxP2ffmytK0R6YiV
+ jXr_aKSb8tkrBcM47EaTQgAW6CGOUpU6xl_RdwggnZmZjLUzdhPgH7Zk3iXb
+ iCNdoAlC2DeDVOanznbhxpBBJd2vw7j8_g0gu8vv852h_VrZXi7mzSJXxC7g
+ 0ZsnOwgfcT4rCel6AKUybJl4oQhm9O4MAjBgn0EGQuuVYoEey9O0rsUWrvpR
+ Tp_C1Tl9JvQA8OIBhW8iajorTbopp7P4Xca6YmJ2itg9aODkegxjPZw2vdX8
+ kaqJWkI7TCjQXFEsI9C6sn3YyOYWRkAS8ciuQDKGSjkcZeOSxtT0TFvnHE4W
+ qUtmPCWcJMGRNNULC9_4Gqb0726Uvyb2Z5Wkcho356o2wBNAr0In9oUqc0BH
+ SDG3ct.8vDU0p1JP5WSTLHSIYpIytVSuNRj8t1nHocc6EAWtYJfOwqxP9eey
+ anAlV9hm5ZbfZnb1QrsMiavdVFbo3rNclMfYd87TkocofsRx_bzMUkeX7xky
+ ITwyfHIlPa6yc.DYliqJXX9Rzfjg_qxXNppC7k0yzNdts8d3i3L7lncjkgn2
+ mMOypetAoOIkt
+X-Rocket-MIMEInfo: 002.001,SSBoYXZlIGEgRGVsbCBJbnNwaXJvbiBONzAxMCBMYXB0b3Agd2l0aCBJbnRlbCBncmFwaGljcy4gV2hlbiB0aGUgZGVsbC1sYXB0b3AgbW9kdWxlIGlzIGxvYWRlZCwKdHdvIGJhY2tsaWdodCBkZXZpY2UgZGV2aWNlcyBhcmUgY3JlYXRlZDsgZGVsbF9iYWNrbGlnaHQsIGFuZCBpbnRlbF9iYWNrbGlnaHQgZnJvbSB0aGUgSW50ZWwKZ3JhcGhpY3MgZHJpdmVyLiBUaGUgZGVsbF9iYWNrbGlnaHQgZGV2aWNlIGlzIG5vbi1mdW5jdGlvbmFsLCBidXQgdGhlIGdyYXBoaWNzIHN1YnN5c3RlbSB1c2VzCml0IGluc3QBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.169.609
+Message-ID: <1386510031.81267.YahooMailNeo@web160401.mail.bf1.yahoo.com>
+Date: Sun, 8 Dec 2013 05:40:31 -0800 (PST)
+From: Alex Davis <alex14641@yahoo.com>
+Reply-To: Alex Davis <alex14641@yahoo.com>
+Subject: [PATCH] dell-laptop: add parameter to disable the backlight device.
+To: "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: lars@metafoo.de, Marek Vasut <marex@denx.de>, harald@ccbib.org,
-        hector.palacios@digi.com, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 3/3] iio: mxs-lradc: add write_raw function to modify
- scale
-References: <1386375840-24984-1-git-send-email-alexandre.belloni@free-electrons.com> <1386375840-24984-4-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1386375840-24984-4-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/13 00:24, Alexandre Belloni wrote:
-> From: Hector Palacios <hector.palacios@digi.com>
->
-> Added write_raw function to manipulate the optional divider_by_two
-> through the scaling attribute out of the available scales.
->
-> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Looks good to me - make that little tiny tweak I mentioned in the previous
-patch and I'll be happy to take these.
+I have a Dell Inspiron N7010 Laptop with Intel graphics. When the dell-laptop module is loaded,
+two backlight device devices are created; dell_backlight, and intel_backlight from the Intel
+graphics driver. The dell_backlight device is non-functional, but the graphics subsystem uses
+it instead of the functioning intel_backlight device. The result is that, when running KDE,
+screen brightness cannot be controlled. I've added a module parameter, disable_backlight
+which, when true, will disable the dell_backlight device, and leave only the intel_backlight:
+with this, screen brightness can be controlled.
 
-Thanks,
+This patch is against 3.10.
 
-Jonathan
+Signed-off-by: Alex Davis <alex14641@yahoo.com>
+--- dell-laptop.c.orig    2013-12-01 19:05:39.693149050 -0500
++++ dell-laptop.c    2013-12-01 17:29:27.613372482 -0500
+@@ -35,6 +35,9 @@
+ /* This structure will be modified by the firmware when we enter
+  * system management mode, hence the volatiles */
+ 
++static bool disable_backlight;
++module_param(disable_backlight, bool, 0644);
++
+ struct calling_interface_buffer {
+     u16 class;
+     u16 select;
+@@ -561,6 +564,9 @@ static int __init dell_init(void)
+ 
+     dell_laptop_dir = debugfs_create_dir("dell_laptop", NULL);
+ 
++    if (disable_backlight)
++        return 0;
++
+ #ifdef CONFIG_ACPI
+     /* In the event of an ACPI backlight being available, don't
+      * register the platform controller.
 
-> ---
->  drivers/staging/iio/adc/mxs-lradc.c | 56 ++++++++++++++++++++++++++++++++++++-
->  1 file changed, 55 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index eca766dce644..a58c6aaa94d3 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -301,6 +301,7 @@ struct mxs_lradc {
->  #define	LRADC_CTRL1_LRADC_IRQ_OFFSET		0
->
->  #define	LRADC_CTRL2				0x20
-> +#define	LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET	24
->  #define	LRADC_CTRL2_TEMPSENSE_PWD		(1 << 15)
->
->  #define	LRADC_STATUS				0x40
-> @@ -918,7 +919,8 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->  		}
->
->  		*val = lradc->vref_mv[chan->channel];
-> -		*val2 = chan->scan_type.realbits;
-> +		*val2 = chan->scan_type.realbits -
-> +			lradc->is_divided[chan->channel];
->  		return IIO_VAL_FRACTIONAL_LOG2;
->
->  	case IIO_CHAN_INFO_OFFSET:
-> @@ -942,6 +944,56 @@ static int mxs_lradc_read_raw(struct iio_dev *iio_dev,
->  	return -EINVAL;
->  }
->
-> +static int mxs_lradc_write_raw(struct iio_dev *iio_dev,
-> +			       const struct iio_chan_spec *chan,
-> +			       int val, int val2, long m)
-> +{
-> +	struct mxs_lradc *lradc = iio_priv(iio_dev);
-> +	struct mxs_lradc_scale *scale_avail =
-> +			lradc->scale_avail[chan->channel];
-> +	int ret;
-> +
-> +	ret = mutex_trylock(&lradc->lock);
-> +	if (!ret)
-> +		return -EBUSY;
-> +
-> +	switch (m) {
-> +	case IIO_CHAN_INFO_SCALE:
-> +		ret = -EINVAL;
-> +		if (val == scale_avail[MXS_LRADC_DIV_DISABLED].integer &&
-> +		    val2 == scale_avail[MXS_LRADC_DIV_DISABLED].nano) {
-> +			/* divider by two disabled */
-> +			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-> +			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_CLR);
-> +			lradc->is_divided[chan->channel] = 0;
-> +			ret = 0;
-> +		} else if (val == scale_avail[MXS_LRADC_DIV_ENABLED].integer &&
-> +			   val2 == scale_avail[MXS_LRADC_DIV_ENABLED].nano) {
-> +			/* divider by two enabled */
-> +			writel(1 << LRADC_CTRL2_DIVIDE_BY_TWO_OFFSET,
-> +			       lradc->base + LRADC_CTRL2 + STMP_OFFSET_REG_SET);
-> +			lradc->is_divided[chan->channel] = 1;
-> +			ret = 0;
-> +		}
-> +
-> +		break;
-> +	default:
-> +		ret = -EINVAL;
-> +		break;
-> +	}
-> +
-> +	mutex_unlock(&lradc->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int mxs_lradc_write_raw_get_fmt(struct iio_dev *iio_dev,
-> +				       const struct iio_chan_spec *chan,
-> +				       long m)
-> +{
-> +	return IIO_VAL_INT_PLUS_NANO;
-> +}
-> +
->  static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
->  		struct device_attribute *attr,
->  		char *buf,
-> @@ -1019,6 +1071,8 @@ static const struct attribute_group mxs_lradc_attribute_group = {
->  static const struct iio_info mxs_lradc_iio_info = {
->  	.driver_module		= THIS_MODULE,
->  	.read_raw		= mxs_lradc_read_raw,
-> +	.write_raw		= mxs_lradc_write_raw,
-> +	.write_raw_get_fmt	= mxs_lradc_write_raw_get_fmt,
->  	.attrs			= &mxs_lradc_attribute_group,
->  };
->
->
+ 
+I code, therefore I am
