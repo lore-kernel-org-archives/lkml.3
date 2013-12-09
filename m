@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761691Ab3LIWFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 17:05:30 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:55316 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab3LIWF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 17:05:29 -0500
-Date: Mon, 9 Dec 2013 14:05:25 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: add show num_poisoned_pages when oom
-In-Reply-To: <1386625778-kutyp5f6-mutt-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.02.1312091405170.11026@chino.kir.corp.google.com>
-References: <52A592DE.7010302@huawei.com> <1386625778-kutyp5f6-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755906Ab3LIWRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 17:17:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24597 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751474Ab3LIWR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 17:17:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,860,1378882800"; 
+   d="scan'208";a="447251616"
+Date: Mon, 9 Dec 2013 23:17:21 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
+        "'Wei WANG'" <wei_wang@realsil.com.cn>,
+        "'Chris Ball'" <cjb@laptop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "'Borislav Petkov'" <bp@alien8.de>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
+Message-ID: <20131209221721.GB8612@zurbaran>
+References: <20131117195358.GO27323@pd.tnic>
+ <4523614.I5MBhorHFt@vostro.rjw.lan>
+ <5292FF5D.1050304@gmail.com>
+ <1821758.2MoNI3h1Mv@vostro.rjw.lan>
+ <52985041.5050000@gmail.com>
+ <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
+ <5299FF38.7060203@gmail.com>
+ <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
+ <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de>
+ <529D92D6.8050409@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <529D92D6.8050409@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013, Naoya Horiguchi wrote:
+Hi Francis,
 
-> > Show num_poisoned_pages when oom, it is helpful to find the reason.
-> > 
-> > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> > ---
-> >  lib/show_mem.c |    3 +++
-> >  1 files changed, 3 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/lib/show_mem.c b/lib/show_mem.c
-> > index 5847a49..1cbdcd8 100644
-> > --- a/lib/show_mem.c
-> > +++ b/lib/show_mem.c
-> > @@ -46,4 +46,7 @@ void show_mem(unsigned int filter)
-> >  	printk("%lu pages in pagetable cache\n",
-> >  		quicklist_total_size());
-> >  #endif
-> > +#ifdef CONFIG_MEMORY_FAILURE
-> > +	printk("%lu pages poisoned\n", atomic_long_read(&num_poisoned_pages));
-> > +#endif
-> >  }
-> 
-> I think that just "poisoned" could be confusing because this word seems to
-> be used also in other context (like slab and list_debug handling.)
-> "hwpoisoned" or "hardware corrupted" (which is the same label in /proc/meminfo)
-> looks better to me.
-> 
+Adding Lee to the Cc list.
 
-Ah, good point.
+On Tue, Dec 03, 2013 at 09:14:14AM +0100, Francis Moreau wrote:
+> Now that you did the hard work, I hope driver's maintainer/developper
+> will care about this issue.
+I applied Thomas' patch to mfd-fixes.
+Thanks a lot to you and Thomas for that.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
