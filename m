@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760330Ab3LICtC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 21:49:02 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49642 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760184Ab3LICtB (ORCPT
+	id S1760354Ab3LICtO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 21:49:14 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:33293 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760285Ab3LICtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Dec 2013 21:49:01 -0500
-From: Libin <huawei.libin@huawei.com>
-To: Tejun Heo <tj@kernel.org>
-CC: <guohanjun@huawei.com>, <wangyijing@huawei.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] workqueue: Fix comment typo for enum WQ_SYSFS
-Date: Mon, 9 Dec 2013 10:44:37 +0800
-Message-ID: <1386557077-9600-1-git-send-email-huawei.libin@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
+Message-ID: <52A53024.9090701@gmail.com>
+Date: Mon, 09 Dec 2013 10:51:16 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH] mm/zswap.c: add BUG() for default case in zswap_writeback_entry()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Bin <huawei.libin@huawei.com>
+Recommend to add default case to avoid compiler's warning, although at
+present, the original implementation is still correct.
 
-s/wq_sysfs_register()/workqueue_sysfs_register()
+The related warning (with allmodconfig for metag):
 
-Signed-off-by: Li Bin <huawei.libin@huawei.com>
+    CC      mm/zswap.o
+  mm/zswap.c: In function 'zswap_writeback_entry':
+  mm/zswap.c:537: warning: 'ret' may be used uninitialized in this function
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 ---
- include/linux/workqueue.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/zswap.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 594521b..88d1e12 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -306,7 +306,7 @@ enum {
- 	WQ_MEM_RECLAIM		= 1 << 3, /* may be used for memory reclaim */
- 	WQ_HIGHPRI		= 1 << 4, /* high priority */
- 	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu instensive workqueue */
--	WQ_SYSFS		= 1 << 6, /* visible in sysfs, see wq_sysfs_register() */
-+	WQ_SYSFS		= 1 << 6, /* visible in sysfs, see workqueue_sysfs_register() */
+diff --git a/mm/zswap.c b/mm/zswap.c
+index 5a63f78..bfd1807 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -585,6 +585,8 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
  
- 	/*
- 	 * Per-cpu workqueues are generally preferred because they tend to
+ 		/* page is up to date */
+ 		SetPageUptodate(page);
++	default:
++		BUG();
+ 	}
+ 
+ 	/* move it to the tail of the inactive list after end_writeback */
 -- 
-1.8.2.2
-
-
+1.7.7.6
