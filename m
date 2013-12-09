@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760220Ab3LIBvv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 20:51:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54871 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760118Ab3LIBvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 20:51:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH 0/9] ARM: support for ICP DAS LP-8x4x (with dts)
-Date: Mon, 9 Dec 2013 02:51:44 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com> <1386543229-1542-1-git-send-email-ynvich@gmail.com>
-In-Reply-To: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	id S1760249Ab3LIB4d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 20:56:33 -0500
+Received: from imap.thunk.org ([74.207.234.97]:37874 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760165Ab3LIB43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 20:56:29 -0500
+Date: Sun, 8 Dec 2013 20:56:28 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: fix del_timer() misuse for ->s_err_report
+Message-ID: <20131209015628.GA12883@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
+References: <20131204072926.GK10323@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312090251.45207.arnd@arndb.de>
-X-Provags-ID: V02:K0:sgFeLdRpn++Uf8NMSvsaAs4jwYwIBrZNqNJxjUkry2I
- KPluy7QfcgTtH+cB8LPv8LYdfU+ZxiXiIAIEsKDtRF10CEq81Z
- hA38w7DZVres+zEdMHuvsatyMHFLsofrUkHtoPyh8aHEtbxS4B
- CsoNnwZA971rU3lvG+erZD2rObpLlm4zzeHpMcUYAtEoaDzuwt
- W9V+7opyZcMgPf7fLv7/Q2chQTAIZVF8u2lnd17FCP7h/Q4+2k
- fwlUhwrurcTzD1XXkcL90FyzqSCPFOXmxwB63mWnEtzw9dDp3q
- dULN+rQWYQ5/3qw+4o3gZSETyqzbY6+tqaV/9MukWUdAhFLq9P
- KDKeHOe/7OnqoXdQhCXA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204072926.GK10323@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 08 December 2013, Sergei Ianovich wrote:
+On Wed, Dec 04, 2013 at 07:29:26AM +0000, Al Viro wrote:
+> That thing should be del_timer_sync(); consider what happens
+> if ext4_put_super() call of del_timer() happens to come just as it's
+> getting run on another CPU.  Since that timer reschedules itself
+> to run next day, you are pretty much guaranteed that you'll end up
+> with kfree'd scheduled timer, with usual fun consequences.  AFAICS,
+> that's -stable fodder all way back to 2010... [the second del_timer_sync()
+> is almost certainly not needed, but it doesn't hurt either]
 > 
-> Except for defconfig, this is a completely new series. The first
-> eight patches fix outstanding issues with device tree support
-> in PXA. The 9th boots ICP DAS LP-8x4x.
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
-Awesome! That was very quick. The main comment I have is for the
-dmaengine support, you will need to rebase on Daniel's patches for
-that. I also found few minor details.
+Nice catch.  Thanks, applied.
 
-	Arnd
+						- Ted
