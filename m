@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab3LISos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:44:48 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:40227 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251Ab3LISor (ORCPT
+	id S932743Ab3LISpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:45:01 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:37097 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286Ab3LISo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:44:47 -0500
-Message-ID: <1386614681.7152.189.camel@host5.omatika.ru>
-Subject: Re: [PATCH 0/9] ARM: support for ICP DAS LP-8x4x (with dts)
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>
-Date: Mon, 09 Dec 2013 22:44:41 +0400
-In-Reply-To: <201312090251.45207.arnd@arndb.de>
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
-	 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
-	 <201312090251.45207.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Dec 2013 13:44:58 -0500
+Date: Mon, 9 Dec 2013 19:44:55 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] softirq: Use ffs in __do_softirq
+Message-ID: <20131209184454.GA1811@localhost.localdomain>
+References: <cover.1384656563.git.joe@perches.com>
+ <8d10077333476c5c0e054cf060006999cf150f0c.1384656563.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8d10077333476c5c0e054cf060006999cf150f0c.1384656563.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-09 at 02:51 +0100, Arnd Bergmann wrote:
-> On Sunday 08 December 2013, Sergei Ianovich wrote:
-> > 
-> > Except for defconfig, this is a completely new series. The first
-> > eight patches fix outstanding issues with device tree support
-> > in PXA. The 9th boots ICP DAS LP-8x4x.
+On Sun, Nov 17, 2013 at 01:55:10AM -0800, Joe Perches wrote:
+> Possible speed improvement of the __do_softirq function by using ffs
+> instead of using a while loop with an & 1 test then single bit shift.
 > 
-> Awesome! That was very quick. The main comment I have is for the
-> dmaengine support, you will need to rebase on Daniel's patches for
-> that. I also found few minor details.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  kernel/softirq.c | 43 ++++++++++++++++++++++---------------------
+>  1 file changed, 22 insertions(+), 21 deletions(-)
+> 
+> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> index 11025cc..7be95d7 100644
+> --- a/kernel/softirq.c
+> +++ b/kernel/softirq.c
+> @@ -219,6 +219,7 @@ asmlinkage void __do_softirq(void)
+>  	int cpu;
+>  	unsigned long old_flags = current->flags;
+>  	int max_restart = MAX_SOFTIRQ_RESTART;
+> +	int softirq_bit;
+>  
+>  	/*
+>  	 * Mask out PF_MEMALLOC s current task context is borrowed for the
+> @@ -242,30 +243,30 @@ restart:
+>  
+>  	h = softirq_vec;
+>  
+> -	do {
+> -		if (pending & 1) {
+> -			unsigned int vec_nr = h - softirq_vec;
+> -			int prev_count = preempt_count();
+> -
+> -			kstat_incr_softirqs_this_cpu(vec_nr);
+> -
+> -			trace_softirq_entry(vec_nr);
+> -			h->action(h);
+> -			trace_softirq_exit(vec_nr);
+> -			if (unlikely(prev_count != preempt_count())) {
+> -				printk(KERN_ERR "huh, entered softirq %u %s %p"
+> -				       "with preempt_count %08x,"
+> -				       " exited with %08x?\n", vec_nr,
+> -				       softirq_to_name[vec_nr], h->action,
+> -				       prev_count, preempt_count());
+> -				preempt_count_set(prev_count);
+> -			}
+> +	while ((softirq_bit = ffs(pending))) {
+> +		unsigned int vec_nr;
+> +		int prev_count;
+> +
+> +		h += softirq_bit - 1;
 
-Thanks for review.
+Perhaps using for_each_set_bit() would simplify that more?
 
-I've applied and tested changes to meet review remarks for all patches,
-except 5/9. However, there is no point to respin the series until the
-decision about DMA is made.
-
-Daniel, could please CC me when you post update pxa-dma series?
-
-
+> +
+> +		vec_nr = h - softirq_vec;
+> +		prev_count = preempt_count();
+>  
+> -			rcu_bh_qs(cpu);
+> +		kstat_incr_softirqs_this_cpu(vec_nr);
+> +
+> +		trace_softirq_entry(vec_nr);
+> +		h->action(h);
+> +		trace_softirq_exit(vec_nr);
+> +		if (unlikely(prev_count != preempt_count())) {
+> +			printk(KERN_ERR "huh, entered softirq %u %s %p with preempt_count %08x, exited with %08x?\n",
+> +			       vec_nr, softirq_to_name[vec_nr], h->action,
+> +			       prev_count, preempt_count());
+> +			preempt_count_set(prev_count);
+>  		}
+> +		rcu_bh_qs(cpu);
+>  		h++;
+> -		pending >>= 1;
+> -	} while (pending);
+> +		pending >>= softirq_bit;
+> +	}
+>  
+>  	local_irq_disable();
+>  
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+> 
