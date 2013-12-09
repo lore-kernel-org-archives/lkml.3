@@ -1,136 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab3LIRci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:32:38 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34953 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab3LIRcf (ORCPT
+	id S1760086Ab3LIReb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:34:31 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:40248 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab3LIRe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:32:35 -0500
-Message-ID: <52A5FEAF.4050001@wwwdotorg.org>
-Date: Mon, 09 Dec 2013 10:32:31 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 9 Dec 2013 12:34:28 -0500
 MIME-Version: 1.0
-To: bilhuang <bilhuang@nvidia.com>, "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] cpufreq: tegra: Re-model Tegra cpufreq driver
-References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com> <1386229462-3474-3-git-send-email-bilhuang@nvidia.com> <52A10681.4050906@wwwdotorg.org> <52A58305.3070902@nvidia.com>
-In-Reply-To: <52A58305.3070902@nvidia.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <52A5A52C.50605@st.com>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-5-git-send-email-wens@csie.org> <52A5A52C.50605@st.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Tue, 10 Dec 2013 01:34:07 +0800
+X-Google-Sender-Auth: C5SPgzI9Kbgq2EGu6eunVvymNIM
+Message-ID: <CAGb2v67WiCaMpJEzA_X6o7uOu6i3w3FCEz7=N5HY0amQb01SZA@mail.gmail.com>
+Subject: Re: [PATCH 04/10] net: stmmac: sunxi platfrom extensions for GMAC in
+ Allwinner A20 SoC's
+To: srinivas kandagatla <srinivas.kandagatla@st.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 01:44 AM, bilhuang wrote:
-> On 12/06/2013 07:04 AM, Stephen Warren wrote:
->> On 12/05/2013 12:44 AM, Bill Huang wrote:
->>> Re-model Tegra cpufreq driver to support all Tegra series of SoCs.
->>>
->>> * Make tegra-cpufreq.c a generic Tegra cpufreq driver.
->>> * Move Tegra20 specific codes into tegra20-cpufreq.c.
->>> * Bind Tegra cpufreq dirver with a fake device so defer probe would work
->>>    when we're going to get regulator in the driver to support voltage
->>>    scaling (DVFS).
->>
->>> diff --git a/drivers/cpufreq/tegra-cpufreq.c
->>> b/drivers/cpufreq/tegra-cpufreq.c
->>
->>> @@ -91,14 +40,10 @@ static int tegra_update_cpu_speed(struct
->>> cpufreq_policy *policy,
->> ...
->>> +    if (soc_config->vote_emc_on_cpu_rate)
->>> +        soc_config->vote_emc_on_cpu_rate(rate);
->>> +
->>> +    ret = soc_config->cpu_clk_set_rate(rate * 1000);
->>>       if (ret)
->>>           pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
->>>               rate);
->>
->> Is there any/much shared code left in this file after this patch? It
->> seems like all this file does now is make each cpufreq callback function
->> call soc_config->the_same_function_name(). If so, wouldn't it be better
->> to simply implement completely separate tegar20-cpufreq and
->> tegra30-cpufreq drivers, and register them each directly with the
->> cpufreq core, to avoid this file doing all the indirection?
+Hi,
+
+On Mon, Dec 9, 2013 at 7:10 PM, srinivas kandagatla
+<srinivas.kandagatla@st.com> wrote:
+> Hi Chen,
+> Good to know that Allwinner uses gmac.
+
+To my knowledge, Allwinner has never confirmed this.
+
+> On ST SoC, we have very similar requirements, before we merge any of
+> these changes I think we need to come up with common way to solve both
+> Allwinner and ST SOCs use cases.
 >
-> I think this file is needed since we can shared the registration and
-> probe logic for different SoCs.
-
-But there's basically nothing in probe() already, and if we have a
-separate driver for each SoC, then there's even less code; just a call
-to devm_kzalloc() for the device-specific data (which will be
-SoC-specific in size anyway), and a call to cpufreq_register_driver(). I
-don't think it's worth sharing that if it means that every other
-function needs to be an indirect function call.
-
->>> -int __init tegra_cpufreq_init(void)
->>> +static struct {
->>> +    char *compat;
->>> +    int (*init)(struct tegra_cpufreq_data *,
->>> +            const struct tegra_cpufreq_config **);
->>> +} tegra_init_funcs[] = {
->>> +    { "nvidia,tegra20", tegra20_cpufreq_init },
->>> +};
->>> +
->>> +static int tegra_cpufreq_probe(struct platform_device *pdev)
->> ...
->>> +    for (i = 0; i < ARRAY_SIZE(tegra_init_funcs); i++) {
->>> +        if (of_machine_is_compatible(tegra_init_funcs[i].compat)) {
->>> +            ret = tegra_init_funcs[i].init(tegra_data, &soc_config);
->>> +            if (!ret)
->>> +                break;
->>> +            else
->>> +                goto out;
->>> +        }
->>>       }
->>> +    if (i == ARRAY_SIZE(tegra_init_funcs))
->>> +        goto out;
->>
->> I think there are better ways of doing this than open-coding it. Perhaps
->> of_match_device() or the platform-driver equivalent could be made to
->> work?
+> I have already posted few patches on to net-dev
+> http://lkml.org/lkml/2013/11/12/243 to add Glue driver on top of stmmac
+> driver.
 >
-> Open coding is everywhere in OF helper functions actually. I doubt if we
-> can use of_match_device() if we're not adding node in DT.
-> If we're matching the platform device then we might need open coding, no?
-
-For platform devices, you can set up the id_table of struct
-platform_driver, and then simply call platform_get_device_id(pdev)
-inside probe() to find the matching entry. drivers/i2c/busses/i2c-at91.c
-is an example of how this works (just some random driver I found using
-grep).
-
->>> +int __init tegra_cpufreq_init(void)
->>> +{
->>> +    struct platform_device_info devinfo = { .name = "tegra-cpufreq", };
->>> +
->>> +    platform_device_register_full(&devinfo);
->>> +
->>> +    return 0;
->>>   }
->>>   EXPORT_SYMBOL(tegra_cpufreq_init);
->>
->> Perhaps instead of hard-coding the name "tegra-cpufreq" here, you could
->> dynamically construct the device name based on the DT's root compatible
->> value, register "${root_compatible}-cpufreq", e.g.
->> "nvidia,tegra20-cpufreq" or "nvidia,tegra30-cpufreq". That would allow
->> the kernel's standard device/driver matching mechanism to pick the
->> correct driver to instantiate. Perhaps you could even dynamically
->> register an OF device so that you can use of_match_device() in probe, if
 >
-> I guess what you meant dynamically register an OF device is registering
-> an fake OF device by calling of_device_add(), no? If yes then what
-> of_node should we give?
+> There are few reasons for the way I have done it.
+>
+> 1> I did not want to modify gmac driver in any sense to when a new SOC
+> support is added.
 
-Yes. Good question about which node. I guess the root node would be the
-only one that made any sense at all, and admittedly it doesn't make a
-huge amount of sense. Perhaps registers a platform device rather than an
-OF device would make more sense. See platform_device_register() I think.
+My approach would add one line (compatible strings) each time.
+
+> 2> As the SOC specific glue logic sits on top of standard GMAC IP, it
+> makes sense to represent it proper harware hierarchy.
+
+My feeling is that the SoC specifics are not a glue layer around dwmac,
+rather an interconnected extension. Arguably I do not have the whole
+picture. Allwinner has refused to provide us with any specifics beyond
+the SoC manual and drivers. As such I can only make educated guesses on
+how the dwmac core interacts with the other modules.
+
+> 3> Did not want to change any generic gmac bindings for SOC specific
+> stuff as requirements if SOC glue would be very different in each case.
+
+We could try to define a standard set of clocks and reset controllers.
+The dwmac does not have much additional tunables in the driver.
+Anything else should be SoC specific, put in an extension, and
+documented as such.
+
+> I see issues with this approach, which are addressed in my patches.
+>
+> Please have a look at the http://lkml.org/lkml/2013/11/12/462 patch on
+> STi SOC glue, which does implement a very similar glue driver.
+>
+> Do you see any issues not to do that way?
+
+The glue layer driver would not have access to any of dwmac driver's
+internals, nor could it respond to any state changes.
+
+For example, .fix_mac_speed is called whenever auto-negotiation happens,
+or when the link goes down or up. Maybe some future SoC would need this.
+
+The Allwinner A20 has the option to use the external 125MHz clock
+provided by the PHY for the tx clock under RGMII mode, with multiple
+dividers yielding 125, 25, or 2.5 MHz. It seems this would require
+.fix_mac_speed, though I have not tested it. My goal was to produce
+a usable driver, rather than test all the possibilities.
+
+The other issue is when the glue layer needs to set SoC specific
+implementation details of the dwmac, when it is not possible to
+add a generic dwmac compatible. See next section for more on this.
+
+> On 06/12/13 17:29, Chen-Yu Tsai wrote:
+>> The Allwinner A20 has an ethernet controller that seems to be
+>> an early version of Synopsys DesignWare MAC 10/100/1000 Universal,
+>> which is supported by the stmmac driver.
+>>
+>> Allwinner's GMAC requires setting additional registers in the SoC's
+>> clock control unit.
+>>
+>> The exact version of the DWMAC IP that Allwinner uses is unknown,
+>> thus the exact feature set is unknown.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> ---
+>>  .../bindings/net/allwinner,sun7i-gmac.txt          | 22 +++++++
+>>  drivers/net/ethernet/stmicro/stmmac/Kconfig        | 12 ++++
+>>  drivers/net/ethernet/stmicro/stmmac/Makefile       |  1 +
+>>  drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c  | 76 ++++++++++++++++++++++
+>>  drivers/net/ethernet/stmicro/stmmac/stmmac.h       |  3 +lot
+>>  .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |  3 +
+>>  6 files changed, 117 insertions(+)
+>> http://lkml.org/lkml/2013/11/12/462
+>> diff --git a/Documentation/devicetree/bindings/net/allwinner,sun7i-gmac.txt b/Documentation/devicetree/bindings/net/allwinner,sun7i-gmac.txt
+>
+>> --- /dev/null
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c
+>> @@ -0,0 +1,76 @@
+>> +/**
+>> + * dwmac-sunxi.c - Allwinner sunxi DWMAC specific glue layer
+>> + *
+>> + * Copyright (C) 2013 Chen-Yu Tsai
+>> + *
+>> + * Chen-Yu Tsai  <wens@csie.org>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, orhttp://lkml.org/lkml/2013/11/12/462
+>> + * (at your option) any later version.
+>> + *http://lkml.org/lkml/2013/11/12/462
+>> + * This program is distributed in the hope that it will be useful,http://lkml.org/lkml/2013/11/12/462
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/phy.h>
+>> +#include <linux/stmmac.h>
+>> +
+>> +#define GMAC_IF_TYPE_RGMII   0x4
+>> +
+>> +#define GMAC_TX_CLK_MASK     0x3
+>> +#define GMAC_TX_CLK_MII              0x0
+>> +#define GMAC_TX_CLK_RGMII_INT        0x2
+>> +
+>> +static int sun7i_gmac_init(struct platform_device *pdev)
+>> +{
+>> +     struct resource *res;
+>> +     struct device *dev = &pdev->dev;
+>> +     void __iomem *addr = NULL;
+>> +     struct plat_stmmacenet_data *plat_dat = NULL;
+>> +     u32 priv_clk_reg;
+>> +
+>> +     plat_dat = dev_get_platdata(&pdev->dev);
+> This is not valid for DT case.
+> In DT case stmmac maintains its own instance of platform data.
+>
+> Setting platform data dynamically after probe to a device is not the
+> right way to do.
+
+I see. And stmmac's own instance of platform data is associated with the
+device in stmmac_dvr_probe. To make this work, we would have to move
+setting dev->priv->plat in front of the .init callback.
+
+>> +     if (!plat_dat)
+>> +             return -EINVAL;
+>> +
+>> +     /* Get GMAC clock register in CCU */
+>> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+>> +     addr = devm_ioremap_resource(dev, res);
+>> +     if (IS_ERR(addr))
+>> +             return PTR_ERR(addr);
+>> +
+>> +     priv_clk_reg = readl(addr);
+>> +
+>> +     /* Set GMAC interface port mode */
+>> +     if (plat_dat->interface == PHY_INTERFACE_MODE_RGMII)
+>> +             priv_clk_reg |= GMAC_IF_TYPE_RGMII;
+>> +     else
+>> +             priv_clk_reg &= ~GMAC_IF_TYPE_RGMII;
+>> +
+>> +     /* Set GMAC transmit clock source. */
+>> +     priv_clk_reg &= ~GMAC_TX_CLK_MASK;
+>> +     if (plat_dat->interface == PHY_INTERFACE_MODE_RGMII
+>> +                     || plat_dat->interface == PHY_INTERFACE_MODE_GMII)
+>> +             priv_clk_reg |= GMAC_TX_CLK_RGMII_INT;
+>> +     else
+>> +             priv_clk_reg |= GMAC_TX_CLK_MII;
+>> +
+>> +     writel(priv_clk_reg, addr);
+>> +
+>> +     /* mask out phy addr 0x0 */
+>> +     plat_dat->mdio_bus_data->phy_mask = 0x1;
+>> +per
+>> +     return 0;
+>> +}
+>> +
+> This routine would not scale..
+>
+> stmmac can call init function multiple times, so you would be parsing DT
+> and also remapping the address multiple times.
+
+I should save the mapped address, and check if it was mapped before.
+Or we could split it into .probe and .init, where .probe is call in
+stmmac_pltfr_probe, and .init is called in stmmac_open.
+
+> [---
+>> +const struct plat_stmmacenet_data sun7i_gmac_data = {
+>> +     .has_gmac = 1,
+>> +     .tx_coe = 1,
+>> +     .init = sun7i_gmac_init,
+>> +};
+>> +
+> ---]
+>
+> This looks exactly like a AUXDATA way of doing things.
+> Again stmmac driver has to make a copy of this so that I would not get a
+> same copy for multiple instances.
+
+In the patch series, stmmac will make a copy.
+Though that part needs some fixes.
+
+On a side note, the impression I got for not using AUXDATA is that it pushes
+what is supposed to be driver extensions to the SoC/board specific code areas.
+
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+>> index f16a9bd..c6e1f93 100644
+>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+>> @@ -130,6 +130,9 @@ void stmmac_disable_eee_mode(struct stmmac_priv *priv);
+>>  bool stmmac_eee_init(struct stmmac_priv *priv);
+>>
+>
+>
+> [...
+>>  #ifdef CONFIG_STMMAC_PLATFORM
+>> +#ifdef CONFIG_DWMAC_SUNXI
+>> +extern const struct plat_stmmacenet_data sun7i_gmac_data;
+>> +#endif
+>>  extern struct platform_driver stmmac_pltfr_driver;
+>>  static inline int stmmac_register_platform(void)
+>>  {
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>> index df3fd1c..6cf8292 100644
+>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>> @@ -35,6 +35,9 @@ static const struct of_device_id stmmac_dt_ids[] = {
+>>       { .compatible = "snps,dwmac-3.70a"},
+>>       { .compatible = "snps,dwmac-3.710"},
+>>       { .compatible = "snps,dwmac"},
+>> +#ifdef CONFIG_DWMAC_SUNXI
+>> +     { .compatible = "allwinner,sun7i-gmac", .data = &sun7i_gmac_data},
+>> +#endif
+> ...]
+>
+> Personally, I did not want to do this kind of stuff in stmmac, As this
+> list would keep growing, and this file need to be edited for every new
+> SOC or every different type of glue logic.
+>
+> Please let me know what your opnion on doing Allwinner glue driver in
+> line with http://lkml.org/lkml/2013/11/12/462
+
+
+I needed to set some fields in the platform data,
+as was set in the driver provided by Allwinner, and
+out of our own needs.
+
+1. .tx_coe
+   This is not exported in the DT bindings.
+   Looking at stmmac code, not setting this seems to disable all
+   checksum offloading.
+
+2. .force_sf_dma_mode
+   I have added DT property handling for this.
+
+3. .mdio_bus_data
+   The PHY mask is something we would like to have at the board level.
+   The PHY on one of our boards, RTL8211E from Realtek, responds to
+   commands sent to phy address 0, regardless what it's actual address is.
+   This is documented in RTL8211E's datasheet:
+
+      The RTL8211E-VB(VL)/RTL8211EG-VB support PHY addresses from 00001 to
+      00111. PHY address 0 is a broadcast from the MAC; each PHY device
+      should respond.
+
+   Without the PHY mask, probing the MDIO bus would yield two devices,
+   when in reality there is only one. This results in some confusion.
+
+   This should definitely be exported as a DT binding.
+
+I am also unable to add a generic compatible string for our particular
+dwmac, because I do not know the exact version of the IP, only that
+it is earlier than 3.50. No hardware DMA capability flags.
+
+Using something like "snps,dwmac-pre-3.50" is IMO worse.
+
+>>       { /* sentinel */ }
+>>  };
+>>  MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
+>>
+>
+
+ChenYu
