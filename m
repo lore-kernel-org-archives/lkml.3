@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab3LIXxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:53:16 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:34391 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3LIXxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:53:15 -0500
+	id S1751605Ab3LIXyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:54:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35797 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab3LIXyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 18:54:11 -0500
+Message-ID: <52A657EC.6080304@redhat.com>
+Date: Mon, 09 Dec 2013 18:53:16 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <52A653C4.1050208@zytor.com>
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
-	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
-	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
-	<52A6389E.90404@zytor.com>
-	<CAMe9rOpuFzqA7tOGZ3Eh8Vb76+Y5T2xirAfB08NHbSS5R-OjuQ@mail.gmail.com>
-	<52A653C4.1050208@zytor.com>
-Date: Mon, 9 Dec 2013 15:53:14 -0800
-Message-ID: <CAMe9rOpuf1=LPBJzUHmgb2x6WDu=yUsKE+iZansaPDQfCPaejw@mail.gmail.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Biederman <ebiederm@xmission.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] kexec: add sysctl to disable kexec
+References: <20131209233829.GA3501@www.outflux.net>
+In-Reply-To: <20131209233829.GA3501@www.outflux.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 3:35 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/09/2013 01:44 PM, H.J. Lu wrote:
->> On Mon, Dec 9, 2013 at 1:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 12/09/2013 01:03 PM, H.J. Lu wrote:
->>>>
->>>> No, please don't do that.  Normally, PIE has zero load address and kernel
->>>> can load it anywhere.  There are multiple reasons why PIE has non-zero
->>>> load address.  Saying you need to load a program above 4GB under x86-64,
->>>> you can't do that with normal dynamic executable.  PIE with non-zero load
->>>> address is the only way to do that on x86-64.
->>>>
->>>
->>> Why does it have to be PIE?
->>>
->>
->> x86-64 small model is limited to 4GB in size.  You can't build
->> a dynamic executable in small model larger than 4GB.
->>
->> There are medium and large models.  But they are slower than
->> small models as well as small models in PIE.  Also there are
->> no glibc run-times for medium and large models.
->>
->
-> Compiling for the small PIC model shouldn't automatically mean
-> generating a PIE (ET_DYN) executable, though (and if those are
-> inherently linked, that is a fundamental bug IMNSHO.)
+On 12/09/2013 06:38 PM, Kees Cook wrote:
+> For general-purpose (i.e. distro) kernel builds it makes sense to build with
+> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+> with kexec. However, in the face of trying to lock down a system with such
+> a kernel, there needs to be a way to disable kexec (much like module loading
+> can be disabled). Without this, it is too easy for the root user to modify
+> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
 
-PIE uses PIC. But GCC has -fPIE and -fPIC.  They aren't
-the same.   You build PIE with
+Not everybody will be running with selinux, or another LSM security
+policy, so having this simple knob probably makes sense.
 
-1. Compile with -fPIE.
-2. Link with -pie.
+OTOH, are the people who run without a fancy security people the
+same people who are interested in locking down the system?
+
+I guess I'll ack the patch, since I see no real downside to having
+the knob...
+
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+
+Acked-by: Rik van Riel <riel@redhat.com>
+
 
 -- 
-H.J.
+All rights reversed
