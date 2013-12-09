@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761421Ab3LISOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:14:45 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48355 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760380Ab3LISOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:14:43 -0500
-Date: Mon, 9 Dec 2013 18:14:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, linux-spi@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20131209181437.GS29268@sirena.org.uk>
-References: <1385745164-10534-1-git-send-email-mpn@google.com>
- <1386516911-26388-1-git-send-email-mina86@mina86.com>
+	id S932302Ab3LISQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:16:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932179Ab3LISP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 13:15:59 -0500
+Date: Mon, 9 Dec 2013 19:15:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
+        Will Deacon <will.deacon@arm.com>, Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH 2/2] perf: unwinding: use the per-feature check flags
+Message-ID: <20131209181547.GB16631@krava.brq.redhat.com>
+References: <1386411461-21510-1-git-send-email-jean.pihet@linaro.org>
+ <1386411461-21510-3-git-send-email-jean.pihet@linaro.org>
+ <20131209171719.GA16631@krava.brq.redhat.com>
+ <CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lJC5CbBzX055ExrY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386516911-26388-1-git-send-email-mina86@mina86.com>
-X-Cookie: It's clever, but is it art?
+In-Reply-To: <CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/3] spi: tegra: use u32 for 32-bit register values
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 09, 2013 at 07:02:02PM +0100, Jean Pihet wrote:
+> Hi Jiri,
+> 
+> On 9 December 2013 18:17, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Sat, Dec 07, 2013 at 11:17:41AM +0100, Jean Pihet wrote:
+> >> Use the per-feature check flags for the unwinding feature in order
+> >> to correctly compile the libunwind and libunwind-debug-frame feature
+> >> checks.
+> >>
+> >> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set
+> >> in 'make -C tools/perf'
+> >>
+> >> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> >> Cc: Jiri Olsa <jolsa@redhat.com>
+> >
+> > SNIP
+> >
+> >> +BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
+> >>
+> >>  ###############################
+> >>
+> >>  test-all:
+> >> -     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+> >> +     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+> >
+> > hum, the test-all build command should have every possible flags we use, right?
+> > including LIBUNWIND_CFLAGS, LIBUNWIND_LDFLAGS
+> Oh yes you are right. I am overlooked the test-all feature (which
+> never builds on my modest embedded systems).
+> $(LIBUNWIND_LIBS) should be replaced by $(LIBUNWIND_CFLAGS)
+> $(LIBUNWIND_LDFLAGS), is that a reasonable approach?
+> 
+> >
+> > also, this patch no longer applies on acme's perf/core
+> I am using a recent mainline (3.12-rc2).
+> 
+> Let me correct the patch on acme's perf/core. Is that OK?
 
---lJC5CbBzX055ExrY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+yep, thats the best practise 
 
-On Sun, Dec 08, 2013 at 04:35:08PM +0100, Michal Nazarewicz wrote:
-> This series has only been compile-tested, but it does not introduce any
-> behaviour changes.
-
-Applied, thanks.  Like Stephen says please do make sure your commits do
-as they're described...
-
---lJC5CbBzX055ExrY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSpgiKAAoJELSic+t+oim907sP/3g9BRQZFFxuiz2/RxzEwqzU
-0vXk+T+pmTYUf4pyI9vkKkG05zGbQcBWNpx2ZYa/yDL0B7vpJwN2JQG+H4ORwDHs
-/a/OUMfc1X0nbjysVAu6Iu5bR2PSFDEimp+o0PQAoj+2VWaLJOj3tPodh/vR2F1m
-44LjeXnXR7UMy8UhIADwPJQ2nytB1/ld/chHi98/bZS1ubJKK4+pcQ8cgmwYP9tl
-70CQeEG7DdVNjTMpkmJ2r4+LEBt1WGWz593xsxhzuxMPxDad3XP7dC8WXloONTZB
-gApozafF3jNKfb7SeL/K+Gkve+QebP4wqo5xq+vSDM1uvFPLWr8tDPVH0XXFF8OT
-w5FWBfPFgjTjPbvOa95QZrQbIW3kaE0LI0GFQRsrrY9OXOQIaSTPD49plgrCLcDf
-JiwbnqNQLwZkTt/Hw2tqJBo2nNubquLDydMSBXMI+fOYvUXAMfvt+jOI62Kx2x8J
-On0EuBH+HC1k3/8GhD/9DT9/EFZ1FYfuH+M4+yHcq3Sp/Vcl5eoS6BQxzzyhqvTa
-N9BdmwKHUc6lYmBTlsnWdOJwULfeNnPtqo5x3g3O8EveNo4JRs/KbKmLM1QAtvV7
-yqXztJjVaqS74SS9b2FWguOxI9oQBQ7TI/8xpjrtF7tIwNx1SAZ+yYK2zXsi//ly
-lHIDyERCLkCW5TAvFYYL
-=aidW
------END PGP SIGNATURE-----
-
---lJC5CbBzX055ExrY--
+jirka
