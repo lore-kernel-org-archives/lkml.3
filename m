@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226Ab3LIV5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:57:25 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:35564 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761687Ab3LIVwZ (ORCPT
+	id S933289Ab3LIV5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:57:51 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47524 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab3LIV5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:25 -0500
+	Mon, 9 Dec 2013 16:57:47 -0500
+Date: Mon, 9 Dec 2013 15:56:41 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v3 01/23] mm/memblock: debug: correct displaying of upper
+ memory boundary
+Message-ID: <20131209215641.GF29143@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+ <1386625856-12942-2-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <52A63AD4.2030101@zytor.com>
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
-	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
-	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
-	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>
-	<CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-	<52A63AD4.2030101@zytor.com>
-Date: Mon, 9 Dec 2013 13:52:25 -0800
-Message-ID: <CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="twz1s1Hj1O0rHoT0"
+Content-Disposition: inline
+In-Reply-To: <1386625856-12942-2-git-send-email-santosh.shilimkar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 1:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->>> PT_LOAD being non-zero causing randomization to be turned off seems like
->>> quite unexpected behavior to me, with a great potential to cause a lot of
->>> confusion.
->>
->> There should be no difference between dynamic executable and PIE
->> with non-zero vaddr when choosing where to load them.
->>
->
-> Why is that?  It would seem to be a big difference between a relocatable
-> binary (PIE) and one with a load address fixed at link time.
->
+--twz1s1Hj1O0rHoT0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-PIE with non-zero vaddr should be loaded at non-zero
-vaddr.  Otherwise, PIE may not work as expected.
+On Mon, Dec 09, 2013 at 04:50:34PM -0500, Santosh Shilimkar wrote:
+> From: Grygorii Strashko <grygorii.strashko@ti.com>
+>=20
+> When debugging is enabled (cmdline has "memblock=3Ddebug") the memblock
+> will display upper memory boundary per each allocated/freed memory range
+> wrongly. For example:
+>  memblock_reserve: [0x0000009e7e8000-0x0000009e7ed000] _memblock_early_al=
+loc_try_nid_nopanic+0xfc/0x12c
+>=20
+> The 0x0000009e7ed000 is displayed instead of 0x0000009e7ecfff
+>=20
+> Hence, correct this by changing formula used to calculate upper memory
+> boundary to (u64)base + size - 1 instead of  (u64)base + size everywhere
+> in the debug messages.
+>=20
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
+Very minor patch but perhaps we should Cc: stable here ? not that it
+matters much...
 
--- 
-H.J.
+--=20
+balbi
+
+--twz1s1Hj1O0rHoT0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpjyZAAoJEIaOsuA1yqREsZwQAJA7Gd1mKnfy3iCkZJmiDeEs
+dts3AWkF7IKcStwYsfNfSd1068vkqHSZ+bA587djfb3EWmYCPb+7f9Vf8SH90wkT
+W1cg/b0l5v0T8t+rmHvuuwXjLOjWj7cPE4CZzJDe3bckGDuXq6/1Bu7i+cHNLW/r
+xI1rrlWuv0WyzzmLTl/kWB7rgdSXR/6X5+ANnEZu6kcMO+Wxy/ns617G1vY+TNnB
+KqNnjn1hnUBQqJONxjzp0bm3sKP0c6V5fq2QqkwVrGZWoXZx2Ia1zzlu+3eJ1y/V
+TiIL7tiuDkvxQdNyiiUSjGfSt0MUd0GxgSf/ZEP8Wd9dnx/WIUgozDEq7b5YPeXc
+2OjNRFm9jcPZ4MRgwjoEl8iUC9BQQjEvKum/RLB3nMO3sCMTf0ikwr6B5wU0aTMh
+HnADwM6+zmYnmOH2k40n5iPsPWbDYZnZCRMVGhjNg+7N6BWwumU6qg1zu+4g5k7X
+eS5TqV53Wz4HFoOTkCxfdw0oKMcQOo/2cq7HSk0sPPPbfD6adVxypmeFpaN8CjMy
+YlzUQaLS1DQPz4tnVuAl24YHPIzvwg1kPHaOl7PTx0GjDy07kv0ezgw/bZjfe6aJ
+3LNSqikxNUqfW0dzWGSgvA7qGB1duSZfx8aLruLHC5/hapshU4xiSWdPqiJiXZP4
+vW4rBSzTCdxFRUj8vGhI
+=vg5q
+-----END PGP SIGNATURE-----
+
+--twz1s1Hj1O0rHoT0--
