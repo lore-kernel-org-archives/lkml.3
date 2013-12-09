@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760829Ab3LIHQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 02:16:01 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:34165 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760557Ab3LIHP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 02:15:59 -0500
-Message-ID: <52A56DE5.5010206@st.com>
-Date: Mon, 9 Dec 2013 08:14:45 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S932208Ab3LIHW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 02:22:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34453 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755587Ab3LIHWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 02:22:54 -0500
+Message-ID: <52A56FC0.8020001@ti.com>
+Date: Mon, 9 Dec 2013 12:52:40 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-sunxi@googlegroups.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing
- hardware
-References: <1386350983-13281-1-git-send-email-wens@csie.org> <1386350983-13281-2-git-send-email-wens@csie.org>
-In-Reply-To: <1386350983-13281-2-git-send-email-wens@csie.org>
+To: Kamil Debski <k.debski@samsung.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <kyungmin.park@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        <gautam.vivek@samsung.com>, <mat.krawczuk@gmail.com>,
+        <yulgon.kim@samsung.com>, <p.paneri@samsung.com>,
+        <av.tikhomirov@samsung.com>, <jg1.han@samsung.com>,
+        <galak@codeaurora.org>, <matt.porter@linaro.org>
+Subject: Re: [PATCH 1/9] phy: core: Change the way of_phy_get is called
+References: <1386246579-25141-1-git-send-email-k.debski@samsung.com> <1386246579-25141-2-git-send-email-k.debski@samsung.com> <52A16104.3080704@ti.com> <009901cef271$3c40d0b0$b4c27210$%debski@samsung.com>
+In-Reply-To: <009901cef271$3c40d0b0$b4c27210$%debski@samsung.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.128]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Chen-Yu
+On Friday 06 December 2013 04:22 PM, Kamil Debski wrote:
+> Hi,
+>
+>> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
+>> Sent: Friday, December 06, 2013 6:31 AM
+>>
+>> Hi,
+>>
+>> On Thursday 05 December 2013 05:59 PM, Kamil Debski wrote:
+>>> Previously the of_phy_get function took a struct device * and was
+>>> declared static. It was impossible to call it from another driver and
+>>> thus it was impossible to get phy defined
+>>
+>> It was never intended to be called from other drivers. What's up with
+>> the wrapper of of_phy_get, phy_get()/devm_phy_get()? Why isn't that
+>> enough?
+>
+> Implementing support for multiple phys in the ehci driver is a bit tricky.
+> Especially when we want to do it right. Please have a look at this part of
+> the dts file:
+>
+> +    ehci@12580000 {
+> +        compatible = "samsung,exynos4210-ehci";
+> +        reg = <0x12580000 0x20000>;
+> +        interrupts = <0 70 0>;
+> +        clocks = <&clock 304>, <&clock 305>;
+> +        clock-names = "usbhost", "otg";
+> +        status = "disabled";
+> +        #address-cells = <1>;
+> +        #size-cells = <0>;
+> +        port@0 {
+> +            reg = <0>;
+> +            phys = <&usb2phy 1>;
+> +            phy-names = "host";
+> +            status = "disabled";
+> +        };
+> +        port@1 {
+> +            reg = <1>;
+> +            phys = <&usb2phy 2>;
+> +            phy-names = "hsic0";
+> +            status = "disabled";
+> +        };
+> +        port@2 {
+> +            reg = <2>;
+> +            phys = <&usb2phy 3>;
+> +            phy-names = "hsic1";
+> +            status = "disabled";
+> +        };
+> +    };
+>
+> With the above we have a clear specification of ports and their respective
+> phys. But to do this properly the ehci driver has to iterate over port
+> nodes. It is much easier to use devm_of_phy_get by giving the node as its
+> argument.
 
-On 12/6/2013 6:29 PM, Chen-Yu Tsai wrote:
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> ---
->
-> Guiseppe previously stated that the "stmmaceth" clock is the
-> main clock that drives the IP. The stmmac driver does not
-> enable this clock during the probe phase. When the driver is
-> built in to the kernel, this is fine because the clock maybe
-> on by default, or the boot loader had enabled it.
->
-> If stmmac is built as a module, when the module is loaded,
-> the clock may be found unused and disabled by the kernel.
+I see. There are a couple of more things we do in the wrapper that gets 
+missed while exporting of_phy_get (get_device and try_module_get). You 
+might want to re-work that one.
 
-the clk_prepare_enable is then called in the open.
-Is it not working for you?
-Do you mean that the stmmac_hw_init fails if you do not move
-the clk_get and clk_prepare_enable on top of the stmmac_dvr_probe?
-
-Peppe
-
->
->   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 24 +++++++++++++----------
->   1 file changed, 14 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index 8d4ccd3..7da71ed 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -2688,10 +2688,17 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->   	if ((phyaddr >= 0) && (phyaddr <= 31))
->   		priv->plat->phy_addr = phyaddr;
->
-> +	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
-> +	if (IS_ERR(priv->stmmac_clk)) {
-> +		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
-> +		goto error_clk_get;
-> +	}
-> +	clk_prepare_enable(priv->stmmac_clk);
-> +
->   	/* Init MAC and get the capabilities */
->   	ret = stmmac_hw_init(priv);
->   	if (ret)
-> -		goto error_free_netdev;
-> +		goto error_hw_init;
->
->   	ndev->netdev_ops = &stmmac_netdev_ops;
->
-> @@ -2729,12 +2736,6 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->   		goto error_netdev_register;
->   	}
->
-> -	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
-> -	if (IS_ERR(priv->stmmac_clk)) {
-> -		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
-> -		goto error_clk_get;
-> -	}
-> -
->   	/* If a specific clk_csr value is passed from the platform
->   	 * this means that the CSR Clock Range selection cannot be
->   	 * changed at run-time and it is fixed. Viceversa the driver'll try to
-> @@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->   		}
->   	}
->
-> +	clk_disable_unprepare(priv->stmmac_clk);
-> +
->   	return priv;
->
->   error_mdio_register:
-> -	clk_put(priv->stmmac_clk);
-> -error_clk_get:
->   	unregister_netdev(ndev);
->   error_netdev_register:
->   	netif_napi_del(&priv->napi);
-> -error_free_netdev:
-> +error_hw_init:
-> +	clk_disable_unprepare(priv->stmmac_clk);
-> +	clk_put(priv->stmmac_clk);
-> +error_clk_get:
->   	free_netdev(ndev);
->
->   	return NULL;
->
-
+Thanks
+Kishon
