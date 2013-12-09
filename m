@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761141Ab3LIJmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:42:35 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34121 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761125Ab3LIJmd (ORCPT
+	id S1761153Ab3LIJmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:42:44 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:54745 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761034Ab3LIJmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:42:33 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: rafael.j.wysocki@intel.com, bhelgaas@google.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] PNP: remove deprecated IRQF_DISABLED
-Date: Mon,  9 Dec 2013 10:42:26 +0100
-Message-Id: <1386582146-4695-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381036116-10167-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381036116-10167-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Mon, 9 Dec 2013 04:42:37 -0500
+Message-ID: <1386582151.7152.113.camel@host5.omatika.ru>
+Subject: Re: [PATCH 4/9] ARM: pxa: remove unused variable
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Date: Mon, 09 Dec 2013 13:42:31 +0400
+In-Reply-To: <52A585D9.4000605@gmail.com>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-5-git-send-email-ynvich@gmail.com>
+	 <52A585D9.4000605@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the use of the IRQF_DISABLED flag
+On Mon, 2013-12-09 at 09:56 +0100, Daniel Mack wrote:
+> A similar patch was already merged by Haojian recently. You should
+> probably rebase your patch stack on top of his maintainer tree.
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+I've just come across the patch you mention in the arm mailing list.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/pnp/resource.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Could you please provide a link to Haojian's official public repository?
 
-diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-index d95e101ffb43..7a7f383a78dd 100644
---- a/drivers/pnp/resource.c
-+++ b/drivers/pnp/resource.c
-@@ -385,7 +385,7 @@ int pnp_check_irq(struct pnp_dev *dev, struct resource *res)
- 	 * device is active because it itself may be in use */
- 	if (!dev->active) {
- 		if (request_irq(*irq, pnp_test_handler,
--				IRQF_DISABLED | IRQF_PROBE_SHARED, "pnp", NULL))
-+				IRQF_PROBE_SHARED, "pnp", NULL))
- 			return 0;
- 		free_irq(*irq, NULL);
- 	}
--- 
-1.8.3.2
+If possible, a link link to your repository will also be very helpful.
+
+My tree is at https://github.com/yanovich/linux
 
