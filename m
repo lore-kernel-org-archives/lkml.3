@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab3LIQKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:10:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22248 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932758Ab3LIQKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:10:44 -0500
-Message-ID: <52A5EB7B.503@redhat.com>
-Date: Mon, 09 Dec 2013 11:10:35 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933904Ab3LIQLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:11:21 -0500
+Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:15882 "EHLO
+	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932706Ab3LIQLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:11:20 -0500
+Date: Mon, 9 Dec 2013 16:11:19 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+cc: alokk@calsoftinc.com, shobhit@calsoftinc.com, shai@scalex86.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/slab.c: check pointer slabp before using it in
+ alloc_slabmgmt()
+In-Reply-To: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com>
+Message-ID: <00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com>
+References: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] mm: numa: Avoid unnecessary disruption of NUMA
- hinting during migration
-References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-11-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386572952-1191-11-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.127.232.131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 02:09 AM, Mel Gorman wrote:
-> do_huge_pmd_numa_page() handles the case where there is parallel THP
-> migration.  However, by the time it is checked the NUMA hinting information
-> has already been disrupted. This patch adds an earlier check with some helpers.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Sun, 8 Dec 2013, ethan.zhao wrote:
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+> Move the NULL check of slabp to the right place before refer its memeber in
+> function alloc_slabmgmt().
 
+I am having trouble to find the code you are modifying. Which kernel
+release is this? The code you are referring to has been rewritten in the
+meantime or this is some other code basis.
 
--- 
-All rights reversed
