@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761133Ab3LIOkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 09:40:06 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36847 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab3LIOkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 09:40:04 -0500
-Date: Mon, 9 Dec 2013 15:40:02 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: gregkh@linuxfoundation.org, joe@perches.com, omar.ramirez@copitl.com,
-        pali.rohar@gmail.com, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH v2] Staging: TIDSPBRIDGE: Remove UUID helper
-Message-ID: <20131209144002.GA23017@amd.pavel.ucw.cz>
-References: <20131208071857.GA12104@kroah.com>
- <1386583996-5648-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+	id S1761206Ab3LIOma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 09:42:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761120Ab3LIOm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 09:42:28 -0500
+Message-ID: <52A5D6C9.1080307@redhat.com>
+Date: Mon, 09 Dec 2013 09:42:17 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386583996-5648-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/18] mm: numa: Avoid unnecessary work on the failure
+ path
+References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-8-git-send-email-mgorman@suse.de>
+In-Reply-To: <1386572952-1191-8-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-12-09 12:13:16, Ivaylo DImitrov wrote:
-> From: Ivaylo Dimitrov <freemangordon@abv.bg>
+On 12/09/2013 02:09 AM, Mel Gorman wrote:
+> If a PMD changes during a THP migration then migration aborts but the
+> failure path is doing more work than is necessary.
 > 
-> Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
-> need to be exported. It can also be made way simpler by using sscanf.
-> 
-> Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+All rights reversed
