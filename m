@@ -1,197 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760882Ab3LIIHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:07:46 -0500
-Received: from relay.parallels.com ([195.214.232.42]:36004 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760751Ab3LIIGT (ORCPT
+	id S1760898Ab3LIIIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:08:12 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43874 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760750Ab3LIIGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:06:19 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, <vdavydov@parallels.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v13 14/16] vmpressure: in-kernel notifications
-Date: Mon, 9 Dec 2013 12:05:55 +0400
-Message-ID: <252512613b0823c84478428f5543d2140d1291a5.1386571280.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1386571280.git.vdavydov@parallels.com>
-References: <cover.1386571280.git.vdavydov@parallels.com>
+	Mon, 9 Dec 2013 03:06:17 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52A579EE.6090107@jp.fujitsu.com>
+Date: Mon, 09 Dec 2013 17:06:06 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] vmcore: copy fractional pages into buffers in the kdump
+ 2nd kernel
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+This is a patch for fixing mmap failure due to fractional page issue.
 
-During the past weeks, it became clear to us that the shrinker interface
-we have right now works very well for some particular types of users,
-but not that well for others. The latter are usually people interested
-in one-shot notifications, that were forced to adapt themselves to the
-count+scan behavior of shrinkers. To do so, they had no choice than to
-greatly abuse the shrinker interface producing little monsters all over.
+This patch might be still a bit too large as a single patch and might need to split.
+If you think patch refactoring is needed, please suggest.
 
-During LSF/MM, one of the proposals that popped out during our session
-was to reuse Anton Voronstsov's vmpressure for this. They are designed
-for userspace consumption, but also provide a well-stablished,
-cgroup-aware entry point for notifications.
+Change Log:
 
-This patch extends that to also support in-kernel users. Events that
-should be generated for in-kernel consumption will be marked as such,
-and for those, we will call a registered function instead of triggering
-an eventfd notification.
+v1 => v2)
 
-Please note that due to my lack of understanding of each shrinker user,
-I will stay away from converting the actual users, you are all welcome
-to do so.
+- Copy fractional pages from 1st kernel to 2nd kernel to reduce read
+  to the fractional pages for reliability.
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: Anton Vorontsov <anton@enomsg.org>
-Acked-by: Pekka Enberg <penberg@kernel.org>
-Reviewed-by: Greg Thelen <gthelen@google.com>
-Cc: Dave Chinner <dchinner@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
+- Deal with the case where multiple System RAM areas are contained in
+  a single fractional page.
+
+Test:
+
+Tested on X86_64. Fractional pages are created using memmap= kernel
+parameter on the kdump 1st kernel.
+
+>From fd6b0aca54caf7f0b5fd3841ef9e5ff081121ab8 Mon Sep 17 00:00:00 2001
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Date: Mon, 9 Dec 2013 09:12:32 +0900
+Subject: [PATCH] vmcore: copy fractional pages into buffers in the kdump 2nd kernel
+
+As Vivek reported in https://lkml.org/lkml/2013/11/13/439, in real
+world there's platform that allocates System RAM area and Reserved
+area in a single same page. As a result, mmap fails at sanity check
+that comapres memory cache types in a given range, causing user-land
+tools to exit abnormally in the middle of crash dumping.
+
+Although in the current case the data in Reserved area is ACPI data,
+in general, arbitrary data can possibly be located in a single page
+together with System RAM area. If they are, for example, mmio, read or
+write to the area could affect the corresponding devices and so a
+whole system. We should avoid doing such operations as much as
+possible in order to keep reliability.
+
+To address this issue, we copy fractional pages into buffers in the
+kdump 2nd kernel, and then read data on the fractional pages from the
+buffers in the kdump 2nd kernel, not from the fractional pages on the
+kdump 1st kernel. Similarly, we mmap data on the buffers on the 2nd
+kernel, not on the 1st kernel. These are done just as we've already
+done for ELF note segments.
+
+Rigorously, we should avoid even mapping pages containing non-System
+RAM area since mapping could cause some platform specific optimization
+that could then lead to some kind of prefetch to the page. However, as
+long as trying to read the System RAM area in the page, we cannot
+avoid mapping the page. Therefore, reliable possible way is to supress
+the number of times of reading the fractional pages to just once by
+buffering System RAM part of the fractional page in the 2nd kerenel.
+
+To implement this, extend vmcore structure to represent object in
+buffer on the 2nd kernel, i.e., introducing VMCORE_2ND_KERNEL flag;
+for a vmcore object, if it has VMCORE_2ND_KERNEL set, then its data is
+on the buffer on the 2nd kernel that is pointed to by ->buf member.
+
+Only non-trivial case is where multiple System RAM areas are contained
+in a single page. I want to think there's unlikely to be such system,
+but the issue addressed here is already odd enough, so we should
+consider there would be likely enough to be.
+
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
- include/linux/vmpressure.h |    5 +++++
- mm/vmpressure.c            |   53 +++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 55 insertions(+), 3 deletions(-)
+ fs/proc/vmcore.c      | 271 +++++++++++++++++++++++++++++++++++++++++---------
+ include/linux/kcore.h |   4 +
+ 2 files changed, 229 insertions(+), 46 deletions(-)
 
-diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
-index 3f3788d..9102e53 100644
---- a/include/linux/vmpressure.h
-+++ b/include/linux/vmpressure.h
-@@ -19,6 +19,9 @@ struct vmpressure {
- 	/* Have to grab the lock on events traversal or modifications. */
- 	struct mutex events_lock;
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 9100d69..ca79120 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -231,11 +231,20 @@ static ssize_t __read_vmcore(char *buffer, size_t buflen, loff_t *fpos,
  
-+	/* False if only kernel users want to be notified, true otherwise. */
-+	bool notify_userspace;
+ 	list_for_each_entry(m, &vmcore_list, list) {
+ 		if (*fpos < m->offset + m->size) {
+-			tsz = min_t(size_t, m->offset + m->size - *fpos, buflen);
+-			start = m->paddr + *fpos - m->offset;
+-			tmp = read_from_oldmem(buffer, tsz, &start, userbuf);
+-			if (tmp < 0)
+-				return tmp;
++			tsz = min_t(size_t, m->offset+m->size-*fpos, buflen);
++			if ((m->flags & VMCORE_2ND_KERNEL)) {
++				void *kaddr;
 +
- 	struct work_struct work;
++				kaddr = m->buf + *fpos - m->offset;
++				if (copy_to(buffer, kaddr, tsz, userbuf))
++					return -EFAULT;
++			} else {
++				start = m->paddr + *fpos - m->offset;
++				tmp = read_from_oldmem(buffer, tsz, &start,
++						       userbuf);
++				if (tmp < 0)
++					return tmp;
++			}
+ 			buflen -= tsz;
+ 			*fpos += tsz;
+ 			buffer += tsz;
+@@ -300,10 +309,10 @@ static const struct vm_operations_struct vmcore_mmap_ops = {
  };
- 
-@@ -38,6 +41,8 @@ extern int vmpressure_register_event(struct cgroup_subsys_state *css,
- 				     struct cftype *cft,
- 				     struct eventfd_ctx *eventfd,
- 				     const char *args);
-+extern int vmpressure_register_kernel_event(struct cgroup_subsys_state *css,
-+					    void (*fn)(void));
- extern void vmpressure_unregister_event(struct cgroup_subsys_state *css,
- 					struct cftype *cft,
- 					struct eventfd_ctx *eventfd);
-diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-index e0f6283..730e7c1 100644
---- a/mm/vmpressure.c
-+++ b/mm/vmpressure.c
-@@ -130,8 +130,12 @@ static enum vmpressure_levels vmpressure_calc_level(unsigned long scanned,
- }
- 
- struct vmpressure_event {
--	struct eventfd_ctx *efd;
-+	union {
-+		struct eventfd_ctx *efd;
-+		void (*fn)(void);
-+	};
- 	enum vmpressure_levels level;
-+	bool kernel_event;
- 	struct list_head node;
- };
- 
-@@ -147,12 +151,15 @@ static bool vmpressure_event(struct vmpressure *vmpr,
- 	mutex_lock(&vmpr->events_lock);
- 
- 	list_for_each_entry(ev, &vmpr->events, node) {
--		if (level >= ev->level) {
-+		if (ev->kernel_event) {
-+			ev->fn();
-+		} else if (vmpr->notify_userspace && level >= ev->level) {
- 			eventfd_signal(ev->efd, 1);
- 			signalled = true;
- 		}
- 	}
- 
-+	vmpr->notify_userspace = false;
- 	mutex_unlock(&vmpr->events_lock);
- 
- 	return signalled;
-@@ -222,7 +229,7 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
- 	 * we account it too.
- 	 */
- 	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
--		return;
-+		goto schedule;
- 
- 	/*
- 	 * If we got here with no pages scanned, then that is an indicator
-@@ -239,8 +246,15 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
- 	vmpr->scanned += scanned;
- 	vmpr->reclaimed += reclaimed;
- 	scanned = vmpr->scanned;
-+	/*
-+	 * If we didn't reach this point, only kernel events will be triggered.
-+	 * It is the job of the worker thread to clean this up once the
-+	 * notifications are all delivered.
-+	 */
-+	vmpr->notify_userspace = true;
- 	spin_unlock(&vmpr->sr_lock);
- 
-+schedule:
- 	if (scanned < vmpressure_win)
- 		return;
- 	schedule_work(&vmpr->work);
-@@ -324,6 +338,39 @@ int vmpressure_register_event(struct cgroup_subsys_state *css,
- }
  
  /**
-+ * vmpressure_register_kernel_event() - Register kernel-side notification
-+ * @css:	css that is interested in vmpressure notifications
-+ * @fn:		function to be called when pressure happens
-+ *
-+ * This function register in-kernel users interested in receiving notifications
-+ * about pressure conditions. Pressure notifications will be triggered at the
-+ * same time as userspace notifications (with no particular ordering relative
-+ * to it).
-+ *
-+ * Pressure notifications are a alternative method to shrinkers and will serve
-+ * well users that are interested in a one-shot notification, with a
-+ * well-defined cgroup aware interface.
-+ */
-+int vmpressure_register_kernel_event(struct cgroup_subsys_state *css,
-+				      void (*fn)(void))
-+{
-+	struct vmpressure *vmpr = css_to_vmpressure(css);
-+	struct vmpressure_event *ev;
+- * alloc_elfnotes_buf - allocate buffer for ELF note segment in
+- *                      vmalloc memory
++ * alloc_copy_buf - allocate buffer to copy ELF note segment or
++ *                      fractional pages in vmalloc memory
+  *
+- * @notes_sz: size of buffer
++ * @sz: size of buffer
+  *
+  * If CONFIG_MMU is defined, use vmalloc_user() to allow users to mmap
+  * the buffer to user-space by means of remap_vmalloc_range().
+@@ -311,12 +320,12 @@ static const struct vm_operations_struct vmcore_mmap_ops = {
+  * If CONFIG_MMU is not defined, use vzalloc() since mmap_vmcore() is
+  * disabled and there's no need to allow users to mmap the buffer.
+  */
+-static inline char *alloc_elfnotes_buf(size_t notes_sz)
++static inline char *alloc_copy_buf(size_t sz)
+ {
+ #ifdef CONFIG_MMU
+-	return vmalloc_user(notes_sz);
++	return vmalloc_user(sz);
+ #else
+-	return vzalloc(notes_sz);
++	return vzalloc(sz);
+ #endif
+ }
+ 
+@@ -383,14 +392,24 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 	list_for_each_entry(m, &vmcore_list, list) {
+ 		if (start < m->offset + m->size) {
+-			u64 paddr = 0;
+-
+ 			tsz = min_t(size_t, m->offset + m->size - start, size);
+-			paddr = m->paddr + start - m->offset;
+-			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
+-						   paddr >> PAGE_SHIFT, tsz,
+-						   vma->vm_page_prot))
+-				goto fail;
++			if ((m->flags & VMCORE_2ND_KERNEL)) {
++				unsigned long uaddr = vma->vm_start + len;
++				void *kaddr = m->buf + start - m->offset;
 +
-+	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
-+	if (!ev)
-+		return -ENOMEM;
++				if (remap_vmalloc_range_partial(vma, uaddr,
++								kaddr, tsz))
++					goto fail;
++			} else {
++				u64 paddr = paddr = m->paddr+start-m->offset;
 +
-+	ev->kernel_event = true;
-+	ev->fn = fn;
++				if (remap_oldmem_pfn_range(vma,
++							   vma->vm_start + len,
++							   paddr >> PAGE_SHIFT,
++							   tsz,
++							   vma->vm_page_prot))
++					goto fail;
++			}
+ 			size -= tsz;
+ 			start += tsz;
+ 			len += tsz;
+@@ -580,7 +599,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+ 		return rc;
+ 
+ 	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
+-	*notes_buf = alloc_elfnotes_buf(*notes_sz);
++	*notes_buf = alloc_copy_buf(*notes_sz);
+ 	if (!*notes_buf)
+ 		return -ENOMEM;
+ 
+@@ -760,7 +779,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+ 		return rc;
+ 
+ 	*notes_sz = roundup(phdr_sz, PAGE_SIZE);
+-	*notes_buf = alloc_elfnotes_buf(*notes_sz);
++	*notes_buf = alloc_copy_buf(*notes_sz);
+ 	if (!*notes_buf)
+ 		return -ENOMEM;
+ 
+@@ -807,7 +826,7 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+ 	Elf64_Ehdr *ehdr_ptr;
+ 	Elf64_Phdr *phdr_ptr;
+ 	loff_t vmcore_off;
+-	struct vmcore *new;
++	struct vmcore *m, *new;
+ 
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+ 	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr)); /* PT_NOTE hdr */
+@@ -816,27 +835,106 @@ static int __init process_ptload_program_headers_elf64(char *elfptr,
+ 	vmcore_off = elfsz + elfnotes_sz;
+ 
+ 	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+-		u64 paddr, start, end, size;
++		u64 start, end, size, rest;
++		u64 start_up, start_down, end_up, end_down;
++		loff_t offset;
++		int rc, reuse = 0;
+ 
+ 		if (phdr_ptr->p_type != PT_LOAD)
+ 			continue;
+ 
+-		paddr = phdr_ptr->p_offset;
+-		start = rounddown(paddr, PAGE_SIZE);
+-		end = roundup(paddr + phdr_ptr->p_memsz, PAGE_SIZE);
+-		size = end - start;
++		start = phdr_ptr->p_offset;
++		start_up = roundup(start, PAGE_SIZE);
++		start_down = rounddown(start, PAGE_SIZE);
 +
-+	mutex_lock(&vmpr->events_lock);
-+	list_add(&ev->node, &vmpr->events);
-+	mutex_unlock(&vmpr->events_lock);
-+	return 0;
-+}
++		end = phdr_ptr->p_offset + phdr_ptr->p_memsz;
++		end_up = roundup(end, PAGE_SIZE);
++		end_down = rounddown(end, PAGE_SIZE);
 +
-+/**
-  * vmpressure_unregister_event() - Unbind eventfd from vmpressure
-  * @css:	css handle
-  * @cft:	cgroup control files handle
++		size = end_up - start_down;
++		rest = phdr_ptr->p_memsz;
++
++		/* Add a head fractional page to vmcore list. */
++		if (!PAGE_ALIGNED(start)) {
++			/* Reuse the same buffer if multiple System
++			 * RAM entries show up in the same page. */
++			list_for_each_entry(m, vc_list, list) {
++				if (m->paddr == start_down &&
++				    m->flags == VMCORE_2ND_KERNEL) {
++					new = m;
++					reuse = 1;
++					goto skip;
++				}
++			}
++
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->buf = alloc_copy_buf(PAGE_SIZE);
++			if (!new->buf) {
++				kfree(new);
++				return -ENOMEM;
++			}
++			new->flags = VMCORE_2ND_KERNEL;
++			new->size = PAGE_SIZE;
++			new->paddr = start_down;
++			list_add_tail(&new->list, vc_list);
++		skip:
++
++			offset = start;
++			rc = __read_vmcore(new->buf + (start - start_down),
++					   min(start_up, end) - start,
++					   &offset, 0);
++			if (rc < 0)
++				return rc;
++
++			rest -= min(start_up, end) - start;
++		}
+ 
+ 		/* Add this contiguous chunk of memory to vmcore list.*/
+-		new = get_new_element();
+-		if (!new)
+-			return -ENOMEM;
+-		new->paddr = start;
+-		new->size = size;
+-		list_add_tail(&new->list, vc_list);
++		if (rest > 0 && start_up < end_down) {
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->size = end_down - start_up;
++			new->paddr = start_up;
++			list_add_tail(&new->list, vc_list);
++			rest -= end_down - start_up;
++		}
++
++		/* Add a tail fractional page to vmcore list. */
++		if (rest > 0) {
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->buf = alloc_copy_buf(PAGE_SIZE);
++			if (!new->buf) {
++				kfree(new);
++				return -ENOMEM;
++			}
++			new->flags = VMCORE_2ND_KERNEL;
++			new->size = PAGE_SIZE;
++			new->paddr = end_down;
++			list_add_tail(&new->list, vc_list);
++
++			offset = end_down;
++			rc = __read_vmcore(new->buf, end - end_down, &offset,
++					   0);
++			if (rc < 0)
++				return rc;
++
++			rest -= end - end_down;
++		}
++
++		WARN_ON(rest > 0);
+ 
+ 		/* Update the program header offset. */
+-		phdr_ptr->p_offset = vmcore_off + (paddr - start);
++		phdr_ptr->p_offset = vmcore_off + (start - start_down);
+ 		vmcore_off = vmcore_off + size;
++		if (reuse) {
++			phdr_ptr->p_offset -= PAGE_SIZE;
++			vmcore_off -= PAGE_SIZE;
++		}
+ 	}
+ 	return 0;
+ }
+@@ -850,7 +948,7 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+ 	Elf32_Ehdr *ehdr_ptr;
+ 	Elf32_Phdr *phdr_ptr;
+ 	loff_t vmcore_off;
+-	struct vmcore *new;
++	struct vmcore *m, *new;
+ 
+ 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+ 	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr)); /* PT_NOTE hdr */
+@@ -859,27 +957,106 @@ static int __init process_ptload_program_headers_elf32(char *elfptr,
+ 	vmcore_off = elfsz + elfnotes_sz;
+ 
+ 	for (i = 0; i < ehdr_ptr->e_phnum; i++, phdr_ptr++) {
+-		u64 paddr, start, end, size;
++		u64 start, end, size, rest;
++		u64 start_up, start_down, end_up, end_down;
++		loff_t offset;
++		int rc, reuse = 0;
+ 
+ 		if (phdr_ptr->p_type != PT_LOAD)
+ 			continue;
+ 
+-		paddr = phdr_ptr->p_offset;
+-		start = rounddown(paddr, PAGE_SIZE);
+-		end = roundup(paddr + phdr_ptr->p_memsz, PAGE_SIZE);
+-		size = end - start;
++		start = phdr_ptr->p_offset;
++		start_up = roundup(start, PAGE_SIZE);
++		start_down = rounddown(start, PAGE_SIZE);
++
++		end = phdr_ptr->p_offset + phdr_ptr->p_memsz;
++		end_up = roundup(end, PAGE_SIZE);
++		end_down = rounddown(end, PAGE_SIZE);
++
++		size = end_up - start_down;
++		rest = phdr_ptr->p_memsz;
++
++		/* Add a head fractional page to vmcore list. */
++		if (!PAGE_ALIGNED(start)) {
++			/* Reuse the same buffer if multiple System
++			 * RAM entries show up in the same page. */
++			list_for_each_entry(m, vc_list, list) {
++				if (m->paddr == start_down &&
++				    m->flags == VMCORE_2ND_KERNEL) {
++					new = m;
++					reuse = 1;
++					goto skip;
++				}
++			}
++
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->buf = alloc_copy_buf(PAGE_SIZE);
++			if (!new->buf) {
++				kfree(new);
++				return -ENOMEM;
++			}
++			new->flags = VMCORE_2ND_KERNEL;
++			new->paddr = start_down;
++			new->size = PAGE_SIZE;
++			list_add_tail(&new->list, vc_list);
++		skip:
++
++			offset = start;
++			rc = __read_vmcore(new->buf + (start - start_down),
++					   min(start_up, end) - start,
++					   &offset, 0);
++			if (rc < 0)
++				return rc;
++
++			rest -= min(start_up, end) - start;
++		}
+ 
+ 		/* Add this contiguous chunk of memory to vmcore list.*/
+-		new = get_new_element();
+-		if (!new)
+-			return -ENOMEM;
+-		new->paddr = start;
+-		new->size = size;
+-		list_add_tail(&new->list, vc_list);
++		if (rest > 0 && start_up < end_down) {
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->size = end_down - start_up;
++			new->paddr = start_up;
++			list_add_tail(&new->list, vc_list);
++			rest -= end_down - start_up;
++		}
++
++		/* Add a tail fractional page to vmcore list. */
++		if (rest > 0) {
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->buf = (void *)get_zeroed_page(GFP_KERNEL);
++			if (!new->buf) {
++				kfree(new);
++				return -ENOMEM;
++			}
++			new->flags = VMCORE_2ND_KERNEL;
++			new->size = PAGE_SIZE;
++			new->paddr = end_down;
++			list_add_tail(&new->list, vc_list);
++
++			offset = end_down;
++			rc = __read_vmcore(new->buf, end - end_down, &offset,
++					   0);
++			if (rc < 0)
++				return rc;
++
++			rest -= end - end_down;
++		}
++
++		WARN_ON(rest > 0);
+ 
+ 		/* Update the program header offset */
+-		phdr_ptr->p_offset = vmcore_off + (paddr - start);
++		phdr_ptr->p_offset = vmcore_off + (start - start_down);
+ 		vmcore_off = vmcore_off + size;
++		if (reuse) {
++			phdr_ptr->p_offset -= PAGE_SIZE;
++			vmcore_off -= PAGE_SIZE;
++		}
+ 	}
+ 	return 0;
+ }
+@@ -1100,6 +1277,8 @@ void vmcore_cleanup(void)
+ 
+ 		m = list_entry(pos, struct vmcore, list);
+ 		list_del(&m->list);
++		if ((m->flags & VMCORE_2ND_KERNEL))
++			vfree(m->buf);
+ 		kfree(m);
+ 	}
+ 	free_elfcorebuf();
+diff --git a/include/linux/kcore.h b/include/linux/kcore.h
+index d927622..3a86423 100644
+--- a/include/linux/kcore.h
++++ b/include/linux/kcore.h
+@@ -19,11 +19,15 @@ struct kcore_list {
+ 	int type;
+ };
+ 
++#define VMCORE_2ND_KERNEL 0x1
++
+ struct vmcore {
+ 	struct list_head list;
+ 	unsigned long long paddr;
+ 	unsigned long long size;
+ 	loff_t offset;
++	char *buf;
++	unsigned long flags;
+ };
+ 
+ #ifdef CONFIG_PROC_KCORE
 -- 
-1.7.10.4
+1.8.3.1
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
