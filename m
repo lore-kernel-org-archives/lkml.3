@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab3LIG7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:59:30 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49121 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760356Ab3LIG73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:59:29 -0500
-X-AuditID: 9c930179-b7ce4ae000000e86-db-52a56a4e3c65
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 09/14] tools lib traceevent: Get rid of die() in add_right()
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-	<1386567251-22751-10-git-send-email-namhyung@kernel.org>
-	<CAKb7Uvhhg2siBURLxTb2jgW_-5AUeK_yqRpEJgi0HW12zQTMyg@mail.gmail.com>
-Date: Mon, 09 Dec 2013 15:59:26 +0900
-In-Reply-To: <CAKb7Uvhhg2siBURLxTb2jgW_-5AUeK_yqRpEJgi0HW12zQTMyg@mail.gmail.com>
-	(Ilia Mirkin's message of "Mon, 9 Dec 2013 01:28:26 -0500")
-Message-ID: <87fvq2mrw1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1760596Ab3LIHJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 02:09:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40117 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755546Ab3LIHJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 02:09:16 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 00/18] NUMA balancing segmentation fault fixes and misc followups v3
+Date: Mon,  9 Dec 2013 07:08:54 +0000
+Message-Id: <1386572952-1191-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ilia,
+Alex Thorlton reported segementation faults when NUMA balancing is enabled
+on large machines. There is no obvious explanation from the console what the
+problem but similar problems have been observed by Rik van Riel and myself
+if migration was aggressive enough. Alex, this series is against 3.13-rc2,
+a verification that the fix addresses your problem would be appreciated.
 
-On Mon, 9 Dec 2013 01:28:26 -0500, Ilia Mirkin wrote:
-> On Mon, Dec 9, 2013 at 12:34 AM, Namhyung Kim <namhyung@kernel.org> wrote:
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/lib/traceevent/parse-filter.c | 12 +++++++++---
->>  1 file changed, 9 insertions(+), 3 deletions(-)
->>
->> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
->> index 5efe66a682bd..a1ad609a860f 100644
->> --- a/tools/lib/traceevent/parse-filter.c
->> +++ b/tools/lib/traceevent/parse-filter.c
->> @@ -583,12 +583,18 @@ static int add_right(struct filter_arg *op, struct filter_arg *arg,
->>                         op->str.type = op_type;
->>                         op->str.field = left->field.field;
->>                         op->str.val = strdup(str);
->> -                       if (!op->str.val)
->> -                               die("malloc string");
->> +                       if (!op->str.val) {
->> +                               show_error(error_str, "Failed to allocate string filter");
->> +                               return -1;
->> +                       }
->>                         /*
->>                          * Need a buffer to copy data for tests
->>                          */
->> -                       op->str.buffer = malloc_or_die(op->str.field->size + 1);
->> +                       op->str.buffer = malloc(op->str.field->size + 1);
->> +                       if (op->str.buffer) {
->
-> That should probably be
->
-> if (!op->str.buffer)
+This series starts with a range of patches aimed at addressing the
+segmentation fault problem while offsetting some of the cost to avoid badly
+regressing performance in -stable. Those that are cc'd to stable (patches
+1-12) should be merged ASAP. The rest of the series is relatively minor
+stuff that fell out during the course of development that is ok to wait
+for the next merge window but should help with the continued development
+of NUMA balancing.
 
-Argh.. you're right!
+ arch/sparc/include/asm/pgtable_64.h |   4 +-
+ arch/x86/include/asm/pgtable.h      |  11 +++-
+ arch/x86/mm/gup.c                   |  13 +++++
+ include/asm-generic/pgtable.h       |   2 +-
+ include/linux/migrate.h             |   9 ++++
+ include/linux/mm_types.h            |  44 +++++++++++++++
+ include/linux/mmzone.h              |   5 +-
+ include/trace/events/migrate.h      |  26 +++++++++
+ include/trace/events/sched.h        |  93 ++++++++++++++++++++++++++++++++
+ kernel/fork.c                       |   1 +
+ kernel/sched/core.c                 |   2 +
+ kernel/sched/fair.c                 |  15 +++++-
+ mm/huge_memory.c                    |  45 ++++++++++++----
+ mm/migrate.c                        | 103 ++++++++++++++++++++++++++++--------
+ mm/mprotect.c                       |  15 ++++--
+ mm/pgtable-generic.c                |   8 ++-
+ 16 files changed, 348 insertions(+), 48 deletions(-)
 
->
-> Also, should you free op->str.val? Perhaps the surrounding code takes
-> care of that.
+-- 
+1.8.4
 
-Yeah, it'll be handled by the caller - process_filter().
-
-Thanks for the quick review!
-Namhyung
-
->
->> +                               show_error(error_str, "Failed to allocate string filter");
->> +                               return -1;
->> +                       }
->>                         /* Null terminate this buffer */
->>                         op->str.buffer[op->str.field->size] = 0;
->>
->> --
->> 1.7.11.7
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
