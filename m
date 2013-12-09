@@ -1,126 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761531Ab3LITmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:42:54 -0500
-Received: from mail.tpi.com ([74.45.170.26]:48024 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761432Ab3LITmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 14:42:14 -0500
-From: Tim Gardner <timg@tpi.com>
-To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Cc: Tim Gardner <timg@tpi.com>, Steve French <sfrench@samba.org>,
-        Jeff Layton <jlayton@redhat.com>, Dean Gehnert <deang@tpi.com>
-Subject: [PATCH 3/4 linux-next V3] cifs: Introduce cifs_legacy_set_file_size()
-Date: Mon,  9 Dec 2013 12:41:55 -0700
-Message-Id: <1386618116-9672-3-git-send-email-timg@tpi.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386618116-9672-1-git-send-email-timg@tpi.com>
-References: <1386618116-9672-1-git-send-email-timg@tpi.com>
+	id S1761547Ab3LITnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:43:08 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:63339 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761432Ab3LITnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 14:43:04 -0500
+Message-ID: <52A61D43.6020007@gmail.com>
+Date: Mon, 09 Dec 2013 12:42:59 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
+References: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131206115627.GA2279@ghostprotocols.net> <52A4AED8.3000506@gmail.com> <20131209180705.GB8098@ghostprotocols.net> <52A60705.5030303@gmail.com> <20131209184901.GE8098@ghostprotocols.net>
+In-Reply-To: <20131209184901.GE8098@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consolidates some duplicate code.
+On 12/9/13, 11:49 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Dec 09, 2013 at 11:08:05AM -0700, David Ahern escreveu:
+>> On 12/9/13, 11:07 AM, Arnaldo Carvalho de Melo wrote:
+>>> Em Sun, Dec 08, 2013 at 10:39:36AM -0700, David Ahern escreveu:
+>>>> On 12/6/13, 4:56 AM, Arnaldo Carvalho de Melo wrote:
+>>>>> You get correct results because the modules/kallsyms info you provided
+>>>>> matches the VM you're testing, i.e. the pid test is not needed.
+>>>>>
+>>>>> I think we need to specify for which PID the --guestmodules and
+>>>>> --guestkallsyms is provided, so that it can refuse to use it for pids
+>>>>> where it is invalid.
+>>>>
+>>>> Those are arguments are shortcut defaults for guests. If the VMs are
+>>>> not running the same kernel use guestmount and pid specific
+>>>> directories. e.g.,
+>>>>
+>>>> /tmp/guestmount/<pid>/proc/kallsyms
+>>>
+>>> Does this already works like that? /me tries to figure that out...
+>>
+>> yes.
+>>
+>
+> Yeah, I saw that:
+>
+>          if ((pid != HOST_KERNEL_ID) &&
+>              (pid != DEFAULT_GUEST_KERNEL_ID) &&
+>              (symbol_conf.guestmount)) {
+>                  sprintf(path, "%s/%d", symbol_conf.guestmount, pid);
+>
+> So, in summary, ack/nack this patch?
+>
 
-Cc: Steve French <sfrench@samba.org>
-Cc: Jeff Layton <jlayton@redhat.com>
-Cc: Dean Gehnert <deang@tpi.com>
-Signed-off-by: Tim Gardner <timg@tpi.com>
----
+NACK. Not needed and breaks the very intent of those 2 options.
 
-V3 - no change
-V2 - this is a new patch in the V2 series.
-
- fs/cifs/inode.c |   54 +++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 33 insertions(+), 21 deletions(-)
-
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 7181516..3f710c6 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1899,6 +1899,30 @@ static void cifs_setsize(struct inode *inode, loff_t offset)
- 	truncate_pagecache(inode, offset);
- }
- 
-+/*
-+ * Legacy hack to set file length.
-+ */
-+static int
-+cifs_legacy_set_file_size(unsigned int xid, __u16 netfid, __u32 pid,
-+			  unsigned int length, struct cifs_tcon *tcon,
-+			  char *full_path)
-+{
-+	int rc;
-+	unsigned int bytes_written;
-+	struct cifs_io_parms io_parms;
-+
-+	io_parms.netfid = netfid;
-+	io_parms.pid = pid;
-+	io_parms.tcon = tcon;
-+	io_parms.offset = 0;
-+	io_parms.length = length;
-+	rc = CIFSSMBWrite(xid, &io_parms, &bytes_written,
-+			  NULL, NULL, 1);
-+	cifs_dbg(FYI, "%s len %d rc %d on %s\n", __func__, length, rc,
-+		 full_path);
-+	return rc;
-+}
-+
- static int
- cifs_set_file_size(struct inode *inode, struct iattr *attrs,
- 		   unsigned int xid, char *full_path)
-@@ -1910,7 +1934,6 @@ cifs_set_file_size(struct inode *inode, struct iattr *attrs,
- 	struct tcon_link *tlink = NULL;
- 	struct cifs_tcon *tcon = NULL;
- 	struct TCP_Server_Info *server;
--	struct cifs_io_parms io_parms;
- 
- 	/*
- 	 * To avoid spurious oplock breaks from server, in the case of
-@@ -1935,16 +1958,11 @@ cifs_set_file_size(struct inode *inode, struct iattr *attrs,
- 		cifsFileInfo_put(open_file);
- 		cifs_dbg(FYI, "SetFSize for attrs rc = %d\n", rc);
- 		if ((rc == -EINVAL) || (rc == -EOPNOTSUPP)) {
--			unsigned int bytes_written;
--
--			io_parms.netfid = open_file->fid.netfid;
--			io_parms.pid = open_file->pid;
--			io_parms.tcon = tcon;
--			io_parms.offset = 0;
--			io_parms.length = attrs->ia_size;
--			rc = CIFSSMBWrite(xid, &io_parms, &bytes_written,
--					  NULL, NULL, 1);
--			cifs_dbg(FYI, "Wrt seteof rc %d\n", rc);
-+			rc = cifs_legacy_set_file_size(xid,
-+						       open_file->fid.netfid,
-+						       open_file->pid,
-+						       attrs->ia_size,
-+						       tcon, full_path);
- 		}
- 	} else
- 		rc = -EINVAL;
-@@ -1982,16 +2000,10 @@ cifs_set_file_size(struct inode *inode, struct iattr *attrs,
- 				   cifs_sb->mnt_cifs_flags &
- 						CIFS_MOUNT_MAP_SPECIAL_CHR);
- 		if (rc == 0) {
--			unsigned int bytes_written;
--
--			io_parms.netfid = netfid;
--			io_parms.pid = current->tgid;
--			io_parms.tcon = tcon;
--			io_parms.offset = 0;
--			io_parms.length = attrs->ia_size;
--			rc = CIFSSMBWrite(xid, &io_parms, &bytes_written, NULL,
--					  NULL,  1);
--			cifs_dbg(FYI, "wrt seteof rc %d\n", rc);
-+			rc = cifs_legacy_set_file_size(xid, netfid,
-+						       current->tgid,
-+						       attrs->ia_size, tcon,
-+						       full_path);
- 			CIFSSMBClose(xid, tcon, netfid);
- 		}
- 	}
--- 
-1.7.9.5
-
+David
