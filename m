@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761303Ab3LIRKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:10:12 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34186 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752856Ab3LIRKH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:10:07 -0500
-Message-ID: <52A5F96A.6030900@hurleysoftware.com>
-Date: Mon, 09 Dec 2013 12:10:02 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1761321Ab3LIRMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:12:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36873 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755906Ab3LIRMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 12:12:18 -0500
+Message-ID: <52A5F9EE.4010605@suse.cz>
+Date: Mon, 09 Dec 2013 18:12:14 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Stas Sergeev <stsp@list.ru>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Margarita Manterola <margamanterola@gmail.com>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Stas Sergeev <stsp@users.sourceforge.net>, Pavel Machek <pavel@ucw.cz>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, Caylan Van Larson <i@caylan.net>
-Subject: Re: [PATCH v3] n_tty: Fix buffer overruns with larger-than-4k pastes
-References: <529F7B35.4050509@list.ru> <1386600604-5092-1-git-send-email-peter@hurleysoftware.com> <52A5EF3F.2070805@list.ru>
-In-Reply-To: <52A5EF3F.2070805@list.ru>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
+        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: kernel BUG in munlock_vma_pages_range
+References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com>
+In-Reply-To: <52A5F83F.4000207@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 11:26 AM, Stas Sergeev wrote:
-> 09.12.2013 18:50, Peter Hurley пишет:
->>   	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
->>   		n--;
->>   		eof_push = !n && ldata->read_tail != ldata->line_start;
->> +		ldata->push = 0;
->>   	}
-> Will this work if the last (and only) char written in raw
-> mode appear to be \0 (__DISABLED_CHAR)?
+On 12/09/2013 06:05 PM, Sasha Levin wrote:
+> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
+>> Hello, I will look at it, thanks.
+>> Do you have specific reproduction instructions?
+>
+> Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
+> the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
+> up testing on that part.
 
-That would have triggered an EOF in older kernels so not a
-regression.
+Thanks. Do you have trinity log and the .config file? I'm currently 
+unable to even boot linux-next with my config/setup due to a GPF.
+Looking at code I wouldn't expect that it could encounter a tail page, 
+without first encountering a head page and skipping the whole huge page. 
+At least in THP case, as TLB pages should be split when a vma is split. 
+As for hugetlbfs, it should be skipped for mlock/munlock operations 
+completely. One of these assumptions is probably failing here...
+
+Vlastimil
 
 >
->> -		ldata->line_start = ldata->read_tail;
->> +		if (!ldata->push)
->> +			ldata->line_start = ldata->read_tail;
->> +		else
->> +			ldata->push = 0;
-> Will this work if more that one "fake" EOF is accumulated
-> in bitmap because of multiple icanon switches?
-
-Not possible. The read_flags and push indicator are reset
-with icanon -> !icanon switches.
-
-> Also, I am a bit surprised with the presence of the code
-> like this:
-> ---
+> Thanks,
+> Sasha
 >
-> |	if  (n>  4096)
-> 		n+=  4096;
-> |
->
-> ---
-> Am I the only one thinking it is unclear what it does?
-> Doesn't it deserve the comment at least?
->
-> Or this:
-> ---
->
-> |eof_push= !n&&  ldata->read_tail!=  ldata->line_start;|
->
-> ---
-> If eof_push means that the EOL mark was found not at the
-> line start, then it is completely confusing why !n is here
-> (one have to read a lot of context to find out why).|||
-> When I created the patch, the code was much more easy
-> to follow than now.
 
-The previous kernels did byte-by-byte copy with lock/unlock
-for every byte, into the input buffer and back out of the input
-buffer. Simple, but inefficient.
-
-This version has roughly 4n-2 fewer bus locks. The necessary
-unsigned arithmetic and additional condition checks make the
-code somewhat more complex.
-
-But please feel free to submit patches that fix or clarify
-anything you find.
-
-Regards,
-Peter Hurley
