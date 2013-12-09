@@ -1,133 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761179Ab3LIPXC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:23:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab3LIPW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:22:58 -0500
-Date: Mon, 9 Dec 2013 16:22:56 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
-Message-ID: <20131209152256.GD3597@dhcp22.suse.cz>
-References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com>
- <20131202181501.GA5524@dhcp22.suse.cz>
- <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com>
- <529CDDB3.3090301@parallels.com>
- <CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com>
- <529D9100.4070207@parallels.com>
- <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com>
- <529EDB41.8030505@parallels.com>
- <CAA6-i6o+ZuM_fq+PdQJZ40S0d7K35cBvbTELg49+SgLKP5F0xA@mail.gmail.com>
- <529F1883.3030907@parallels.com>
+	id S1761251Ab3LIPXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 10:23:14 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:28122 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761195Ab3LIPXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 10:23:08 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: dt for 3.14 #1
+Date: Mon, 9 Dec 2013 16:23:05 +0100
+Message-ID: <1386602585-1927-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529F1883.3030907@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-12-13 15:56:51, Vladimir Davydov wrote:
-> On 12/04/2013 02:08 PM, Glauber Costa wrote:
-> >>> Could you do something clever with just one flag? Probably yes. But I
-> >>> doubt it would
-> >>> be that much cleaner, this is just the way that patching sites work.
-> >> Thank you for spending your time to listen to me.
-> >>
-> > Don't worry! I thank you for carrying this forward.
-> >
-> >> Let me try to explain what is bothering me.
-> >>
-> >> We have two state bits for each memcg, 'active' and 'activated'. There
-> >> are two scenarios where the bits can be modified:
-> >>
-> >> 1) The kmem limit is set on a memcg for the first time -
-> >> memcg_update_kmem_limit(). Here we call memcg_update_cache_sizes(),
-> >> which sets the 'activated' bit on success, then update static branching,
-> >> then set the 'active' bit. All three actions are done atomically in
-> >> respect to other tasks setting the limit due to the set_limit_mutex.
-> >> After both bits are set, they never get cleared for the memcg.
-> >>
-> > So far so good. But again, note how you yourself describe it:
-> > the cations are done atomically  *in respect to other tasks setting the limit*
-> >
-> > But there are also tasks that are running its courses naturally and
-> > just allocating
-> > memory. For those, some call sites will be on, some will be off. We need to make
-> > sure that *none* of them uses the patched site until *all* of them are patched.
-> > This has nothing to do with updates, this is all about the readers.
-> >
-> >> 2) When a subgroup of a kmem-active cgroup is created -
-> >> memcg_propagate_kmem(). Here we copy kmem_account_flags from the parent,
-> >> then increase static branching refcounter, then call
-> >> memcg_update_cache_sizes() for the new memcg, which may clear the
-> >> 'activated' bit on failure. After successful execution, the state bits
-> >> never get cleared for the new memcg.
-> >>
-> >> In scenario 2 there is no need bothering about the flags setting order,
-> >> because we don't have any tasks in the cgroup yet - the tasks can be
-> >> moved in only after css_online finishes when we have both of the bits
-> >> set and the static branching enabled. Actually, we already do not bother
-> >> about it, because we have both bits set before the cgroup is fully
-> >> initialized (memcg_update_cache_sizes() is called).
-> >>
-> > Yes, after the first cgroup is set none of that matters. But it is just easier
-> > and less error prone just to follow the same path every time. As I have said,
-> > if you can come up with a more clever way to deal with the problem above
-> > that doesn't involve the double flag - and you can prove it works - I
-> > am definitely
-> > fine with it. But this is subtle code, and in the past - Michal can
-> > attest this - we've
-> > changed this being sure it would work just to see it explode in our faces.
-> >
-> > So although I am willing to review every patch for correctness on that
-> > front (I never
-> > said I liked the 2-flags scheme...), unless you have a bug or real
-> > problem on it,
-> > I would advise against changing it if its just to make it more readable.
-> >
-> > But again, don't take me too seriously on this. If you and Michal think you can
-> > come up with something better, I'm all for it.
-> 
-> All right, I finally get you :-)
-> 
-> Although I still don't think we need the second flag, I now understand
-> that it's better not to change the code that works fine especially the
-> change does not make it neither more readable nor more effective. Since
-> I can be mistaken about the flags usage (it's by far not unlikely), it's
-> better to leave it as is rather than being at risk of catching spurious
-> hangs that might be caused by this modification.
-> 
-> Thanks for the detailed explanation!
+Arnd, Olof, Kevin,
 
-It would be really great if we could push some of that into the
-comments, please?
+First pull-request focusing on DT material for AT91 on 3.14. This one is also
+based on the "cleanup" material already in arm-soc tree (at91/sama5-ccf) like
+all other AT91 pull-requests for 3.14.
 
-Anyway, reading this thread again, I guess I finally got what you meant
-Vladimir.
-You are basically saying that the two stage enabling can be done
-by static_key_slow_inc in the first step and memcg_kmem_set_active
-in the second step without an additional flag.
-Assuming that the writers cannot race (they cannot currently because
-they are linearized by set_limit_mutex and memcg_create_mutex) and
-readers (charging paths) are _always_ checking the static key before
-checking active flags?
+Thanks, best regards,
 
-I guess this should work. But it would require a deep audit that the
-above is correct in all places. For example we do not bother to check
-static key during offline/free paths. I guess it should be harmless as
-is but who knows...
+The following changes since commit b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
 
-I would rather see more detailed description of the current state first.
+  ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-dt
+
+for you to fetch changes up to ca594844e4a53f778811c06feef60bdf36bc5fec:
+
+  ARM: at91/at91rm9200ek.dts: rearrange nodes in address ascending order (2013-12-09 15:08:57 +0100)
+
+----------------------------------------------------------------
+First DT pull-request for 3.14
+- many little corrections and documentation updates
+- LCD FB Device Tree for at91sam9263 and at91sam9g45 boards
+- crypto peripherals DT entries + DMA specification
+- new Cosino board
+
+----------------------------------------------------------------
+Bo Shen (1):
+      ARM: at91: sama5d3: enable qt1070 as a wakeup source
+
+Boris BREZILLON (2):
+      ARM: at91/dt: add ethernet phy to at91rm9200ek board
+      ARM: at91/dt: add atmel,pullup-gpio to at91rm9200ek usb1 definition
+
+Jean-Christophe PLAGNIOL-VILLARD (6):
+      ARM: at91: sam9g45: add fb dt support
+      ARM: at91: sam9263: add fb dt support
+      ARM: at91: at9sam9m10g45ek: add dt lcd support
+      ARM: at91: sam9263ek: add dt lcd support
+      ARM: at91: Animeo IP: fix mtd partition table
+      ARM: at91: dt: at91rm9200ek: add emac and nor flash support
+
+Ludovic Desroches (2):
+      ARM: at91: at91sam9g45: set default mmc pinctrl-names
+      ARM: at91: at91sam9g45: add i2c pinctrl
+
+Nicolas Ferre (9):
+      ARM: at91/trivial: fix at91rm9200 rts/cts pinctrl definitions
+      ARM: at91/dt: binding: add precision to AIC documentation
+      ARM: at91/dt: binding: add missing compatibility string in SDRAM/DDR documentation
+      ARM: at91/dt/trivial: use macro for AES irq type
+      ARM: at91/dt/trivial: before sama5d3, Atmel MPU were using at91 prefix
+      ARM: at91/dt/sama5d3: add DMA information to SHA/AES/TDES nodes
+      ARM: at91: add i2c2 pinctrl speficifation to sama5d3 DT
+      ARM: at91: add uart aliases to sama5d3 dtsi
+      ARM: at91/at91rm9200ek.dts: rearrange nodes in address ascending order
+
+Rodolfo Giometti (1):
+      ARM: at91: add support for Cosino board series by HCE Engineering
+
+ .../devicetree/bindings/arm/atmel-aic.txt          |   1 +
+ .../devicetree/bindings/arm/atmel-at91.txt         |   3 +-
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/animeo_ip.dts                    |  31 ++----
+ arch/arm/boot/dts/at91-cosino.dtsi                 | 122 +++++++++++++++++++++
+ arch/arm/boot/dts/at91-cosino_mega2560.dts         |  84 ++++++++++++++
+ arch/arm/boot/dts/at91rm9200.dtsi                  |   4 +-
+ arch/arm/boot/dts/at91rm9200ek.dts                 |  57 ++++++++--
+ arch/arm/boot/dts/at91sam9263.dtsi                 |  37 +++++++
+ arch/arm/boot/dts/at91sam9263ek.dts                |  30 +++++
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |  67 +++++++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts             |  29 +++++
+ arch/arm/boot/dts/sama5d3.dtsi                     |  26 ++++-
+ arch/arm/boot/dts/sama5d3_uart.dtsi                |   5 +
+ arch/arm/boot/dts/sama5d3xdm.dtsi                  |   1 +
+ 15 files changed, 457 insertions(+), 41 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91-cosino.dtsi
+ create mode 100644 arch/arm/boot/dts/at91-cosino_mega2560.dts
 
 -- 
-Michal Hocko
-SUSE Labs
+Nicolas Ferre
