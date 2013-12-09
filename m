@@ -1,123 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab3LIIxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:53:36 -0500
-Received: from 7.mo6.mail-out.ovh.net ([46.105.59.196]:35517 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932425Ab3LIIxb (ORCPT
+	id S932502Ab3LIIyc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:54:32 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:40186 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760696Ab3LIIya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:53:31 -0500
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Douglas Gilbert <dgilbert@interlog.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [PATCH v5 3/3] usb: ohci-at91: use device managed clk retrieval
-Date: Mon,  9 Dec 2013 09:51:55 +0100
-Message-Id: <1386579115-4324-4-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386579115-4324-1-git-send-email-b.brezillon@overkiz.com>
-References: <1386579115-4324-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 9605052106555291906
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Mon, 9 Dec 2013 03:54:30 -0500
+MIME-Version: 1.0
+X-Originating-IP: [218.164.103.71]
+In-Reply-To: <20131209064654.GA20485@kroah.com>
+References: <1384589723.7840.1.camel@phoenix>
+	<1386125959.1974.309@driftwood>
+	<CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+	<20131209064654.GA20485@kroah.com>
+Date: Mon, 9 Dec 2013 16:54:29 +0800
+Message-ID: <CAFRkauCQdOyWbck+WtmNxtnenKyPAFNcqqUgcGSb1kAqj56sYA@mail.gmail.com>
+Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
+From: Axel Lin <axel.lin@ingics.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace clk_get calls by devm_clk_get calls.
+2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+> On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
+>> 2013/12/4 Rob Landley <rob@landley.net>:
+>> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
+>> >>
+>> >> The deleted variable is always 1 in current code.
+>> >> Initialize deleted variable to be 0, so delete_path() will be called only
+>> >> when
+>> >> necessary.
+>> >>
+>> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>> >
+>> >
+>> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
+>> > nobody's objected to this, you might want to forward it to
+>> > trivial@kernel.org.
+>> >
+>> > That said, you could describe what it _does_ a little more?
+>>
+>> I was expecting Greg to pick up this patch.
+>>
+>> I thought the description is pretty clear.
+>> What the patch does is changing the init value of deleted variable to 0.
+>> The intention of this change is to avoid unnecessary delete_path() call.
+>
+> I agree the logic is a bit odd here, but are you seeing an "unnecessary"
+> delete_path() call happening?  The code has always been like this from
+> what I can tell...
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/ohci-at91.c |   30 +++++++-----------------------
- 1 file changed, 7 insertions(+), 23 deletions(-)
+Honestly, I havn't see the "unnecessary" delete_path() call happening druing my
+test. I look at the code when I was debugging a hangup issue.
+(In the end, I think the issue is not related to the devtmpfs code.)
+But I found the logic for the deleted variable looks odd.
+There are below possible (unlikely) case:
+When strchr(nodename, '/') != 0 and
+1. If dentry->d_inode is NULL
+2. vfs_getattr returns error
+3. vfs_unlink returns error except -ENOENT.
 
-diff --git a/drivers/usb/host/ohci-at91.c b/drivers/usb/host/ohci-at91.c
-index 8c0c4a4..9aa485e 100644
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -164,30 +164,30 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 		goto err;
- 	}
- 
--	iclk = clk_get(dev, "ohci_clk");
-+	iclk = devm_clk_get(dev, "ohci_clk");
- 	if (IS_ERR(iclk)) {
- 		dev_err(dev, "failed to get ohci_clk\n");
- 		retval = PTR_ERR(iclk);
- 		goto err;
- 	}
--	fclk = clk_get(dev, "uhpck");
-+	fclk = devm_clk_get(dev, "uhpck");
- 	if (IS_ERR(fclk)) {
- 		dev_err(dev, "failed to get uhpck\n");
- 		retval = PTR_ERR(fclk);
--		goto err4;
-+		goto err;
- 	}
--	hclk = clk_get(dev, "hclk");
-+	hclk = devm_clk_get(dev, "hclk");
- 	if (IS_ERR(hclk)) {
- 		dev_err(dev, "failed to get hclk\n");
- 		retval = PTR_ERR(hclk);
--		goto err5;
-+		goto err;
- 	}
- 	if (IS_ENABLED(CONFIG_COMMON_CLK)) {
--		uclk = clk_get(dev, "usb_clk");
-+		uclk = devm_clk_get(dev, "usb_clk");
- 		if (IS_ERR(uclk)) {
- 			dev_err(dev, "failed to get uclk\n");
- 			retval = PTR_ERR(uclk);
--			goto err6;
-+			goto err;
- 		}
- 	}
- 
-@@ -203,15 +203,6 @@ static int usb_hcd_at91_probe(const struct hc_driver *driver,
- 	/* Error handling */
- 	at91_stop_hc(pdev);
- 
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_put(uclk);
-- err6:
--	clk_put(hclk);
-- err5:
--	clk_put(fclk);
-- err4:
--	clk_put(iclk);
--
-  err:
- 	usb_put_hcd(hcd);
- 	return retval;
-@@ -236,13 +227,6 @@ static void usb_hcd_at91_remove(struct usb_hcd *hcd,
- 	usb_remove_hcd(hcd);
- 	at91_stop_hc(pdev);
- 	usb_put_hcd(hcd);
--
--	if (IS_ENABLED(CONFIG_COMMON_CLK))
--		clk_put(uclk);
--	clk_put(hclk);
--	clk_put(fclk);
--	clk_put(iclk);
--	fclk = iclk = hclk = NULL;
- }
- 
- /*-------------------------------------------------------------------------*/
--- 
-1.7.9.5
+In these cases, delete_path() will fail anyway.
 
+Although this is a unlikely case, and I know the code is there since initial
+commit. But I think it's still good to fix it.
+
+Regards,
+Axel
