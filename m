@@ -1,100 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934122Ab3LIQgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:36:33 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:30933 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932933Ab3LIQg3 (ORCPT
+	id S934050Ab3LIQgb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:36:31 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60475 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932796Ab3LIQg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Dec 2013 11:36:29 -0500
-Message-ID: <1386606983.2723.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: David Gibson <david@gibson.dropbear.id.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Mon, 09 Dec 2013 08:36:23 -0800
-In-Reply-To: <20130930074744.GA15351@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
-	 <20130905011553.GA10158@voom.redhat.com> <20130905054357.GA23597@lge.com>
-	 <20130916120909.GA2706@voom.fritz.box> <20130930074744.GA15351@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Message-ID: <52A5F164.1040305@ti.com>
+Date: Mon, 9 Dec 2013 11:35:48 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/2] memory: ti-aemif: add bindings for AEMIF driver
+References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-3-git-send-email-ivan.khoronzhuk@ti.com> <817E4263-5E61-4471-AED0-5C97FD2B902F@kernel.crashing.org> <5294CC0C.9000203@ti.com>
+In-Reply-To: <5294CC0C.9000203@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-30 at 16:47 +0900, Joonsoo Kim wrote:
-> On Mon, Sep 16, 2013 at 10:09:09PM +1000, David Gibson wrote:
-> > > > 
-> > > > > +		*do_dequeue = false;
-> > > > >  		spin_unlock(&hugetlb_lock);
-> > > > >  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> > > > >  		if (!page) {
-> > > > 
-> > > > I think the counter also needs to be incremented in the case where we
-> > > > call alloc_buddy_huge_page() from alloc_huge_page().  Even though it's
-> > > > new, it gets added to the hugepage pool at this point and could still
-> > > > be a contended page for the last allocation, unless I'm missing
-> > > > something.
-> > > 
-> > > Your comment has reasonable point to me, but I have a different opinion.
-> > > 
-> > > As I already mentioned, the point is that we want to avoid the race
-> > > which kill the legitimate users of hugepages by out of resources.
-> > > I increase 'h->nr_dequeue_users' when the hugepage allocated by
-> > > administrator is dequeued. It is because what the hugepage I want to
-> > > protect from the race is the one allocated by administrator via
-> > > kernel param or /proc interface. Administrator may already know how many
-> > > hugepages are needed for their application so that he may set nr_hugepage
-> > > to reasonable value. I want to guarantee that these hugepages can be used
-> > > for his application without any race, since he assume that the application
-> > > would work fine with these hugepages.
-> > > 
-> > > To protect hugepages returned from alloc_buddy_huge_page() from the race
-> > > is different for me. Although it will be added to the hugepage pool, this
-> > > doesn't guarantee certain application's success more. If certain
-> > > application's success depends on the race of this new hugepage, it's death
-> > > by the race doesn't matter, since nobody assume that it works fine.
-> > 
-> > Hrm.  I still think this path should be included.  Although I'll agree
-> > that failing in this case is less bad.
-> > 
-> > However, it can still lead to a situation where with two processes or
-> > threads, faulting on exactly the same shared page we have one succeed
-> > and the other fail.  That's a strange behaviour and I think we want to
-> > avoid it in this case too.
-> 
-> Hello, David.
-> 
-> I don't think it is a strange behaviour. Similar situation can occur
-> even though we use the mutex. Hugepage allocation can be failed when
-> the first process try to allocate the hugepage while second process is blocked
-> by the mutex. And then, second process will go into the fault handler. And
-> at this time, it can succeed. So result is that we have one succeed and
-> the other fail.
-> 
-> It is slightly different from the case you mentioned, but I think that
-> effect for user is same. We cannot avoid this kind of race completely and
-> I think that avoiding the race for administrator managed hugepage pool is
-> good enough to use.
+Kumar,
 
-What was the final decision on this issue? Is Joonsoo's approach to
-removing this mutex viable, or are we stuck with it?
+On Tuesday 26 November 2013 11:27 AM, Grygorii Strashko wrote:
+> On 11/22/2013 11:04 PM, Kumar Gala wrote:
+>>
+>> On Nov 20, 2013, at 9:46 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+>>
+>>> Add bindings for AEMIF controller drivers/memory/ti-aemif.c
+>>>
+>>
+>> Binding shouldn’t normally refer to code.
+>>
+>> Just saying something like:
+>>
+>> Adding binging for TI Async External Memory Interface (AEMIF) controller.
+>>
+>>
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> ---
+>>> .../bindings/memory-controllers/ti-aemif.txt       |  198 ++++++++++++++++++++
+>>> 1 file changed, 198 insertions(+)
+>>> create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>> new file mode 100644
+>>> index 0000000..be0c0cb
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>> @@ -0,0 +1,198 @@
+>>> +* Device tree bindings for Texas instruments AEMIF controller
+>>> +
+>>> +Th Async External Memory Interface (EMIF16/AEMIF) controller is intended to
+>>
+>> The?
+>>
+>>> +provide a glue-less interface to a variety of asynchronous memory devices like
+>>> +ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
+>>> +can be accessed at any given time via four chip selects with 64M byte access
+>>> +per chip select. Synchronous memories such as DDR1 SD RAM, SDR SDRAM
+>>> +and Mobile SDR are not supported.
+>>> +
+>>> +Documentation:
+>>> +Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
+>>> +OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
+>>> +Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+>>> +
+>>> +Required properties:
+>>> +
+>>> +- compatible:		"ti,davinci-aemif"
+>>> +			"ti,keystone-aemif"
+>>> +			"ti,omap-L138-aemif"
+>>> +
+>>> +- #address-cells:	Must be 2. The first cell is the memory partition
+>>> +			number. The 0 partition is for chip selects. And the
+>>> +			second cell is the offset into the partition, for the 0
+>>> +			partition it corresponds to chip select offset.
+>>> +
+>>
+>> Is the first cell just the chip select number?
+> 
+> No. It's rather memory range/partition number. Now there are 2 partitions:
+> - control partition which is common for all CS interfaces
+> - CS-specific partition/range
+> (this one can be splitted according to specific SoC requirement)
+> 
+> As per Keystone TCI6638K2K
+>  Datasheet http://www.ti.com/lit/ds/sprs836d/sprs836d.pdf:
+> 
+> 1) the memory range 0 will be from 0x30000000 size 0x10000000:
+> 00 3000 0000 - 00 33FF FFFF 64M EMIF16 CE0
+> 00 3400 0000 - 00 37FF FFFF 64M EMIF16 CE1
+> 00 3800 0000 - 00 3BFF FFFF 64M EMIF16 CE2
+> 00 3C00 0000 - 00 3FFF FFFF 64M EMIF16 CE3
+> 
+> 2) the memory range 1:
+> 00 2100 0A00 - 00 2100 0AFF 256 AEMIF Config
+> 
+> And AEMIF node contains definition:
+> ranges = <0 0 0x30000000 0x10000000
+> 	  1 0 0x21000A00 0x0000100>;
+> 
+> 
+> Child node has (nand):
+>  reg = <0 0 0x4000000 (cs0)
+>         - or - 0 0x4000000 0x4000000 (cs1)
+>         - or - 0 0x8000000 0x4000000 (cs2)
+> 	- or - 0 0xC000000 0x4000000 (cs3)
+> 	- and -
+>         1 0 0x0000100>; (for all cs)
+> 
+> For example for cs2 child node the resulting mem range 0 will be calculated as
+> 
+> from: 0x30000000 + (0 0x8000000 - 0 0)
+> size: 0x4000000
+> 
+> We don't encode CS number in reg/ranges, because it will allow simply change 
+> AEMIF DT definitions depending on each SoC
+> (AEMIF CS memory range can be continuous as above or not, if not - additional
+> range/partition can be added and child device can select the proper one).
+> 
+>>
+>> I’m wondering if this is similar to FSL Localbus controller, see the binding:
+>>
+>> bindings/powerpc/fsl/lbc.txt
+> 
+> Don't think so :) it looks similar just because of using standard bindings
+> (gpmc-nand.c mvebu-devbus.txt ti-gpmc.txt and etc.)
+> 
+>>
+>>> +- #size-cells:		Must be set to 1.
+>>> +
+>>> +- reg:			contains offset/length value for AEMIF control registers
+>>> +			space.
+>>> +
+>>> +- ranges:		Must be set up to reflect the memory layout for 4
+>>> +			chipselects and for AEMIF control range.
+>>> +
+>>> +- clocks:		phandle reference to the controller clock. Required only
+>>> +			if clock tree data present in device tree.
+>>> +			See clock-bindings.txt
 
-Thanks,
-Davidlohr
+Are you ok with above description on why cs property is needed. We will need
+your ack ;-) to take these patches forward.
+
+Regards,
+Santosh
 
