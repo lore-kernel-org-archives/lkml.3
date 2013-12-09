@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab3LIJ5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:57:25 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:35186 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab3LIJ5X (ORCPT
+	id S933385Ab3LIJ5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:57:43 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:14015 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932955Ab3LIJ5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:57:23 -0500
+	Mon, 9 Dec 2013 04:57:42 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <Josh.wu@atmel.com>, Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: soc updates for 3.14 #1
+Date: Mon, 9 Dec 2013 10:57:39 +0100
+Message-ID: <1386583059-22281-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-In-Reply-To: <20131209085526.GB4125@kroah.com>
-References: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
-	<20131208140100.GA22793@kroah.com>
-	<CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
-	<20131209082527.GA26950@kroah.com>
-	<CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
-	<20131209085526.GB4125@kroah.com>
-Date: Mon, 9 Dec 2013 17:57:22 +0800
-Message-ID: <CABawtvPhE9enmt2NdSemVsDRp6ca38xyQSTO2mEujx0kikWtoA@mail.gmail.com>
-Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 4:55 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Dec 09, 2013 at 04:44:05PM +0800, Ethan Zhao wrote:
->> On Mon, Dec 9, 2013 at 4:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Mon, Dec 09, 2013 at 09:43:16AM +0800, Ethan Zhao wrote:
->> >> On Sun, Dec 8, 2013 at 10:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> > On Sun, Dec 08, 2013 at 07:31:02PM +0800, ethan.zhao wrote:
->> >> >> Should check debugfs initialization with debugfs_initialized() before using it,
->> >> >> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
->> >> >> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
->> >> >
->> >> > So?  It should "just work" without this check, right?  What happens if
->> >> > your patch isn't applied and debugfs isn't enabled?
->> >>
->> >> If debugfs isn't  configured, debugfs_initialized() and other
->> >> functions are defined as following,
->> >>
->> >> static inline bool debugfs_initialized(void)
->> >> {
->> >> return false;
->> >> }
->> >>
->> >> static inline struct dentry *debugfs_create_file(const char *name, umode_t mode,
->> >> struct dentry *parent, void *data,
->> >> const struct file_operations *fops)
->> >> {
->> >> return ERR_PTR(-ENODEV);
->> >> }
->> >>
->> >> static inline struct dentry *debugfs_create_dir(const char *name,
->> >> struct dentry *parent)
->> >> {
->> >> return ERR_PTR(-ENODEV);
->> >> }
->> >>
->> >> And the checking code in xen\debugfs.c xen_init_debugfs() will not
->> >> work, the return value is not NULL.
->> >> d_xen_debug = debugfs_create_dir("xen", NULL);
->> >>
->> >> if (!d_xen_debug)
->> >> pr_warning("Could not create 'xen' debugfs directory\n");
->> >
->> > Which is just fine, what is wrong with this?
->>
->> If we no check with debugfs_initialized(),  the above code should be
->> if  (!d_xen_debug || IS_ERR (d_xen_debug))
->>     pr_warning("Could not create 'xen' debugfs directory\n");
->
-> No, you don't want to print out that message if debugfs is not enabled.
->
-> You really don't want to print anything out, as what can a user do about
-> this?
->
-Yep, should output a warning about "Debugfs is not configured and enabled"
+Arnd, Olof, Kevin,
 
-> I still think the original code is correct, have you tried it with
-> debugfs disabled?
+This pull-request is for addition of sama5d36 and its Evaluation Kit. The
+patches are stacked on the "cleanup" material already in arm-soc tree
+(at91/sama5-ccf) like all other AT91 pull-requests for 3.14.
 
-If debugfs is not configured, no "Could not create 'xen' debugfs
-directory" warning.
-Ok, send V3 to imporve it.
+Thanks, best regards,
 
->
-> greg k-h
+The following changes since commit b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
+
+  ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-soc
+
+for you to fetch changes up to 0a72922b8dab2a1ce9cc977e9b1850556b48b4aa:
+
+  ARM: at91: sama5d3/dt: add sama5d36ek dts files (2013-12-09 09:50:53 +0100)
+
+----------------------------------------------------------------
+First soc pull-request for 3.14
+Addition of the sama5d36 SoC as a member of the sama5d3 family
+- SoC code and Device Tree file
+- Evaluation Kit (EK board) Device Tree file
+
+----------------------------------------------------------------
+Josh Wu (2):
+      ARM: at91: sama5d3: add support for sama5d36 chip
+      ARM: at91: sama5d3/dt: add sama5d36ek dts files
+
+ arch/arm/boot/dts/Makefile            |  2 ++
+ arch/arm/boot/dts/sama5d3.dtsi        |  2 +-
+ arch/arm/boot/dts/sama5d36.dtsi       | 20 +++++++++++++
+ arch/arm/boot/dts/sama5d36ek.dts      | 53 +++++++++++++++++++++++++++++++++++
+ arch/arm/mach-at91/Kconfig            |  2 +-
+ arch/arm/mach-at91/include/mach/cpu.h |  3 +-
+ arch/arm/mach-at91/setup.c            |  4 +++
+ 7 files changed, 83 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/boot/dts/sama5d36.dtsi
+ create mode 100644 arch/arm/boot/dts/sama5d36ek.dts
+
+-- 
+Nicolas Ferre
