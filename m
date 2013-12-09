@@ -1,172 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760736Ab3LIICI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:02:08 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:47853 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336Ab3LIICD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:02:03 -0500
-X-AuditID: cbfee690-b7f676d00000310d-09-52a578f68c61
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <1386576057.2101.106.camel@kjgkr>
-Subject: Re: [f2fs-dev] [PATCH 3/3 V3] f2fs: introduce f2fs_cache_node_page()
- to add page into node_inode cache
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Date: Mon, 09 Dec 2013 17:00:57 +0900
-In-reply-to: <000a01cef4a0$9f2d64a0$dd882de0$@samsung.com>
-References: <000a01cef4a0$9f2d64a0$dd882de0$@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zfd1vFUuDDHZ1Wlj8b/rIZnFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgytjWs5W9YLJUxdwF
-	t1gbGA+KdDFycEgImEgcO23YxcgJZIpJXLi3nq2LkYtDSGAZo8Si369YIBImEg/7/zBBJBYx
-	Sky5MZkVJMErICjxY/I9sCJmAXWJSfMWMUPYIhLvmqdA2doSyxa+ZoZofsUoMXnzJjaIZl2J
-	Wetes4PYwgKFEmt2v2UGuYgNqGHzfgOQsJCAosTb/XfBdokIKEn8mr+IFWJmpsSc1xA3sAio
-	Shw6sgRsF6eAlcTxddtZIXotJfZv3s8EYvMLiEocXridGeIZJYnd7Z3sIPdICBxjl7jQcpIZ
-	YpCAxLfJh1ggoSIrsekAVL2kxMEVN1gmMErOQvLyLCQvz0Ly8iwkLy9gZFnFKJpakFxQnJRe
-	ZKJXnJhbXJqXrpecn7uJERKhE3Yw3jtgfYgxGWj9RGYp0eR8YITnlcQbGpsZWZiamBobmVua
-	kSasJM6r9igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOjJaPckefu19ymT3DI/33L6tC5
-	WL/3N+R8//x88OvGnxdSNmK/TuVHvj80pWPrqbhGqeTovl8Fy5Zu/cajduFBd+yz1HOWVUky
-	37iOVLktT1ttMb9+J2PZ95uhMTeDmeYXtbVwHxDmq+ZmFZ1uMDdejT+97U7ml/eT0nRqJs24
-	mb5B/qyOb0W0EktxRqKhFnNRcSIAmdv9Y+YCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAd1vFUuDDDZeNbb43/SRzeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ix4Pc61oLfkhVHnpxga2BcKdLFyMkhIWAi8bD/DxOELSZx4d56ti5GLg4h
-	gUWMElNuTGYFSfAKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrEpHmLmCHqXzFKTN68iQ2iXldi
-	1rrX7CC2sEChxJrdb5lBetkEtCU27zcACQsJKEq83X8XbLyIgJLEr/mLWCFmZkrMeQ2xlkVA
-	VeLQkSXMIDangJXE8XXbWSF6LSX2b94PdjO/gKjE4YXbmSHuV5LY3d7JPoFRaBaSq2chXD0L
-	ydULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH8zOpHYwrGywOMQpwMCrx8K5gXRok
-	xJpYVlyZe4hRgoNZSYTXPAooxJuSWFmVWpQfX1Sak1p8iDEZ6PCJzFKiyfnARJNXEm9obGJm
-	ZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzGE0yD/j5/ImG+7k7Ni7KG
-	quaC0hf/y5+9+P2ujIf9ZwR32qP26q3TlH/NfaJ8oyi/rl95PmPPt9RNiqubvrg2TWdtWPmf
-	WXL+73cOKZvf6fvd/6vjM/3enmXbQ/4dE1EQC0s4GSE69WniNM53odLLSjN/zfvhnXTi8cZQ
-	gRDXM0afvl3wlX+kxFKckWioxVxUnAgA5bvPCyoDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932241Ab3LIIDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:03:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22951 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932104Ab3LIIDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 03:03:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,856,1378882800"; 
+   d="scan'208";a="449048043"
+Message-ID: <52A57B12.1090609@intel.com>
+Date: Mon, 09 Dec 2013 10:10:58 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH V2 2/3] perf script: Add an option to print the source
+ line number
+References: <1386315778-11633-1-git-send-email-adrian.hunter@intel.com> <1386315778-11633-3-git-send-email-adrian.hunter@intel.com> <52A4ADC8.3020202@gmail.com>
+In-Reply-To: <52A4ADC8.3020202@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Sorry for the noise.
-Once I tested this patch, I recognized that I made a mistake:
-
-f2fs_fill_super()
- 1. build_segment_manager()
-    -> restore_node_summary()
-       -> NULL pointer exception, due to no NAT cache.
- 2. build_node_manager()
-
-So, we should not call get_node_info() prior to build_node_manager().
-And, it's not easy to change the order of build_*_manager simply.
-
-Let's consider in more details.
-Thanks,
-
-2013-12-09 (월), 13:35 +0800, Chao Yu:
-> This patch introduces f2fs_cache_node_page(), in this function, page which is
-> readed ahead will be copy to node_inode's mapping cache.
-> It will avoid rereading these node pages.
+On 08/12/13 19:35, David Ahern wrote:
+> On 12/6/13, 12:42 AM, Adrian Hunter wrote:
+>> Add field 'srcline' that displays the source file name
+>> and line number associated with the sample ip.  The
+>> information displayed is the same as from addr2line.
 > 
-> change log:
->  o check validity of page by searching NAT suggested by Jaegeuk Kim.
->  o add 'unlikely' for compiler optimization suggested by Jaegeuk Kim.
-> 
-> Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/node.c |   39 ++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 38 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index 099f06f..4c6da98 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1600,13 +1600,46 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
->  	return 0;
->  }
->  
-> +/*
-> + * f2fs_cache_node_page() check validaty of input page by searching NAT.
-> + * Then, it will copy updated data of vaild page to node_inode cache.
-> + */
-> +void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
-> +						nid_t nid, block_t blkaddr)
-> +{
-> +	struct address_space *mapping = sbi->node_inode->i_mapping;
-> +	struct page *npage;
-> +	struct node_info ni;
-> +
-> +	get_node_info(sbi, nid, &ni);
-> +
-> +	if (ni.blk_addr != blkaddr)
-> +		return;
-> +
-> +	npage = grab_cache_page(mapping, nid);
-> +	if (unlikely(!npage))
-> +		return;
-> +
-> +	if (PageUptodate(npage)) {
-> +		f2fs_put_page(npage, 1);
-> +		return;
-> +	}
-> +
-> +	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
-> +
-> +	SetPageUptodate(npage);
-> +	f2fs_put_page(npage, 1);
-> +
-> +	return;
-> +}
-> +
->  int restore_node_summary(struct f2fs_sb_info *sbi,
->  			unsigned int segno, struct f2fs_summary_block *sum)
->  {
->  	struct f2fs_node *rn;
->  	struct f2fs_summary *sum_entry;
->  	struct page *page, *tmp;
-> -	block_t addr;
-> +	block_t addr, blkaddr;
->  	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
->  	int i, last_offset, nrpages, err = 0;
->  	LIST_HEAD(page_list);
-> @@ -1624,6 +1657,7 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
->  		if (err)
->  			return err;
->  
-> +		blkaddr = addr;
->  		list_for_each_entry_safe(page, tmp, &page_list, lru) {
->  
->  			lock_page(page);
-> @@ -1633,6 +1667,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
->  				sum_entry->version = 0;
->  				sum_entry->ofs_in_node = 0;
->  				sum_entry++;
-> +				f2fs_cache_node_page(sbi, page,
-> +					le32_to_cpu(rn->footer.nid), blkaddr);
->  			} else {
->  				err = -EIO;
->  			}
-> @@ -1640,6 +1676,7 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
->  			list_del(&page->lru);
->  			unlock_page(page);
->  			__free_pages(page, 0);
-> +			blkaddr++;
->  		}
->  	}
->  	return err;
+> example output?
 
--- 
-Jaegeuk Kim
-Samsung
+            grep 10701/10701 2497321.421013:  ffffffff81043ffa native_write_msr_safe+0xa ([kernel.kallsyms])
+  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/arch/x86/include/asm/msr.h:95
+            grep 10701/10701 2497321.421984:  ffffffff8165b6b3 _raw_spin_lock+0x13 ([kernel.kallsyms])
+  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/arch/x86/include/asm/spinlock.h:54
+            grep 10701/10701 2497321.421990:  ffffffff810b64b3 tick_sched_timer+0x53 ([kernel.kallsyms])
+  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/kernel/time/tick-sched.c:840
+            grep 10701/10701 2497321.421992:  ffffffff8106f63f run_timer_softirq+0x2f ([kernel.kallsyms])
+  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/kernel/timer.c:1372
+
+
+
+> 
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>   tools/perf/Documentation/perf-script.txt |  2 +-
+>>   tools/perf/builtin-script.c              | 10 ++++++++++
+>>   tools/perf/util/map.c                    | 17 +++++++++++++++++
+>>   tools/perf/util/map.h                    |  2 ++
+>>   tools/perf/util/session.c                |  8 ++++++++
+>>   tools/perf/util/session.h                |  1 +
+>>   6 files changed, 39 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/Documentation/perf-script.txt
+>> b/tools/perf/Documentation/perf-script.txt
+>> index cfdbb1e..c2a5071 100644
+>> --- a/tools/perf/Documentation/perf-script.txt
+>> +++ b/tools/perf/Documentation/perf-script.txt
+>> @@ -115,7 +115,7 @@ OPTIONS
+>>   -f::
+>>   --fields::
+>>           Comma separated list of fields to print. Options are:
+>> -        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, symoff.
+>> +        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr,
+>> symoff, srcline.
+>>           Field list can be prepended with the type, trace, sw or hw,
+>>           to indicate to which event type the field list applies.
+>>           e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
+>> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+>> index 4484886..7a571fb 100644
+>> --- a/tools/perf/builtin-script.c
+>> +++ b/tools/perf/builtin-script.c
+>> @@ -43,6 +43,7 @@ enum perf_output_field {
+>>       PERF_OUTPUT_DSO             = 1U << 9,
+>>       PERF_OUTPUT_ADDR            = 1U << 10,
+>>       PERF_OUTPUT_SYMOFFSET       = 1U << 11,
+>> +    PERF_OUTPUT_SRCLINE         = 1U << 12,
+>>   };
+>>
+>>   struct output_option {
+>> @@ -61,6 +62,7 @@ struct output_option {
+>>       {.str = "dso",   .field = PERF_OUTPUT_DSO},
+>>       {.str = "addr",  .field = PERF_OUTPUT_ADDR},
+>>       {.str = "symoff", .field = PERF_OUTPUT_SYMOFFSET},
+>> +    {.str = "srcline", .field = PERF_OUTPUT_SRCLINE},
+>>   };
+>>
+>>   /* default set to maintain compatibility with current format */
+>> @@ -210,6 +212,11 @@ static int perf_evsel__check_attr(struct perf_evsel
+>> *evsel,
+>>                  "to DSO.\n");
+>>           return -EINVAL;
+>>       }
+>> +    if (PRINT_FIELD(SRCLINE) && !PRINT_FIELD(IP)) {
+>> +        pr_err("Display of source line number requested but sample IP is
+>> not\n"
+>> +               "selected. Hence, no address to lookup the source line
+>> number.\n");
+>> +        return -EINVAL;
+>> +    }
+>>
+>>       if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
+>>           perf_evsel__check_stype(evsel, PERF_SAMPLE_TID, "TID",
+>> @@ -245,6 +252,9 @@ static void set_print_ip_opts(struct perf_event_attr
+>> *attr)
+>>
+>>       if (PRINT_FIELD(SYMOFFSET))
+>>           output[type].print_ip_opts |= PRINT_IP_OPT_SYMOFFSET;
+>> +
+>> +    if (PRINT_FIELD(SRCLINE))
+>> +        output[type].print_ip_opts |= PRINT_IP_OPT_SRCLINE;
+>>   }
+>>
+>>   /*
+>> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+>> index ef5bc91..9b9bd71 100644
+>> --- a/tools/perf/util/map.c
+>> +++ b/tools/perf/util/map.c
+>> @@ -11,6 +11,7 @@
+>>   #include "strlist.h"
+>>   #include "vdso.h"
+>>   #include "build-id.h"
+>> +#include "util.h"
+>>   #include <linux/string.h>
+>>
+>>   const char *map_type__name[MAP__NR_TYPES] = {
+>> @@ -252,6 +253,22 @@ size_t map__fprintf_dsoname(struct map *map, FILE *fp)
+>>       return fprintf(fp, "%s", dsoname);
+>>   }
+>>
+>> +int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
+>> +             FILE *fp)
+>> +{
+>> +    char *srcline;
+>> +    int ret = 0;
+>> +
+>> +    if (map && map->dso) {
+>> +        srcline = get_srcline(map->dso,
+>> +                      map__rip_2objdump(map, addr));
+>> +        if (srcline != SRCLINE_UNKNOWN)
+>> +            ret = fprintf(fp, "%s%s", prefix, srcline);
+>> +        free_srcline(srcline);
+>> +    }
+>> +    return ret;
+>> +}
+>> +
+>>   /**
+>>    * map__rip_2objdump - convert symbol start address to objdump address.
+>>    * @map: memory map
+>> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+>> index e4e259c..18068c6 100644
+>> --- a/tools/perf/util/map.h
+>> +++ b/tools/perf/util/map.h
+>> @@ -103,6 +103,8 @@ struct map *map__clone(struct map *map);
+>>   int map__overlap(struct map *l, struct map *r);
+>>   size_t map__fprintf(struct map *map, FILE *fp);
+>>   size_t map__fprintf_dsoname(struct map *map, FILE *fp);
+>> +int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
+>> +             FILE *fp);
+>>
+>>   int map__load(struct map *map, symbol_filter_t filter);
+>>   struct symbol *map__find_symbol(struct map *map,
+>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>> index c236b38..e748f29 100644
+>> --- a/tools/perf/util/session.c
+>> +++ b/tools/perf/util/session.c
+>> @@ -1497,6 +1497,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel,
+>> struct perf_sample *sample,
+>>       int print_dso = print_opts & PRINT_IP_OPT_DSO;
+>>       int print_symoffset = print_opts & PRINT_IP_OPT_SYMOFFSET;
+>>       int print_oneline = print_opts & PRINT_IP_OPT_ONELINE;
+>> +    int print_srcline = print_opts & PRINT_IP_OPT_SRCLINE;
+>>       char s = print_oneline ? ' ' : '\t';
+>>
+>>       if (symbol_conf.use_callchain && sample->callchain) {
+>> @@ -1546,6 +1547,10 @@ void perf_evsel__print_ip(struct perf_evsel *evsel,
+>> struct perf_sample *sample,
+>>                   printf(")");
+>>               }
+>>
+>> +            if (print_srcline)
+>> +                map__fprintf_srcline(node->map, addr, "\n  ",
+>> +                             stdout);
+>> +
+>>               if (!print_oneline)
+>>                   printf("\n");
+>>
+>> @@ -1575,6 +1580,9 @@ next:
+>>               map__fprintf_dsoname(al->map, stdout);
+>>               printf(")");
+>>           }
+>> +
+>> +        if (print_srcline)
+>> +            map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
+>>       }
+>>   }
+> 
+> Why newline followed by space?
+
+It looked better that way to me.
+
+> 
+> Otherwise, Acked-by: David Ahern <dsahern@gmail.com>
+> 
+> 
+> 
 
