@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933866Ab3LIQGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:06:37 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:34552 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932761Ab3LIQGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:06:32 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Nishanth Menon <nm@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>, Joel F <joelf@ti.com>
-Subject: Re: [PATCH] ARM: OMAP2+: omap_device: add fail hook for runtime_pm when bad data is detected
-References: <1386121153-32351-1-git-send-email-nm@ti.com>
-	<20131205190343.GI26766@atomide.com>
-Date: Mon, 09 Dec 2013 08:06:29 -0800
-In-Reply-To: <20131205190343.GI26766@atomide.com> (Tony Lindgren's message of
-	"Thu, 5 Dec 2013 11:03:43 -0800")
-Message-ID: <87mwka80vu.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S933895Ab3LIQGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:06:46 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:12295 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932761Ab3LIQGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:06:41 -0500
+X-IronPort-AV: E=Sophos;i="4.93,858,1378857600"; 
+   d="scan'208";a="82415066"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        <Stefano.Stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        <catalin.marinas@arm.com>, <Will.Deacon@arm.com>,
+        <Ian.Campbell@citrix.com>
+Subject: [PATCH] xen/arm64: do not call the swiotlb functions twice
+Date: Mon, 9 Dec 2013 16:06:00 +0000
+Message-ID: <1386605160-3185-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Lindgren <tony@atomide.com> writes:
+On arm64 the dma_map_ops implementation is based on the swiotlb.
+swiotlb-xen, used by default in dom0 on Xen, is also based on the
+swiotlb.
 
-> * Nishanth Menon <nm@ti.com> [131203 17:40]:
->> Due to the cross dependencies between hwmod for automanaged device
->> information for OMAP and dts node definitions, we can run into scenarios
->> where the dts node is defined, however it's hwmod entry is yet to be
->> added. In these cases:
->> a) omap_device does not register a pm_domain (since it cannot find
->>    hwmod entry).
->> b) driver does not know about (a), does a pm_runtime_get_sync which
->>    never fails
->> c) It then tries to do some operation on the device (such as read the
->>   revision register (as part of probe) without clock or adequate OMAP
->>   generic PM operation performed for enabling the module.
->> 
->> This causes a crash such as that reported in:
->> https://bugzilla.kernel.org/show_bug.cgi?id=66441
->> 
->> When 'ti,hwmod' is provided in dt node, it is expected that the device
->> will not function without the OMAP's power automanagement. Hence, when
->> we hit a fail condition (due to hwmod entries not present or other
->> similar scenario), fail at pm_domain level due to lack of data, provide
->> enough information for it to be fixed, however, it allows for the driver
->> to take appropriate measures to prevent crash.
->
-> Kevin, any comments on this one?
+Avoid calling into the default arm64 dma_map_ops functions from
+xen_dma_map_page, xen_dma_unmap_page, xen_dma_sync_single_for_cpu, and
+xen_dma_sync_single_for_device otherwise we end up calling into the
+swiotlb twice.
 
-Looks like a good approach to catch these corner cases.
+When arm64 gets a non-swiotlb based implementation of dma_map_ops, we'll
+probably have to reintroduce dma_map_ops calls in page-coherent.h.
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: catalin.marinas@arm.com
+CC: Will.Deacon@arm.com
+CC: Ian.Campbell@citrix.com
+---
+ arch/arm64/include/asm/xen/page-coherent.h |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
+index 2820f1a..dde3fc9 100644
+--- a/arch/arm64/include/asm/xen/page-coherent.h
++++ b/arch/arm64/include/asm/xen/page-coherent.h
+@@ -23,25 +23,21 @@ static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
+ 	     unsigned long offset, size_t size, enum dma_data_direction dir,
+ 	     struct dma_attrs *attrs)
+ {
+-	__generic_dma_ops(hwdev)->map_page(hwdev, page, offset, size, dir, attrs);
+ }
+ 
+ static inline void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
+ 		size_t size, enum dma_data_direction dir,
+ 		struct dma_attrs *attrs)
+ {
+-	__generic_dma_ops(hwdev)->unmap_page(hwdev, handle, size, dir, attrs);
+ }
+ 
+ static inline void xen_dma_sync_single_for_cpu(struct device *hwdev,
+ 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+ {
+-	__generic_dma_ops(hwdev)->sync_single_for_cpu(hwdev, handle, size, dir);
+ }
+ 
+ static inline void xen_dma_sync_single_for_device(struct device *hwdev,
+ 		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+ {
+-	__generic_dma_ops(hwdev)->sync_single_for_device(hwdev, handle, size, dir);
+ }
+ #endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
+-- 
+1.7.10.4
+
