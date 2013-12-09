@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab3LIH1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 02:27:20 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:47052 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab3LIH1S (ORCPT
+	id S932388Ab3LIH3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 02:29:51 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48830 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab3LIH3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 02:27:18 -0500
+	Mon, 9 Dec 2013 02:29:50 -0500
+X-AuditID: 9c93017e-b7bb9ae000000ec8-54-52a5716c4039
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>, Pekka Enberg <penberg@iki.fi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<20131203091655.GB20179@gmail.com>
+	<20131203103346.65c744e3@gandalf.local.home>
+	<CAMEtUuw_6dCuZd=1fQxNYrZid67n7MRYBT16qBkgR_JxOPkfdg@mail.gmail.com>
+	<529E81C1.2070208@hitachi.com>
+Date: Mon, 09 Dec 2013 16:29:48 +0900
+In-Reply-To: <529E81C1.2070208@hitachi.com> (Masami Hiramatsu's message of
+	"Wed, 04 Dec 2013 10:13:37 +0900")
+Message-ID: <877gbemqhf.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <878uvw1t49.fsf@mina86.com>
-References: <1385744870-10164-1-git-send-email-mpn@google.com>
-	<20131201004715.11125.qmail@stuge.se>
-	<xa1tiov78kmp.fsf@mina86.com>
-	<CAFSJ42YckTDO=UV=fWG9mmVXSBYep1x6xiHahzGDcrB4dy0oOQ@mail.gmail.com>
-	<878uvw1t49.fsf@mina86.com>
-Date: Mon, 9 Dec 2013 07:27:17 +0000
-Message-ID: <CAFSJ42a5ngsShaQPwwjfLxaj3ojvghwTAvCBggG=tPr9oLwhEg@mail.gmail.com>
-Subject: Re: [PATCH] net: wirelesse: wcn36xx: pull allocation outside of
- critical section
-From: Eugene Krasnikov <k.eugene.e@gmail.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Peter Stuge <peter@stuge.se>, "John W. Linville" <linville@tuxdriver.com>,
-        ath9k-devel <ath9k-devel@venema.h4ckr.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hal_ind_mutex suppose to protect msg_ind but with this patch
-allocation will be done outside the critical section.
+Hi Masami,
 
-On Sat, Dec 7, 2013 at 5:13 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
+On Wed, 04 Dec 2013 10:13:37 +0900, Masami Hiramatsu wrote:
+> (2013/12/04 3:26), Alexei Starovoitov wrote:
+>> the only inconvenience so far is to know how parameters are getting
+>> into registers.
+>> on x86-64, arg1 is in rdi, arg2 is in rsi,... I want to improve that
+>> after first step is done.
 >
-> This also simplifies flow-controll as there is now only one if
-> condition with a single branch.
-> ---
->  drivers/net/wireless/ath/wcn36xx/smd.c | 28 +++++++++++++++-------------
->  1 file changed, 15 insertions(+), 13 deletions(-)
->
-> On Thu, Dec 05 2013, Eugene Krasnikov <k.eugene.e@gmail.com> wrote:
->> I think code will look neater if error case will be handled in "else"
->> statement something like: [...]
->
-> How about the following:
->
-> diff --git a/drivers/net/wireless/ath/wcn36xx/smd.c b/drivers/net/wireless/ath/wcn36xx/smd.c
-> index 823631c..ebab2db 100644
-> --- a/drivers/net/wireless/ath/wcn36xx/smd.c
-> +++ b/drivers/net/wireless/ath/wcn36xx/smd.c
-> @@ -2056,22 +2056,24 @@ static void wcn36xx_smd_rsp_process(struct wcn36xx *wcn, void *buf, size_t len)
->         case WCN36XX_HAL_OTA_TX_COMPL_IND:
->         case WCN36XX_HAL_MISSED_BEACON_IND:
->         case WCN36XX_HAL_DELETE_STA_CONTEXT_IND:
-> -               mutex_lock(&wcn->hal_ind_mutex);
->                 msg_ind = kmalloc(sizeof(*msg_ind), GFP_KERNEL);
-> -               if (msg_ind) {
-> -                       msg_ind->msg_len = len;
-> -                       msg_ind->msg = kmalloc(len, GFP_KERNEL);
-> -                       memcpy(msg_ind->msg, buf, len);
-> -                       list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
-> -                       queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
-> -                       wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
-> +               if (!msg_ind) {
-> +                       /*
-> +                        * FIXME: Do something smarter then just
-> +                        * printing an error.
-> +                        */
-> +                       wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
-> +                                   msg_header->msg_type);
-> +                       break;
->                 }
-> +               mutex_lock(&wcn->hal_ind_mutex);
-> +               msg_ind->msg_len = len;
-> +               msg_ind->msg = kmalloc(len, GFP_KERNEL);
-> +               memcpy(msg_ind->msg, buf, len);
-> +               list_add_tail(&msg_ind->list, &wcn->hal_ind_queue);
-> +               queue_work(wcn->hal_ind_wq, &wcn->hal_ind_work);
-> +               wcn36xx_dbg(WCN36XX_DBG_HAL, "indication arrived\n");
->                 mutex_unlock(&wcn->hal_ind_mutex);
-> -               if (msg_ind)
-> -                       break;
-> -               /* FIXME: Do something smarter then just printing an error. */
-> -               wcn36xx_err("Run out of memory while handling SMD_EVENT (%d)\n",
-> -                           msg_header->msg_type);
->                 break;
->         default:
->                 wcn36xx_err("SMD_EVENT (%d) not supported\n",
-> --
-> 1.8.4
->
+> Actually, that part is done by the perf-probe and ftrace dynamic events
+> (kernel/trace/trace_probe.c). I think this generic BPF is good for
+> re-implementing fetch methods. :)
 
+For implementing patch method, it seems that it needs to access to user
+memory, stack and/or current (task_struct - for utask or vma later) from
+the BPF VM as well.  Isn't it OK from the security perspective?
 
+Anyway, I'll take a look at it later if I have time, but I want to get
+the existing/pending implementation merged first. :)
 
--- 
-Best regards,
-Eugene
+Thanks,
+Namhyung
