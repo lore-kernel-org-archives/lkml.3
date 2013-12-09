@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760879Ab3LIIY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:24:58 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:59759 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760858Ab3LIIYy (ORCPT
+	id S1760794Ab3LII1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:27:31 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48631 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753215Ab3LII1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:24:54 -0500
-Message-ID: <52A57E55.40808@atmel.com>
-Date: Mon, 9 Dec 2013 09:24:53 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 9 Dec 2013 03:27:24 -0500
+X-Sasl-enc: upmuPCnCVE0utvgEPaiYmJkZ8s/vktZ2mIpagyMfQeUL 1386577642
+Date: Sun, 8 Dec 2013 17:55:53 -0800
+From: Greg KH <greg@kroah.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm@vger.kernel.org, "'Kamil Debski'" <k.debski@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        m.szyprowski@samsung.com, gautam.vivek@samsung.com,
+        "'Mateusz Krawczuk'" <mat.krawczuk@gmail.com>,
+        "'Yulgon Kim'" <yulgon.kim@samsung.com>,
+        "'Praveen Paneri'" <p.paneri@samsung.com>,
+        "'Anton Tikhomirov'" <av.tikhomirov@samsung.com>,
+        "'Kumar Gala'" <galak@codeaurora.org>
+Subject: Re: [PATCH] usb: ohci-exynos: Change to use phy provided by the
+ generic phy framework
+Message-ID: <20131209015553.GA27542@kroah.com>
+References: <001401ceda8f$67f1ee50$37d5caf0$%han@samsung.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] pinctrl: at91: initialize config parameter to 0
-References: <1386421734-10240-1-git-send-email-alexandre.belloni@free-electrons.com> <1386421734-10240-2-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1386421734-10240-2-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <001401ceda8f$67f1ee50$37d5caf0$%han@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 14:08, Alexandre Belloni :
-> When passing a not initialized config parameter, at91_pinconf_get() would return
-> a bogus value. Fix that by initializing it to zero before using it.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Wed, Nov 06, 2013 at 10:27:49AM +0900, Jingoo Han wrote:
+> Change the phy provider used from the old usb phy specific to a new one
+> using the generic phy framework.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Cc: Kamil Debski <k.debski@samsung.com>
 > ---
->   drivers/pinctrl/pinctrl-at91.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-> index 6446dc804aa7..b0b78f3468ae 100644
-> --- a/drivers/pinctrl/pinctrl-at91.c
-> +++ b/drivers/pinctrl/pinctrl-at91.c
-> @@ -722,7 +722,8 @@ static int at91_pinconf_get(struct pinctrl_dev *pctldev,
->   	unsigned pin;
->   	int div;
->
-> -	dev_dbg(info->dev, "%s:%d, pin_id=%d, config=0x%lx", __func__, __LINE__, pin_id, *config);
-> +	*config = 0;
-> +	dev_dbg(info->dev, "%s:%d, pin_id=%d", __func__, __LINE__, pin_id);
->   	pio = pin_to_controller(info, pin_to_bank(pin_id));
->   	pin = pin_id % MAX_NB_GPIO_PER_BANK;
+> Exynos OHCI driver also uses Exynos USB2.0 PHY. Thus, I make this
+> patch based-on Kamil Debski's patchset for adding Exynos USB 2.0 PHY
+> driver.
+> (http://www.spinics.net/lists/linux-samsung-soc/msg24104.html)
+> 
+>  drivers/usb/host/ohci-exynos.c |   28 ++++++++--------------------
+>  1 file changed, 8 insertions(+), 20 deletions(-)
 
-Beyond this patch, I must say that I am puzzled by this function.
+This has some fuzz when applied to my tree, care to redo it against my
+usb-next branch of the usb.git tree on git.kernel.org?
 
-What I read from the prototype documentation and what I see in different 
-implementations is different...
+thanks,
 
-Linus, can we have a review of this function because it seems not in 
-line with what is used for u300 (but on the other hand looks like the 
-what is returned by pinctrl-exynos5440.c driver for example).
-
-What would be the consequences if we change this function's behavior: I 
-mean use of -EINVAL for pin configuration "available but disabled" as 
-said in include/linux/pinctrl/pinconf.h?
-
-Bye,
--- 
-Nicolas Ferre
+greg k-h
