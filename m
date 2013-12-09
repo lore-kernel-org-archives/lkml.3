@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760914Ab3LIJCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:02:36 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:33894 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755451Ab3LIJC0 (ORCPT
+	id S1760940Ab3LIJEU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:04:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48447 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab3LIJEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:02:26 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: ben-linux@fluff.org, kgene.kim@samsung.com, linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] ARM: SAMSUNG: remove IRQF_DISABLED
-Date: Mon,  9 Dec 2013 10:02:15 +0100
-Message-Id: <1386579735-4065-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <000801cec874$%han@samsung.com>
-References: <000801cec874$%han@samsung.com>
+	Mon, 9 Dec 2013 04:04:13 -0500
+Date: Mon, 9 Dec 2013 01:05:30 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
+Message-ID: <20131209090530.GA4586@kroah.com>
+References: <1384589723.7840.1.camel@phoenix>
+ <1386125959.1974.309@driftwood>
+ <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+ <20131209064654.GA20485@kroah.com>
+ <CAFRkauCQdOyWbck+WtmNxtnenKyPAFNcqqUgcGSb1kAqj56sYA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFRkauCQdOyWbck+WtmNxtnenKyPAFNcqqUgcGSb1kAqj56sYA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the use of the IRQF_DISABLED flag
+On Mon, Dec 09, 2013 at 04:54:29PM +0800, Axel Lin wrote:
+> 2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+> > On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
+> >> 2013/12/4 Rob Landley <rob@landley.net>:
+> >> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
+> >> >>
+> >> >> The deleted variable is always 1 in current code.
+> >> >> Initialize deleted variable to be 0, so delete_path() will be called only
+> >> >> when
+> >> >> necessary.
+> >> >>
+> >> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> >> >
+> >> >
+> >> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
+> >> > nobody's objected to this, you might want to forward it to
+> >> > trivial@kernel.org.
+> >> >
+> >> > That said, you could describe what it _does_ a little more?
+> >>
+> >> I was expecting Greg to pick up this patch.
+> >>
+> >> I thought the description is pretty clear.
+> >> What the patch does is changing the init value of deleted variable to 0.
+> >> The intention of this change is to avoid unnecessary delete_path() call.
+> >
+> > I agree the logic is a bit odd here, but are you seeing an "unnecessary"
+> > delete_path() call happening?  The code has always been like this from
+> > what I can tell...
+> 
+> Honestly, I havn't see the "unnecessary" delete_path() call happening druing my
+> test. I look at the code when I was debugging a hangup issue.
+> (In the end, I think the issue is not related to the devtmpfs code.)
+> But I found the logic for the deleted variable looks odd.
+> There are below possible (unlikely) case:
+> When strchr(nodename, '/') != 0 and
+> 1. If dentry->d_inode is NULL
+> 2. vfs_getattr returns error
+> 3. vfs_unlink returns error except -ENOENT.
+> 
+> In these cases, delete_path() will fail anyway.
+> 
+> Although this is a unlikely case, and I know the code is there since initial
+> commit. But I think it's still good to fix it.
 
-It's a NOOP since 2.6.35 and it will be removed one day.
-
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
----
- arch/arm/mach-s3c24xx/dma.c         | 2 +-
- arch/arm/mach-s3c24xx/simtec-usb.c  | 3 +--
- arch/arm/mach-s3c64xx/mach-smartq.c | 2 +-
- 3 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-s3c24xx/dma.c b/arch/arm/mach-s3c24xx/dma.c
-index 4a65cba3295d..a8dafc174fe3 100644
---- a/arch/arm/mach-s3c24xx/dma.c
-+++ b/arch/arm/mach-s3c24xx/dma.c
-@@ -742,7 +742,7 @@ int s3c2410_dma_request(enum dma_ch channel,
- 		chan->irq_claimed = 1;
- 		local_irq_restore(flags);
- 
--		err = request_irq(chan->irq, s3c2410_dma_irq, IRQF_DISABLED,
-+		err = request_irq(chan->irq, s3c2410_dma_irq, 0,
- 				  client->name, (void *)chan);
- 
- 		local_irq_save(flags);
-diff --git a/arch/arm/mach-s3c24xx/simtec-usb.c b/arch/arm/mach-s3c24xx/simtec-usb.c
-index 2ed2e32430dc..bb3eac6a7697 100644
---- a/arch/arm/mach-s3c24xx/simtec-usb.c
-+++ b/arch/arm/mach-s3c24xx/simtec-usb.c
-@@ -78,8 +78,7 @@ static void usb_simtec_enableoc(struct s3c2410_hcd_info *info, int on)
- 
- 	if (on) {
- 		ret = request_irq(BAST_IRQ_USBOC, usb_simtec_ocirq,
--				  IRQF_DISABLED | IRQF_TRIGGER_RISING |
--				   IRQF_TRIGGER_FALLING,
-+				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 				  "USB Over-current", info);
- 		if (ret != 0) {
- 			printk(KERN_ERR "failed to request usb oc irq\n");
-diff --git a/arch/arm/mach-s3c64xx/mach-smartq.c b/arch/arm/mach-s3c64xx/mach-smartq.c
-index a6b338fd0470..08a889c141da 100644
---- a/arch/arm/mach-s3c64xx/mach-smartq.c
-+++ b/arch/arm/mach-s3c64xx/mach-smartq.c
-@@ -106,7 +106,7 @@ static void smartq_usb_host_enableoc(struct s3c2410_hcd_info *info, int on)
- 
- 	if (on) {
- 		ret = request_irq(gpio_to_irq(S3C64XX_GPL(10)),
--				  smartq_usb_host_ocirq, IRQF_DISABLED |
-+				  smartq_usb_host_ocirq,
- 				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 				  "USB host overcurrent", info);
- 		if (ret != 0)
--- 
-1.8.3.2
-
+Have you tested your patch to verify nothing breaks?
