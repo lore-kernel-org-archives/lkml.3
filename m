@@ -1,158 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3LIXP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:15:28 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:50682 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab3LIXPV (ORCPT
+	id S1761282Ab3LIXQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:16:00 -0500
+Received: from gate.crashing.org ([63.228.1.57]:43503 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753280Ab3LIXP4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:15:21 -0500
-Date: Mon, 9 Dec 2013 16:15:15 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Tang, Feng" <feng.tang@intel.com>,
-        "sfi-devel@simplefirmware.org" <sfi-devel@simplefirmware.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v3 5/6] ACPI/SFI: Fix wrong <acpi/acpi.h> inclusion in
- SFI/ACPI wrapper - acpi_disabled linkage.
-Message-ID: <20131209231515.GA4699@google.com>
-References: <cover.1385094640.git.lv.zheng@intel.com>
- <cover.1386316208.git.lv.zheng@intel.com>
- <ba1e799968e59a07964a7e693d623b41e6d62110.1386316208.git.lv.zheng@intel.com>
- <1AE640813FDE7649BE1B193DEA596E88024950DB@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88024950DB@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Dec 2013 18:15:56 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
+Subject: Re: [PATCH 2/2] memory: ti-aemif: add bindings for AEMIF driver
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <5294CC0C.9000203@ti.com>
+Date: Mon, 9 Dec 2013 17:09:11 -0600
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        devicetree <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <01B6F752-AD19-437E-B6A6-CC167B6C34BF@kernel.crashing.org>
+References: <1384962416-14862-1-git-send-email-ivan.khoronzhuk@ti.com> <1384962416-14862-3-git-send-email-ivan.khoronzhuk@ti.com> <817E4263-5E61-4471-AED0-5C97FD2B902F@kernel.crashing.org> <5294CC0C.9000203@ti.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+X-Mailer: Apple Mail (2.1822)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 02:53:00PM +0000, Zheng, Lv wrote:
-> Hi,
-> 
-> > From: Zheng, Lv
-> > Sent: Friday, December 06, 2013 4:52 PM
-> > To: Wysocki, Rafael J; Brown, Len
-> > 
-> > In Linux kernel, ACPICA is wrapped and safely exported by CONFIG_ACPI.  So
-> > all external modules should depend on CONFIG_ACPI rather than using ACPICA
-> > header directly for stubbing.  But if we moves <acpi/acpi.h> inclusions
-> > into "#ifdef CONFIG_ACPI", build breakge can help to detect wrong ACPICA
-> > dependent modules.
-> > 
-> > One of the build breakage is:
-> > arch/x86/pci/mmconfig-shared.c:389:1: error: unknown type name 'acpi_status'
-> > arch/x86/pci/mmconfig-shared.c:389:47: warning: 'struct acpi_resource' declared inside parameter list [enabled by default]
-> > arch/x86/pci/mmconfig-shared.c:389:47: warning: its scope is only this definition or declaration, which is probably not what you want
-> > [enabled by default]
-> > arch/x86/pci/mmconfig-shared.c: In function 'check_mcfg_resource':
-> > arch/x86/pci/mmconfig-shared.c:392:33: error: storage size of 'address' isn't known
-> > arch/x86/pci/mmconfig-shared.c:393:2: error: unknown type name 'acpi_status'
-> > arch/x86/pci/mmconfig-shared.c:395:9: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:395:19: error: 'ACPI_RESOURCE_TYPE_FIXED_MEMORY32' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c:395:19: note: each undeclared identifier is reported only once for each function it appears in
-> > arch/x86/pci/mmconfig-shared.c:397:8: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:399:11: error: 'AE_OK' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c:400:35: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:401:33: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:402:19: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:404:11: error: 'AE_CTRL_TERMINATE' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c:407:10: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:407:20: error: 'ACPI_RESOURCE_TYPE_ADDRESS32' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c:408:10: error: dereferencing pointer to incomplete type
-> > arch/x86/pci/mmconfig-shared.c:408:20: error: 'ACPI_RESOURCE_TYPE_ADDRESS64' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c:411:2: error: implicit declaration of function 'acpi_resource_to_address64' [-Werror=implicit-
-> > function-declaration]
-> > arch/x86/pci/mmconfig-shared.c:412:2: error: implicit declaration of function 'ACPI_FAILURE' [-Werror=implicit-function-declaration]
-> > arch/x86/pci/mmconfig-shared.c:414:31: error: 'ACPI_MEMORY_RANGE' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c:392:33: warning: unused variable 'address' [-Wunused-variable]
-> > arch/x86/pci/mmconfig-shared.c: At top level:
-> > arch/x86/pci/mmconfig-shared.c:425:1: error: unknown type name 'acpi_status'
-> > arch/x86/pci/mmconfig-shared.c:425:41: error: unknown type name 'acpi_handle'
-> > arch/x86/pci/mmconfig-shared.c: In function 'is_acpi_reserved':
-> > arch/x86/pci/mmconfig-shared.c:447:2: error: implicit declaration of function 'acpi_get_devices' [-Werror=implicit-function-
-> > declaration]
-> > arch/x86/pci/mmconfig-shared.c:447:30: error: 'find_mboard_resource' undeclared (first use in this function)
-> > arch/x86/pci/mmconfig-shared.c: At top level:
-> > arch/x86/pci/mmconfig-shared.c:389:20: warning: 'check_mcfg_resource' defined but not used [-Wunused-function]
-> 
-> Let me say something about this error messages.  Someone may face difficulties to reproduce it.
-> Currently, this message cannot be seen in any kernel build.
-> This is because this patch series doesn't include a fix to remove <acpi/acpi.h> inclusion from linux/sfi_acpi.h.
-> To achieve this, I have offered 2 options:
-> 1. Redefining ACPICA table stuff for CONFIG_ACPI=n environment, or
-> 2. Implementing stubs for all ACPICA functions/globals/macros and introducing <linux/acpica.h> (where acpi/acpi.h is included) as a top level header.
-> 3. Other solutions...
-> 
-> If we choose solution 1, then this issue is exposed by a build test where CONFIG_ACPI=n and CONFIG_SFI=y.
-> Since we haven't decided what to do for the table structures and it is really not a good approach to achieve the build safety for mmconfig-share.c by relying on link-stage optimization rather than compile-stage referencing.  IMO, we need to sort it out, thus I make it a part of this patchset.
-> 
-> Well, if we choose solution 2, this patch can only help to reduce the size of the kernel image.
 
-OK, I assume you will make sure one of these fixes gets merged before the
-change that causes the breakage, so bisection continues to work.
-Therefore, I think it's best if both changes are merged through the same
-tree, and I won't apply this via the PCI tree.  Let me know if you need me
-to do something.
+On Nov 26, 2013, at 10:27 AM, Grygorii Strashko <grygorii.strashko@ti.com> wrote:
 
-Bjorn
-
-> > 
-> > The root cause of this breakage is:
-> > 1. The following commit doesn't protect ACPICA functions like
-> >    acpi_get_devices()/acpi_walk_resources()/acpi_resource_to_address64() in
-> >    CONFIG_SFI=y and CONFIG_ACPI=n environment:
-> >     Commit: 5f0db7a2fb78895a197f64e548333b3bbd433996
-> >     Author: Feng Tang <feng.tang@intel.com>
-> >     Subject: SFI: Hook PCI MMCONFIG
-> >     First check ACPI, and if that fails, ask SFI to find the MCFG.
-> >    So it actually depends on the logic that in !CONFIG_ACPI builds, code
-> >    blocks under "if (!acpi_disabled)" will not be linked in.
-> > 
-> > This patch fixes this issue by introducing a stub for MCFG entry checker
-> > is_acpi_reserved() in !CONFIG_ACPI builds.
-> > 
-> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Len Brown <lenb@kernel.org>
-> > Cc: Feng Tang <feng.tang@intel.com>
-> > Cc: sfi-devel@simplefirmware.org
-> > Cc: linux-pci@vger.kernel.org
-> > ---
-> >  arch/x86/pci/mmconfig-shared.c |    7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-> > index 248642f..2c04b22 100644
-> > --- a/arch/x86/pci/mmconfig-shared.c
-> > +++ b/arch/x86/pci/mmconfig-shared.c
-> > @@ -369,6 +369,7 @@ static int __init pci_mmcfg_check_hostbridge(void)
-> >  	return !list_empty(&pci_mmcfg_list);
-> >  }
-> > 
-> > +#ifdef CONFIG_ACPI
-> >  static acpi_status check_mcfg_resource(struct acpi_resource *res, void *data)
-> >  {
-> >  	struct resource *mcfg_res = data;
-> > @@ -435,6 +436,12 @@ static int is_acpi_reserved(u64 start, u64 end, unsigned not_used)
-> > 
-> >  	return mcfg_res.flags;
-> >  }
-> > +#else
-> > +static inline int is_acpi_reserved(u64 start, u64 end, unsigned not_used)
-> > +{
-> > +	return 0;
-> > +}
-> > +#endif
-> > 
-> >  typedef int (*check_reserved_t)(u64 start, u64 end, unsigned type);
-> > 
-> > --
-> > 1.7.10
+> On 11/22/2013 11:04 PM, Kumar Gala wrote:
+>> 
+>> On Nov 20, 2013, at 9:46 AM, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com> wrote:
+>> 
+>>> Add bindings for AEMIF controller drivers/memory/ti-aemif.c
+>>> 
+>> 
+>> Binding shouldn’t normally refer to code.
+>> 
+>> Just saying something like:
+>> 
+>> Adding binging for TI Async External Memory Interface (AEMIF) controller.
+>> 
+>> 
+>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>> ---
+>>> .../bindings/memory-controllers/ti-aemif.txt       |  198 ++++++++++++++++++++
+>>> 1 file changed, 198 insertions(+)
+>>> create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>> 
+>>> diff --git a/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>> new file mode 100644
+>>> index 0000000..be0c0cb
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+>>> @@ -0,0 +1,198 @@
+>>> +* Device tree bindings for Texas instruments AEMIF controller
+>>> +
+>>> +Th Async External Memory Interface (EMIF16/AEMIF) controller is intended to
+>> 
+>> The?
+>> 
+>>> +provide a glue-less interface to a variety of asynchronous memory devices like
+>>> +ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
+>>> +can be accessed at any given time via four chip selects with 64M byte access
+>>> +per chip select. Synchronous memories such as DDR1 SD RAM, SDR SDRAM
+>>> +and Mobile SDR are not supported.
+>>> +
+>>> +Documentation:
+>>> +Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
+>>> +OMAP-L138 - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
+>>> +Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
+>>> +
+>>> +Required properties:
+>>> +
+>>> +- compatible:		"ti,davinci-aemif"
+>>> +			"ti,keystone-aemif"
+>>> +			"ti,omap-L138-aemif"
+>>> +
+>>> +- #address-cells:	Must be 2. The first cell is the memory partition
+>>> +			number. The 0 partition is for chip selects. And the
+>>> +			second cell is the offset into the partition, for the 0
+>>> +			partition it corresponds to chip select offset.
+>>> +
+>> 
+>> Is the first cell just the chip select number?
 > 
+> No. It's rather memory range/partition number. Now there are 2 partitions:
+> - control partition which is common for all CS interfaces
+> - CS-specific partition/range
+> (this one can be splitted according to specific SoC requirement)
+> 
+> As per Keystone TCI6638K2K
+> Datasheet http://www.ti.com/lit/ds/sprs836d/sprs836d.pdf:
+> 
+> 1) the memory range 0 will be from 0x30000000 size 0x10000000:
+> 00 3000 0000 - 00 33FF FFFF 64M EMIF16 CE0
+> 00 3400 0000 - 00 37FF FFFF 64M EMIF16 CE1
+> 00 3800 0000 - 00 3BFF FFFF 64M EMIF16 CE2
+> 00 3C00 0000 - 00 3FFF FFFF 64M EMIF16 CE3
+> 
+> 2) the memory range 1:
+> 00 2100 0A00 - 00 2100 0AFF 256 AEMIF Config
+> 
+> And AEMIF node contains definition:
+> ranges = <0 0 0x30000000 0x10000000
+> 	  1 0 0x21000A00 0x0000100>;
+> 
+> 
+> Child node has (nand):
+> reg = <0 0 0x4000000 (cs0)
+>        - or - 0 0x4000000 0x4000000 (cs1)
+>        - or - 0 0x8000000 0x4000000 (cs2)
+> 	- or - 0 0xC000000 0x4000000 (cs3)
+> 	- and -
+>        1 0 0x0000100>; (for all cs)
+> 
+> For example for cs2 child node the resulting mem range 0 will be calculated as
+> 
+> from: 0x30000000 + (0 0x8000000 - 0 0)
+> size: 0x4000000
+> 
+> We don't encode CS number in reg/ranges, because it will allow simply change 
+> AEMIF DT definitions depending on each SoC
+> (AEMIF CS memory range can be continuous as above or not, if not - additional
+> range/partition can be added and child device can select the proper one).
+
+This is quite confusing.  I think the ranges property needs far more description as part of the top level controller node.  It spec out what the various fields are in the ranges property.
+
+- k
