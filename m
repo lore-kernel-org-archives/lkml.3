@@ -1,124 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761172Ab3LIKwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:52:09 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42524 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761135Ab3LIKwE (ORCPT
+	id S932529Ab3LIKxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:53:04 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36120 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758819Ab3LIKxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:52:04 -0500
-Date: Mon, 9 Dec 2013 10:51:55 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/2] pinctrl: tegra: Add devicetree binding document
- for Tegra124
-Message-ID: <20131209105155.GC29303@e106331-lin.cambridge.arm.com>
-References: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com>
+	Mon, 9 Dec 2013 05:53:01 -0500
+Subject: [PATCH -tip v5 00/18] kprobes: introduce NOKPROBE_SYMBOL(),
+ cleanup and fixes crash bugs
+To: Ingo Molnar <mingo@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Date: Mon, 09 Dec 2013 10:47:18 +0000
+Message-ID: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 10:32:19AM +0000, Laxman Dewangan wrote:
-> This device tree binding document describes the Tegra124 pincontrol
-> DT bindings. This document lists all valid properties, names, mux
-> options of Tegra124 pins.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> Changes from V1:
-> - Referred the dt-binding header file on describing the nodes.
-> 
->  .../bindings/pinctrl/nvidia,tegra124-pinmux.txt    |  147 ++++++++++++++++++++
->  1 files changed, 147 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
-> new file mode 100644
-> index 0000000..12ef772
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
-> @@ -0,0 +1,147 @@
-> +NVIDIA Tegra124 pinmux controller
-> +
-> +The Tegra124 pinctrl binding is very similar to the Tegra20 and Tegra30
-> +pinctrl binding, as described in nvidia,tegra20-pinmux.txt and
-> +nvidia,tegra30-pinmux.txt. In fact, this document assumes that binding as
-> +a baseline, and only documents the differences between the two bindings.
-> +
-> +Required properties:
-> +- compatible: "nvidia,tegra124-pinmux"
-> +- reg: Should contain the register physical address and length for each of
-> +  the pad control and mux registers. The first bank of address must be the
-> +  driver strength pad control register address and second bank address must
-> +  be pinmux register address.
+Hi,
+Here is the version 5 of NOKPORBE_SYMBOL series.
 
-The wording here could be improved. The first sentence implies an entry
-for each individual register but I assume these are actually banks of
-registers (the sizes in the exanple imply this). The second sentence is
-more sepcific.
+This version includes the cleanup patches and features
+(make blacklist visible, module support) again.
 
-How about something like:
+And I've added a patch to show all the blacklist
+functions which includes .entry.text and
+.kprobes.text(if exist) so that user tools can
+check the blacklisted functions before setting
+new probe.
 
-reg: Should contain a list of base address and size pairs for:
- * first entry - the driver strength and pad control registers
- * second entry - the pinmux registers
+This series will fix the kernel crashable "qualitative"
+bugs of kprobes even with lockdep. But we still have
+"quantitative" issue which we are discussing on LKML.
 
-Are these banks well defined? Where do they end?
+https://lkml.org/lkml/2013/12/3/788
 
-Is there likely to be anything built as an extension of this? Does it
-possibly make sense to use reg-names?
+I'd like to send another series for solving this
+"quantitative" issue.
 
-> +
-> +Tegra124 adds the following optional properties for pin configuration subnodes.
-> +The macros for options are defined in the
-> +	include/dt-binding/pinctrl/pinctrl-tegra.h.
-> +- nvidia,enable-input: Integer. Enable the pin's input path.
-> +		enable :TEGRA_PIN_ENABLE0 and
-> +		disable or output only: TEGRA_PIN_DISABLE.
-> +- nvidia,open-drain: Integer.
-> +		enable: TEGRA_PIN_ENABLE.
-> +		disable: TEGRA_PIN_DISABLE.
-> +- nvidia,lock: Integer. Lock the pin configuration against further changes
-> +    until reset.
-> +		enable: TEGRA_PIN_ENABLE.
-> +		disable: TEGRA_PIN_DISABLE.
-> +- nvidia,io-reset: Integer. Reset the IO path.
-> +		enable: TEGRA_PIN_ENABLE.
-> +		disable: TEGRA_PIN_DISABLE.
-> +- nvidia,rcv-sel: Integer. Select VIL/VIH receivers.
-> +		normal: TEGRA_PIN_DISABLE
-> +		high: TEGRA_PIN_ENABLE
-> +- nvidia,drive-type: Integer. Valid range 0...3.
+Thank you,
+---
 
-What do the values in this range mean?
+Masami Hiramatsu (18):
+      kprobes: Prohibit probing on .entry.text code
+      kprobes: Introduce NOKPROBE_SYMBOL() macro for blacklist
+      [BUGFIX] kprobes/x86: Prohibit probing on debug_stack_*
+      [BUGFIX] x86: Prohibit probing on native_set_debugreg
+      [BUGFIX] x86: Prohibit probing on thunk functions and restore
+      kprobes/x86: Call exception handlers directly from do_int3/do_debug
+      kprobes/x86: Allow probe on some kprobe preparation functions
+      kprobes: Allow probe on some kprobe functions
+      ftrace/kprobes: Allow probing on some preparation functions
+      x86: Use NOKPROBE_SYMBOL() instead of __kprobes annotation
+      kprobes: Use NOKPROBE_SYMBOL macro instead of __kprobes
+      ftrace/kprobes: Use NOKPROBE_SYMBOL macro in ftrace
+      notifier: Use NOKPROBE_SYMBOL macro in notifier
+      sched: Use NOKPROBE_SYMBOL macro in sched
+      kprobes: Show blacklist entries via debugfs
+      kprobes: Support blacklist functions in module
+      kprobes: Use NOKPROBE_SYMBOL() in sample modules
+      kprobes/x86: Use kprobe_blacklist for .kprobes.text and .entry.text
 
-[...]
 
-> +Example:
-> +
-> +	pinmux: pinmux {
-> +		compatible = "nvidia,tegra124-pinmux";
-> +		reg = <0x70000868 0x164		/* Pad control registers */
-> +		       0x70003000 0x434>;	/* PinMux registers */
+ Documentation/kprobes.txt                |   24 +-
+ arch/x86/include/asm/asm.h               |    7 
+ arch/x86/include/asm/kprobes.h           |    2 
+ arch/x86/include/asm/traps.h             |    2 
+ arch/x86/kernel/alternative.c            |    3 
+ arch/x86/kernel/apic/hw_nmi.c            |    3 
+ arch/x86/kernel/cpu/common.c             |    4 
+ arch/x86/kernel/cpu/perf_event.c         |    3 
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |    3 
+ arch/x86/kernel/dumpstack.c              |    9 -
+ arch/x86/kernel/entry_32.S               |   33 --
+ arch/x86/kernel/entry_64.S               |   20 -
+ arch/x86/kernel/hw_breakpoint.c          |    6 
+ arch/x86/kernel/kprobes/core.c           |  120 ++++----
+ arch/x86/kernel/kprobes/ftrace.c         |   17 +
+ arch/x86/kernel/kprobes/opt.c            |   32 +-
+ arch/x86/kernel/kvm.c                    |    4 
+ arch/x86/kernel/nmi.c                    |   18 +
+ arch/x86/kernel/paravirt.c               |    5 
+ arch/x86/kernel/traps.c                  |   30 +-
+ arch/x86/lib/thunk_32.S                  |    3 
+ arch/x86/lib/thunk_64.S                  |    3 
+ arch/x86/mm/fault.c                      |   28 +-
+ include/asm-generic/vmlinux.lds.h        |    9 +
+ include/linux/kprobes.h                  |   22 +
+ include/linux/module.h                   |    5 
+ kernel/kprobes.c                         |  461 +++++++++++++++++++-----------
+ kernel/module.c                          |    6 
+ kernel/notifier.c                        |   22 +
+ kernel/sched/core.c                      |    7 
+ kernel/trace/trace_event_perf.c          |    5 
+ kernel/trace/trace_kprobe.c              |   53 ++-
+ kernel/trace/trace_probe.c               |   78 +++--
+ kernel/trace/trace_probe.h               |    4 
+ samples/kprobes/jprobe_example.c         |    1 
+ samples/kprobes/kprobe_example.c         |    3 
+ samples/kprobes/kretprobe_example.c      |    2 
+ 37 files changed, 649 insertions(+), 408 deletions(-)
 
-Nit: please bracket these individually.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Thanks,
-Mark.
