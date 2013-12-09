@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739Ab3LIOO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 09:14:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59370 "EHLO mx1.redhat.com"
+	id S1760802Ab3LIOQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 09:16:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65513 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab3LIOO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 09:14:27 -0500
-Message-ID: <52A5D03C.1040100@redhat.com>
-Date: Mon, 09 Dec 2013 09:14:20 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755788Ab3LIOQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 09:16:32 -0500
+Date: Mon, 9 Dec 2013 15:16:24 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tool: Ensure forward progress unwinding frames
+Message-ID: <20131209141624.GC30360@krava.brq.redhat.com>
+References: <1385942509-11445-1-git-send-email-dsahern@gmail.com>
+ <52A4B065.9080804@gmail.com>
+ <20131209100205.GA1242@krava.brq.redhat.com>
+ <52A5CE1B.3030007@gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/18] mm: Clear pmd_numa before invalidating
-References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-4-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386572952-1191-4-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A5CE1B.3030007@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 02:08 AM, Mel Gorman wrote:
-> pmdp_invalidate clears the present bit without taking into account that it
-> might be in the _PAGE_NUMA bit leaving the PMD in an unexpected state. Clear
-> pmd_numa before invalidating.
+On Mon, Dec 09, 2013 at 07:05:15AM -0700, David Ahern wrote:
+> On 12/9/13, 3:02 AM, Jiri Olsa wrote:
+> >>On 12/1/13, 5:01 PM, David Ahern wrote:
+> >>>The dwarf option for callstacks is getting stuck on the unwind and showing
+> >>>repeated frames. For example,
+> >>>
+> >>>qemu-system-x86 13759 [001] 287663.084957: syscalls:sys_enter_futex: uaddr: 0x7f770a958700, op: 0x00000081, val: 0x00000001, utime: 0x7f75ea
+> >>>             7f7705fd23ea __lll_unlock_wake (/lib64/libpthread-2.14.90.so)
+> >>>             7f7705fcf045 _L_unlock_649 (/lib64/libpthread-2.14.90.so)
+> >>>             7f7705fcf045 _L_unlock_649 (/lib64/libpthread-2.14.90.so)
+> >>>             7f7705fcf045 _L_unlock_649 (/lib64/libpthread-2.14.90.so)
+> >>>             7f7705fcf045 _L_unlock_649 (/lib64/libpthread-2.14.90.so)
+> >>>             7f7705fcf045 _L_unlock_649 (/lib64/libpthread-2.14.90.so)
+> >>>             ...
+> >
+> >I wonder this is us or libunwind bug (or cfi code) ;-)
+> >
+> >looks like you can reproduce..? are you using the latest libunwind?
 > 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> $ rpm -q libunwind
+> libunwind-0.99-2.20110424git1e10c293.fc16.x86_64
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+[jolsa@krava libunwind]$ rpm -q libunwind
+libunwind-1.1-2.fc19.x86_64
 
-
--- 
-All rights reversed
+;-)
