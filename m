@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3LIXvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:51:17 -0500
+	id S1751348Ab3LIXvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:51:14 -0500
 Received: from mga02.intel.com ([134.134.136.20]:45379 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab3LIXvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:51:11 -0500
+	id S1750814Ab3LIXvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 18:51:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,861,1378882800"; 
-   d="scan'208";a="421949711"
+   d="scan'208";a="421949715"
 From: David Cohen <david.a.cohen@linux.intel.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, mina86@mina86.com,
         stern@rowland.harvard.edu, David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH v7 0/5] add gadget quirk to adapt f_fs for DWC3
-Date: Mon,  9 Dec 2013 15:55:33 -0800
-Message-Id: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com>
+Subject: [PATCH v7 4/5] usb: f_fs: check quirk to pad epout buf size when not aligned to maxpacketsize
+Date: Mon,  9 Dec 2013 15:55:37 -0800
+Message-Id: <1386633338-10919-5-git-send-email-david.a.cohen@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com>
+References: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Michal Nazarewicz <mina86@mina86.com>
 
-These patches are a proposal to add gadget quirks in an immediate objective to
-adapt f_fs when using DWC3 controller. But the quirk solution is generic and
-can be used by other controllers to adapt gadget functions to their
-non-standard restrictions.
+Check gadget.quirk_ep_out_aligned_size to decide if buffer size requires
+to be aligned to maxpacketsize of an out endpoint.  ffs_epfile_io() needs
+to pad epout buffer to match above condition if quirk is found.
 
-This change is necessary to make Android's adbd service to work on Intel
-Merrifield with f_fs instead of out-of-tree android gadget.
-
-This new patch set was tested and validated in my environment:
- - Intel Merrifield was able to use DWC3/f_fs with adbd service (it wasn't
-   before).
-
-Changes from v6 to v7:
- - Downgraded patch set version to v5 as per Felipe Balbi request, with some
-   changes:
-   - usb_ep_align_maxpacketsize() macro was change to usp_ep_align_maybe()
-     in order to check gadget->quirk_ep_out_aligned_size internally.
-   - updated patch 4/5 to use new macro usp_ep_align_maybe() and to fix
-     following compilation warning:
-     $ drivers/usb/gadget/f_fs.c: In function 'ffs_epfile_io':
-     $ drivers/usb/gadget/f_fs.c:857:124: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
 ---
-David Cohen (3):
-  usb: gadget: move bitflags to the end of usb_gadget struct
-  usb: gadget: add quirk_ep_out_aligned_size field to struct usb_gadget
-  usb: dwc3: set gadget's quirk ep_out_align_size
+ drivers/usb/gadget/f_fs.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
-Michal Nazarewicz (2):
-  usb: gadget: f_fs: remove loop from I/O function
-  usb: f_fs: check quirk to pad epout buf size when not aligned to
-    maxpacketsize
-
- drivers/usb/dwc3/gadget.c  |   6 +++
- drivers/usb/gadget/f_fs.c  | 115 +++++++++++++++++++++++----------------------
- include/linux/usb/gadget.h |  39 +++++++++++----
- 3 files changed, 94 insertions(+), 66 deletions(-)
-
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index efa1152a4c15..918c21885d49 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -755,9 +755,10 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 			     char __user *buf, size_t len, int read)
+ {
+ 	struct ffs_epfile *epfile = file->private_data;
++	struct usb_gadget *gadget = epfile->ffs->gadget;
+ 	struct ffs_ep *ep;
+ 	char *data = NULL;
+-	ssize_t ret;
++	ssize_t ret, data_len;
+ 	int halt;
+ 
+ 	/* Are we still active? */
+@@ -790,7 +791,13 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 
+ 	/* Allocate & copy */
+ 	if (!halt) {
+-		data = kmalloc(len, GFP_KERNEL);
++		/*
++		 * Controller may require buffer size to be aligned to
++		 * maxpacketsize of an out endpoint.
++		 */
++		data_len = read ? usb_ep_align_maybe(gadget, ep->ep, len) : len;
++
++		data = kmalloc(data_len, GFP_KERNEL);
+ 		if (unlikely(!data))
+ 			return -ENOMEM;
+ 
+@@ -825,7 +832,7 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 		req->context  = &done;
+ 		req->complete = ffs_epfile_io_complete;
+ 		req->buf      = data;
+-		req->length   = len;
++		req->length   = data_len;
+ 
+ 		ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
+ 
+@@ -837,9 +844,17 @@ static ssize_t ffs_epfile_io(struct file *file,
+ 			ret = -EINTR;
+ 			usb_ep_dequeue(ep->ep, req);
+ 		} else {
++			/*
++			 * XXX We may end up silently droping data here.
++			 * Since data_len (i.e. req->length) may be bigger
++			 * than len (after being rounded up to maxpacketsize),
++			 * we may end up with more data then user space has
++			 * space for.
++			 */
+ 			ret = ep->status;
+ 			if (read && ret > 0 &&
+-			    unlikely(copy_to_user(buf, data, ret)))
++			    unlikely(copy_to_user(buf, data,
++						  min_t(size_t, ret, len))))
+ 				ret = -EFAULT;
+ 		}
+ 	}
 -- 
 1.8.4.2
 
