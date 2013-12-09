@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760563Ab3LIFee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 00:34:34 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58135 "EHLO
+	id S1760587Ab3LIFet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 00:34:49 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61198 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760259Ab3LIFeU (ORCPT
+	with ESMTP id S1760156Ab3LIFeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 00:34:20 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-8e-52a55658926b
+	Mon, 9 Dec 2013 00:34:19 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-8b-52a55657101a
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 14/14] tools lib traceevent: Get rid of die() in some string conversion funcitons
-Date: Mon,  9 Dec 2013 14:34:11 +0900
-Message-Id: <1386567251-22751-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 13/14] tools lib traceevent: Refactor test_filter() to get rid of die()
+Date: Mon,  9 Dec 2013 14:34:10 +0900
+Message-Id: <1386567251-22751-14-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
 References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
@@ -25,143 +25,266 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those functions are for stringify filter arguments.  As caller of
-those functions handles NULL string properly, it seems that it's
-enough to return NULL rather than calling die().
+The test_filter() function is for testing given filter is matched to a
+given record.  However it doesn't handle error cases properly so add a
+new argument error_str to save error info during the test and also
+pass it to internal test functions.
+
+For now, it just save the error but does nothing with it.  Maybe it
+can be given by user through pevent_filter_match() later.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/parse-filter.c | 51 ++++++++++++++++++++++---------------
- 1 file changed, 31 insertions(+), 20 deletions(-)
+ tools/lib/traceevent/event-parse.h  |   1 +
+ tools/lib/traceevent/parse-filter.c | 102 ++++++++++++++++++++++--------------
+ 2 files changed, 65 insertions(+), 38 deletions(-)
 
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 6e23f197175f..a1d8b2792e3a 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -836,6 +836,7 @@ struct event_filter {
+ 
+ struct event_filter *pevent_filter_alloc(struct pevent *pevent);
+ 
++#define FILTER_ERROR		-3
+ #define FILTER_NONE		-2
+ #define FILTER_NOEXIST		-1
+ #define FILTER_MISS		0
 diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 8a5b7a74b44e..ff95da94eee2 100644
+index 4d395e8b88bb..8a5b7a74b44e 100644
 --- a/tools/lib/traceevent/parse-filter.c
 +++ b/tools/lib/traceevent/parse-filter.c
-@@ -2108,7 +2108,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 				default:
- 					break;
- 				}
--				str = malloc_or_die(6);
-+				str = malloc(6);
-+				if (str == NULL)
-+					break;
- 				if (val)
- 					strcpy(str, "TRUE");
- 				else
-@@ -2131,7 +2133,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 		}
- 
- 		len = strlen(left) + strlen(right) + strlen(op) + 10;
--		str = malloc_or_die(len);
-+		str = malloc(len);
-+		if (str == NULL)
-+			break;
- 		snprintf(str, len, "(%s) %s (%s)",
- 			 left, op, right);
- 		break;
-@@ -2149,7 +2153,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 			right_val = 0;
- 		if (right_val >= 0) {
- 			/* just return the opposite */
--			str = malloc_or_die(6);
-+			str = malloc(6);
-+			if (str == NULL)
-+				break;
- 			if (right_val)
- 				strcpy(str, "FALSE");
- 			else
-@@ -2157,8 +2163,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 			break;
- 		}
- 		len = strlen(right) + strlen(op) + 3;
--		str = malloc_or_die(len);
--		snprintf(str, len, "%s(%s)", op, right);
-+		str = malloc(len);
-+		if (str)
-+			snprintf(str, len, "%s(%s)", op, right);
- 		break;
- 
- 	default:
-@@ -2174,9 +2181,9 @@ static char *val_to_str(struct event_filter *filter, struct filter_arg *arg)
- {
- 	char *str;
- 
--	str = malloc_or_die(30);
--
--	snprintf(str, 30, "%lld", arg->value.val);
-+	str = malloc(30);
-+	if (str)
-+		snprintf(str, 30, "%lld", arg->value.val);
- 
- 	return str;
- }
-@@ -2231,12 +2238,13 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
- 		op = "^";
- 		break;
- 	default:
--		die("oops in exp");
-+		break;
+@@ -1698,8 +1698,8 @@ int pevent_filter_event_has_trivial(struct event_filter *filter,
  	}
+ }
  
- 	len = strlen(op) + strlen(lstr) + strlen(rstr) + 4;
--	str = malloc_or_die(len);
--	snprintf(str, len, "%s %s %s", lstr, op, rstr);
-+	str = malloc(len);
-+	if (str)
-+		snprintf(str, len, "%s %s %s", lstr, op, rstr);
- out:
- 	free(lstr);
- 	free(rstr);
-@@ -2282,9 +2290,9 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
- 			op = "<=";
+-static int test_filter(struct event_format *event,
+-		       struct filter_arg *arg, struct pevent_record *record);
++static int test_filter(struct event_format *event, struct filter_arg *arg,
++		       struct pevent_record *record, char **error_str);
  
- 		len = strlen(lstr) + strlen(op) + strlen(rstr) + 4;
--		str = malloc_or_die(len);
--		sprintf(str, "%s %s %s", lstr, op, rstr);
--
-+		str = malloc(len);
-+		if (str)
-+			sprintf(str, "%s %s %s", lstr, op, rstr);
- 		break;
+ static const char *
+ get_comm(struct event_format *event, struct pevent_record *record)
+@@ -1745,15 +1745,17 @@ get_value(struct event_format *event,
+ }
  
+ static unsigned long long
+-get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record);
++get_arg_value(struct event_format *event, struct filter_arg *arg,
++	      struct pevent_record *record, char **error_str);
+ 
+ static unsigned long long
+-get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
++get_exp_value(struct event_format *event, struct filter_arg *arg,
++	      struct pevent_record *record, char **error_str)
+ {
+ 	unsigned long long lval, rval;
+ 
+-	lval = get_arg_value(event, arg->exp.left, record);
+-	rval = get_arg_value(event, arg->exp.right, record);
++	lval = get_arg_value(event, arg->exp.left, record, error_str);
++	rval = get_arg_value(event, arg->exp.right, record, error_str);
+ 
+ 	switch (arg->exp.type) {
+ 	case FILTER_EXP_ADD:
+@@ -1788,39 +1790,44 @@ get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_
+ 
+ 	case FILTER_EXP_NOT:
  	default:
-@@ -2322,10 +2330,11 @@ static char *str_to_str(struct event_filter *filter, struct filter_arg *arg)
+-		die("error in exp");
++		if (*error_str == NULL)
++			*error_str = "invalid expression type";
+ 	}
+ 	return 0;
+ }
  
- 		len = strlen(arg->str.field->name) + strlen(op) +
- 			strlen(arg->str.val) + 6;
--		str = malloc_or_die(len);
--		snprintf(str, len, "%s %s \"%s\"",
--			 arg->str.field->name,
--			 op, arg->str.val);
-+		str = malloc(len);
-+		if (str) {
-+			snprintf(str, len, "%s %s \"%s\"",
-+				 arg->str.field->name, op, arg->str.val);
+ static unsigned long long
+-get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
++get_arg_value(struct event_format *event, struct filter_arg *arg,
++	      struct pevent_record *record, char **error_str)
+ {
+ 	switch (arg->type) {
+ 	case FILTER_ARG_FIELD:
+ 		return get_value(event, arg->field.field, record);
+ 
+ 	case FILTER_ARG_VALUE:
+-		if (arg->value.type != FILTER_NUMBER)
+-			die("must have number field!");
++		if (arg->value.type != FILTER_NUMBER) {
++			if (*error_str == NULL)
++				*error_str = "must have number field!";
 +		}
- 		break;
+ 		return arg->value.val;
+ 
+ 	case FILTER_ARG_EXP:
+-		return get_exp_value(event, arg, record);
++		return get_exp_value(event, arg, record, error_str);
  
  	default:
-@@ -2341,7 +2350,9 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
+-		die("oops in filter");
++		if (*error_str == NULL)
++			*error_str = "invalid numeric argument type";
+ 	}
+ 	return 0;
+ }
  
+-static int test_num(struct event_format *event,
+-		    struct filter_arg *arg, struct pevent_record *record)
++static int test_num(struct event_format *event, struct filter_arg *arg,
++		    struct pevent_record *record, char **error_str)
+ {
+ 	unsigned long long lval, rval;
+ 
+-	lval = get_arg_value(event, arg->num.left, record);
+-	rval = get_arg_value(event, arg->num.right, record);
++	lval = get_arg_value(event, arg->num.left, record, error_str);
++	rval = get_arg_value(event, arg->num.right, record, error_str);
+ 
+ 	switch (arg->num.type) {
+ 	case FILTER_CMP_EQ:
+@@ -1842,7 +1849,8 @@ static int test_num(struct event_format *event,
+ 		return lval <= rval;
+ 
+ 	default:
+-		/* ?? */
++		if (*error_str == NULL)
++			*error_str = "invalid numeric comparison type";
+ 		return 0;
+ 	}
+ }
+@@ -1889,8 +1897,8 @@ static const char *get_field_str(struct filter_arg *arg, struct pevent_record *r
+ 	return val;
+ }
+ 
+-static int test_str(struct event_format *event,
+-		    struct filter_arg *arg, struct pevent_record *record)
++static int test_str(struct event_format *event, struct filter_arg *arg,
++		    struct pevent_record *record, char **error_str)
+ {
+ 	const char *val;
+ 
+@@ -1914,48 +1922,57 @@ static int test_str(struct event_format *event,
+ 		return regexec(&arg->str.reg, val, 0, NULL, 0);
+ 
+ 	default:
+-		/* ?? */
++		if (*error_str == NULL)
++			*error_str = "invalid string comparison type";
+ 		return 0;
+ 	}
+ }
+ 
+-static int test_op(struct event_format *event,
+-		   struct filter_arg *arg, struct pevent_record *record)
++static int test_op(struct event_format *event, struct filter_arg *arg,
++		   struct pevent_record *record, char **error_str)
+ {
+ 	switch (arg->op.type) {
+ 	case FILTER_OP_AND:
+-		return test_filter(event, arg->op.left, record) &&
+-			test_filter(event, arg->op.right, record);
++		return test_filter(event, arg->op.left, record, error_str) &&
++			test_filter(event, arg->op.right, record, error_str);
+ 
+ 	case FILTER_OP_OR:
+-		return test_filter(event, arg->op.left, record) ||
+-			test_filter(event, arg->op.right, record);
++		return test_filter(event, arg->op.left, record, error_str) ||
++			test_filter(event, arg->op.right, record, error_str);
+ 
+ 	case FILTER_OP_NOT:
+-		return !test_filter(event, arg->op.right, record);
++		return !test_filter(event, arg->op.right, record, error_str);
+ 
+ 	default:
+-		/* ?? */
++		if (*error_str == NULL)
++			*error_str = "invalid operator type";
+ 		return 0;
+ 	}
+ }
+ 
+-static int test_filter(struct event_format *event,
+-		       struct filter_arg *arg, struct pevent_record *record)
++static int test_filter(struct event_format *event, struct filter_arg *arg,
++		       struct pevent_record *record, char **error_str)
+ {
++	if (*error_str) {
++		/*
++		 * There was an error, no need to process anymore.
++		 */
++		return 0;
++	}
++
  	switch (arg->type) {
  	case FILTER_ARG_BOOLEAN:
--		str = malloc_or_die(6);
-+		str = malloc(6);
-+		if (str == NULL)
-+			return NULL;
- 		if (arg->boolean.value)
- 			strcpy(str, "TRUE");
- 		else
-@@ -2380,7 +2391,7 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
-  *
-  * Returns a string that displays the filter contents.
-  *  This string must be freed with free(str).
-- *  NULL is returned if no filter is found.
-+ *  NULL is returned if no filter is found or allocation failed.
+ 		/* easy case */
+ 		return arg->boolean.value;
+ 
+ 	case FILTER_ARG_OP:
+-		return test_op(event, arg, record);
++		return test_op(event, arg, record, error_str);
+ 
+ 	case FILTER_ARG_NUM:
+-		return test_num(event, arg, record);
++		return test_num(event, arg, record, error_str);
+ 
+ 	case FILTER_ARG_STR:
+-		return test_str(event, arg, record);
++		return test_str(event, arg, record, error_str);
+ 
+ 	case FILTER_ARG_EXP:
+ 	case FILTER_ARG_VALUE:
+@@ -1964,11 +1981,11 @@ static int test_filter(struct event_format *event,
+ 		 * Expressions, fields and values evaluate
+ 		 * to true if they return non zero
+ 		 */
+-		return !!get_arg_value(event, arg, record);
++		return !!get_arg_value(event, arg, record, error_str);
+ 
+ 	default:
+-		die("oops!");
+-		/* ?? */
++		if (*error_str == NULL)
++			*error_str = "invalid argument type";
+ 		return 0;
+ 	}
+ }
+@@ -2004,6 +2021,7 @@ int pevent_event_filtered(struct event_filter *filter,
+  *  0 - filter found for event and @record does not match
+  * -1 - no filter found for @record's event
+  * -2 - if no filters exist
++ * -3 - if error occurred during test
   */
- char *
- pevent_filter_make_string(struct event_filter *filter, int event_id)
+ int pevent_filter_match(struct event_filter *filter,
+ 			struct pevent_record *record)
+@@ -2011,6 +2029,8 @@ int pevent_filter_match(struct event_filter *filter,
+ 	struct pevent *pevent = filter->pevent;
+ 	struct filter_type *filter_type;
+ 	int event_id;
++	char *error_str = NULL;
++	int ret;
+ 
+ 	if (!filter->filters)
+ 		return FILTER_NONE;
+@@ -2022,8 +2042,14 @@ int pevent_filter_match(struct event_filter *filter,
+ 	if (!filter_type)
+ 		return FILTER_NOEXIST;
+ 
+-	return test_filter(filter_type->event, filter_type->filter, record) ?
+-		FILTER_MATCH : FILTER_MISS;
++	ret = test_filter(filter_type->event, filter_type->filter, record,
++			  &error_str);
++	if (error_str) {
++		/* TODO: maybe we can print it or pass back to user */
++		return FILTER_ERROR;
++	}
++
++	return ret ? FILTER_MATCH : FILTER_MISS;
+ }
+ 
+ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
 -- 
 1.7.11.7
 
