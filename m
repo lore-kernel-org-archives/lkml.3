@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761448Ab3LIU00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:26:26 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45281 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab3LIU0X (ORCPT
+	id S932867Ab3LIU2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 15:28:20 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:46030 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab3LIU2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:26:23 -0500
-Message-ID: <52A6275F.4040007@oracle.com>
-Date: Mon, 09 Dec 2013 15:26:07 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 9 Dec 2013 15:28:16 -0500
+X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 15:28:16 EST
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
-        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kernel BUG in munlock_vma_pages_range
-References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz>
-In-Reply-To: <52A5F9EE.4010605@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
+ <1386546869-31900-3-git-send-email-yinghai@kernel.org> <CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
+ <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
+ <CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com> <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 9 Dec 2013 13:20:59 -0700
+Message-ID: <CAErSpo6xSYq=7AfFm+qNLGSfe6qjaGKyrwxdpG_CXHSy2uVX_w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
-> On 12/09/2013 06:05 PM, Sasha Levin wrote:
->> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
->>> Hello, I will look at it, thanks.
->>> Do you have specific reproduction instructions?
+On Mon, Dec 9, 2013 at 1:10 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> That doesn't answer my question at all.
 >>
->> Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
->> the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
->> up testing on that part.
+>> I understand that this change makes it so Joseph doesn't have to use
+>> "pci=realloc=off".  But why should auto-reallocation be limited to
+>> buses that have resources above 4GB?  That doesn't make any sense.
+>>
+>> We should fix the reallocation code so it can deal with this case.  If
+>> there's not enough space for everything, obviously we have to leave
+>> something unassigned.  A ROM BAR is a good candidate for leaving
+>> unassigned, because most of the time we can get along without it.
 >
-> Thanks. Do you have trinity log and the .config file? I'm currently unable to even boot linux-next
-> with my config/setup due to a GPF.
-> Looking at code I wouldn't expect that it could encounter a tail page, without first encountering a
-> head page and skipping the whole huge page. At least in THP case, as TLB pages should be split when
-> a vma is split. As for hugetlbfs, it should be skipped for mlock/munlock operations completely. One
-> of these assumptions is probably failing here...
+> Yes, that is ideal and not that simple.
+> but that would be hard to backport to old kernels.
 
-If it helps, I've added a dump_page() in case we hit a tail page there and got:
+Yes, I agree.  I didn't say it would be simple.  The quick fix would
+be easy for now, but adding nonsensical code makes our lives harder
+long into the future.
 
-[  980.172299] page:ffffea003e5e8040 count:0 mapcount:1 mapping:          (null) index:0
-x0
-[  980.173412] page flags: 0x2fffff80008000(tail)
-
-I can also add anything else in there to get other debug output if you think of something else useful.
-
-
-Thanks,
-Sasha
-
+Bjorn
