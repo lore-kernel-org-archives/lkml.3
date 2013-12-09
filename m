@@ -1,71 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275Ab3LICPs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 21:15:48 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:59571 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760197Ab3LICPp (ORCPT
+	id S1760295Ab3LICQD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 21:16:03 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:32801 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760192Ab3LICP6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 21:15:45 -0500
-Date: Mon, 9 Dec 2013 02:15:44 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Tony Lindgren <tony@atomide.com>
-cc: bcousson@baylibre.com, Roger Quadros <rogerq@ti.com>,
-        tomi.valkeinen@ti.com, balbi@ti.com, sr@denx.de,
-        David.Laight@ACULAB.COM, michael@amarulasolutions.com,
-        bigeasy@linutronix.de, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] ARM: OMAP4+: hwmod data: Don't prevent RESET of USB
- Host module
-In-Reply-To: <20131209015838.GA11433@atomide.com>
-Message-ID: <alpine.DEB.2.02.1312090213210.32309@utopia.booyaka.com>
-References: <1386080748-17005-1-git-send-email-rogerq@ti.com> <1386080748-17005-2-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1312090125170.32309@utopia.booyaka.com> <20131209015838.GA11433@atomide.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-894948885-1386555344=:32309"
+	Sun, 8 Dec 2013 21:15:58 -0500
+X-AuditID: cbfee61a-b7f796d000004313-f4-52a527dd05e0
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <000501cef263$1c57e710$5507b530$@samsung.com>
+ <1386545831.2101.67.camel@kjgkr>
+In-reply-to: <1386545831.2101.67.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH 3/3 V2] f2fs: introduce f2fs_cache_node_page()
+ to add page into node_inode cache
+Date: Mon, 09 Dec 2013 10:14:53 +0800
+Message-id: <000901cef484$97536b10$c5fa4130$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQM1EKM7fuPPQQy5873xnWPLUCkM9wEcDPxjl3XxkJA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t9jAd276kuDDOZP47O4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6Oz7Rl7wX+5in8d
+	TxkbGJ9KdDFyckgImEjcO/yYBcIWk7hwbz1bFyMXh5DAIkaJR7O7oZwfjBJHOlYwglSxCahI
+	LO/4zwRiiwhIS8z6NA+sm1kgU2LO68msILaQQIzExgezmEFsTgFdidurH7CD2MIChRJn1uwB
+	m8MioCrx9+9vMJtXwFLix7a1rBC2oMSPyfegZqpLTJq3iBnC1pZ48u4CK8SlChI7zr5mhLjB
+	SmLWvJmsEDXiEhuP3GKZwCg0C8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS
+	9ZLzczcxgkP/mdQOxpUNFocYBTgYlXh4V7AuDRJiTSwrrsw9xCjBwawkwqt0YkmQEG9KYmVV
+	alF+fFFpTmrxIUZpDhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBsa9O3emmPJaT/5kwGtp
+	WbqrY373h8/njSpeLHtwTppNvSZGeQqraNeFP01vS28UiSXsq/RPfur+8/UHnj6l49FfPJ9o
+	S23NMPxexClUmOu0ZsX5bBVz1elXpp6b0mCib3ZxwqVXM0Jufytfx3k96OhmJgcz1QN9BeLl
+	xyqeqpzMKVmeq5zd0qDEUpyRaKjFXFScCAD7SGuKeQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---843723315-894948885-1386555344=:32309
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Monday, December 09, 2013 7:37 AM
+> To: Chao Yu
+> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH 3/3 V2] f2fs: introduce f2fs_cache_node_page() to add page into node_inode cache
+> 
+> 2013-12-06 (금), 17:10 +0800, Chao Yu:
+> > This patch introduces f2fs_cache_node_page(), in this function, page which is
+> > readed ahead will be copy to node_inode's mapping cache.
+> > It will avoid rereading these node pages.
+> >
+> > change log:
+> >  o check validity of grabbed page suggested by Jaegeuk Kim.
+> >
+> > Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  fs/f2fs/node.c |   35 +++++++++++++++++++++++++++++++++++
+> >  1 file changed, 35 insertions(+)
+> >
+> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> > index 099f06f..3ff98fa 100644
+> > --- a/fs/f2fs/node.c
+> > +++ b/fs/f2fs/node.c
+> > @@ -1600,6 +1600,39 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+> >  	return 0;
+> >  }
+> >
+> > +/*
+> > + * f2fs_cache_node_page() copy updated page data to node_inode cache page.
+> > + */
+> > +void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
+> > +						nid_t nid)
+> > +{
+> > +	struct address_space *mapping = sbi->node_inode->i_mapping;
+> > +	struct page *npage;
+> 
+> 
+> What I meant for the validity was to check the block address to figure
+> out this node page is up-to-date or not.
+> IOW, something like this.
 
-On Sun, 8 Dec 2013, Tony Lindgren wrote:
+Yes, you're right.
 
-> * Paul Walmsley <paul@pwsan.com> [131208 17:27]:
-> > On Tue, 3 Dec 2013, Roger Quadros wrote:
-> >=20
-> > > Without this, the USB devices are sometimes not detected on OMAP4 Pan=
-da
-> > > with u-boot v2013.10.
-> > >=20
-> > > Unlike what the comment states, errata i660 does not state that we
-> > > can't RESET the USB host module. Instead it states that RESET is the
-> > > only way to recover from a deadlock situation.
-> > >=20
-> > > RESET ensures that the module is in a known good state irrespective
-> > > of what bootloader does with the module, so it must be done at boot.
-> > >=20
-> > > Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> > > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >=20
-> > Acked-by: Paul Walmsley <paul@pwsan.com>
-> >=20
-> > Will you pick this up for the -rc series, or do you want me or Tony to?=
- =20
-> > Roger writes that this one's pretty important.
->=20
-> I suggest that you just queue this with your other fixes so we get
-> things working.
+So, how about the this one?
+---
+ fs/f2fs/node.c |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 38 insertions(+), 1 deletion(-)
 
-I'm going to wait until tomorrow anyway to see if Sathya responds to my=20
-other E-mail, so maybe Beno=C3=AEt will let us know by then.
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 099f06f..3e7a336 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1600,13 +1600,46 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
+ 	return 0;
+ }
+ 
++/*
++ * f2fs_cache_node_page() check validaty of input page by searching NAT.
++ * Then, it will copy updated data of vaild page to node_inode cache.
++ */
++void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
++						nid_t nid, block_t blkaddr)
++{
++	struct address_space *mapping = sbi->node_inode->i_mapping;
++	struct page *npage;
++	struct node_info ni;
++
++	get_node_info(sbi, nid, &ni);
++
++	if (ni.blk_addr != blkaddr)
++		return;
++
++	npage = grab_cache_page(mapping, nid);
++	if (!npage)
++		return;
++
++	if (PageUptodate(npage)) {
++		f2fs_put_page(npage, 1);
++		return;
++	}
++
++	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
++
++	SetPageUptodate(npage);
++	f2fs_put_page(npage, 1);
++
++	return;
++}
++
+ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 			unsigned int segno, struct f2fs_summary_block *sum)
+ {
+ 	struct f2fs_node *rn;
+ 	struct f2fs_summary *sum_entry;
+ 	struct page *page, *tmp;
+-	block_t addr;
++	block_t addr, blkaddr;
+ 	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+ 	int i, last_offset, nrpages, err = 0;
+ 	LIST_HEAD(page_list);
+@@ -1624,6 +1657,7 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 		if (err)
+ 			return err;
+ 
++		blkaddr = addr;
+ 		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+ 
+ 			lock_page(page);
+@@ -1633,6 +1667,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 				sum_entry->version = 0;
+ 				sum_entry->ofs_in_node = 0;
+ 				sum_entry++;
++				f2fs_cache_node_page(sbi, page,
++					le32_to_cpu(rn->footer.nid), blkaddr);
+ 			} else {
+ 				err = -EIO;
+ 			}
+@@ -1640,6 +1676,7 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 			list_del(&page->lru);
+ 			unlock_page(page);
+ 			__free_pages(page, 0);
++			blkaddr++;
+ 		}
+ 	}
+ 	return err;
+-- 
+1.7.9.5
 
-
-- Paul
---843723315-894948885-1386555344=:32309--
