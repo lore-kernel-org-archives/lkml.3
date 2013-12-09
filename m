@@ -1,36 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760858Ab3LIIdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:33:23 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:65257 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab3LIIdT (ORCPT
+	id S1760875Ab3LIIdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:33:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48254 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3LIIdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:33:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <000f01cef252$8dbe1d90$a93a58b0$%han@samsung.com>
-References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
-	<000f01cef252$8dbe1d90$a93a58b0$%han@samsung.com>
-Date: Mon, 9 Dec 2013 09:33:19 +0100
-Message-ID: <CACRpkdZUsmA=8DW84s=w8NDUBaVdjXWrHYsaNCVnRyg_eUSZ_Q@mail.gmail.com>
-Subject: Re: [PATCH 6/6] regulator: stw481x-vmmc: use devm_regulator_register()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+	Mon, 9 Dec 2013 03:33:32 -0500
+Date: Sun, 8 Dec 2013 22:46:54 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
+Message-ID: <20131209064654.GA20485@kroah.com>
+References: <1384589723.7840.1.camel@phoenix>
+ <1386125959.1974.309@driftwood>
+ <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 8:12 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
+> 2013/12/4 Rob Landley <rob@landley.net>:
+> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
+> >>
+> >> The deleted variable is always 1 in current code.
+> >> Initialize deleted variable to be 0, so delete_path() will be called only
+> >> when
+> >> necessary.
+> >>
+> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> >
+> >
+> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
+> > nobody's objected to this, you might want to forward it to
+> > trivial@kernel.org.
+> >
+> > That said, you could describe what it _does_ a little more?
+> 
+> I was expecting Greg to pick up this patch.
+> 
+> I thought the description is pretty clear.
+> What the patch does is changing the init value of deleted variable to 0.
+> The intention of this change is to avoid unnecessary delete_path() call.
 
-> Use devm_regulator_register() to make cleanup paths simpler,
-> and remove unnecessary remove().
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+I agree the logic is a bit odd here, but are you seeing an "unnecessary"
+delete_path() call happening?  The code has always been like this from
+what I can tell...
 
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+thanks,
 
-Yours,
-Linus Walleij
+greg k-h
