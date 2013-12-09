@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760964Ab3LIL0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 06:26:35 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37385 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753358Ab3LIL0d (ORCPT
+	id S932978Ab3LIL1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 06:27:34 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:44988 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760298Ab3LIL1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 06:26:33 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+BPKTghA9S+NrobaxC2dkKUi1ysHqCtnk=
-Date: Mon, 9 Dec 2013 06:26:10 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: andrew@lunn.ch, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: plat-orion: remove deprecated IRQF_DISABLED
-Message-ID: <20131209112610.GD10053@titan.lakedaemon.net>
-References: <1381549760-5432-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20131017125414.GB22434@titan.lakedaemon.net>
- <52A55187.3050907@free-electrons.com>
+	Mon, 9 Dec 2013 06:27:31 -0500
+Message-ID: <52A5A7B2.4000509@st.com>
+Date: Mon, 9 Dec 2013 11:21:22 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A55187.3050907@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>, <netdev@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 04/10] net: stmmac: sunxi platfrom extensions for GMAC
+ in Allwinner A20 SoC's
+References: <1386350983-13281-1-git-send-email-wens@csie.org> <1386350983-13281-5-git-send-email-wens@csie.org>
+In-Reply-To: <1386350983-13281-5-git-send-email-wens@csie.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 06:13:43AM +0100, Michael Opdenacker wrote:
-> Hi Jason,
-> 
-> On 10/17/2013 02:54 PM, Jason Cooper wrote:
-> > On Sat, Oct 12, 2013 at 05:49:20AM +0200, Michael Opdenacker wrote:
-> >> This patch proposes to remove the use of the IRQF_DISABLED flag
-> >>
-> >> It's a NOOP since 2.6.35 and it will be removed one day.
-> >>
-> >> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> >> ---
-> >>  arch/arm/plat-orion/time.c | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> > Applied to mvebu/soc
-> 
-> Oops, I don't see this patch in mainline yet.
-> 
-> It is still in the tree? Did it just miss the last merge window?
+On 06/12/13 17:29, Chen-Yu Tsai wrote:
+> +static int sun7i_gmac_init(struct platform_device *pdev)
+> +{
+> +	struct resource *res;
+> +	struct device *dev = &pdev->dev;
+> +	void __iomem *addr = NULL;
+> +	struct plat_stmmacenet_data *plat_dat = NULL;
+> +	u32 priv_clk_reg;
+> +
+> +	plat_dat = dev_get_platdata(&pdev->dev);
+> +	if (!plat_dat)
+> +		return -EINVAL;
+dev_get_platdata will return NULL for DT, So this function will fail all
+the time.
 
-Yep, It's currently in mvebu/soc and arm-soc/mvebu/soc
+How is it supposed to work?
+Am I missing some thing?
 
-  eb4d552b933a arm: plat-orion: remove deprecated IRQF_DISABLED
+--srini
+> +
+> +	/* Get GMAC clock register in CCU */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +	addr = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(addr))
 
-thx,
-
-Jason.
