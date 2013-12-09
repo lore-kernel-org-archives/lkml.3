@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761559Ab3LITn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:43:27 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:52965 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759848Ab3LITmu (ORCPT
+	id S934052Ab3LITlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:41:22 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54996 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761346Ab3LIThX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 14:42:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
- <1386546869-31900-3-git-send-email-yinghai@kernel.org> <CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
- <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 9 Dec 2013 12:42:29 -0700
-Message-ID: <CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Dec 2013 14:37:23 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 04/21] perf script: Fix symoff printing in callchains
+Date: Mon,  9 Dec 2013 16:36:53 -0300
+Message-Id: <1386617830-18926-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386617830-18926-1-git-send-email-acme@infradead.org>
+References: <1386617830-18926-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 12:20 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Dec 9, 2013 at 9:54 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> I don't see how the question of whether the host bridge has an
->> aperture above 4G is related to whether we should automatically
->> reassign resources.  They seem orthogonal to me.  No doubt it "fixes"
->> the current problem, but it doesn't make sense conceptually.
->
-> the BIOS has problem to have two functions point to same position.
->
-> During realloc first try: standard+two rom_bar+sriov will be fail at first as
-> pci root bus does not have enough mmio range,
-> later try will standard+two rom_bar it will fail too as root bus mmio range will
-> still only fit standard+one rom_bar.
->
-> My thoughts is limit use realloc auto in those systems that does not have mmio64
-> above 4g...
-> so old system will never have to specify "pci=realloc=off" to disable it.
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-That doesn't answer my question at all.
+The address being used to calculate the offset was the memory address
+but the address needed is the address mapped to the dso. i.e. the 'addr'
+member of 'struct addr_location'
 
-I understand that this change makes it so Joseph doesn't have to use
-"pci=realloc=off".  But why should auto-reallocation be limited to
-buses that have resources above 4GB?  That doesn't make any sense.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386315778-11633-2-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-We should fix the reallocation code so it can deal with this case.  If
-there's not enough space for everything, obviously we have to leave
-something unassigned.  A ROM BAR is a good candidate for leaving
-unassigned, because most of the time we can get along without it.
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 8a7da6f4a569..c236b38ed02b 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1515,6 +1515,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
+ 			node_al = *al;
+ 
+ 		while (stack_depth) {
++			u64 addr = 0;
++
+ 			node = callchain_cursor_current(&callchain_cursor);
+ 			if (!node)
+ 				break;
+@@ -1525,10 +1527,13 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
+ 			if (print_ip)
+ 				printf("%c%16" PRIx64, s, node->ip);
+ 
++			if (node->map)
++				addr = node->map->map_ip(node->map, node->ip);
++
+ 			if (print_sym) {
+ 				printf(" ");
+ 				if (print_symoffset) {
+-					node_al.addr = node->ip;
++					node_al.addr = addr;
+ 					node_al.map  = node->map;
+ 					symbol__fprintf_symname_offs(node->sym, &node_al, stdout);
+ 				} else
+-- 
+1.8.1.4
 
-Bjorn
