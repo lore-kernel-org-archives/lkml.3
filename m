@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761397Ab3LISAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:00:53 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34130 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab3LISAu (ORCPT
+	id S1761469Ab3LISCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:02:05 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:65013 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761361Ab3LISCE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:00:50 -0500
-Message-ID: <52A6054F.4080103@wwwdotorg.org>
-Date: Mon, 09 Dec 2013 11:00:47 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 9 Dec 2013 13:02:04 -0500
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, linux-spi@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] spi: tegra: use u32 for 32-bit register values
-References: <1385745164-10534-1-git-send-email-mpn@google.com> <1386516911-26388-1-git-send-email-mina86@mina86.com>
-In-Reply-To: <1386516911-26388-1-git-send-email-mina86@mina86.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131209171719.GA16631@krava.brq.redhat.com>
+References: <1386411461-21510-1-git-send-email-jean.pihet@linaro.org>
+	<1386411461-21510-3-git-send-email-jean.pihet@linaro.org>
+	<20131209171719.GA16631@krava.brq.redhat.com>
+Date: Mon, 9 Dec 2013 19:02:02 +0100
+Message-ID: <CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf: unwinding: use the per-feature check flags
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
+        Will Deacon <will.deacon@arm.com>, Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2013 08:35 AM, Michal Nazarewicz wrote:
-> This series has only been compile-tested, but it does not introduce any
-> behaviour changes.
+Hi Jiri,
 
-The series,
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
+On 9 December 2013 18:17, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Sat, Dec 07, 2013 at 11:17:41AM +0100, Jean Pihet wrote:
+>> Use the per-feature check flags for the unwinding feature in order
+>> to correctly compile the libunwind and libunwind-debug-frame feature
+>> checks.
+>>
+>> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set
+>> in 'make -C tools/perf'
+>>
+>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>
+> SNIP
+>
+>> +BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
+>>
+>>  ###############################
+>>
+>>  test-all:
+>> -     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+>> +     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+>
+> hum, the test-all build command should have every possible flags we use, right?
+> including LIBUNWIND_CFLAGS, LIBUNWIND_LDFLAGS
+Oh yes you are right. I am overlooked the test-all feature (which
+never builds on my modest embedded systems).
+$(LIBUNWIND_LIBS) should be replaced by $(LIBUNWIND_CFLAGS)
+$(LIBUNWIND_LDFLAGS), is that a reasonable approach?
 
-... although I will observe that the patch subjects, and even patch
-descriptions, don't describe all the other unrelated code
-transformations that are rolled into these patches...
+>
+> also, this patch no longer applies on acme's perf/core
+I am using a recent mainline (3.12-rc2).
+
+Let me correct the patch on acme's perf/core. Is that OK?
+
+Thx for reviewing!
+Jean
+
+>
+> jirka
