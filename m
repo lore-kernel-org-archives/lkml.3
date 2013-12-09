@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761567Ab3LIVco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:32:44 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:43317 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758864Ab3LIVck (ORCPT
+	id S1761587Ab3LIVeP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:34:15 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:11792
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753970Ab3LIVeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:32:40 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        naveenkrishna.ch@gmail.com
-Cc: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.daniel@samsung.com, devicetree@vger.kernel.org,
-        b.zolnierkie@samsung.com, cpgs@samsung.com, t.figa@samsung.com
-Subject: Re: [PATCH 4/4 v4] ARM: dts: Exynos5420: Add device nodes for TMU blocks
-Date: Mon, 09 Dec 2013 22:32:33 +0100
-Message-ID: <4444992.uYV4fhSHQI@flatron>
-User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <52A632DC.6040509@samsung.com>
-References: <1382004240-3282-1-git-send-email-l.krishna@samsung.com> <1384866359-16157-1-git-send-email-ch.naveen@samsung.com> <52A632DC.6040509@samsung.com>
+	Mon, 9 Dec 2013 16:34:11 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(z579ehz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+Message-ID: <1386624837.10013.49.camel@snotra.buserror.net>
+Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
+ allow binding via sysfs only
+From: Scott Wood <scottwood@freescale.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Kim Phillips <kim.phillips@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <kvm@vger.kernel.org>,
+        <R65777@freescale.com>, <B07421@freescale.com>, <B08248@freescale.com>,
+        <christoffer.dall@linaro.org>, <alex.williamson@redhat.com>,
+        <a.motakis@virtualopensystems.com>, <agraf@suse.de>,
+        <B16395@freescale.com>
+Date: Mon, 9 Dec 2013 15:33:57 -0600
+In-Reply-To: <52A6162D.7090008@siemens.com>
+References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>
+	 <529DFA09.1030707@siemens.com>
+	 <20131205174530.a1d6e763e423d3baaa5992ad@linaro.org>
+	 <1386283095.7375.63.camel@snotra.buserror.net>
+	 <20131209125802.0e2b86a3daa9d9ad5a7d43bf@linaro.org>
+	 <52A6162D.7090008@siemens.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
-
-On Tuesday 10 of December 2013 06:15:08 Kukjin Kim wrote:
-> On 11/19/13 22:05, Naveen Krishna Chatradhi wrote:
-> > Exynos5420 SoC has per core thermal management unit.
-> > 5 TMU channels 4 for CPUs and 5th for GPU.
-> >
-> > This patch adds the device tree nodes to the DT device list.
-> >
-> > Nodes carry the misplaced second base address and the second
-> > clock to access the misplaced base address.
-> >
-> > Signed-off-by: Leela Krishna Amudala<l.krishna@samsung.com>
-> > Signed-off-by: Naveen Krishna Chatradhi<ch.naveen@samsung.com>
-> > Signed-off-by: Andrew Bresticker<abrestic@chromium.org>
-> > ---
-> > Changes since v3:
-> > None, Just respinning
-> >
-> > Changes since v2:
-> > 3. uses the new compatible strings introduced along with adding
-> >     support for Exynso5420.
-> >
-> > Changes since v1:
-> > 1. Nodes carry the misplaced second base address and the second
-> >     clock to access the misplaced base address.
-> > 2. Correct the clock number for the TMU4
-> >
-> >   arch/arm/boot/dts/exynos5420.dtsi |   48 +++++++++++++++++++++++++++++++++++++
-> >   1 file changed, 48 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-> > index 6ffefd1..d736b40 100644
-> > --- a/arch/arm/boot/dts/exynos5420.dtsi
-> > +++ b/arch/arm/boot/dts/exynos5420.dtsi
-> > @@ -369,4 +369,52 @@
-> >   		clock-names = "gscl";
-> >   		samsung,power-domain =<&gsc_pd>;
-> >   	};
-> > +
-> > +	/* tmu for CPU0 */
-> > +	tmu@10060000 {
-> > +		compatible = "samsung,exynos5420-tmu";
-> > +		reg =<0x10060000 0x100>;
-> > +		interrupts =<0 65 0>;
-> > +		clocks =<&clock 318>;
-> > +		clock-names = "tmu_apbif";
-> > +	};
-> > +
-> > +	/* tmu for CPU1 */
-> > +	tmu@10064000 {
-> > +		compatible = "samsung,exynos5420-tmu";
-> > +		reg =<0x10064000 0x100>;
-> > +		interrupts =<0 183 0>;
-> > +		clocks =<&clock 318>;
-> > +		clock-names = "tmu_apbif";
-> > +	};
-> > +
-> > +	/* tmu for CPU2 */
-> > +	tmu@10068000 {
-> > +		compatible = "samsung,exynos5420-tmu-triminfo";
-> > +		/* 2nd reg is for the misplaced TRIMINFO register */
-> > +		reg =<0x10068000 0x100>,<0x1006c000 0x4>;
-> > +		interrupts =<0 184 0>;
-> > +		clocks =<&clock 318>;
-> > +		clock-names = "tmu_apbif";
-> > +	};
-> > +
-> > +	/* tmu for CPU3 */
-> > +	tmu@1006c000 {
-> > +		compatible = "samsung,exynos5420-tmu-triminfo-clk";
-> > +		/* 2nd reg is for the misplaced TRIMINFO register */
-> > +		reg =<0x1006c000 0x100>,<0x100a0000 0x4>;
-> > +		interrupts =<0 185 0>;
-> > +		clocks =<&clock 318>,<&clock 319>;
-> > +		clock-names = "tmu_apbif", "tmu_apbif_triminfo";
-> > +	};
-> > +
-> > +	/* tmu for GPU */
-> > +	tmu@100a0000 {
-> > +		compatible = "samsung,exynos5420-tmu-triminfo-clk";
-> > +		/* 2nd reg is for the misplaced TRIMINFO register */
-> > +		reg =<0x100a0000 0x100>,<0x10068000 0x4>;
-> > +		interrupts =<0 215 0>;
-> > +		clocks =<&clock 319>,<&clock 318>;
-> > +		clock-names = "tmu_apbif", "tmu_apbif_triminfo";
-> > +	};
-> >   };
+On Mon, 2013-12-09 at 20:12 +0100, Jan Kiszka wrote:
+> On 2013-12-09 19:58, Kim Phillips wrote:
+> > On Thu, 5 Dec 2013 16:38:15 -0600
+> > Scott Wood <scottwood@freescale.com> wrote:
+> > 
+> >> What would combining them solve, other than making it more likely that
+> >> Greg complains about the wildcard because it would no longer be handled
+> >> at the bus level where all the other matching goes on?
+> >>
+> >> They are logically separate things.  That doesn't change just because we
+> >> currently plan to use them together.
+> > 
+> > Jan?  Given the above, what would be the advantage of merging
+> > sysfs_bind_only and (PCI drivers' PCI_ANY_ID and platform drivers'
+> > match_any_dev)?
 > 
-> BTW, there is just only this patch to support TMU on exynos5420?
+> That you cannot configure (likely) meaningless or even harmful (bind-any
+> + auto-bind) configurations.
 
-This patch is a part of a 4-patch series, but unfortunately it was not
-sent with correct threading, so it's hard to find remaing patches,
-which are:
+If you want to put in a check that warns on bind-any plus auto-bind,
+fine -- but that doesn't mean they should share a mechanism.  It's valid
+to have no-auto-bind without a wildcard match.  And FWIW, PCI already
+has wildcard matches without any no-auto-bind mechanism (it's presumably
+not intended to specify PCI_ANY_ID for all fields, but it is allowed
+AFAICT).
 
-[PATCH 1/4 v9] thermal: samsung: replace inten_ bit fields with intclr_
-[PATCH 2/4 v10] thermal: samsung: change base_common to more meaningful base_second
-[PATCH 3/4 v10] thermal: samsung: Add TMU support for Exynos5420 SoCs
+-Scott
 
-There are comments to be addressed to those patches, so I guest at least
-one more iteration is needed.
-
-Naveen, it would be nice if you could send next version with proper
-threading and consistent versioning. Thanks in advance.
-
-Best regards,
-Tomasz
 
