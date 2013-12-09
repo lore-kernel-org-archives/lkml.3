@@ -1,68 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760595Ab3LIRoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:44:46 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48282 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3LIRom (ORCPT
+	id S1759371Ab3LIRqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:46:53 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62834 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753193Ab3LIRqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:44:42 -0500
-Date: Mon, 9 Dec 2013 17:44:39 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20131209174439.GH29268@sirena.org.uk>
-References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
- <000c01cef252$1b341040$519c30c0$%han@samsung.com>
+	Mon, 9 Dec 2013 12:46:49 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.236.217
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18+D9tl1I7VsujXtKGUv8DQ
+Date: Mon, 9 Dec 2013 09:46:38 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: Sebastian Reichel <sre@ring0.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Documentation: dt: Document TSC2005 DT binding
+Message-ID: <20131209174638.GC12527@atomide.com>
+References: <1386284979-9680-1-git-send-email-sre@debian.org>
+ <1386284979-9680-3-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mew6/suNvUayQDfo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000c01cef252$1b341040$519c30c0$%han@samsung.com>
-X-Cookie: It's clever, but is it art?
+In-Reply-To: <1386284979-9680-3-git-send-email-sre@debian.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/6] regulator: fixed: use devm_regulator_register()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Sebastian Reichel <sre@debian.org> [131205 15:11]:
+> Add devicetree binding documentation for TSC2005 touchscreen.
+> 
+> Signed-off-by: Sebastian Reichel <sre@debian.org>
+> ---
+>  .../bindings/input/touchscreen/tsc2005.txt         | 49 ++++++++++++++++++++++
+>  1 file changed, 49 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt b/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
+> new file mode 100644
+> index 0000000..4e7df0b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
+> @@ -0,0 +1,49 @@
+> +* TSC2005 Touchscreen
+> +
+> +Required properties:
+> + - compatible		      : "ti,tsc2005"
+> + - reg			      : SPI device address
+> + - spi-max-frequency	      : Maximal SPI speed
+> + - interrupts		      : IRQ specifier
+> + - reset-gpio		      : GPIO specifier
+> +
+> +Optional properties:
+> + - ti,fuzz-x		      : integer, X noise value of the touchscreen
+> +				(defaults to 4)
+> + - ti,fuzz-y		      : integer, Y noise value of the touchscreen
+> +				(defaults to 8)
+> + - ti,fuzz-pressure	      : integer, pressure noise value of the touchscreen
+> +				(defaults to 2)
+> + - ti,max-x		      : integer, maximum reported x value
+> +				(defaults to 4096)
+> + - ti,max-y		      : integer, maximum reported y value
+> +				(defaults to 4096)
+> + - ti,max-pressure	      : integer, maximum reported pressure
+> +				(defaults to 4096)
+> + - ti,x-plate-resistance      : integer, resistance of the touchscreen's X plates
+> +				in ohm (defaults to 280)
+> + - ti,esd-recovery-timeout-ms : integer, if the touchscreen does not respond after
+> +				the configured time (in milli seconds), the driver
+> +				will reset it. This is disabled by default.
 
---mew6/suNvUayQDfo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Instead of adding these optional ti,* properties you can set them in the
+driver directly in the of_match table based on the compatible flag. Then
+you can pass compatible flag like ti,tsc2005-nokia-n900, or the name of
+the LCD panel. Most likely these depend on the LCD panel selected.
 
-On Fri, Dec 06, 2013 at 04:09:29PM +0900, Jingoo Han wrote:
-> Use devm_regulator_register() to make cleanup paths simpler.
+Regards,
 
-This has the same issue as the gpio regulator - it needs a more complete
-conversion to devm to be safe due to the use of other resources by the
-regulator while it's running.  The conversion looks straightfoward
-though.
+Tony
 
---mew6/suNvUayQDfo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSpgGDAAoJELSic+t+oim9lrUP/00/B8e2zGEcmzo67Gn1CwON
-z3gduN9D6bs/4HucY4AbhJk6Qc+QwPzGVVJxYQMD2odNUn/2AwkhbZJhAhd2WfNr
-t86nTJL55AlGvGCR6LIP1pp4/qyyuhf0vteWTTntZxBUkjFATy2qid9VaF66bFiK
-3f/7LrweJjLK28on3VUaTEX3t3wDsZREtmUJ5qta+ghdsb94DIXEW/lr6dXBppSQ
-BQDcjnFaCtVsNMibQGvJm9NrqMxd92mwLaW2/ORtUHkHJ9F4T7mSq+7yEJ/KEB7E
-p8C9LGuxX2/BR/btqV8qbTzyWzqlm5J0xHyNpsbmqu0OGEC0GsfyDFqW6jANGAFC
-0gWCIWFWMbwBmgUC4XSFhMa0MZY1DbBEbHTpMCQV9t8UJwr0DEkOhWkKM1zbFuS/
-Ioj+eDpLd4xUswwD2CTeJzY9RYf1NkponuZ7BVNFp5NU3lm43sduilAWXsctAZKh
-LKLT/6vG2Z3ylgNLWCuFnAD0Yo5D4FZ+SZKwS7Z5zea0VUM9o5jYr3DSMqth7Rh/
-wLniVRl6Nvy+8gibBf2XsJ5LsdPvUrmpmCXyodXxDsSpu35ozzdohqQC/vL0tqFL
-HHho6FZl4qxEk01n6ByIdVuiQKtCdnABSazp9tvGfUIeSs2fHvIbo31OGKnvjJek
-NtDlda7cZj8uUu0b/3Zy
-=1UGS
------END PGP SIGNATURE-----
-
---mew6/suNvUayQDfo--
+> +Example:
+> +
+> +&mcspi1 {
+> +	tsc2005@0 {
+> +		compatible = "ti,tsc2005";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <0>;
+> +		reset-gpio = <&gpio4 8 GPIO_ACTIVE_HIGH>; /* 104 */
+> +		interrupt-parent = <&gpio4>;
+> +		interrupts = <4 IRQ_TYPE_NONE>; /* gpio line 100 */
+> +
+> +		ti,fuzz-x = <4>;
+> +		ti,fuzz-y = <7>;
+> +		ti,fuzz-pressure = <2>;
+> +		ti,max-x = <4096>;
+> +		ti,max-y = <4096>;
+> +		ti,max-pressure = <2048>;
+> +		ti,x-plate-resistance = <280>;
+> +		ti,esd-recovery-timeout-ms = <8000>;
+> +	};
+> +}
+> -- 
+> 1.8.4.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
