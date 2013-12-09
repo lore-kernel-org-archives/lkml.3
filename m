@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760837Ab3LIGXg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:23:36 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47491 "EHLO
+	id S1760586Ab3LIGUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:20:16 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44535 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760611Ab3LIGUV (ORCPT
+	with ESMTP id S1760414Ab3LIGUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:20:21 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-6a-52a56121049b
+	Mon, 9 Dec 2013 01:20:14 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-22-52a5611b2288
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -18,238 +18,173 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 10/17] tracing/probes: Move 'symbol' fetch method to kprobes
-Date: Mon,  9 Dec 2013 15:19:58 +0900
-Message-Id: <1386570005-3368-11-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 00/17] tracing/uprobes: Add support for more fetch methods (v8)
+Date: Mon,  9 Dec 2013 15:19:48 +0900
+Message-Id: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hello,
 
-Move existing functions to trace_kprobe.c and add NULL entries to the
-uprobes fetch type table.  I don't make them static since some generic
-routines like update/free_XXX_fetch_param() require pointers to the
-functions.
+This patchset implements memory (address), stack[N], deference,
+bitfield, retval (it needs uretprobe tho) and file_offset fetch
+methods for uprobes.  It's based on the previous work [1] done by
+Hyeoncheol Lee.
+
+Now kprobes and uprobes have their own fetch_type_tables and, in turn,
+memory and stack access methods.  The symbol and file_offset fetch
+methods are only available to kprobes and uprobes, respectively.
+Other fetch methods are shared.
+
+For the file_offset method, it translates the offset argument to a
+virtual address in a process.  To do that, it calculates base mapping
+address using probe address (utask->vaddr) and probe offset
+(tu->offset) and then adds the argument offset.  Those info are
+carried via utask and a new fetch parameter.
+
+The syntax is '@+offset' where offset are relative address to the base
+address.  For shared libraries, it'd be simply the st_value of symbol
+in ELF format.  But for executable, it needs to subtract base load
+address (e.g. 0x40000 for x86_64) from the symbol value.  Please see
+previous discussion for an example [2] - Note that the syntax changed
+to '@+' from plain '@'.  The plain '@addr' syntax is used for
+accessing absolute memory address if you already know the exact address.
+
+Many thanks to Oleg who provides valuable feedbacks and suggestions.
+
+The patch 1-2 are bug fixes and can be applied independently.
+The patch 16 is a preparation for patch 17 which implements the
+file_offset fetch method.
+
+
+ * v8 changes:
+  - rename tk, tu and tp more consistently (Srikar)
+  - change prefix format specifier: %#x -> 0x%x (Masami)
+  - convert file_offset_param to uprobe_dispatch_data (Oleg)
+  - add more Ack's from Srikar and Masami
+
+ * v7 changes:
+  - restructure patches not to break build with !CONFIG_[KU]PROBE_EVENT
+  - print 0x prefix for unsigned types
+  - add @+file_offset fetch method (Oleg)
+  - get rid of uprobe_buffer_mutex (Oleg)
+  - pass 'is_return' to uprobes argument parser
+
+
+[1] https://lkml.org/lkml/2012/11/14/84
+[2] https://lkml.org/lkml/2013/11/5/25
+
+A simple example:
+
+  # cat foo.c
+  int glob = -1;
+  char str[] = "hello uprobe.";
+
+  struct foo {
+    unsigned int unused: 2;
+    unsigned int foo: 20;
+    unsigned int bar: 10;
+  } foo = {
+    .foo = 5,
+  };
+
+  int main(int argc, char *argv[])
+  {
+    long local = 0x1234;
+
+    return 127;
+  }
+
+  # gcc -o foo -g foo.c
+
+  # objdump -d foo | grep -A9 -F '<main>'
+  00000000004004b0 <main>:
+    4004b0:	55                   	push   %rbp
+    4004b1:	48 89 e5             	mov    %rsp,%rbp
+    4004b4:	89 7d ec             	mov    %edi,-0x14(%rbp)
+    4004b7:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
+    4004bb:	48 c7 45 f8 34 12 00 	movq   $0x1234,-0x8(%rbp)
+    4004c2:	00 
+    4004c3:	b8 7f 00 00 00       	mov    $0x7f,%eax
+    4004c8:	5d                   	pop    %rbp
+    4004c9:	c3                   	retq   
+
+  # nm foo | grep -e glob$ -e str -e foo
+  00000000006008bc D foo
+  00000000006008a8 D glob
+  00000000006008ac D str
+
+  # perf probe -x /home/namhyung/tmp/foo -a 'foo=main+0x13 glob=@0x6008a8:s32 \
+  > str=@+0x2008ac:string bit=@+0x2008bc:b10@2/32 argc=%di:s32 local=-0x8(%bp)'
+  Added new event:
+    probe_foo:foo      (on 0x4c3 with glob=@0x6008a8:s32 str=@+0x2008ac:string 
+                           bit=@+0x2008bc:b10@2/32 argc=%di:s32 local=-0x8(%bp))
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe_foo:foo -aR sleep 1
+
+  # perf record -e probe_foo:foo ./foo
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.001 MB perf.data (~33 samples) ]
+
+  # perf script | grep -v ^#
+               foo  2008 [002  2199.867154: probe_foo:foo (4004c3)
+                   glob=-1 str="hello uprobe." bit=0x5 argc=1 local=0x1234
+
+
+This patchset is based on the current for-next branch of the Steven
+Rostedt's linux-trace tree.  I also put this on my 'uprobe/fetch-v8'
+branch in my tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_kprobe.c | 59 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.c  | 59 ---------------------------------------------
- kernel/trace/trace_probe.h  | 24 ++++++++++++++++++
- kernel/trace/trace_uprobe.c |  8 ++++++
- 4 files changed, 91 insertions(+), 59 deletions(-)
+Cc: Hemant Kumar <hkshaw@linux.vnet.ibm.com>
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 4eaecf9bfd66..2886e6da524d 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -88,6 +88,51 @@ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
- static int kretprobe_dispatcher(struct kretprobe_instance *ri,
- 				struct pt_regs *regs);
- 
-+/* Memory fetching by symbol */
-+struct symbol_cache {
-+	char		*symbol;
-+	long		offset;
-+	unsigned long	addr;
-+};
-+
-+unsigned long update_symbol_cache(struct symbol_cache *sc)
-+{
-+	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
-+
-+	if (sc->addr)
-+		sc->addr += sc->offset;
-+
-+	return sc->addr;
-+}
-+
-+void free_symbol_cache(struct symbol_cache *sc)
-+{
-+	kfree(sc->symbol);
-+	kfree(sc);
-+}
-+
-+struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
-+{
-+	struct symbol_cache *sc;
-+
-+	if (!sym || strlen(sym) == 0)
-+		return NULL;
-+
-+	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
-+	if (!sc)
-+		return NULL;
-+
-+	sc->symbol = kstrdup(sym, GFP_KERNEL);
-+	if (!sc->symbol) {
-+		kfree(sc);
-+		return NULL;
-+	}
-+	sc->offset = offset;
-+	update_symbol_cache(sc);
-+
-+	return sc;
-+}
-+
- /*
-  * Kprobes-specific fetch functions
-  */
-@@ -103,6 +148,20 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
- #define fetch_stack_string	NULL
- #define fetch_stack_string_size	NULL
- 
-+#define DEFINE_FETCH_symbol(type)					\
-+__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
-+					  void *data, void *dest)	\
-+{									\
-+	struct symbol_cache *sc = data;					\
-+	if (sc->addr)							\
-+		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
-+	else								\
-+		*(type *)dest = 0;					\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(symbol)
-+DEFINE_FETCH_symbol(string)
-+DEFINE_FETCH_symbol(string_size)
-+
- /* Fetch type information table */
- const struct fetch_type kprobes_fetch_type_table[] = {
- 	/* Special types */
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index ddd14a5cb3ee..56cf63796fc1 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -180,65 +180,6 @@ __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
- 		*(u32 *)dest = len;
- }
- 
--/* Memory fetching by symbol */
--struct symbol_cache {
--	char		*symbol;
--	long		offset;
--	unsigned long	addr;
--};
--
--static unsigned long update_symbol_cache(struct symbol_cache *sc)
--{
--	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
--
--	if (sc->addr)
--		sc->addr += sc->offset;
--
--	return sc->addr;
--}
--
--static void free_symbol_cache(struct symbol_cache *sc)
--{
--	kfree(sc->symbol);
--	kfree(sc);
--}
--
--static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
--{
--	struct symbol_cache *sc;
--
--	if (!sym || strlen(sym) == 0)
--		return NULL;
--
--	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
--	if (!sc)
--		return NULL;
--
--	sc->symbol = kstrdup(sym, GFP_KERNEL);
--	if (!sc->symbol) {
--		kfree(sc);
--		return NULL;
--	}
--	sc->offset = offset;
--	update_symbol_cache(sc);
--
--	return sc;
--}
--
--#define DEFINE_FETCH_symbol(type)					\
--__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
--					  void *data, void *dest)	\
--{									\
--	struct symbol_cache *sc = data;					\
--	if (sc->addr)							\
--		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
--	else								\
--		*(type *)dest = 0;					\
--}
--DEFINE_BASIC_FETCH_FUNCS(symbol)
--DEFINE_FETCH_symbol(string)
--DEFINE_FETCH_symbol(string_size)
--
- /* Dereference memory access function */
- struct deref_fetch_param {
- 	struct fetch_param	orig;
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 23b2d83ee5fb..d327a1c21f4b 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -239,6 +239,30 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
- extern __weak const struct fetch_type kprobes_fetch_type_table[];
- extern __weak const struct fetch_type uprobes_fetch_type_table[];
- 
-+#ifdef CONFIG_KPROBE_EVENT
-+struct symbol_cache;
-+unsigned long update_symbol_cache(struct symbol_cache *sc);
-+void free_symbol_cache(struct symbol_cache *sc);
-+struct symbol_cache *alloc_symbol_cache(const char *sym, long offset);
-+#else
-+struct symbol_cache {
-+};
-+static unsigned long __used update_symbol_cache(struct symbol_cache *sc)
-+{
-+	return 0;
-+}
-+
-+static void __used free_symbol_cache(struct symbol_cache *sc)
-+{
-+}
-+
-+static struct symbol_cache * __used
-+alloc_symbol_cache(const char *sym, long offset)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_KPROBE_EVENT */
-+
- struct probe_arg {
- 	struct fetch_param	fetch;
- 	struct fetch_param	fetch_size;
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 28caa766edf8..7793360199f1 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -115,6 +115,14 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
- #define fetch_stack_string_size	NULL
- 
- 
-+/* uprobes don't support symbol fetch methods */
-+#define fetch_symbol_u8			NULL
-+#define fetch_symbol_u16		NULL
-+#define fetch_symbol_u32		NULL
-+#define fetch_symbol_u64		NULL
-+#define fetch_symbol_string		NULL
-+#define fetch_symbol_string_size	NULL
-+
- /* Fetch type information table */
- const struct fetch_type uprobes_fetch_type_table[] = {
- 	/* Special types */
+
+Hyeoncheol Lee (1):
+  tracing/probes: Add fetch{,_size} member into deref fetch method
+
+Namhyung Kim (15):
+  tracing/uprobes: Fix documentation of uprobe registration syntax
+  tracing/probes: Fix basic print type functions
+  tracing/kprobes: Factor out struct trace_probe
+  tracing/uprobes: Convert to struct trace_probe
+  tracing/kprobes: Move common functions to trace_probe.h
+  tracing/probes: Integrate duplicate set_print_fmt()
+  tracing/probes: Move fetch function helpers to trace_probe.h
+  tracing/probes: Split [ku]probes_fetch_type_table
+  tracing/probes: Implement 'stack' fetch method for uprobes
+  tracing/probes: Move 'symbol' fetch method to kprobes
+  tracing/probes: Implement 'memory' fetch method for uprobes
+  tracing/uprobes: Pass 'is_return' to traceprobe_parse_probe_arg()
+  tracing/uprobes: Fetch args before reserving a ring buffer
+  tracing/uprobes: Add support for full argument access methods
+  tracing/uprobes: Add @+file_offset fetch method
+
+Oleg Nesterov (1):
+  uprobes: Allocate ->utask before handler_chain() for tracing handlers
+
+ Documentation/trace/uprobetracer.txt |  36 +-
+ kernel/events/uprobes.c              |   4 +
+ kernel/trace/trace_kprobe.c          | 666 +++++++++++++++++++----------------
+ kernel/trace/trace_probe.c           | 458 ++++++++++--------------
+ kernel/trace/trace_probe.h           | 220 +++++++++++-
+ kernel/trace/trace_uprobe.c          | 481 ++++++++++++++++++-------
+ 6 files changed, 1140 insertions(+), 725 deletions(-)
+
 -- 
 1.7.11.7
-
