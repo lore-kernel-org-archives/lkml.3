@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761838Ab3LIV6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:58:16 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:49569 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761697Ab3LIV6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:58:10 -0500
-Date: Mon, 9 Dec 2013 16:58:35 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Namhyung Kim <namhyung@kernel.org>
-cc: linux-kernel@vger.kernel.org, Chad Paradis <chad.paradis@umit.maine.edu>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: [patch] perf tools: perf list broken on ARM
-Message-ID: <alpine.DEB.2.10.1312091646100.2337@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1761809Ab3LIV6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:58:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43491 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761672Ab3LIVwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:52:22 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v3 09/23] mm/init: Use memblock apis for early memory allocations
+Date: Mon, 9 Dec 2013 16:50:42 -0500
+Message-ID: <1386625856-12942-10-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Switch to memblock interfaces for early memory allocator instead of
+bootmem allocator. No functional change in beahvior than what it is
+in current code from bootmem users points of view.
 
-"perf list" listing of hardware events doesn't work on older ARM devices.
-The change enabling event detection:
+Archs already converted to NO_BOOTMEM now directly use memblock
+interfaces instead of bootmem wrappers build on top of memblock.
+And the archs which still uses bootmem, these new apis just fall
+back to exiting bootmem APIs.
 
-commit b41f1cec91c37eeea6fdb15effbfa24ea0a5536b
-Author: Namhyung Kim <namhyung.kim@lge.com>
-Date:   Tue Aug 27 11:41:53 2013 +0900
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ init/main.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-    perf list: Skip unsupported events
+diff --git a/init/main.c b/init/main.c
+index febc511..d3e3cff 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -355,9 +355,11 @@ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
+  */
+ static void __init setup_command_line(char *command_line)
+ {
+-	saved_command_line = alloc_bootmem(strlen (boot_command_line)+1);
+-	initcall_command_line = alloc_bootmem(strlen (boot_command_line)+1);
+-	static_command_line = alloc_bootmem(strlen (command_line)+1);
++	saved_command_line =
++		memblock_virt_alloc(strlen(boot_command_line) + 1, 0);
++	initcall_command_line =
++		memblock_virt_alloc(strlen(boot_command_line) + 1, 0);
++	static_command_line = memblock_virt_alloc(strlen(command_line) + 1, 0);
+ 	strcpy (saved_command_line, boot_command_line);
+ 	strcpy (static_command_line, command_line);
+ }
+-- 
+1.7.9.5
 
-
-uses the following code in tools/perf/util/parse-events.c:
-
-       struct perf_event_attr attr = {
-               .type = type,
-               .config = config,
-               .disabled = 1,
-               .exclude_kernel = 1,
-       };
-
-On ARM machines pre-dating the Cortex-A15 this doesn't work, as
-these machines don't support .exclude_kernel.  So starting with 3.12
-"perf list" does not report any hardware events at all on older
-machines (seen on Rasp-Pi, Pandaboard, Beagleboard, etc).
-
-If we drop the "exclude_kernel" attribute events are properly reported.
-
-Reported-by: Chad Paradis <chad.paradis@umit.maine.edu>
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 6de6f89..360ecab 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1087,7 +1087,6 @@ static bool is_event_supported(u8 type, unsigned config)
- 		.type = type,
- 		.config = config,
- 		.disabled = 1,
--		.exclude_kernel = 1,
- 	};
- 	struct {
- 		struct thread_map map;
