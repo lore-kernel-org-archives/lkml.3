@@ -1,239 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab3LIPbR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:31:17 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:33727 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755710Ab3LIPbO (ORCPT
+	id S933671Ab3LIPcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 10:32:05 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53703 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702Ab3LIPcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:31:14 -0500
-Message-ID: <52A5E23E.9030604@gmail.com>
-Date: Mon, 09 Dec 2013 10:31:10 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH net 1/2] tun: unbreak truncated packet signalling
-References: <1386584717-5776-1-git-send-email-jasowang@redhat.com> <20131209105529.GD15055@redhat.com>
-In-Reply-To: <20131209105529.GD15055@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Dec 2013 10:32:01 -0500
+Message-ID: <1386603119.30495.331.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: sk == 0xffffffff fix - not for commit
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Date: Mon, 09 Dec 2013 07:31:59 -0800
+In-Reply-To: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
+References: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 05:55 AM, Michael S. Tsirkin wrote:
-> On Mon, Dec 09, 2013 at 06:25:16PM +0800, Jason Wang wrote:
->> Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
->> (tuntap: hardware vlan tx support) breaks the truncated packet signal
-by never
->> return a length greater than iov length in tun_put_user(). This patch
-fixes this
->> by always return the length of packet plus possible vlan header.
-Caller can
->> detect the truncated packet by comparing the return value and the
-size of iov
->> length.
->>
->> Reported-by: Vlad Yasevich <vyasevich@gmail.com>
->> Cc: Vlad Yasevich <vyasevich@gmail.com>
->> Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->
-> So writer gets back a value greater than what was written?
->
->> ---
->> The patch is needed for stable.
->> ---
->>  drivers/net/tun.c | 23 ++++++++++++-----------
->>  1 file changed, 12 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index e26cbea..dd1bd7a 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -1183,7 +1183,11 @@ static ssize_t tun_put_user(struct tun_struct
-*tun,
->>  			    const struct iovec *iv, int len)
->>  {
->>  	struct tun_pi pi = { 0, skb->protocol };
->> -	ssize_t total = 0;
->> +	struct {
->> +		__be16 h_vlan_proto;
->> +		__be16 h_vlan_TCI;
->> +	} veth;
->> +	ssize_t total = 0, off = 0;
->
-> Why off = 0 here?
-> We initialize it to total unconditionally, don't we?
->
->>  	int vlan_offset = 0;
->>
->>  	if (!(tun->flags & TUN_NO_PI)) {
->> @@ -1248,14 +1252,11 @@ static ssize_t tun_put_user(struct tun_struct
-*tun,
->>  		total += tun->vnet_hdr_sz;
->>  	}
->>
->> +	off = total;
->>  	if (!vlan_tx_tag_present(skb)) {
->>  		len = min_t(int, skb->len, len);
->>  	} else {
->>  		int copy, ret;
->> -		struct {
->> -			__be16 h_vlan_proto;
->> -			__be16 h_vlan_TCI;
->> -		} veth;
->>
->>  		veth.h_vlan_proto = skb->vlan_proto;
->>  		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
->> @@ -1264,22 +1265,22 @@ static ssize_t tun_put_user(struct tun_struct
-*tun,
->>  		len = min_t(int, skb->len + VLAN_HLEN, len);
->>
->>  		copy = min_t(int, vlan_offset, len);
->> -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
->> +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, off, copy);
->>  		len -= copy;
->> -		total += copy;
->> +		off += copy;
->>  		if (ret || !len)
->>  			goto done;
->>
->>  		copy = min_t(int, sizeof(veth), len);
->> -		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
->> +		ret = memcpy_toiovecend(iv, (void *)&veth, off, copy);
->>  		len -= copy;
->> -		total += copy;
->> +		off += copy;
->>  		if (ret || !len)
->>  			goto done;
->
-> This seems wrong: if one of the branches above is taken, total is
-> never incremented.
->
->>  	}
->>
->> -	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
->> -	total += len;
->> +	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, off, len);
->> +	total += skb->len + (vlan_offset ? sizeof(veth) : 0);
->>
->>  done:
->>  	tun->dev->stats.tx_packets++;
->
-> I also think it's inelegant that the veth struct is now in the
-> outside scope, and the extra ? is also ugly.
->
-> Here's a smaller patch to fix all these problems - what do you think?
->
->
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->
-> ---
->
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 782e38b..3297e41 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1183,7 +1183,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  			    const struct iovec *iv, int len)
->  {
->  	struct tun_pi pi = { 0, skb->protocol };
-> -	ssize_t total = 0;
-> +	ssize_t total = 0, offset;
->  	int vlan_offset = 0;
->
->  	if (!(tun->flags & TUN_NO_PI)) {
-> @@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  		total += tun->vnet_hdr_sz;
->  	}
->
-> +	offset = total;
-> +	total += skb->len;
->  	if (!vlan_tx_tag_present(skb)) {
->  		len = min_t(int, skb->len, len);
->  	} else {
-> @@ -1257,6 +1259,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  			__be16 h_vlan_TCI;
->  		} veth;
->
-> +		total += sizeof(veth);
-> +
->  		veth.h_vlan_proto = skb->vlan_proto;
->  		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
->
-> @@ -1279,7 +1283,6 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  	}
->
->  	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
-> -	total += len;
->
->  done:
->  	tun->dev->stats.tx_packets++;
->
+On Mon, 2013-12-09 at 12:47 +0100, Andrzej Pietrasiewicz wrote:
+> NOT FOR COMMITTING TO MAINLINE.
+> 
+> With g_ether loaded the sk occasionally becomes 0xffffffff.
+> It happens usually after transferring few hundreds of kilobytes to few
+> tens of megabytes. If sk is 0xffffffff then dereferencing it causes
+> kernel panic.
+> 
+> This is a *workaround*. I don't know enough net code to understand the core
+> of the problem. However, with this patch applied the problems are gone,
+> or at least pushed farther away.
+
+Is it happening on SMP or UP ?
+
+Crash should happen earlier in __inet_lookup_established()
 
 
-You have to use 'offset' instead of 'total' when doing skb_copy and
-adjust offset as you write the vlan header.
-
-I think something like this will fix it:
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 782e38b..d71c393 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1183,7 +1183,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 			    const struct iovec *iv, int len)
- {
- 	struct tun_pi pi = { 0, skb->protocol };
--	ssize_t total = 0;
-+	ssize_t total = 0, offset;
- 	int vlan_offset = 0;
-
- 	if (!(tun->flags & TUN_NO_PI)) {
-@@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		total += tun->vnet_hdr_sz;
- 	}
-
-+	offset = total;
-+	total += skb->len;
- 	if (!vlan_tx_tag_present(skb)) {
- 		len = min_t(int, skb->len, len);
- 	} else {
-@@ -1262,24 +1264,24 @@ static ssize_t tun_put_user(struct tun_struct *tun,
-
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
- 		len = min_t(int, skb->len + VLAN_HLEN, len);
-+		total += VLAN_HLEN;
-
- 		copy = min_t(int, vlan_offset, len);
--		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
-+		ret = skb_copy_datagram_const_iovec(skb, 0, iv, offset, copy);
- 		len -= copy;
--		total += copy;
-+		offset += copy;
- 		if (ret || !len)
- 			goto done;
-
- 		copy = min_t(int, sizeof(veth), len);
--		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
-+		ret = memcpy_toiovecend(iv, (void *)&veth, offset, copy);
- 		len -= copy;
--		total += copy;
-+		offset += copy;
- 		if (ret || !len)
- 			goto done;
- 	}
-
--	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
--	total += len;
-+	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, offset, len);
-
- done:
- 	tun->dev->stats.tx_packets++;
-
--vlad
