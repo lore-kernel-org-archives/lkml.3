@@ -1,155 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881Ab3LIPKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:10:44 -0500
-Received: from mga03.intel.com ([143.182.124.21]:35255 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932623Ab3LIPJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:09:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,858,1378882800"; 
-   d="scan'208";a="441039572"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 1/5] phy: unify the phy name parameters
-Date: Mon,  9 Dec 2013 17:08:53 +0200
-Message-Id: <1386601737-8735-2-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S933892Ab3LIPLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 10:11:54 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42130 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440Ab3LIPLw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 10:11:52 -0500
+Message-ID: <52A5DDB1.20708@hitachi.com>
+Date: Tue, 10 Dec 2013 00:11:45 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 13/17] tracing/uprobes: Pass 'is_return' to traceprobe_parse_probe_arg()
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-14-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1386570005-3368-14-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace "string" and "port" that are used as phy name
-parameter for various functions with "con_id" which is
-commonly used in other frameworks.
+(2013/12/09 15:20), Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Currently uprobes don't pass is_return to the argument parser so that
+> it cannot make use of "$retval" fetch method since it only works for
+> return probes.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/phy/phy-core.c  | 22 ++++++++++------------
- include/linux/phy/phy.h |  8 ++++----
- 2 files changed, 14 insertions(+), 16 deletions(-)
+Looks good for me.
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..1102aef 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -53,7 +53,7 @@ static int devm_phy_match(struct device *dev, void *res, void *match_data)
- 	return res == match_data;
- }
- 
--static struct phy *phy_lookup(struct device *device, const char *port)
-+static struct phy *phy_lookup(struct device *device, const char *con_id)
- {
- 	unsigned int count;
- 	struct phy *phy;
-@@ -68,7 +68,7 @@ static struct phy *phy_lookup(struct device *device, const char *port)
- 		consumers = phy->init_data->consumers;
- 		while (count--) {
- 			if (!strcmp(consumers->dev_name, dev_name(device)) &&
--					!strcmp(consumers->port, port)) {
-+					!strcmp(consumers->port, con_id)) {
- 				class_dev_iter_exit(&iter);
- 				return phy;
- 			}
-@@ -350,33 +350,32 @@ EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
- /**
-  * phy_get() - lookup and obtain a reference to a phy.
-  * @dev: device that requests this phy
-- * @string: the phy name as given in the dt data or the name of the controller
-- * port for non-dt case
-+ * @con_id: name of the phy from device's point of view
-  *
-  * Returns the phy driver, after getting a refcount to it; or
-  * -ENODEV if there is no such phy.  The caller is responsible for
-  * calling phy_put() to release that count.
-  */
--struct phy *phy_get(struct device *dev, const char *string)
-+struct phy *phy_get(struct device *dev, const char *con_id)
- {
- 	int index = 0;
- 	struct phy *phy = NULL;
- 
--	if (string == NULL) {
-+	if (con_id == NULL) {
- 		dev_WARN(dev, "missing string\n");
- 		return ERR_PTR(-EINVAL);
- 	}
- 
- 	if (dev->of_node) {
- 		index = of_property_match_string(dev->of_node, "phy-names",
--			string);
-+						 con_id);
- 		phy = of_phy_get(dev, index);
- 		if (IS_ERR(phy)) {
- 			dev_err(dev, "unable to find phy\n");
- 			return phy;
- 		}
- 	} else {
--		phy = phy_lookup(dev, string);
-+		phy = phy_lookup(dev, con_id);
- 		if (IS_ERR(phy)) {
- 			dev_err(dev, "unable to find phy\n");
- 			return phy;
-@@ -395,14 +394,13 @@ EXPORT_SYMBOL_GPL(phy_get);
- /**
-  * devm_phy_get() - lookup and obtain a reference to a phy.
-  * @dev: device that requests this phy
-- * @string: the phy name as given in the dt data or phy device name
-- * for non-dt case
-+ * @con_id: name of the phy from device's point of view
-  *
-  * Gets the phy using phy_get(), and associates a device with it using
-  * devres. On driver detach, release function is invoked on the devres data,
-  * then, devres data is freed.
-  */
--struct phy *devm_phy_get(struct device *dev, const char *string)
-+struct phy *devm_phy_get(struct device *dev, const char *con_id)
- {
- 	struct phy **ptr, *phy;
- 
-@@ -410,7 +408,7 @@ struct phy *devm_phy_get(struct device *dev, const char *string)
- 	if (!ptr)
- 		return ERR_PTR(-ENOMEM);
- 
--	phy = phy_get(dev, string);
-+	phy = phy_get(dev, con_id);
- 	if (!IS_ERR(phy)) {
- 		*ptr = phy;
- 		devres_add(dev, ptr);
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 6d72269..d67dcbf 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -127,8 +127,8 @@ int phy_init(struct phy *phy);
- int phy_exit(struct phy *phy);
- int phy_power_on(struct phy *phy);
- int phy_power_off(struct phy *phy);
--struct phy *phy_get(struct device *dev, const char *string);
--struct phy *devm_phy_get(struct device *dev, const char *string);
-+struct phy *phy_get(struct device *dev, const char *con_id);
-+struct phy *devm_phy_get(struct device *dev, const char *con_id);
- void phy_put(struct phy *phy);
- void devm_phy_put(struct device *dev, struct phy *phy);
- struct phy *of_phy_simple_xlate(struct device *dev,
-@@ -199,12 +199,12 @@ static inline int phy_power_off(struct phy *phy)
- 	return -ENOSYS;
- }
- 
--static inline struct phy *phy_get(struct device *dev, const char *string)
-+static inline struct phy *phy_get(struct device *dev, const char *con_id)
- {
- 	return ERR_PTR(-ENOSYS);
- }
- 
--static inline struct phy *devm_phy_get(struct device *dev, const char *string)
-+static inline struct phy *devm_phy_get(struct device *dev, const char *con_id)
- {
- 	return ERR_PTR(-ENOSYS);
- }
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_uprobe.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 89dd346865ad..d407a556aa55 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -512,7 +512,7 @@ static int create_trace_uprobe(int argc, char **argv)
+>  
+>  		/* Parse fetch argument */
+>  		ret = traceprobe_parse_probe_arg(arg, &tu->tp.size, parg,
+> -						 false, false);
+> +						 is_return, false);
+>  		if (ret) {
+>  			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
+>  			goto error;
+> 
+
+
 -- 
-1.8.5.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
