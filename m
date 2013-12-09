@@ -1,126 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761001Ab3LIWld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 17:41:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:32773 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab3LIWlb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 17:41:31 -0500
-Message-ID: <52A646D7.9090700@kernel.dk>
-Date: Mon, 09 Dec 2013 15:40:23 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1756087Ab3LIWvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 17:51:52 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:45660 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753964Ab3LIWvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 17:51:49 -0500
+Date: Mon, 9 Dec 2013 17:51:42 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131209225142.GK21724@cmpxchg.org>
+References: <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+ <20131202200221.GC5524@dhcp22.suse.cz>
+ <20131202212500.GN22729@cmpxchg.org>
+ <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+ <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+ <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [HANG 3.13-rc3] blk-mq/virtio: mkfs.ext4 hangs in blk_mq_wait_for_tags
-References: <20131209223905.GU31386@dastard>
-In-Reply-To: <20131209223905.GU31386@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 03:39 PM, Dave Chinner wrote:
-> Hi Jens,
+On Mon, Dec 09, 2013 at 01:46:16PM -0800, David Rientjes wrote:
+> On Mon, 9 Dec 2013, Michal Hocko wrote:
 > 
-> Another day, another blkmq/virtio problem. Running mkfs.ext4 on a
-> sparse 100TB VM file image, it hangs hard while writing superblock
-> information:
+> > > Google depends on getting memory.oom_control notifications only when they 
+> > > are actionable, which is exactly how Documentation/cgroups/memory.txt 
+> > > describes how userspace should respond to such a notification.
+> > > 
+> > > "Actionable" here means that the kernel has exhausted its capabilities of 
+> > > allowing for future memory freeing, which is the entire premise of any oom 
+> > > killer.
+> > > 
+> > > Giving a dying process or a process that is going to subsequently die 
+> > > access to memory reserves is a capability the kernel users to ensure 
+> > > progress is made in oom conditions.  It is not an exhaustion of 
+> > > capabilities.
+> > > 
+> > > Yes, we all know that subsequent to the userspace notification that memory 
+> > > may be freed and the kill no longer becomes required.  There is nothing 
+> > > that can be done about that, and it has never been implied that a memcg is 
+> > > guaranteed to still be oom when the process wakes up.
+> > > 
+> > > I'm referring to a siutation that can manifest in a number of ways: 
+> > > coincidental process exit, coincidental process being killed, 
+> > > VMPRESSURE_CRITICAL notification that results in a process being killed, 
+> > > or memory threshold notification that results in a process being killed.  
+> > > Regardless, we're talking about a situation where something is already 
+> > > in the exit path or has been killed and is simply attempting to free its 
+> > > memory.
+> > 
+> > You have already mentioned that. Several times in fact. And I do
+> > understand what you are saying. You are just not backing your claims
+> > with anything that would convince us that what you are trying to solve
+> > is an issue in the real life. So show us it is real, please.
+> > 
 > 
-> $ tests/fsmark-50-test-ext4.sh
-> mke2fs 1.43-WIP (20-Jun-2013)
-> Filesystem label=
-> OS type: Linux
-> Block size=4096 (log=2)
-> Fragment size=4096 (log=2)
-> Stride=0 blocks, Stripe width=0 blocks
-> 1677721600 inodes, 26843545600 blocks
-> 1342177280 blocks (5.00%) reserved for the super user
-> First data block=0
-> 819200 block groups
-> 32768 blocks per group, 32768 fragments per group
-> 2048 inodes per group
-> Superblock backups stored on blocks:
->         32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
->         4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
->         102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
->         2560000000, 3855122432, 5804752896, 12800000000, 17414258688
-> 
-> Allocating group tables: done
-> Writing inode tables: done
-> Creating journal (32768 blocks): done
-> Writing superblocks and filesystem accounting information: 
-> 
-> It writes a few superblocks, then hangs. Immediately after it stops
-> updating that last line, I see this:
-> 
-> root@test4:~# echo w > /proc/sysrq-trigger 
-> [   79.408153] SysRq : Show Blocked State
-> [   79.408832]   task                        PC stack   pid father
-> [   79.409860] mke2fs          D ffff88011bc13100  3904  4242   4241 0x00000002
-> [   79.411074]  ffff88021a737978 0000000000000086 ffff8800dbb9de40 0000000000013100
-> [   79.412009]  ffff88021a737fd8 0000000000013100 ffff88011ac7af20 ffff8800dbb9de40
-> [   79.412009]  ffff88021a737988 ffffe8fcfbc038d0 ffff88011b39c058 ffff88011b39c040
-> [   79.412009] Call Trace:
-> [   79.412009]  [<ffffffff81ae36d9>] schedule+0x29/0x70
-> [   79.412009]  [<ffffffff8178863e>] percpu_ida_alloc+0x16e/0x330
-> [   79.412009]  [<ffffffff810cf393>] ? finish_wait+0x63/0x80
-> [   79.412009]  [<ffffffff810cf3f0>] ? __init_waitqueue_head+0x40/0x40
-> [   79.412009]  [<ffffffff8175f30f>] blk_mq_wait_for_tags+0x1f/0x40
-> [   79.412009]  [<ffffffff8175e28e>] blk_mq_alloc_request_pinned+0x4e/0x110
-> [   79.412009]  [<ffffffff8175eacb>] blk_mq_make_request+0x41b/0x500
-> [   79.412009]  [<ffffffff81753552>] generic_make_request+0xc2/0x110
-> [   79.412009]  [<ffffffff81754a1c>] submit_bio+0x6c/0x120
-> [   79.412009]  [<ffffffff811d1dd3>] _submit_bh+0x133/0x200
-> [   79.412009]  [<ffffffff811d1eb0>] submit_bh+0x10/0x20
-> [   79.412009]  [<ffffffff811d5298>] __block_write_full_page+0x1b8/0x370
-> [   79.412009]  [<ffffffff811d3e30>] ? block_read_full_page+0x320/0x320
-> [   79.412009]  [<ffffffff811d8450>] ? I_BDEV+0x10/0x10
-> [   79.412009]  [<ffffffff811d8450>] ? I_BDEV+0x10/0x10
-> [   79.412009]  [<ffffffff811d5541>] block_write_full_page_endio+0xf1/0x100
-> [   79.412009]  [<ffffffff811d5565>] block_write_full_page+0x15/0x20
-> [   79.412009]  [<ffffffff811d8908>] blkdev_writepage+0x18/0x20
-> [   79.412009]  [<ffffffff8115668a>] __writepage+0x1a/0x50
-> [   79.412009]  [<ffffffff81157055>] write_cache_pages+0x225/0x470
-> [   79.412009]  [<ffffffff81156670>] ? mapping_tagged+0x20/0x20
-> [   79.412009]  [<ffffffff811572ed>] generic_writepages+0x4d/0x70
-> [   79.412009]  [<ffffffff810c4d0f>] ? __dequeue_entity+0x2f/0x50
-> [   79.412009]  [<ffffffff81158bd1>] do_writepages+0x21/0x50
-> [   79.412009]  [<ffffffff8114e199>] __filemap_fdatawrite_range+0x59/0x60
-> [   79.412009]  [<ffffffff81ae7e8e>] ? _raw_spin_unlock_irq+0xe/0x20
-> [   79.412009]  [<ffffffff8114e1da>] filemap_write_and_wait_range+0x3a/0x80
-> [   79.412009]  [<ffffffff811d8b14>] blkdev_fsync+0x24/0x50
-> [   79.412009]  [<ffffffff811cf898>] do_fsync+0x58/0x80
-> [   79.412009]  [<ffffffff81aeb8e5>] ? do_async_page_fault+0x35/0xc0
-> [   79.412009]  [<ffffffff811cfb30>] SyS_fsync+0x10/0x20
-> [   79.412009]  [<ffffffff81af08e9>] system_call_fastpath+0x16/0x1b
-> 
-> And a coupel of seconds later the VM hangs hard - console,
-> networking, everything just stops dead and it doesn't even respond
-> ot an nmi from the qemu command console.
-> 
-> The test is exactly the same as described in the previous problem I
-> had:
-> 
-> http://marc.info/?l=linux-kernel&m=138621901319333&w=2
-> 
-> The only difference is that I'm trying to run the concurrent create
-> workload on ext4 now, not XFS, and it's failing in mkfs.ext4 during
-> the setup code....
+> What exactly would you like to see?  It's obvious that the kernel has not 
+> exhausted its capabilities of allowing for future memory freeing if the 
+> notification happens before the check for current->flags & PF_EXITING or 
+> fatal_signal_pending(current).  Does that conditional get triggered?  ALL 
+> THE TIME.
 
-I'll take a look at this.
+We check for fatal signals during the repeated charge attempts and
+reclaim.  Should we be checking for PF_EXITING too?
 
-> At this point, I have to ask: is anyone doing high IOPS testing on
-> virtio/blk_mq? This is the third regression I've hit since it was
-> merged, and I'm really not stressing this code nearly as much as
-> some of the hardware out there is capable of doing....
+> We know it happens because I had to introduce it into both the 
+> system oom killer and the memcg oom killer to fix mm->mmap_sem issues for 
+> threads that were killed as part of the oom killer SIGKILL but weren't the 
+> thread lucky enough to get TIF_MEMDIE set and they were in the allocation 
+> path.
 
-Plenty was done previously, but at this point it does seem flakey.
-Wonder if it's other changes, or some screwup along the way.
 
--- 
-Jens Axboe
 
+> 
+> Are you asking me to patch our kernel, get it rolled out, and plot a graph 
+> to show how often it gets triggered over time in our datacenters and that 
+> it causes us to get unnecessary oom kill notifications?
+> 
+> I'm trying to support you in any way I can by giving you the information 
+> you need, but in all honesty this seems pretty trivial and obvious to 
+> understand.  I'm really quite stunned at this thread.  What exactly are 
+> you arguing in the other direction for?  What does giving an oom 
+> notification before allowing exiting processes to free its memory so the 
+> memcg or system is no longer oom do?  Why can't you use memory thresholds 
+> or vmpressure for such a situation?
+> 
+> > > Such a process simply needs access to memory reserves to make progress and 
+> > > free its memory as part of the exit path.  The process waiting on 
+> > > memory.oom_control does _not_ need to do any of the actions mentioned in 
+> > > Documentation/cgroups/memory.txt: reduce usage, enlarge the limit, kill a 
+> > > process, or move a process with charge migration.
+> > > 
+> > > It would be ridiculous to require anybody implementing such a process to 
+> > > check if the oom condition still exists after a period of time before 
+> > > taking such an action.
+> > 
+> > Why would you consider that ridiculous? If your memcg is oom already
+> > then waiting few seconds to let racing tasks finish doesn't sound that
+> > bad to me.
+> > 
+> 
+> A few seconds?  Is that just handwaving or are you making a guarantee that 
+> all processes that need access to memory reserves will wake up, try its 
+> allocation, get the memcg's oom lock, get access to memory reserves, 
+> allocate, return to handle its pending SIGKILL, proceed down the exit() 
+> path, and free its memory by then?
+> 
+> Meanwhile, the userspace oom handler is doing its little sleep(3) that you 
+> suggest, it checks the status of the memcg, finds it's still oom, but 
+> doesn't realize because it didn't do a second blocking read() that its a 
+> second oom condition for a different process attached to the memcg and 
+> that process simply needs memory reserves to exit.
