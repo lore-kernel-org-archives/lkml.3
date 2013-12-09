@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760915Ab3LIIzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:55:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48343 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760718Ab3LIIzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:55:43 -0500
-Date: Mon, 9 Dec 2013 00:55:26 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
+	id S932550Ab3LII44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:56:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:17522 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760769Ab3LII4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 03:56:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,856,1378882800"; 
+   d="scan'208";a="446851254"
+Message-ID: <1386579383.1871.102.camel@smile>
+Subject: Re: [PATCH] SFI: fix compilation warnings
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
-Message-ID: <20131209085526.GB4125@kroah.com>
-References: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
- <20131208140100.GA22793@kroah.com>
- <CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
- <20131209082527.GA26950@kroah.com>
- <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Date: Mon, 09 Dec 2013 10:56:23 +0200
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802494B99@SHSMSX101.ccr.corp.intel.com>
+References: <1386264397-27319-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1419818.3DzaCCe02K@vostro.rjw.lan>
+	 <1AE640813FDE7649BE1B193DEA596E8802494B65@SHSMSX101.ccr.corp.intel.com>
+	 <1790293.cpW4sKD6m8@vostro.rjw.lan>
+	 <1AE640813FDE7649BE1B193DEA596E8802494B99@SHSMSX101.ccr.corp.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 04:44:05PM +0800, Ethan Zhao wrote:
-> On Mon, Dec 9, 2013 at 4:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Dec 09, 2013 at 09:43:16AM +0800, Ethan Zhao wrote:
-> >> On Sun, Dec 8, 2013 at 10:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Sun, Dec 08, 2013 at 07:31:02PM +0800, ethan.zhao wrote:
-> >> >> Should check debugfs initialization with debugfs_initialized() before using it,
-> >> >> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
-> >> >> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
-> >> >
-> >> > So?  It should "just work" without this check, right?  What happens if
-> >> > your patch isn't applied and debugfs isn't enabled?
-> >>
-> >> If debugfs isn't  configured, debugfs_initialized() and other
-> >> functions are defined as following,
-> >>
-> >> static inline bool debugfs_initialized(void)
-> >> {
-> >> return false;
-> >> }
-> >>
-> >> static inline struct dentry *debugfs_create_file(const char *name, umode_t mode,
-> >> struct dentry *parent, void *data,
-> >> const struct file_operations *fops)
-> >> {
-> >> return ERR_PTR(-ENODEV);
-> >> }
-> >>
-> >> static inline struct dentry *debugfs_create_dir(const char *name,
-> >> struct dentry *parent)
-> >> {
-> >> return ERR_PTR(-ENODEV);
-> >> }
-> >>
-> >> And the checking code in xen\debugfs.c xen_init_debugfs() will not
-> >> work, the return value is not NULL.
-> >> d_xen_debug = debugfs_create_dir("xen", NULL);
-> >>
-> >> if (!d_xen_debug)
-> >> pr_warning("Could not create 'xen' debugfs directory\n");
-> >
-> > Which is just fine, what is wrong with this?
+On Fri, 2013-12-06 at 01:51 +0000, Zheng, Lv wrote:
+> > From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> > Sent: Friday, December 06, 2013 10:01 AM
+> > To: Zheng, Lv
+> > Cc: Andy Shevchenko; Wysocki, Rafael J; linux-acpi@vger.kernel.org; LKML
+> > Subject: Re: [PATCH] SFI: fix compilation warnings
+> > 
+> > On Friday, December 06, 2013 01:26:07 AM Zheng, Lv wrote:
+> > > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > > > Sent: Friday, December 06, 2013 9:26 AM
+> > > >
+> > > > On Friday, December 06, 2013 01:08:45 AM Zheng, Lv wrote:
+> > > > > > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > > > > > Sent: Friday, December 06, 2013 6:37 AM
+> > > > > >
+> > > > > > On Thursday, December 05, 2013 07:26:37 PM Andy Shevchenko wrote:
+> > > > > > > When build kernel with make W=1 we get the following compiler error.
+> > > > > > >
+> > > > > > > In file included from drivers/sfi/sfi_acpi.c:66:0:
+> > > > > > > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
+> > > > > > > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
+> > > > > > >   if (!acpi_table_parse(signature, handler))
+> > > > > > >   ^
+> > > > > > >   cc1: some warnings being treated as errors
+> > > > > > >
+> > > > > > > The patch changes acpi/acpi.h inclusion to linux/acpi.h.
+> > > > > > >
+> > > > > > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > > > > >
+> > > > > > OK
+> > > > > >
+> > > > > > Lv, I'm dropping your patch cleaning up the inclusions, please sort that thing
+> > > > > > out entirely for the next cycle.
+> > > > >
+> > > > > No, I think Andy's patch is wrong.
+> > > >
+> > > > His patch may be wrong, but the warning in his changelog surely is real. :-)
+> > > >
+> > > > > This warning is existing before merging my fixes.
+> > > > >
+> > > > > Either we fix this warning or leave it as is.
+> > > > >
+> > > > > To fix it, you need to add 1 line in sfi_acpi.h rather than change the line.
+> > > > > Let me post a fix for this.
+> > > >
+> > > > Please do.  And I'm putting all ACPI header cleanups on hold until all warnings
+> > > > of this kind have been fixed by them.  Otherwise doing those cleanups makes a
+> > > > little sense in my opinion.
+> > >
+> > > OK, not only this warning, there is another warning in sfi_acpi.c.
+> > > I doubt whether they are strictly tested before upstreamed...
+> > > They are all existing warnings.
+> > > You can apply my new patch before the cleanup series.
+> > 
+> > Sorry, I'm already lost in the thick of patches. :-)
+> > 
+> > Please resend them all as a single series.
 > 
-> If we no check with debugfs_initialized(),  the above code should be
-> if  (!d_xen_debug || IS_ERR (d_xen_debug))
->     pr_warning("Could not create 'xen' debugfs directory\n");
+> OK, I'll sort them again.
 
-No, you don't want to print out that message if debugfs is not enabled.
+First of all, you are right. We have to have acpi/acpi.h _and_
+linux/acpi.h in sfi_acpi.h.
 
-You really don't want to print anything out, as what can a user do about
-this?
+Please, also check this one:
+http://www.mail-archive.com/linux-gpio@vger.kernel.org/msg01521.html
 
-I still think the original code is correct, have you tried it with
-debugfs disabled?
 
-greg k-h
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
