@@ -1,159 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176Ab3LIBc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 20:32:57 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:59346 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759563Ab3LIBcz (ORCPT
+	id S1760204Ab3LIBeX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 20:34:23 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50424 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237Ab3LIBeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 20:32:55 -0500
-Date: Mon, 9 Dec 2013 01:32:54 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: bcousson@baylibre.com, tony@atomide.com, tomi.valkeinen@ti.com,
-        balbi@ti.com, sr@denx.de, David.Laight@ACULAB.COM,
-        michael@amarulasolutions.com, bigeasy@linutronix.de,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: OMAP2+: hwmod: Fix RESET logic
-In-Reply-To: <1386080748-17005-3-git-send-email-rogerq@ti.com>
-Message-ID: <alpine.DEB.2.02.1312090130090.32309@utopia.booyaka.com>
-References: <1386080748-17005-1-git-send-email-rogerq@ti.com> <1386080748-17005-3-git-send-email-rogerq@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 8 Dec 2013 20:34:18 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sergei Ianovich <ynvich@gmail.com>
+Subject: Re: [PATCH 5/9] ARM: dts: provide DMA config to pxamci
+Date: Mon, 9 Dec 2013 02:33:58 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com> <1386543229-1542-1-git-send-email-ynvich@gmail.com> <1386543229-1542-6-git-send-email-ynvich@gmail.com>
+In-Reply-To: <1386543229-1542-6-git-send-email-ynvich@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312090233.58592.arnd@arndb.de>
+X-Provags-ID: V02:K0:zBIOceJIjY7DNg1tdrhTh3/JHdAVFFXWUyf/LC0/5gy
+ TozEbPPmuii7mJLQW5RZY4FlBc5uzGfixSeIl3zGcuD/VOtuDz
+ RQa855KeSpi3wf5dzTzICiyjiRPPT0dOgfGG0SjKRlHoyKzzb6
+ D3gJJsnOW9GOwpDmSj3RbQ+RA5gwnP5iRlvocFBhNtjiIP5r5P
+ H+PgH1CKH7P9ZMXacufAt2Ot+Zzro2oevj0xCFqQAxTMGX3YIM
+ yuevfIPC4Wlq0zghCwu7/V6N3/o23G2P2+N1X9dWJGFXD61V6R
+ 9SfIT0WIwTSfx5zbrREjg62oxbqJorhjZUQjU/FGWraIyha1OU
+ wgwbdVVIQlEGnMfTOwN8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On Sunday 08 December 2013, Sergei Ianovich wrote:
+> Non-dts implementation supply required DMA channel numbers as
+> IORESOURCE_DMA. However, there is was no way to get them from
+> device tree.
 
-On Tue, 3 Dec 2013, Roger Quadros wrote:
+I just wrote a lengthy reply to this email to explain in what ways
+you got it wrong, but then I saw that Daniel has already done all
+the work in the right way in August, so nevermind that.
 
-> In _ocp_softreset(), after _set_softreset() + write_sysconfig(),
-> the hwmod's sysc_cache will always contain SOFTRESET bit set
-> so all further writes to sysconfig using this cache will initiate
-> a repeated SOFTRESET e.g. enable_sysc(). This is true for OMAP3 like
-> platforms that have RESET_DONE status in the SYSSTATUS register and
-> so the the SOFTRESET bit in SYSCONFIG is not automatically cleared.
-> It is not a problem for OMAP4 like platforms that indicate RESET
-> completion by clearing the SOFTRESET bit in the SYSCONFIG register.
-> 
-> This repeated SOFTRESET is undesired and was the root cause of
-> USB host issues on OMAP3 platforms when hwmod was allowed to do the
-> SOFTRESET for the USB Host module.
+It hasn't made it upstream yet, but see http://list-archives.org/2013/08/07/linux-mtd-lists-infradead-org/patch-00-20-arm-pxa-move-core-and-drivers-to-dmaengine/f/3444199144
+for how it's done. Maybe Daniel can comment on the status of his
+patches.
 
-Doh :-(
-
-Nice catch.  Renamed _clr_softreset() to _clear_softreset() and queued 
-the following for v3.13-rc.
-
-
-- Paul
-
-
-From: Roger Quadros <rogerq@ti.com>
-
-ARM: OMAP2+: hwmod: Fix SOFTRESET logic
-
-In _ocp_softreset(), after _set_softreset() + write_sysconfig(),
-the hwmod's sysc_cache will always contain SOFTRESET bit set
-so all further writes to sysconfig using this cache will initiate
-a repeated SOFTRESET e.g. enable_sysc(). This is true for OMAP3 like
-platforms that have RESET_DONE status in the SYSSTATUS register and
-so the the SOFTRESET bit in SYSCONFIG is not automatically cleared.
-It is not a problem for OMAP4 like platforms that indicate RESET
-completion by clearing the SOFTRESET bit in the SYSCONFIG register.
-
-This repeated SOFTRESET is undesired and was the root cause of
-USB host issues on OMAP3 platforms when hwmod was allowed to do the
-SOFTRESET for the USB Host module.
-
-To fix this we clear the SOFTRESET bit and update the sysconfig
-register + sysc_cache using write_sysconfig().
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-[paul@pwsan.com: renamed _clr_softreset() to _clear_softreset()]
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
----
- arch/arm/mach-omap2/omap_hwmod.c | 43 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index e3f0ecaf87dd..cacc0c7e8634 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -399,7 +399,7 @@ static int _set_clockactivity(struct omap_hwmod *oh, u8 clockact, u32 *v)
- }
- 
- /**
-- * _set_softreset: set OCP_SYSCONFIG.CLOCKACTIVITY bits in @v
-+ * _set_softreset: set OCP_SYSCONFIG.SOFTRESET bit in @v
-  * @oh: struct omap_hwmod *
-  * @v: pointer to register contents to modify
-  *
-@@ -427,6 +427,36 @@ static int _set_softreset(struct omap_hwmod *oh, u32 *v)
- }
- 
- /**
-+ * _clear_softreset: clear OCP_SYSCONFIG.SOFTRESET bit in @v
-+ * @oh: struct omap_hwmod *
-+ * @v: pointer to register contents to modify
-+ *
-+ * Clear the SOFTRESET bit in @v for hwmod @oh.  Returns -EINVAL upon
-+ * error or 0 upon success.
-+ */
-+static int _clear_softreset(struct omap_hwmod *oh, u32 *v)
-+{
-+	u32 softrst_mask;
-+
-+	if (!oh->class->sysc ||
-+	    !(oh->class->sysc->sysc_flags & SYSC_HAS_SOFTRESET))
-+		return -EINVAL;
-+
-+	if (!oh->class->sysc->sysc_fields) {
-+		WARN(1,
-+		     "omap_hwmod: %s: sysc_fields absent for sysconfig class\n",
-+		     oh->name);
-+		return -EINVAL;
-+	}
-+
-+	softrst_mask = (0x1 << oh->class->sysc->sysc_fields->srst_shift);
-+
-+	*v &= ~softrst_mask;
-+
-+	return 0;
-+}
-+
-+/**
-  * _wait_softreset_complete - wait for an OCP softreset to complete
-  * @oh: struct omap_hwmod * to wait on
-  *
-@@ -1911,6 +1941,12 @@ static int _ocp_softreset(struct omap_hwmod *oh)
- 	ret = _set_softreset(oh, &v);
- 	if (ret)
- 		goto dis_opt_clks;
-+
-+	_write_sysconfig(v, oh);
-+	ret = _clear_softreset(oh, &v);
-+	if (ret)
-+		goto dis_opt_clks;
-+
- 	_write_sysconfig(v, oh);
- 
- 	if (oh->class->sysc->srst_udelay)
-@@ -3169,6 +3205,11 @@ int omap_hwmod_softreset(struct omap_hwmod *oh)
- 		goto error;
- 	_write_sysconfig(v, oh);
- 
-+	ret = _clear_softreset(oh, &v);
-+	if (ret)
-+		goto error;
-+	_write_sysconfig(v, oh);
-+
- error:
- 	return ret;
- }
--- 
-1.8.4.4
-
+	Arnd
