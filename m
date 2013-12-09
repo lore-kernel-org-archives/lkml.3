@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760871Ab3LIIj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:39:58 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47563 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754336Ab3LIIj5 (ORCPT
+	id S1760857Ab3LIIlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:41:15 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4941 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3LIIlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:39:57 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-3e-52a581dbd496
-Date: Mon, 9 Dec 2013 17:42:45 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] mm/migrate: correct return value of migrate_pages()
-Message-ID: <20131209084245.GA27201@lge.com>
-References: <1386319310-28016-1-git-send-email-iamjoonsoo.kim@lge.com>
- <52A1E248.1000204@suse.cz>
- <1386355046-jja39cg0-mutt-n-horiguchi@ah.jp.nec.com>
+	Mon, 9 Dec 2013 03:41:12 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 09 Dec 2013 00:37:54 -0800
+Message-ID: <52A5822A.9030807@nvidia.com>
+Date: Mon, 9 Dec 2013 16:41:14 +0800
+From: bilhuang <bilhuang@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386355046-jja39cg0-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] cpufreq: tegra: Call tegra_cpufreq_init() specifically
+ in machine code
+References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com> <1386229462-3474-2-git-send-email-bilhuang@nvidia.com> <52A10431.6070306@wwwdotorg.org>
+In-Reply-To: <52A10431.6070306@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 01:37:26PM -0500, Naoya Horiguchi wrote:
-> On Fri, Dec 06, 2013 at 03:42:16PM +0100, Vlastimil Babka wrote:
-> > On 12/06/2013 09:41 AM, Joonsoo Kim wrote:
-> > >migrate_pages() should return number of pages not migrated or error code.
-> > >When unmap_and_move return -EAGAIN, outer loop is re-execution without
-> > >initialising nr_failed. This makes nr_failed over-counted.
-> > >
-> > >So this patch correct it by initialising nr_failed in outer loop.
-> > >
-> > >Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > >
-> > >diff --git a/mm/migrate.c b/mm/migrate.c
-> > >index 3747fcd..1f59ccc 100644
-> > >--- a/mm/migrate.c
-> > >+++ b/mm/migrate.c
-> > >@@ -1102,6 +1102,7 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
-> > >
-> > >  	for(pass = 0; pass < 10 && retry; pass++) {
-> > >  		retry = 0;
-> > >+		nr_failed = 0;
-> > >
-> > >  		list_for_each_entry_safe(page, page2, from, lru) {
-> > >  			cond_resched();
-> > >
-> > 
-> > If I'm reading the code correctly, unmap_and_move() (and
-> > unmap_and_move_huge_page() as well) deletes all pages from the
-> > 'from' list, unless it fails with -EAGAIN. So the only pages you see
-> > in subsequent passes are those that failed with -EAGAIN and those
-> > are not counted as nr_failed. So there shouldn't be over-count, but
-> > your patch could result in under-count.
-> > 
-> > Perhaps a comment somewhere would clarify this.
-> 
-> I agree and suggest the one below.
-> Joonsoo, feel free to append it to your series:)
-> 
-> Thanks,
-> Naoya Horiguchi
-> ---
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Fri, 6 Dec 2013 13:08:15 -0500
-> Subject: [PATCH] migrate: add comment about permanent failure path
-> 
-> Let's add a comment about where the failed page goes to, which makes
-> code more readable.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  mm/migrate.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 661ff5f66591..c01caafa0a6f 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1118,7 +1118,12 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
->  				nr_succeeded++;
->  				break;
->  			default:
-> -				/* Permanent failure */
-> +				/*
-> +				 * Permanent failure (-EBUSY, -ENOSYS, etc.):
-> +				 * unlike -EAGAIN case, the failed page is
-> +				 * removed from migration page list and not
-> +				 * retried in the next outer loop.
-> +				 */
->  				nr_failed++;
->  				break;
->  			}
-> -- 
-> 1.8.3.1
-
-Hello, Naoya.
-
-When I saw this new comment, I found that unmap_and_move_huge_page()
-has a bug. It would not remove the page from the list if
-hugepage_migration_support() is false.
-I will include your patch into my series and send an additional patch to fix
-this problem.
-
-Thanks.
+On 12/06/2013 06:54 AM, Stephen Warren wrote:
+> On 12/05/2013 12:44 AM, Bill Huang wrote:
+>> Move the call from module_init to Tegra machine codes so it won't be
+>> called in a multi-platform kernel running on non-Tegra SoCs.
+>
+>> diff --git a/include/linux/tegra-soc.h b/include/linux/tegra-soc.h
+>
+> It might be better to create <linux/tegra-cpufreq.h> for the interface
+> to the cpufreq driver; tegra-soc.h is for the interface to core Tegra
+> code *from* other drivers.
+Thanks, will do.
+>
+>> +#ifdef CONFIG_ARM_TEGRA_CPUFREQ
+>> +int tegra_cpufreq_init(void);
+>> +#else
+>> +static inline int tegra_cpufreq_init(void)
+>> +{
+>> +	return -EINVAL;
+>> +}
+>> +#endif
+>
+> Probably best to "return 0" from the !CONFIG_ARM_TEGRA_CPUFREQ case; the
+> whole point is to isolate callers from having to care whether
+> CONFIG_ARM_TEGRA_CPUFREQ is enabled, and making the function act like it
+> worked OK is part of that isolation.
+>
+OK thanks.
