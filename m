@@ -1,176 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934161Ab3LIQYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:24:46 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59766 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933889Ab3LIQWx (ORCPT
+	id S933991Ab3LIQY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:24:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:64743 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934003Ab3LIQYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:22:53 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <lee.jones@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 08/15] mfd: menelaus: Pass menelaus_chip pointer to add/remove irq functions
-Date: Mon, 9 Dec 2013 10:21:18 -0600
-Message-ID: <1386606085-26838-8-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.8.4.GIT
-In-Reply-To: <1386606085-26838-1-git-send-email-balbi@ti.com>
-References: <20131209161422.GC24047@saruman.home>
- <1386606085-26838-1-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Dec 2013 11:24:53 -0500
+Date: Mon, 9 Dec 2013 11:24:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCHSET 00/14] tools lib traceevent: Get rid of *die() calls
+ from parse-filter.c
+Message-ID: <20131209112449.47eeedaa@gandalf.local.home>
+In-Reply-To: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those functions are static and can receive a menelaus_chip pointer very
-easily.
+On Mon,  9 Dec 2013 14:33:57 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/mfd/menelaus.c | 57 ++++++++++++++++++++++++++------------------------
- 1 file changed, 30 insertions(+), 27 deletions(-)
+> Hello,
+> 
+> This patchset tries to remove all die() calls in event filter parsing
+> code.  The only remaining bits are in trace-seq.c which implement
+> print functions and I want to hear what's the best way we can handle
+> the error case during the print.
+> 
+> I also put this patches on libtraceevent/die-removal-v1 branch in my tree
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> 
+> Any comments are welcome, thanks
+> Namhyung
+> 
 
-diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 8796e5e..8672d86 100644
---- a/drivers/mfd/menelaus.c
-+++ b/drivers/mfd/menelaus.c
-@@ -236,28 +236,28 @@ static int menelaus_ack_irq(struct menelaus_chip *m, int irq)
- }
- 
- /* Adds a handler for an interrupt. Does not run in interrupt context */
--static int menelaus_add_irq_work(int irq,
-+static int menelaus_add_irq_work(struct menelaus_chip *m, int irq,
- 		void (*handler)(struct menelaus_chip *))
- {
- 	int ret = 0;
- 
--	mutex_lock(&the_menelaus->lock);
--	the_menelaus->handlers[irq] = handler;
--	ret = menelaus_enable_irq(the_menelaus, irq);
--	mutex_unlock(&the_menelaus->lock);
-+	mutex_lock(&m->lock);
-+	m->handlers[irq] = handler;
-+	ret = menelaus_enable_irq(m, irq);
-+	mutex_unlock(&m->lock);
- 
- 	return ret;
- }
- 
- /* Removes handler for an interrupt */
--static int menelaus_remove_irq_work(int irq)
-+static int menelaus_remove_irq_work(struct menelaus_chip *m, int irq)
- {
- 	int ret = 0;
- 
--	mutex_lock(&the_menelaus->lock);
--	ret = menelaus_disable_irq(the_menelaus, irq);
--	the_menelaus->handlers[irq] = NULL;
--	mutex_unlock(&the_menelaus->lock);
-+	mutex_lock(&m->lock);
-+	ret = menelaus_disable_irq(m, irq);
-+	m->handlers[irq] = NULL;
-+	mutex_unlock(&m->lock);
- 
- 	return ret;
- }
-@@ -412,23 +412,24 @@ EXPORT_SYMBOL(menelaus_set_mmc_slot);
- int menelaus_register_mmc_callback(void (*callback)(void *data, u8 card_mask),
- 				   void *data)
- {
-+	struct menelaus_chip *m = the_menelaus;
- 	int ret = 0;
- 
--	the_menelaus->mmc_callback_data = data;
--	the_menelaus->mmc_callback = callback;
--	ret = menelaus_add_irq_work(MENELAUS_MMC_S1CD_IRQ,
-+	m->mmc_callback_data = data;
-+	m->mmc_callback = callback;
-+	ret = menelaus_add_irq_work(m, MENELAUS_MMC_S1CD_IRQ,
- 				    menelaus_mmc_cd_work);
- 	if (ret < 0)
- 		return ret;
--	ret = menelaus_add_irq_work(MENELAUS_MMC_S2CD_IRQ,
-+	ret = menelaus_add_irq_work(m, MENELAUS_MMC_S2CD_IRQ,
- 				    menelaus_mmc_cd_work);
- 	if (ret < 0)
- 		return ret;
--	ret = menelaus_add_irq_work(MENELAUS_MMC_S1D1_IRQ,
-+	ret = menelaus_add_irq_work(m, MENELAUS_MMC_S1D1_IRQ,
- 				    menelaus_mmc_cd_work);
- 	if (ret < 0)
- 		return ret;
--	ret = menelaus_add_irq_work(MENELAUS_MMC_S2D1_IRQ,
-+	ret = menelaus_add_irq_work(m, MENELAUS_MMC_S2D1_IRQ,
- 				    menelaus_mmc_cd_work);
- 
- 	return ret;
-@@ -437,13 +438,15 @@ EXPORT_SYMBOL(menelaus_register_mmc_callback);
- 
- void menelaus_unregister_mmc_callback(void)
- {
--	menelaus_remove_irq_work(MENELAUS_MMC_S1CD_IRQ);
--	menelaus_remove_irq_work(MENELAUS_MMC_S2CD_IRQ);
--	menelaus_remove_irq_work(MENELAUS_MMC_S1D1_IRQ);
--	menelaus_remove_irq_work(MENELAUS_MMC_S2D1_IRQ);
-+	struct menelaus_chip *m = the_menelaus;
-+
-+	menelaus_remove_irq_work(m, MENELAUS_MMC_S1CD_IRQ);
-+	menelaus_remove_irq_work(m, MENELAUS_MMC_S2CD_IRQ);
-+	menelaus_remove_irq_work(m, MENELAUS_MMC_S1D1_IRQ);
-+	menelaus_remove_irq_work(m, MENELAUS_MMC_S2D1_IRQ);
- 
--	the_menelaus->mmc_callback = NULL;
--	the_menelaus->mmc_callback_data = NULL;
-+	m->mmc_callback = NULL;
-+	m->mmc_callback_data = NULL;
- }
- EXPORT_SYMBOL(menelaus_unregister_mmc_callback);
- 
-@@ -1070,8 +1073,8 @@ static int menelaus_ioctl(struct device *dev, unsigned cmd, unsigned long arg)
- 	case RTC_UIE_ON:
- 		if (m->uie)
- 			return 0;
--		status = menelaus_remove_irq_work(MENELAUS_RTCTMR_IRQ);
--		status = menelaus_add_irq_work(MENELAUS_RTCTMR_IRQ,
-+		status = menelaus_remove_irq_work(m, MENELAUS_RTCTMR_IRQ);
-+		status = menelaus_add_irq_work(m, MENELAUS_RTCTMR_IRQ,
- 				menelaus_rtc_update_work);
- 		if (status == 0)
- 			m->uie = 1;
-@@ -1079,7 +1082,7 @@ static int menelaus_ioctl(struct device *dev, unsigned cmd, unsigned long arg)
- 	case RTC_UIE_OFF:
- 		if (!m->uie)
- 			return 0;
--		status = menelaus_remove_irq_work(MENELAUS_RTCTMR_IRQ);
-+		status = menelaus_remove_irq_work(m, MENELAUS_RTCTMR_IRQ);
- 		if (status == 0)
- 			m->uie = 0;
- 		return status;
-@@ -1127,7 +1130,7 @@ static inline void menelaus_rtc_init(struct menelaus_chip *m)
- 
- 	/* support RTC alarm; it can issue wakeups */
- 	if (alarm) {
--		if (menelaus_add_irq_work(MENELAUS_RTCALM_IRQ,
-+		if (menelaus_add_irq_work(m, MENELAUS_RTCALM_IRQ,
- 				menelaus_rtc_alarm_work) < 0) {
- 			dev_err(&m->client->dev, "can't handle RTC alarm\n");
- 			return;
-@@ -1154,7 +1157,7 @@ static inline void menelaus_rtc_init(struct menelaus_chip *m)
- 			&menelaus_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(m->rtc)) {
- 		if (alarm) {
--			menelaus_remove_irq_work(MENELAUS_RTCALM_IRQ);
-+			menelaus_remove_irq_work(m, MENELAUS_RTCALM_IRQ);
- 			device_init_wakeup(&m->client->dev, 0);
- 		}
- 		dev_err(&m->client->dev, "can't register RTC: %d\n",
--- 
-1.8.4.GIT
+Other than what I commented on, the rest can have my:
+
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> 
+> Namhyung Kim (14):
+>   tools lib traceevent: Get rid of malloc_or_die() in show_error()
+>   tools lib traceevent: Get rid of die in add_filter_type()
+>   tools lib traceevent: Get rid of malloc_or_die() in
+>     pevent_filter_alloc()
+>   tools lib traceevent: Get rid of malloc_or_die() allocate_arg()
+>   tools lib traceevent: Get rid of malloc_or_die() in read_token()
+>   tools lib traceevent: Get rid of malloc_or_die() in find_event()
+>   tools lib traceevent: Get rid of malloc_or_die() in add_event()
+>   tools lib traceevent: Get rid of die() in create_arg_item()
+>   tools lib traceevent: Get rid of die() in add_right()
+>   tools lib traceevent: Get rid of die() in reparent_op_arg()
+>   tools lib traceevent: Get rid of malloc_or_die() in
+>     pevent_filter_add_filter_str()
+>   tools lib traceevent: Get rid of die() in
+>     pevent_filter_clear_trivial()
+>   tools lib traceevent: Refactor test_filter() to get rid of die()
+>   tools lib traceevent: Get rid of die() in some string conversion
+>     funcitons
+> 
+>  tools/lib/traceevent/event-parse.h  |   3 +-
+>  tools/lib/traceevent/parse-filter.c | 432 +++++++++++++++++++++++++-----------
+>  2 files changed, 303 insertions(+), 132 deletions(-)
+> 
 
