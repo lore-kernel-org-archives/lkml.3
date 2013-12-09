@@ -1,142 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab3LISpK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:45:10 -0500
-Received: from relay.parallels.com ([195.214.232.42]:41123 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932286Ab3LISpF (ORCPT
+	id S932933Ab3LISqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:46:13 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33081 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab3LISqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:45:05 -0500
-Message-ID: <52A60FA3.20106@parallels.com>
-Date: Mon, 9 Dec 2013 22:44:51 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Glauber Costa <glommer@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
-References: <1385989693-28788-1-git-send-email-vdavydov@parallels.com> <20131202181501.GA5524@dhcp22.suse.cz> <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com> <529CDDB3.3090301@parallels.com> <CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com> <529D9100.4070207@parallels.com> <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com> <529EDB41.8030505@parallels.com> <CAA6-i6o+ZuM_fq+PdQJZ40S0d7K35cBvbTELg49+SgLKP5F0xA@mail.gmail.com> <529F1883.3030907@parallels.com> <20131209152256.GD3597@dhcp22.suse.cz>
-In-Reply-To: <20131209152256.GD3597@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.25.103]
+	Mon, 9 Dec 2013 13:46:11 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-95-52a60ff036e2
+From: Tomasz Figa <t.figa@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rjw@rjwysocki.net, kgene.kim@samsung.com, tomasz.figa@gmail.com,
+        yadi.brar01@gmail.com, myungjoo.ham@samsung.com,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Andrew Bresticker <abrestic@google.com>,
+        Doug Anderson <dianders@google.com>
+Subject: Re: [RFC v2 1/4] power: asv: Add common ASV support for Samsung SoCs
+Date: Mon, 09 Dec 2013 19:45:57 +0100
+Message-id: <4229773.U5JovcREjb@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
+In-reply-to: <1384515691-26299-2-git-send-email-sachin.kamat@linaro.org>
+References: <1384515691-26299-1-git-send-email-sachin.kamat@linaro.org>
+ <1384515691-26299-2-git-send-email-sachin.kamat@linaro.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t/xy7of+JcFGTy4KG3x8OhnNosF21cy
+	WfQuuMpmsenxNVaLy7vmsFl87j3CaDHj/D4mi9uNK9gszpy+xGpx8k8vo8WqXX8YLeb+bmS1
+	mDP9HZMDr8fOWXfZPRZsKvW4c20Pm8fmJfUeW662s3j0bVnF6PF5k1wAexSXTUpqTmZZapG+
+	XQJXRtfBtWwFa0wqXh7cytzAuFSzi5GTQ0LAROLmnceMELaYxIV769lAbCGBpYwSLa0eXYxc
+	QHYXk8TJ7g3sIAk2ATWJzw2PwIpEBLQkXnYvZwIpYhb4zSSx48lPsCJhAV+JBc/OgdksAqoS
+	R1ZNZwaxeQU0Je5/ns8KYvMLqEu82/aUCcQWFXCTeLFvC1g9p4CHxJo5pxkhNrcySrz8s48V
+	ollQ4sfkeywgNrOAvMS+/VNZIWwtifU7jzNNYBSchaRsFpKyWUjKFjAyr2IUTS1NLihOSs81
+	1CtOzC0uzUvXS87P3cQIiaYvOxgXH7M6xCjAwajEw1vAsCxIiDWxrLgy9xCjBAezkggvFztQ
+	iDclsbIqtSg/vqg0J7X4ECMTB6dUA6Pm4UcRHLEmbpWLzlmZ/fpd5MGy89GTtSds0uZcrr14
+	9vNn3veTVZW+RAWnhdyem2Dw6g+3iXytwIGDHD4vr5U2FfjPMzuc9v/JlDvKh+dx77Q0sX+V
+	svX76lOJi1gYJm8/s2372ZD7ZyaLqwo9+KN6r0Bit/ZNuxrVzeI9KrcVBMuV3QwvC51VYinO
+	SDTUYi4qTgQAThJP24QCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 07:22 PM, Michal Hocko wrote:
-> On Wed 04-12-13 15:56:51, Vladimir Davydov wrote:
->> On 12/04/2013 02:08 PM, Glauber Costa wrote:
->>>>> Could you do something clever with just one flag? Probably yes. But I
->>>>> doubt it would
->>>>> be that much cleaner, this is just the way that patching sites work.
->>>> Thank you for spending your time to listen to me.
->>>>
->>> Don't worry! I thank you for carrying this forward.
->>>
->>>> Let me try to explain what is bothering me.
->>>>
->>>> We have two state bits for each memcg, 'active' and 'activated'. There
->>>> are two scenarios where the bits can be modified:
->>>>
->>>> 1) The kmem limit is set on a memcg for the first time -
->>>> memcg_update_kmem_limit(). Here we call memcg_update_cache_sizes(),
->>>> which sets the 'activated' bit on success, then update static branching,
->>>> then set the 'active' bit. All three actions are done atomically in
->>>> respect to other tasks setting the limit due to the set_limit_mutex.
->>>> After both bits are set, they never get cleared for the memcg.
->>>>
->>> So far so good. But again, note how you yourself describe it:
->>> the cations are done atomically  *in respect to other tasks setting the limit*
->>>
->>> But there are also tasks that are running its courses naturally and
->>> just allocating
->>> memory. For those, some call sites will be on, some will be off. We need to make
->>> sure that *none* of them uses the patched site until *all* of them are patched.
->>> This has nothing to do with updates, this is all about the readers.
->>>
->>>> 2) When a subgroup of a kmem-active cgroup is created -
->>>> memcg_propagate_kmem(). Here we copy kmem_account_flags from the parent,
->>>> then increase static branching refcounter, then call
->>>> memcg_update_cache_sizes() for the new memcg, which may clear the
->>>> 'activated' bit on failure. After successful execution, the state bits
->>>> never get cleared for the new memcg.
->>>>
->>>> In scenario 2 there is no need bothering about the flags setting order,
->>>> because we don't have any tasks in the cgroup yet - the tasks can be
->>>> moved in only after css_online finishes when we have both of the bits
->>>> set and the static branching enabled. Actually, we already do not bother
->>>> about it, because we have both bits set before the cgroup is fully
->>>> initialized (memcg_update_cache_sizes() is called).
->>>>
->>> Yes, after the first cgroup is set none of that matters. But it is just easier
->>> and less error prone just to follow the same path every time. As I have said,
->>> if you can come up with a more clever way to deal with the problem above
->>> that doesn't involve the double flag - and you can prove it works - I
->>> am definitely
->>> fine with it. But this is subtle code, and in the past - Michal can
->>> attest this - we've
->>> changed this being sure it would work just to see it explode in our faces.
->>>
->>> So although I am willing to review every patch for correctness on that
->>> front (I never
->>> said I liked the 2-flags scheme...), unless you have a bug or real
->>> problem on it,
->>> I would advise against changing it if its just to make it more readable.
->>>
->>> But again, don't take me too seriously on this. If you and Michal think you can
->>> come up with something better, I'm all for it.
->> All right, I finally get you :-)
->>
->> Although I still don't think we need the second flag, I now understand
->> that it's better not to change the code that works fine especially the
->> change does not make it neither more readable nor more effective. Since
->> I can be mistaken about the flags usage (it's by far not unlikely), it's
->> better to leave it as is rather than being at risk of catching spurious
->> hangs that might be caused by this modification.
->>
->> Thanks for the detailed explanation!
-> It would be really great if we could push some of that into the
-> comments, please?
->
-> Anyway, reading this thread again, I guess I finally got what you meant
-> Vladimir.
-> You are basically saying that the two stage enabling can be done
-> by static_key_slow_inc in the first step and memcg_kmem_set_active
-> in the second step without an additional flag.
-> Assuming that the writers cannot race (they cannot currently because
-> they are linearized by set_limit_mutex and memcg_create_mutex) and
-> readers (charging paths) are _always_ checking the static key before
-> checking active flags?
+Hi Yadwinder, Sachin,
 
-Right. There is no point in checking the static key after checking
-active flags, because the benefit of using static branching would
-disappear then. So IMHO the only thing we should bother is that the
-static key refcounter is incremented *before* the active bit is set.
-That assures all static branches have been patched if a charge path
-succeeds, because a charge path cannot succeed if the active bit is not
-set. That said we won't skip a commit or uncharge after a charge due to
-an unpatched static branch. That's why I think the 'active' bit is enough.
+On Friday 15 of November 2013 17:11:28 Sachin Kamat wrote:
+> From: Yadwinder Singh Brar <yadi.brar@samsung.com>
+> 
+> This patch introduces a common ASV (Adaptive Supply Voltage) basic framework
+> for samsung SoCs. It provides common APIs (to be called by users to get ASV
+> values or init opp_table) and an interface for SoC specific drivers to
+> register ASV members (instances).
+[snip]
+> diff --git a/drivers/power/asv/asv.c b/drivers/power/asv/asv.c
+> new file mode 100644
+> index 000000000000..3f2c31a0d3a9
+> --- /dev/null
+> +++ b/drivers/power/asv/asv.c
+> @@ -0,0 +1,176 @@
+> +/*
+> + * ASV(Adaptive Supply Voltage) common core
+> + *
+> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+> + *		http://www.samsung.com/
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> +*/
+> +
+> +#include <linux/io.h>
+> +#include <linux/pm_opp.h>
+> +#include <linux/slab.h>
+> +#include <linux/device.h>
+> +#include <linux/power/asv-driver.h>
+> +
+> +static LIST_HEAD(asv_list);
+> +static DEFINE_MUTEX(asv_mutex);
+> +
+> +struct asv_member {
+> +	struct list_head		node;
+> +	struct asv_info *asv_info;
 
-Currently we have two flags 'activated' and 'active', and their usage
-looks strange to me. Throughout the code we only have the following checks:
-    test_bit('active', state_mask)
-    test_bit('active', state_mask)&&test_bit('activated', state_mask)
-Since 'active' bit is always set after 'activated' and none of them gets
-cleared, the latter check is equivalent to the former.
-Since we never issue a check like this:
-    test_bit('activated', state_mask)
-we never actually check the 'activated' bit and do not need it - ???
+nit: Inconsistent indentation of member names. In general I would
+recommend dropping the tabs between types and names and using a single
+space instead, since this is more future proof - you will never have to
+change other lines to add new ones.
 
-Thanks.
+> +};
+> +
+> +static void add_asv_member(struct asv_member *asv_mem)
+> +{
+> +	mutex_lock(&asv_mutex);
+> +	list_add_tail(&asv_mem->node, &asv_list);
+> +	mutex_unlock(&asv_mutex);
+> +}
+> +
+> +static struct asv_member *asv_get_mem(enum asv_type_id asv_type)
 
-> I guess this should work. But it would require a deep audit that the
-> above is correct in all places. For example we do not bother to check
-> static key during offline/free paths. I guess it should be harmless as
-> is but who knows...
->
-> I would rather see more detailed description of the current state first.
+I don't really like this enum based look-up. It's hard to define an enum
+that covers any possible existing and future platforms that would not be
+bloated with single platform specific entries. IMHO something string based
+could be more scalable.
+
+> +{
+> +	struct asv_member *asv_mem;
+> +	struct asv_info *asv_info;
+> +
+> +	list_for_each_entry(asv_mem, &asv_list, node) {
+> +		asv_info = asv_mem->asv_info;
+> +		if (asv_type == asv_info->type)
+> +			return asv_mem;
+> +	}
+
+Don't you need any kind of locking here? A mutex in add_asv_member()
+suggests that read access to the list should be protected as well.
+
+> +
+> +	return NULL;
+> +}
+> +
+> +unsigned int asv_get_volt(enum asv_type_id target_type,
+> +						unsigned int target_freq)
+
+Do you need this function at all? I believe this is all about populating
+device's OPP array with frequencies and voltages according to its ASV
+level. Users will be able to query for required voltage using standard OPP
+calls then, without a need for ASV specific functions like this one.
+
+> +{
+> +	struct asv_member *asv_mem = asv_get_mem(target_type);
+> +	struct asv_freq_table *dvfs_table;
+> +	struct asv_info *asv_info;
+> +	unsigned int i;
+> +
+> +	if (!asv_mem)
+> +		return 0;
+> +
+> +	asv_info = asv_mem->asv_info;
+> +	dvfs_table = asv_info->dvfs_table;
+> +
+> +	for (i = 0; i < asv_info->nr_dvfs_level; i++) {
+> +		if (dvfs_table[i].freq == target_freq)
+> +			return dvfs_table[i].volt;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +int asv_init_opp_table(struct device *dev, enum asv_type_id target_type)
+> +{
+> +	struct asv_member *asv_mem = asv_get_mem(target_type);
+> +	struct asv_info *asv_info;
+> +	struct asv_freq_table *dvfs_table;
+> +	unsigned int i;
+> +
+> +	if (!asv_mem)
+> +		return -EINVAL;
+> +
+> +	asv_info = asv_mem->asv_info;
+> +	dvfs_table = asv_info->dvfs_table;
+> +
+> +	for (i = 0; i < asv_info->nr_dvfs_level; i++) {
+> +		if (dev_pm_opp_add(dev, dvfs_table[i].freq * 1000,
+> +			dvfs_table[i].volt)) {
+> +			dev_warn(dev, "Failed to add OPP %d\n",
+> +				 dvfs_table[i].freq);
+
+Hmm, shouldn't it be considered a failure instead?
+
+> +			continue;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct asv_member *asv_init_member(struct asv_info *asv_info)
+> +{
+> +	struct asv_member *asv_mem;
+> +	int ret = 0;
+> +
+> +	if (!asv_info) {
+> +		pr_err("No ASV info provided\n");
+> +		return NULL;
+
+I'd suggest adopting the ERR_PTR() convention, which allows returning more
+information about the error.
+
+> +	}
+> +
+> +	asv_mem = kzalloc(sizeof(*asv_mem), GFP_KERNEL);
+> +	if (!asv_mem) {
+> +		pr_err("Allocation failed for member: %s\n", asv_info->name);
+> +		return NULL;
+> +	}
+> +
+> +	asv_mem->asv_info = kmemdup(asv_info, sizeof(*asv_info), GFP_KERNEL);
+> +	if (!asv_mem->asv_info) {
+> +		pr_err("Copying asv_info failed for member: %s\n",
+> +			asv_info->name);
+> +		kfree(asv_mem);
+> +		return NULL;
+
+For consistency, the error here should be handled as below, by using the
+error path.
+
+> +	}
+> +	asv_info = asv_mem->asv_info;
+> +
+> +	if (asv_info->ops->get_asv_group) {
+> +		ret = asv_info->ops->get_asv_group(asv_info);
+> +		if (ret) {
+> +			pr_err("get_asv_group failed for %s : %d\n",
+> +				asv_info->name, ret);
+> +			goto err;
+> +		}
+> +	}
+> +
+> +	if (asv_info->ops->init_asv)
+> +		ret = asv_info->ops->init_asv(asv_info);
+> +		if (ret) {
+> +			pr_err("asv_init failed for %s : %d\n",
+> +				asv_info->name, ret);
+> +			goto err;
+> +		}
+> +
+> +	/* In case of parsing table from DT, we may need to add flag to identify
+> +	DT supporting members and call init_asv_table from asv_init_opp_table(
+> +	after getting dev_node from dev,if required), instead of calling here.
+> +	*/
+
+coding style: Wrong multi-line comment style.
+
+/*
+ * This is a valid multi-line comment.
+ */
+
+> +
+> +	if (asv_info->ops->init_asv_table) {
+> +		ret = asv_info->ops->init_asv_table(asv_info);
+> +		if (ret) {
+> +			pr_err("init_asv_table failed for %s : %d\n",
+> +				asv_info->name, ret);
+> +			goto err;
+> +		}
+> +	}
+
+Hmm, I don't see a point of these three separate callbacks above.
+
+In general, I'd suggest a different architecture. I'd see this more as:
+
+1) Platform code registers static platform device to instantiate SoC ASV
+   driver.
+2) SoC specific ASV driver probes, reads group ID from hardware register,
+   calls register_asv_member() with appropriate DVFS table for detected
+   group.
+3) Driver using ASV calls asv_init_opp_table() with its struct device and
+   ASV member name, which causes the ASV code to fill device's operating
+   point using OPP calls.
+
+Now client driver has all the information it needs and the work of ASV
+subsystem is done. The control flow between drivers would be much simpler
+and no callbacks would have to be called.
+
+Best regards,
+Tomasz
+
