@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760299Ab3LICdT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 21:33:19 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60724 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab3LICdS (ORCPT
+	id S1760290Ab3LIClR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 21:41:17 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40578 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab3LIClO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 21:33:18 -0500
-Date: Mon, 9 Dec 2013 11:31:34 +0900
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-CC: <linux-audit@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Eric Paris <eparis@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Richard Guy Briggs <rgb@tricolour.ca>, <toshi.okajima@jp.fujitsu.com>
-Subject: Re: [PATCH 3/3] audit: drop audit_cmd_lock in AUDIT_USER family of
- cases
-Message-ID: <20131209113134.23d1176bedbf6831dbf86e8c@jp.fujitsu.com>
-In-Reply-To: <53733434b27dc65bd16b2e73211b823da1fa64cf.1386206544.git.rgb@redhat.com>
-References: <1382713941.2954.19.camel@flatline.rdu.redhat.com>
-	<53733434b27dc65bd16b2e73211b823da1fa64cf.1386206544.git.rgb@redhat.com>
-Organization: Fujitsu
-X-Mailer: Sylpheed 3.2.0beta9 (GTK+ 2.24.11; i686-redhat-linux-gnu)
+	Sun, 8 Dec 2013 21:41:14 -0500
+Message-ID: <52A52BBF.6030105@huawei.com>
+Date: Mon, 9 Dec 2013 10:32:31 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: David Miller <davem@davemloft.net>, <kaber@trash.net>, <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>, <ebiederm@xmission.com>
+CC: <edumazet@google.com>, <fbl@redhat.com>, <ebiederm@xmission.com>,
+        <jeff@garzik.org>, <edumazet@google.com>, <peterz@infradead.org>,
+        <honkiko@gmail.com>, <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>,
+        Wengmeiling <wengmeiling.weng@huawei.com>
+Subject: cgroup filter on physics interface can't container
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Dec 2013 21:45:56 -0500
-Richard Guy Briggs <rgb@redhat.com> wrote:
+hello network hackers,
 
-> We do not need to hold the audit_cmd_mutex for this family of cases.  The
-> possible exception to this is the call to audit_filter_user(), so drop the lock
-> immediately after.  To help in fixing the race we are trying to avoid, make
-> sure that nothing called by audit_filter_user() calls audit_log_start().  In
-> particular, watch out for *_audit_rule_match().
-> 
-> This fix will take care of systemd and anything USING audit.  It still means
-> that we could race with something configuring audit and auditd shutting down.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@tricolour.ca>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+	A linux container was builded with veth pair(veth0 inside container, veth1 outside container),
 
-When I have tested a patch with my reproducer, 
-a hangup by this problem doesn't occur. 
-//// reproducer ////
- # auditctl -a exit,always -S all
- # reboot
-/////////////////////////
+the config as below:
 
-So, this fix looks good to me.
+  lxc.network.type = veth
+  lxc.network.flags = up
+  lxc.network.link = br0  // base on eth0
+  lxc.network.name = eth0
+  lxc.network.ipv4 = 128.5.130.26/24
 
-Please add:
+then I use tc command with cgroup filter on veth0, it works well. But when setting on eth0, it doesn`t work.
 
-Reported-by: toshi.okajima@jp.fujitsu.com
-Tested-by: toshi.okajima@jp.fujitsu.com
+The reason is dev_forward_skb() in veth_xmit will call skb_scrub_packet and clean all information including skb->sk
+in the skb, so if cls_cgroup_classify is working in serving softirq state, it will return failer, see below:
 
-Thanks.
-
-> ---
->  kernel/audit.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 4689012..4cbc945 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -713,6 +713,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  				if (err)
->  					break;
->  			}
-> +			mutex_unlock(&audit_cmd_mutex);
->  			audit_log_common_recv_msg(&ab, msg_type);
->  			if (msg_type != AUDIT_USER_TTY)
->  				audit_log_format(ab, " msg='%.1024s'",
-> @@ -729,6 +730,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  			}
->  			audit_set_pid(ab, NETLINK_CB(skb).portid);
->  			audit_log_end(ab);
-> +			mutex_lock(&audit_cmd_mutex);
->  		}
->  		break;
->  	case AUDIT_ADD_RULE:
-> -- 
-> 1.7.1
-> 
+	if (in_serving_softirq()) {
+		/* If there is an sk_classid we'll use that. */
+		if (!skb->sk)
+			return -1;
+		classid = skb->sk->sk_classid;
+	}
 
 
--- 
-Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Qdisc with cgroup filter on physics interface can not control a container network, it is disappointed.
+
+we can save sk_classid before skb_scrub_packet and restore it after that. Is it reasonable?  or any way to achieve this?
+
+thanks,
+Libo
+
