@@ -1,148 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761014Ab3LIIKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:10:11 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35842 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab3LIIGH (ORCPT
+	id S1759993Ab3LIIOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:14:19 -0500
+Received: from cassarossa.samfundet.no ([193.35.52.29]:47183 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3LIIOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:06:07 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, <vdavydov@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v13 02/16] memcg: consolidate callers of memcg_cache_id
-Date: Mon, 9 Dec 2013 12:05:43 +0400
-Message-ID: <9068986c0e39addbc1d1eee0d76c6dfe3eb0e175.1386571280.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1386571280.git.vdavydov@parallels.com>
-References: <cover.1386571280.git.vdavydov@parallels.com>
+	Mon, 9 Dec 2013 03:14:18 -0500
+Date: Mon, 9 Dec 2013 09:14:15 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: hskinnemoen@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] avr32: remove deprecated IRQF_DISABLED
+Message-ID: <20131209081415.GA8849@samfundet.no>
+References: <20131013072003.GA11195@samfundet.no>
+ <1386566211-19536-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386566211-19536-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+Around Mon 09 Dec 2013 06:16:51 +0100 or thereabout, Michael Opdenacker wrote:
+> This patch proposes to remove the use of the IRQF_DISABLED flag
+> 
+> It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-Each caller of memcg_cache_id ends up sanitizing its parameters in its own way.
-Now that the memcg_cache_id itself is more robust, we can consolidate this.
+I'll pull it into the for-linus branch in
+git://git.kernel.org/pub/scm/linux/kernel/git/egtvedt/linux-avr32.git
 
-Also, as suggested by Michal, a special helper memcg_cache_idx is used when the
-result is expected to be used directly as an array index to make sure we never
-access in a negative index.
+> ---
+>  arch/avr32/kernel/time.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   49 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 29 insertions(+), 20 deletions(-)
+<snipp diff>
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 02b5176..144cb4c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2960,6 +2960,30 @@ static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
- }
- 
- /*
-+ * helper for acessing a memcg's index. It will be used as an index in the
-+ * child cache array in kmem_cache, and also to derive its name. This function
-+ * will return -1 when this is not a kmem-limited memcg.
-+ */
-+int memcg_cache_id(struct mem_cgroup *memcg)
-+{
-+	if (!memcg || !memcg_can_account_kmem(memcg))
-+		return -1;
-+	return memcg->kmemcg_id;
-+}
-+
-+/*
-+ * This helper around memcg_cache_id is not intented for use outside memcg
-+ * core. It is meant for places where the cache id is used directly as an array
-+ * index
-+ */
-+static int memcg_cache_idx(struct mem_cgroup *memcg)
-+{
-+	int ret = memcg_cache_id(memcg);
-+	BUG_ON(ret < 0);
-+	return ret;
-+}
-+
-+/*
-  * This is a bit cumbersome, but it is rarely used and avoids a backpointer
-  * in the memcg_cache_params struct.
-  */
-@@ -2969,7 +2993,7 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
- 
- 	VM_BUG_ON(p->is_root_cache);
- 	cachep = p->root_cache;
--	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
-+	return cache_from_memcg_idx(cachep, memcg_cache_idx(p->memcg));
- }
- 
- #ifdef CONFIG_SLABINFO
-@@ -3067,18 +3091,6 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
- }
- 
- /*
-- * helper for acessing a memcg's index. It will be used as an index in the
-- * child cache array in kmem_cache, and also to derive its name. This function
-- * will return -1 when this is not a kmem-limited memcg.
-- */
--int memcg_cache_id(struct mem_cgroup *memcg)
--{
--	if (!memcg || !memcg_can_account_kmem(memcg))
--		return -1;
--	return memcg->kmemcg_id;
--}
--
--/*
-  * This ends up being protected by the set_limit mutex, during normal
-  * operation, because that is its main call site.
-  *
-@@ -3240,7 +3252,7 @@ void memcg_release_cache(struct kmem_cache *s)
- 		goto out;
- 
- 	memcg = s->memcg_params->memcg;
--	id  = memcg_cache_id(memcg);
-+	id = memcg_cache_idx(memcg);
- 
- 	root = s->memcg_params->root_cache;
- 	root->memcg_params->memcg_caches[id] = NULL;
-@@ -3403,9 +3415,7 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
- 	struct kmem_cache *new_cachep;
- 	int idx;
- 
--	BUG_ON(!memcg_can_account_kmem(memcg));
--
--	idx = memcg_cache_id(memcg);
-+	idx = memcg_cache_idx(memcg);
- 
- 	mutex_lock(&memcg_cache_mutex);
- 	new_cachep = cache_from_memcg_idx(cachep, idx);
-@@ -3578,10 +3588,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 	rcu_read_lock();
- 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
- 
--	if (!memcg_can_account_kmem(memcg))
--		goto out;
--
- 	idx = memcg_cache_id(memcg);
-+	if (idx < 0)
-+		goto out;
- 
- 	/*
- 	 * barrier to mare sure we're always seeing the up to date value.  The
 -- 
-1.7.10.4
-
+mvh
+Hans-Christian Egtvedt
