@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761360Ab3LIS00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:26:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:37148 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3LIS0Y (ORCPT
+	id S1761456Ab3LIS1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:27:45 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45861 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760593Ab3LIS1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:26:24 -0500
-Date: Mon, 9 Dec 2013 12:26:19 -0600
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        ebiederm@xmission.com, sgrubb@redhat.com
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-Message-ID: <20131209182619.GD6849@sergelap>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
- <529EE877.7030701@cn.fujitsu.com>
- <20131206221241.GD22445@mail.hallyn.com>
- <52A52599.3070502@cn.fujitsu.com>
+	Mon, 9 Dec 2013 13:27:42 -0500
+Message-ID: <52A60B9A.7010709@wwwdotorg.org>
+Date: Mon, 09 Dec 2013 11:27:38 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A52599.3070502@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@linaro.org
+CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, rob@landley.net,
+        thierry.reding@gmail.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ashwini Ghuge <aghuge@nvidia.com>
+Subject: Re: [PATCH V2 2/2] pinctrl: tegra: add pinmux controller driver for
+ Tegra124
+References: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com> <1386585140-1137-2-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386585140-1137-2-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
-> > Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >> Hi
-> >>
-> >> On 10/24/2013 03:31 PM, Gao feng wrote:
-> >>> Here is the v1 patchset: http://lwn.net/Articles/549546/
-> >>>
-> >>> The main target of this patchset is allowing user in audit
-> >>> namespace to generate the USER_MSG type of audit message,
-> >>> some userspace tools need to generate audit message, or
-> >>> these tools will broken.
-> >>>
-> >>
-> >> I really need this feature, right now,some process such as
-> >> logind are broken in container becase we leak of this feature.
-> > 
-> > Your set doesn't address loginuid though right?  How exactly do you
-> > expect to do that?  If user violates MAC policy and audit msg is
-> > sent to init user ns by mac subsys, you need the loginuid from
-> > init_audit_ns.  where will that be stored if you allow updates
-> > of loginuid in auditns?
-> > 
-> This patchset doesn't include the loginuid part.
+On 12/09/2013 03:32 AM, Laxman Dewangan wrote:
+> From: Ashwini Ghuge <aghuge@nvidia.com>
 > 
-> the loginuid is stored in task as before.
-> In my opinion, when task creates a new audit namespace, this task's
-> loginuid will be reset to zero, so the children tasks can set their
-> loginuid. Does this change break the MAC?
+> This adds a driver for the Tegra124 pinmux, and required
+> parameterization data for Tegra124.
+> 
+> The driver uses the common Tegra pincontrol driver utility
+> functions to implement the majority of the driver.
+> 
+> This driver is not compatible with the earlier NVIDIA's SoCs,
+> hence add new compatibile as "nvidia,tegra124-pinmux".
+> 
+> Originally written by Ashwini Gguhe.
+> Thierry:
+> 	- Cleanups in patches.
+> ldewangan:
+>         - Fix some entries for groups.
+> 	- Fix MUX enums and group sequence.
 
-I think so, yes.  In an LSPP selinux environment, if the task
-manages to trigger an selinux deny rule which is audited, then
-the loginuid must make sense on the host.  Now presumably it
-will get translated to the mapped host uid, and we can figure
-out the host uid owning it through /etc/subuid.  But that adds
-/etc/subuid as a new part of the TCB without any warning <shrug>
-So in that sense, for LSPP, it breaks it.
+> +static const struct pinctrl_pin_desc  tegra124_pins[] = {
 
--serge
+Still two spaces there...
+
+BTW, I said the following before for both patches; please make sure you
+add this to the commit description...
+
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
+Even if I didn't say it before, it's certainly now,
+
+Tested-by: Stephen Warren <swarren@nvidia.com>
+
+(I also tested your patches that add the pinctrl DT entries to the
+Venice2 DT file. Thanks.)
