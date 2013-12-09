@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761794Ab3LIVwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:52:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43500 "EHLO bear.ext.ti.com"
+	id S933137Ab3LIVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:54:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37083 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761712Ab3LIVwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:33 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v3 14/23] mm/lib/cpumask: Use memblock apis for early memory allocations
-Date: Mon, 9 Dec 2013 16:50:47 -0500
-Message-ID: <1386625856-12942-15-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+	id S933065Ab3LIVyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:54:05 -0500
+Message-ID: <52A63BF3.1000608@zytor.com>
+Date: Mon, 09 Dec 2013 13:53:55 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
+References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>	<CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>	<52A63AD4.2030101@zytor.com> <CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
+In-Reply-To: <CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to memblock interfaces for early memory allocator instead of
-bootmem allocator. No functional change in beahvior than what it is
-in current code from bootmem users points of view.
+On 12/09/2013 01:52 PM, H.J. Lu wrote:
+>>
+>> Why is that?  It would seem to be a big difference between a relocatable
+>> binary (PIE) and one with a load address fixed at link time.
+>>
+> 
+> PIE with non-zero vaddr should be loaded at non-zero
+> vaddr.  Otherwise, PIE may not work as expected.
+> 
 
-Archs already converted to NO_BOOTMEM now directly use memblock
-interfaces instead of bootmem wrappers build on top of memblock. And the
-archs which still uses bootmem, these new apis just fallback to exiting
-bootmem APIs.
+Please explain why that is the case, as it seems to be implying that PIE
+isn't actually relocatable in that case...
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- lib/cpumask.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	-hpa
 
-diff --git a/lib/cpumask.c b/lib/cpumask.c
-index d327b87..b810b75 100644
---- a/lib/cpumask.c
-+++ b/lib/cpumask.c
-@@ -140,7 +140,7 @@ EXPORT_SYMBOL(zalloc_cpumask_var);
-  */
- void __init alloc_bootmem_cpumask_var(cpumask_var_t *mask)
- {
--	*mask = alloc_bootmem(cpumask_size());
-+	*mask = memblock_virt_alloc(cpumask_size(), 0);
- }
- 
- /**
-@@ -161,6 +161,6 @@ EXPORT_SYMBOL(free_cpumask_var);
-  */
- void __init free_bootmem_cpumask_var(cpumask_var_t mask)
- {
--	free_bootmem(__pa(mask), cpumask_size());
-+	memblock_free_early(__pa(mask), cpumask_size());
- }
- #endif
--- 
-1.7.9.5
 
