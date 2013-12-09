@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761392Ab3LIRHo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:07:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755646Ab3LIRHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:07:42 -0500
-Date: Mon, 09 Dec 2013 12:07:26 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Message-ID: <1386608846-opj9f7ee-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1386580248-22431-7-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1386580248-22431-7-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v2 6/7] mm/migrate: remove unused function,
- fail_migrate_page()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1386580248-22431-7-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1761303Ab3LIRKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:10:12 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34186 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752856Ab3LIRKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 12:10:07 -0500
+Message-ID: <52A5F96A.6030900@hurleysoftware.com>
+Date: Mon, 09 Dec 2013 12:10:02 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Stas Sergeev <stsp@list.ru>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Margarita Manterola <margamanterola@gmail.com>,
+        Maximiliano Curia <maxy@gnuservers.com.ar>,
+        Stas Sergeev <stsp@users.sourceforge.net>, Pavel Machek <pavel@ucw.cz>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, Caylan Van Larson <i@caylan.net>
+Subject: Re: [PATCH v3] n_tty: Fix buffer overruns with larger-than-4k pastes
+References: <529F7B35.4050509@list.ru> <1386600604-5092-1-git-send-email-peter@hurleysoftware.com> <52A5EF3F.2070805@list.ru>
+In-Reply-To: <52A5EF3F.2070805@list.ru>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 06:10:47PM +0900, Joonsoo Kim wrote:
-> fail_migrate_page() isn't used anywhere, so remove it.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On 12/09/2013 11:26 AM, Stas Sergeev wrote:
+> 09.12.2013 18:50, Peter Hurley пишет:
+>>   	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
+>>   		n--;
+>>   		eof_push = !n && ldata->read_tail != ldata->line_start;
+>> +		ldata->push = 0;
+>>   	}
+> Will this work if the last (and only) char written in raw
+> mode appear to be \0 (__DISABLED_CHAR)?
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+That would have triggered an EOF in older kernels so not a
+regression.
 
-> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-> index e4671f9..4308018 100644
-> --- a/include/linux/migrate.h
-> +++ b/include/linux/migrate.h
-> @@ -41,9 +41,6 @@ extern int migrate_page(struct address_space *,
->  extern int migrate_pages(struct list_head *l, new_page_t x,
->  		unsigned long private, enum migrate_mode mode, int reason);
->  
-> -extern int fail_migrate_page(struct address_space *,
-> -			struct page *, struct page *);
-> -
->  extern int migrate_prep(void);
->  extern int migrate_prep_local(void);
->  extern int migrate_vmas(struct mm_struct *mm,
-> @@ -83,7 +80,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
->  
->  /* Possible settings for the migrate_page() method in address_operations */
->  #define migrate_page NULL
-> -#define fail_migrate_page NULL
->  
->  #endif /* CONFIG_MIGRATION */
->  
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index cdafdc0..b595f89 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -550,14 +550,6 @@ void migrate_page_copy(struct page *newpage, struct page *page)
->   *                    Migration functions
->   ***********************************************************/
->  
-> -/* Always fail migration. Used for mappings that are not movable */
-> -int fail_migrate_page(struct address_space *mapping,
-> -			struct page *newpage, struct page *page)
-> -{
-> -	return -EIO;
-> -}
-> -EXPORT_SYMBOL(fail_migrate_page);
-> -
->  /*
->   * Common logic to directly migrate a single page suitable for
->   * pages that do not use PagePrivate/PagePrivate2.
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+>
+>> -		ldata->line_start = ldata->read_tail;
+>> +		if (!ldata->push)
+>> +			ldata->line_start = ldata->read_tail;
+>> +		else
+>> +			ldata->push = 0;
+> Will this work if more that one "fake" EOF is accumulated
+> in bitmap because of multiple icanon switches?
+
+Not possible. The read_flags and push indicator are reset
+with icanon -> !icanon switches.
+
+> Also, I am a bit surprised with the presence of the code
+> like this:
+> ---
+>
+> |	if  (n>  4096)
+> 		n+=  4096;
+> |
+>
+> ---
+> Am I the only one thinking it is unclear what it does?
+> Doesn't it deserve the comment at least?
+>
+> Or this:
+> ---
+>
+> |eof_push= !n&&  ldata->read_tail!=  ldata->line_start;|
+>
+> ---
+> If eof_push means that the EOL mark was found not at the
+> line start, then it is completely confusing why !n is here
+> (one have to read a lot of context to find out why).|||
+> When I created the patch, the code was much more easy
+> to follow than now.
+
+The previous kernels did byte-by-byte copy with lock/unlock
+for every byte, into the input buffer and back out of the input
+buffer. Simple, but inefficient.
+
+This version has roughly 4n-2 fewer bus locks. The necessary
+unsigned arithmetic and additional condition checks make the
+code somewhat more complex.
+
+But please feel free to submit patches that fix or clarify
+anything you find.
+
+Regards,
+Peter Hurley
