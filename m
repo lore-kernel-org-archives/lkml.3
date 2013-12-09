@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3LIIGL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:06:11 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35827 "EHLO
+	id S1760967Ab3LIIJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:09:18 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35899 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3LIIGG (ORCPT
+	with ESMTP id S1751400Ab3LIIGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:06:06 -0500
+	Mon, 9 Dec 2013 03:06:11 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
         <glommer@gmail.com>, <vdavydov@parallels.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH v13 05/16] vmscan: move call to shrink_slab() to shrink_zones()
-Date: Mon, 9 Dec 2013 12:05:46 +0400
-Message-ID: <71c7c5bbcad2e29f81eaf9eaad36c120815125c8.1386571280.git.vdavydov@parallels.com>
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH v13 16/16] memcg: flush memcg items upon memcg destruction
+Date: Mon, 9 Dec 2013 12:05:57 +0400
+Message-ID: <790660d8826b95b3b6bd5d7ee0c7510dc70b1a58.1386571280.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1386571280.git.vdavydov@parallels.com>
 References: <cover.1386571280.git.vdavydov@parallels.com>
@@ -27,130 +28,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces the indentation level of do_try_to_free_pages() and removes
-extra loop over all eligible zones counting the number of on-LRU pages.
+From: Glauber Costa <glommer@openvz.org>
 
+When a memcg is destroyed, it won't be imediately released until all
+objects are gone. This means that if a memcg is restarted with the very
+same workload - a very common case, the objects already cached won't be
+billed to the new memcg. This is mostly undesirable since a container
+can exploit this by restarting itself every time it reaches its limit,
+and then coming up again with a fresh new limit.
+
+Since now we have targeted reclaim, I sustain that we should assume that
+a memcg that is destroyed should be flushed away. It makes perfect sense
+if we assume that a memcg that goes away most likely indicates an
+isolated workload that is terminated.
+
+Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@openvz.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/vmscan.c |   57 ++++++++++++++++++++++++++-------------------------------
- 1 file changed, 26 insertions(+), 31 deletions(-)
+ mm/memcontrol.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eea668d..035ab3a 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2273,13 +2273,17 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-  * the caller that it should consider retrying the allocation instead of
-  * further reclaim.
-  */
--static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
-+static bool shrink_zones(struct zonelist *zonelist,
-+			 struct scan_control *sc,
-+			 struct shrink_control *shrink)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 	unsigned long nr_soft_reclaimed;
- 	unsigned long nr_soft_scanned;
-+	unsigned long lru_pages = 0;
- 	bool aborted_reclaim = false;
-+	struct reclaim_state *reclaim_state = current->reclaim_state;
- 
- 	/*
- 	 * If the number of buffer_heads in the machine exceeds the maximum
-@@ -2289,6 +2293,8 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 	if (buffer_heads_over_limit)
- 		sc->gfp_mask |= __GFP_HIGHMEM;
- 
-+	nodes_clear(shrink->nodes_to_scan);
-+
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask), sc->nodemask) {
- 		if (!populated_zone(zone))
-@@ -2300,6 +2306,10 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 		if (global_reclaim(sc)) {
- 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 				continue;
-+
-+			lru_pages += zone_reclaimable_pages(zone);
-+			node_set(zone_to_nid(zone), shrink->nodes_to_scan);
-+
- 			if (sc->priority != DEF_PRIORITY &&
- 			    !zone_reclaimable(zone))
- 				continue;	/* Let kswapd poll it */
-@@ -2336,6 +2346,20 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 		shrink_zone(zone, sc);
- 	}
- 
-+	/*
-+	 * Don't shrink slabs when reclaiming memory from over limit
-+	 * cgroups but do shrink slab at least once when aborting
-+	 * reclaim for compaction to avoid unevenly scanning file/anon
-+	 * LRU pages over slab pages.
-+	 */
-+	if (global_reclaim(sc)) {
-+		shrink_slab(shrink, sc->nr_scanned, lru_pages);
-+		if (reclaim_state) {
-+			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-+			reclaim_state->reclaimed_slab = 0;
-+		}
-+	}
-+
- 	return aborted_reclaim;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 182199f..65ef284 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6171,12 +6171,40 @@ static void memcg_destroy_kmem(struct mem_cgroup *memcg)
+ 	memcg_destroy_all_lrus(memcg);
  }
  
-@@ -2380,9 +2404,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 					struct shrink_control *shrink)
++static void memcg_drop_slab(struct mem_cgroup *memcg)
++{
++	struct shrink_control shrink = {
++		.gfp_mask = GFP_KERNEL,
++		.target_mem_cgroup = memcg,
++	};
++	unsigned long nr_objects;
++
++	nodes_setall(shrink.nodes_to_scan);
++	do {
++		nr_objects = shrink_slab(&shrink, 1000, 1000);
++	} while (nr_objects > 0);
++}
++
+ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
  {
- 	unsigned long total_scanned = 0;
--	struct reclaim_state *reclaim_state = current->reclaim_state;
--	struct zoneref *z;
--	struct zone *zone;
- 	unsigned long writeback_threshold;
- 	bool aborted_reclaim;
+ 	if (!memcg_kmem_is_active(memcg))
+ 		return;
  
-@@ -2395,34 +2416,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
- 				sc->priority);
- 		sc->nr_scanned = 0;
--		aborted_reclaim = shrink_zones(zonelist, sc);
--
--		/*
--		 * Don't shrink slabs when reclaiming memory from over limit
--		 * cgroups but do shrink slab at least once when aborting
--		 * reclaim for compaction to avoid unevenly scanning file/anon
--		 * LRU pages over slab pages.
--		 */
--		if (global_reclaim(sc)) {
--			unsigned long lru_pages = 0;
-+		aborted_reclaim = shrink_zones(zonelist, sc, shrink);
- 
--			nodes_clear(shrink->nodes_to_scan);
--			for_each_zone_zonelist(zone, z, zonelist,
--					gfp_zone(sc->gfp_mask)) {
--				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
--					continue;
--
--				lru_pages += zone_reclaimable_pages(zone);
--				node_set(zone_to_nid(zone),
--					 shrink->nodes_to_scan);
--			}
--
--			shrink_slab(shrink, sc->nr_scanned, lru_pages);
--			if (reclaim_state) {
--				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
--				reclaim_state->reclaimed_slab = 0;
--			}
--		}
- 		total_scanned += sc->nr_scanned;
- 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
- 			goto out;
+ 	/*
++	 * When a memcg is destroyed, it won't be imediately released until all
++	 * objects are gone. This means that if a memcg is restarted with the
++	 * very same workload - a very common case, the objects already cached
++	 * won't be billed to the new memcg. This is mostly undesirable since a
++	 * container can exploit this by restarting itself every time it
++	 * reaches its limit, and then coming up again with a fresh new limit.
++	 *
++	 * Therefore a memcg that is destroyed should be flushed away. It makes
++	 * perfect sense if we assume that a memcg that goes away indicates an
++	 * isolated workload that is terminated.
++	 */
++	memcg_drop_slab(memcg);
++
++	/*
+ 	 * kmem charges can outlive the cgroup. In the case of slab
+ 	 * pages, for instance, a page contain objects from various
+ 	 * processes. As we prevent from taking a reference for every
 -- 
 1.7.10.4
 
