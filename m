@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205Ab3LIJqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:46:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933110Ab3LIJqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:46:05 -0500
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
-        matt@console-pimps.org, toshi.kani@hp.com
-Subject: [PATCH v5 13/14] x86: reserve setup_data ranges late after parsing memmap cmdline
-Date: Mon,  9 Dec 2013 17:42:26 +0800
-Message-Id: <1386582147-9802-14-git-send-email-dyoung@redhat.com>
-In-Reply-To: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+	id S933256Ab3LIJqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:46:51 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38609 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932190Ab3LIJqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 04:46:47 -0500
+Date: Mon, 9 Dec 2013 09:46:44 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "subhashj@codeaurora.org" <subhashj@codeaurora.org>
+Subject: Re: [PATCH v7 2/2] mmc: sdhci-msm: Initial support for MSM chipsets
+Message-ID: <20131209094644.GC28379@e106331-lin.cambridge.arm.com>
+References: <1383753405-23631-1-git-send-email-gdjakov@mm-sol.com>
+ <1383753405-23631-3-git-send-email-gdjakov@mm-sol.com>
+ <20131205102740.GI29200@e106331-lin.cambridge.arm.com>
+ <52A1BCEF.30505@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A1BCEF.30505@mm-sol.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently e820_reserve_setup_data is called before parsing early params,
-it works in normal case. But for memmap=exactmap, the final memory ranges
-are created after parsing memmap= cmdline params, so the previous
-e820_reserve_setup_data has no effect. For example, setup_data ranges
-will still be marked as normal system ram, thus when later sysfs driver
-ioremap them kernel will warn about mapping normal ram.
+> > [...]
+> >
+> >> +       /*
+> >> +        * CORE_SW_RST above may trigger power irq if previous status of PWRCTL
+> >> +        * was either BUS_ON or IO_HIGH_V. So before we enable the power irq
+> >> +        * interrupt in GIC (by registering the interrupt handler), we need to
+> >> +        * ensure that any pending power irq interrupt status is acknowledged
+> >> +        * otherwise power irq interrupt handler would be fired prematurely.
+> >> +        */
+> >> +       irq_status = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_STATUS);
+> >> +       writel_relaxed(irq_status, (msm_host->core_mem + CORE_PWRCTL_CLEAR));
+> >> +       irq_ctl = readl_relaxed(msm_host->core_mem + CORE_PWRCTL_CTL);
+> >> +       if (irq_status & (CORE_PWRCTL_BUS_ON | CORE_PWRCTL_BUS_OFF))
+> >> +               irq_ctl |= CORE_PWRCTL_BUS_SUCCESS;
+> >> +       if (irq_status & (CORE_PWRCTL_IO_HIGH | CORE_PWRCTL_IO_LOW))
+> >> +               irq_ctl |= CORE_PWRCTL_IO_SUCCESS;
+> >> +       writel_relaxed(irq_ctl, (msm_host->core_mem + CORE_PWRCTL_CTL));
+> >> +       /*
+> >> +        * Ensure that above writes are propogated before interrupt enablement
+> >> +        * in GIC.
+> >> +        */
+> >> +       mb();
+> >
+> > Does this guarantee that the device has finished responding to the write
+> > and deasserted the interrupt line (i.e. does the device only acknowledge
+> > the write once that is true)?
+> >
+> 
+> I am not sure that i understand your concern. The write to 
+> CORE_PWRCTL_CTL should acknowledge and deassert the interrupt.
 
-This patch fix it by moving the e820_reserve_setup_data callback after
-parsing early params so they can be set as reserved ranges and later
-ioremap will be fine with it.
+The mb() ensures that the write has reached the device, and the device's
+slave interface has acknowledged the write. On some devices this
+acknowledgement of the write can be asynchronous with respect to the
+device changing state in response to the write (i.e. the interrupt might
+get deasserted a short time after the write completes). Typically there
+is a register that should be polled to see whether the state change has
+completed.
 
-changes:
-Boris: improve patch description
+Does the acknowledgement of the write only occur once the device has
+changed state? Or might it change state in the background?
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/kernel/setup.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index b2b54cd..a3357a6 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -927,8 +927,6 @@ void __init setup_arch(char **cmdline_p)
- 	iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
- 	setup_memory_map();
- 	parse_setup_data();
--	/* update the e820_saved too */
--	e820_reserve_setup_data();
- 
- 	copy_edd();
- 
-@@ -990,6 +988,8 @@ void __init setup_arch(char **cmdline_p)
- 		early_dump_pci_devices();
- #endif
- 
-+	/* update the e820_saved too */
-+	e820_reserve_setup_data();
- 	finish_e820_parsing();
- 
- 	if (efi_enabled(EFI_BOOT))
--- 
-1.8.3.1
-
+Thanks,
+Mark
