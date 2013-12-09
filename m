@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab3LIUWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:22:48 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:55069 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756021Ab3LIUWr (ORCPT
+	id S1761448Ab3LIU00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 15:26:26 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45281 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755981Ab3LIU0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:22:47 -0500
-Message-ID: <52A62696.10406@tilera.com>
-Date: Mon, 9 Dec 2013 15:22:46 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 9 Dec 2013 15:26:23 -0500
+Message-ID: <52A6275F.4040007@oracle.com>
+Date: Mon, 09 Dec 2013 15:26:07 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
-CC: <akpm@linuxfoundation.org>, <rostedt@goodmis.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 25/41] drivers/net/ethernet/tile: Replace __get_cpu_var
- uses for address calculation
-References: <20131203233232.928771708@linux.com> <20131203233258.055104802@linux.com>
-In-Reply-To: <20131203233258.055104802@linux.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
+        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: kernel BUG in munlock_vma_pages_range
+References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz>
+In-Reply-To: <52A5F9EE.4010605@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/3/2013 6:32 PM, Christoph Lameter wrote:
-> Replace with this_cpu_ptr.
+On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
+> On 12/09/2013 06:05 PM, Sasha Levin wrote:
+>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
+>>> Hello, I will look at it, thanks.
+>>> Do you have specific reproduction instructions?
+>>
+>> Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
+>> the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
+>> up testing on that part.
 >
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Christoph Lameter <cl@linux.com>
+> Thanks. Do you have trinity log and the .config file? I'm currently unable to even boot linux-next
+> with my config/setup due to a GPF.
+> Looking at code I wouldn't expect that it could encounter a tail page, without first encountering a
+> head page and skipping the whole huge page. At least in THP case, as TLB pages should be split when
+> a vma is split. As for hugetlbfs, it should be skipped for mlock/munlock operations completely. One
+> of these assumptions is probably failing here...
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+If it helps, I've added a dump_page() in case we hit a tail page there and got:
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+[  980.172299] page:ffffea003e5e8040 count:0 mapcount:1 mapping:          (null) index:0
+x0
+[  980.173412] page flags: 0x2fffff80008000(tail)
+
+I can also add anything else in there to get other debug output if you think of something else useful.
+
+
+Thanks,
+Sasha
 
