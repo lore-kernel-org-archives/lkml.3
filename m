@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760573Ab3LIES5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 23:18:57 -0500
-Received: from ozlabs.org ([203.10.76.45]:60186 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760357Ab3LIESz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 23:18:55 -0500
-Date: Mon, 9 Dec 2013 15:18:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Bjorn Andersson" <bjorn.andersson@sonymobile.com>
-Subject: linux-next: build failure after merge of the pinctrl tree
-Message-Id: <20131209151849.d36d6374e622f44b821ec3d8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1760481Ab3LIE1x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 23:27:53 -0500
+Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:41145
+	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760402Ab3LIE1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 23:27:50 -0500
+To: mpatocka@redhat.com, peter@hurleysoftware.com, gregkh@linuxfoundation.org,
+        jslaby@suse.cz
+CC: linux-kernel@vger.kernel.org
+From: Karl Dahlke <eklhad@comcast.net>
+Reply-to: Karl Dahlke <eklhad@comcast.net>
+References: <alpine.LRH.2.02.1312082127020.19329@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: edbrowse/3.4.9
+Subject: [PATCH 3.12] Broken terminal due to echo bufferring
+Date: Sun, 08 Dec 2013 23:26:14 -0500
+Message-ID: <20131108232614.eklhad@comcast.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__9_Dec_2013_15_18_49_+1100_5L225CdilyEPuJAu"
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_Dec_2013_15_18_49_+1100_5L225CdilyEPuJAu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I discovered that kernel 3.12 has broken terminal handling.
+> I created this program to show the problem:
+> ...
 
-Hi Linus,
+This is very likely the same bug I reported, with subject:
 
-After merging the pinctrl tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Bug in tty cooked mode kernel 3.12.3
 
-drivers/pinctrl/pinctrl-msm.c:103:21: error: 'pinconf_generic_dt_node_to_ma=
-p_group' undeclared here (not in a function)
-  .dt_node_to_map  =3D pinconf_generic_dt_node_to_map_group,
-                     ^
-drivers/pinctrl/pinctrl-msm.c: In function 'msm_gpio_init':
-drivers/pinctrl/pinctrl-msm.c:905:6: error: 'struct gpio_chip' has no membe=
-r named 'of_node'
-  chip->of_node =3D pctrl->dev->of_node;
-      ^
+You don't have to write a program for it, just put bash into cooked mode.
+I demonstrated the bug by switching consoles and hitting return,
+assuming bash has been placed in cooked mode.
+It's very repeatable this way, not so random.
+Switch console,hit return, the prompt is on the same line as the previous prompt.
+It affects every cooked mode program, and of course your compiled program 
+comes up in cooked mode.
+It is cooked echo crlf that is the issue.
+Programs in raw mode, like ash default in readline mode,
+vi, emacs, etc,are ok.
+So you don't see it right away.
 
-Probably caused by commit f365be092572 ("pinctrl: Add Qualcomm TLMM
-driver").
+See the thread with the aforementioned subject line.
 
-I have used the pinctrl tree from next-20131206 for today.
+I have applied two separate patches hoping to fix this problem,
+but it remains.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__9_Dec_2013_15_18_49_+1100_5L225CdilyEPuJAu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSpUStAAoJEMDTa8Ir7ZwV8ksQAJdV4hGZrRC8qaG48iWSDg9r
-VBif0XhscZVat4F4nm1B6ilKHGGb/6m9Tr3mDrisG8ARBTBY8NQjxfwVgb/bGmtF
-ev4fypl5TQfuOVfujjrPFOxj5rVVP9KrDwjRROTxgeAgBe9Z5wRaO4JjzGCsE4sB
-BcGevlYBKthej8zYiQeylQC7jN1WN+yHSHkx785em6r1CpvjeW5e4FUlcOrconlK
-kc/JTEXIIM6RKQBFz7nTDe3qTj1vhChH8oc6pQ+MlEMpnBM3XsoG5kPoHfYkAcRm
-5l4Jq90iAdCWBZ78PI8f0aZpVxC2k22dIcteQAfR7nhaZRm8Y0Myp5CYWkOfd5z6
-B8D5eJmuLykLEtEGPXklsvYn8Lx6rZiT5/1JtDPbvGKCwbCQoDT/V/llST/paKGA
-rX7MPKzzrqdvansNL9NNfQYLb84sJ5penUsSuzAE0wyqDeqUeqKfOWdrBuyuycsh
-2D9YO//wbnEHPErsT7AMrZi+/EWuX0AmQwqj0VX+yW6xcdAOoJ3kf8fqbtuyLWLW
-CVlhNBJH2JMMpzEjZ6NWZrOtUh2QXtnR9qVizCldeOXwHr4aQ0/hJYzma6sIFBBM
-36v/yXlibEOKmbMNHgqQhiD4Ha/wEW9T8rmWhfRcB/V7t/bRxUQZ0fa+LeTMBqvO
-QfdIXs7KueIhJMHMDsGp
-=Y7qe
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_Dec_2013_15_18_49_+1100_5L225CdilyEPuJAu--
+Karl Dahlke
