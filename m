@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab3LIXyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:54:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899Ab3LIXyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:54:11 -0500
-Message-ID: <52A657EC.6080304@redhat.com>
-Date: Mon, 09 Dec 2013 18:53:16 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751395Ab3LIXza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:55:30 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:32930 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750742Ab3LIXz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 18:55:28 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkMSAFpXplJ5LHyk/2dsb2JhbABZgwc4pGUDjzGFUIEpF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIAQ7AZBcWjnoHhDMDmBOBMZBjgz0o
+Date: Tue, 10 Dec 2013 10:55:23 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        Kees Cook <keescook@google.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        xfs@oss.sgi.com, stable@vger.kernel.org
+Subject: Re: XFS security fix never sent to -stable?
+Message-ID: <20131209235523.GW31386@dastard>
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+ <20131209121534.GE4278@hercules>
+ <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Biederman <ebiederm@xmission.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] kexec: add sysctl to disable kexec
-References: <20131209233829.GA3501@www.outflux.net>
-In-Reply-To: <20131209233829.GA3501@www.outflux.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 06:38 PM, Kees Cook wrote:
-> For general-purpose (i.e. distro) kernel builds it makes sense to build with
-> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
-> with kexec. However, in the face of trying to lock down a system with such
-> a kernel, there needs to be a way to disable kexec (much like module loading
-> can be disabled). Without this, it is too easy for the root user to modify
-> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
+[cc xfs list, cc stable@vger.kernel.org]
 
-Not everybody will be running with selinux, or another LSM security
-policy, so having this simple knob probably makes sense.
+On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
+> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
+> <luis.henriques@canonical.com> wrote:
+> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
+> >> Hi,
+> >>
+> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
+> >> capability check to free eofblocks ioctl") is a security fix that was
+> >> never sent to -stable? From what I can see, it was introduced in 3.8
+> >> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
+> >>
+> >> I don't see this in the 3.8.y tree. Should it be added there and newer?
+> >
+> > Thanks Kees, I'm queuing it for the 3.11 kernel.
+> 
+> There's also this one:
+> 
+> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
+> 
+> It fixes CVE-2013-6382
 
-OTOH, are the people who run without a fancy security people the
-same people who are interested in locking down the system?
+First I've heard about it there being a CVE for that bug. Since when
+has it been considered best practice to publish CVEs without first
+(or ever) directly contacting the relevant upstream developers?
 
-I guess I'll ack the patch, since I see no real downside to having
-the knob...
+But, regardless of how broken I think the CVE process is, commit
+071c529 ("xfs: underflow bug in xfs_attrlist_by_handle()") should be
+picked up by the stable kernels.
 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+Cheers,
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
-
+Dave.
 -- 
-All rights reversed
+Dave Chinner
+david@fromorbit.com
