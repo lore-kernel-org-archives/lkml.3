@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933691Ab3LINtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:49:42 -0500
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:41274 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440Ab3LINth (ORCPT
+	id S933725Ab3LINvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:51:48 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:64571 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933590Ab3LINvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:49:37 -0500
+	Mon, 9 Dec 2013 08:51:46 -0500
+Date: Mon, 9 Dec 2013 14:52:00 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, roy.franz@linaro.org
+Subject: Re: [PATCH 3/3] arm64: add EFI runtime services
+Message-ID: <20131209135158.GH24997@rocoto.smurfnet.nu>
+References: <1385762712-17043-1-git-send-email-msalter@redhat.com>
+ <1385762712-17043-4-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20131209111900.GC6562@kroah.com>
-References: <1386583012-506-1-git-send-email-ethan.kernel@gmail.com>
-	<20131209111900.GC6562@kroah.com>
-Date: Mon, 9 Dec 2013 21:49:36 +0800
-Message-ID: <CABawtvNZn8VPjP-Bs3Zw9HJw134iZRx8dWbGgPbWFA4CyJjsZA@mail.gmail.com>
-Subject: Re: [PATCH v3] xen/debugfs: Check debugfs initialization before using it
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385762712-17043-4-git-send-email-msalter@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 7:19 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Dec 09, 2013 at 05:56:52PM +0800, Ethan Zhao wrote:
->> From: "ethan.zhao" <ethan.kernel@gmail.com>
->>
->> Should check debugfs initialization with debugfs_initialized() before using it,
->> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
->> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
->>
->> V3: add warning message when debugfs not configured or disabled.
->
-> That's not what this patch does...
->
->> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
->> ---
->>  arch/x86/xen/debugfs.c | 6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
->> index c8377fb..85c0e0e 100644
->> --- a/arch/x86/xen/debugfs.c
->> +++ b/arch/x86/xen/debugfs.c
->> @@ -9,12 +9,18 @@ static struct dentry *d_xen_debug;
->>
->>  struct dentry * __init xen_init_debugfs(void)
->>  {
->> +     if (!debugfs_initialized()) {
->> +             d_xen_debug = NULL;
->> +             goto nodebugfs;
->> +     }
->
-> Again, why is this even needed?
->
-> What problem in the existing code are you trying to solve?
->
-What I want to ask who is so smart and fake some many functions when
-CONFIG_DEBUG_FS is not configured/defined and the build could pass
-without any error ? What is the motive make him wrote some many fake
-function and why he wrote the debugfs_initialized() function seem
-'useless' at all ?
+Apologies for late feedback.
 
-Thanks,
-Ethan
+On Fri, Nov 29, 2013 at 05:05:12PM -0500, Mark Salter wrote:
+> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+> new file mode 100644
+> index 0000000..1bad8a7
+> --- /dev/null
+> +++ b/arch/arm64/kernel/efi.c
+> @@ -0,0 +1,507 @@
+> +/*
+> + * Extensible Firmware Interface
+> + *
+> + * Based on Extensible Firmware Interface Specification version 2.3.1
+
+Actually, for arm64, we're relying on UEFI 2.4 or later.
+
+> + *
+> + * Copyright (C) 2013 Linaro Ltd.
+
+And I'd say you've easily done enough here to motivate adding Red Hat.
+
+> + *
+> + * Adapted for arm64 from arch/arm/kernel/efi.c code
+> + */
+> +
+> +#include <linux/efi.h>
+> +#include <linux/export.h>
+> +#include <linux/memblock.h>
+> +#include <linux/of.h>
+> +#include <linux/of_fdt.h>
+> +#include <linux/sched.h>
+> +#include <linux/slab.h>
+> +#include <linux/bootmem.h>
+> +
+> +#include <asm/cacheflush.h>
+> +#include <asm/efi.h>
+> +#include <asm/tlbflush.h>
+> +#include <asm/mmu_context.h>
+> +
+> +#define efi_early_remap(a, b) \
+> +	((__force void *)early_ioremap((a), (b)))
+
+Do we not want early_memremap() here, rather than early_ioremap()?
+
+/
+    Leif
