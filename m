@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab3LISnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:43:45 -0500
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:56931 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab3LISnn (ORCPT
+	id S932633Ab3LISos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:44:48 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:40227 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab3LISor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:43:43 -0500
-From: Nat Gurumoorthy <natg@google.com>
-To: nsujir@broadcom.com, mchan@broadcom.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nat Gurumoorthy <natg@google.com>
-Subject: [PATCH] net-tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
-Date: Mon,  9 Dec 2013 10:43:21 -0800
-Message-Id: <1386614601-9453-1-git-send-email-natg@google.com>
-X-Mailer: git-send-email 1.8.5.1
+	Mon, 9 Dec 2013 13:44:47 -0500
+Message-ID: <1386614681.7152.189.camel@host5.omatika.ru>
+Subject: Re: [PATCH 0/9] ARM: support for ICP DAS LP-8x4x (with dts)
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>
+Date: Mon, 09 Dec 2013 22:44:41 +0400
+In-Reply-To: <201312090251.45207.arnd@arndb.de>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	 <201312090251.45207.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
-uninitialized. From power on reset this register may have garbage in it. The
-Register Base Address register defines the device local address of a
-register. The data pointed to by this location is read or written using
-the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
-garbage any read or write of Register Data Register (PCI 128) will cause the
-PCI bus to lock up. The TCO watchdog will fire and bring down the system.
+On Mon, 2013-12-09 at 02:51 +0100, Arnd Bergmann wrote:
+> On Sunday 08 December 2013, Sergei Ianovich wrote:
+> > 
+> > Except for defconfig, this is a completely new series. The first
+> > eight patches fix outstanding issues with device tree support
+> > in PXA. The 9th boots ICP DAS LP-8x4x.
+> 
+> Awesome! That was very quick. The main comment I have is for the
+> dmaengine support, you will need to rebase on Daniel's patches for
+> that. I also found few minor details.
 
-Signed-off-by: Nat Gurumoorthy <natg@google.com>
----
- drivers/net/ethernet/broadcom/tg3.c | 3 +++
- 1 file changed, 3 insertions(+)
+Thanks for review.
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 369b736..9a904fd 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -16499,6 +16499,9 @@ static int tg3_get_invariants(struct tg3 *tp, const struct pci_device_id *ent)
- 	/* Clear this out for sanity. */
- 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
- 
-+	/* Clear TG3PCI_REG_BASE_ADDR to prevent hangs. */
-+	tw32(TG3PCI_REG_BASE_ADDR, 0);
-+
- 	pci_read_config_dword(tp->pdev, TG3PCI_PCISTATE,
- 			      &pci_state_reg);
- 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
--- 
-1.8.5.1
+I've applied and tested changes to meet review remarks for all patches,
+except 5/9. However, there is no point to respin the series until the
+decision about DMA is made.
+
+Daniel, could please CC me when you post update pxa-dma series?
+
 
