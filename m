@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3LIFdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 00:33:21 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:32878 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751225Ab3LIFdU (ORCPT
+	id S1760036Ab3LIFeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 00:34:17 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61198 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab3LIFeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 00:33:20 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: liqin.linux@gmail.com, lennox.wu@gmail.com
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] score: remove unused CPU_SCORE7 Kconfig parameter
-Date: Mon,  9 Dec 2013 06:33:12 +0100
-Message-Id: <1386567192-19924-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1383559081-5460-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1383559081-5460-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Mon, 9 Dec 2013 00:34:14 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-58-52a55653edcc
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCHSET 00/14] tools lib traceevent: Get rid of *die() calls from parse-filter.c
+Date: Mon,  9 Dec 2013 14:33:57 +0900
+Message-Id: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the CPU_SCORE7 Kconfig parameter,
-which was no longer used anywhere in the source code
-and Makefiles.
+Hello,
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/score/Kconfig | 6 ------
- 1 file changed, 6 deletions(-)
+This patchset tries to remove all die() calls in event filter parsing
+code.  The only remaining bits are in trace-seq.c which implement
+print functions and I want to hear what's the best way we can handle
+the error case during the print.
 
-diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-index 305f7ee1f382..2bc03d04f3af 100644
---- a/arch/score/Kconfig
-+++ b/arch/score/Kconfig
-@@ -23,27 +23,21 @@ choice
- config ARCH_SCORE7
- 	bool "SCORE7 processor"
- 	select SYS_SUPPORTS_32BIT_KERNEL
--	select CPU_SCORE7
- 	select GENERIC_HAS_IOMAP
- 
- config MACH_SPCT6600
- 	bool "SPCT6600 series based machines"
- 	select SYS_SUPPORTS_32BIT_KERNEL
--	select CPU_SCORE7
- 	select GENERIC_HAS_IOMAP
- 
- config SCORE_SIM
- 	bool "Score simulator"
- 	select SYS_SUPPORTS_32BIT_KERNEL
--	select CPU_SCORE7
- 	select GENERIC_HAS_IOMAP
- endchoice
- 
- endmenu
- 
--config CPU_SCORE7
--	bool
--
- config NO_DMA
- 	bool
- 	default y
+I also put this patches on libtraceevent/die-removal-v1 branch in my tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Namhyung Kim (14):
+  tools lib traceevent: Get rid of malloc_or_die() in show_error()
+  tools lib traceevent: Get rid of die in add_filter_type()
+  tools lib traceevent: Get rid of malloc_or_die() in
+    pevent_filter_alloc()
+  tools lib traceevent: Get rid of malloc_or_die() allocate_arg()
+  tools lib traceevent: Get rid of malloc_or_die() in read_token()
+  tools lib traceevent: Get rid of malloc_or_die() in find_event()
+  tools lib traceevent: Get rid of malloc_or_die() in add_event()
+  tools lib traceevent: Get rid of die() in create_arg_item()
+  tools lib traceevent: Get rid of die() in add_right()
+  tools lib traceevent: Get rid of die() in reparent_op_arg()
+  tools lib traceevent: Get rid of malloc_or_die() in
+    pevent_filter_add_filter_str()
+  tools lib traceevent: Get rid of die() in
+    pevent_filter_clear_trivial()
+  tools lib traceevent: Refactor test_filter() to get rid of die()
+  tools lib traceevent: Get rid of die() in some string conversion
+    funcitons
+
+ tools/lib/traceevent/event-parse.h  |   3 +-
+ tools/lib/traceevent/parse-filter.c | 432 +++++++++++++++++++++++++-----------
+ 2 files changed, 303 insertions(+), 132 deletions(-)
+
 -- 
-1.8.3.2
+1.7.11.7
 
