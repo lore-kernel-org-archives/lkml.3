@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761082Ab3LIJjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:39:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34087 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761065Ab3LIJjC (ORCPT
+	id S1761003Ab3LIJlV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:41:21 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:51493 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3LIJlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:39:02 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: linux@prisktech.co.nz, daniel.lezcano@linaro.org, tglx@linutronix.de
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] clocksource: vt8500: remove deprecated IRQF_DISABLED
-Date: Mon,  9 Dec 2013 10:38:50 +0100
-Message-Id: <1386581930-4618-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381639194-6861-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381639194-6861-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Mon, 9 Dec 2013 04:41:19 -0500
+From: panchaxari <panchaxari.prasannamurthy@linaro.org>
+To: linus.walleij@linaro.org
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        panchaxari.prasannamurthy@linaro.org,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH CFT] ARM:MSM: Enable ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR default
+Date: Mon,  9 Dec 2013 15:10:50 +0530
+Message-Id: <1386582050-21375-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the use of the IRQF_DISABLED flag
+ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR have been enabled as default configs
+to MSM platform
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+Introduction of PHYS_VIRT config as default would enable phy-to-virt and
+virt-to-phy translation function at boot and module loading time
+and enforce dynamic reallocation of memory. AUTO_ZRELADDR config would
+enable calculation of kernel load address at run time.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+PHYS_VIRT config is mutually exclusive to XIP_KERNEL, XIP_KERNEL is used in
+systems with NOR flash devices, and ZRELADDR config is mutually exclusive
+to ZBOOT_ROM.
+
+CFT::Call For Testing
+
+Requesting maintainers of MSM platforms to evaluate the changes on the board
+and comment, as I dont have the board for testing and also requesting an ACK
+
+Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Daniel Walker <dwalker@fifo99.com>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-msm@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+
 ---
- drivers/clocksource/vt8500_timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ARCH_MSM supports for Qualcomm MSM/QSD based systems.  This runs on the apps
+processor of the MSM/QSD and depends on a shared memory interface to the modem
+processor which runs the baseband stack and controls some vital subsystems
+like clock and power control.
 
-diff --git a/drivers/clocksource/vt8500_timer.c b/drivers/clocksource/vt8500_timer.c
-index ad3c0e83a779..1098ed3b9b89 100644
---- a/drivers/clocksource/vt8500_timer.c
-+++ b/drivers/clocksource/vt8500_timer.c
-@@ -124,7 +124,7 @@ static irqreturn_t vt8500_timer_interrupt(int irq, void *dev_id)
- 
- static struct irqaction irq = {
- 	.name    = "vt8500_timer",
--	.flags   = IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags   = IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler = vt8500_timer_interrupt,
- 	.dev_id  = &clockevent,
- };
+Snapdragon is based on ARMv7 instruction set. And supports Random memory devices
+like DDR1, LPDDR2 and LPDDR3. And storage memory devices like NAND, eMMC.
+
+Below lkml link is a quoting by Russell which clears the concept of PHYS_VIRT
+and ZRELADDR
+---------------------------------------------------
+
+https://lkml.org/lkml/2011/10/14/434
+
+-------------------------------------------------
+---
+ arch/arm/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 13621ed..3b77864 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -638,6 +638,8 @@ config ARCH_PXA
+ config ARCH_MSM
+ 	bool "Qualcomm MSM"
+ 	select ARCH_REQUIRE_GPIOLIB
++	select ARM_PATCH_PHYS_VIRT
++	select AUTO_ZRELADDR
+ 	select CLKSRC_OF if OF
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
 -- 
-1.8.3.2
+1.7.10.4
 
