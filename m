@@ -1,87 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760772Ab3LIGVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:21:50 -0500
-Received: from ozlabs.org ([203.10.76.45]:51281 "EHLO ozlabs.org"
+	id S1760786Ab3LIGWD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:22:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:56939 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760407Ab3LIGVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:21:47 -0500
-In-Reply-To: <1386153162-11225-8-git-send-email-khandual@linux.vnet.ibm.com>
+	id S1760606Ab3LIGVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 01:21:48 -0500
+In-Reply-To: <1386153162-11225-10-git-send-email-khandual@linux.vnet.ibm.com>
 To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
         khandual@linux.vnet.ibm.com
 From: Michael Ellerman <mpe@ellerman.id.au>
 Cc: mikey@neuling.org, ak@linux.intel.com, eranian@google.com,
         acme@ghostprotocols.net, sukadev@linux.vnet.ibm.com, mingo@kernel.org
-Subject: Re: [PATCH V4 07/10] powerpc, lib: Add new branch instruction analysis support functions
-Message-Id: <20131209062146.6D5C12C00BF@ozlabs.org>
-Date: Mon,  9 Dec 2013 17:21:46 +1100 (EST)
+Subject: Re: [PATCH V4 09/10] power8, perf: Change BHRB branch filter configuration
+Message-Id: <20131209062147.51F822C00C5@ozlabs.org>
+Date: Mon,  9 Dec 2013 17:21:47 +1100 (EST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-12 at 10:32:39 UTC, Anshuman Khandual wrote:
-> Generic powerpc branch instruction analysis support added in the code
-> patching library which will help the subsequent patch on SW based
-> filtering of branch records in perf. This patch also converts and
-> exports some of the existing local static functions through the header
-> file to be used else where.
+On Wed, 2013-04-12 at 10:32:41 UTC, Anshuman Khandual wrote:
+> Powerpc kernel now supports SW based branch filters for book3s systems with some
+> specifc requirements while dealing with HW supported branch filters in order to
+> achieve overall OR semantics prevailing in perf branch stack sampling framework.
+> This patch adapts the BHRB branch filter configuration to meet those protocols.
+> POWER8 PMU does support 3 branch filters (out of which two are getting used in
+> perf branch stack) which are mutually exclussive and cannot be ORed with each
+> other. This implies that PMU can only handle one HW based branch filter request
+> at any point of time. For all other combinations PMU will pass it on to the SW.
 > 
-> diff --git a/arch/powerpc/include/asm/code-patching.h b/arch/powerpc/include/asm/code-patching.h
-> index a6f8c7a..8bab417 100644
-> --- a/arch/powerpc/include/asm/code-patching.h
-> +++ b/arch/powerpc/include/asm/code-patching.h
-> @@ -22,6 +22,36 @@
->  #define BRANCH_SET_LINK	0x1
->  #define BRANCH_ABSOLUTE	0x2
+> Also the combination of PERF_SAMPLE_BRANCH_ANY_CALL and PERF_SAMPLE_BRANCH_COND
+> can now be handled in SW, hence we dont error them out anymore.
+> 
+> diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+> index 03c5b8d..6021349 100644
+> --- a/arch/powerpc/perf/power8-pmu.c
+> +++ b/arch/powerpc/perf/power8-pmu.c
+> @@ -561,7 +561,56 @@ static int power8_generic_events[] = {
 >  
-> +#define XL_FORM_LR  0x4C000020
-> +#define XL_FORM_CTR 0x4C000420
-> +#define XL_FORM_TAR 0x4C000460
+>  static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *filter_mask)
+>  {
+> -	u64 pmu_bhrb_filter = 0;
+> +	u64 x, tmp, pmu_bhrb_filter = 0;
+> +	*filter_mask = 0;
 > +
-> +#define BO_ALWAYS    0x02800000
-> +#define BO_CTR       0x02000000
-> +#define BO_CRBI_OFF  0x00800000
-> +#define BO_CRBI_ON   0x01800000
-> +#define BO_CRBI_HINT 0x00400000
+> +	/* No branch filter requested */
+> +	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY) {
+> +		*filter_mask = PERF_SAMPLE_BRANCH_ANY;
+> +		return pmu_bhrb_filter;
+> +	}
 > +
-> +/* Forms of branch instruction */
-> +int instr_is_branch_iform(unsigned int instr);
-> +int instr_is_branch_bform(unsigned int instr);
-> +int instr_is_branch_xlform(unsigned int instr);
+> +	/*
+> +	 * P8 does not support oring of PMU HW branch filters. Hence
+> +	 * if multiple branch filters are requested which includes filters
+> +	 * supported in PMU, still go ahead and clear the PMU based HW branch
+> +	 * filter component as in this case all the filters will be processed
+> + 	 * in SW.
+
+Leading space there.
+
+> +	 */
+> +	tmp = branch_sample_type;
 > +
-> +/* Classification of XL-form instruction */
-> +int is_xlform_lr(unsigned int instr);
-> +int is_xlform_ctr(unsigned int instr);
-> +int is_xlform_tar(unsigned int instr);
+> +	/* Remove privilege filters before comparison */
+> +	tmp &= ~PERF_SAMPLE_BRANCH_USER;
+> +	tmp &= ~PERF_SAMPLE_BRANCH_KERNEL;
+> +	tmp &= ~PERF_SAMPLE_BRANCH_HV;
 > +
-> +/* Branch instruction is a call */
-> +int is_branch_link_set(unsigned int instr);
+> +	for_each_branch_sample_type(x) {
+> +		/* Ignore privilege requests */
+> +		if ((x == PERF_SAMPLE_BRANCH_USER) || (x == PERF_SAMPLE_BRANCH_KERNEL) || (x == PERF_SAMPLE_BRANCH_HV))
+> +			continue;
 > +
-> +/* BO field analysis (B-form or XL-form) */
-> +int is_bo_always(unsigned int instr);
-> +int is_bo_ctr(unsigned int instr);
-> +int is_bo_crbi_off(unsigned int instr);
-> +int is_bo_crbi_on(unsigned int instr);
-> +int is_bo_crbi_hint(unsigned int instr);
+> +		if (!(tmp & x))
+> +			continue;
+> +
+> +               /* Supported HW PMU filters */
+> +		if (tmp & PERF_SAMPLE_BRANCH_ANY_CALL) {
+> +			tmp &= ~PERF_SAMPLE_BRANCH_ANY_CALL;
+> +			if (tmp) {
+> +				pmu_bhrb_filter = 0;
+> +				*filter_mask = 0;
+> +				return pmu_bhrb_filter;
+> +			}
+> +		}
+> +
+> +		if (tmp & PERF_SAMPLE_BRANCH_COND) {
+> +			tmp &= ~PERF_SAMPLE_BRANCH_COND;
+> +			if (tmp) {
+> +				pmu_bhrb_filter = 0;
+> +				*filter_mask = 0;
+> +				return pmu_bhrb_filter;
+> +			}
+> +		}
+> +	}
+
+>  
+>  	/* BHRB and regular PMU events share the same privilege state
+>  	 * filter configuration. BHRB is always recorded along with a
+> @@ -570,34 +619,20 @@ static u64 power8_bhrb_filter_map(u64 branch_sample_type, u64 *filter_mask)
+>  	 * PMU event, we ignore any separate BHRB specific request.
+>  	 */
+>  
+> -	/* No branch filter requested */
+> -	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY)
+> -		return pmu_bhrb_filter;
+> -
+> -	/* Invalid branch filter options - HW does not support */
+> -	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
+> -		return -1;
+> -
+> -	if (branch_sample_type & PERF_SAMPLE_BRANCH_IND_CALL)
+> -		return -1;
+> -
+> +	/* Supported individual branch filters */
+>  	if (branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) {
+>  		pmu_bhrb_filter |= POWER8_MMCRA_IFM1;
+> +		*filter_mask    |= PERF_SAMPLE_BRANCH_ANY_CALL;
+>  		return pmu_bhrb_filter;
+>  	}
+>  
+>  	if (branch_sample_type & PERF_SAMPLE_BRANCH_COND) {
+>  		pmu_bhrb_filter |= POWER8_MMCRA_IFM3;
+> +		*filter_mask    |= PERF_SAMPLE_BRANCH_COND;
+>  		return pmu_bhrb_filter;
+>  	}
+>  
+> -	/* PMU does not support ANY combination of HW BHRB filters */
+> -	if ((branch_sample_type & PERF_SAMPLE_BRANCH_ANY_CALL) &&
+> -			(branch_sample_type & PERF_SAMPLE_BRANCH_COND))
+> -		return -1;
+> -
+> -	/* Every thing else is unsupported */
+> -	return -1;
+> +	return pmu_bhrb_filter;
+>  }
 
 
-I think this is the wrong API.
+As I said in my comments on version 3 which you ignored:
 
-We end up with all these micro checks, which don't actually encapsulate much,
-and don't implement the logic perf needs. If we had another user for this level
-of detail then it might make sense, but for a single user I think we're better
-off just implementing the semantics it wants.
+    I think it would be clearer if we actually checked for the possibilities we
+    allow and let everything else fall through, eg:
 
-So that would be something more like:
+        /* Ignore user/kernel/hv bits */
+        branch_sample_type &= ~PERF_SAMPLE_BRANCH_PLM_ALL;
 
-bool instr_is_return_branch(unsigned int instr);
-bool instr_is_conditional_branch(unsigned int instr);
-bool instr_is_func_call(unsigned int instr);
-bool instr_is_indirect_func_call(unsigned int instr);
+        if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY)
+                return 0;
 
+        if (branch_sample_type == PERF_SAMPLE_BRANCH_ANY_CALL)
+                return POWER8_MMCRA_IFM1;
+ 
+        if (branch_sample_type == PERF_SAMPLE_BRANCH_COND)
+                return POWER8_MMCRA_IFM3;
+        
+        return -1;
 
-These would then encapsulate something like the logic in your 8/10 patch. You
-can hopefully also optimise the checking logic in each routine because you know
-the exact semantics you're implementing.
 
 cheers
