@@ -1,292 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907Ab3LIPMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:12:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62472 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932440Ab3LIPMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:12:00 -0500
-Date: Mon, 9 Dec 2013 10:10:50 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-cc: linux-kernel@vger.kernel.org, Karl Dahlke <eklhad@comcast.net>
-Subject: [PATCH 3.12 v2] Broken terminal due to echo bufferring
-Message-ID: <alpine.LRH.2.02.1312091004110.19590@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1761225Ab3LIPMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 10:12:37 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:53930 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760719Ab3LIPMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 10:12:33 -0500
+Message-ID: <52A5DDD8.4030007@hitachi.com>
+Date: Tue, 10 Dec 2013 00:12:24 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 07/17] tracing/probes: Move fetch function helpers to
+ trace_probe.h
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-8-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1386570005-3368-8-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+(2013/12/09 15:19), Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Move fetch function helper macros/functions to the header file and
+> make them external.  This is preparation of supporting uprobe fetch
+> table in next patch.
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 
-Here I'm sending another version of the patch that removes some unneeded 
-code for echo bufferring - 41 lines are removed.
+This looks OK for me.
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thanks!
+
+> ---
+>  kernel/trace/trace_probe.c | 74 ++++++++--------------------------------------
+>  kernel/trace/trace_probe.h | 64 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 77 insertions(+), 61 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index d8347b01ce89..c26bc9eaa2ac 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -35,19 +35,15 @@ const char *reserved_field_names[] = {
+>  	FIELD_STRING_FUNC,
+>  };
+>  
+> -/* Printing function type */
+> -#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
+> -#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
+> -
+>  /* Printing  in basic type function template */
+>  #define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt)				\
+> -static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
+> +__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
+>  						const char *name,	\
+>  						void *data, void *ent)	\
+>  {									\
+>  	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
+>  }									\
+> -static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
+> +const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
+>  
+>  DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "0x%x")
+>  DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "0x%x")
+> @@ -58,23 +54,12 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
+>  DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
+>  DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
+>  
+> -static inline void *get_rloc_data(u32 *dl)
+> -{
+> -	return (u8 *)dl + get_rloc_offs(*dl);
+> -}
+> -
+> -/* For data_loc conversion */
+> -static inline void *get_loc_data(u32 *dl, void *ent)
+> -{
+> -	return (u8 *)ent + get_rloc_offs(*dl);
+> -}
+> -
+>  /* For defining macros, define string/string_size types */
+>  typedef u32 string;
+>  typedef u32 string_size;
+>  
+>  /* Print type function for string type */
+> -static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+> +__kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+>  						  const char *name,
+>  						  void *data, void *ent)
+>  {
+> @@ -87,7 +72,7 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+>  					(const char *)get_loc_data(data, ent));
+>  }
+>  
+> -static const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+> +const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+>  
+>  #define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
+>  /*
+> @@ -111,7 +96,7 @@ DEFINE_FETCH_##method(u64)
+>  
+>  /* Data fetch function templates */
+>  #define DEFINE_FETCH_reg(type)						\
+> -static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
+> +__kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
+>  					void *offset, void *dest)	\
+>  {									\
+>  	*(type *)dest = (type)regs_get_register(regs,			\
+> @@ -123,7 +108,7 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
+>  #define fetch_reg_string_size	NULL
+>  
+>  #define DEFINE_FETCH_stack(type)					\
+> -static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+> +__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
+>  					  void *offset, void *dest)	\
+>  {									\
+>  	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+> @@ -135,7 +120,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+>  #define fetch_stack_string_size	NULL
+>  
+>  #define DEFINE_FETCH_retval(type)					\
+> -static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
+> +__kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
+>  					  void *dummy, void *dest)	\
+>  {									\
+>  	*(type *)dest = (type)regs_return_value(regs);			\
+> @@ -146,7 +131,7 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
+>  #define fetch_retval_string_size	NULL
+>  
+>  #define DEFINE_FETCH_memory(type)					\
+> -static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
+> +__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
+>  					  void *addr, void *dest)	\
+>  {									\
+>  	type retval;							\
+> @@ -160,7 +145,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
+>   * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
+>   * length and relative data location.
+>   */
+> -static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+> +__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+>  						      void *addr, void *dest)
+>  {
+>  	long ret;
+> @@ -197,7 +182,7 @@ static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+>  }
+>  
+>  /* Return the length of string -- including null terminal byte */
+> -static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+> +__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+>  							void *addr, void *dest)
+>  {
+>  	mm_segment_t old_fs;
+> @@ -268,7 +253,7 @@ static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
+>  }
+>  
+>  #define DEFINE_FETCH_symbol(type)					\
+> -static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
+> +__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
+>  					  void *data, void *dest)	\
+>  {									\
+>  	struct symbol_cache *sc = data;					\
+> @@ -288,7 +273,7 @@ struct deref_fetch_param {
+>  };
+>  
+>  #define DEFINE_FETCH_deref(type)					\
+> -static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
+> +__kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+>  					    void *data, void *dest)	\
+>  {									\
+>  	struct deref_fetch_param *dprm = data;				\
+> @@ -329,7 +314,7 @@ struct bitfield_fetch_param {
+>  };
+>  
+>  #define DEFINE_FETCH_bitfield(type)					\
+> -static __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
+> +__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
+>  					    void *data, void *dest)	\
+>  {									\
+>  	struct bitfield_fetch_param *bprm = data;			\
+> @@ -374,39 +359,6 @@ free_bitfield_fetch_param(struct bitfield_fetch_param *data)
+>  	kfree(data);
+>  }
+>  
+> -/* Default (unsigned long) fetch type */
+> -#define __DEFAULT_FETCH_TYPE(t) u##t
+> -#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
+> -#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
+> -#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
+> -
+> -#define ASSIGN_FETCH_FUNC(method, type)	\
+> -	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
+> -
+> -#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
+> -	{.name = _name,				\
+> -	 .size = _size,					\
+> -	 .is_signed = sign,				\
+> -	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
+> -	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
+> -	 .fmttype = _fmttype,				\
+> -	 .fetch = {					\
+> -ASSIGN_FETCH_FUNC(reg, ftype),				\
+> -ASSIGN_FETCH_FUNC(stack, ftype),			\
+> -ASSIGN_FETCH_FUNC(retval, ftype),			\
+> -ASSIGN_FETCH_FUNC(memory, ftype),			\
+> -ASSIGN_FETCH_FUNC(symbol, ftype),			\
+> -ASSIGN_FETCH_FUNC(deref, ftype),			\
+> -ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+> -	  }						\
+> -	}
+> -
+> -#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
+> -	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
+> -
+> -#define FETCH_TYPE_STRING	0
+> -#define FETCH_TYPE_STRSIZE	1
+> -
+>  /* Fetch type information table */
+>  static const struct fetch_type fetch_type_table[] = {
+>  	/* Special types */
+> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+> index 2c979cb66367..7c6be146f444 100644
+> --- a/kernel/trace/trace_probe.h
+> +++ b/kernel/trace/trace_probe.h
+> @@ -81,6 +81,17 @@
+>   */
+>  #define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
+>  
+> +static inline void *get_rloc_data(u32 *dl)
+> +{
+> +	return (u8 *)dl + get_rloc_offs(*dl);
+> +}
+> +
+> +/* For data_loc conversion */
+> +static inline void *get_loc_data(u32 *dl, void *ent)
+> +{
+> +	return (u8 *)ent + get_rloc_offs(*dl);
+> +}
+> +
+>  /* Data fetch function type */
+>  typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
+>  /* Printing function type */
+> @@ -115,6 +126,59 @@ struct fetch_param {
+>  	void 			*data;
+>  };
+>  
+> +#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
+> +#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
+> +
+> +/* Printing  in basic type function template */
+> +#define DECLARE_BASIC_PRINT_TYPE_FUNC(type, fmt)			\
+> +__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
+> +					 const char *name,		\
+> +					 void *data, void *ent);	\
+> +extern const char PRINT_TYPE_FMT_NAME(type)[];
+> +
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(u8 , "%x")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(u16, "%x")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(u32, "%x")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(u64, "%Lx")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(s8,  "%d")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
+> +DECLARE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
+> +
+> +/* Default (unsigned long) fetch type */
+> +#define __DEFAULT_FETCH_TYPE(t) u##t
+> +#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
+> +#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
+> +#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
+> +
+> +#define ASSIGN_FETCH_FUNC(method, type)	\
+> +	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
+> +
+> +#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
+> +	{.name = _name,				\
+> +	 .size = _size,					\
+> +	 .is_signed = sign,				\
+> +	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
+> +	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
+> +	 .fmttype = _fmttype,				\
+> +	 .fetch = {					\
+> +ASSIGN_FETCH_FUNC(reg, ftype),				\
+> +ASSIGN_FETCH_FUNC(stack, ftype),			\
+> +ASSIGN_FETCH_FUNC(retval, ftype),			\
+> +ASSIGN_FETCH_FUNC(memory, ftype),			\
+> +ASSIGN_FETCH_FUNC(symbol, ftype),			\
+> +ASSIGN_FETCH_FUNC(deref, ftype),			\
+> +ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+> +	  }						\
+> +	}
+> +
+> +#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
+> +	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
+> +
+> +#define FETCH_TYPE_STRING	0
+> +#define FETCH_TYPE_STRSIZE	1
+> +
+> +
+>  struct probe_arg {
+>  	struct fetch_param	fetch;
+>  	struct fetch_param	fetch_size;
+> 
 
 
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-From: mpatocka@redhat.com
 
-I discovered that kernel 3.12 has broken terminal handling.
-
-I created this program to show the problem:
-#include <stdio.h>
-#include <unistd.h>
-
-int main(void)
-{
-        int c;
-        while ((c = getchar()) != EOF) {
-                if (c == '\n') write(1, "prompt>", 7);
-        }
-        return 0;
-}
-
-Each time the user presses enter, the program prints "prompt>". Normally, 
-when you press enter, you should see:
-
-prompt>
-prompt>
-prompt>
-prompt>_
-
-However, with kernel 3.12.4, you occasionally see
-
-prompt>
-prompt>
-prompt>prompt>
-_
-
-This bug happens randomly, it is timing-dependent. I am using single-core 
-600MHz processor with preemptible kernel, the bug may or may not happen on 
-other computers.
-
-This bug is caused by Peter Hurley's echo buffering patches 
-(cbfd0340ae1993378fd47179db949e050e16e697). The patches change n_tty.c so 
-that it accumulates echoed characters and sends them out in a batch. 
-Something like this happens:
-
-* The user presses enter
-* n_tty.c adds '\n' to the echo buffer using echo_char_raw
-* n_tty.c adds '\n' to the input queue using put_tty_queue
-* A process is switched
-* Userspace reads '\n' from the terminal input queue
-* Userspace writes the string "prompt>" to the terminal
-* A process is switched back
-* The echo buffer is flushed
-* '\n' from the echo buffer is printed.
-
-Echo bufferring is fundamentally wrong idea - you must make sure that you 
-flush the echo buffer BEFORE you add a character to input queue and BEFORE 
-you send any signal on behalf of that character. If you delay echo, you 
-are breaking behavior of various programs because the program output will 
-be interleaved with the echoed characters.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com
-Cc: stable@kernel.org	# 3.12
-
----
- drivers/tty/n_tty.c |   71 ++++++++++------------------------------------------
- 1 file changed, 15 insertions(+), 56 deletions(-)
-
-Index: linux-3.12.4/drivers/tty/n_tty.c
-===================================================================
---- linux-3.12.4.orig/drivers/tty/n_tty.c	2013-12-09 15:47:22.401049994 +0100
-+++ linux-3.12.4/drivers/tty/n_tty.c	2013-12-09 16:03:10.964942268 +0100
-@@ -92,7 +92,6 @@ struct n_tty_data {
- 	size_t read_head;
- 	size_t canon_head;
- 	size_t echo_head;
--	size_t echo_commit;
- 	DECLARE_BITMAP(char_map, 256);
- 
- 	/* private to n_tty_receive_overrun (single-threaded) */
-@@ -335,7 +334,7 @@ static inline void put_tty_queue(unsigne
- static void reset_buffer_flags(struct n_tty_data *ldata)
- {
- 	ldata->read_head = ldata->canon_head = ldata->read_tail = 0;
--	ldata->echo_head = ldata->echo_tail = ldata->echo_commit = 0;
-+	ldata->echo_head = ldata->echo_tail = 0;
- 	ldata->line_start = 0;
- 
- 	ldata->erasing = 0;
-@@ -655,7 +654,7 @@ static size_t __process_echoes(struct tt
- 	old_space = space = tty_write_room(tty);
- 
- 	tail = ldata->echo_tail;
--	while (ldata->echo_commit != tail) {
-+	while (ldata->echo_head != tail) {
- 		c = echo_buf(ldata, tail);
- 		if (c == ECHO_OP_START) {
- 			unsigned char op;
-@@ -766,7 +765,7 @@ static size_t __process_echoes(struct tt
- 	/* If the echo buffer is nearly full (so that the possibility exists
- 	 * of echo overrun before the next commit), then discard enough
- 	 * data at the tail to prevent a subsequent overrun */
--	while (ldata->echo_commit - tail >= ECHO_DISCARD_WATERMARK) {
-+	while (ldata->echo_head - tail >= ECHO_DISCARD_WATERMARK) {
- 		if (echo_buf(ldata, tail) == ECHO_OP_START) {
- 			if (echo_buf(ldata, tail + 1) == ECHO_OP_ERASE_TAB)
- 				tail += 3;
-@@ -780,37 +779,12 @@ static size_t __process_echoes(struct tt
- 	return old_space - space;
- }
- 
--static void commit_echoes(struct tty_struct *tty)
--{
--	struct n_tty_data *ldata = tty->disc_data;
--	size_t nr, old, echoed;
--	size_t head;
--
--	head = ldata->echo_head;
--	old = ldata->echo_commit - ldata->echo_tail;
--
--	/* Process committed echoes if the accumulated # of bytes
--	 * is over the threshold (and try again each time another
--	 * block is accumulated) */
--	nr = head - ldata->echo_tail;
--	if (nr < ECHO_COMMIT_WATERMARK || (nr % ECHO_BLOCK > old % ECHO_BLOCK))
--		return;
--
--	mutex_lock(&ldata->output_lock);
--	ldata->echo_commit = head;
--	echoed = __process_echoes(tty);
--	mutex_unlock(&ldata->output_lock);
--
--	if (echoed && tty->ops->flush_chars)
--		tty->ops->flush_chars(tty);
--}
--
- static void process_echoes(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 	size_t echoed;
- 
--	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
-+	if (ldata->echo_head == ldata->echo_tail)
- 		return;
- 
- 	mutex_lock(&ldata->output_lock);
-@@ -821,19 +795,6 @@ static void process_echoes(struct tty_st
- 		tty->ops->flush_chars(tty);
- }
- 
--static void flush_echoes(struct tty_struct *tty)
--{
--	struct n_tty_data *ldata = tty->disc_data;
--
--	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_head)
--		return;
--
--	mutex_lock(&ldata->output_lock);
--	ldata->echo_commit = ldata->echo_head;
--	__process_echoes(tty);
--	mutex_unlock(&ldata->output_lock);
--}
--
- /**
-  *	add_echo_byte	-	add a byte to the echo buffer
-  *	@c: unicode byte to echo
-@@ -1230,7 +1191,7 @@ n_tty_receive_signal_char(struct tty_str
- 		start_tty(tty);
- 	if (L_ECHO(tty)) {
- 		echo_char(c, tty);
--		commit_echoes(tty);
-+		process_echoes(tty);
- 	}
- 	isig(signal, tty);
- 	return;
-@@ -1262,7 +1223,7 @@ n_tty_receive_char_special(struct tty_st
- 	if (I_IXON(tty)) {
- 		if (c == START_CHAR(tty)) {
- 			start_tty(tty);
--			commit_echoes(tty);
-+			process_echoes(tty);
- 			return 0;
- 		}
- 		if (c == STOP_CHAR(tty)) {
-@@ -1301,7 +1262,7 @@ n_tty_receive_char_special(struct tty_st
- 		if (c == ERASE_CHAR(tty) || c == KILL_CHAR(tty) ||
- 		    (c == WERASE_CHAR(tty) && L_IEXTEN(tty))) {
- 			eraser(c, tty);
--			commit_echoes(tty);
-+			process_echoes(tty);
- 			return 0;
- 		}
- 		if (c == LNEXT_CHAR(tty) && L_IEXTEN(tty)) {
-@@ -1311,7 +1272,7 @@ n_tty_receive_char_special(struct tty_st
- 				if (L_ECHOCTL(tty)) {
- 					echo_char_raw('^', ldata);
- 					echo_char_raw('\b', ldata);
--					commit_echoes(tty);
-+					process_echoes(tty);
- 				}
- 			}
- 			return 1;
-@@ -1326,13 +1287,13 @@ n_tty_receive_char_special(struct tty_st
- 				echo_char(read_buf(ldata, tail), tty);
- 				tail++;
- 			}
--			commit_echoes(tty);
-+			process_echoes(tty);
- 			return 0;
- 		}
- 		if (c == '\n') {
- 			if (L_ECHO(tty) || L_ECHONL(tty)) {
- 				echo_char_raw('\n', ldata);
--				commit_echoes(tty);
-+				process_echoes(tty);
- 			}
- 			goto handle_newline;
- 		}
-@@ -1352,7 +1313,7 @@ n_tty_receive_char_special(struct tty_st
- 				if (ldata->canon_head == ldata->read_head)
- 					echo_set_canon_col(ldata);
- 				echo_char(c, tty);
--				commit_echoes(tty);
-+				process_echoes(tty);
- 			}
- 			/*
- 			 * XXX does PARMRK doubling happen for
-@@ -1383,7 +1344,7 @@ handle_newline:
- 				echo_set_canon_col(ldata);
- 			echo_char(c, tty);
- 		}
--		commit_echoes(tty);
-+		process_echoes(tty);
- 	}
- 
- 	if (parmrk)
-@@ -1409,7 +1370,7 @@ n_tty_receive_char_inline(struct tty_str
- 		if (ldata->canon_head == ldata->read_head)
- 			echo_set_canon_col(ldata);
- 		echo_char(c, tty);
--		commit_echoes(tty);
-+		process_echoes(tty);
- 	}
- 	parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty)) ? 1 : 0;
- 	if (parmrk)
-@@ -1437,7 +1398,7 @@ n_tty_receive_char_fast(struct tty_struc
- 		if (ldata->canon_head == ldata->read_head)
- 			echo_set_canon_col(ldata);
- 		echo_char(c, tty);
--		commit_echoes(tty);
-+		process_echoes(tty);
- 	}
- 	put_tty_queue(c, ldata);
- }
-@@ -1661,9 +1622,7 @@ static void __receive_buf(struct tty_str
- 		else
- 			n_tty_receive_buf_standard(tty, cp, fp, count);
- 
--		flush_echoes(tty);
--		if (tty->ops->flush_chars)
--			tty->ops->flush_chars(tty);
-+		process_echoes(tty);
- 	}
- 
- 	if ((!ldata->icanon && (read_cnt(ldata) >= ldata->minimum_to_wake)) ||
