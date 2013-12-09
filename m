@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226Ab3LIXrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:47:31 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49121 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab3LIXra (ORCPT
+	id S1751076Ab3LIXvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:51:04 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44167 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab3LIXvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:47:30 -0500
-X-AuditID: 9c930179-b7ce4ae000000e86-68-52a65690c4d3
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 09/14] tools lib traceevent: Get rid of die() in add_right()
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-	<1386567251-22751-10-git-send-email-namhyung@kernel.org>
-	<CAKb7Uvhhg2siBURLxTb2jgW_-5AUeK_yqRpEJgi0HW12zQTMyg@mail.gmail.com>
-	<87fvq2mrw1.fsf@sejong.aot.lge.com>
-	<20131209113256.67442b2a@gandalf.local.home>
-Date: Tue, 10 Dec 2013 08:47:28 +0900
-In-Reply-To: <20131209113256.67442b2a@gandalf.local.home> (Steven Rostedt's
-	message of "Mon, 9 Dec 2013 11:32:56 -0500")
-Message-ID: <87y53tlh7z.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 9 Dec 2013 18:51:00 -0500
+Date: Mon, 9 Dec 2013 23:50:35 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
+Message-ID: <20131209235035.GA11632@n2100.arm.linux.org.uk>
+References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net> <20131128055706.GM8834@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131128055706.GM8834@intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Thu, Nov 28, 2013 at 11:27:06AM +0530, Vinod Koul wrote:
+> + Dan
+> 
+> On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
+> > The following commit:
+> > 
+> >   54f8d501e842 dmaengine: remove DMA unmap from drivers
+> > 
+> > removed the last caller to mv_desc_get_dest_addr(), creating the
+> > warning:
+> > 
+> >   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
+> >   but not used [-Wunused-function]
+> > 
+> > Remove it.
+> > 
+> > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> Acked-by: Vinod Koul <vinod.koul@intel.com>
+> 
+> This should go thru Dan's tree
 
-On Mon, 9 Dec 2013 11:32:56 -0500, Steven Rostedt wrote:
-> On Mon, 09 Dec 2013 15:59:26 +0900
-> Namhyung Kim <namhyung@kernel.org> wrote:
->
->> Hi Ilia,
->> 
->> On Mon, 9 Dec 2013 01:28:26 -0500, Ilia Mirkin wrote:
->> > That should probably be
->> >
->> > if (!op->str.buffer)
->> 
->> Argh.. you're right!
->
-> I was thinking that it was better to do it Namhyung's way, with:
->
-> 	if (op->str.buffer == NULL)
->
-> than my preferred way of:
->
-> 	if (!op->str.buffer)
->
-> because I thought this mistake is more prevalent with my way. But It's
-> good to know that this bug happens regardless of which way you
-> prefer ;-)
-
-Well, while I prefer explicit "buf == NULL" style, I was using "!buf"
-style at that time since the previous line of "!op->str.val" already
-used that style so that's why the typo came in.  Just FYI. :)
-
-Thanks,
-Namhyung
+So what's happening with this patch?  I don't see it in -rc yet.
