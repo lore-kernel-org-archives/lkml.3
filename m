@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761031Ab3LIKZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:25:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27052 "EHLO mx1.redhat.com"
+	id S1759210Ab3LIK13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:27:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42112 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760304Ab3LIKZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:25:47 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH net 1/2] tun: unbreak truncated packet signalling
-Date: Mon,  9 Dec 2013 18:25:16 +0800
-Message-Id: <1386584717-5776-1-git-send-email-jasowang@redhat.com>
+	id S1754114Ab3LIK11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 05:27:27 -0500
+Date: Mon, 9 Dec 2013 11:26:50 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH 2/2] tools/: Move fs.* to lib/api/fs/
+Message-ID: <20131209102650.GD1242@krava.brq.redhat.com>
+References: <1386260752-16436-1-git-send-email-bp@alien8.de>
+ <1386260752-16436-3-git-send-email-bp@alien8.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386260752-16436-3-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
-(tuntap: hardware vlan tx support) breaks the truncated packet signal by never
-return a length greater than iov length in tun_put_user(). This patch fixes this
-by always return the length of packet plus possible vlan header. Caller can
-detect the truncated packet by comparing the return value and the size of iov
-length.
+On Thu, Dec 05, 2013 at 05:25:52PM +0100, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> Move to generic library and kill magic.h as it is needed only in fs.h.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  tools/lib/api/Makefile                                     |  2 ++
+>  tools/{perf/util => lib/api/fs}/fs.c                       | 11 ++++++++---
+>  tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} | 12 +++++-------
+>  tools/perf/Makefile.perf                                   |  3 ---
+>  tools/perf/tests/parse-events.c                            |  2 +-
+>  tools/perf/util/cpumap.c                                   |  2 +-
+>  tools/perf/util/fs.h                                       |  7 -------
+>  tools/perf/util/pmu.c                                      |  2 +-
+>  tools/perf/util/python-ext-sources                         |  2 +-
+>  tools/perf/util/record.c                                   |  2 +-
+>  10 files changed, 20 insertions(+), 25 deletions(-)
+>  rename tools/{perf/util => lib/api/fs}/fs.c (91%)
+>  rename tools/{perf/util/include/linux/magic.h => lib/api/fs/fs.h} (50%)
+>  delete mode 100644 tools/perf/util/fs.h
+> 
+> diff --git a/tools/lib/api/Makefile b/tools/lib/api/Makefile
+> index d749cdc8e1d4..2a354292d781 100644
+> --- a/tools/lib/api/Makefile
+> +++ b/tools/lib/api/Makefile
+> @@ -8,8 +8,10 @@ LIB_H=
+>  LIB_OBJS=
+>  
+>  LIB_H += fs/debugfs.h
+> +LIB_H += fs/fs.h
+>  
+>  LIB_OBJS += $(OUTPUT)fs/debugfs.o
+> +LIB_OBJS += $(OUTPUT)fs/fs.o
+>  
+>  LIBFILE = libapikfs.a
+>  
+> diff --git a/tools/perf/util/fs.c b/tools/lib/api/fs/fs.c
+> similarity index 91%
+> rename from tools/perf/util/fs.c
+> rename to tools/lib/api/fs/fs.c
+> index f5be1f26e724..ff8907275cfb 100644
+> --- a/tools/perf/util/fs.c
+> +++ b/tools/lib/api/fs/fs.c
+> @@ -1,8 +1,13 @@
+> +/* TODO merge/factor into debugfs.c */
 
-Reported-by: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-The patch is needed for stable.
----
- drivers/net/tun.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+I guess now above one should be:
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index e26cbea..dd1bd7a 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1183,7 +1183,11 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 			    const struct iovec *iv, int len)
- {
- 	struct tun_pi pi = { 0, skb->protocol };
--	ssize_t total = 0;
-+	struct {
-+		__be16 h_vlan_proto;
-+		__be16 h_vlan_TCI;
-+	} veth;
-+	ssize_t total = 0, off = 0;
- 	int vlan_offset = 0;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
-@@ -1248,14 +1252,11 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		total += tun->vnet_hdr_sz;
- 	}
- 
-+	off = total;
- 	if (!vlan_tx_tag_present(skb)) {
- 		len = min_t(int, skb->len, len);
- 	} else {
- 		int copy, ret;
--		struct {
--			__be16 h_vlan_proto;
--			__be16 h_vlan_TCI;
--		} veth;
- 
- 		veth.h_vlan_proto = skb->vlan_proto;
- 		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
-@@ -1264,22 +1265,22 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		len = min_t(int, skb->len + VLAN_HLEN, len);
- 
- 		copy = min_t(int, vlan_offset, len);
--		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
-+		ret = skb_copy_datagram_const_iovec(skb, 0, iv, off, copy);
- 		len -= copy;
--		total += copy;
-+		off += copy;
- 		if (ret || !len)
- 			goto done;
- 
- 		copy = min_t(int, sizeof(veth), len);
--		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
-+		ret = memcpy_toiovecend(iv, (void *)&veth, off, copy);
- 		len -= copy;
--		total += copy;
-+		off += copy;
- 		if (ret || !len)
- 			goto done;
- 	}
- 
--	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
--	total += len;
-+	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, off, len);
-+	total += skb->len + (vlan_offset ? sizeof(veth) : 0);
- 
- done:
- 	tun->dev->stats.tx_packets++;
--- 
-1.8.3.2
+ TODO merge/factor debugfs object in here
 
+;-)
+
+jirka
