@@ -1,101 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933010Ab3LIVnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:43:01 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38681 "EHLO arroyo.ext.ti.com"
+	id S933124Ab3LIVnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:43:23 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:44372 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab3LIVm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:42:59 -0500
-Date: Mon, 9 Dec 2013 15:42:12 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Anton Tikhomirov <av.tikhomirov@samsung.com>
-Subject: Re: linux-next: build failure after merge of the usb-gadget tree
-Message-ID: <20131209214212.GD29143@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
- <20131209041152.GC20608@saruman.home>
- <20131209194032.GC28441@saruman.home>
- <20131210074330.7875f55f1a0e25bd4c2acf0d@canb.auug.org.au>
- <20131209210101.GC29143@saruman.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J4XPiPrVK1ev6Sgr"
-Content-Disposition: inline
-In-Reply-To: <20131209210101.GC29143@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932129Ab3LIVnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:43:19 -0500
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: David Miller <davem@davemloft.net>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH v3] net: handle error more gracefully in socketpair()
+Date: Mon,  9 Dec 2013 22:42:20 +0100
+Message-Id: <1386625340-8490-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <20131206.121411.2205219888474731457.davem@davemloft.net>
+References: <1386285331.18074.47.camel@localhost.localdomain> <20131205.194355.1677309681391704143.davem@davemloft.net> <1386324655.18074.75.camel@localhost.localdomain> <20131206104805.GM10323@ZenIV.linux.org.uk> <20131206.121411.2205219888474731457.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---J4XPiPrVK1ev6Sgr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch makes socketpair() use error paths which do not
+rely on heavy-weight call to sys_close(): it's better to try
+to push the file descriptor to userspace before installing
+the socket file to the file descriptor, so that errors are
+catched earlier and being easier to handle.
 
-On Mon, Dec 09, 2013 at 03:01:01PM -0600, Felipe Balbi wrote:
-> On Tue, Dec 10, 2013 at 07:43:30AM +1100, Stephen Rothwell wrote:
-> > Hi Felipe,
-> >=20
-> > On Mon, 9 Dec 2013 13:40:32 -0600 Felipe Balbi <balbi@ti.com> wrote:
-> > >
-> > > On Sun, Dec 08, 2013 at 10:11:52PM -0600, Felipe Balbi wrote:
-> > > > On Mon, Dec 09, 2013 at 02:58:03PM +1100, Stephen Rothwell wrote:
-> > > > >=20
-> > > > > After merging the usb-gadget tree, today's linux-next build (x86_=
-64
-> > > > > allmodconfig) failed like this:
-> > > > >=20
-> > > > > drivers/built-in.o: In function `otg_set_state':
-> > > > > (.text+0x14f7de): undefined reference to `usb_bus_start_enum'
-> > > > >=20
-> > > > > CONFIG_USB is 'm' in this build.
-> > > > >=20
-> > > > > I am not sure what changed to cause this, maybe e1d2e31975e1 ("us=
-b: phy:
-> > > > > Add OTG FSM configuration option")?
-> > > > >=20
-> > > > > I have used the usb-gadget tree from next-20131206 for today.
-> > > >=20
-> > > > I see what caused it, will fix it up with a patch which should prob=
-ably
-> > > > be backported a few kernels back. Thanks for letting me know.
-> > >=20
-> > > Do you still have the .config which caused that build error ? I could=
-n't
-> > > reproduce with CONFIG_USB=3Dm && CONFIG_USB_OTG=3Dy.
-> >=20
-> > See above, it was just an x86_64 allmodconfig build.
->=20
-> cool, building that on my end.
+Using sys_close() seems to be the exception, while writing the
+file descriptor before installing it look like it's more or less
+the norm: eg. except for code used in init/, error handling
+involve fput() and put_unused_fd(), but not sys_close().
 
-patch sent to linux-usb.
+This make socketpair() usage of sys_close() quite unusual.
+So it deserves to be replaced by the common pattern relying on
+fput() and put_unused_fd() just like, for example, the one used
+in pipe(2) or recvmsg(2).
 
---=20
-balbi
+Three distinct error paths are still needed since calling
+fput() on file structure returned by sock_alloc_file() will
+implicitly call sock_release() on the associated socket
+structure.
 
---J4XPiPrVK1ev6Sgr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://marc.info/?i=1385979146-13825-1-git-send-email-ydroneaud@opteya.com
+---
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+Hi David,
 
-iQIcBAEBAgAGBQJSpjk0AAoJEIaOsuA1yqRE8NwP/2wfofwEVG1sKqu6A9VCs+xw
-OI7+K+w+Mt1a/IDVpsXYjzUQKIPBic7KVcz9IYt2mC8YPp2WnTM8hhTkvcGam3zV
-16kKeHAoMAx8arqdsRzt27dmKfWzjAp+D6kbI7m9zLZ4912J4SmDUQtQN7BXqv/1
-s5nEInYRKssr5M/BHKBtPCjSUoB78L7EBIA+2W3ZnLh0BBAfgFyYCEANbwZIWDWQ
-7FFn9uU0wtyLwPKL7157c/KdcatiXDYhd0S6Vr0jq0xZ0ETmP5tq4mnS7lrqkt7n
-ejVEK+Ko3fHWgp5pEubEu7qa+S5/PelO+E5iozrK56U/dAm4Kn7E3HG/6yCI7BXt
-mlYRXjoY5/Hjmq84v9nfFGEDKP2o5gpCKSeqpSaBkrLG4NOhGsW0JhOL9xqw/Mjv
-6+UlzR6G5SxIjmngXsGZsTXzNlLZOR0yKsUQtX3R42xwp+na2rBeWcw4isSkOIwF
-B8fffXiqXxlrjnvNRrdeD3nH+g9MHi5zcXk3ZOazXG1BB2uiVipfAf3S9idCyqOB
-st8MEr5YXR0wU0jrI/UIWW9EGnhqrzQzIcPmXJPYHNXlLVfLLR4khr9g9+sgcbpY
-NMa0wYpHGKQmwRMHYNbKGcn8Yr2/iqLIU0mPWCjF4h8wti6geCuVKOVS4tHeGDt+
-RLlmUZIWN2WsIN23VIlM
-=nIN8
------END PGP SIGNATURE-----
+Please find a patch which was discussed last week.
 
---J4XPiPrVK1ev6Sgr--
+I've rework a bit the commit message to sum up our discussion
+about the pattern to use when dealing with file descriptor when
+it has to be copied to userspace.
+
+Regards.
+
+Changes from v2 [1]:
+
+- rework a bit commit message
+
+Changes from v1 [2]:
+
+- use three different error path to handle file allocated through
+  sock_alloc_file().
+
+Regards.
+
+[1] http://mid.gmane.org/1385979146-13825-1-git-send-email-ydroneaud@opteya.com
+
+[2] http://mid.gmane.org/1385977019-12282-1-git-send-email-ydroneaud@opteya.com
+
+ net/socket.c | 49 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 31 insertions(+), 18 deletions(-)
+
+diff --git a/net/socket.c b/net/socket.c
+index cd38a785f7d2..879933aaed4c 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1445,48 +1445,61 @@ SYSCALL_DEFINE4(socketpair, int, family, int, type, int, protocol,
+ 		err = fd1;
+ 		goto out_release_both;
+ 	}
++
+ 	fd2 = get_unused_fd_flags(flags);
+ 	if (unlikely(fd2 < 0)) {
+ 		err = fd2;
+-		put_unused_fd(fd1);
+-		goto out_release_both;
++		goto out_put_unused_1;
+ 	}
+ 
+ 	newfile1 = sock_alloc_file(sock1, flags, NULL);
+ 	if (unlikely(IS_ERR(newfile1))) {
+ 		err = PTR_ERR(newfile1);
+-		put_unused_fd(fd1);
+-		put_unused_fd(fd2);
+-		goto out_release_both;
++		goto out_put_unused_both;
+ 	}
+ 
+ 	newfile2 = sock_alloc_file(sock2, flags, NULL);
+ 	if (IS_ERR(newfile2)) {
+ 		err = PTR_ERR(newfile2);
+-		fput(newfile1);
+-		put_unused_fd(fd1);
+-		put_unused_fd(fd2);
+-		sock_release(sock2);
+-		goto out;
++		goto out_fput_1;
+ 	}
+ 
++	err = put_user(fd1, &usockvec[0]);
++	if (err)
++		goto out_fput_both;
++
++	err = put_user(fd2, &usockvec[1]);
++	if (err)
++		goto out_fput_both;
++
+ 	audit_fd_pair(fd1, fd2);
++
+ 	fd_install(fd1, newfile1);
+ 	fd_install(fd2, newfile2);
+ 	/* fd1 and fd2 may be already another descriptors.
+ 	 * Not kernel problem.
+ 	 */
+ 
+-	err = put_user(fd1, &usockvec[0]);
+-	if (!err)
+-		err = put_user(fd2, &usockvec[1]);
+-	if (!err)
+-		return 0;
++	return 0;
+ 
+-	sys_close(fd2);
+-	sys_close(fd1);
+-	return err;
++out_fput_both:
++	fput(newfile2);
++	fput(newfile1);
++	put_unused_fd(fd2);
++	put_unused_fd(fd1);
++	goto out;
++
++out_fput_1:
++	fput(newfile1);
++	put_unused_fd(fd2);
++	put_unused_fd(fd1);
++	sock_release(sock2);
++	goto out;
+ 
++out_put_unused_both:
++	put_unused_fd(fd2);
++out_put_unused_1:
++	put_unused_fd(fd1);
+ out_release_both:
+ 	sock_release(sock2);
+ out_release_1:
+-- 
+1.8.4.2
+
