@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760481Ab3LIE1x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 23:27:53 -0500
-Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:41145
-	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760402Ab3LIE1u (ORCPT
+	id S1760470Ab3LIEc7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 23:32:59 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:43284 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab3LIEcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 23:27:50 -0500
-To: mpatocka@redhat.com, peter@hurleysoftware.com, gregkh@linuxfoundation.org,
-        jslaby@suse.cz
-CC: linux-kernel@vger.kernel.org
-From: Karl Dahlke <eklhad@comcast.net>
-Reply-to: Karl Dahlke <eklhad@comcast.net>
-References: <alpine.LRH.2.02.1312082127020.19329@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: edbrowse/3.4.9
-Subject: [PATCH 3.12] Broken terminal due to echo bufferring
-Date: Sun, 08 Dec 2013 23:26:14 -0500
-Message-ID: <20131108232614.eklhad@comcast.net>
-Mime-Version: 1.0
-Content-Type: text/plain
+	Sun, 8 Dec 2013 23:32:54 -0500
+Message-ID: <52A547F4.6080904@gmail.com>
+Date: Sun, 08 Dec 2013 21:32:52 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
+References: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131206115627.GA2279@ghostprotocols.net> <52A5DFC9.6020105@cn.fujitsu.com> <52A53C3A.2090107@gmail.com> <52A5FA13.9000000@cn.fujitsu.com>
+In-Reply-To: <52A5FA13.9000000@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I discovered that kernel 3.12 has broken terminal handling.
-> I created this program to show the problem:
-> ...
+On 12/9/13, 10:12 AM, Dongsheng Yang wrote:
+> On 12/08/2013 10:42 PM, David Ahern wrote:
+>> On 12/9/13, 8:20 AM, Dongsheng Yang wrote:
+>>> How about introduce an option named --guestpid? Then we can make the
+>>> usage of perf kvm
+>>> more clear:
+>>>      * perf kvm --guestkallsyms --guestmodules --guestpid
+>>> [top|record|report]
+>>>          This usage is for only one guest and will not resolve the
+>>> symbols from other guests.
+>>
+>> If there is only 1 guest then there should not be a problem right? You
+>> give perf a single guest kallsyms as the "default" and it works.
+>> --guestpid adds no value in that case.
+>
+> Yes, if there is only one guest is running, "default" guest is "the"
+> guest. Then with my patch in this thread applied, it works well.
+>
+> But consider this scenario, there are two guests are running, but we
+> need to record-report one of them.
+>
+> --guestmount can achieve this request, but as a shortcut of guestmount,
+> --guest{kallysms, modules} dose not
+> support it well, right? So, I think we can discard the default guest,
+> and use guestpid in record-report.
 
-This is very likely the same bug I reported, with subject:
+No.
 
-Bug in tty cooked mode kernel 3.12.3
+Use cases:
+1. one guest
+--guestkallsyms and --guestmodules apply to default guest; user should 
+supply files that apply to the one guest. Supplying any other kallsyms 
+is just nonsense. *NO* other arguments are needed.
 
-You don't have to write a program for it, just put bash into cooked mode.
-I demonstrated the bug by switching consoles and hitting return,
-assuming bash has been placed in cooked mode.
-It's very repeatable this way, not so random.
-Switch console,hit return, the prompt is on the same line as the previous prompt.
-It affects every cooked mode program, and of course your compiled program 
-comes up in cooked mode.
-It is cooked echo crlf that is the issue.
-Programs in raw mode, like ash default in readline mode,
-vi, emacs, etc,are ok.
-So you don't see it right away.
+2. more than 1 VM, *ALL* VMs running the same kernel
+--guestkallsyms and --guestmodules apply to default guest; user should 
+supply files that apply to all of guests. No other arguments are needed.
 
-See the thread with the aforementioned subject line.
+3. more than 1 VM, VMs running different kernels. 1+ VMs running the 
+same kernel
+--guestmount allows user to supply files that apply to all of guests 
+based on pid. --guestkallsyms/guestmodules is used for any guest not 
+showing up in guestmount.
 
-I have applied two separate patches hoping to fix this problem,
-but it remains.
+David
 
-Karl Dahlke
