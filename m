@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933999Ab3LIQWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:22:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56415 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932796Ab3LIQWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:22:45 -0500
+	id S934027Ab3LIQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:26:01 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59761 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933978Ab3LIQWs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:22:48 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: <lee.jones@linaro.org>
 CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
@@ -14,122 +15,48 @@ CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 03/15] mfd: menelaus: Convert to threaded irq
-Date: Mon, 9 Dec 2013 10:21:13 -0600
-Message-ID: <1386606085-26838-3-git-send-email-balbi@ti.com>
+Subject: [PATCH v3 01/15] mfd: menelaus: Drop __exit section annotation
+Date: Mon, 9 Dec 2013 10:21:11 -0600
+Message-ID: <1386606085-26838-1-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.8.4.GIT
-In-Reply-To: <1386606085-26838-1-git-send-email-balbi@ti.com>
+In-Reply-To: <20131209161422.GC24047@saruman.home>
 References: <20131209161422.GC24047@saruman.home>
- <1386606085-26838-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need that extra workqueue when we have generic threaded irq
-handlers support. This patch just moves over to threaded irqs and
-deletes the unnecessary workqueue.
+We could build that driver as a dynamically-linked module.
 
 Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/menelaus.c | 29 ++++-------------------------
- 1 file changed, 4 insertions(+), 25 deletions(-)
+ drivers/mfd/menelaus.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 8bd97ca..11d7d81 100644
+index ad25bfa..975ff9e 100644
 --- a/drivers/mfd/menelaus.c
 +++ b/drivers/mfd/menelaus.c
-@@ -36,7 +36,6 @@
- #include <linux/interrupt.h>
- #include <linux/sched.h>
- #include <linux/mutex.h>
--#include <linux/workqueue.h>
- #include <linux/delay.h>
- #include <linux/rtc.h>
- #include <linux/bcd.h>
-@@ -161,12 +160,9 @@
- #define MCT_PIN_ST_S1_CD_ST		(1 << 0)
- #define MCT_PIN_ST_S2_CD_ST		(1 << 1)
- 
--static void menelaus_work(struct work_struct *_menelaus);
--
- struct menelaus_chip {
- 	struct mutex		lock;
- 	struct i2c_client	*client;
--	struct work_struct	work;
- #ifdef CONFIG_RTC_DRV_TWL92330
- 	struct rtc_device	*rtc;
- 	u8			rtc_control;
-@@ -795,11 +791,9 @@ out:
- 
- /*-----------------------------------------------------------------------*/
- 
--/* Handles Menelaus interrupts. Does not run in interrupt context */
--static void menelaus_work(struct work_struct *_menelaus)
-+static irqreturn_t menelaus_irq(int irq, void *_menelaus)
- {
--	struct menelaus_chip *menelaus =
--			container_of(_menelaus, struct menelaus_chip, work);
-+	struct menelaus_chip *menelaus = _menelaus;
- 	void (*handler)(struct menelaus_chip *menelaus);
- 
- 	while (1) {
-@@ -826,18 +820,6 @@ static void menelaus_work(struct work_struct *_menelaus)
- 			mutex_unlock(&menelaus->lock);
- 		}
- 	}
--	enable_irq(menelaus->client->irq);
--}
--
--/*
-- * We cannot use I2C in interrupt context, so we just schedule work.
-- */
--static irqreturn_t menelaus_irq(int irq, void *_menelaus)
--{
--	struct menelaus_chip *menelaus = _menelaus;
--
--	disable_irq_nosync(irq);
--	(void)schedule_work(&menelaus->work);
- 
- 	return IRQ_HANDLED;
- }
-@@ -1225,8 +1207,8 @@ static int menelaus_probe(struct i2c_client *client,
- 	menelaus_write_reg(MENELAUS_MCT_CTRL1, 0x73);
- 
- 	if (client->irq > 0) {
--		err = request_irq(client->irq, menelaus_irq, 0,
--				  DRIVER_NAME, menelaus);
-+		err = request_threaded_irq(client->irq, NULL, menelaus_irq,
-+				IRQF_ONESHOT, DRIVER_NAME, menelaus);
- 		if (err) {
- 			dev_dbg(&client->dev,  "can't get IRQ %d, err %d\n",
- 					client->irq, err);
-@@ -1235,7 +1217,6 @@ static int menelaus_probe(struct i2c_client *client,
- 	}
- 
- 	mutex_init(&menelaus->lock);
--	INIT_WORK(&menelaus->work, menelaus_work);
- 
- 	pr_info("Menelaus rev %d.%d\n", rev >> 4, rev & 0x0f);
- 
-@@ -1258,7 +1239,6 @@ static int menelaus_probe(struct i2c_client *client,
- 	return 0;
- fail:
- 	free_irq(client->irq, menelaus);
--	flush_work(&menelaus->work);
+@@ -1262,7 +1262,7 @@ fail:
  	return err;
  }
  
-@@ -1267,7 +1247,6 @@ static int menelaus_remove(struct i2c_client *client)
+-static int __exit menelaus_remove(struct i2c_client *client)
++static int menelaus_remove(struct i2c_client *client)
+ {
  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
  
- 	free_irq(client->irq, menelaus);
--	flush_work(&menelaus->work);
- 	the_menelaus = NULL;
- 	return 0;
- }
+@@ -1283,7 +1283,7 @@ static struct i2c_driver menelaus_i2c_driver = {
+ 		.name		= DRIVER_NAME,
+ 	},
+ 	.probe		= menelaus_probe,
+-	.remove		= __exit_p(menelaus_remove),
++	.remove		= menelaus_remove,
+ 	.id_table	= menelaus_id,
+ };
+ 
 -- 
 1.8.4.GIT
 
