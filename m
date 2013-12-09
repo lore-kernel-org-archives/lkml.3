@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab3LIFYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 00:24:22 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:32849 "EHLO
+	id S1754076Ab3LIF1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 00:27:52 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:32857 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751491Ab3LIFYV (ORCPT
+	with ESMTP id S1750862Ab3LIF1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 00:24:21 -0500
+	Mon, 9 Dec 2013 00:27:47 -0500
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: takata@linux-m32r.org
-Cc: linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-kernel@vger.kernel.org,
+To: benh@kernel.crashing.org, paulus@samba.org, galak@kernel.crashing.org,
+        vitb@kernel.crashing.org, marcelo@kvack.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] m32r: remove deprecated IRQF_DISABLED
-Date: Mon,  9 Dec 2013 06:24:11 +0100
-Message-Id: <1386566651-19681-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] powerpc: remove unused REDBOOT Kconfig parameter
+Date: Mon,  9 Dec 2013 06:27:40 +0100
+Message-Id: <1386566860-19785-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381550848-5958-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381550848-5958-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1383554336-3829-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1383554336-3829-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the use of the IRQF_DISABLED flag
-
-It's a NOOP since 2.6.35 and it will be removed one day.
+This removes the REDBOOT Kconfig parameter,
+which was no longer used anywhere in the source code
+and Makefiles.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- arch/m32r/kernel/time.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/powerpc/Kconfig                | 3 ---
+ arch/powerpc/platforms/83xx/Kconfig | 1 -
+ arch/powerpc/platforms/8xx/Kconfig  | 1 -
+ 3 files changed, 5 deletions(-)
 
-diff --git a/arch/m32r/kernel/time.c b/arch/m32r/kernel/time.c
-index 1a15f81ea1bd..093f2761aa51 100644
---- a/arch/m32r/kernel/time.c
-+++ b/arch/m32r/kernel/time.c
-@@ -134,7 +134,6 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index b44b52c0a8f0..70dc283050b5 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -209,9 +209,6 @@ config DEFAULT_UIMAGE
+ 	  Used to allow a board to specify it wants a uImage built by default
+ 	default n
  
- static struct irqaction irq0 = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED,
- 	.name = "MFT2",
- };
- 
+-config REDBOOT
+-	bool
+-
+ config ARCH_HIBERNATION_POSSIBLE
+ 	bool
+ 	default y
+diff --git a/arch/powerpc/platforms/83xx/Kconfig b/arch/powerpc/platforms/83xx/Kconfig
+index 670a033264c0..2bdc8c862c46 100644
+--- a/arch/powerpc/platforms/83xx/Kconfig
++++ b/arch/powerpc/platforms/83xx/Kconfig
+@@ -99,7 +99,6 @@ config SBC834x
+ config ASP834x
+ 	bool "Analogue & Micro ASP 834x"
+ 	select PPC_MPC834x
+-	select REDBOOT
+ 	help
+ 	  This enables support for the Analogue & Micro ASP 83xx
+ 	  board.
+diff --git a/arch/powerpc/platforms/8xx/Kconfig b/arch/powerpc/platforms/8xx/Kconfig
+index 8dec3c0911ad..bd6f1a1cf922 100644
+--- a/arch/powerpc/platforms/8xx/Kconfig
++++ b/arch/powerpc/platforms/8xx/Kconfig
+@@ -45,7 +45,6 @@ config PPC_EP88XC
+ config PPC_ADDER875
+ 	bool "Analogue & Micro Adder 875"
+ 	select CPM1
+-	select REDBOOT
+ 	help
+ 	  This enables support for the Analogue & Micro Adder 875
+ 	  board.
 -- 
 1.8.3.2
 
