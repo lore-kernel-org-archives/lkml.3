@@ -1,232 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933694Ab3LIPQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:16:53 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:57613 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291Ab3LIPQw (ORCPT
+	id S933819Ab3LIPRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 10:17:06 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:49651 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932621Ab3LIPQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:16:52 -0500
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
-        mark.rutland@arm.com, tomasz.figa@gmail.com, adam.jaremko@gmail.com,
-        sylvester.nawrocki@gmail.com, Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v8] clk: add MOXA ART SoCs clock driver
-Date: Mon,  9 Dec 2013 16:16:03 +0100
-Message-Id: <1386602163-28479-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1381330482-13846-1-git-send-email-jonas.jensen@gmail.com>
-References: <1381330482-13846-1-git-send-email-jonas.jensen@gmail.com>
+	Mon, 9 Dec 2013 10:16:58 -0500
+Message-ID: <1386602213.7152.180.camel@host5.omatika.ru>
+Subject: Re: [PATCH 9/9] ARM: pxa27x: device tree support ICP DAS LP-8x4x
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Daniel Mack <zonque@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Date: Mon, 09 Dec 2013 19:16:53 +0400
+In-Reply-To: <201312090247.24978.arnd@arndb.de>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-10-git-send-email-ynvich@gmail.com>
+	 <201312090247.24978.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MOXA ART SoCs clock driver support.
+On Mon, 2013-12-09 at 02:47 +0100, Arnd Bergmann wrote:
+> On Sunday 08 December 2013, Sergei Ianovich wrote:
+> > +
+> > +#ifdef CONFIG_PXA27x
+> > +extern void __init pxa27x_dt_init_irq(void);
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+> This is not the right place to put an 'extern' declaration, it should go into
+> a header file if it's really needed. Ideally you would not need it at all
+> and just add an IRQCHIP_DECLARE() line into the driver to automatically
+> probe it.
 
-Notes:
-    Thanks for the replies.
-    
-    As indicated by Sylwester, that it's discouraged to use hardware
-    to register DT properties (multiplier-* divisor-*),
-    I decided to remove them.
-    
-    They were only added as extra safety in cases where the
-    implementation must be changed.
-    Code readability is better of without them, and when something
-    needs to change, it's probably better to do it directly.
-    
-    Changes since v7:
-    
-    1. remove hardware to register properties (multiplier-* divisor-*)
-    2. remove redundant parentheses
-    3. check clk_register_fixed_rate() return value
-    
-    Applies to next-20131209
+I thought I moved it to the header in patch 6/9. I'll just drop the
+line.
 
- .../bindings/clock/moxa,moxart-clock.txt           |  37 +++++++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-moxart.c                           | 112 +++++++++++++++++++++
- 3 files changed, 150 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
- create mode 100644 drivers/clk/clk-moxart.c
+IRQCHIP_DECLARE isn't used on pxa_internal_irq_chip in
+arch/arm/mach-pxa/irq.c, probably for a reason.
 
-diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-new file mode 100644
-index 0000000..bc59ceb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
-@@ -0,0 +1,37 @@
-+Device Tree Clock bindings for arch-moxart
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+MOXA ART SoCs allow to determine PLL output and APB frequencies
-+by reading registers holding multiplier and divisor information.
-+
-+Required properties:
-+- compatible : Must be "moxa,moxart-pll-clock" or "moxa,moxart-apb-clock"
-+- #clock-cells : Should be 0
-+- reg : Should contain registers location and length
-+- clocks : Should contain phandle to parent clock
-+
-+Optional properties for "moxa,moxart-pll-clock":
-+- clock-output-names : Should contain clock name
-+
-+Optional properties for "moxa,moxart-apb-clock":
-+- clock-output-names : Should contain clock name
-+
-+
-+For example:
-+
-+	clk_pll: clk_pll@98100000 {
-+		compatible = "moxa,moxart-pll-clock";
-+		#clock-cells = <0>;
-+		reg = <0x98100000 0x34>;
-+		clocks = <&ref12>;
-+	};
-+
-+	clk_apb: clk_apb@98100000 {
-+		compatible = "moxa,moxart-apb-clock";
-+		#clock-cells = <0>;
-+		reg = <0x98100000 0x34>;
-+		clocks = <&pll0>;
-+	};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index ace7309..f07eb3b 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
- obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
-+obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
- obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
-diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-new file mode 100644
-index 0000000..f0436a3
---- /dev/null
-+++ b/drivers/clk/clk-moxart.c
-@@ -0,0 +1,112 @@
-+/*
-+ * MOXA ART SoCs clock driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+
-+void __init moxart_of_pll_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct clk *clk, *ref_clk;
-+	unsigned long rate;
-+	unsigned int mul;
-+	const char *name = node->name;
-+
-+	of_property_read_string(node, "clock-output-names", &name);
-+
-+	base = of_iomap(node, 0);
-+	if (!base) {
-+		pr_err("%s: of_iomap failed\n", node->full_name);
-+		return;
-+	}
-+
-+	mul = readl(base + 0x30) >> 3 & 0x3f;
-+	iounmap(base);
-+
-+	ref_clk = of_clk_get(node, 0);
-+	if (IS_ERR(ref_clk)) {
-+		pr_err("%s: of_clk_get failed\n", node->full_name);
-+		return;
-+	}
-+
-+	rate = mul * clk_get_rate(ref_clk);
-+
-+	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
-+		return;
-+	}
-+
-+	clk_register_clkdev(clk, NULL, name);
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
-+	       moxart_of_pll_clk_init);
-+
-+void __init moxart_of_apb_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct clk *clk, *pll_clk;
-+	unsigned long rate;
-+	unsigned int div, val;
-+	const char *name = node->name;
-+
-+	of_property_read_string(node, "clock-output-names", &name);
-+
-+	base = of_iomap(node, 0);
-+	if (!base) {
-+		pr_err("%s: of_iomap failed\n", node->full_name);
-+		return;
-+	}
-+
-+	val = readl(base + 0xc) >> 4 & 0x7;
-+	iounmap(base);
-+
-+	switch (val) {
-+	case 1:
-+		div = 3;
-+		break;
-+	case 2:
-+		div = 4;
-+		break;
-+	case 3:
-+		div = 6;
-+		break;
-+	case 4:
-+		div = 8;
-+		break;
-+	default:
-+		div = 2;
-+		break;
-+	}
-+
-+	pll_clk = of_clk_get(node, 0);
-+	if (IS_ERR(pll_clk)) {
-+		pr_err("%s: of_clk_get failed\n", node->full_name);
-+		return;
-+	}
-+
-+	rate = clk_get_rate(pll_clk) / (div * 2);
-+
-+	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
-+		return;
-+	}
-+
-+	clk_register_clkdev(clk, NULL, name);
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+CLK_OF_DECLARE(moxart_apb_clock, "moxa,moxart-apb-clock",
-+	       moxart_of_apb_clk_init);
--- 
-1.8.2.1
+> > +static const struct of_dev_auxdata pxa27x_auxdata_lookup[] __initconst = {
+> > +     OF_DEV_AUXDATA("mrvl,pxa-uart",         0x40100000, "pxa2xx-uart.0", NULL),
+> > +     OF_DEV_AUXDATA("mrvl,pxa-uart",         0x40200000, "pxa2xx-uart.1", NULL),
+> > +     OF_DEV_AUXDATA("mrvl,pxa-uart",         0x40700000, "pxa2xx-uart.2", NULL),
+> > +     OF_DEV_AUXDATA("mrvl,pxa-uart",         0x41600000, "pxa2xx-uart.3", NULL),
+> > +     OF_DEV_AUXDATA("marvell,pxa-mmc",       0x41100000, "pxa2xx-mci.0", NULL),
+> > +     OF_DEV_AUXDATA("intel,pxa27x-gpio",     0x40e00000, "pxa27x-gpio", NULL),
+> > +     OF_DEV_AUXDATA("marvell,pxa-ohci",      0x4c000000, "pxa27x-ohci", NULL),
+> > +     OF_DEV_AUXDATA("mrvl,pxa-i2c",          0x40301680, "pxa2xx-i2c.0", NULL),
+> > +     {}
+> > +};
+> 
+> I guess these are needed only for clock management purposes at the moment?
+
+Absolutely.
+
+> > +static void __init pxa27x_init_early(void)
+> > +{
+> > +     pxa27x_skip_init();
+> > +}
+> 
+> I would prefer not to have an init_early function at all, and instead
+> check "if (of_have_populated_dt())" in pxa27x_init, or to split
+> that function into two.
+
+Device tree is populated in init_machine. However, pxa27x_init is
+executed before via postcore_initcall. The only chance to run before is
+to use init_early. What's wrong with this function?
+
+> > +static const char *pxa27x_dt_board_compat[] __initdata = {
+> > +     "marvell,pxa27x",
+> > +     NULL,
+> > +};
+> > +
+> > +#ifdef CONFIG_MACH_LP8X4X
+> > +static const char *lp8x4x_dt_board_compat[] __initdata = {
+> > +     "marvell,lp8x4x",
+> > +     NULL,
+> > +};
+> 
+> Note that you should not have wildcards in any "compatible" strings.
+> Just list all the combinations here (pxa270, pxa271, pxa272, and whatever
+> you need for lp8x4x).
+
+Will do.
+
+> > +static void lp8x4x_restart(enum reboot_mode mode, const char *cmd)
+> > +{
+> > +     /* Switch off fast-bus and turbo mode */
+> > +     asm volatile("mcr       p14, 0, %0, c6, c0, 0" : :
+> > +                     "r"(2));
+> > +     /* SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71) */
+> > +     pxa_restart(REBOOT_SOFT, cmd);
+> > +}
+> > +#endif
+> > +#endif
+> 
+> Since the only difference here is the restart logic, I would prefer here to
+> have only a single DT_MACHINE_START() and do
+> 
+> static void pxa27x_restart(enum reboot_mode mode, const char *cmd)
+> {
+>         /* Switch off fast-bus and turbo mode */
+>         if (of_machine_is_compatible("marvell,lp8x4x"))
+>                 asm volatile("mcr       p14, 0, %0, c6, c0, 0" : : "r"(2));
+> 
+>         /* SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71) */
+>         if (of_machine_is_compatible("marvell,pxa270"))
+>                 pxa_restart(REBOOT_SOFT, cmd);
+> }
+
+Nice tip, thanks. I've spent 30 minutes to find something like that.
+
+If the device has fast SDRAM, which can reset itself in up to 8ms, the
+device is not affected by E71. So both checks are per-device.
+
 
