@@ -1,63 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761475Ab3LIUSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:18:48 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45392 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab3LIUSq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:18:46 -0500
-Message-ID: <52A633B4.9000307@cogentembedded.com>
-Date: Tue, 10 Dec 2013 00:18:44 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1761486Ab3LIUWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 15:22:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24323 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755964Ab3LIUWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 15:22:01 -0500
+Date: Mon, 9 Dec 2013 15:21:57 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        Steve Grubb <sgrubb@redhat.com>
+Subject: Re: [PATCH] audit: process errors from filter user rules
+Message-ID: <20131209202157.GC1687@madcap2.tricolour.ca>
+References: <647f568c0aa7a20435d2471c8052710bf811095c.1386214928.git.rgb@redhat.com>
+ <1386276741.24441.2.camel@localhost>
 MIME-Version: 1.0
-To: Natarajan Gurumoorthy <natg@google.com>, Michael Chan <mchan@broadcom.com>
-CC: nsujir@broadcom.com, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net-tg3: Initialize REG_BASE_ADDR at PCI config offset
- 120 to 0
-References: <1386614601-9453-1-git-send-email-natg@google.com>	<1386615608.1752.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com> <CAGmqidkxoi9EEe0uC18QQUXwjFP1e_1MXL7VPk+NtU-Ta6FGUg@mail.gmail.com>
-In-Reply-To: <CAGmqidkxoi9EEe0uC18QQUXwjFP1e_1MXL7VPk+NtU-Ta6FGUg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386276741.24441.2.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 13/12/05, Eric Paris wrote:
+> I know we talked about this patch, and it seemed like a good idea at the
+> time, but honestly, these races are so rare, it isn't worth the code
+> complexity.  I tried to simplify the readability of your code and got
+> something better, but still the loop is needless...
 
-On 12/09/2013 10:22 PM, Natarajan Gurumoorthy wrote:
+Your original code suggestion was cleaner and simpler than mine, but I
+tried to code it in a structured manner without gotos, perhaps naively
+believing structured code to be superior.  I think that effort backfired
+and made it more complex.  I'm ok going back to your original ideas.
 
-> Michael,
->        We had crashes when the PCI config space got scanned via
-> /sys/devices/pcixxxx/....../config.
+I do still think that retry and passing back of error codes is the
+better approach.
 
-> I agree that this fix will not help if the scan happens before the tg3
-> driver gets loaded.
+> Just log the messages on any error, even with a dontaudit rule...   How
+> about a function like:
 
-    Then perhaps a better place for such fixup would be a PCI quirk?
+I suspect this isn't what you intended.  The way this is written, it
+always breaks after the first rule, not checking any of the others.
 
-> Regards
-> Nat
+> int audit_filter_user(int type)
+> {
+>         enum audit_state state = AUDIT_DISABLED;
+>         struct audit_entry *e;
+>         int rc, ret;
+> 
+>         ret = 1; /* Audit by default */
+> 
+>         rcu_read_lock();
+>         list_for_each_entry_rcu(e, &audit_filter_list[AUDIT_FILTER_USER], list) {
+>                 rc = audit_filter_user_rules(&e->rule, type, &state);
+>                 if (rc > 0 && state == AUDIT_DISABLED)
+>                         ret = 0;
+>                 break;
+>         }
+>         rcu_read_unlock();
+>         return ret;
+> }
 
-> On Mon, Dec 9, 2013 at 11:00 AM, Michael Chan <mchan@broadcom.com> wrote:
->> On Mon, 2013-12-09 at 10:43 -0800, Nat Gurumoorthy wrote:
->>> The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
->>> uninitialized. From power on reset this register may have garbage in it. The
->>> Register Base Address register defines the device local address of a
->>> register. The data pointed to by this location is read or written using
->>> the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
->>> garbage any read or write of Register Data Register (PCI 128) will cause the
->>> PCI bus to lock up. The TCO watchdog will fire and bring down the system.
+Did you mean?
 
+        list_for_each_entry_rcu(e, &audit_filter_list[AUDIT_FILTER_USER], list) {
+                rc = audit_filter_user_rules(&e->rule, type, &state);
+                if (rc) {
+                	if (rc > 0 && state == AUDIT_DISABLED)
+                        	ret = 0;
+                	break;
+		}
+        }
 
->> Is this to prevent problem from other software that may be scanning the
->> PCI config space?  It won't help if this happens before the tg3 driver
->> is loaded, right?
+> and use some sense with the 80 character line length rule.  It's 81
+> long.  Just let it be long even if checkpatch whines....
 
->> Thanks.
+Yeah, I haven't been too pedantic about line length warnings barely over
+80 characters when it affects readability...
 
-WBR, Sergei
+> -Eric
+> 
+> On Wed, 2013-12-04 at 22:45 -0500, Richard Guy Briggs wrote:
+> > Errors from filter user rules were previously ignored, and worse, an error on
+> > a AUDIT_NEVER rule disabled logging on that rule.  On -ESTALE, retry up to 5
+> > times.  On error on AUDIT_NEVER rules, log.
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  kernel/audit.c       |    2 +-
+> >  kernel/auditfilter.c |   44 +++++++++++++++++++++++++++++++-------------
+> >  2 files changed, 32 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/kernel/audit.c b/kernel/audit.c
+> > index 4cbc945..c93cf06 100644
+> > --- a/kernel/audit.c
+> > +++ b/kernel/audit.c
+> > @@ -706,7 +706,7 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
+> >  			return 0;
+> >  
+> >  		err = audit_filter_user(msg_type);
+> > -		if (err == 1) {
+> > +		if (err) { /* match or error */
+> >  			err = 0;
+> >  			if (msg_type == AUDIT_USER_TTY) {
+> >  				err = tty_audit_push_current();
+> > diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> > index b4c6e03..1a7dfa5 100644
+> > --- a/kernel/auditfilter.c
+> > +++ b/kernel/auditfilter.c
+> > @@ -1272,8 +1272,8 @@ static int audit_filter_user_rules(struct audit_krule *rule, int type,
+> >  			break;
+> >  		}
+> >  
+> > -		if (!result)
+> > -			return 0;
+> > +		if (result <= 0)
+> > +			return result;
+> >  	}
+> >  	switch (rule->action) {
+> >  	case AUDIT_NEVER:    *state = AUDIT_DISABLED;	    break;
+> > @@ -1286,19 +1286,37 @@ int audit_filter_user(int type)
+> >  {
+> >  	enum audit_state state = AUDIT_DISABLED;
+> >  	struct audit_entry *e;
+> > -	int ret = 1;
+> > -
+> > -	rcu_read_lock();
+> > -	list_for_each_entry_rcu(e, &audit_filter_list[AUDIT_FILTER_USER], list) {
+> > -		if (audit_filter_user_rules(&e->rule, type, &state)) {
+> > -			if (state == AUDIT_DISABLED)
+> > -				ret = 0;
+> > -			break;
+> > +	int rc, count = 0, retry = 0, ret = 1; /* Audit by default */
+> > +#define FILTER_RETRY_LIMIT 5
+> > +
+> > +	do {
+> > +		rcu_read_lock();
+> > +		list_for_each_entry_rcu(e,
+> > +					&audit_filter_list[AUDIT_FILTER_USER],
+> > +					list) {
+> > +			retry = 0;
+> > +			rc = audit_filter_user_rules(&e->rule, type, &state);
+> > +			if (rc > 0) {
+> > +				if (state == AUDIT_DISABLED)
+> > +					ret = 0;
+> > +				break;
+> > +			} else if (rc < 0) {
+> > +				if (rc == -ESTALE && count < FILTER_RETRY_LIMIT) {
+> > +					rcu_read_unlock();
+> > +					count++;
+> > +					retry = 1;
+> > +					cond_resched();
+> > +				} else {
+> > +					ret = rc;
+> > +				}
+> > +				break;
+> > +			}
+> >  		}
+> > -	}
+> > -	rcu_read_unlock();
+> > +		if (!retry)
+> > +			rcu_read_unlock();
+> > +	} while (retry);
+> >  
+> > -	return ret; /* Audit by default */
+> > +	return ret;
+> >  }
+> >  
+> >  int audit_filter_type(int type)
+> 
+> 
 
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
