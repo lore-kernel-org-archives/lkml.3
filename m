@@ -1,141 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932110Ab3LIB6x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 20:58:53 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:42734 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760192Ab3LIB6v (ORCPT
+	id S1760199Ab3LICB3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 21:01:29 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:40185 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759074Ab3LICB1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 20:58:51 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.236.217
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19qlGZ9/revaA84PuGvx5Ry
-Date: Sun, 8 Dec 2013 17:58:39 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: bcousson@baylibre.com, Roger Quadros <rogerq@ti.com>,
-        tomi.valkeinen@ti.com, balbi@ti.com, sr@denx.de,
-        David.Laight@ACULAB.COM, michael@amarulasolutions.com,
-        bigeasy@linutronix.de, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] ARM: OMAP4+: hwmod data: Don't prevent RESET of USB
- Host module
-Message-ID: <20131209015838.GA11433@atomide.com>
-References: <1386080748-17005-1-git-send-email-rogerq@ti.com>
- <1386080748-17005-2-git-send-email-rogerq@ti.com>
- <alpine.DEB.2.02.1312090125170.32309@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1312090125170.32309@utopia.booyaka.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 8 Dec 2013 21:01:27 -0500
+X-AuditID: cbfee691-b7fd26d000003f7b-5b-52a52474acf9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>,
+        "=?iso-8859-1?Q?'Heiko_St=FCbner'?=" <heiko@sntech.de>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Axel Lin'" <axel.lin@ingics.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+ <000d01cef252$4680cf90$d3826eb0$%han@samsung.com>
+ <201312061012.05535.heiko@sntech.de> <20131206120907.GE29268@sirena.org.uk>
+In-reply-to: <20131206120907.GE29268@sirena.org.uk>
+Subject: Re: [PATCH 4/6] regulator: gpio-regulator: use
+ devm_regulator_register()
+Date: Mon, 09 Dec 2013 11:01:24 +0900
+Message-id: <001401cef482$90461180$b0d23480$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-1
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7ye/s4eo8IDt0+RSStRUmDo2FdOQCBfndg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zY90SlaVBBjsbNS2OzPnKbDH14RM2
+	i/+PXrNaXF54idXi25UOJovLu+awObB57Jx1l92j7WeZx6ZVnWwefVtWMXpsvzaP2ePzJrkA
+	tigum5TUnMyy1CJ9uwSujJ9HbQoWsFVsmfKEpYHxF0sXIyeHhICJxIcDjWwQtpjEhXvrgWwu
+	DiGBZYwSd6dMZoUpWtK7nBkisYhR4u3LNhYI5xejxIL128FGsQmoSXz5cpgdxBYRiJW4uGIR
+	2ChmgX5GiZNvJ7FCdOxnlHj5cDcTSBWngLHE9GV7wZYLCwRLzDv1lRHEZhFQlejcdxishlfA
+	VmLN9IPsELagxI/J98C2MQvoSPR+/8YMYWtLPHl3AWgBB9Ct6hKP/upCHGEkcXPlXqgSEYl9
+	L94xgtwgIfCWXeLOzy/sELsEJL5NPsQC0SsrsekAM8TLkhIHV9xgmcAoMQvJ5llINs9CsnkW
+	khULGFlWMYqmFiQXFCelF5nqFSfmFpfmpesl5+duYoTE78QdjPcPWB9iTAZaP5FZSjQ5Hxj/
+	eSXxhsZmRhamJqbGRuaWZqQJK4nzpj9KChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAeEFO
+	eK5f7PO+8jTFmJqLmms+LMw91CygWrs2jetOcNCX3oVnZx2rnDWpSTTvv1ytvFvDh17RPWq7
+	nsvtmngnMvb6n2lh2+d6x77ZvJJZ7fbXg4/nqaf3RD/zf+16/Nah+DsM5j9//tzGZMDWPFtc
+	XtR9++m/18+Uf9UuF1snO1+0jeOM+sRNE5VYijMSDbWYi4oTARNyDoL1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd0SlaVBBquWqFocmfOV2WLqwyds
+	Fv8fvWa1uLzwEqvFtysdTBaXd81hc2Dz2DnrLrtH288yj02rOtk8+rasYvTYfm0es8fnTXIB
+	bFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGco
+	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDN+HrUpWMBWsWXKE5YGxl8s
+	XYycHBICJhJLepczQ9hiEhfurWfrYuTiEBJYxCjx9mUbC4Tzi1FiwfrtYB1sAmoSX74cZgex
+	RQRiJS6uWATWwSzQzyhx8u0kVoiO/YwSLx/uZgKp4hQwlpi+bC8biC0sECwx79RXRhCbRUBV
+	onPfYbAaXgFbiTXTD7JD2IISPybfA9vGLKAj0fv9GzOErS3x5N0FoAUcQLeqSzz6qwtxhJHE
+	zZV7oUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn
+	525iBCeHZ9I7GFc1WBxiFOBgVOLhXcG6NEiINbGsuDL3EKMEB7OSCK/SiSVBQrwpiZVVqUX5
+	8UWlOanFhxiTgR6dyCwlmpwPTFx5JfGGxiZmRpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5N
+	LUgtgtnCxMEp1cDIe+bPPsHi+N/vRTX7ow8oztb8FBjqlng719nKLp+5/WyD7a4Hd/ymnpk0
+	hafqHveqngk1NxfccuJmL1Fc9GlRUoyzwm0ZsZg5q229Tl2wnb5UIkz96ff1XV9nT//J5Mma
+	t43B/kLMuj+vPSVaTb+p3Hf3EZ8z4bvIGYNWRin7uavlKlwWKi9SYinOSDTUYi4qTgQA0O8w
+	R1IDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [131208 17:27]:
-> Hi BenoÃ®t,
+On Friday, December 06, 2013 9:09 PM, Mark Brown wrote:
+> On Fri, Dec 06, 2013 at 10:12:05AM +0100, Heiko Stübner wrote:
 > 
-> On Tue, 3 Dec 2013, Roger Quadros wrote:
+> > I'm not this firm in the core driver/device behaviour, but when looking at
+> > __device_release_driver I see that the remove callback runs before
+> > devres_release_all, which would effectively free the gpios before the
+> > regulator gets unregistered - is this racy with a regulator change at the same
+> > time?
 > 
-> > Without this, the USB devices are sometimes not detected on OMAP4 Panda
-> > with u-boot v2013.10.
-> > 
-> > Unlike what the comment states, errata i660 does not state that we
-> > can't RESET the USB host module. Instead it states that RESET is the
-> > only way to recover from a deadlock situation.
-> > 
-> > RESET ensures that the module is in a known good state irrespective
-> > of what bootloader does with the module, so it must be done at boot.
-> > 
-> > Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> Acked-by: Paul Walmsley <paul@pwsan.com>
-> 
-> Will you pick this up for the -rc series, or do you want me or Tony to?  
-> Roger writes that this one's pretty important.
+> Yes, the rest of the driver really needs to be converted to devm_ at the
+> same time.
 
-I suggest that you just queue this with your other fixes so we get
-things working.
+The gpios is requested by gpio_request_array().
+However, devm_gpio_request_array() is not supported yet,
+so the rest of the driver cannot be converted to devm_.
 
-Regards,
+Mark Brown,
+Please ignore this patch.
 
-Tony
- 
- 
-> >  arch/arm/mach-omap2/omap_hwmod_44xx_data.c | 12 ++----------
-> >  arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 13 +++----------
-> >  2 files changed, 5 insertions(+), 20 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > index 1e5b12c..3318cae9 100644
-> > --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > @@ -2937,7 +2937,7 @@ static struct omap_hwmod_class_sysconfig omap44xx_usb_host_hs_sysc = {
-> >  	.sysc_offs	= 0x0010,
-> >  	.syss_offs	= 0x0014,
-> >  	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE |
-> > -			   SYSC_HAS_SOFTRESET),
-> > +			   SYSC_HAS_SOFTRESET | SYSC_HAS_RESET_STATUS),
-> >  	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-> >  			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-> >  			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-> > @@ -3001,15 +3001,7 @@ static struct omap_hwmod omap44xx_usb_host_hs_hwmod = {
-> >  	 * hence HWMOD_SWSUP_MSTANDBY
-> >  	 */
-> >  
-> > -	/*
-> > -	 * During system boot; If the hwmod framework resets the module
-> > -	 * the module will have smart idle settings; which can lead to deadlock
-> > -	 * (above Errata Id:i660); so, dont reset the module during boot;
-> > -	 * Use HWMOD_INIT_NO_RESET.
-> > -	 */
-> > -
-> > -	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
-> > -			  HWMOD_INIT_NO_RESET,
-> > +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-> >  };
-> >  
-> >  /*
-> > diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-> > index 9e08d69..e297d62 100644
-> > --- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
-> > @@ -1544,7 +1544,8 @@ static struct omap_hwmod_class_sysconfig omap54xx_usb_host_hs_sysc = {
-> >  	.rev_offs	= 0x0000,
-> >  	.sysc_offs	= 0x0010,
-> >  	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_RESET_STATUS |
-> > -			   SYSC_HAS_SIDLEMODE | SYSC_HAS_SOFTRESET),
-> > +			   SYSC_HAS_SIDLEMODE | SYSC_HAS_SOFTRESET |
-> > +			   SYSC_HAS_RESET_STATUS),
-> >  	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-> >  			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-> >  			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-> > @@ -1598,15 +1599,7 @@ static struct omap_hwmod omap54xx_usb_host_hs_hwmod = {
-> >  	 * hence HWMOD_SWSUP_MSTANDBY
-> >  	 */
-> >  
-> > -	/*
-> > -	 * During system boot; If the hwmod framework resets the module
-> > -	 * the module will have smart idle settings; which can lead to deadlock
-> > -	 * (above Errata Id:i660); so, dont reset the module during boot;
-> > -	 * Use HWMOD_INIT_NO_RESET.
-> > -	 */
-> > -
-> > -	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
-> > -			  HWMOD_INIT_NO_RESET,
-> > +	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-> >  	.main_clk	= "l3init_60m_fclk",
-> >  	.prcm = {
-> >  		.omap4 = {
-> > -- 
-> > 1.8.3.2
-> > 
-> 
-> 
-> - Paul
+Best regards,
+Jingoo Han
 
