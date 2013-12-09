@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760203Ab3LICM3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 21:12:29 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54555 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336Ab3LICM1 (ORCPT
+	id S1760275Ab3LICPs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 21:15:48 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:59571 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760197Ab3LICPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 21:12:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 3/6] ARM: at91/dt: define sama5d3 clocks
-Date: Mon, 9 Dec 2013 03:09:23 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
+	Sun, 8 Dec 2013 21:15:45 -0500
+Date: Mon, 9 Dec 2013 02:15:44 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Tony Lindgren <tony@atomide.com>
+cc: bcousson@baylibre.com, Roger Quadros <rogerq@ti.com>,
+        tomi.valkeinen@ti.com, balbi@ti.com, sr@denx.de,
+        David.Laight@ACULAB.COM, michael@amarulasolutions.com,
+        bigeasy@linutronix.de, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-References: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com> <1385650228-8906-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1385650228-8906-1-git-send-email-b.brezillon@overkiz.com>
+Subject: Re: [PATCH 1/3] ARM: OMAP4+: hwmod data: Don't prevent RESET of USB
+ Host module
+In-Reply-To: <20131209015838.GA11433@atomide.com>
+Message-ID: <alpine.DEB.2.02.1312090213210.32309@utopia.booyaka.com>
+References: <1386080748-17005-1-git-send-email-rogerq@ti.com> <1386080748-17005-2-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1312090125170.32309@utopia.booyaka.com> <20131209015838.GA11433@atomide.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312090309.23723.arnd@arndb.de>
-X-Provags-ID: V02:K0:FGk9M65Kaqak+niXD2gIP+hlB6Gu7U18u2UKkZfj3F1
- K3xGTrqIrEOIuCX88L6yxmQuBSXpxQcz/63Ax6EnvlsORct5pS
- m/fklefLldG3NQV48rM/NApEM2kj2TbzbsJsA0AO2m2QsK0mQY
- zWkl2c24lXGqHkMKMHn6cDseB9OpPQgnmxf3YiQPCSLrc6b64f
- lTL7R0GKsq7SXArDsWDGEuw8cBktRhto/NVqLZJfTSEmkg/hHE
- vt4IV65rEdD80l63z8YY7rA4qVAQgqgKdBJeicIl0D1RYfd1M7
- UCK4eqH3+qM39AtuAudBvv95MPsFziYsQIngArliOWuhW/WMtV
- H8NCAgLwyzbAMD1I7f+E=
+Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-894948885-1386555344=:32309"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 November 2013, Boris BREZILLON wrote:
-> @@ -92,6 +103,8 @@
->  				dma-names = "tx", "rx";
->  				pinctrl-names = "default";
->  				pinctrl-0 = <&pinctrl_spi0>;
-> +				clocks = <&spi0_clk>;
-> +				clock-names = "spi_clk";
->  				status = "disabled";
->  			};
->  
-> @@ -101,6 +114,8 @@
->  				interrupts = <38 IRQ_TYPE_LEVEL_HIGH 4>;
->  				pinctrl-names = "default";
->  				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-> +				clocks = <&ssc0_clk>;
-> +				clock-names = "pclk";
->  				status = "disabled";
->  			};
->  
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-You are adding "clock-names" properties in a lot of cases. Are you sure you
-are using the strings that are documented in the respective device bindings
-for each name? In a lot of cases, drivers just want an anonymous clock
-and we don't name them.
+--843723315-894948885-1386555344=:32309
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-	Arnd
+On Sun, 8 Dec 2013, Tony Lindgren wrote:
+
+> * Paul Walmsley <paul@pwsan.com> [131208 17:27]:
+> > On Tue, 3 Dec 2013, Roger Quadros wrote:
+> >=20
+> > > Without this, the USB devices are sometimes not detected on OMAP4 Pan=
+da
+> > > with u-boot v2013.10.
+> > >=20
+> > > Unlike what the comment states, errata i660 does not state that we
+> > > can't RESET the USB host module. Instead it states that RESET is the
+> > > only way to recover from a deadlock situation.
+> > >=20
+> > > RESET ensures that the module is in a known good state irrespective
+> > > of what bootloader does with the module, so it must be done at boot.
+> > >=20
+> > > Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> > > Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >=20
+> > Acked-by: Paul Walmsley <paul@pwsan.com>
+> >=20
+> > Will you pick this up for the -rc series, or do you want me or Tony to?=
+ =20
+> > Roger writes that this one's pretty important.
+>=20
+> I suggest that you just queue this with your other fixes so we get
+> things working.
+
+I'm going to wait until tomorrow anyway to see if Sathya responds to my=20
+other E-mail, so maybe Beno=C3=AEt will let us know by then.
+
+
+- Paul
+--843723315-894948885-1386555344=:32309--
