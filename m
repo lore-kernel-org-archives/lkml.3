@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760532Ab3LIGIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:08:18 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33809 "EHLO bear.ext.ti.com"
+	id S1760416Ab3LIGSQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:18:16 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55328 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755504Ab3LIGIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:08:16 -0500
-Message-ID: <52A55E2C.7070500@ti.com>
-Date: Mon, 9 Dec 2013 11:37:40 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Javier Martinez Canillas <javier@dowhile0.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] arm: omap: remove *.auto* from device names given
- in usb_bind_phy
-References: <1386331571-30903-1-git-send-email-kishon@ti.com> <1386331571-30903-3-git-send-email-kishon@ti.com> <CABxcv=n67gNq6ayx+t_mfZ0++UBKkXpH9avXvRKFEH4VUrwy0g@mail.gmail.com> <20131206210835.GM21086@saruman.home>
-In-Reply-To: <20131206210835.GM21086@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1754078Ab3LIGSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 01:18:15 -0500
+Message-ID: <1386569840.5159.40.camel@pasglop>
+Subject: Re: [PATCH][RESEND] powerpc: remove unused REDBOOT Kconfig parameter
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: paulus@samba.org, galak@kernel.crashing.org, vitb@kernel.crashing.org,
+        marcelo@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 09 Dec 2013 17:17:20 +1100
+In-Reply-To: <1386566860-19785-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1383554336-3829-1-git-send-email-michael.opdenacker@free-electrons.com>
+	 <1386566860-19785-1-git-send-email-michael.opdenacker@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2013-12-09 at 06:27 +0100, Michael Opdenacker wrote:
+> This removes the REDBOOT Kconfig parameter,
+> which was no longer used anywhere in the source code
+> and Makefiles.
 
-On Saturday 07 December 2013 02:38 AM, Felipe Balbi wrote:
-> Hi,
->
-> On Fri, Dec 06, 2013 at 01:14:38PM +0100, Javier Martinez Canillas wrote:
->> On Fri, Dec 6, 2013 at 1:06 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>> Previously MUSB wrapper (OMAP) device used PLATFORM_DEVID_AUTO while creating
->>> MUSB core device. So in usb_bind_phy (binds the controller with the PHY), the
->>> device name of the controller had *.auto* in it. Since with using
->>> PLATFORM_DEVID_AUTO, there is no way to know the exact device name in advance,
->>> the data given in usb_bind_phy became obsolete and usb_get_phy was failing.
->>> So MUSB wrapper was modified not to use PLATFORM_DEVID_AUTO. Corresponding
->>> change is done in board file here.
->>>
->>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>> ---
->>>   arch/arm/mach-omap2/board-2430sdp.c        |    2 +-
->>>   arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
->>>   arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
->>>   arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
->>>   arch/arm/mach-omap2/board-ldp.c            |    2 +-
->>>   arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
->>>   arch/arm/mach-omap2/board-omap3logic.c     |    2 +-
->>>   arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
->>>   arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
->>>   arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
->>>   arch/arm/mach-omap2/board-overo.c          |    2 +-
->>>   arch/arm/mach-omap2/board-rx51.c           |    2 +-
->>>   12 files changed, 12 insertions(+), 12 deletions(-)
->>>
->>
->> You can drop this patch since boards files are being removed for v3.14
->
-> if we can drop this patch, the whole series is invalid, since we'll be
-> using DT phandles to find PHYs going forward, no ?
->
-yeah. But in one of the other threads, Tony seemed ok to take a patch 
-that fixes the same issue in mach-omap2/twl-common.c. So it's better to 
-confirm with Tony.
+It hasn't been lost :-) It's still in patchwork and it's even in my
+queue.
 
-Thanks
-Kishon
+Cheers,
+Ben.
+
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  arch/powerpc/Kconfig                | 3 ---
+>  arch/powerpc/platforms/83xx/Kconfig | 1 -
+>  arch/powerpc/platforms/8xx/Kconfig  | 1 -
+>  3 files changed, 5 deletions(-)
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index b44b52c0a8f0..70dc283050b5 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -209,9 +209,6 @@ config DEFAULT_UIMAGE
+>  	  Used to allow a board to specify it wants a uImage built by default
+>  	default n
+>  
+> -config REDBOOT
+> -	bool
+> -
+>  config ARCH_HIBERNATION_POSSIBLE
+>  	bool
+>  	default y
+> diff --git a/arch/powerpc/platforms/83xx/Kconfig b/arch/powerpc/platforms/83xx/Kconfig
+> index 670a033264c0..2bdc8c862c46 100644
+> --- a/arch/powerpc/platforms/83xx/Kconfig
+> +++ b/arch/powerpc/platforms/83xx/Kconfig
+> @@ -99,7 +99,6 @@ config SBC834x
+>  config ASP834x
+>  	bool "Analogue & Micro ASP 834x"
+>  	select PPC_MPC834x
+> -	select REDBOOT
+>  	help
+>  	  This enables support for the Analogue & Micro ASP 83xx
+>  	  board.
+> diff --git a/arch/powerpc/platforms/8xx/Kconfig b/arch/powerpc/platforms/8xx/Kconfig
+> index 8dec3c0911ad..bd6f1a1cf922 100644
+> --- a/arch/powerpc/platforms/8xx/Kconfig
+> +++ b/arch/powerpc/platforms/8xx/Kconfig
+> @@ -45,7 +45,6 @@ config PPC_EP88XC
+>  config PPC_ADDER875
+>  	bool "Analogue & Micro Adder 875"
+>  	select CPM1
+> -	select REDBOOT
+>  	help
+>  	  This enables support for the Analogue & Micro Adder 875
+>  	  board.
+
+
