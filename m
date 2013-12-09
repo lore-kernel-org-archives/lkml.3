@@ -1,231 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934131Ab3LIQzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:55:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932795Ab3LIQzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:55:12 -0500
-Message-ID: <1386607847.24473.10.camel@dcbw.foobar.com>
-Subject: Re: [PATCH v2 14/16] wl1251: Add sysfs file tx_mgmt_frm_rate for
- setting rate
-From: Dan Williams <dcbw@redhat.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Date: Mon, 09 Dec 2013 10:50:47 -0600
-In-Reply-To: <1386494714-21070-15-git-send-email-pali.rohar@gmail.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	 <1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
-	 <1386494714-21070-15-git-send-email-pali.rohar@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S934142Ab3LIQzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:55:46 -0500
+Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:45271 "EHLO
+	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932795Ab3LIQzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:55:44 -0500
+X-Greylist: delayed 936 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 11:55:43 EST
+Date: Mon, 9 Dec 2013 16:40:06 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 7/7] mm/migrate: remove result argument on page
+ allocation function for migration
+In-Reply-To: <1386580248-22431-8-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000142d83adfc7-81b70cc9-c87b-4e7e-bd98-0a97ee21db31-000000@email.amazonses.com>
+References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com> <1386580248-22431-8-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.09-54.240.9.50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-12-08 at 10:25 +0100, Pali Rohár wrote:
-> This patch adds support for configuring reg domains.
-> Patch was extracted from Maemo 2.6.28 kernel.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  drivers/net/wireless/ti/wl1251/main.c |  152 +++++++++++++++++++++++++++++++++
->  1 file changed, 152 insertions(+)
+On Mon, 9 Dec 2013, Joonsoo Kim wrote:
 
-Isn't this supposed to be done automatically by the rate control
-modules?  Seems pretty wrong to have it done via a sysfs file.  If the
-maemo code was twiddling the TX rate for management frames so that it
-could get more reliable DHCP or 802.1x, we have better nl80211
-mechanisms for that now.
+> First, we don't use error number in fail case. Call-path related to
+> new_page_node() is shown in the following.
+>
+> do_move_page_to_node_array() -> migrate_pages() -> unmap_and_move()
+> -> new_page_node()
+>
+> If unmap_and_move() failed, migrate_pages() also returns err, and then
+> do_move_page_to_node_array() skips to set page's status to user buffer.
+> So we don't need to set error number to each pages on failure case.
 
-Also, the patch description is wrong.  This doesn't really add support
-for "configuring reg domains" at all.
+I dont get this. new_page_node() sets the error condition in the
+page_to_node array before this patch. There is no post processing in
+do_move_page_to_node_array(). The function simply returns and relies on
+new_page_node() to have set the page status. do_move_pages() then returns
+the page status back to userspace. How does the change preserve these
+diagnostics?
 
-Dan
+> Next, we don't need to set node id of the new page in unmap_and_move(),
+> since it cannot be different with pm->node. In new_page_node(), we always
+> try to allocate the page in exact node by referencing pm->node. So it is
+> sufficient to set node id of the new page in new_page_node(), instead of
+> unmap_and_move().
 
-> diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
-> index 382dedf..42730b7 100644
-> --- a/drivers/net/wireless/ti/wl1251/main.c
-> +++ b/drivers/net/wireless/ti/wl1251/main.c
-> @@ -1377,6 +1377,147 @@ static const struct ieee80211_ops wl1251_ops = {
->  	.get_survey = wl1251_op_get_survey,
->  };
->  
-> +static ssize_t wl1251_sysfs_show_tx_mgmt_frm_rate(struct device *dev,
-> +						  struct device_attribute *attr,
-> +						  char *buf)
-> +{
-> +	struct wl1251 *wl = dev_get_drvdata(dev);
-> +	ssize_t len;
-> +	int val;
-> +
-> +	/* FIXME: what's the maximum length of buf? page size?*/
-> +	len = 500;
-> +
-> +	switch (wl->tx_mgmt_frm_rate) {
-> +		/* skip 1 and 12 Mbps because they have same value 0x0a */
-> +	case RATE_2MBPS:
-> +		val = 20;
-> +		break;
-> +	case RATE_5_5MBPS:
-> +		val = 55;
-> +		break;
-> +	case RATE_11MBPS:
-> +		val = 110;
-> +		break;
-> +	case RATE_6MBPS:
-> +		val = 60;
-> +		break;
-> +	case RATE_9MBPS:
-> +		val = 90;
-> +		break;
-> +	case RATE_12MBPS:
-> +		val = 120;
-> +		break;
-> +	case RATE_18MBPS:
-> +		val = 180;
-> +		break;
-> +	case RATE_24MBPS:
-> +		val = 240;
-> +		break;
-> +	case RATE_36MBPS:
-> +		val = 360;
-> +		break;
-> +	case RATE_48MBPS:
-> +		val = 480;
-> +		break;
-> +	case RATE_54MBPS:
-> +		val = 540;
-> +		break;
-> +	default:
-> +		val = 10;
-> +	}
-> +
-> +	/* for 1 and 12 Mbps we have to check the modulation */
-> +	if (wl->tx_mgmt_frm_rate == RATE_1MBPS) {
-> +		switch (wl->tx_mgmt_frm_rate) {
-> +		case CCK_LONG:
-> +			val = 10;
-> +			break;
-> +		case OFDM:
-> +			val = 120;
-> +			break;
-> +		default:
-> +			val = 10;
-> +			break;
-> +		}
-> +	}
-> +	len = snprintf(buf, len, "%d", val);
-> +
-> +	return len;
-> +}
-> +
-> +static ssize_t wl1251_sysfs_store_tx_mgmt_frm_rate(struct device *dev,
-> +					struct device_attribute *attr,
-> +					const char *buf, size_t count)
-> +{
-> +	struct wl1251 *wl = dev_get_drvdata(dev);
-> +	unsigned long res;
-> +	int ret;
-> +
-> +	ret = strict_strtoul(buf, 10, &res);
-> +
-> +	if (ret < 0) {
-> +		wl1251_warning("incorrect value written to tx_mgmt_frm_rate");
-> +		return 0;
-> +	}
-> +
-> +	switch (res) {
-> +	case 10:
-> +		wl->tx_mgmt_frm_rate = RATE_1MBPS;
-> +		wl->tx_mgmt_frm_mod = CCK_LONG;
-> +		break;
-> +	case 20:
-> +		wl->tx_mgmt_frm_rate = RATE_2MBPS;
-> +		wl->tx_mgmt_frm_mod = CCK_LONG;
-> +		break;
-> +	case 55:
-> +		wl->tx_mgmt_frm_rate = RATE_5_5MBPS;
-> +		wl->tx_mgmt_frm_mod = CCK_LONG;
-> +		break;
-> +	case 110:
-> +		wl->tx_mgmt_frm_rate = RATE_11MBPS;
-> +		wl->tx_mgmt_frm_mod = CCK_LONG;
-> +		break;
-> +	case 60:
-> +		wl->tx_mgmt_frm_rate = RATE_6MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 90:
-> +		wl->tx_mgmt_frm_rate = RATE_9MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 120:
-> +		wl->tx_mgmt_frm_rate = RATE_12MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 180:
-> +		wl->tx_mgmt_frm_rate = RATE_18MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 240:
-> +		wl->tx_mgmt_frm_rate = RATE_24MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 360:
-> +		wl->tx_mgmt_frm_rate = RATE_36MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 480:
-> +		wl->tx_mgmt_frm_rate = RATE_48MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	case 540:
-> +		wl->tx_mgmt_frm_rate = RATE_54MBPS;
-> +		wl->tx_mgmt_frm_mod = OFDM;
-> +		break;
-> +	default:
-> +		wl1251_warning("incorrect value written to tx_mgmt_frm_rate");
-> +		return 0;
-> +	}
-> +
-> +	return count;
-> +}
-> +
->  static ssize_t wl1251_sysfs_show_bt_coex_mode(struct device *dev,
->  					      struct device_attribute *attr,
->  					      char *buf)
-> @@ -1445,6 +1586,10 @@ out:
->  	return count;
->  }
->  
-> +static DEVICE_ATTR(tx_mgmt_frm_rate, S_IRUGO | S_IWUSR,
-> +		   wl1251_sysfs_show_tx_mgmt_frm_rate,
-> +		   wl1251_sysfs_store_tx_mgmt_frm_rate);
-> +
->  static DEVICE_ATTR(bt_coex_mode, S_IRUGO | S_IWUSR,
->  		   wl1251_sysfs_show_bt_coex_mode,
->  		   wl1251_sysfs_store_bt_coex_mode);
-> @@ -1585,6 +1730,13 @@ int wl1251_init_ieee80211(struct wl1251 *wl)
->  	}
->  	dev_set_drvdata(&wl1251_device.dev, wl);
->  
-> +	/* Create sysfs file tx_mgmt_frm_rate */
-> +	ret = device_create_file(&wl1251_device.dev,
-> +				 &dev_attr_tx_mgmt_frm_rate);
-> +	if (ret < 0) {
-> +		wl1251_error("failed to create sysfs file tx_mgmt_frm_rate");
-> +		goto out;
-> +	}
->  
->  	/* Create sysfs file to control bt coex state */
->  	ret = device_create_file(&wl1251_device.dev, &dev_attr_bt_coex_mode);
+Thats a good thought.
 
 
