@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761484Ab3LISCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:02:19 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:30853 "EHLO
-	highbank-bc01-b06.austin.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761277Ab3LISCP (ORCPT
+	id S1760717Ab3LISEC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:04:02 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:61777 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3LISD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:02:15 -0500
-Date: Mon, 9 Dec 2013 18:01:55 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core
- running without PCI on ARM64
-Message-ID: <20131209180155.GG19163@arm.com>
-References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
- <201312091735.05014.arnd@arndb.de>
- <20131209165548.GE19163@arm.com>
- <201312091820.23006.arnd@arndb.de>
+	Mon, 9 Dec 2013 13:03:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201312091820.23006.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAPgLHd-Fjx1RybjWFAu1vHRfTvhWwMLL3x46BouC5uNxHPjy1A@mail.gmail.com>
+References: <CAPgLHd-Fjx1RybjWFAu1vHRfTvhWwMLL3x46BouC5uNxHPjy1A@mail.gmail.com>
+Date: Mon, 9 Dec 2013 10:03:57 -0800
+X-Google-Sender-Auth: 73X9S4I4MFk2pp8qqQ24V1VHaps
+Message-ID: <CAGXu5jLq_CHdSNuCgenTZzyBaa=CjvnFOioxVyqRdB3FYro08A@mail.gmail.com>
+Subject: Re: [PATCH -next] x86, kaslr: remove unused including <linux/version.h>
+From: Kees Cook <keescook@chromium.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, yongjun_wei@trendmicro.com.cn,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 05:20:22PM +0000, Arnd Bergmann wrote:
-> On Monday 09 December 2013, Catalin Marinas wrote:
-> > CONFIG_PCI does not exist on arm64 yet (we have some internal patches
-> > but may not be ready to be posted before the holidays; they try to share
-> > code with other archs, so more discussions before merging). We could add
-> > CONFIG_PCI and some dummy functions on arm64 for development (not to be
-> > upstreamed) or Hanjun could continue to use the current patch before we
-> > get PCI working. In the order of priorities, we'll have to merge PCI
-> > before ACPI anyway.
-> 
-> Well, lack of PCI support on ARM64 is a much better reason for accepting
-> the patch than potential use on non-server platforms of course.
+On Sat, Dec 7, 2013 at 5:02 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Remove including <linux/version.h> that don't need it.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-As I said above about priorities, we are not in a hurry to merge ACPI
-for arm64 before PCI is supported.
+Thanks, yeah, ultimately utsrelease.h had everything that was needed.
 
-> What is the status of the PCI work though? I suspect it won't be all
-> that hard to add minimal PCI support for a simple mmconfig plus
-> fixed I/O space based host of the kind that qemu can easily provide.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Liviu (ARM engineer) has been working on generalising the microblaze
-code (which is very similar to powerpc) and enable it on arm64. The
-patches will be posted soon (though may slip into the new year) but
-there will be many discussions on how to do this best, so I don't expect
-a quick merge.
+> ---
+>  arch/x86/boot/compressed/aslr.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+> index 84be175..90a21f4 100644
+> --- a/arch/x86/boot/compressed/aslr.c
+> +++ b/arch/x86/boot/compressed/aslr.c
+> @@ -10,7 +10,6 @@
+>  #include <linux/uts.h>
+>  #include <linux/utsname.h>
+>  #include <generated/utsrelease.h>
+> -#include <linux/version.h>
+>
+>  /* Simplified build-specific string for starting entropy. */
+>  static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
+>
 
-In parallel, Will is looking at getting PCI to work with kvmtool and
-that's something we could merge sooner (but again, in the new year).
-
-> The hard part that we want to share code with other architectures is
-> supporting pluggable host controllers, and I think we can defer that
-> a bit.
-
-Indeed, this would take time.
+-Kees
 
 -- 
-Catalin
+Kees Cook
+Chrome OS Security
