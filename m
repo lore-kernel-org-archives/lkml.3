@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab3LIXqM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:46:12 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60243 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3LIXqL (ORCPT
+	id S1751226Ab3LIXrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:47:31 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49121 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3LIXra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:46:11 -0500
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Vladimir Murzin <murzin.v@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2] mm/hwpoison: add '#' to hwpoison_inject
-Date: Tue, 10 Dec 2013 07:45:57 +0800
-Message-Id: <1386632757-11783-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13120923-8256-0000-0000-00000A7E6722
+	Mon, 9 Dec 2013 18:47:30 -0500
+X-AuditID: 9c930179-b7ce4ae000000e86-68-52a65690c4d3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 09/14] tools lib traceevent: Get rid of die() in add_right()
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+	<1386567251-22751-10-git-send-email-namhyung@kernel.org>
+	<CAKb7Uvhhg2siBURLxTb2jgW_-5AUeK_yqRpEJgi0HW12zQTMyg@mail.gmail.com>
+	<87fvq2mrw1.fsf@sejong.aot.lge.com>
+	<20131209113256.67442b2a@gandalf.local.home>
+Date: Tue, 10 Dec 2013 08:47:28 +0900
+In-Reply-To: <20131209113256.67442b2a@gandalf.local.home> (Steven Rostedt's
+	message of "Mon, 9 Dec 2013 11:32:56 -0500")
+Message-ID: <87y53tlh7z.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- v1 -> v2:
-  * remove KERN_INFO in pr_info().
+Hi Steve,
 
-Add '#' to hwpoison_inject just as done in madvise_hwpoison.
+On Mon, 9 Dec 2013 11:32:56 -0500, Steven Rostedt wrote:
+> On Mon, 09 Dec 2013 15:59:26 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+>
+>> Hi Ilia,
+>> 
+>> On Mon, 9 Dec 2013 01:28:26 -0500, Ilia Mirkin wrote:
+>> > That should probably be
+>> >
+>> > if (!op->str.buffer)
+>> 
+>> Argh.. you're right!
+>
+> I was thinking that it was better to do it Namhyung's way, with:
+>
+> 	if (op->str.buffer == NULL)
+>
+> than my preferred way of:
+>
+> 	if (!op->str.buffer)
+>
+> because I thought this mistake is more prevalent with my way. But It's
+> good to know that this bug happens regardless of which way you
+> prefer ;-)
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/hwpoison-inject.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Well, while I prefer explicit "buf == NULL" style, I was using "!buf"
+style at that time since the previous line of "!op->str.val" already
+used that style so that's why the typo came in.  Just FYI. :)
 
-diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
-index 4c84678..95487c7 100644
---- a/mm/hwpoison-inject.c
-+++ b/mm/hwpoison-inject.c
-@@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
- 		return 0;
- 
- inject:
--	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
-+	pr_info("Injecting memory failure at pfn %#lx\n", pfn);
- 	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
- }
- 
--- 
-1.7.5.4
-
+Thanks,
+Namhyung
