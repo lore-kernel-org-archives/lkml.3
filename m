@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab3LIRVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:21:39 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52845 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3LIRVg (ORCPT
+	id S1755926Ab3LIRWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:22:00 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56281 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab3LIRV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:21:36 -0500
-Message-ID: <52A5FC1C.70400@wwwdotorg.org>
-Date: Mon, 09 Dec 2013 10:21:32 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 9 Dec 2013 12:21:57 -0500
+Date: Mon, 9 Dec 2013 17:21:35 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Robin Gong <b38343@freescale.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20131209172135.GY29268@sirena.org.uk>
+References: <1386573859.5508.0.camel@phoenix>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Olof Johansson <olof@lixom.net>, Alexandre Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v11 0/7] ARM: support for the Trusted Foundations secure
- monitor
-References: <1385274652-16415-1-git-send-email-acourbot@nvidia.com> <20131126001033.GB21634@quad.lixom.net> <CAAVeFuKh7T42AfAud=ZJ-j_7BgeRUFOytD7CNQ_DFdZeQRHj4A@mail.gmail.com>
-In-Reply-To: <CAAVeFuKh7T42AfAud=ZJ-j_7BgeRUFOytD7CNQ_DFdZeQRHj4A@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bVncxp9+I3apAFr+"
+Content-Disposition: inline
+In-Reply-To: <1386573859.5508.0.camel@phoenix>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: pfuze100: Fix address of FABID
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 05:48 PM, Alexandre Courbot wrote:
-> On Tue, Nov 26, 2013 at 9:10 AM, Olof Johansson <olof@lixom.net> wrote:
->> On Sun, Nov 24, 2013 at 03:30:45PM +0900, Alexandre Courbot wrote:
->>> New rebase that should be ready-to-apply on the latest Tegra tree. The last
->>> remaining blocker is Russell's approval for this series and it is my hope to
->>> obtain it with this version.
->>>
->>> There has been quite some debate around this series, notably about the SMC
->>> calling conventions and whether the firmware interface should be moved out of
->>> arch/arm. I hope that all the questions have been answered and that we can move
->>> forward with this series that enables NVIDIA-branded retail Tegra devices to run
->>> mainline.
->>>
->>> Changes since v10:
->>> - Rebased on top of more recent sources since some files have been renamed in
->>>   mach-tegra.
->>> - Gave a final proof-read and extensive testing.
->>>
->>> Alexandre Courbot (7):
->>>   ARM: add basic support for Trusted Foundations
->>>   of: add vendor prefix for Trusted Logic Mobility
->>>   of: add Trusted Foundations bindings documentation
->>>   ARM: tegra: add support for Trusted Foundations
->>>   ARM: tegra: split setting of CPU reset handler
->>>   ARM: tegra: set CPU reset handler using firmware
->>>   ARM: tegra: support Trusted Foundations by default
->>
->> Ok, this looks good to me. Russell, do you want the first patch in your
->> tree or are you ok with acking that and we can take everything through
->> arm-soc?
->>
->> The alternative is that we can have Stephen provide a stable branch with
->> the first patch on it and we both merge that, then the rest goes on top
->> of that through arm-soc.
-> 
-> Russell, ping?
 
-Russell, are you OK with this series? If you could ack patch 1, that
-would be great.
+--bVncxp9+I3apAFr+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If I don't hear otherwise by Friday, I think the best thing is to merge
-the whole series through the Tegra tree, although I'll structure it so
-that patch 1 can be merged into other branches separately if needed.
+On Mon, Dec 09, 2013 at 03:24:19PM +0800, Axel Lin wrote:
+> According to the datasheet, the address of FABID is 0x4. Fix it.
+
+Applied, thanks.
+
+--bVncxp9+I3apAFr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpfwcAAoJELSic+t+oim9eJ0P/irIkkAhah0opH6On3y2jxFg
+kj7s0qmYgxFVJsqqgcOwk2v28Duq0xMY62cyQvucu492B9+XcZZXY9j+KDv2rlfP
+ZbJClh1aecdkk2/A6pJqqsRlzEkwSizKYb78yKTkxmv1p3qy+eOQ0jwhJpR/i4HN
+bJH+rQqulcf0gPzk1I/cOOY21mU3CeOUEN9dm/PO0FEjmxJNdj+r9sOAeZ0AFVB9
+WTsrmR/QOKyXa24tWX/Ppl9YA31TpyDIu9sElTyiA99lQZEiubS975cJ+YY/oXqt
+Ht7NIMvWnY/OWr1fzJZ++xCGCHBgQf9tKMc3K+mYNK5omak9i4BPjFesozr2sBc7
+aue0TS8cAV2Twb8T9GqupXhoJAA1JcUtcOEey0PUbKFRl0QJITGx4TRsgrGd1Hgz
++mtO7ocDhbI24jt+Zz89Y173H/uQovG9JrhpAVmSdDaiPQ+p/TtTEWlAK09o46Kr
+Hzjc3tQVS4bJIZ+R70Sd0G9roSPaZaS110lEM8kLWaE1d58qCffGZ+gD9VZFj7MS
+rJS1gKMWJGqn7GhyG2txC0NtreOagqgGVuvlvy6ORSBfuiYu9JEefVuF11LDl8JT
+FGi52fMmQIhfpUM1dWXILxvQotH0FdZCZD21iVS5WnfIIgZObTHPtwrQRytiAFpI
+YBScNhsMAvmJZIQ9kyvT
+=eMvE
+-----END PGP SIGNATURE-----
+
+--bVncxp9+I3apAFr+--
