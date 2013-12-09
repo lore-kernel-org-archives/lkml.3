@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761744Ab3LIVwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:52:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39099 "EHLO arroyo.ext.ti.com"
+	id S1761914Ab3LIVzX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:55:23 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39101 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761717Ab3LIVwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:35 -0500
+	id S1761737Ab3LIVwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:52:38 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v3 16/23] mm/hugetlb: Use memblock apis for early memory allocations
-Date: Mon, 9 Dec 2013 16:50:49 -0500
-Message-ID: <1386625856-12942-17-git-send-email-santosh.shilimkar@ti.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v3 22/23] mm/ARM: mm: Use memblock apis for early memory allocations
+Date: Mon, 9 Dec 2013 16:50:55 -0500
+Message-ID: <1386625856-12942-23-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
@@ -24,8 +23,6 @@ Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Grygorii Strashko <grygorii.strashko@ti.com>
 
 Switch to memblock interfaces for early memory allocator instead of
 bootmem allocator. No functional change in beahvior than what it is
@@ -39,40 +36,24 @@ bootmem APIs.
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- mm/hugetlb.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/mm/init.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index dee6cf4..e16c56e 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1280,9 +1280,9 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
- 	for_each_node_mask_to_alloc(h, nr_nodes, node, &node_states[N_MEMORY]) {
- 		void *addr;
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 3e8f106..bee6d2c 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -461,7 +461,7 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
+ 	 * free the section of the memmap array.
+ 	 */
+ 	if (pg < pgend)
+-		free_bootmem(pg, pgend - pg);
++		memblock_free_early(pg, pgend - pg);
+ }
  
--		addr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
--				huge_page_size(h), huge_page_size(h), 0);
--
-+		addr = memblock_virt_alloc_try_nid_nopanic(
-+				huge_page_size(h), huge_page_size(h),
-+				0, BOOTMEM_ALLOC_ACCESSIBLE, node);
- 		if (addr) {
- 			/*
- 			 * Use the beginning of the huge page to store the
-@@ -1322,8 +1322,8 @@ static void __init gather_bootmem_prealloc(void)
- 
- #ifdef CONFIG_HIGHMEM
- 		page = pfn_to_page(m->phys >> PAGE_SHIFT);
--		free_bootmem_late((unsigned long)m,
--				  sizeof(struct huge_bootmem_page));
-+		memblock_free_late(__pa(m),
-+				   sizeof(struct huge_bootmem_page));
- #else
- 		page = virt_to_page(m);
- #endif
+ /*
 -- 
 1.7.9.5
 
