@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab3LIWRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 17:17:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:24597 "EHLO mga11.intel.com"
+	id S1761585Ab3LIWSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 17:18:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751474Ab3LIWR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 17:17:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,860,1378882800"; 
-   d="scan'208";a="447251616"
-Date: Mon, 9 Dec 2013 23:17:21 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Message-ID: <20131209221721.GB8612@zurbaran>
-References: <20131117195358.GO27323@pd.tnic>
- <4523614.I5MBhorHFt@vostro.rjw.lan>
- <5292FF5D.1050304@gmail.com>
- <1821758.2MoNI3h1Mv@vostro.rjw.lan>
- <52985041.5050000@gmail.com>
- <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
- <5299FF38.7060203@gmail.com>
- <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de>
- <529D92D6.8050409@gmail.com>
+	id S1751474Ab3LIWSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 17:18:53 -0500
+Date: Mon, 9 Dec 2013 17:18:38 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Peter Hurley <peter@hurleysoftware.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Karl Dahlke <eklhad@comcast.net>
+Subject: Re: [PATCH 3.12] Broken terminal due to echo bufferring
+In-Reply-To: <52A5E531.9010909@hurleysoftware.com>
+Message-ID: <alpine.LRH.2.02.1312091645400.9569@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1312082127020.19329@file01.intranet.prod.int.rdu2.redhat.com> <52A5E531.9010909@hurleysoftware.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <529D92D6.8050409@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Francis,
 
-Adding Lee to the Cc list.
 
-On Tue, Dec 03, 2013 at 09:14:14AM +0100, Francis Moreau wrote:
-> Now that you did the hard work, I hope driver's maintainer/developper
-> will care about this issue.
-I applied Thomas' patch to mfd-fixes.
-Thanks a lot to you and Thomas for that.
+On Mon, 9 Dec 2013, Peter Hurley wrote:
 
-Cheers,
-Samuel.
+> On 12/08/2013 09:55 PM, Mikulas Patocka wrote:
+> > Hi
+> > 
+> > I discovered that kernel 3.12 has broken terminal handling.
+> > 
+> > I created this program to show the problem:
+> > #include <stdio.h>
+> > #include <unistd.h>
+> > 
+> > int main(void)
+> > {
+> >          int c;
+> >          while ((c = getchar()) != EOF) {
+> >                  if (c == '\n') write(1, "prompt>", 7);
+> >          }
+> >          return 0;
+> > }
+> > 
+> > Each time the user presses enter, the program prints "prompt>". Normally,
+> > when you press enter, you should see:
+> > 
+> > prompt>
+> > prompt>
+> > prompt>
+> > prompt>_
+> > 
+> > However, with kernel 3.12.4, you occasionally see
+> > 
+> > prompt>
+> > prompt>
+> > prompt>prompt>
+> > _
+> > 
+> > This bug happens randomly, it is timing-dependent. I am using single-core
+> > 600MHz processor with preemptible kernel, the bug may or may not happen on
+> > other computers.
+> > 
+> > This bug is caused by Peter Hurley's echo buffering patches
+> > (cbfd0340ae1993378fd47179db949e050e16e697). The patches change n_tty.c so
+> > that it accumulates echoed characters and sends them out in a batch.
+> > Something like this happens:
+> > 
+> > * The user presses enter
+> > * n_tty.c adds '\n' to the echo buffer using echo_char_raw
+> > * n_tty.c adds '\n' to the input queue using put_tty_queue
+> > * A process is switched
+> > * Userspace reads '\n' from the terminal input queue
+> > * Userspace writes the string "prompt>" to the terminal
+> > * A process is switched back
+> > * The echo buffer is flushed
+> > * '\n' from the echo buffer is printed.
+> > 
+> > 
+> > Echo bufferring is fundamentally wrong idea - you must make sure that you
+> > flush the echo buffer BEFORE you add a character to input queue and BEFORE
+> > you send any signal on behalf of that character. If you delay echo, you
+> > are breaking behavior of various programs because the program output will
+> > be interleaved with the echoed characters.
+> 
+> There is nothing fundamentally broken with buffering echoes; it's just that
+> there is a bug wrt when to process the echoes (ie, when to force the output).
+> 
+> In the example you provided, the write() should cause the echoes to flush
+> but doesn't because the commit marker hasn't been advanced.
+> 
+> The commit marker wasn't advanced _yet_ because there is a race window between
+> the reader being woken as a result of the newline and the flush_echoes()
+> which happens with every received input.
+> 
+> Either closing the race window or advancing the commit marker prior to
+> write() output will fix the problem; right now, I'm looking at which is least
+> painful.
+> 
+> Regards,
+> Peter Hurley
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I still think you should drop this.
+
+
+The user types on the keyboard so slowly, that lock contention doesn't 
+matter. Specialized programs that use terminal to transmit bulk data don't 
+use cooked mode and echo. So I don't really see any use case where 
+something depends on performance of echoed characters.
+
+
+Those patches just complicate the code for no benefit.
+
+
+When you read a variable that may be asynchronously modified, you need 
+ACCESS_ONCE - for example you need this in process_echoes when accessing 
+the variables outside the lock:
+if (ACCESS_ONCE(ldata->echo_commit) == ACCESS_ONCE(ldata->echo_tail))
+
+Anyway accessing variables that may change without locks or barriers is 
+generally bad idea and it is hard to verify it. Terminal layer is not 
+performance-sensitive part of the kernel, so it isn't justified to use 
+such dirty tricks.
+
+
+Another problem: what about this in process_echoes and flush_echoes?
+if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
+	return;
+- so if the user turns off echo, echoes are not performed. But the buffer 
+is not flushed. So when the user turns on echo again, previously buffered 
+characters will be echoed. That is wrong.
+
+
+Mikulas
