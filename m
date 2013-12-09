@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933769Ab3LINo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:44:58 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:38102 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933590Ab3LINo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:44:56 -0500
-Message-ID: <52A5C950.7070903@cogentembedded.com>
-Date: Mon, 09 Dec 2013 17:44:48 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S933789Ab3LINpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:45:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14179 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933693Ab3LINpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 08:45:01 -0500
+Date: Mon, 9 Dec 2013 14:44:44 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/4] perf tools: Pedantic fixes for mmap_pages
+Message-ID: <20131209134444.GB30360@krava.brq.redhat.com>
+References: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-To: srinivas kandagatla <srinivas.kandagatla@st.com>,
-        Chen-Yu Tsai <wens@csie.org>
-CC: devicetree@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        linux-sunxi@googlegroups.com,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 04/10] net: stmmac: sunxi platfrom extensions for GMAC
- in Allwinner A20 SoC's
-References: <1386350983-13281-1-git-send-email-wens@csie.org> <1386350983-13281-5-git-send-email-wens@csie.org> <52A5A7B2.4000509@st.com>
-In-Reply-To: <52A5A7B2.4000509@st.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Dec 09, 2013 at 03:18:36PM +0200, Adrian Hunter wrote:
+> Hi
+> 
+> Here are some pedantic fixes for mmap_pages.
+> 
+> 
+> Adrian Hunter (4):
+>       perf tools: Remove unnecessary parentheses
+>       perf tools: Fix max mmap_pages
+>       perf tools: Fix mmap pages rounding to power of 2
+>       perf tools: Fix display of incorrect mmap pages
+> 
+>  tools/perf/builtin-record.c |  2 +-
+>  tools/perf/util/evlist.c    | 10 ++++++----
+>  tools/perf/util/util.h      | 12 ++++++++++++
+>  3 files changed, 19 insertions(+), 5 deletions(-)
 
-On 09-12-2013 15:21, srinivas kandagatla wrote:
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
->> +static int sun7i_gmac_init(struct platform_device *pdev)
->> +{
->> +	struct resource *res;
->> +	struct device *dev = &pdev->dev;
->> +	void __iomem *addr = NULL;
->> +	struct plat_stmmacenet_data *plat_dat = NULL;
-
-    No need to initialize it since you're assigning to it right below.
-
->> +	u32 priv_clk_reg;
->> +
->> +	plat_dat = dev_get_platdata(&pdev->dev);
->> +	if (!plat_dat)
->> +		return -EINVAL;
-
-> dev_get_platdata will return NULL for DT, So this function will fail all
-> the time.
-
-    Indeed, unless the probe() method assigns it from the 'data' field of
-'struct of_device_id'.
-
-> How is it supposed to work?
-> Am I missing some thing?
-
-    Look at stmmac_pltfr_probe().
-
-> --srini
-
-WBR, Sergei
-
+thanks,
+jirka
