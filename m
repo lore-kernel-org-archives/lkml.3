@@ -1,73 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395Ab3LIXza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:55:30 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:32930 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742Ab3LIXz2 (ORCPT
+	id S1751483Ab3LIX6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:58:05 -0500
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:40329 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3LIX6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:55:28 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkMSAFpXplJ5LHyk/2dsb2JhbABZgwc4pGUDjzGFUIEpF3SCJQEBBTocIxAIAw4KCSUPBSUDIROIAQ7AZBcWjnoHhDMDmBOBMZBjgz0o
-Date: Tue, 10 Dec 2013 10:55:23 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        Kees Cook <keescook@google.com>,
-        Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
-        xfs@oss.sgi.com, stable@vger.kernel.org
-Subject: Re: XFS security fix never sent to -stable?
-Message-ID: <20131209235523.GW31386@dastard>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
- <20131209121534.GE4278@hercules>
- <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Dec 2013 18:58:02 -0500
+From: Nat Gurumoorthy <natg@google.com>
+To: nsujir@broadcom.com, mchan@broadcom.com, bhelgaas@google.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Nat Gurumoorthy <natg@google.com>
+Subject: [PATCH] PCI: Add quirk to initialize REG_BASE_ADDR to 0 for Broadcom TIGON3 chips.
+Date: Mon,  9 Dec 2013 15:57:22 -0800
+Message-Id: <1386633442-12509-1-git-send-email-natg@google.com>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs list, cc stable@vger.kernel.org]
+The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
+uninitialized. From power on reset this register may have garbage in it. The
+Register Base Address register defines the device local address of a
+register. The data pointed to by this location is read or written using
+the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
+garbage any read or write of Register Data Register (PCI 128) will cause the
+PCI bus to lock up. The TCO watchdog will fire and bring down the system.
 
-On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
-> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
-> <luis.henriques@canonical.com> wrote:
-> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
-> >> Hi,
-> >>
-> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
-> >> capability check to free eofblocks ioctl") is a security fix that was
-> >> never sent to -stable? From what I can see, it was introduced in 3.8
-> >> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
-> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
-> >>
-> >> I don't see this in the 3.8.y tree. Should it be added there and newer?
-> >
-> > Thanks Kees, I'm queuing it for the 3.11 kernel.
-> 
-> There's also this one:
-> 
-> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
-> 
-> It fixes CVE-2013-6382
+Signed-off-by: <natg@google.com>
+---
+ drivers/pci/quirks.c | 138 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
 
-First I've heard about it there being a CVE for that bug. Since when
-has it been considered best practice to publish CVEs without first
-(or ever) directly contacting the relevant upstream developers?
-
-But, regardless of how broken I think the CVE process is, commit
-071c529 ("xfs: underflow bug in xfs_attrlist_by_handle()") should be
-picked up by the stable kernels.
-
-Cheers,
-
-Dave.
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 3a02717..b9a289b 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3461,3 +3461,141 @@ int pci_dev_specific_acs_enabled(struct pci_dev *dev, u16 acs_flags)
+ 
+ 	return -ENOTTY;
+ }
++
++/*
++ * This is a quirk is to initialize REG_BASE_ADDR at PCI config offset 120
++ * to 0 for all Broadcom devices controlled by the TIGON3 driver.
++ */
++static void tg3_init_reg_base_addr(struct pci_dev *dev)
++{
++	pci_write_config_dword(dev, 120, 0);
++}
++
++
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5700,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5701,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5703,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5704,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702FE,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705_2,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705M_2,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702X,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5703X,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5704S,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702A3,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5703A3,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5782,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5788,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5789,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5901,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5901_2,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5704S_2,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705F,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5721,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5722,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5751,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5751M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5751F,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5752,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5752M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5753,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5753M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5753F,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5754,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5754M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5755,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5755M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5756,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5786,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5787,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5787M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5787F,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5714,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5714S,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5715,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5715S,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5780,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5780S,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5781,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5906,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5906M,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5784,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5764,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5723,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5761,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5761E,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_SYSKONNECT,
++			PCI_DEVICE_ID_SYSKONNECT_9DXX,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_SYSKONNECT,
++			PCI_DEVICE_ID_SYSKONNECT_9MXX,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1000,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1001,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1003,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC9100,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_APPLE, PCI_DEVICE_ID_APPLE_TIGON3,
++			tg3_init_reg_base_addr);
++DECLARE_PCI_FIXUP_EARLY(0x10cf, 0x11a2, tg3_init_reg_base_addr);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.5.1
+
