@@ -1,275 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761077Ab3LIWiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 17:38:04 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45652 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753214Ab3LIWh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 17:37:58 -0500
-Date: Mon, 9 Dec 2013 17:37:34 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
- notifications to access reserves
-Message-ID: <20131209223734.GJ21724@cmpxchg.org>
-References: <20131128115458.GK2761@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312021504170.13465@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
- <20131204054533.GZ3556@cmpxchg.org>
- <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
- <20131205025026.GA26777@htj.dyndns.org>
- <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
- <20131206190105.GE13373@htj.dyndns.org>
- <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
+	id S1761494Ab3LIWjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 17:39:13 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:40931 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754286Ab3LIWjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 17:39:10 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj8SAJtFplJ5LHyk/2dsb2JhbABZgwc4pGUDjzGFUIEsF3SCZhwjGCQ0BSUDIROIAQ7AYRcWjnqEOgOYE4ExiRuHSIM9KA
+Date: Tue, 10 Dec 2013 09:39:05 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [HANG 3.13-rc3] blk-mq/virtio: mkfs.ext4 hangs in
+ blk_mq_wait_for_tags
+Message-ID: <20131209223905.GU31386@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 12:10:44PM -0800, David Rientjes wrote:
-> On Fri, 6 Dec 2013, Tejun Heo wrote:
-> 
-> > > Tejun, how are you?
-> > 
-> > Doing pretty good.  How's yourself? :)
-> > 
-> 
-> Not bad, busy with holidays and all that.
-> 
-> > > I agree that we wouldn't need such support if we are only addressing memcg 
-> > > oom conditions.  We could do things like A/memory.limit_in_bytes == 128M 
-> > > and A/b/memory.limit_in_bytes == 126MB and then attach the process waiting 
-> > > on A/b/memory.oom_control to A and that would work perfect.
-> > 
-> > Or even just create a separate parallel cgroup A/memory.limit_in_bytes
-> > == 126M A-oom/memory.limit_in_bytes = 2M and avoid the extra layer of
-> > nesting.
-> > 
-> 
-> Indeed.  The setup I'm specifically trying to attack is where the sum of 
-> the limits of all non-oom handling memcgs (A/b in my model, A in yours) 
-> exceed the amount of RAM.  If the system has 256MB,
-> 
-> 				/=256MB
-> 	A=126MB		A-oom=2MB	B=188MB		B-oom=4MB
-> 
-> or
-> 
-> 			/=256MB
-> 	C=128MB				D=192MB
-> 	C/a=126M			D/a=188MB
-> 
-> then it's possible for A + B or C/a + D/a to cause a system oom condition 
-> and meanwhile A-oom/tasks, B-oom/tasks, C/tasks, and D/tasks cannot 
-> allocate memory to handle it.
+Hi Jens,
 
-So your per-memcg handlers want access to PHYSICAL MEMORY reserves
-during system-wide OOM, but this patch implements MEMORY CHARGE
-reserves only, which are obviously meaningless during system-wide OOM.
+Another day, another blkmq/virtio problem. Running mkfs.ext4 on a
+sparse 100TB VM file image, it hangs hard while writing superblock
+information:
 
-In other words, this is an entirely different usecase than what this
-patchset is really about.
+$ tests/fsmark-50-test-ext4.sh
+mke2fs 1.43-WIP (20-Jun-2013)
+Filesystem label=
+OS type: Linux
+Block size=4096 (log=2)
+Fragment size=4096 (log=2)
+Stride=0 blocks, Stripe width=0 blocks
+1677721600 inodes, 26843545600 blocks
+1342177280 blocks (5.00%) reserved for the super user
+First data block=0
+819200 block groups
+32768 blocks per group, 32768 fragments per group
+2048 inodes per group
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+        4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
+        102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
+        2560000000, 3855122432, 5804752896, 12800000000, 17414258688
 
-You have to sell us on the problem first, then we can discuss a
-solution.  Instead, you insist on the solution and keep changing the
-problem whenever we find it no longer justifies your proposal.
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (32768 blocks): done
+Writing superblocks and filesystem accounting information: 
 
-> > > However, we also need to discuss system oom handling.  We have an interest 
-> > > in being able to allow userspace to handle system oom conditions since the 
-> > > policy will differ depending on machine and we can't encode every possible 
-> > > mechanism into the kernel.  For example, on system oom we want to kill a 
-> > > process from the lowest priority top-level memcg.  We lack that ability 
-> > > entirely in the kernel and since the sum of our top-level memcgs 
-> > > memory.limit_in_bytes exceeds the amount of present RAM, we run into these 
-> > > oom conditions a _lot_.
-> > > 
-> > > So the first step, in my opinion, is to add a system oom notification on 
-> > > the root memcg's memory.oom_control which currently allows registering an 
-> > > eventfd() notification but never actually triggers.  I did that in a patch 
-> > > and it is was merged into -mm but was pulled out for later discussion.
-> > 
-> > Hmmm... this seems to be a different topic.  You're saying that it'd
-> > be beneficial to add userland oom handling at the sytem level and if
-> > that happens having per-memcg oom reserve would be consistent with the
-> > system-wide one, right?
-> 
-> Right, and apologies for not discussing the system oom handling here since 
-> its notification on the root memcg is currently being debated as well.  
-> The idea is that admins and users aren't going to be concerned about 
-> memory allocation through the page allocator vs memory charging through 
-> the memory controller; they simply want memory for their userspace oom 
-> handling.  And since the notification would be tied to the root memcg, it 
-> makes sense to make the amount of memory allowed to allocate exclusively 
-> for these handlers a memcg interface.  So the cleanest solution, in my 
-> opinion, was to add the interface as part of memcg.
-> 
-> > While I can see some merit in that argument,
-> > the whole thing is predicated on system level userland oom handling
-> > being justified && even then I'm not quite sure whether "consistent
-> > interface" is enough to have oom reserve in all memory cgroups.  It
-> > feels a bit backwards because, here, the root memcg is the exception,
-> > not the other way around.  Root is the only one which can't put oom
-> > handler in a separate cgroup, so it could make more sense to special
-> > case that rather than spreading the interface for global userland oom
-> > to everyone else.
-> > 
-> 
-> It's really the same thing, though, from the user perspective.  They don't 
-> care about page allocation failure vs memcg charge failure, they simply 
-> want to ensure that the memory set aside for memory.oom_reserve_in_bytes 
-> is available in oom conditions.  With the suggested alternatives:
-> 
-> 				/=256MB
-> 	A=126MB		A-oom=2MB	B=188MB		B-oom=4MB
-> 
-> or
-> 
-> 			/=256MB
-> 	C=128MB				D=192MB
-> 	C/a=126M			D/a=188MB
-> 
-> we can't distinguish between what is able to allocate below per-zone min 
-> watermarks in the page allocator as the oom reserve.  The key point is 
-> that the root memcg is not the only memcg concerned with page allocator 
-> memory reserves, it's any oom reserve.  If A's usage is 124MB and B's 
-> usage is 132MB, we can't specify that processes attached to B-oom should 
-> be able to bypass per-zone min watermarks without an interface such as 
-> that being proposed.
+It writes a few superblocks, then hangs. Immediately after it stops
+updating that last line, I see this:
 
-The per-zone min watermarks are there to allow rudimentary OOM
-handling inside the kernel to prevent a complete deadlock.
+root@test4:~# echo w > /proc/sysrq-trigger 
+[   79.408153] SysRq : Show Blocked State
+[   79.408832]   task                        PC stack   pid father
+[   79.409860] mke2fs          D ffff88011bc13100  3904  4242   4241 0x00000002
+[   79.411074]  ffff88021a737978 0000000000000086 ffff8800dbb9de40 0000000000013100
+[   79.412009]  ffff88021a737fd8 0000000000013100 ffff88011ac7af20 ffff8800dbb9de40
+[   79.412009]  ffff88021a737988 ffffe8fcfbc038d0 ffff88011b39c058 ffff88011b39c040
+[   79.412009] Call Trace:
+[   79.412009]  [<ffffffff81ae36d9>] schedule+0x29/0x70
+[   79.412009]  [<ffffffff8178863e>] percpu_ida_alloc+0x16e/0x330
+[   79.412009]  [<ffffffff810cf393>] ? finish_wait+0x63/0x80
+[   79.412009]  [<ffffffff810cf3f0>] ? __init_waitqueue_head+0x40/0x40
+[   79.412009]  [<ffffffff8175f30f>] blk_mq_wait_for_tags+0x1f/0x40
+[   79.412009]  [<ffffffff8175e28e>] blk_mq_alloc_request_pinned+0x4e/0x110
+[   79.412009]  [<ffffffff8175eacb>] blk_mq_make_request+0x41b/0x500
+[   79.412009]  [<ffffffff81753552>] generic_make_request+0xc2/0x110
+[   79.412009]  [<ffffffff81754a1c>] submit_bio+0x6c/0x120
+[   79.412009]  [<ffffffff811d1dd3>] _submit_bh+0x133/0x200
+[   79.412009]  [<ffffffff811d1eb0>] submit_bh+0x10/0x20
+[   79.412009]  [<ffffffff811d5298>] __block_write_full_page+0x1b8/0x370
+[   79.412009]  [<ffffffff811d3e30>] ? block_read_full_page+0x320/0x320
+[   79.412009]  [<ffffffff811d8450>] ? I_BDEV+0x10/0x10
+[   79.412009]  [<ffffffff811d8450>] ? I_BDEV+0x10/0x10
+[   79.412009]  [<ffffffff811d5541>] block_write_full_page_endio+0xf1/0x100
+[   79.412009]  [<ffffffff811d5565>] block_write_full_page+0x15/0x20
+[   79.412009]  [<ffffffff811d8908>] blkdev_writepage+0x18/0x20
+[   79.412009]  [<ffffffff8115668a>] __writepage+0x1a/0x50
+[   79.412009]  [<ffffffff81157055>] write_cache_pages+0x225/0x470
+[   79.412009]  [<ffffffff81156670>] ? mapping_tagged+0x20/0x20
+[   79.412009]  [<ffffffff811572ed>] generic_writepages+0x4d/0x70
+[   79.412009]  [<ffffffff810c4d0f>] ? __dequeue_entity+0x2f/0x50
+[   79.412009]  [<ffffffff81158bd1>] do_writepages+0x21/0x50
+[   79.412009]  [<ffffffff8114e199>] __filemap_fdatawrite_range+0x59/0x60
+[   79.412009]  [<ffffffff81ae7e8e>] ? _raw_spin_unlock_irq+0xe/0x20
+[   79.412009]  [<ffffffff8114e1da>] filemap_write_and_wait_range+0x3a/0x80
+[   79.412009]  [<ffffffff811d8b14>] blkdev_fsync+0x24/0x50
+[   79.412009]  [<ffffffff811cf898>] do_fsync+0x58/0x80
+[   79.412009]  [<ffffffff81aeb8e5>] ? do_async_page_fault+0x35/0xc0
+[   79.412009]  [<ffffffff811cfb30>] SyS_fsync+0x10/0x20
+[   79.412009]  [<ffffffff81af08e9>] system_call_fastpath+0x16/0x1b
 
-You want to hand them out to an indefinite number of (untrusted?)
-userspace tasks in the hope that they handle the situation?
+And a coupel of seconds later the VM hangs hard - console,
+networking, everything just stops dead and it doesn't even respond
+ot an nmi from the qemu command console.
 
-Also, the following concerns from Tejun still apply:
+The test is exactly the same as described in the previous problem I
+had:
 
-> > The thing is OOM handling in userland is an inherently fragile thing
-> > and it can *never* replace kernel OOM handling.  You may reserve any
-> > amount of memory you want but there would still be cases that it may
-> > fail.  It's not like we have owner-based allocation all through the
-> > kernel or are willing to pay overhead for such thing.  Even if that
-> > part can be guaranteed somehow (no idea how), the kernel still can
-> > NEVER trust the userland OOM handler.  No matter what we do, we need a
-> > kernel OOM handler with no resource dependency.
+http://marc.info/?l=linux-kernel&m=138621901319333&w=2
 
-Your userspace handler may very much fail, but it may have squandered
-all the resources for the kernel fallback handling to actually perform
-its job.
+The only difference is that I'm trying to run the concurrent create
+workload on ext4 now, not XFS, and it's failing in mkfs.ext4 during
+the setup code....
 
-I don't know if you are actually allowing every PF_OOM_HANDLER to
-simply bypass the watermarks in your kernels, but this seems way too
-fragile for upstream.
+At this point, I have to ask: is anyone doing high IOPS testing on
+virtio/blk_mq? This is the third regression I've hit since it was
+merged, and I'm really not stressing this code nearly as much as
+some of the hardware out there is capable of doing....
 
-> > But, before that, system level userland OOM handling sounds scary to
-> > me.  I thought about userland OOM handling for memcgs and it does make
-> > some sense.  ie. there is a different action that userland oom handler
-> > can take which kernel oom handler can't - it can expand the limit of
-> > the offending cgroup, effectively using OOM handler as a sizing
-> > estimator.  I'm not sure whether that in itself is a good idea but
-> > then again it might not be possible to clearly separate out sizing
-> > from oom conditions.
-> > 
-> > Anyways, but for system level OOM handling, there's no other action
-> > userland handler can take.  It's not like the OOM handler paging the
-> > admin to install more memory is a reasonable mode of operation to
-> > support.  The *only* action userland OOM handler can take is killing
-> > something.  Now, if that's the case and we have kernel OOM handler
-> > anyway, I think the best course of action is improving kernel OOM
-> > handler and teach it to make the decisions that the userland handler
-> > would consider good.  That should be doable, right?
-> > 
-> 
-> It's much more powerful than that; you're referring to the mechanism to 
-> guarantee future memory freeing so the system or memcg is no longer oom, 
-> and that's only one case of possible handling.  I have a customer who 
-> wants to save heap profiles at the time of oom as well, for example, and 
-> their sole desire is to be able to capture memory statistics before the 
-> oom kill takes place.  The sine qua non is that memory reserves allow 
-> something to be done in such conditions: if you try to do a "ps" or "ls" 
-> or cat a file in an oom memcg, you hang.
+Cheers,
 
-This is conflating per-memcg OOM handling and global OOM handling.
-You can always ps or ls from outside to analyze a memcg OOM and we
-have established that there is no good reason to try doing it from
-inside the OOM group.
-
-> We need better functionality to ensure that we can do some action
-> prior to the oom kill itself, whether that comes from userspace or
-> the kernel.  We simply cannot rely on things like memory thresholds
-> or vmpressure to grab these heap profiles, there is no guarantee
-> that memory will not be exhausted and the oom kill would already
-> have taken place before the process handling the notification wakes
-> up.  (And any argument that it is possible by simply making the
-> threshold happen early enough is a non-starter: it does not
-> guarantee the heaps are collected for oom conditions and the oom
-> kill can still occur prematurely in machines that overcommit their
-> memcg limits, as we do.)
-> 
-> > The thing is OOM handling in userland is an inherently fragile thing
-> > and it can *never* replace kernel OOM handling.  You may reserve any
-> > amount of memory you want but there would still be cases that it may
-> > fail.  It's not like we have owner-based allocation all through the
-> > kernel or are willing to pay overhead for such thing.  Even if that
-> > part can be guaranteed somehow (no idea how), the kernel still can
-> > NEVER trust the userland OOM handler.  No matter what we do, we need a
-> > kernel OOM handler with no resource dependency.
-> > 
-> 
-> I was never an advocate for the current memory.oom_control behavior that 
-> allows you to disable the oom killer indefinitely for a memcg and I agree 
-> that it is dangerous if userspace will not cause future memory freeing or 
-> toggle the value such that the kernel will kill something.
-
-This is again confusing system-wide OOM with per-memcg OOM.  Disabling
-the per-memcg OOM handler is perfectly fine because any memory demand
-from higher up the hierarchy will still kill in such a group.  The
-problems Tejun describe are only existant in userspace handling of
-system-wide OOM situations.  Which is the thing you are advocating,
-not what we currently have.
-
-> So I agree with you with today's functionality, not with the
-> functionality that this patchset, and the notification on the root
-> memcg for system oom conditions, provides.  I also proposed a
-> memory.oom_delay_millisecs that we have used for several years
-> dating back to even cpusets that simply delays the oom kill such
-> that userspace can do "something" like send a kill itself, collect
-> heap profiles, send a signal to our malloc() implementation to free
-> arena memory, etc. prior to the kernel oom kill.
-> 
-> > So, there isn't anything userland OOM handler can inherently do better
-> > and we can't do away with kernel handler no matter what.  On both
-> > accounts, it seems like the best course of action is making
-> > system-wide kernel OOM handler to make better decisions if possible at
-> > all.  If that's impossible, let's first think about why that's the
-> > case before hastly opening this new can of worms.
-> > 
-> 
-> We certainly can get away with the kernel oom killer in 99% of cases with 
-> this functionality for users who choose to have their own oom handling 
-> implementations.  We also can't possibly code every single handling policy 
-> into the kernel: we can't guarantee that our version of malloc() is 
-> guaranteed to be able to free memory back to the kernel when waking up on 
-> a memory.oom_control notification prior to the memcg oom killer killing 
-> something, for example, without this functionality.
-
-If you have discardable anonymous memory laying around the volatile
-memory patches are a much more reliable way of getting rid of it than
-to wake up a userspace task and wait & pray a few seconds.
-
-Page reclaim has been *the* tool to facilitate overcommit for decades
-while OOM killing has always been a last-resort measure.  Why is this
-not good enough anymore and why is the only solution to give up and do
-it all in userspace?
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
