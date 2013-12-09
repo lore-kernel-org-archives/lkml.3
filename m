@@ -1,59 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761597Ab3LIWkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 17:40:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49202 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3LIWkE (ORCPT
+	id S1761001Ab3LIWld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 17:41:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32773 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab3LIWlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 17:40:04 -0500
-Message-ID: <52A646AB.1030900@ti.com>
-Date: Mon, 9 Dec 2013 17:39:39 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 9 Dec 2013 17:41:31 -0500
+Message-ID: <52A646D7.9090700@kernel.dk>
+Date: Mon, 09 Dec 2013 15:40:23 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v3 01/23] mm/memblock: debug: correct displaying of upper
- memory boundary
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com> <1386625856-12942-2-git-send-email-santosh.shilimkar@ti.com> <20131209215641.GF29143@saruman.home>
-In-Reply-To: <20131209215641.GF29143@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Dave Chinner <david@fromorbit.com>
+CC: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [HANG 3.13-rc3] blk-mq/virtio: mkfs.ext4 hangs in blk_mq_wait_for_tags
+References: <20131209223905.GU31386@dastard>
+In-Reply-To: <20131209223905.GU31386@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 December 2013 04:56 PM, Felipe Balbi wrote:
-> On Mon, Dec 09, 2013 at 04:50:34PM -0500, Santosh Shilimkar wrote:
->> From: Grygorii Strashko <grygorii.strashko@ti.com>
->>
->> When debugging is enabled (cmdline has "memblock=debug") the memblock
->> will display upper memory boundary per each allocated/freed memory range
->> wrongly. For example:
->>  memblock_reserve: [0x0000009e7e8000-0x0000009e7ed000] _memblock_early_alloc_try_nid_nopanic+0xfc/0x12c
->>
->> The 0x0000009e7ed000 is displayed instead of 0x0000009e7ecfff
->>
->> Hence, correct this by changing formula used to calculate upper memory
->> boundary to (u64)base + size - 1 instead of  (u64)base + size everywhere
->> in the debug messages.
->>
->> Cc: Yinghai Lu <yinghai@kernel.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Tejun Heo <tj@kernel.org>
->> Acked-by: Tejun Heo <tj@kernel.org>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On 12/09/2013 03:39 PM, Dave Chinner wrote:
+> Hi Jens,
 > 
-> Very minor patch but perhaps we should Cc: stable here ? not that it
-> matters much...
+> Another day, another blkmq/virtio problem. Running mkfs.ext4 on a
+> sparse 100TB VM file image, it hangs hard while writing superblock
+> information:
 > 
-Yeah... No major fix as such from stable perspective.
+> $ tests/fsmark-50-test-ext4.sh
+> mke2fs 1.43-WIP (20-Jun-2013)
+> Filesystem label=
+> OS type: Linux
+> Block size=4096 (log=2)
+> Fragment size=4096 (log=2)
+> Stride=0 blocks, Stripe width=0 blocks
+> 1677721600 inodes, 26843545600 blocks
+> 1342177280 blocks (5.00%) reserved for the super user
+> First data block=0
+> 819200 block groups
+> 32768 blocks per group, 32768 fragments per group
+> 2048 inodes per group
+> Superblock backups stored on blocks:
+>         32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+>         4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
+>         102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
+>         2560000000, 3855122432, 5804752896, 12800000000, 17414258688
+> 
+> Allocating group tables: done
+> Writing inode tables: done
+> Creating journal (32768 blocks): done
+> Writing superblocks and filesystem accounting information: 
+> 
+> It writes a few superblocks, then hangs. Immediately after it stops
+> updating that last line, I see this:
+> 
+> root@test4:~# echo w > /proc/sysrq-trigger 
+> [   79.408153] SysRq : Show Blocked State
+> [   79.408832]   task                        PC stack   pid father
+> [   79.409860] mke2fs          D ffff88011bc13100  3904  4242   4241 0x00000002
+> [   79.411074]  ffff88021a737978 0000000000000086 ffff8800dbb9de40 0000000000013100
+> [   79.412009]  ffff88021a737fd8 0000000000013100 ffff88011ac7af20 ffff8800dbb9de40
+> [   79.412009]  ffff88021a737988 ffffe8fcfbc038d0 ffff88011b39c058 ffff88011b39c040
+> [   79.412009] Call Trace:
+> [   79.412009]  [<ffffffff81ae36d9>] schedule+0x29/0x70
+> [   79.412009]  [<ffffffff8178863e>] percpu_ida_alloc+0x16e/0x330
+> [   79.412009]  [<ffffffff810cf393>] ? finish_wait+0x63/0x80
+> [   79.412009]  [<ffffffff810cf3f0>] ? __init_waitqueue_head+0x40/0x40
+> [   79.412009]  [<ffffffff8175f30f>] blk_mq_wait_for_tags+0x1f/0x40
+> [   79.412009]  [<ffffffff8175e28e>] blk_mq_alloc_request_pinned+0x4e/0x110
+> [   79.412009]  [<ffffffff8175eacb>] blk_mq_make_request+0x41b/0x500
+> [   79.412009]  [<ffffffff81753552>] generic_make_request+0xc2/0x110
+> [   79.412009]  [<ffffffff81754a1c>] submit_bio+0x6c/0x120
+> [   79.412009]  [<ffffffff811d1dd3>] _submit_bh+0x133/0x200
+> [   79.412009]  [<ffffffff811d1eb0>] submit_bh+0x10/0x20
+> [   79.412009]  [<ffffffff811d5298>] __block_write_full_page+0x1b8/0x370
+> [   79.412009]  [<ffffffff811d3e30>] ? block_read_full_page+0x320/0x320
+> [   79.412009]  [<ffffffff811d8450>] ? I_BDEV+0x10/0x10
+> [   79.412009]  [<ffffffff811d8450>] ? I_BDEV+0x10/0x10
+> [   79.412009]  [<ffffffff811d5541>] block_write_full_page_endio+0xf1/0x100
+> [   79.412009]  [<ffffffff811d5565>] block_write_full_page+0x15/0x20
+> [   79.412009]  [<ffffffff811d8908>] blkdev_writepage+0x18/0x20
+> [   79.412009]  [<ffffffff8115668a>] __writepage+0x1a/0x50
+> [   79.412009]  [<ffffffff81157055>] write_cache_pages+0x225/0x470
+> [   79.412009]  [<ffffffff81156670>] ? mapping_tagged+0x20/0x20
+> [   79.412009]  [<ffffffff811572ed>] generic_writepages+0x4d/0x70
+> [   79.412009]  [<ffffffff810c4d0f>] ? __dequeue_entity+0x2f/0x50
+> [   79.412009]  [<ffffffff81158bd1>] do_writepages+0x21/0x50
+> [   79.412009]  [<ffffffff8114e199>] __filemap_fdatawrite_range+0x59/0x60
+> [   79.412009]  [<ffffffff81ae7e8e>] ? _raw_spin_unlock_irq+0xe/0x20
+> [   79.412009]  [<ffffffff8114e1da>] filemap_write_and_wait_range+0x3a/0x80
+> [   79.412009]  [<ffffffff811d8b14>] blkdev_fsync+0x24/0x50
+> [   79.412009]  [<ffffffff811cf898>] do_fsync+0x58/0x80
+> [   79.412009]  [<ffffffff81aeb8e5>] ? do_async_page_fault+0x35/0xc0
+> [   79.412009]  [<ffffffff811cfb30>] SyS_fsync+0x10/0x20
+> [   79.412009]  [<ffffffff81af08e9>] system_call_fastpath+0x16/0x1b
+> 
+> And a coupel of seconds later the VM hangs hard - console,
+> networking, everything just stops dead and it doesn't even respond
+> ot an nmi from the qemu command console.
+> 
+> The test is exactly the same as described in the previous problem I
+> had:
+> 
+> http://marc.info/?l=linux-kernel&m=138621901319333&w=2
+> 
+> The only difference is that I'm trying to run the concurrent create
+> workload on ext4 now, not XFS, and it's failing in mkfs.ext4 during
+> the setup code....
 
-regards,
-Santosh
+I'll take a look at this.
+
+> At this point, I have to ask: is anyone doing high IOPS testing on
+> virtio/blk_mq? This is the third regression I've hit since it was
+> merged, and I'm really not stressing this code nearly as much as
+> some of the hardware out there is capable of doing....
+
+Plenty was done previously, but at this point it does seem flakey.
+Wonder if it's other changes, or some screwup along the way.
+
+-- 
+Jens Axboe
+
