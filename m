@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385Ab3LIJ5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:57:43 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:14015 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955Ab3LIJ5m (ORCPT
+	id S933471Ab3LIJ6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:58:23 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:44008 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932494Ab3LIJ6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:57:42 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <Josh.wu@atmel.com>, Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: soc updates for 3.14 #1
-Date: Mon, 9 Dec 2013 10:57:39 +0100
-Message-ID: <1386583059-22281-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Dec 2013 04:58:21 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: gregkh@linuxfoundation.org, konrad.wilk@oracle.com,
+        raghavendra.kt@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, "ethan.zhao" <ethan.kernel@gmail.com>
+Subject: [PATCH v3] xen/debugfs: Check debugfs initialization before using it
+Date: Mon,  9 Dec 2013 17:56:52 +0800
+Message-Id: <1386583012-506-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+From: "ethan.zhao" <ethan.kernel@gmail.com>
 
-This pull-request is for addition of sama5d36 and its Evaluation Kit. The
-patches are stacked on the "cleanup" material already in arm-soc tree
-(at91/sama5-ccf) like all other AT91 pull-requests for 3.14.
+Should check debugfs initialization with debugfs_initialized() before using it,
+Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
+functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
 
-Thanks, best regards,
+V3: add warning message when debugfs not configured or disabled.
 
-The following changes since commit b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
+Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+---
+ arch/x86/xen/debugfs.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-  ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-soc
-
-for you to fetch changes up to 0a72922b8dab2a1ce9cc977e9b1850556b48b4aa:
-
-  ARM: at91: sama5d3/dt: add sama5d36ek dts files (2013-12-09 09:50:53 +0100)
-
-----------------------------------------------------------------
-First soc pull-request for 3.14
-Addition of the sama5d36 SoC as a member of the sama5d3 family
-- SoC code and Device Tree file
-- Evaluation Kit (EK board) Device Tree file
-
-----------------------------------------------------------------
-Josh Wu (2):
-      ARM: at91: sama5d3: add support for sama5d36 chip
-      ARM: at91: sama5d3/dt: add sama5d36ek dts files
-
- arch/arm/boot/dts/Makefile            |  2 ++
- arch/arm/boot/dts/sama5d3.dtsi        |  2 +-
- arch/arm/boot/dts/sama5d36.dtsi       | 20 +++++++++++++
- arch/arm/boot/dts/sama5d36ek.dts      | 53 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-at91/Kconfig            |  2 +-
- arch/arm/mach-at91/include/mach/cpu.h |  3 +-
- arch/arm/mach-at91/setup.c            |  4 +++
- 7 files changed, 83 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/boot/dts/sama5d36.dtsi
- create mode 100644 arch/arm/boot/dts/sama5d36ek.dts
-
+diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
+index c8377fb..85c0e0e 100644
+--- a/arch/x86/xen/debugfs.c
++++ b/arch/x86/xen/debugfs.c
+@@ -9,12 +9,18 @@ static struct dentry *d_xen_debug;
+ 
+ struct dentry * __init xen_init_debugfs(void)
+ {
++	if (!debugfs_initialized()) {
++		d_xen_debug = NULL;
++		goto nodebugfs;
++	}
++
+ 	if (!d_xen_debug) {
+ 		d_xen_debug = debugfs_create_dir("xen", NULL);
+ 
+ 		if (!d_xen_debug)
+ 			pr_warning("Could not create 'xen' debugfs directory\n");
+ 	}
++nodebugfs:
+ 
+ 	return d_xen_debug;
+ }
 -- 
-Nicolas Ferre
+1.8.3.4 (Apple Git-47)
+
