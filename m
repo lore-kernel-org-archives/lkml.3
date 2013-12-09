@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052Ab3LITlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:41:22 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54996 "EHLO
+	id S933984Ab3LITlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:41:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54994 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761346Ab3LIThX (ORCPT
+	with ESMTP id S1761388Ab3LIThX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Dec 2013 14:37:23 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/21] perf script: Fix symoff printing in callchains
-Date: Mon,  9 Dec 2013 16:36:53 -0300
-Message-Id: <1386617830-18926-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/21] perf record: Fix display of incorrect mmap pages
+Date: Mon,  9 Dec 2013 16:36:55 -0300
+Message-Id: <1386617830-18926-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386617830-18926-1-git-send-email-acme@infradead.org>
 References: <1386617830-18926-1-git-send-email-acme@infradead.org>
@@ -32,13 +32,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-The address being used to calculate the offset was the memory address
-but the address needed is the address mapped to the dso. i.e. the 'addr'
-member of 'struct addr_location'
+'mmap_pages' is 'unsigned int' not 'int' e.g.
+
+  perf record -m2147483648 uname
+  Permission error mapping pages.
+  Consider increasing /proc/sys/kernel/perf_event_mlock_kb,
+  or try again with a smaller value of -m/--mmap_pages.
+  (current value: -2147483648)
+
+Fixed:
+
+  perf record -m2147483648 uname
+  Permission error mapping pages.
+  Consider increasing /proc/sys/kernel/perf_event_mlock_kb,
+  or try again with a smaller value of -m/--mmap_pages.
+  (current value: 2147483648)
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -48,40 +59,25 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1386315778-11633-2-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1386595120-22978-5-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/builtin-record.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8a7da6f4a569..c236b38ed02b 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1515,6 +1515,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
- 			node_al = *al;
- 
- 		while (stack_depth) {
-+			u64 addr = 0;
-+
- 			node = callchain_cursor_current(&callchain_cursor);
- 			if (!node)
- 				break;
-@@ -1525,10 +1527,13 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
- 			if (print_ip)
- 				printf("%c%16" PRIx64, s, node->ip);
- 
-+			if (node->map)
-+				addr = node->map->map_ip(node->map, node->ip);
-+
- 			if (print_sym) {
- 				printf(" ");
- 				if (print_symoffset) {
--					node_al.addr = node->ip;
-+					node_al.addr = addr;
- 					node_al.map  = node->map;
- 					symbol__fprintf_symname_offs(node->sym, &node_al, stdout);
- 				} else
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d93e2eef0979..c1c1200d2f0a 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -224,7 +224,7 @@ try_again:
+ 			       "Consider increasing "
+ 			       "/proc/sys/kernel/perf_event_mlock_kb,\n"
+ 			       "or try again with a smaller value of -m/--mmap_pages.\n"
+-			       "(current value: %d)\n", opts->mmap_pages);
++			       "(current value: %u)\n", opts->mmap_pages);
+ 			rc = -errno;
+ 		} else {
+ 			pr_err("failed to mmap with %d (%s)\n", errno, strerror(errno));
 -- 
 1.8.1.4
 
