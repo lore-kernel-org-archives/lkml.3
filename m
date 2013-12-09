@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760374Ab3LIKnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:43:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39806 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab3LIKng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:43:36 -0500
-Date: Mon, 9 Dec 2013 11:43:32 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH 2/2] tools/: Move fs.* to lib/api/fs/
-Message-ID: <20131209104332.GC31650@pd.tnic>
-References: <1386260752-16436-1-git-send-email-bp@alien8.de>
- <1386260752-16436-3-git-send-email-bp@alien8.de>
- <20131209102650.GD1242@krava.brq.redhat.com>
+	id S1760733Ab3LIKnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:43:41 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:34638 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753006Ab3LIKni (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 05:43:38 -0500
+Message-ID: <52A59ED9.4010608@free-electrons.com>
+Date: Mon, 09 Dec 2013 11:43:37 +0100
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131209102650.GD1242@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] clocksource: misc drivers: remove deprecated
+ IRQF_DISABLED
+References: <1381639028-6791-1-git-send-email-michael.opdenacker@free-electrons.com> <1386580330-4187-1-git-send-email-michael.opdenacker@free-electrons.com> <52A597C4.3050406@linaro.org>
+In-Reply-To: <52A597C4.3050406@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 11:26:50AM +0100, Jiri Olsa wrote:
-> > @@ -1,8 +1,13 @@
-> > +/* TODO merge/factor into debugfs.c */
-> 
-> I guess now above one should be:
-> 
->  TODO merge/factor debugfs object in here
-> 
-> ;-)
+Hi Daniel,
 
-Right, done!
+On 12/09/2013 11:13 AM, Daniel Lezcano wrote:
+> On 12/09/2013 10:12 AM, Michael Opdenacker wrote:
+>> This patch proposes to remove the use of the IRQF_DISABLED flag
+>>
+>> It's a NOOP since 2.6.35 and it will be removed one day.
+>>
+>> Signed-off-by: Michael Opdenacker
+>> <michael.opdenacker@free-electrons.com>
+>> ---
+>
+> Hi Michael,
+>
+> the three patches are applied to my tree for 3.14.
+Great, thanks!
 
-Thanks guys, I'll resend soonish.
+>
+> I changed a bit the changelog by replacing 'proposes to remove' by
+> 'removes' and added a capitalized letter for the first character of
+> the short description (eg. remove deprecated => Remove deprecated).
+>
+> In the future please take care of that.
+
+This makes perfect sense. I promise to pay attention to this in the future!
+
+Thank you for the good advice!
+
+Michael.
 
 -- 
-Regards/Gruss,
-    Boris.
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
-Sent from a fat crate under my desk. Formatting is fine.
---
