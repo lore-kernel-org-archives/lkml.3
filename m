@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760805Ab3LIIG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:06:27 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35983 "EHLO
+	id S1760770Ab3LIIGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:06:20 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35839 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760734Ab3LIIGR (ORCPT
+	with ESMTP id S1751681Ab3LIIGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:06:17 -0500
+	Mon, 9 Dec 2013 03:06:07 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
-        <glommer@gmail.com>, <vdavydov@parallels.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v13 15/16] memcg: reap dead memcgs upon global memory pressure
-Date: Mon, 9 Dec 2013 12:05:56 +0400
-Message-ID: <d9b823b23f9a0f6e38bba6a3a475387074abb00a.1386571280.git.vdavydov@parallels.com>
+        <glommer@gmail.com>, <vdavydov@parallels.com>
+Subject: [PATCH v13 00/16] kmemcg shrinkers
+Date: Mon, 9 Dec 2013 12:05:41 +0400
+Message-ID: <cover.1386571280.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1386571280.git.vdavydov@parallels.com>
-References: <cover.1386571280.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.30.16.96]
@@ -29,164 +24,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+Hi,
 
-When we delete kmem-enabled memcgs, they can still be zombieing around
-for a while. The reason is that the objects may still be alive, and we
-won't be able to delete them at destruction time.
+This is the 13th iteration of Glauber Costa's patch-set implementing slab
+shrinking on memcg pressure. The main idea is to make the list_lru structure
+used by most FS shrinkers per-memcg. When adding or removing an element from a
+list_lru, we use the page information to figure out which memcg it belongs to
+and relay it to the appropriate list. This allows scanning kmem objects
+accounted to different memcgs independently.
 
-The only entry point for that, though, are the shrinkers. The shrinker
-interface, however, is not exactly tailored to our needs. It could be a
-little bit better by using the API Dave Chinner proposed, but it is
-still not ideal since we aren't really a count-and-scan event, but more
-a one-off flush-all-you-can event that would have to abuse that somehow.
+Please note that in contrast to previous versions this patch-set implements
+slab shrinking only when we hit the user memory limit so that kmem allocations
+will still fail if we are below the user memory limit, but close to the kmem
+limit. This is, because the implementation of kmem-only reclaim was rather
+incomplete - we had to fail GFP_NOFS allocations since everything we could
+reclaim was only FS data. I will try to improve this and send in a separate
+patch-set, but currently it is only worthwhile setting the kmem limit to be
+greater than the user mem limit just to enable per-memcg slab accounting and
+reclaim.
 
-Signed-off-by: Glauber Costa <glommer@openvz.org>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   80 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 77 insertions(+), 3 deletions(-)
+The patch-set is based on top of Linux-3.13-rc3 and organized as follows:
+ - patches 1-9 prepare vmscan, memcontrol, list_lru to kmemcg reclaim;
+ - patch 10 implements the kmemcg reclaim core;
+ - patch 11 makes the list_lru struct per-memcg and patch 12 marks all
+   list_lru-based shrinkers as memcg-aware;
+ - patches 13-16 slightly improve memcontrol behavior regarding mem reclaim.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b15219e..182199f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -287,8 +287,16 @@ struct mem_cgroup {
- 	/* thresholds for mem+swap usage. RCU-protected */
- 	struct mem_cgroup_thresholds memsw_thresholds;
- 
--	/* For oom notifier event fd */
--	struct list_head oom_notify;
-+	union {
-+		/* For oom notifier event fd */
-+		struct list_head oom_notify;
-+		/*
-+		 * we can only trigger an oom event if the memcg is alive.
-+		 * so we will reuse this field to hook the memcg in the list
-+		 * of dead memcgs.
-+		 */
-+		struct list_head dead;
-+	};
- 
- 	/*
- 	 * Should we move charges of a task when a task is moved into this
-@@ -336,6 +344,29 @@ struct mem_cgroup {
- 	/* WARNING: nodeinfo must be the last member here */
- };
- 
-+#if defined(CONFIG_MEMCG_KMEM) || defined(CONFIG_MEMCG_SWAP)
-+static LIST_HEAD(dangling_memcgs);
-+static DEFINE_MUTEX(dangling_memcgs_mutex);
-+
-+static inline void memcg_dangling_del(struct mem_cgroup *memcg)
-+{
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_del(&memcg->dead);
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+
-+static inline void memcg_dangling_add(struct mem_cgroup *memcg)
-+{
-+	INIT_LIST_HEAD(&memcg->dead);
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_add(&memcg->dead, &dangling_memcgs);
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+#else
-+static inline void memcg_dangling_del(struct mem_cgroup *memcg) {}
-+static inline void memcg_dangling_add(struct mem_cgroup *memcg) {}
-+#endif
-+
- static size_t memcg_size(void)
- {
- 	return sizeof(struct mem_cgroup) +
-@@ -6085,6 +6116,41 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
- }
- 
- #ifdef CONFIG_MEMCG_KMEM
-+static void memcg_vmpressure_shrink_dead(void)
-+{
-+	struct memcg_cache_params *params, *tmp;
-+	struct kmem_cache *cachep;
-+	struct mem_cgroup *memcg;
-+
-+	mutex_lock(&dangling_memcgs_mutex);
-+	list_for_each_entry(memcg, &dangling_memcgs, dead) {
-+		mutex_lock(&memcg->slab_caches_mutex);
-+		/* The element may go away as an indirect result of shrink */
-+		list_for_each_entry_safe(params, tmp,
-+					 &memcg->memcg_slab_caches, list) {
-+			cachep = memcg_params_to_cache(params);
-+			/*
-+			 * the cpu_hotplug lock is taken in kmem_cache_create
-+			 * outside the slab_caches_mutex manipulation. It will
-+			 * be taken by kmem_cache_shrink to flush the cache.
-+			 * So we need to drop the lock. It is all right because
-+			 * the lock only protects elements moving in and out the
-+			 * list.
-+			 */
-+			mutex_unlock(&memcg->slab_caches_mutex);
-+			kmem_cache_shrink(cachep);
-+			mutex_lock(&memcg->slab_caches_mutex);
-+		}
-+		mutex_unlock(&memcg->slab_caches_mutex);
-+	}
-+	mutex_unlock(&dangling_memcgs_mutex);
-+}
-+
-+static void memcg_register_kmem_events(struct cgroup_subsys_state *css)
-+{
-+	vmpressure_register_kernel_event(css, memcg_vmpressure_shrink_dead);
-+}
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	int ret;
-@@ -6139,6 +6205,10 @@ static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
- 		css_put(&memcg->css);
- }
- #else
-+static inline void memcg_register_kmem_events(struct cgroup *cont)
-+{
-+}
-+
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
- 	return 0;
-@@ -6477,8 +6547,10 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
- 		return -ENOSPC;
- 
--	if (!parent)
-+	if (!parent) {
-+		memcg_register_kmem_events(css);
- 		return 0;
-+	}
- 
- 	mutex_lock(&memcg_create_mutex);
- 
-@@ -6540,6 +6612,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
- 	mem_cgroup_reparent_charges(memcg);
- 	mem_cgroup_destroy_all_caches(memcg);
-+	memcg_dangling_add(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
- }
- 
-@@ -6548,6 +6621,7 @@ static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 
- 	memcg_destroy_kmem(memcg);
-+	memcg_dangling_del(memcg);
- 	__mem_cgroup_free(memcg);
- }
- 
+Changes in v13:
+ - fix NUMA-unaware shrinkers not being called when node 0 is not set in the
+   nodemask;
+ - rework list_lru API to require a shrink_control
+ - make list_lru automatically handle memcgs w/o introducing a separate struct;
+ - simplify walk over all memcg LRUs of a list_lru;
+ - cleanup shrink_slab()
+ - remove kmem-only reclaim as explained above;
+
+Previous iterations of this patch-set can be found here:
+ - https://lkml.org/lkml/2013/12/2/141
+ - https://lkml.org/lkml/2013/11/25/214
+
+Thanks.
+
+Glauber Costa (7):
+  memcg: make cache index determination more robust
+  memcg: consolidate callers of memcg_cache_id
+  memcg: move initialization to memcg creation
+  vmscan: take at least one pass with shrinkers
+  vmpressure: in-kernel notifications
+  memcg: reap dead memcgs upon global memory pressure
+  memcg: flush memcg items upon memcg destruction
+
+Vladimir Davydov (9):
+  memcg: move memcg_caches_array_size() function
+  vmscan: move call to shrink_slab() to shrink_zones()
+  vmscan: remove shrink_control arg from do_try_to_free_pages()
+  vmscan: call NUMA-unaware shrinkers irrespective of nodemask
+  mm: list_lru: require shrink_control in count, walk functions
+  fs: consolidate {nr,free}_cached_objects args in shrink_control
+  vmscan: shrink slab on memcg pressure
+  mm: list_lru: add per-memcg lists
+  fs: mark list_lru based shrinkers memcg aware
+
+ fs/dcache.c                |   17 +-
+ fs/gfs2/quota.c            |   10 +-
+ fs/inode.c                 |    8 +-
+ fs/internal.h              |    9 +-
+ fs/super.c                 |   24 ++-
+ fs/xfs/xfs_buf.c           |   16 +-
+ fs/xfs/xfs_qm.c            |    8 +-
+ fs/xfs/xfs_super.c         |    6 +-
+ include/linux/fs.h         |    6 +-
+ include/linux/list_lru.h   |   83 ++++++----
+ include/linux/memcontrol.h |   35 ++++
+ include/linux/shrinker.h   |   10 +-
+ include/linux/vmpressure.h |    5 +
+ mm/list_lru.c              |  263 +++++++++++++++++++++++++++---
+ mm/memcontrol.c            |  384 +++++++++++++++++++++++++++++++++++++++-----
+ mm/vmpressure.c            |   53 +++++-
+ mm/vmscan.c                |  172 +++++++++++++-------
+ 17 files changed, 888 insertions(+), 221 deletions(-)
+
 -- 
 1.7.10.4
 
