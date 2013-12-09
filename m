@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053Ab3LIQWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:22:54 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56417 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933965Ab3LIQWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:22:47 -0500
+	id S934070Ab3LIQW6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:22:58 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59758 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933964Ab3LIQWq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:22:46 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: <lee.jones@linaro.org>
 CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
@@ -14,9 +15,9 @@ CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 06/15] mfd: menelaus: Pass menelaus pointer as argument to enable/disable irq
-Date: Mon, 9 Dec 2013 10:21:16 -0600
-Message-ID: <1386606085-26838-6-git-send-email-balbi@ti.com>
+Subject: [PATCH v3 15/15] mfd: menelaus: Use devm_request_threaded_irq()
+Date: Mon, 9 Dec 2013 10:21:25 -0600
+Message-ID: <1386606085-26838-15-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.8.4.GIT
 In-Reply-To: <1386606085-26838-1-git-send-email-balbi@ti.com>
 References: <20131209161422.GC24047@saruman.home>
@@ -27,122 +28,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to, eventually, get rid of the global the_menelaus pointer, so
-let's start passing menelaus as argument to some function calls and
-slowly phase out the_menelaus global pointer.
+By using devm_request_threaded_irq() we can drop a few extra lines of
+code and rely on device managed resources layer to free our IRQ for us.
 
 Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/menelaus.c | 48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
+ drivers/mfd/menelaus.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index 9ccbb79..4c51e4b 100644
+index bffe978..b87c2bd 100644
 --- a/drivers/mfd/menelaus.c
 +++ b/drivers/mfd/menelaus.c
-@@ -199,35 +199,35 @@ static int menelaus_read_reg(int reg)
- 	return val;
- }
+@@ -1271,8 +1271,8 @@ static int menelaus_probe(struct i2c_client *client,
+ 	/* Set output buffer strengths */
+ 	menelaus_write_reg(m, MENELAUS_MCT_CTRL1, 0x73);
  
--static int menelaus_enable_irq(int irq)
-+static int menelaus_enable_irq(struct menelaus_chip *m, int irq)
- {
- 	if (irq > 7) {
- 		irq -= 8;
--		the_menelaus->mask2 &= ~(1 << irq);
-+		m->mask2 &= ~(1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK2,
--				the_menelaus->mask2);
-+				m->mask2);
- 	} else {
--		the_menelaus->mask1 &= ~(1 << irq);
-+		m->mask1 &= ~(1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK1,
--				the_menelaus->mask1);
-+				m->mask1);
- 	}
- }
+-	err = request_threaded_irq(client->irq, NULL, menelaus_irq,
+-			IRQF_ONESHOT, DRIVER_NAME, m);
++	err = devm_request_threaded_irq(&client->dev, client->irq,
++			NULL, menelaus_irq, IRQF_ONESHOT, DRIVER_NAME, m);
+ 	if (err) {
+ 		dev_dbg(&client->dev,  "can't get IRQ %d, err %d\n",
+ 				client->irq, err);
+@@ -1283,7 +1283,7 @@ static int menelaus_probe(struct i2c_client *client,
  
--static int menelaus_disable_irq(int irq)
-+static int menelaus_disable_irq(struct menelaus_chip *m, int irq)
- {
- 	if (irq > 7) {
- 		irq -= 8;
--		the_menelaus->mask2 |= (1 << irq);
-+		m->mask2 |= (1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK2,
--				the_menelaus->mask2);
-+				m->mask2);
- 	} else {
--		the_menelaus->mask1 |= (1 << irq);
-+		m->mask1 |= (1 << irq);
- 		return menelaus_write_reg(MENELAUS_INT_MASK1,
--				the_menelaus->mask1);
-+				m->mask1);
- 	}
- }
- 
--static int menelaus_ack_irq(int irq)
-+static int menelaus_ack_irq(struct menelaus_chip *m, int irq)
- {
- 	if (irq > 7)
- 		return menelaus_write_reg(MENELAUS_INT_ACK2, 1 << (irq - 8));
-@@ -243,7 +243,7 @@ static int menelaus_add_irq_work(int irq,
- 
- 	mutex_lock(&the_menelaus->lock);
- 	the_menelaus->handlers[irq] = handler;
--	ret = menelaus_enable_irq(irq);
-+	ret = menelaus_enable_irq(the_menelaus, irq);
- 	mutex_unlock(&the_menelaus->lock);
- 
- 	return ret;
-@@ -255,7 +255,7 @@ static int menelaus_remove_irq_work(int irq)
- 	int ret = 0;
- 
- 	mutex_lock(&the_menelaus->lock);
--	ret = menelaus_disable_irq(irq);
-+	ret = menelaus_disable_irq(the_menelaus, irq);
- 	the_menelaus->handlers[irq] = NULL;
- 	mutex_unlock(&the_menelaus->lock);
- 
-@@ -793,25 +793,25 @@ out:
- 
- static irqreturn_t menelaus_irq(int irq, void *_menelaus)
- {
--	struct menelaus_chip *menelaus = _menelaus;
--	void (*handler)(struct menelaus_chip *menelaus);
-+	struct menelaus_chip *m = _menelaus;
-+	void (*handler)(struct menelaus_chip *m);
- 	unsigned long isr;
- 	unsigned long i;
- 
- 	isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
--			& ~menelaus->mask2) << 8;
-+			& ~m->mask2) << 8;
- 	isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
--		& ~menelaus->mask1;
-+		& ~m->mask1;
- 
- 	for_each_set_bit(i, &isr, 16) {
--		mutex_lock(&menelaus->lock);
--		menelaus_disable_irq(i);
--		menelaus_ack_irq(i);
--		handler = menelaus->handlers[i];
-+		mutex_lock(&m->lock);
-+		menelaus_disable_irq(m, i);
-+		menelaus_ack_irq(m, i);
-+		handler = m->handlers[i];
- 		if (handler)
--			handler(menelaus);
--		menelaus_enable_irq(i);
--		mutex_unlock(&menelaus->lock);
-+			handler(m);
-+		menelaus_enable_irq(m, i);
-+		mutex_unlock(&m->lock);
+ 	val = menelaus_read_reg(m, MENELAUS_VCORE_CTRL1);
+ 	if (val < 0)
+-		goto fail_free_irq;
++		goto fail_free_descs;
+ 	if (val & (1 << 7))
+ 		m->vcore_hw_mode = 1;
+ 	else
+@@ -1292,14 +1292,12 @@ static int menelaus_probe(struct i2c_client *client,
+ 	if (menelaus_pdata != NULL && menelaus_pdata->late_init != NULL) {
+ 		err = menelaus_pdata->late_init(&client->dev);
+ 		if (err < 0)
+-			goto fail_free_irq;
++			goto fail_free_descs;
  	}
  
- 	return IRQ_HANDLED;
+ 	menelaus_rtc_init(m);
+ 
+ 	return 0;
+-fail_free_irq:
+-	free_irq(client->irq, m);
+ 
+ fail_free_descs:
+ 	irq_free_descs(irq_base, MENELAUS_NR_IRQS);
+@@ -1311,7 +1309,6 @@ static int menelaus_remove(struct i2c_client *client)
+ {
+ 	struct menelaus_chip	*m = i2c_get_clientdata(client);
+ 
+-	free_irq(client->irq, m);
+ 	irq_free_descs(m->irq_base, MENELAUS_NR_IRQS);
+ 	the_menelaus = NULL;
+ 	return 0;
 -- 
 1.8.4.GIT
 
