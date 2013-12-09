@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab3LIVxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:53:42 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47319 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761805Ab3LIVwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:50 -0500
+	id S1761794Ab3LIVwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:52:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43500 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761712Ab3LIVwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:52:33 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH v3 23/23] mm/ARM: OMAP: Use memblock apis for early memory allocations
-Date: Mon, 9 Dec 2013 16:50:56 -0500
-Message-ID: <1386625856-12942-24-git-send-email-santosh.shilimkar@ti.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v3 14/23] mm/lib/cpumask: Use memblock apis for early memory allocations
+Date: Mon, 9 Dec 2013 16:50:47 -0500
+Message-ID: <1386625856-12942-15-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
@@ -38,39 +36,32 @@ bootmem APIs.
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ lib/cpumask.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index e3f0eca..f03f8b8 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2695,9 +2695,7 @@ static int __init _alloc_links(struct omap_hwmod_link **ml,
- 	sz = sizeof(struct omap_hwmod_link) * LINKS_PER_OCP_IF;
- 
- 	*sl = NULL;
--	*ml = alloc_bootmem(sz);
--
--	memset(*ml, 0, sz);
-+	*ml = memblock_virt_alloc(sz, 0);
- 
- 	*sl = (void *)(*ml) + sizeof(struct omap_hwmod_link);
- 
-@@ -2816,9 +2814,7 @@ static int __init _alloc_linkspace(struct omap_hwmod_ocp_if **ois)
- 	pr_debug("omap_hwmod: %s: allocating %d byte linkspace (%d links)\n",
- 		 __func__, sz, max_ls);
- 
--	linkspace = alloc_bootmem(sz);
--
--	memset(linkspace, 0, sz);
-+	linkspace = memblock_virt_alloc(sz, 0);
- 
- 	return 0;
+diff --git a/lib/cpumask.c b/lib/cpumask.c
+index d327b87..b810b75 100644
+--- a/lib/cpumask.c
++++ b/lib/cpumask.c
+@@ -140,7 +140,7 @@ EXPORT_SYMBOL(zalloc_cpumask_var);
+  */
+ void __init alloc_bootmem_cpumask_var(cpumask_var_t *mask)
+ {
+-	*mask = alloc_bootmem(cpumask_size());
++	*mask = memblock_virt_alloc(cpumask_size(), 0);
  }
+ 
+ /**
+@@ -161,6 +161,6 @@ EXPORT_SYMBOL(free_cpumask_var);
+  */
+ void __init free_bootmem_cpumask_var(cpumask_var_t mask)
+ {
+-	free_bootmem(__pa(mask), cpumask_size());
++	memblock_free_early(__pa(mask), cpumask_size());
+ }
+ #endif
 -- 
 1.7.9.5
 
