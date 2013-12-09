@@ -1,193 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761318Ab3LIRx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:53:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36981 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab3LIRxz (ORCPT
+	id S1761437Ab3LIRyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:54:44 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:58976 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755891Ab3LIRyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:53:55 -0500
-Date: Mon, 9 Dec 2013 11:53:43 -0600
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, toshi.okajima@jp.fujitsu.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        eparis@redhat.com, linux-audit@redhat.com, ebiederm@xmission.com,
-        sgrubb@redhat.com
-Subject: Re: [PATCH 18/20] audit: add new message type AUDIT_CREATE_NS
-Message-ID: <20131209175343.GA6849@sergelap>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
- <1382599925-25143-19-git-send-email-gaofeng@cn.fujitsu.com>
- <20131206221014.GC22445@mail.hallyn.com>
- <52A52400.7060008@cn.fujitsu.com>
+	Mon, 9 Dec 2013 12:54:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A52400.7060008@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386546869-31900-3-git-send-email-yinghai@kernel.org>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org> <1386546869-31900-3-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 9 Dec 2013 10:54:20 -0700
+Message-ID: <CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> On 12/07/2013 06:10 AM, Serge E. Hallyn wrote:
-> > Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >> Since there is no more place for flags of clone system call.
-> >> we need to find a way to create audit namespace.
-> >>
-> >> this patch add a new type of message AUDIT_CREATE_NS.
-> >> user space can create new audit namespace through
-> >> netlink.
-> >>
-> >> Right now, The privileged user in user namespace is allowed
-> >> to create audit namespace. it means the unprivileged user can
-> >> create an user namespace and then create audit namespace.
-> >>
-> >> Looks like it is not safe, but even the unprivileged user can
-> >> create audit namespace, it can do no harm to the host. un-init
-> >> audit namespace cann't effect the host.
-> >>
-> >> In the follow patches, the audit_backlog_limit will be per
-> >> audit namesapace, but only the privileged user has rights to
-> >> modify it. and the default value of audit_backlog_limit for
-> >> uninit audit namespace will be set to 0.
-> >>
-> >> And the audit_rate_limit will be limited too.
-> >>
-> >> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-> >> ---
-> >>  include/linux/audit_namespace.h |  7 +++++++
-> >>  include/uapi/linux/audit.h      |  1 +
-> >>  kernel/audit.c                  | 22 ++++++++++++++++++++++
-> >>  kernel/audit_namespace.c        | 29 +++++++++++++++++++++++++++++
-> >>  4 files changed, 59 insertions(+)
-> >>
-> >> diff --git a/include/linux/audit_namespace.h b/include/linux/audit_namespace.h
-> >> index 79a9b78..b17f052 100644
-> >> --- a/include/linux/audit_namespace.h
-> >> +++ b/include/linux/audit_namespace.h
-> >> @@ -54,6 +54,8 @@ void put_audit_ns(struct audit_namespace *ns)
-> >>  		rcu_read_unlock();
-> >>  	}
-> >>  }
-> >> +
-> >> +extern int unshare_audit_namespace(void);
-> >>  #else
-> >>  static inline
-> >>  struct audit_namespace *get_audit_ns(struct audit_namespace *ns)
-> >> @@ -66,6 +68,11 @@ void put_audit_ns(struct audit_namespace *ns)
-> >>  {
-> >>  
-> >>  }
-> >> +
-> >> +static inline int unshare_audit_namespace()
-> >> +{
-> >> +	return -EINVAL;
-> >> +}
-> >>  #endif
-> >>  
-> >>  static inline struct
-> >> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> >> index 75cef3f..877d509 100644
-> >> --- a/include/uapi/linux/audit.h
-> >> +++ b/include/uapi/linux/audit.h
-> >> @@ -68,6 +68,7 @@
-> >>  #define AUDIT_MAKE_EQUIV	1015	/* Append to watched tree */
-> >>  #define AUDIT_TTY_GET		1016	/* Get TTY auditing status */
-> >>  #define AUDIT_TTY_SET		1017	/* Set TTY auditing status */
-> >> +#define AUDIT_CREATE_NS		1018	/* Create new audit namespace */
-> >>  
-> >>  #define AUDIT_FIRST_USER_MSG	1100	/* Userspace messages mostly uninteresting to kernel */
-> >>  #define AUDIT_USER_AVC		1107	/* We filter this differently */
-> >> diff --git a/kernel/audit.c b/kernel/audit.c
-> >> index c4d4291..86212d3 100644
-> >> --- a/kernel/audit.c
-> >> +++ b/kernel/audit.c
-> >> @@ -596,6 +596,12 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
-> >>  		    !capable(CAP_AUDIT_CONTROL))
-> >>  			err = -EPERM;
-> >>  		break;
-> >> +	case AUDIT_CREATE_NS:
-> >> +		/* Allow privileged user in user namespace to
-> >> +		 * create audit namespace */
-> >> +		if (!ns_capable(current_user_ns(), CAP_AUDIT_CONTROL))
-> >> +			err = -EPERM;
-> >> +		break;
-> >>  	case AUDIT_USER:
-> >>  	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
-> >>  	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
-> >> @@ -735,6 +741,22 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
-> >>  		if (status_get->mask & AUDIT_STATUS_BACKLOG_LIMIT)
-> >>  			err = audit_set_backlog_limit(status_get->backlog_limit);
-> >>  		break;
-> >> +	case AUDIT_CREATE_NS:
-> >> +		err = unshare_audit_namespace();
-> >> +
-> >> +		if (audit_enabled == AUDIT_OFF)
-> >> +			break;
-> >> +
-> >> +		ab = audit_log_start_ns(ns, NULL, GFP_KERNEL, AUDIT_CREATE_NS);
-> >> +		if (ab) {
-> >> +			audit_log_format(ab, "Create audit namespace");
-> >> +			audit_log_session_info(ab);
-> >> +			audit_log_task_context(ab);
-> >> +			audit_log_format(ab, "res=%d", err ? 0 : 1);
-> >> +			audit_log_end_ns(ns, ab);
-> >> +		}
-> >> +
-> >> +		break;
-> >>  	case AUDIT_USER:
-> >>  	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
-> >>  	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
-> >> diff --git a/kernel/audit_namespace.c b/kernel/audit_namespace.c
-> >> index 6d9cb8f..28c608e 100644
-> >> --- a/kernel/audit_namespace.c
-> >> +++ b/kernel/audit_namespace.c
-> >> @@ -6,3 +6,32 @@ struct audit_namespace init_audit_ns = {
-> >>  	.user_ns = &init_user_ns,
-> >>  };
-> >>  EXPORT_SYMBOL_GPL(init_audit_ns);
-> >> +
-> >> +int unshare_audit_namespace(void)
-> >> +{
-> >> +	struct task_struct *tsk = current;
-> >> +	struct audit_namespace *new_audit = NULL;
-> >> +	struct nsproxy *new_nsp;
-> >> +
-> >> +	new_audit = kzalloc(sizeof(struct audit_namespace), GFP_KERNEL);
-> >> +	if (!new_audit)
-> >> +		return -ENOMEM;
-> >> +
-> >> +	skb_queue_head_init(&new_audit->queue);
-> >> +	skb_queue_head_init(&new_audit->hold_queue);
-> >> +	init_waitqueue_head(&new_audit->kauditd_wait);
-> >> +	init_waitqueue_head(&new_audit->backlog_wait);
-> >> +
-> >> +	new_nsp = create_new_namespaces(0, tsk, NULL, NULL);
-> >> +	if (IS_ERR(new_nsp)) {
-> >> +		kfree(new_audit);
-> >> +		return PTR_ERR(new_nsp);
-> >> +	}
-> >> +
-> >> +	new_audit->user_ns = get_user_ns(current_user_ns());
-> >> +	new_nsp->audit_ns = get_audit_ns(new_audit);
-> >> +
-> >> +	switch_task_namespaces(current, new_nsp);
-> > 
-> > Do you need to drop the old audit->ns refcount?
-> > 
-> 
-> task doesn't hold namespace's refcount directly. it hold ns's refcount
+On Sun, Dec 8, 2013 at 4:54 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Joseph found
+> | commit b07f2ebc109b607789f648dedcff4b125f9afec6
+> | Date:   Thu Feb 23 19:23:32 2012 -0800
+> |
+> |    PCI: add a PCI resource reallocation config option
+>
+> cause one system can not load driver for Intel x520 NIC's.
+>
+> The root resource:
+> [    1.212470] PCI host bridge to bus 0000:20
+> [    1.212475] pci_bus 0000:20: root bus resource [bus 20-3e]
+> [    1.212479] pci_bus 0000:20: root bus resource [io  0xc000-0xdfff]
+> [    1.212483] pci_bus 0000:20: root bus resource [mem 0xfecc0000-0xfecfffff]
+> [    1.212487] pci_bus 0000:20: root bus resource [mem 0xe9400000-0xe97fffff]
+>
+> and bios does not assign sriov, also have two function ROM bar point to same
+> position.
+> [    1.213197] pci 0000:22:00.0: [8086:10fb] type 00 class 0x020000
+> ...
+> [    1.213240] pci 0000:22:00.0: reg 0x30: [mem 0xe9500000-0xe957ffff pref]
+> [    1.213303] pci 0000:22:00.0: reg 0x184: [mem 0x00000000-0x00003fff 64bit]
+> [    1.213317] pci 0000:22:00.0: reg 0x190: [mem 0x00000000-0x00003fff 64bit]
+> [    1.213366] pci 0000:22:00.1: [8086:10fb] type 00 class 0x020000
+> ...
+> [    1.213408] pci 0000:22:00.1: reg 0x30: [mem 0xe9500000-0xe957ffff pref]
+> [    1.213468] pci 0000:22:00.1: reg 0x184: [mem 0x00000000-0x00003fff 64bit]
+> [    1.213481] pci 0000:22:00.1: reg 0x190: [mem 0x00000000-0x00003fff 64bit]
+> [    1.218527] pci 0000:20:03.0: PCI bridge to [bus 22]
+> [    1.218534] pci 0000:20:03.0:   bridge window [io  0xd000-0xdfff]
+> [    1.218537] pci 0000:20:03.0:   bridge window [mem 0xe9400000-0xe95fffff]
+> ...
+> [    1.254103] pci 0000:22:00.1: address space collision: [mem 0xe9500000-0xe957ffff pref] conflicts with 0000:22:00.0 [mem 0xe9500000-0xe957ffff pref]
+> [    1.254111] pci 0000:23:00.1: address space collision: [mem 0xe9700000-0xe977ffff pref] conflicts with 0000:23:00.0 [mem 0xe9700000-0xe977ffff pref]
+>
+> We don't need to enable realloc for this case, as we can not alter root bus mmio
+> range to get big one to hold two rom bar, and sriov under 4G.
+>
+> Add checking if pci root bus have 4G above mmio res, and don't enable
+> realloc auto accordingly.
+>
+> bug report at: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1245938
+>
+> Reported-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/pci/setup-bus.c | 32 +++++++++++++++++++++++++++-----
+>  1 file changed, 27 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 219a410..f9e6efb 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -1432,17 +1432,39 @@ static int iov_resources_unassigned(struct pci_dev *dev, void *data)
+>         return 0;
+>  }
+>
+> +static bool pci_bus_mem_above_4g(struct pci_bus *bus)
+> +{
+> +       int i;
+> +       struct resource *res;
+> +
+> +       pci_bus_for_each_resource(bus, res, i) {
+> +               struct pci_bus_region region;
+> +
+> +               if (!res || !(res->flags & IORESOURCE_MEM))
+> +                       continue;
+> +
+> +               __pcibios_resource_to_bus(bus, &region, res);
+> +               if (region.end > 0xffffffff)
+> +                       return true;
+> +       }
+> +
+> +       return false;
+> +}
+> +
+>  static enum enable_type pci_realloc_detect(struct pci_bus *bus,
+>                          enum enable_type enable_local)
+>  {
+> -       bool unassigned = false;
+> -
+>         if (enable_local != undefined)
+>                 return enable_local;
+>
+> -       pci_walk_bus(bus, iov_resources_unassigned, &unassigned);
+> -       if (unassigned)
+> -               return auto_enabled;
+> +       /* only enable auto when root bus does support 64bit mmio */
+> +       if (pci_bus_mem_above_4g(bus)) {
+> +               bool unassigned = false;
+> +
+> +               pci_walk_bus(bus, iov_resources_unassigned, &unassigned);
+> +               if (unassigned)
+> +                       return auto_enabled;
 
-No but when you create the new_nsp with create_new_namespaces(),
-that new_nsp bumps the refcount on the init_audit_ns.  Then you
-point new_nsp to a new audit_ns, but you never drop the refcount
-on init_audit_ns.
+I don't see how the question of whether the host bridge has an
+aperture above 4G is related to whether we should automatically
+reassign resources.  They seem orthogonal to me.  No doubt it "fixes"
+the current problem, but it doesn't make sense conceptually.
 
-> through nsproxy. switch_task_namespaces will release the refcount of old
-> nsproxy. so I think the refcount here is no problem.
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+Bjorn
+
+> +       }
+>
+>         return enable_local;
+>  }
+> --
+> 1.8.4
+>
