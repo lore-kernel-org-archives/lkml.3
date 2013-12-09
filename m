@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab3LIUr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:47:27 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:60999 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932216Ab3LIUrY (ORCPT
+	id S933062Ab3LIUwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 15:52:47 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:21689 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932690Ab3LIUwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:47:24 -0500
+	Mon, 9 Dec 2013 15:52:47 -0500
+Message-ID: <52A62D9D.5080105@tilera.com>
+Date: Mon, 9 Dec 2013 15:52:45 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20131209204323.GA25180@kroah.com>
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
-	<1386546869-31900-2-git-send-email-yinghai@kernel.org>
-	<CAErSpo7HaAbsoy0n5sr_d3iPazEnpnO8WupJrDn2QR2Kid=EgQ@mail.gmail.com>
-	<CAE9FiQUebPPcTyHGssxTwJJ3GYx4aq-=infapvxOQgAm+PL4rA@mail.gmail.com>
-	<CAE9FiQUrTAnQkiS9SU3-pJ35-U9CqXQNQEceUUarf-WiPXCF2Q@mail.gmail.com>
-	<20131209204323.GA25180@kroah.com>
-Date: Mon, 9 Dec 2013 12:47:24 -0800
-X-Google-Sender-Auth: Es4gDo8u7iiyV7kQcoyq1Yu7f1k
-Message-ID: <CAE9FiQW60hW06sr=ahV6rEMRQ5kA04A_1mUtfZQAra__6ttNxw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: pcibus address to resource converting take bus
- instead of dev
-From: Yinghai Lu <yinghai@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>
+CC: <akpm@linuxfoundation.org>, <rostedt@goodmis.org>,
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 35/41] tile: Replace __get_cpu_var uses
+References: <20131203233232.928771708@linux.com> <20131203233303.460840679@linux.com>
+In-Reply-To: <20131203233303.460840679@linux.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 12:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Dec 09, 2013 at 12:03:18PM -0800, Yinghai Lu wrote:
->> On Mon, Dec 9, 2013 at 11:21 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> > On Mon, Dec 9, 2013 at 9:52 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> >>
->> >> Ugh.  Why would we add new functions with "__" prefixes?  There are
->> >> only a handful of callers to pcibios_bus_to_resource() and
->> >> pcibios_resource_to_bus().  We can just change them to supply a
->> >> "struct pci_bus *" directly.  That's a better match for how the
->> >> hardware works anyway.
->> >
->>
->> Please double check if you are happy with the change.
->> Hope that will not update stable tree maintainer guys.
+On 12/3/2013 6:33 PM, Christoph Lameter wrote:
+> __get_cpu_var() is used for multiple purposes in the kernel source. One of
+> them is address calculation via the form &__get_cpu_var(x).  This calculates
+> the address for the instance of the percpu variable of the current processor
+> based on an offset.
 >
-> What do you mean by this?
-
-Do not want to change too much code, to upset stable tree maintainers.
-
+> [...]
 >
-> How is this a -stable kernel patch?
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-We have stable patch that will need use the new function.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-[PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+Except for a comment typo:
 
-Thanks
+>  /*
+>   * Read the set of maskable interrupts.
+> - * We avoid the preemption warning here via __this_cpu_ptr since even
+> + * We avoid the preemption warning here via raw_cpu_ptr since even
+>   * if irqs are already enabled, it's harmless to read the wrong cpu's
+>   * enabled mask.
+>   */
+>  #define arch_local_irqs_enabled() \
+> -	(*__this_cpu_ptr(&interrupts_enabled_mask))
+> +	raw_cpu_read(interrupts_enabled_mask)
 
-Yinghai
+Should be raw_cpu_read() in the comment.
+
+I assume you are planning to submit these through your own tree, not the arch trees?
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
