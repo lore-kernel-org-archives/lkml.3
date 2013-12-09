@@ -1,91 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab3LISUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:20:30 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49910 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab3LISU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:20:28 -0500
-Message-ID: <52A607BB.60200@wwwdotorg.org>
-Date: Mon, 09 Dec 2013 11:11:07 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1759146Ab3LISYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:24:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:51456 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab3LISYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 13:24:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,859,1378882800"; 
+   d="scan'208";a="421801061"
+Date: Mon, 9 Dec 2013 10:24:10 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Vikas Sajjan <vikas.sajjan@linaro.org>, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, vpalatin@chromium.org, jwerner@chromium.org,
+        tianyu.lan@intel.com, burzalodowa@gmail.com,
+        gregkh@linuxfoundation.org, gautam.vivek@samsung.com,
+        dianders@chromium.org, balbi@ti.com, joshi@samsung.com
+Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming
+ SuperSpeed HUBs
+Message-ID: <20131209182410.GA5220@xanatos>
+References: <1386592158-12086-1-git-send-email-vikas.sajjan@linaro.org>
+ <Pine.LNX.4.44L0.1312091019400.1439-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "rob@landley.net" <rob@landley.net>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 1/2] pinctrl: tegra: Add devicetree binding document
- for Tegra124
-References: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com> <20131209105155.GC29303@e106331-lin.cambridge.arm.com> <52A6005E.3060506@wwwdotorg.org> <20131209174859.GC1809@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20131209174859.GC1809@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1312091019400.1439-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 10:48 AM, Mark Rutland wrote:
-> On Mon, Dec 09, 2013 at 05:39:42PM +0000, Stephen Warren wrote:
->> On 12/09/2013 03:51 AM, Mark Rutland wrote:
->>> On Mon, Dec 09, 2013 at 10:32:19AM +0000, Laxman Dewangan wrote:
->>>> This device tree binding document describes the Tegra124 pincontrol
->>>> DT bindings. This document lists all valid properties, names, mux
->>>> options of Tegra124 pins.
->>>>
->>>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->>>> ---
->>>> Changes from V1:
->>>> - Referred the dt-binding header file on describing the nodes.
->>>>
->>>>  .../bindings/pinctrl/nvidia,tegra124-pinmux.txt    |  147 ++++++++++++++++++++
->>>>  1 files changed, 147 insertions(+), 0 deletions(-)
->>>>  create mode 100644 Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
->>>> new file mode 100644
->>>> index 0000000..12ef772
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
->>>> @@ -0,0 +1,147 @@
->>>> +NVIDIA Tegra124 pinmux controller
->>>> +
->>>> +The Tegra124 pinctrl binding is very similar to the Tegra20 and Tegra30
->>>> +pinctrl binding, as described in nvidia,tegra20-pinmux.txt and
->>>> +nvidia,tegra30-pinmux.txt. In fact, this document assumes that binding as
->>>> +a baseline, and only documents the differences between the two bindings.
->>>> +
->>>> +Required properties:
->>>> +- compatible: "nvidia,tegra124-pinmux"
->>>> +- reg: Should contain the register physical address and length for each of
->>>> +  the pad control and mux registers. The first bank of address must be the
->>>> +  driver strength pad control register address and second bank address must
->>>> +  be pinmux register address.
->>>
->>> The wording here could be improved. The first sentence implies an entry
->>> for each individual register but I assume these are actually banks of
->>> registers (the sizes in the exanple imply this). The second sentence is
->>> more sepcific.
->>>
->>> How about something like:
->>>
->>> reg: Should contain a list of base address and size pairs for:
->>>  * first entry - the driver strength and pad control registers
->>
->> If this patch gets revised, please s/driver/drive/ here.
+On Mon, Dec 09, 2013 at 10:24:52AM -0500, Alan Stern wrote:
+> On Mon, 9 Dec 2013, Vikas Sajjan wrote:
 > 
-> Whoops. I'm too used to typing the former.
+> > Does warm reset while activating SuperSpeed HUBs if the hub activate type
+> > is HUB_RESET_RESUME.
+> > 
+> > When we do Suspend-to-RAM with (any one of the 16, 32, 64 Jetflash) transcend
+> > USB 3.0 device connected on 3.0 port, during resume I noticed that the
+> > XHCI controller has moved to sometimes RECOVERY, POLLING or INACTIVE STATE.
+> > This behaviour is inconsistent and the connection with connected USB 3.0 device
+> > on 3.0 port was LOST.
 
-Don't worry - I pointed it out because the same typo was in the original
-patch, so I assumed that's where it came from.
+Does the device eventually re-connect on the USB port?  Or is warm reset
+necessary to make the device connect?
+
+Does the xHCI register restore complete after resume from S3, or is
+power lost?  I'm trying to figure out whether xhci_reset is called
+before your issue is triggered.
+
+> > Doing warm reset while activating SuperSpeed HUBs if the hub
+> > activate type is HUB_RESET_RESUME, gets the connected device to the stable state.
+> > 
+> > Reviewed at https://chromium-review.googlesource.com/#/c/177132/
+> > 
+> > Tested on exynos5420 and exynos5250 with Transcend Jetflash USB 3.0 device (8564:1000)
+
+Is this issue specific to the particular USB device manufacturer
+(Transcend)?  Does the same device lose connection on resume from S3
+with other host controller vendors?  Have you seen this issue when the
+USB 3.0 device is behind a USB 3.0 hub?
+
+I ask because this sounds like a low-level link training issue that's
+specific to the exynos host or USB device.  I would rather track down
+which hardware is to blame than generically add a warm reset for all USB
+3.0 devices.
+
+> > rebased on Greg Kroah-Hartman's usb-next
+> > git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
+> > 
+> > Signed-off-by: Vikas Sajjan <vikas.sajjan@samsung.com>
+> > ---
+> >  drivers/usb/core/hub.c |   41 +++++++++++++++++++++++++----------------
+> >  1 file changed, 25 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> > index a7c04e2..d8432b0 100644
+> > --- a/drivers/usb/core/hub.c
+> > +++ b/drivers/usb/core/hub.c
+> 
+> > @@ -1093,6 +1108,16 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+> >  		u16 portstatus, portchange;
+> >  
+> >  		portstatus = portchange = 0;
+> > +
+> > +		/* Some connected devices might be still in unknown state even
+> > +		 * after reset-resume, a WARM_RESET gets the connected device
+> > +		 * to the normal state.
+> > +		 */
+> > +		if (udev && hub_is_superspeed(hub->hdev) &&
+> > +						type == HUB_RESET_RESUME)
+> > +			hub_port_reset(hub, port1, NULL,
+> > +						HUB_BH_RESET_TIME, true);
+> 
+> Please don't do this all the time to every attached port.  Do it only 
+> when it is really needed.
+
+Agreed.  Can we at least limit the warm reset to devices directly
+attached to roothubs?  You can also change this code to get the port
+status and only do the warm reset if the port link state is
+USB_SS_PORT_LS_POLLING, USB_SS_PORT_LS_RX_DETECT, or
+USB_SS_PORT_LS_SS_INACTIVE.
+
+> Shouldn't you pass udev as the third argument?  If not, please explain
+> why not.
+> 
+> Finally, I don't see why you put this in hub_activate().  Isn't it more 
+> closely connected with the reset-resume procedure for the child device?
+
+Sarah Sharp
