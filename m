@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760904Ab3LIHKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 02:10:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40194 "EHLO mx2.suse.de"
+	id S1760949Ab3LIHKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 02:10:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40211 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760639Ab3LIHJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 02:09:28 -0500
+	id S1760646Ab3LIHJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 02:09:31 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 15/18] mm: numa: Trace tasks that fail migration due to rate limiting
-Date: Mon,  9 Dec 2013 07:09:09 +0000
-Message-Id: <1386572952-1191-16-git-send-email-mgorman@suse.de>
+Subject: [PATCH 18/18] sched: Add tracepoints related to NUMA task migration
+Date: Mon,  9 Dec 2013 07:09:12 +0000
+Message-Id: <1386572952-1191-19-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386572952-1191-1-git-send-email-mgorman@suse.de>
 References: <1386572952-1191-1-git-send-email-mgorman@suse.de>
@@ -21,70 +21,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A low local/remote numa hinting fault ratio is potentially explained by
-failed migrations. This patch adds a tracepoint that fires when migration
-fails due to migration rate limitation.
+This patch adds three tracepoints
+ o trace_sched_move_numa	when a task is moved to a node
+ o trace_sched_swap_numa	when a task is swapped with another task
+ o trace_sched_stick_numa	when a numa-related migration fails
+
+The tracepoints allow the NUMA scheduler activity to be monitored and the
+following high-level metrics can be calculated
+
+ o NUMA migrated stuck	 nr trace_sched_stick_numa
+ o NUMA migrated idle	 nr trace_sched_move_numa
+ o NUMA migrated swapped nr trace_sched_swap_numa
+ o NUMA local swapped	 trace_sched_swap_numa src_nid == dst_nid (should never happen)
+ o NUMA remote swapped	 trace_sched_swap_numa src_nid != dst_nid (should == NUMA migrated swapped)
+ o NUMA group swapped	 trace_sched_swap_numa src_ngid == dst_ngid
+			 Maybe a small number of these are acceptable
+			 but a high number would be a major surprise.
+			 It would be even worse if bounces are frequent.
+ o NUMA avg task migs.	 Average number of migrations for tasks
+ o NUMA stddev task mig	 Self-explanatory
+ o NUMA max task migs.	 Maximum number of migrations for a single task
+
+In general the intent of the tracepoints is to help diagnose problems
+where automatic NUMA balancing appears to be doing an excessive amount of
+useless work.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/trace/events/migrate.h | 26 ++++++++++++++++++++++++++
- mm/migrate.c                   |  5 ++++-
- 2 files changed, 30 insertions(+), 1 deletion(-)
+ include/trace/events/sched.h | 68 ++++++++++++++++++++++++++++++++++++++++----
+ kernel/sched/core.c          |  2 ++
+ kernel/sched/fair.c          |  6 ++--
+ 3 files changed, 69 insertions(+), 7 deletions(-)
 
-diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
-index ec2a6cc..3075ffb 100644
---- a/include/trace/events/migrate.h
-+++ b/include/trace/events/migrate.h
-@@ -45,6 +45,32 @@ TRACE_EVENT(mm_migrate_pages,
- 		__print_symbolic(__entry->reason, MIGRATE_REASON))
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index cf1694c..f0c54e3 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -443,11 +443,7 @@ TRACE_EVENT(sched_process_hang,
  );
+ #endif /* CONFIG_DETECT_HUNG_TASK */
  
-+TRACE_EVENT(mm_numa_migrate_ratelimit,
+-/*
+- * Tracks migration of tasks from one runqueue to another. Can be used to
+- * detect if automatic NUMA balancing is bouncing between nodes
+- */
+-TRACE_EVENT(sched_move_task,
++DECLARE_EVENT_CLASS(sched_move_task_template,
+ 
+ 	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
+ 
+@@ -478,6 +474,68 @@ TRACE_EVENT(sched_move_task,
+ 			__entry->src_cpu, __entry->src_nid,
+ 			__entry->dst_cpu, __entry->dst_nid)
+ );
 +
-+	TP_PROTO(struct task_struct *p, int dst_nid, unsigned long nr_pages),
++/*
++ * Tracks migration of tasks from one runqueue to another. Can be used to
++ * detect if automatic NUMA balancing is bouncing between nodes
++ */
++DEFINE_EVENT(sched_move_task_template, sched_move_task,
++	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
 +
-+	TP_ARGS(p, dst_nid, nr_pages),
++	TP_ARGS(tsk, src_cpu, dst_cpu)
++);
++
++DEFINE_EVENT(sched_move_task_template, sched_move_numa,
++	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
++
++	TP_ARGS(tsk, src_cpu, dst_cpu)
++);
++
++DEFINE_EVENT(sched_move_task_template, sched_stick_numa,
++	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
++
++	TP_ARGS(tsk, src_cpu, dst_cpu)
++);
++
++TRACE_EVENT(sched_swap_numa,
++
++	TP_PROTO(struct task_struct *src_tsk, int src_cpu,
++		 struct task_struct *dst_tsk, int dst_cpu),
++
++	TP_ARGS(src_tsk, src_cpu, dst_tsk, dst_cpu),
 +
 +	TP_STRUCT__entry(
-+		__array(	char,		comm,	TASK_COMM_LEN)
-+		__field(	pid_t,		pid)
-+		__field(	int,		dst_nid)
-+		__field(	unsigned long,	nr_pages)
++		__field( pid_t,	src_pid			)
++		__field( pid_t,	src_tgid		)
++		__field( pid_t,	src_ngid		)
++		__field( int,	src_cpu			)
++		__field( int,	src_nid			)
++		__field( pid_t,	dst_pid			)
++		__field( pid_t,	dst_tgid		)
++		__field( pid_t,	dst_ngid		)
++		__field( int,	dst_cpu			)
++		__field( int,	dst_nid			)
 +	),
 +
 +	TP_fast_assign(
-+		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
-+		__entry->pid		= p->pid;
-+		__entry->dst_nid	= dst_nid;
-+		__entry->nr_pages	= nr_pages;
++		__entry->src_pid	= task_pid_nr(src_tsk);
++		__entry->src_tgid	= task_tgid_nr(src_tsk);
++		__entry->src_ngid	= task_numa_group_id(src_tsk);
++		__entry->src_cpu	= src_cpu;
++		__entry->src_nid	= cpu_to_node(src_cpu);
++		__entry->dst_pid	= task_pid_nr(dst_tsk);
++		__entry->dst_tgid	= task_tgid_nr(dst_tsk);
++		__entry->dst_ngid	= task_numa_group_id(dst_tsk);
++		__entry->dst_cpu	= dst_cpu;
++		__entry->dst_nid	= cpu_to_node(dst_cpu);
 +	),
 +
-+	TP_printk("comm=%s pid=%d dst_nid=%d nr_pages=%lu",
-+		__entry->comm,
-+		__entry->pid,
-+		__entry->dst_nid,
-+		__entry->nr_pages)
++	TP_printk("src_pid=%d src_tgid=%d src_ngid=%d src_cpu=%d src_nid=%d dst_pid=%d dst_tgid=%d dst_ngid=%d dst_cpu=%d dst_nid=%d",
++			__entry->src_pid, __entry->src_tgid, __entry->src_ngid,
++			__entry->src_cpu, __entry->src_nid,
++			__entry->dst_pid, __entry->dst_tgid, __entry->dst_ngid,
++			__entry->dst_cpu, __entry->dst_nid)
 +);
- #endif /* _TRACE_MIGRATE_H */
+ #endif /* _TRACE_SCHED_H */
  
  /* This part must be outside protection */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 8b560d5..9f53c00 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1608,8 +1608,11 @@ static bool numamigrate_update_ratelimit(pg_data_t *pgdat,
- 			msecs_to_jiffies(migrate_interval_millisecs);
- 		spin_unlock(&pgdat->numabalancing_migrate_lock);
- 	}
--	if (pgdat->numabalancing_migrate_nr_pages > ratelimit_pages)
-+	if (pgdat->numabalancing_migrate_nr_pages > ratelimit_pages) {
-+		trace_mm_numa_migrate_ratelimit(current, pgdat->node_id,
-+								nr_pages);
- 		return true;
-+	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c180860..3980110 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1108,6 +1108,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+ 	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
+ 		goto out;
  
- 	/*
- 	 * This is an unlocked non-atomic update so errors are possible.
++	trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
+ 	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
+ 
+ out:
+@@ -4091,6 +4092,7 @@ int migrate_task_to(struct task_struct *p, int target_cpu)
+ 
+ 	/* TODO: This is not properly updating schedstats */
+ 
++	trace_sched_move_numa(p, curr_cpu, target_cpu);
+ 	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
+ }
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 41021c8..aac8c65 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1272,11 +1272,13 @@ static int task_numa_migrate(struct task_struct *p)
+ 	p->numa_scan_period = task_scan_min(p);
+ 
+ 	if (env.best_task == NULL) {
+-		int ret = migrate_task_to(p, env.best_cpu);
++		if ((ret = migrate_task_to(p, env.best_cpu)) != 0)
++			trace_sched_stick_numa(p, env.src_cpu, env.best_cpu);
+ 		return ret;
+ 	}
+ 
+-	ret = migrate_swap(p, env.best_task);
++	if ((ret = migrate_swap(p, env.best_task)) != 0);
++		trace_sched_stick_numa(p, env.src_cpu, task_cpu(env.best_task));
+ 	put_task_struct(env.best_task);
+ 	return ret;
+ }
 -- 
 1.8.4
 
