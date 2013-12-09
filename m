@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940Ab3LIUiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:38:11 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:59041 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932286Ab3LIUiI (ORCPT
+	id S933074Ab3LIUmC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 15:42:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54094 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932582Ab3LIUl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:38:08 -0500
-Message-ID: <52A62A27.7080408@samsung.com>
-Date: Tue, 10 Dec 2013 05:37:59 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 9 Dec 2013 15:41:58 -0500
+Date: Mon, 9 Dec 2013 12:43:23 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/2] PCI: pcibus address to resource converting take bus
+ instead of dev
+Message-ID: <20131209204323.GA25180@kroah.com>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
+ <1386546869-31900-2-git-send-email-yinghai@kernel.org>
+ <CAErSpo7HaAbsoy0n5sr_d3iPazEnpnO8WupJrDn2QR2Kid=EgQ@mail.gmail.com>
+ <CAE9FiQUebPPcTyHGssxTwJJ3GYx4aq-=infapvxOQgAm+PL4rA@mail.gmail.com>
+ <CAE9FiQUrTAnQkiS9SU3-pJ35-U9CqXQNQEceUUarf-WiPXCF2Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-CC: Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Mark Rutland <mark.rutland@arm.com>, nicolas.pitre@linaro.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-doc@vger.kernel.org,
-        tomasz.figa@gmail.com, Naour Romain <romain.naour@openwide.fr>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, Dave.Martin@arm.com,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-samsung-soc@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v4 2/4] clk: exynos5410: register clocks using common
- clock framework
-References: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com> <1385456288-20398-3-git-send-email-v.tyrtov@samsung.com> <1914850.6CAa0SzDWP@amdc1227>
-In-Reply-To: <1914850.6CAa0SzDWP@amdc1227>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUrTAnQkiS9SU3-pJ35-U9CqXQNQEceUUarf-WiPXCF2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/13 01:34, Tomasz Figa wrote:
-> Hi Vyacheslav, Tarek,
->
-> On Tuesday 26 of November 2013 12:58:06 Vyacheslav Tyrtov wrote:
->> From: Tarek Dakhran<t.dakhran@samsung.com>
->>
->> The EXYNOS5410 clocks are statically listed and registered
->> using the Samsung specific common clock helper functions.
->>
->> Signed-off-by: Tarek Dakhran<t.dakhran@samsung.com>
->> Signed-off-by: Vyacheslav Tyrtov<v.tyrtov@samsung.com>
->> ---
->>   .../devicetree/bindings/clock/exynos5410-clock.txt |  54 +++++
->>   drivers/clk/samsung/Makefile                       |   1 +
->>   drivers/clk/samsung/clk-exynos5410.c               | 239 +++++++++++++++++++++
->>   include/dt-bindings/clock/exynos5410.h             |  32 +++
->>   4 files changed, 326 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
->>   create mode 100644 drivers/clk/samsung/clk-exynos5410.c
->>   create mode 100644 include/dt-bindings/clock/exynos5410.h
->
-> Acked-by: Tomasz Figa<t.figa@samsung.com>
->
-Tomasz, thanks for your ack on clk stuff.
+On Mon, Dec 09, 2013 at 12:03:18PM -0800, Yinghai Lu wrote:
+> On Mon, Dec 9, 2013 at 11:21 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Mon, Dec 9, 2013 at 9:52 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >>
+> >> Ugh.  Why would we add new functions with "__" prefixes?  There are
+> >> only a handful of callers to pcibios_bus_to_resource() and
+> >> pcibios_resource_to_bus().  We can just change them to supply a
+> >> "struct pci_bus *" directly.  That's a better match for how the
+> >> hardware works anyway.
+> >
+> 
+> Please double check if you are happy with the change.
+> Hope that will not update stable tree maintainer guys.
 
-> This should go through Samsung tree, I guess, since it's a dependency
-> of other patches in this series and doesn't depend on any things from
-> clock tree. Mike, Kukjin, are you okay with this?
->
-Yeah, I'm fine on this series but 4th patch for supporting dual cluster.
+What do you mean by this?
 
-Let me take 1 to 3 patches firstly. Thanks.
-- Kukjin
+How is this a -stable kernel patch?
+
