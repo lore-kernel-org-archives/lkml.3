@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760706Ab3LIGUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:20:36 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52395 "EHLO
+	id S1760722Ab3LIGUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:20:39 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44535 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760608Ab3LIGUY (ORCPT
+	with ESMTP id S1760622Ab3LIGUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:20:24 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-98-52a56123f587
+	Mon, 9 Dec 2013 01:20:23 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-8a-52a561222fc8
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
@@ -18,9 +18,9 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 15/17] tracing/uprobes: Add support for full argument access methods
-Date: Mon,  9 Dec 2013 15:20:03 +0900
-Message-Id: <1386570005-3368-16-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 12/17] tracing/probes: Implement 'memory' fetch method for uprobes
+Date: Mon,  9 Dec 2013 15:20:00 +0900
+Message-Id: <1386570005-3368-13-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
 References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
@@ -31,150 +31,286 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Enable to fetch other types of argument for the uprobes.  IOW, we can
-access stack, memory, deref, bitfield and retval from uprobes now.
+Use separate method to fetch from memory.  Move existing functions to
+trace_kprobe.c and make them static.  Also add new memory fetch
+implementation for uprobes.
 
-The format for the argument types are same as kprobes (but @SYMBOL
-type is not supported for uprobes), i.e:
-
-  @ADDR   : Fetch memory at ADDR
-  $stackN : Fetch Nth entry of stack (N >= 0)
-  $stack  : Fetch stack address
-  $retval : Fetch return value
-  +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address
-
-Note that the retval only can be used with uretprobes.
-
-Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- Documentation/trace/uprobetracer.txt | 25 +++++++++++++++++++++++++
- kernel/trace/trace_probe.c           | 34 ++++++++++++++++++++++------------
- 2 files changed, 47 insertions(+), 12 deletions(-)
+ kernel/trace/trace_kprobe.c | 77 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_probe.c  | 79 +--------------------------------------------
+ kernel/trace/trace_probe.h  |  4 ---
+ kernel/trace/trace_uprobe.c | 52 +++++++++++++++++++++++++++++
+ 4 files changed, 130 insertions(+), 82 deletions(-)
 
-diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-index 8f1a8b8956fc..6e5cff263e2b 100644
---- a/Documentation/trace/uprobetracer.txt
-+++ b/Documentation/trace/uprobetracer.txt
-@@ -31,6 +31,31 @@ Synopsis of uprobe_tracer
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 2886e6da524d..8b32236ae890 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -148,6 +148,83 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+ #define fetch_stack_string	NULL
+ #define fetch_stack_string_size	NULL
  
-   FETCHARGS     : Arguments. Each probe can have up to 128 args.
-    %REG         : Fetch register REG
-+   @ADDR	: Fetch memory at ADDR (ADDR should be in userspace)
-+   $stackN	: Fetch Nth entry of stack (N >= 0)
-+   $stack	: Fetch stack address.
-+   $retval	: Fetch return value.(*)
-+   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
-+   NAME=FETCHARG     : Set NAME as the argument name of FETCHARG.
-+   FETCHARG:TYPE     : Set TYPE as the type of FETCHARG. Currently, basic types
-+		       (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
-+		       are supported.
-+
-+  (*) only for return probe.
-+  (**) this is useful for fetching a field of data structures.
-+
-+Types
-+-----
-+Several types are supported for fetch-args. Uprobe tracer will access memory
-+by given type. Prefix 's' and 'u' means those types are signed and unsigned
-+respectively. Traced arguments are shown in decimal (signed) or hex (unsigned).
-+String type is a special type, which fetches a "null-terminated" string from
-+user space.
-+Bitfield is another special type, which takes 3 parameters, bit-width, bit-
-+offset, and container-size (usually 32). The syntax is;
-+
-+ b<bit-width>@<bit-offset>/<container-size>
-+
- 
- Event Profiling
- ---------------
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index d0b4a42dafcf..464ec506ec08 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -254,12 +254,18 @@ fail:
- }
- 
- /* Special function : only accept unsigned long */
--static __kprobes void fetch_stack_address(struct pt_regs *regs,
--					void *dummy, void *dest)
-+static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
-+						 void *dummy, void *dest)
- {
- 	*(unsigned long *)dest = kernel_stack_pointer(regs);
- }
- 
-+static __kprobes void fetch_user_stack_address(struct pt_regs *regs,
-+					       void *dummy, void *dest)
++#define DEFINE_FETCH_memory(type)					\
++static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
++					  void *addr, void *dest)	\
++{									\
++	type retval;							\
++	if (probe_kernel_address(addr, retval))				\
++		*(type *)dest = 0;					\
++	else								\
++		*(type *)dest = retval;					\
++}
++DEFINE_BASIC_FETCH_FUNCS(memory)
++/*
++ * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
++ * length and relative data location.
++ */
++static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
++						      void *addr, void *dest)
 +{
-+	*(unsigned long *)dest = user_stack_pointer(regs);
++	long ret;
++	int maxlen = get_rloc_len(*(u32 *)dest);
++	u8 *dst = get_rloc_data(dest);
++	u8 *src = addr;
++	mm_segment_t old_fs = get_fs();
++
++	if (!maxlen)
++		return;
++
++	/*
++	 * Try to get string again, since the string can be changed while
++	 * probing.
++	 */
++	set_fs(KERNEL_DS);
++	pagefault_disable();
++
++	do
++		ret = __copy_from_user_inatomic(dst++, src++, 1);
++	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
++
++	dst[-1] = '\0';
++	pagefault_enable();
++	set_fs(old_fs);
++
++	if (ret < 0) {	/* Failed to fetch string */
++		((u8 *)get_rloc_data(dest))[0] = '\0';
++		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
++	} else {
++		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
++					      get_rloc_offs(*(u32 *)dest));
++	}
 +}
 +
- static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
- 					    fetch_func_t orig_fn,
- 					    const struct fetch_type *ftbl)
-@@ -304,7 +310,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
- #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
- 
- static int parse_probe_vars(char *arg, const struct fetch_type *t,
--			    struct fetch_param *f, bool is_return)
-+			    struct fetch_param *f, bool is_return,
-+			    bool is_kprobe)
- {
- 	int ret = 0;
- 	unsigned long param;
-@@ -316,13 +323,16 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- 			ret = -EINVAL;
- 	} else if (strncmp(arg, "stack", 5) == 0) {
- 		if (arg[5] == '\0') {
--			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
--				f->fn = fetch_stack_address;
-+			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
-+				return -EINVAL;
++/* Return the length of string -- including null terminal byte */
++static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
++							void *addr, void *dest)
++{
++	mm_segment_t old_fs;
++	int ret, len = 0;
++	u8 c;
 +
-+			if (is_kprobe)
-+				f->fn = fetch_kernel_stack_address;
- 			else
--				ret = -EINVAL;
-+				f->fn = fetch_user_stack_address;
- 		} else if (isdigit(arg[5])) {
- 			ret = kstrtoul(arg + 5, 10, &param);
--			if (ret || param > PARAM_MAX_STACK)
-+			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
- 				ret = -EINVAL;
- 			else {
- 				f->fn = t->fetch[FETCH_MTD_stack];
-@@ -349,13 +359,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 	ftbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
- 	BUG_ON(ftbl == NULL);
++	old_fs = get_fs();
++	set_fs(KERNEL_DS);
++	pagefault_disable();
++
++	do {
++		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
++		len++;
++	} while (c && ret == 0 && len < MAX_STRING_SIZE);
++
++	pagefault_enable();
++	set_fs(old_fs);
++
++	if (ret < 0)	/* Failed to check the length */
++		*(u32 *)dest = 0;
++	else
++		*(u32 *)dest = len;
++}
++
+ #define DEFINE_FETCH_symbol(type)					\
+ __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
+ 					  void *data, void *dest)	\
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index b4f28bc39959..d0b4a42dafcf 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -103,83 +103,6 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
+ #define fetch_retval_string		NULL
+ #define fetch_retval_string_size	NULL
  
--	/* Until uprobe_events supports only reg arguments */
--	if (!is_kprobe && arg[0] != '%')
--		return -EINVAL;
+-#define DEFINE_FETCH_memory(type)					\
+-__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
+-					  void *addr, void *dest)	\
+-{									\
+-	type retval;							\
+-	if (probe_kernel_address(addr, retval))				\
+-		*(type *)dest = 0;					\
+-	else								\
+-		*(type *)dest = retval;					\
+-}
+-DEFINE_BASIC_FETCH_FUNCS(memory)
+-/*
+- * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
+- * length and relative data location.
+- */
+-__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+-						      void *addr, void *dest)
+-{
+-	long ret;
+-	int maxlen = get_rloc_len(*(u32 *)dest);
+-	u8 *dst = get_rloc_data(dest);
+-	u8 *src = addr;
+-	mm_segment_t old_fs = get_fs();
 -
- 	switch (arg[0]) {
- 	case '$':
--		ret = parse_probe_vars(arg + 1, t, f, is_return);
-+		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
- 		break;
- 
- 	case '%':	/* named register */
-@@ -376,6 +382,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 			f->fn = t->fetch[FETCH_MTD_memory];
- 			f->data = (void *)param;
- 		} else {
-+			/* uprobes don't support symbols */
-+			if (!is_kprobe)
-+				return -EINVAL;
-+
- 			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
+-	if (!maxlen)
+-		return;
+-
+-	/*
+-	 * Try to get string again, since the string can be changed while
+-	 * probing.
+-	 */
+-	set_fs(KERNEL_DS);
+-	pagefault_disable();
+-
+-	do
+-		ret = __copy_from_user_inatomic(dst++, src++, 1);
+-	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
+-
+-	dst[-1] = '\0';
+-	pagefault_enable();
+-	set_fs(old_fs);
+-
+-	if (ret < 0) {	/* Failed to fetch string */
+-		((u8 *)get_rloc_data(dest))[0] = '\0';
+-		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
+-	} else {
+-		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
+-					      get_rloc_offs(*(u32 *)dest));
+-	}
+-}
+-
+-/* Return the length of string -- including null terminal byte */
+-__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+-							void *addr, void *dest)
+-{
+-	mm_segment_t old_fs;
+-	int ret, len = 0;
+-	u8 c;
+-
+-	old_fs = get_fs();
+-	set_fs(KERNEL_DS);
+-	pagefault_disable();
+-
+-	do {
+-		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
+-		len++;
+-	} while (c && ret == 0 && len < MAX_STRING_SIZE);
+-
+-	pagefault_enable();
+-	set_fs(old_fs);
+-
+-	if (ret < 0)	/* Failed to check the length */
+-		*(u32 *)dest = 0;
+-	else
+-		*(u32 *)dest = len;
+-}
+-
+ /* Dereference memory access function */
+ struct deref_fetch_param {
+ 	struct fetch_param	orig;
+@@ -493,7 +416,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 			dprm->offset = offset;
+ 			dprm->fetch = t->fetch[FETCH_MTD_memory];
+ 			dprm->fetch_size = get_fetch_size_function(t,
+-							dprm->fetch, ttbl);
++							dprm->fetch, ftbl);
+ 			ret = parse_probe_arg(arg, t2, &dprm->orig, is_return,
+ 							is_kprobe);
  			if (ret)
- 				break;
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index d327a1c21f4b..385206bbbf8b 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -171,10 +171,6 @@ DECLARE_BASIC_FETCH_FUNCS(retval);
+ #define fetch_retval_string			NULL
+ #define fetch_retval_string_size		NULL
+ 
+-DECLARE_BASIC_FETCH_FUNCS(memory);
+-DECLARE_FETCH_FUNC(memory, string);
+-DECLARE_FETCH_FUNC(memory, string_size);
+-
+ DECLARE_BASIC_FETCH_FUNCS(symbol);
+ DECLARE_FETCH_FUNC(symbol, string);
+ DECLARE_FETCH_FUNC(symbol, string_size);
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 7793360199f1..89dd346865ad 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -114,6 +114,58 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+ #define fetch_stack_string	NULL
+ #define fetch_stack_string_size	NULL
+ 
++#define DEFINE_FETCH_memory(type)					\
++static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
++						void *addr, void *dest) \
++{									\
++	type retval;							\
++	void __user *vaddr = (void __force __user *) addr;		\
++									\
++	if (copy_from_user(&retval, vaddr, sizeof(type)))		\
++		*(type *)dest = 0;					\
++	else								\
++		*(type *) dest = retval;				\
++}
++DEFINE_BASIC_FETCH_FUNCS(memory)
++/*
++ * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
++ * length and relative data location.
++ */
++static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
++						      void *addr, void *dest)
++{
++	long ret;
++	u32 rloc = *(u32 *)dest;
++	int maxlen  = get_rloc_len(rloc);
++	u8 *dst = get_rloc_data(dest);
++	void __user *src = (void __force __user *) addr;
++
++	if (!maxlen)
++		return;
++
++	ret = strncpy_from_user(dst, src, maxlen);
++
++	if (ret < 0) {	/* Failed to fetch string */
++		((u8 *)get_rloc_data(dest))[0] = '\0';
++		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(rloc));
++	} else {
++		*(u32 *)dest = make_data_rloc(ret, get_rloc_offs(rloc));
++	}
++}
++
++static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
++						      void *addr, void *dest)
++{
++	int len;
++	void __user *vaddr = (void __force __user *) addr;
++
++	len = strnlen_user(vaddr, MAX_STRING_SIZE);
++
++	if (len == 0 || len > MAX_STRING_SIZE)  /* Failed to check length */
++		*(u32 *)dest = 0;
++	else
++		*(u32 *)dest = len;
++}
+ 
+ /* uprobes don't support symbol fetch methods */
+ #define fetch_symbol_u8			NULL
 -- 
 1.7.11.7
 
