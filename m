@@ -1,127 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760909Ab3LIJcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:32:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:61071 "EHLO mga02.intel.com"
+	id S1760943Ab3LIJeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:34:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44509 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab3LIJci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:32:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,856,1378882800"; 
-   d="scan'208";a="421561449"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Alex Courbot <acourbot@nvidia.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Sathyanarayanan Kuppuswamy <sathyanarayanan.kuppuswamy@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] SFI: remove wrong FSF address from the license
-Date: Mon,  9 Dec 2013 11:32:07 +0200
-Message-Id: <1386581527-28907-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.4
+	id S1752124Ab3LIJeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 04:34:06 -0500
+Message-ID: <52A58E8A.3050401@suse.cz>
+Date: Mon, 09 Dec 2013 10:34:02 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
+        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: kernel BUG in munlock_vma_pages_range
+References: <52A3D0C3.1080504@oracle.com>
+In-Reply-To: <52A3D0C3.1080504@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove old and currently wrong address of the FSF from license parts of the
-code.
+On 12/08/2013 02:52 AM, Sasha Levin wrote:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+> I've stumbled on the following spew.
+>
+> The code seems to be in munlock_vma_pages_range():
+>
+>           page = follow_page_mask(vma, start, FOLL_GET | FOLL_DUMP,
+>                           &page_mask);
+>
+>           if (page && !IS_ERR(page)) {
+>                   if (PageTransHuge(page)) {		<<==== HERE
+>                           lock_page(page);
+>
+>
+> This is new code added in "mm: munlock: batch non-THP page isolation and munlock+putback
+> using pagevec". I've Cc'ed involved parties.
 
-There is no functional change.
+Hello, I will look at it, thanks.
+Do you have specific reproduction instructions?
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/sfi/sfi_acpi.c   | 6 ------
- drivers/sfi/sfi_core.c   | 6 ------
- drivers/sfi/sfi_core.h   | 6 ------
- include/linux/sfi.h      | 6 ------
- include/linux/sfi_acpi.h | 6 ------
- 5 files changed, 30 deletions(-)
+Vlastimil
 
-diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
-index d4dfcbe..0c5a29a 100644
---- a/drivers/sfi/sfi_acpi.c
-+++ b/drivers/sfi/sfi_acpi.c
-@@ -18,12 +18,6 @@
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
- 
--  You should have received a copy of the GNU General Public License
--  along with this program; if not, write to the Free Software
--  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
--  The full GNU General Public License is included in this distribution
--  in the file called LICENSE.GPL.
--
-   BSD LICENSE
- 
-   Copyright(c) 2009 Intel Corporation. All rights reserved.
-diff --git a/drivers/sfi/sfi_core.c b/drivers/sfi/sfi_core.c
-index e9ff6f0..bd01928 100644
---- a/drivers/sfi/sfi_core.c
-+++ b/drivers/sfi/sfi_core.c
-@@ -18,12 +18,6 @@
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
- 
--  You should have received a copy of the GNU General Public License
--  along with this program; if not, write to the Free Software
--  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
--  The full GNU General Public License is included in this distribution
--  in the file called LICENSE.GPL.
--
-   BSD LICENSE
- 
-   Copyright(c) 2009 Intel Corporation. All rights reserved.
-diff --git a/drivers/sfi/sfi_core.h b/drivers/sfi/sfi_core.h
-index 18c663d..15f85bc 100644
---- a/drivers/sfi/sfi_core.h
-+++ b/drivers/sfi/sfi_core.h
-@@ -18,12 +18,6 @@
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
- 
--  You should have received a copy of the GNU General Public License
--  along with this program; if not, write to the Free Software
--  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
--  The full GNU General Public License is included in this distribution
--  in the file called LICENSE.GPL.
--
-   BSD LICENSE
- 
-   Copyright(c) 2009 Intel Corporation. All rights reserved.
-diff --git a/include/linux/sfi.h b/include/linux/sfi.h
-index 510e74d..2a5cfa7 100644
---- a/include/linux/sfi.h
-+++ b/include/linux/sfi.h
-@@ -18,12 +18,6 @@
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
- 
--  You should have received a copy of the GNU General Public License
--  along with this program; if not, write to the Free Software
--  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
--  The full GNU General Public License is included in this distribution
--  in the file called LICENSE.GPL.
--
-   BSD LICENSE
- 
-   Copyright(c) 2009 Intel Corporation. All rights reserved.
-diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
-index ecc2344..1cc1b5e 100644
---- a/include/linux/sfi_acpi.h
-+++ b/include/linux/sfi_acpi.h
-@@ -18,12 +18,6 @@
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
- 
--  You should have received a copy of the GNU General Public License
--  along with this program; if not, write to the Free Software
--  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
--  The full GNU General Public License is included in this distribution
--  in the file called LICENSE.GPL.
--
-   BSD LICENSE
- 
-   Copyright(c) 2009 Intel Corporation. All rights reserved.
--- 
-1.8.4.4
+> [  356.390309] kernel BUG at include/linux/page-flags.h:415!
+> [  356.390309] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  356.395160] Dumping ftrace buffer:
+> [  356.395160]    (ftrace buffer empty)
+> [  356.395160] Modules linked in:
+> [  356.395160] CPU: 36 PID: 10919 Comm: trinity-child74 Not tainted
+> 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4045
+> [  356.395160] task: ffff880f731e0000 ti: ffff880f731e8000 task.ti: ffff880f731e8000
+> [  356.395160] RIP: 0010:[<ffffffff812636c9>]  [<ffffffff812636c9>] munlock_vma_pages_range+0x89/0x1b0
+> [  356.395160] RSP: 0018:ffff880f731e9b58  EFLAGS: 00010286
+> [  356.395160] RAX: 002fffff80008000 RBX: 00007f91cd801000 RCX: 0000000000000000
+> [  356.395160] RDX: ffffea003ded0040 RSI: 00000000000013f1 RDI: 00000000ffffffff
+> [  356.395160] RBP: ffff880f731e9c18 R08: 00000000e26e4584 R09: 0000000000000001
+> [  356.395160] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea003ded0040
+> [  356.395160] R13: ffff880f733a8400 R14: 00007f91cdeea000 R15: ffff880f731e9be4
+> [  356.395160] FS:  0000000000000000(0000) GS:ffff880fdba00000(0000) knlGS:0000000000000000
+> [  356.395160] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  356.395160] CR2: 0000000000000000 CR3: 0000000f7314a000 CR4: 00000000000006e0
+> [  356.395160] Stack:
+> [  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+> [  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+> [  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+> [  356.395160] Call Trace:
+> [  356.395160]  [<ffffffff81264c89>] exit_mmap+0x59/0x170
+> [  356.395160]  [<ffffffff8129a4a0>] ? __khugepaged_exit+0xe0/0x150
+> [  356.395160]  [<ffffffff81292d2b>] ? kmem_cache_free+0x24b/0x310
+> [  356.395160]  [<ffffffff8129a4a0>] ? __khugepaged_exit+0xe0/0x150
+> [  356.395160]  [<ffffffff81127eec>] mmput+0x7c/0xf0
+> [  356.395160]  [<ffffffff8112c18d>] exit_mm+0x18d/0x1a0
+> [  356.395160]  [<ffffffff811c8d85>] ? acct_collect+0x175/0x1b0
+> [  356.395160]  [<ffffffff8112ceef>] do_exit+0x26f/0x4e0
+> [  356.395160]  [<ffffffff8112d209>] do_group_exit+0xa9/0xe0
+> [  356.395160]  [<ffffffff81311ff0>] get_signal_to_deliver+0x460/0x4b0
+> [  356.395160]  [<ffffffff81067c3b>] do_signal+0x4b/0x120
+> [  356.395160]  [<ffffffff842a4405>] ? _raw_spin_unlock+0x35/0x60
+> [  356.395160]  [<ffffffff81168d36>] ? vtime_account_user+0x96/0xb0
+> [  356.395160]  [<ffffffff8122ccbf>] ? context_tracking_user_exit+0xaf/0x160
+> [  356.395160]  [<ffffffff81067f9a>] do_notify_resume+0x5a/0xe0
+> [  356.395160]  [<ffffffff842ad0f0>] int_signal+0x12/0x17
+> [  356.395160] Code: 48 89 de 4c 89 ef e8 17 7f ff ff 49 89 c4 48 85 c0 0f 84 eb 00 00 00 48 3d 00
+> f0 ff ff 0f 87 df 00 00 00 48 8b 00 66 85 c0 79 0f <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 49
+> 8b 04 24 f6 c4
+> [  356.395160] RIP  [<ffffffff812636c9>] munlock_vma_pages_range+0x89/0x1b0
+> [  356.395160]  RSP <ffff880f731e9b58>
+>
 
