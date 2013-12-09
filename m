@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab3LIQfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:35:34 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:15680 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932989Ab3LIQf3 (ORCPT
+	id S934122Ab3LIQgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:36:33 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:30933 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932933Ab3LIQg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:35:29 -0500
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5k/CuK2S920=
-X-RZG-CLASS-ID: mo00
-Message-ID: <52A5F14B.6080301@hartkopp.net>
-Date: Mon, 09 Dec 2013 17:35:23 +0100
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Sebastian Haas <dev@sebastianhaas.info>,
-        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] can: ems_usb: fix urb leaks on failure paths
-References: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru> <52A309BE.7000602@hartkopp.net> <52A59E7A.5060605@pengutronix.de>
-In-Reply-To: <52A59E7A.5060605@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Dec 2013 11:36:29 -0500
+Message-ID: <1386606983.2723.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Date: Mon, 09 Dec 2013 08:36:23 -0800
+In-Reply-To: <20130930074744.GA15351@lge.com>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
+	 <20130905011553.GA10158@voom.redhat.com> <20130905054357.GA23597@lge.com>
+	 <20130916120909.GA2706@voom.fritz.box> <20130930074744.GA15351@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 09.12.2013 11:42, Marc Kleine-Budde wrote:
-> On 12/07/2013 12:42 PM, Oliver Hartkopp wrote:
->> Hello Alexey,
->>
->> looks better :-)
+On Mon, 2013-09-30 at 16:47 +0900, Joonsoo Kim wrote:
+> On Mon, Sep 16, 2013 at 10:09:09PM +1000, David Gibson wrote:
+> > > > 
+> > > > > +		*do_dequeue = false;
+> > > > >  		spin_unlock(&hugetlb_lock);
+> > > > >  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> > > > >  		if (!page) {
+> > > > 
+> > > > I think the counter also needs to be incremented in the case where we
+> > > > call alloc_buddy_huge_page() from alloc_huge_page().  Even though it's
+> > > > new, it gets added to the hugepage pool at this point and could still
+> > > > be a contended page for the last allocation, unless I'm missing
+> > > > something.
+> > > 
+> > > Your comment has reasonable point to me, but I have a different opinion.
+> > > 
+> > > As I already mentioned, the point is that we want to avoid the race
+> > > which kill the legitimate users of hugepages by out of resources.
+> > > I increase 'h->nr_dequeue_users' when the hugepage allocated by
+> > > administrator is dequeued. It is because what the hugepage I want to
+> > > protect from the race is the one allocated by administrator via
+> > > kernel param or /proc interface. Administrator may already know how many
+> > > hugepages are needed for their application so that he may set nr_hugepage
+> > > to reasonable value. I want to guarantee that these hugepages can be used
+> > > for his application without any race, since he assume that the application
+> > > would work fine with these hugepages.
+> > > 
+> > > To protect hugepages returned from alloc_buddy_huge_page() from the race
+> > > is different for me. Although it will be added to the hugepage pool, this
+> > > doesn't guarantee certain application's success more. If certain
+> > > application's success depends on the race of this new hugepage, it's death
+> > > by the race doesn't matter, since nobody assume that it works fine.
+> > 
+> > Hrm.  I still think this path should be included.  Although I'll agree
+> > that failing in this case is less bad.
+> > 
+> > However, it can still lead to a situation where with two processes or
+> > threads, faulting on exactly the same shared page we have one succeed
+> > and the other fail.  That's a strange behaviour and I think we want to
+> > avoid it in this case too.
 > 
-> Is this an Acked-by?
+> Hello, David.
 > 
+> I don't think it is a strange behaviour. Similar situation can occur
+> even though we use the mutex. Hugepage allocation can be failed when
+> the first process try to allocate the hugepage while second process is blocked
+> by the mutex. And then, second process will go into the fault handler. And
+> at this time, it can succeed. So result is that we have one succeed and
+> the other fail.
+> 
+> It is slightly different from the case you mentioned, but I think that
+> effect for user is same. We cannot avoid this kind of race completely and
+> I think that avoiding the race for administrator managed hugepage pool is
+> good enough to use.
 
-No it was not. I'm not a USB specialist ;-)
+What was the final decision on this issue? Is Joonsoo's approach to
+removing this mutex viable, or are we stuck with it?
 
-That's why I asked Sebastian for his Acked-by, which he did here:
+Thanks,
+Davidlohr
 
-http://marc.info/?l=linux-can&m=138652222410554&w=2
-
-Regards,
-Oliver
