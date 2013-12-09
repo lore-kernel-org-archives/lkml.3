@@ -1,111 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3LIXFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:05:38 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45669 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752856Ab3LIXFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:05:34 -0500
-Date: Mon, 9 Dec 2013 18:05:27 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131209230527.GL21724@cmpxchg.org>
-References: <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
- <20131127163435.GA3556@cmpxchg.org>
- <20131202200221.GC5524@dhcp22.suse.cz>
- <20131202212500.GN22729@cmpxchg.org>
- <20131203120454.GA12758@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
- <20131204111318.GE8410@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
- <20131209124840.GC3597@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+	id S1756123Ab3LIXGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:06:50 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:49251 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab3LIXGq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 18:06:46 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Karl Dahlke <eklhad@comcast.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>, <stable@vger.kernel.org>
+Subject: Re: Bug in tty cooked mode kernel 3.12.3
+Date: Mon,  9 Dec 2013 18:06:07 -0500
+Message-Id: <1386630367-4658-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20131107184607.eklhad@comcast.net>
+References: <20131107184607.eklhad@comcast.net>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 01:46:16PM -0800, David Rientjes wrote:
-> On Mon, 9 Dec 2013, Michal Hocko wrote:
+On 12/07/2013 06:46 PM, Karl Dahlke wrote:
+> This may have appeared in 3.9.11 with the changes to tty.
+> Don't know; I just started running 3.12 from kernel.org.
+> Perhaps nobody saw it before because nobody runs command line programs,
+> we're all on desktops or x or whatever,
+> and even those in the command line are still raw.
+> bash is raw by default, but I run it cooked.
+> You can supress its readline functions like this.
 > 
-> > > Google depends on getting memory.oom_control notifications only when they 
-> > > are actionable, which is exactly how Documentation/cgroups/memory.txt 
-> > > describes how userspace should respond to such a notification.
-> > > 
-> > > "Actionable" here means that the kernel has exhausted its capabilities of 
-> > > allowing for future memory freeing, which is the entire premise of any oom 
-> > > killer.
-> > > 
-> > > Giving a dying process or a process that is going to subsequently die 
-> > > access to memory reserves is a capability the kernel users to ensure 
-> > > progress is made in oom conditions.  It is not an exhaustion of 
-> > > capabilities.
-> > > 
-> > > Yes, we all know that subsequent to the userspace notification that memory 
-> > > may be freed and the kill no longer becomes required.  There is nothing 
-> > > that can be done about that, and it has never been implied that a memcg is 
-> > > guaranteed to still be oom when the process wakes up.
-> > > 
-> > > I'm referring to a siutation that can manifest in a number of ways: 
-> > > coincidental process exit, coincidental process being killed, 
-> > > VMPRESSURE_CRITICAL notification that results in a process being killed, 
-> > > or memory threshold notification that results in a process being killed.  
-> > > Regardless, we're talking about a situation where something is already 
-> > > in the exit path or has been killed and is simply attempting to free its 
-> > > memory.
-> > 
-> > You have already mentioned that. Several times in fact. And I do
-> > understand what you are saying. You are just not backing your claims
-> > with anything that would convince us that what you are trying to solve
-> > is an issue in the real life. So show us it is real, please.
-> > 
+> set +o emacs
+> set +o vi
+> set +o histexpand
+> set +o history
 > 
-> What exactly would you like to see?  It's obvious that the kernel has not 
-> exhausted its capabilities of allowing for future memory freeing if the 
-> notification happens before the check for current->flags & PF_EXITING or 
-> fatal_signal_pending(current).  Does that conditional get triggered?  ALL 
-> THE TIME.
+> That puts its tty back into cooked mode.
+> 
+> Come up in run level 3, command line mode,
+> and bring up two consoles with bash in cooked mode as above.
+> Set a simple prompt like this.
+> 
+> PS1='$ '
+> 
+> Switch to console 2 via alt-f2.
+> Hit return.
+> The cursor should drop to a new line then give you the $ prompt.
+> But it puts the $ prompt next too the old one, then drops down
+> to a blank line.
+> The $ prompt and the crlf are out of sequence.
+> Hit return a few more times and it will straighten itself out.
+> Then switch back to console 1 alt-f1
+> Hit return and the same bug,
+> $ $
+> 
+> hit return a few more times to straighten it out.
+> Switch back to console 2 and the same problem.
+> For me it's repeatable.
+> 
+> It's also very confusing when I'm running other command line programs with cooked tty.
+> For unknown reasons the crlf can come out at the wrong time,
+> breaking lines or leaving lines together.
+> My editor can run either way, so I've switched it over to readline mode
+> and I haven't noticed any problems this way, yet.
+> But I would prefer the cooked mode.
+> 
+> I looked through MAINTAINERS but couldn't find
+> a clear maintainer for drivers/tty/tty*.c
+> Please forward this to the appropriate people.
 
-We check for fatal signals during the repeated charge attempts and
-reclaim.  Should we be checking for PF_EXITING too?
+Thanks for the report, Karl.
 
-> We know it happens because I had to introduce it into both the 
-> system oom killer and the memcg oom killer to fix mm->mmap_sem issues for 
-> threads that were killed as part of the oom killer SIGKILL but weren't the 
-> thread lucky enough to get TIF_MEMDIE set and they were in the allocation 
-> path.
->
-> Are you asking me to patch our kernel, get it rolled out, and plot a graph 
-> to show how often it gets triggered over time in our datacenters and that 
-> it causes us to get unnecessary oom kill notifications?
+Please test the patch below (requires
+commit 39434abd942c8e4b9c14c06a03b3245beaf8467f,
+'n_tty: Fix missing newline echo').
+This should fix the 'newline output after the new prompt' problem.
 
-I asked this because you were talking about all this nonsense of
-last-second checks and the probability of unnecessary kills.
+Note however that the other output order you observe is correct:
+you press enter, a newline is echoed to terminal which mixes
+with program output, the program ends, and the cooked mode
+shell outputs an extra prompt because it reads a newline (which
+the program did not read).
 
-You kept insisting that this check has to be the last action before
-the OOM kill, which was an entirely different motivation for this
-change and I questioned the validity of this claim repeatedly during
-this thread, to which you never answered.
+Regards,
+Peter Hurley
 
-You even re-inforced this motivation by suggesting the separate memcg
-margin check right before the OOM kill, so don't blame us for
-misunderstanding the exact placement of this check as your main
-argument when you repeated it over and over.
+--- >% ---
+From: Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] n_tty: Fix apparent order of echoed output
 
-All I object to is that the OOM killer is riddled with last-second
-checks of whether the OOM situation is still existant.  We establish
-that the context is OOM and once we are certain we are executing,
-period.
+With block processing of echoed output, observed output order is still
+required. Push completed echoes and echo commands prior to output.
 
-Not catching PF_EXITING in the long window between the first reclaim
-and going OOM is a separate issue and I can see that this should be
-fixed but it should be checked before we start invoking OOM.
+Introduce echo_mark echo buffer index, which tracks completed echo
+commands; ie., those submitted via commit_echoes but which may not
+have been committed. Ensure that completed echoes are output prior
+to subsequent terminal writes in process_echoes().
+
+Fixes newline/prompt output order in cooked mode shell.
+
+Cc: <stable@vger.kernel.org> # 3.12.x : 39434ab n_tty: Fix missing newline echo
+Reported-by: Karl Dahlke <eklhad@comcast.net>
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index ab24fe1..e9304b6 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -94,6 +94,7 @@ struct n_tty_data {
+ 	size_t canon_head;
+ 	size_t echo_head;
+ 	size_t echo_commit;
++	size_t echo_mark;
+ 	DECLARE_BITMAP(char_map, 256);
+ 
+ 	/* private to n_tty_receive_overrun (single-threaded) */
+@@ -339,6 +340,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
+ {
+ 	ldata->read_head = ldata->canon_head = ldata->read_tail = 0;
+ 	ldata->echo_head = ldata->echo_tail = ldata->echo_commit = 0;
++	ldata->echo_mark = 0;
+ 	ldata->line_start = 0;
+ 
+ 	ldata->erasing = 0;
+@@ -791,6 +793,7 @@ static void commit_echoes(struct tty_struct *tty)
+ 	size_t head;
+ 
+ 	head = ldata->echo_head;
++	ldata->echo_mark = head;
+ 	old = ldata->echo_commit - ldata->echo_tail;
+ 
+ 	/* Process committed echoes if the accumulated # of bytes
+@@ -815,10 +818,11 @@ static void process_echoes(struct tty_struct *tty)
+ 	size_t echoed;
+ 
+ 	if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
+-	    ldata->echo_commit == ldata->echo_tail)
++	    ldata->echo_mark == ldata->echo_tail)
+ 		return;
+ 
+ 	mutex_lock(&ldata->output_lock);
++	ldata->echo_commit = ldata->echo_mark;
+ 	echoed = __process_echoes(tty);
+ 	mutex_unlock(&ldata->output_lock);
+ 
+@@ -826,6 +830,7 @@ static void process_echoes(struct tty_struct *tty)
+ 		tty->ops->flush_chars(tty);
+ }
+ 
++/* NB: echo_mark and echo_head should be equivalent here */
+ static void flush_echoes(struct tty_struct *tty)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+-- 
+1.8.1.2
+
