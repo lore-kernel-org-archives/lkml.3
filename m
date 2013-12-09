@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933789Ab3LINpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:45:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933693Ab3LINpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:45:01 -0500
-Date: Mon, 9 Dec 2013 14:44:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/4] perf tools: Pedantic fixes for mmap_pages
-Message-ID: <20131209134444.GB30360@krava.brq.redhat.com>
-References: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
+	id S933691Ab3LINtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:49:42 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:41274 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440Ab3LINth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 08:49:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131209111900.GC6562@kroah.com>
+References: <1386583012-506-1-git-send-email-ethan.kernel@gmail.com>
+	<20131209111900.GC6562@kroah.com>
+Date: Mon, 9 Dec 2013 21:49:36 +0800
+Message-ID: <CABawtvNZn8VPjP-Bs3Zw9HJw134iZRx8dWbGgPbWFA4CyJjsZA@mail.gmail.com>
+Subject: Re: [PATCH v3] xen/debugfs: Check debugfs initialization before using it
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 03:18:36PM +0200, Adrian Hunter wrote:
-> Hi
-> 
-> Here are some pedantic fixes for mmap_pages.
-> 
-> 
-> Adrian Hunter (4):
->       perf tools: Remove unnecessary parentheses
->       perf tools: Fix max mmap_pages
->       perf tools: Fix mmap pages rounding to power of 2
->       perf tools: Fix display of incorrect mmap pages
-> 
->  tools/perf/builtin-record.c |  2 +-
->  tools/perf/util/evlist.c    | 10 ++++++----
->  tools/perf/util/util.h      | 12 ++++++++++++
->  3 files changed, 19 insertions(+), 5 deletions(-)
+On Mon, Dec 9, 2013 at 7:19 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Dec 09, 2013 at 05:56:52PM +0800, Ethan Zhao wrote:
+>> From: "ethan.zhao" <ethan.kernel@gmail.com>
+>>
+>> Should check debugfs initialization with debugfs_initialized() before using it,
+>> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
+>> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
+>>
+>> V3: add warning message when debugfs not configured or disabled.
+>
+> That's not what this patch does...
+>
+>> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+>> ---
+>>  arch/x86/xen/debugfs.c | 6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
+>> index c8377fb..85c0e0e 100644
+>> --- a/arch/x86/xen/debugfs.c
+>> +++ b/arch/x86/xen/debugfs.c
+>> @@ -9,12 +9,18 @@ static struct dentry *d_xen_debug;
+>>
+>>  struct dentry * __init xen_init_debugfs(void)
+>>  {
+>> +     if (!debugfs_initialized()) {
+>> +             d_xen_debug = NULL;
+>> +             goto nodebugfs;
+>> +     }
+>
+> Again, why is this even needed?
+>
+> What problem in the existing code are you trying to solve?
+>
+What I want to ask who is so smart and fake some many functions when
+CONFIG_DEBUG_FS is not configured/defined and the build could pass
+without any error ? What is the motive make him wrote some many fake
+function and why he wrote the debugfs_initialized() function seem
+'useless' at all ?
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-
-thanks,
-jirka
+Thanks,
+Ethan
