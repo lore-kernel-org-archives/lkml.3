@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760361Ab3LIDXj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 22:23:39 -0500
-Received: from mail.unimetro.ed.ao ([41.221.245.42]:35430 "EHLO
-	mail.unimetro.ed.ao" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760259Ab3LIDXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 22:23:32 -0500
-Message-ID: <cfde000bd55c7af83993da2bf1f9f99d.squirrel@41.221.245.42>
-Date: Sun, 8 Dec 2013 08:39:08 -0200
-Subject: Profitable & Important
-From: "Partnership Request" <l0920903901@gmail.com>
-Reply-To: shu60w@qq.com
-User-Agent: SquirrelMail/1.4.22
+	id S1760455Ab3LIDbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 22:31:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760379Ab3LIDbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 22:31:21 -0500
+Message-ID: <52A5396E.8050806@redhat.com>
+Date: Mon, 09 Dec 2013 11:30:54 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+To: Vlad Yasevich <vyasevich@gmail.com>, Zhi Yong Wu <zwu.kernel@gmail.com>,
+        davem@davemloft.net
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] macvtap: remove useless codes in macvtap_aio_read()
+ and macvtap_recvmsg()
+References: <1386363300-19040-1-git-send-email-zwu.kernel@gmail.com> <52A28A33.4080306@gmail.com>
+In-Reply-To: <52A28A33.4080306@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/07/2013 10:38 AM, Vlad Yasevich wrote:
+> On 12/06/2013 03:54 PM, Zhi Yong Wu wrote:
+>> > From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> > 
+>> > By checking related codes, it is impossible that ret > len or total_len,
+>> > so we should remove some useless coeds in both above functions.
+> Looks like commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
+> Author: Jason Wang <jasowang@redhat.com>
+> Date:   Thu Jul 25 13:00:33 2013 +0800
+>
+>     tuntap: hardware vlan tx support
+>
+> Introduced a change in tun_put_user() where we can
+> never return a length longer then len or total_len.
+> This has an effect that is now impossible to signal
+> truncated status.  It seems like a potential loss
+> of functionality and it might make sense to restore it.
+>
+> -vlad
 
-Good day,
+True, will send a patch. For macvtap, we'd better also correct current
+behaviour to be same with tun.
 
-I have a business proposal which will be of
-great benefit to you. Contact me for details
-through:
-
-Email: shu60w@qq.com
-
-I await your prompt response.
-
-Thanks.
-shu60w@qq.com
-
-
-
+Thanks
