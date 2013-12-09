@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab3LIIyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:54:32 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:40186 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760696Ab3LIIya (ORCPT
+	id S1760915Ab3LIIzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:55:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48343 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760718Ab3LIIzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:54:30 -0500
+	Mon, 9 Dec 2013 03:55:43 -0500
+Date: Mon, 9 Dec 2013 00:55:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ethan Zhao <ethan.kernel@gmail.com>
+Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
+Message-ID: <20131209085526.GB4125@kroah.com>
+References: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
+ <20131208140100.GA22793@kroah.com>
+ <CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
+ <20131209082527.GA26950@kroah.com>
+ <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [218.164.103.71]
-In-Reply-To: <20131209064654.GA20485@kroah.com>
-References: <1384589723.7840.1.camel@phoenix>
-	<1386125959.1974.309@driftwood>
-	<CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
-	<20131209064654.GA20485@kroah.com>
-Date: Mon, 9 Dec 2013 16:54:29 +0800
-Message-ID: <CAFRkauCQdOyWbck+WtmNxtnenKyPAFNcqqUgcGSb1kAqj56sYA@mail.gmail.com>
-Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
-From: Axel Lin <axel.lin@ingics.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
->> 2013/12/4 Rob Landley <rob@landley.net>:
->> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
->> >>
->> >> The deleted variable is always 1 in current code.
->> >> Initialize deleted variable to be 0, so delete_path() will be called only
->> >> when
->> >> necessary.
->> >>
->> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->> >
->> >
->> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
->> > nobody's objected to this, you might want to forward it to
->> > trivial@kernel.org.
->> >
->> > That said, you could describe what it _does_ a little more?
->>
->> I was expecting Greg to pick up this patch.
->>
->> I thought the description is pretty clear.
->> What the patch does is changing the init value of deleted variable to 0.
->> The intention of this change is to avoid unnecessary delete_path() call.
->
-> I agree the logic is a bit odd here, but are you seeing an "unnecessary"
-> delete_path() call happening?  The code has always been like this from
-> what I can tell...
+On Mon, Dec 09, 2013 at 04:44:05PM +0800, Ethan Zhao wrote:
+> On Mon, Dec 9, 2013 at 4:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Dec 09, 2013 at 09:43:16AM +0800, Ethan Zhao wrote:
+> >> On Sun, Dec 8, 2013 at 10:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Sun, Dec 08, 2013 at 07:31:02PM +0800, ethan.zhao wrote:
+> >> >> Should check debugfs initialization with debugfs_initialized() before using it,
+> >> >> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
+> >> >> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
+> >> >
+> >> > So?  It should "just work" without this check, right?  What happens if
+> >> > your patch isn't applied and debugfs isn't enabled?
+> >>
+> >> If debugfs isn't  configured, debugfs_initialized() and other
+> >> functions are defined as following,
+> >>
+> >> static inline bool debugfs_initialized(void)
+> >> {
+> >> return false;
+> >> }
+> >>
+> >> static inline struct dentry *debugfs_create_file(const char *name, umode_t mode,
+> >> struct dentry *parent, void *data,
+> >> const struct file_operations *fops)
+> >> {
+> >> return ERR_PTR(-ENODEV);
+> >> }
+> >>
+> >> static inline struct dentry *debugfs_create_dir(const char *name,
+> >> struct dentry *parent)
+> >> {
+> >> return ERR_PTR(-ENODEV);
+> >> }
+> >>
+> >> And the checking code in xen\debugfs.c xen_init_debugfs() will not
+> >> work, the return value is not NULL.
+> >> d_xen_debug = debugfs_create_dir("xen", NULL);
+> >>
+> >> if (!d_xen_debug)
+> >> pr_warning("Could not create 'xen' debugfs directory\n");
+> >
+> > Which is just fine, what is wrong with this?
+> 
+> If we no check with debugfs_initialized(),  the above code should be
+> if  (!d_xen_debug || IS_ERR (d_xen_debug))
+>     pr_warning("Could not create 'xen' debugfs directory\n");
 
-Honestly, I havn't see the "unnecessary" delete_path() call happening druing my
-test. I look at the code when I was debugging a hangup issue.
-(In the end, I think the issue is not related to the devtmpfs code.)
-But I found the logic for the deleted variable looks odd.
-There are below possible (unlikely) case:
-When strchr(nodename, '/') != 0 and
-1. If dentry->d_inode is NULL
-2. vfs_getattr returns error
-3. vfs_unlink returns error except -ENOENT.
+No, you don't want to print out that message if debugfs is not enabled.
 
-In these cases, delete_path() will fail anyway.
+You really don't want to print anything out, as what can a user do about
+this?
 
-Although this is a unlikely case, and I know the code is there since initial
-commit. But I think it's still good to fix it.
+I still think the original code is correct, have you tried it with
+debugfs disabled?
 
-Regards,
-Axel
+greg k-h
