@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750960Ab3LIXZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:25:35 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:34961 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab3LIXZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:25:34 -0500
-Message-ID: <52A65169.2030705@gmail.com>
-Date: Mon, 09 Dec 2013 16:25:29 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-CC: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/2] perf tools: Add --header/--header-only options
-References: <1386583370-1699-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1386583370-1699-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751105Ab3LIX0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:26:32 -0500
+Received: from gate.crashing.org ([63.228.1.57]:34094 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707Ab3LIX0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 18:26:30 -0500
+Message-ID: <1386631570.32037.40.camel@pasglop>
+Subject: Re: [PATCH] powerpc: Fix "attempt to move .org backwards" error
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Dec 2013 10:26:10 +1100
+In-Reply-To: <20131210101031.82b02468d32ddb89481b24b9@canb.auug.org.au>
+References: <20131209191015.22974.31604.stgit@mars>
+	 <20131210101031.82b02468d32ddb89481b24b9@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added Stephane given that he added the header output]
+On Tue, 2013-12-10 at 10:10 +1100, Stephen Rothwell wrote:
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> Works for me.  Thanks.  I will add this to linux-next today if Ben
+> doesn't add it to his tree.
 
-On 12/9/13, 3:02 AM, Jiri Olsa wrote:
-> Currently the perf.data header is always displayed for stdio
-> output, which is no always useful.
->
-> Disabling header information by default and adding following
-> options to control header output:
->    --header      - display header information (old default)
->    --header-only - display header information only w/o further
->                    processing.
->
-> thanks,
-> jirka
->
->
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->   tools/perf/Documentation/perf-report.txt |  6 ++++++
->   tools/perf/Documentation/perf-script.txt |  6 ++++++
->   tools/perf/builtin-report.c              | 19 ++++++++++++++++---
->   tools/perf/builtin-script.c              | 13 ++++++++++---
->   4 files changed, 38 insertions(+), 6 deletions(-)
->
+I will but probably not soon enough for your cut today
 
-I've been getting annoyed but that as well. Very useful on the first 
-run; overhead after that.
+Cheers,
+Ben.
 
-Acked-by: David Ahern <dsahern@gmail.com>
 
