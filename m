@@ -1,259 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760956Ab3LIKOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:14:01 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:33388 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760448Ab3LIKN6 (ORCPT
+	id S1760996Ab3LIKPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:15:39 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54946 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab3LIKPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:13:58 -0500
-From: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: joe@perches.com, omar.ramirez@copitl.com, pali.rohar@gmail.com,
-        pavel@ucw.cz, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: [PATCH v2] Staging: TIDSPBRIDGE: Remove UUID helper
-Date: Mon,  9 Dec 2013 12:13:16 +0200
-Message-Id: <1386583996-5648-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-X-Mailer: git-send-email 1.8.4.msysgit.0
-In-Reply-To: <20131208071857.GA12104@kroah.com>
-References: <20131208071857.GA12104@kroah.com>
+	Mon, 9 Dec 2013 05:15:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
+References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
+	<1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
+Date: Mon, 9 Dec 2013 11:15:36 +0100
+Message-ID: <CACRpkdbpME+TErz=ZE0Sk9=R5comaU7A7Xo3YxVjqergp=n9MA@mail.gmail.com>
+Subject: Re: [RFC/RFT/PATCH V3] gpio: omap: refresh patch "be more aggressive
+ with pm_runtime" against v3.12-rc5
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chao Xu <caesarxuchao@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>
+Cc: Linux-OMAP <linux-omap@vger.kernel.org>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ivaylo Dimitrov <freemangordon@abv.bg>
+On Sun, Dec 8, 2013 at 5:40 AM, Chao Xu <caesarxuchao@gmail.com> wrote:
 
-Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
-need to be exported. It can also be made way simpler by using sscanf.
+> From: Felipe Balbi <balbi@ti.com>
+>
+> try to keep gpio block suspended as much as possible.
+>
+> Tested with pandaboard and a sysfs exported gpio.
+>
+> Signed-off-by: Felipe Balbi <balbi at ti.com>
+>
+> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added
+> revision check to enable aggressive pm_runtime on OMAP4-only. Because
+> am33xx_gpio_sysc.idlemodes seems to be wrongly marked as
+> SIDLE_SMART_WKUP, which might cause missed interrupts with this patch.
+> Tested on Pandaboard rev A2.]
+> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
 
-Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
----
- drivers/staging/tidspbridge/Makefile               |    2 +-
- drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
- .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |   49 ++++++++++-
- 4 files changed, 46 insertions(+), 108 deletions(-)
- delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
+Kevin/Santosh: you're maintainers for this driver, can you ACK/NACK
+this patch?
 
-diff --git a/drivers/staging/tidspbridge/Makefile b/drivers/staging/tidspbridge/Makefile
-index 230e3e6..2e77734 100644
---- a/drivers/staging/tidspbridge/Makefile
-+++ b/drivers/staging/tidspbridge/Makefile
-@@ -1,6 +1,6 @@
- obj-$(CONFIG_TIDSPBRIDGE)	+= tidspbridge.o
- 
--libgen = gen/gh.o gen/uuidutil.o
-+libgen = gen/gh.o
- libcore = core/chnl_sm.o core/msg_sm.o core/io_sm.o core/tiomap3430.o \
- 		core/tiomap3430_pwr.o core/tiomap_io.o \
- 		core/ue_deh.o core/wdt.o core/dsp-clock.o core/sync.o
-diff --git a/drivers/staging/tidspbridge/gen/uuidutil.c b/drivers/staging/tidspbridge/gen/uuidutil.c
-deleted file mode 100644
-index b7d8313..0000000
---- a/drivers/staging/tidspbridge/gen/uuidutil.c
-+++ /dev/null
-@@ -1,85 +0,0 @@
--/*
-- * uuidutil.c
-- *
-- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-- *
-- * This file contains the implementation of UUID helper functions.
-- *
-- * Copyright (C) 2005-2006 Texas Instruments, Inc.
-- *
-- * This package is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-- */
--#include <linux/types.h>
--
--/*  ----------------------------------- Host OS */
--#include <dspbridge/host_os.h>
--
--/*  ----------------------------------- DSP/BIOS Bridge */
--#include <dspbridge/dbdefs.h>
--
--/*  ----------------------------------- This */
--#include <dspbridge/uuidutil.h>
--
--static s32 uuid_hex_to_bin(char *buf, s32 len)
--{
--	s32 i;
--	s32 result = 0;
--	int value;
--
--	for (i = 0; i < len; i++) {
--		value = hex_to_bin(*buf++);
--		result *= 16;
--		if (value > 0)
--			result += value;
--	}
--
--	return result;
--}
--
--/*
-- *  ======== uuid_uuid_from_string ========
-- *  Purpose:
-- *      Converts a string to a struct dsp_uuid.
-- */
--void uuid_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
--{
--	s32 j;
--
--	uuid_obj->data1 = uuid_hex_to_bin(sz_uuid, 8);
--	sz_uuid += 8;
--
--	/* Step over underscore */
--	sz_uuid++;
--
--	uuid_obj->data2 = (u16) uuid_hex_to_bin(sz_uuid, 4);
--	sz_uuid += 4;
--
--	/* Step over underscore */
--	sz_uuid++;
--
--	uuid_obj->data3 = (u16) uuid_hex_to_bin(sz_uuid, 4);
--	sz_uuid += 4;
--
--	/* Step over underscore */
--	sz_uuid++;
--
--	uuid_obj->data4 = (u8) uuid_hex_to_bin(sz_uuid, 2);
--	sz_uuid += 2;
--
--	uuid_obj->data5 = (u8) uuid_hex_to_bin(sz_uuid, 2);
--	sz_uuid += 2;
--
--	/* Step over underscore */
--	sz_uuid++;
--
--	for (j = 0; j < 6; j++) {
--		uuid_obj->data6[j] = (u8) uuid_hex_to_bin(sz_uuid, 2);
--		sz_uuid += 2;
--	}
--}
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h b/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
-index 414bf71..b4951a1 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
-@@ -21,22 +21,4 @@
- 
- #define MAXUUIDLEN  37
- 
--/*
-- *  ======== uuid_uuid_from_string ========
-- *  Purpose:
-- *      Converts an ANSI string to a dsp_uuid.
-- *  Parameters:
-- *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
-- *      uuid_obj:      Pointer to a dsp_uuid object.
-- *  Returns:
-- *  Requires:
-- *      uuid_obj & sz_uuid are non-NULL values.
-- *  Ensures:
-- *  Details:
-- *      We assume the string representation of a UUID has the following format:
-- *      "12345678_1234_1234_1234_123456789abc".
-- */
--extern void uuid_uuid_from_string(char *sz_uuid,
--				  struct dsp_uuid *uuid_obj);
--
- #endif /* UUIDUTIL_ */
-diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-index 3d2a26f..11b13af 100644
---- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
-+++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-@@ -74,6 +74,47 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
- 				   enum nldr_phase phase);
- 
- /*
-+ *  ======== dcd_uuid_from_string ========
-+ *  Purpose:
-+ *      Converts an ANSI string to a dsp_uuid.
-+ *  Parameters:
-+ *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
-+ *      uuid_obj:      Pointer to a dsp_uuid object.
-+ *  Returns:
-+ *      0:        Success.
-+ *      -EINVAL:  Coversion failed
-+ *  Requires:
-+ *      uuid_obj & sz_uuid are non-NULL values.
-+ *  Ensures:
-+ *  Details:
-+ *      We assume the string representation of a UUID has the following format:
-+ *      "12345678_1234_1234_1234_123456789abc".
-+ */
-+static int dcd_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
-+{
-+	char c;
-+	u64 t;
-+	struct dsp_uuid uuid_tmp;
-+
-+	/*
-+	 * sscanf implementation cannot deal with hh format modifier
-+	 * if the converted value doesn't fit in u32. So, convert the
-+	 * last six bytes to u64 and memcpy what is needed
-+	 */
-+	if(sscanf(sz_uuid, "%8x%c%4hx%c%4hx%c%2hhx%2hhx%c%llx",
-+	       &uuid_tmp.data1, &c, &uuid_tmp.data2, &c,
-+	       &uuid_tmp.data3, &c, &uuid_tmp.data4,
-+	       &uuid_tmp.data5, &c, &t) != 10)
-+		return -EINVAL;
-+
-+	t = cpu_to_be64(t);
-+	memcpy(&uuid_tmp.data6[0], ((char*)&t) + 2, 6);
-+	*uuid_obj = uuid_tmp;
-+
-+	return 0;
-+}
-+
-+/*
-  *  ======== dcd_auto_register ========
-  *  Purpose:
-  *      Parses the supplied image and resigsters with DCD.
-@@ -253,7 +294,7 @@ int dcd_enumerate_object(s32 index, enum dsp_dcdobjtype obj_type,
- 		if (!status) {
- 			/* Create UUID value using string retrieved from
- 			 * registry. */
--			uuid_uuid_from_string(sz_value, &dsp_uuid_obj);
-+			dcd_uuid_from_string(sz_value, &dsp_uuid_obj);
- 
- 			*uuid_obj = dsp_uuid_obj;
- 
-@@ -581,7 +622,7 @@ int dcd_get_objects(struct dcd_manager *hdcd_mgr,
- 		psz_cur = psz_coff_buf;
- 		while ((token = strsep(&psz_cur, seps)) && *token != '\0') {
- 			/*  Retrieve UUID string. */
--			uuid_uuid_from_string(token, &dsp_uuid_obj);
-+			dcd_uuid_from_string(token, &dsp_uuid_obj);
- 
- 			/*  Retrieve object type */
- 			token = strsep(&psz_cur, seps);
-@@ -1001,7 +1042,7 @@ static int get_attrs_from_buf(char *psz_buf, u32 ul_buf_size,
- 		token = strsep(&psz_cur, seps);
- 
- 		/* dsp_uuid ui_node_id */
--		uuid_uuid_from_string(token,
-+		dcd_uuid_from_string(token,
- 				      &gen_obj->obj_data.node_obj.ndb_props.
- 				      ui_node_id);
- 		token = strsep(&psz_cur, seps);
-@@ -1400,7 +1441,7 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
- 				break;
- 			} else {
- 				/* Retrieve UUID string. */
--				uuid_uuid_from_string(token,
-+				dcd_uuid_from_string(token,
- 						      &(dep_lib_uuids
- 							[dep_libs]));
- 				/* Is this library persistent? */
--- 
-1.5.6.1
-
+Yours,
+Linus Walleij
