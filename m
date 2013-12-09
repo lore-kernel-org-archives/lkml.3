@@ -1,132 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761961Ab3LIV4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:56:34 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:37729 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761718Ab3LIVwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:35 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v3 11/23] mm/page_alloc: Use memblock apis for early memory allocations
-Date: Mon, 9 Dec 2013 16:50:44 -0500
-Message-ID: <1386625856-12942-12-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+	id S1761972Ab3LIV4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:56:44 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:52276 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab3LIV4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:56:40 -0500
+Date: Mon, 9 Dec 2013 13:56:37 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, page_alloc: make __GFP_NOFAIL really not fail
+Message-ID: <alpine.DEB.2.02.1312091355360.11026@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to memblock interfaces for early memory allocator instead of
-bootmem allocator. No functional change in beahvior than what it is
-in current code from bootmem users points of view.
+__GFP_NOFAIL specifies that the page allocator cannot fail to return
+memory.  Allocators that call it may not even check for NULL upon
+returning.
 
-Archs already converted to NO_BOOTMEM now directly use memblock
-interfaces instead of bootmem wrappers build on top of memblock. And the
-archs which still uses bootmem, these new apis just fallback to exiting
-bootmem APIs.
+It turns out GFP_NOWAIT | __GFP_NOFAIL or GFP_ATOMIC | __GFP_NOFAIL can
+actually return NULL.  More interestingly, processes that are doing
+direct reclaim and have PF_MEMALLOC set may also return NULL for any
+__GFP_NOFAIL allocation.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+This patch fixes it so that the page allocator never actually returns
+NULL as expected for __GFP_NOFAIL.  It turns out that no code actually
+does anything as crazy as GFP_ATOMIC | __GFP_NOFAIL currently, so this
+is more for correctness than a bug fix for that issue.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- mm/page_alloc.c |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ mm/page_alloc.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 580a5f0..ed64107 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -4210,7 +4210,6 @@ static noinline __init_refok
- int zone_wait_table_init(struct zone *zone, unsigned long zone_size_pages)
- {
- 	int i;
--	struct pglist_data *pgdat = zone->zone_pgdat;
- 	size_t alloc_size;
+@@ -2535,17 +2535,19 @@ rebalance:
+ 		}
+ 	}
+ 
+-	/* Atomic allocations - we can't balance anything */
+-	if (!wait)
+-		goto nopage;
+-
+-	/* Avoid recursion of direct reclaim */
+-	if (current->flags & PF_MEMALLOC)
+-		goto nopage;
+-
+-	/* Avoid allocations with no watermarks from looping endlessly */
+-	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
+-		goto nopage;
++	if (likely(!(gfp_mask & __GFP_NOFAIL))) {
++		/* Atomic allocations - we can't balance anything */
++		if (!wait)
++			goto nopage;
++
++		/* Avoid recursion of direct reclaim */
++		if (current->flags & PF_MEMALLOC)
++			goto nopage;
++
++		/* Avoid allocations with no watermarks from looping forever */
++		if (test_thread_flag(TIF_MEMDIE))
++			goto nopage;
++	}
  
  	/*
-@@ -4226,7 +4225,8 @@ int zone_wait_table_init(struct zone *zone, unsigned long zone_size_pages)
- 
- 	if (!slab_is_available()) {
- 		zone->wait_table = (wait_queue_head_t *)
--			alloc_bootmem_node_nopanic(pgdat, alloc_size);
-+			memblock_virt_alloc_node_nopanic(
-+				alloc_size, zone->zone_pgdat->node_id);
- 	} else {
- 		/*
- 		 * This case means that a zone whose size was 0 gets new memory
-@@ -4346,13 +4346,14 @@ bool __meminit early_pfn_in_nid(unsigned long pfn, int node)
- #endif
- 
- /**
-- * free_bootmem_with_active_regions - Call free_bootmem_node for each active range
-+ * free_bootmem_with_active_regions - Call memblock_free_early_nid for each active range
-  * @nid: The node to free memory on. If MAX_NUMNODES, all nodes are freed.
-- * @max_low_pfn: The highest PFN that will be passed to free_bootmem_node
-+ * @max_low_pfn: The highest PFN that will be passed to memblock_free_early_nid
-  *
-  * If an architecture guarantees that all ranges registered with
-  * add_active_ranges() contain no holes and may be freed, this
-- * this function may be used instead of calling free_bootmem() manually.
-+ * this function may be used instead of calling memblock_free_early_nid()
-+ * manually.
-  */
- void __init free_bootmem_with_active_regions(int nid, unsigned long max_low_pfn)
- {
-@@ -4364,9 +4365,9 @@ void __init free_bootmem_with_active_regions(int nid, unsigned long max_low_pfn)
- 		end_pfn = min(end_pfn, max_low_pfn);
- 
- 		if (start_pfn < end_pfn)
--			free_bootmem_node(NODE_DATA(this_nid),
--					  PFN_PHYS(start_pfn),
--					  (end_pfn - start_pfn) << PAGE_SHIFT);
-+			memblock_free_early_nid(PFN_PHYS(start_pfn),
-+					(end_pfn - start_pfn) << PAGE_SHIFT,
-+					this_nid);
- 	}
- }
- 
-@@ -4637,8 +4638,9 @@ static void __init setup_usemap(struct pglist_data *pgdat,
- 	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
- 	zone->pageblock_flags = NULL;
- 	if (usemapsize)
--		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
--								   usemapsize);
-+		zone->pageblock_flags =
-+			memblock_virt_alloc_node_nopanic(usemapsize,
-+							 pgdat->node_id);
- }
- #else
- static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
-@@ -4832,7 +4834,8 @@ static void __init_refok alloc_node_mem_map(struct pglist_data *pgdat)
- 		size =  (end - start) * sizeof(struct page);
- 		map = alloc_remap(pgdat->node_id, size);
- 		if (!map)
--			map = alloc_bootmem_node_nopanic(pgdat, size);
-+			map = memblock_virt_alloc_node_nopanic(size,
-+							       pgdat->node_id);
- 		pgdat->node_mem_map = map + (pgdat->node_start_pfn - start);
- 	}
- #ifndef CONFIG_NEED_MULTIPLE_NODES
-@@ -5858,7 +5861,7 @@ void *__init alloc_large_system_hash(const char *tablename,
- 	do {
- 		size = bucketsize << log2qty;
- 		if (flags & HASH_EARLY)
--			table = alloc_bootmem_nopanic(size);
-+			table = memblock_virt_alloc_nopanic(size, 0);
- 		else if (hashdist)
- 			table = __vmalloc(size, GFP_ATOMIC, PAGE_KERNEL);
- 		else {
--- 
-1.7.9.5
-
+ 	 * Try direct compaction. The first pass is asynchronous. Subsequent
