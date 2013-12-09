@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760504Ab3LIEMl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 23:12:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60945 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3LIEMi (ORCPT
+	id S1760567Ab3LIENJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 23:13:09 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46617 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760549Ab3LIENF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 23:12:38 -0500
-Date: Sun, 8 Dec 2013 22:11:52 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Anton Tikhomirov <av.tikhomirov@samsung.com>
-Subject: Re: linux-next: build failure after merge of the usb-gadget tree
-Message-ID: <20131209041152.GC20608@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
+	Sun, 8 Dec 2013 23:13:05 -0500
+Message-ID: <52A54328.3000709@linaro.org>
+Date: Mon, 09 Dec 2013 12:12:24 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WplhKdTI2c8ulnbP"
-Content-Disposition: inline
-In-Reply-To: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>, Tomasz Nowicki <tomasz.nowicki@linaro.org>
+CC: Mark Rutland <mark.rutland@arm.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linaro-kernel@lists.linaro.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, patches@linaro.org,
+        Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core running
+ without PCI on ARM64
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <201312052304.22302.arnd@arndb.de> <52A1E794.1040008@linaro.org> <201312061823.26481.arnd@arndb.de>
+In-Reply-To: <201312061823.26481.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---WplhKdTI2c8ulnbP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2013-12-7 1:23, Arnd Bergmann wrote:
+> On Friday 06 December 2013, Tomasz Nowicki wrote:
+>> On 05.12.2013 23:04, Arnd Bergmann wrote:
+>>> On Wednesday 04 December 2013, Hanjun Guo wrote:
+>>>> On 2013年12月04日 00:41, Matthew Garrett wrote:
+>>>>> Given the number of #ifdefs you're adding, wouldn't it make more sense
+>>>>> to just add stub functions to include/linux/pci.h?
+>>>>
+>>>> Thanks for the suggestion :)
+>>>>
+>>>> I can add stub functions in include/linux/pci.h for raw_pci_read()/
+>>>> raw_pci_write(), then can remove #ifdefs for acpi_os_read/write_pci_configuration().
+>>>
+>>> Actually I wonder about the usefulness of this patch in either form: Since ACPI
+>>> on ARM64 is only for servers, I would very much expect them to always come with
+>>> PCI, either physical host bridges with attached devices, or logical PCI functions
+>>> used to describe the on-SoC I/O devices. Even in case of virtual machines, you'd
+>>> normally use PCI as the method to communicate data about the virtio channels.
+>>>
+>>> Can you name a realistic use-case where you'd want ACPI but not PCI?
+>>
+>> Yes you can describe SoC I/O devices using logical PCI functions only if 
+>> they are on PCI, correct me if I am wrong. Also, devices can be placed 
+>> only on IOMEM (like for ARM SoC) and it is hard to predict which way 
+>> vendors chose. So way don't let it be configurable? ACPI spec says 
+>> nothing like PCI is needed for ACPI, AFAIK.
+> 
+> You are right that today's ARM SoCs basically never use PCI to describe
+> internal devices (IIRC VIA VT8500 is an exception, but their PCI was
+> just a software fabrication).
+> 
+> However, when we're talking about ACPI on ARM64, that is nothing like classic
+> ARM SoCs: As Jon Masters mentioned, this is about new server hardware following
+> a (still secret, but hopefully not much longer) hardware specification that is
+> explicitly designed to allow interoperability between vendors, so they
+> must have put some thought into how to make the hardware discoverable. It
+> seems that they are modeling things after how it's done on x86, and the
+> only sensible way to have discoverable hardware there is PCI. This is
+> also what all x86 SoCs do.
 
-Hi,
+I think the concern here is that ACPI is only for server platform or not.
 
-On Mon, Dec 09, 2013 at 02:58:03PM +1100, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> After merging the usb-gadget tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/built-in.o: In function `otg_set_state':
-> (.text+0x14f7de): undefined reference to `usb_bus_start_enum'
->=20
-> CONFIG_USB is 'm' in this build.
->=20
-> I am not sure what changed to cause this, maybe e1d2e31975e1 ("usb: phy:
-> Add OTG FSM configuration option")?
->=20
-> I have used the usb-gadget tree from next-20131206 for today.
+Since ACPI has lots of content related to power management, I think ACPI
+can be used for mobile devices and other platform too, not only for ARM
+servers, and with this patch, we can support both requirement.
 
-I see what caused it, will fix it up with a patch which should probably
-be backported a few kernels back. Thanks for letting me know.
-
---=20
-balbi
-
---WplhKdTI2c8ulnbP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSpUMIAAoJEIaOsuA1yqRE9fIQAKa7mj9OH/Cz0oskSux3lpJM
-r40DhP/gVXiQfFnoNJ1+iKVzkbyI9WEK+FivSjwQp/9ujCM5P47FhTdL+JVUJWn4
-c203lR+SzNpZ1T0lIzELzZQTq+BdP8NYggLu47BCFvZSJOs5p5efjxPtG/IT5gqw
-hcItv/vGhDGdxZqKzbOTbDFDGzvQx4Km4pbSSyvm6Et8vYiUwJ+4OK+3dmAVPke7
-It7A7Gr42vog0Fu3ARrUhQ1c67Jpaja11kTDswhYZ9zpOHq1cEqhf8FWNFi8Q+Ir
-5LoDct+p63+teF9RzojkH+zxQ+Xk7m0v1XOUCT9nbvzbNWsSvAyjzUw3iTBX69CP
-RCnfc3ClFphtLC4bFQvZizH5nG/BW74+kEkHMAW+C6757KCmsUXqD0W2AbGRnhPp
-jyUdT7FrDwNtxqbLPJGRwxfB8MPYAgRCqd9ti3z2CzgtoSS9NCLJ7Jx3bvsXDFiH
-EIxfBq0Ux1BflUWSDSVxafImXQKc6ABtQ3gWFjjz2xS8g+rH72AF1W6d+cEa4f2x
-z9otsMDBigWz6DuZGxP7f8PihH+P6auQwDTPZp2GGowonCfXA92aGzPnICQKZxlr
-rDTEuFFToCE2wOSlZn8rotH1Xz3Bp0orHRwVkqTTwhyNAjeoxW/ICYDpMeS10w5d
-KO66Rex3Ou6JLB/VlKlQ
-=SaGK
------END PGP SIGNATURE-----
-
---WplhKdTI2c8ulnbP--
+Thanks
+Hanjun
