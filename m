@@ -1,85 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933523Ab3LIM5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 07:57:07 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:33461 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933192Ab3LIM5C (ORCPT
+	id S933577Ab3LIM51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 07:57:27 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:18108 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933192Ab3LIM5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 07:57:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <52A11220.8080509@wwwdotorg.org>
-References: <1384881351-10782-1-git-send-email-t.figa@samsung.com>
-	<528BB1F2.4080107@wwwdotorg.org>
-	<CAD=FV=XS0dbE7zfgDGVdp84h4fHH6tfO8aN_HNh1LbOjYy51aQ@mail.gmail.com>
-	<528BB913.6080409@wwwdotorg.org>
-	<CAH9JG2UjnL5bZzNUuJhWY3GpwPD=rJvR2O4Hcpm33G+prSS=BA@mail.gmail.com>
-	<CACRpkdbyjm0X9RX+8WjqQxBPyRjBOAunkqVcO-0KUd1PTdGavA@mail.gmail.com>
-	<5293ACA6.7060403@bracey.fi>
-	<CACRpkdYrPd9tnO48bA_5n+-k=KEDyhY7czkCNhTZfpgF3ar+LQ@mail.gmail.com>
-	<52A11220.8080509@wwwdotorg.org>
-Date: Mon, 9 Dec 2013 13:57:00 +0100
-Message-ID: <CACRpkdbDxNkb9XnVnfVWK9HEKj1mb+VUawh1GMe1bggQVg88KA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: samsung: Allow pin value to be initialized using pinfunc.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Kevin Bracey <kevin@bracey.fi>, Kyungmin Park <kmpark@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Dec 2013 07:57:22 -0500
+X-AuditID: cbfec7f5-b7fd16d000007299-ed-52a5be300f48
+From: Tomasz Figa <t.figa@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
+        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
+        kgene.kim@samsung.com, devicetree@vger.kernel.org,
+        b.zolnierkie@samsung.com, cpgs@samsung.com
+Subject: Re: [PATCH 4/4 v3] ARM: dts: Exynos5420: Add device nodes for TMU
+ blocks
+Date: Mon, 09 Dec 2013 13:57:09 +0100
+Message-id: <3503788.1T16Njt87z@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
+In-reply-to: <1384238268-24671-1-git-send-email-ch.naveen@samsung.com>
+References: <1382004240-3282-1-git-send-email-l.krishna@samsung.com>
+ <1384238268-24671-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t/xy7oG+5YGGZxeJGfRcDXEYuOM9awW
+	d58fZrR4eUjTYv6Rc6wWa/b/ZLLoXXCVzeLyrjlsFp97jzBazDi/j8li0bb/zBZPHvaxOfB4
+	7Jx1l91j8Z6XTB59W1Yxehy/sZ3J4/MmuQDWKC6blNSczLLUIn27BK6MBy2r2AumClVMvV7T
+	wLiar4uRk0NCwETief80ZghbTOLCvfVsXYxcHEICSxklJpydxAjhdDFJdC/czw5SxSagJvG5
+	4REbiC0C1H381Rl2kCJmgaVMEvOXLQIbJSwQLHH/+hIwm0VAVaLz7lkWEJtXQFPi0IPvYHF+
+	AXWJd9ueMoHYogJuEi/2bQFbwAlk/5qyjAVicwOjxKv1s1khmgUlfky+BzaIWUBeYt/+qawQ
+	tpbE+p3HmSYwCs5CUjYLSdksJGULGJlXMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoTEy9cd
+	jEuPWR1iFOBgVOLhDWBeGiTEmlhWXJl7iFGCg1lJhFdsF1CINyWxsiq1KD++qDQntfgQIxMH
+	p1QDo4C0TR93w4kP04wufj7qEVHKOb9gyoV1wT/U/mqFn5SWLXp1oj9Z9e7EwNlc9ko/OBa9
+	42zV3qTSuq17vmXepG2sN27oTJw799qk1j6Zu9vvXjg9PV5nhW/K8wdm+20y+50dY1WynvgZ
+	pBoddpMWkTawuTB586OjR7YkvmxlOy06aceiVxVT1yixFGckGmoxFxUnAgAMjM15dQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 12:54 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 12/03/2013 02:29 AM, Linus Walleij wrote:
+Hi Naveen,
 
-(skipped the conversation on weak hogs, we are on the same page
-here, just waiting for someone to start working on it ...)
+On Tuesday 12 of November 2013 12:07:48 Naveen Krishna Chatradhi wrote:
+> Exynos5420 SoC has per core thermal management unit.
+> 5 TMU channels 4 for CPUs and 5th for GPU.
+> 
+> This patch adds the device tree nodes to the DT device list.
+> 
+> Nodes carry the misplaced second base address and the second
+> clock to access the misplaced base address.
+> 
+> Signed-off-by: Leela Krishna Amudala <l.krishna@samsung.com>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+> Changes since v2:
+> 3. uses the new compatible strings introduced along with adding
+>    support for Exynso5420.
+> 
+> Changes since v1:
+> 1. Nodes carry the misplaced second base address and the second
+>    clock to access the misplaced base address.
+> 2. Correct the clock number for the TMU4
+> 
+>  arch/arm/boot/dts/exynos5420.dtsi |   48 +++++++++++++++++++++++++++++++++++++
+>  1 file changed, 48 insertions(+)
 
-> Related, I prefer to put /all/ static pinctrl configuration into the
-> pinctrl device's "default" state (i.e. use a hog) rather than
-> configuring the static pinctrl setup per device, for another reason too:
->
-> If a particular IO controller's signals can be routed to n different
-> (sets of) pins, then we need to do *both* of the following when setting
-> up the pinmux:
->
-> a) Configure the pins we want to host those signals to route to/from
-> that particular IO controller.
->
-> b) Configure any other pins that could route to/from that particular IO
-> controller as some other function; either disabled, or routed to/from
-> some different IO controller.
->
-> That is so that the IO controller's RX/input signals are not connected
-> from two different sets of pins at once, which would cause two things to
-> driver them. Depending on HW, this could cause on of:
->
-> 1) Multiple drivers -> high power usage, or even Silicon damage.
->
-> 2) Inconsistent configuration, with the "wrong" set of pins driving the
-> IO controller's inputs, and hence the signals on the "correct" pins
-> being ignored -> hard to find bug.
+In addition to updating to reflect my comments to patch 3/4, please also
+see my comments inline.
 
-I'm following, I think what we need here is to think about additional
-behaviours and electronic constraints we can encode into the drivers
-and/or the pin tables to safeguard pin states from electronically
-unsound states.
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+> index 6ffefd1..d736b40 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -369,4 +369,52 @@
+>  		clock-names = "gscl";
+>  		samsung,power-domain = <&gsc_pd>;
+>  	};
+> +
+> +	/* tmu for CPU0 */
+> +	tmu@10060000 {
 
-That is to say, I prefer the subsystem to be conscious about the
-electronic constraints and navigate around them or put up a road
-block, rather than trying ti avoid driving into the roadblocks by means
-of carefully crafted tables if you get the picture ...
+Instead of the comment, it might be better to add a label to the node,
+such as
 
-Yours,
-Linus Walleij
+tmu_cpu0: tmu@10060000 {
+
+for TMU of CPU0 and so on.
+
+> +		compatible = "samsung,exynos5420-tmu";
+> +		reg = <0x10060000 0x100>;
+> +		interrupts = <0 65 0>;
+> +		clocks = <&clock 318>;
+> +		clock-names = "tmu_apbif";
+> +	};
+> +
+> +	/* tmu for CPU1 */
+> +	tmu@10064000 {
+> +		compatible = "samsung,exynos5420-tmu";
+> +		reg = <0x10064000 0x100>;
+> +		interrupts = <0 183 0>;
+> +		clocks = <&clock 318>;
+> +		clock-names = "tmu_apbif";
+> +	};
+> +
+> +	/* tmu for CPU2 */
+> +	tmu@10068000 {
+> +		compatible = "samsung,exynos5420-tmu-triminfo";
+> +		/* 2nd reg is for the misplaced TRIMINFO register */
+
+Hmm, I'm not convinced about usefulness of this comment. Used compatible
+value directly implies the meaning of all reg entries.
+
+Best regards,
+Tomasz
+
