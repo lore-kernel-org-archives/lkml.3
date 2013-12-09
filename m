@@ -1,187 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab3LITGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:06:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932855Ab3LITGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 14:06:48 -0500
-Message-ID: <52A614C0.7030502@redhat.com>
-Date: Mon, 09 Dec 2013 14:06:40 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1761205Ab3LITJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:09:46 -0500
+Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:30010
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752975Ab3LITJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 14:09:45 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "pavel@ucw.cz" <pavel@ucw.cz>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove unnecessarily gendered language
+Thread-Topic: [PATCH] Remove unnecessarily gendered language
+Thread-Index: AQHO78Wp335rwpc28EKOB9Zlmmg7eZpFb2wAgATV8JmAAf91AA==
+Date: Mon, 9 Dec 2013 19:09:28 +0000
+Message-ID: <1386616168.20263.1.camel@x230>
+References: <1386033532-25431-1-git-send-email-matthew.garrett@nebula.com>
+	 <20131205104808.GA6455@amd.pavel.ucw.cz> <1386261314.14035.8.camel@x230>
+	 <20131208123848.GC14108@amd.pavel.ucw.cz>
+In-Reply-To: <20131208123848.GC14108@amd.pavel.ucw.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.0.250.146]
+x-forefront-prvs: 00550ABE1F
+x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(24454002)(51704005)(377424004)(19580395003)(47446002)(46102001)(74662001)(31966008)(74502001)(74366001)(56776001)(54316002)(77982001)(59766001)(54356001)(53806001)(79102001)(81342001)(76786001)(81542001)(83072002)(85852003)(69226001)(74876001)(80022001)(74706001)(33646001)(51856001)(19580405001)(83322001)(77096001)(76796001)(33716001)(66066001)(87266001)(87936001)(80976001)(2656002)(81816001)(81686001)(85306002)(65816001)(63696002)(76482001)(50986001)(47736001)(4396001)(90146001)(49866001)(47976001)(56816005);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB422;H:BN1PR05MB423.namprd05.prod.outlook.com;CLIP:50.0.250.146;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1B48CA887A26124D8446CE787F4B0C37@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 18/18] sched: Add tracepoints related to NUMA task migration
-References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-19-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386572952-1191-19-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB9J9rTU007847
 
-On 12/09/2013 02:09 AM, Mel Gorman wrote:
-> This patch adds three tracepoints
->  o trace_sched_move_numa	when a task is moved to a node
->  o trace_sched_swap_numa	when a task is swapped with another task
->  o trace_sched_stick_numa	when a numa-related migration fails
+On Sun, 2013-12-08 at 13:38 +0100, Pavel Machek wrote:
+> On Thu 2013-12-05 16:35:15, Matthew Garrett wrote:
+> > Using "he" to refer to objects without gender is (with some exceptions)
+> > incorrect in English, so that set should be uncontroversial. "He" is
+> > usually considered acceptable when referring to an individual of unknown
+> > gender, but so is "they". The latter version has the advantage of not
+> > giving the impression that we believe all our users are male.
 > 
-> The tracepoints allow the NUMA scheduler activity to be monitored and the
-> following high-level metrics can be calculated
-> 
->  o NUMA migrated stuck	 nr trace_sched_stick_numa
->  o NUMA migrated idle	 nr trace_sched_move_numa
->  o NUMA migrated swapped nr trace_sched_swap_numa
->  o NUMA local swapped	 trace_sched_swap_numa src_nid == dst_nid (should never happen)
->  o NUMA remote swapped	 trace_sched_swap_numa src_nid != dst_nid (should == NUMA migrated swapped)
->  o NUMA group swapped	 trace_sched_swap_numa src_ngid == dst_ngid
-> 			 Maybe a small number of these are acceptable
-> 			 but a high number would be a major surprise.
-> 			 It would be even worse if bounces are frequent.
->  o NUMA avg task migs.	 Average number of migrations for tasks
->  o NUMA stddev task mig	 Self-explanatory
->  o NUMA max task migs.	 Maximum number of migrations for a single task
-> 
-> In general the intent of the tracepoints is to help diagnose problems
-> where automatic NUMA balancing appears to be doing an excessive amount of
-> useless work.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> As you said, "he" is acceptable when referring to an individual of
+> unknown gender. Disadvantage of "they" is that it makes the text
+> confusing if not done carefuly. And random sample of 3 changes made it
+> clear you were not careful...
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
-> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> index cf1694c..f0c54e3 100644
-> --- a/include/trace/events/sched.h
-> +++ b/include/trace/events/sched.h
-> @@ -443,11 +443,7 @@ TRACE_EVENT(sched_process_hang,
->  );
->  #endif /* CONFIG_DETECT_HUNG_TASK */
->  
-> -/*
-> - * Tracks migration of tasks from one runqueue to another. Can be used to
-> - * detect if automatic NUMA balancing is bouncing between nodes
-> - */
-> -TRACE_EVENT(sched_move_task,
-> +DECLARE_EVENT_CLASS(sched_move_task_template,
->  
->  	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
->  
-> @@ -478,6 +474,68 @@ TRACE_EVENT(sched_move_task,
->  			__entry->src_cpu, __entry->src_nid,
->  			__entry->dst_cpu, __entry->dst_nid)
->  );
-> +
-> +/*
-> + * Tracks migration of tasks from one runqueue to another. Can be used to
-> + * detect if automatic NUMA balancing is bouncing between nodes
-> + */
-> +DEFINE_EVENT(sched_move_task_template, sched_move_task,
-> +	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
-> +
-> +	TP_ARGS(tsk, src_cpu, dst_cpu)
-> +);
-> +
-> +DEFINE_EVENT(sched_move_task_template, sched_move_numa,
-> +	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
-> +
-> +	TP_ARGS(tsk, src_cpu, dst_cpu)
-> +);
-> +
-> +DEFINE_EVENT(sched_move_task_template, sched_stick_numa,
-> +	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
-> +
-> +	TP_ARGS(tsk, src_cpu, dst_cpu)
-> +);
-> +
-> +TRACE_EVENT(sched_swap_numa,
-> +
-> +	TP_PROTO(struct task_struct *src_tsk, int src_cpu,
-> +		 struct task_struct *dst_tsk, int dst_cpu),
-> +
-> +	TP_ARGS(src_tsk, src_cpu, dst_tsk, dst_cpu),
-> +
-> +	TP_STRUCT__entry(
-> +		__field( pid_t,	src_pid			)
-> +		__field( pid_t,	src_tgid		)
-> +		__field( pid_t,	src_ngid		)
-> +		__field( int,	src_cpu			)
-> +		__field( int,	src_nid			)
-> +		__field( pid_t,	dst_pid			)
-> +		__field( pid_t,	dst_tgid		)
-> +		__field( pid_t,	dst_ngid		)
-> +		__field( int,	dst_cpu			)
-> +		__field( int,	dst_nid			)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->src_pid	= task_pid_nr(src_tsk);
-> +		__entry->src_tgid	= task_tgid_nr(src_tsk);
-> +		__entry->src_ngid	= task_numa_group_id(src_tsk);
-> +		__entry->src_cpu	= src_cpu;
-> +		__entry->src_nid	= cpu_to_node(src_cpu);
-> +		__entry->dst_pid	= task_pid_nr(dst_tsk);
-> +		__entry->dst_tgid	= task_tgid_nr(dst_tsk);
-> +		__entry->dst_ngid	= task_numa_group_id(dst_tsk);
-> +		__entry->dst_cpu	= dst_cpu;
-> +		__entry->dst_nid	= cpu_to_node(dst_cpu);
-> +	),
-> +
-> +	TP_printk("src_pid=%d src_tgid=%d src_ngid=%d src_cpu=%d src_nid=%d dst_pid=%d dst_tgid=%d dst_ngid=%d dst_cpu=%d dst_nid=%d",
-> +			__entry->src_pid, __entry->src_tgid, __entry->src_ngid,
-> +			__entry->src_cpu, __entry->src_nid,
-> +			__entry->dst_pid, __entry->dst_tgid, __entry->dst_ngid,
-> +			__entry->dst_cpu, __entry->dst_nid)
-> +);
->  #endif /* _TRACE_SCHED_H */
->  
->  /* This part must be outside protection */
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index c180860..3980110 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1108,6 +1108,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
->  	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
->  		goto out;
->  
-> +	trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
->  	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
->  
->  out:
-> @@ -4091,6 +4092,7 @@ int migrate_task_to(struct task_struct *p, int target_cpu)
->  
->  	/* TODO: This is not properly updating schedstats */
->  
-> +	trace_sched_move_numa(p, curr_cpu, target_cpu);
->  	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
->  }
->  
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 41021c8..aac8c65 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1272,11 +1272,13 @@ static int task_numa_migrate(struct task_struct *p)
->  	p->numa_scan_period = task_scan_min(p);
->  
->  	if (env.best_task == NULL) {
-> -		int ret = migrate_task_to(p, env.best_cpu);
-> +		if ((ret = migrate_task_to(p, env.best_cpu)) != 0)
-> +			trace_sched_stick_numa(p, env.src_cpu, env.best_cpu);
->  		return ret;
->  	}
->  
-> -	ret = migrate_swap(p, env.best_task);
-> +	if ((ret = migrate_swap(p, env.best_task)) != 0);
-> +		trace_sched_stick_numa(p, env.src_cpu, task_cpu(env.best_task));
->  	put_task_struct(env.best_task);
->  	return ret;
->  }
-> 
-
+Acceptable but increasingly socially frowned upon. Of the set you
+commented on, one was unclear as a result of the transition. I've
+examined the rest and am fairly happy with their clarity, but, well,
+that's the point of review.
 
 -- 
-All rights reversed
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
