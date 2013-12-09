@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab3LINKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:10:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55833 "EHLO mga02.intel.com"
+	id S933726Ab3LINLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:11:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42365 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933272Ab3LINKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:10:54 -0500
+	id S933607Ab3LINL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 08:11:29 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,857,1378882800"; 
-   d="scan'208";a="449172814"
+   d="scan'208";a="449172936"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/4] perf tools: Remove unnecessary parentheses
-Date: Mon,  9 Dec 2013 15:18:37 +0200
-Message-Id: <1386595120-22978-2-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 4/4] perf tools: Fix display of incorrect mmap pages
+Date: Mon,  9 Dec 2013 15:18:40 +0200
+Message-Id: <1386595120-22978-5-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
 References: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
@@ -28,26 +28,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary parentheses.
+'mmap_pages' is 'unsigned int' not 'int' e.g.
+
+  perf record -m2147483648 uname
+  Permission error mapping pages.
+  Consider increasing /proc/sys/kernel/perf_event_mlock_kb,
+  or try again with a smaller value of -m/--mmap_pages.
+  (current value: -2147483648)
+
+Fixed:
+
+  perf record -m2147483648 uname
+  Permission error mapping pages.
+  Consider increasing /proc/sys/kernel/perf_event_mlock_kb,
+  or try again with a smaller value of -m/--mmap_pages.
+  (current value: 2147483648)
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/evlist.c | 2 +-
+ tools/perf/builtin-record.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 7bb6ee1..4d0945c 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -732,7 +732,7 @@ static long parse_pages_arg(const char *str, unsigned long min,
- 			return -EINVAL;
- 	}
- 
--	if ((pages == 0) && (min == 0)) {
-+	if (pages == 0 && min == 0) {
- 		/* leave number of pages at 0 */
- 	} else if (pages < (1UL << 31) && !is_power_of_2(pages)) {
- 		/* round pages up to next power of 2 */
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d93e2ee..c1c1200 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -224,7 +224,7 @@ try_again:
+ 			       "Consider increasing "
+ 			       "/proc/sys/kernel/perf_event_mlock_kb,\n"
+ 			       "or try again with a smaller value of -m/--mmap_pages.\n"
+-			       "(current value: %d)\n", opts->mmap_pages);
++			       "(current value: %u)\n", opts->mmap_pages);
+ 			rc = -errno;
+ 		} else {
+ 			pr_err("failed to mmap with %d (%s)\n", errno, strerror(errno));
 -- 
 1.7.11.7
 
