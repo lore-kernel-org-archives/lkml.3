@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761469Ab3LISCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:02:05 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:65013 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761361Ab3LISCE convert rfc822-to-8bit (ORCPT
+	id S1761484Ab3LISCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:02:19 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:30853 "EHLO
+	highbank-bc01-b06.austin.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761277Ab3LISCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:02:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131209171719.GA16631@krava.brq.redhat.com>
-References: <1386411461-21510-1-git-send-email-jean.pihet@linaro.org>
-	<1386411461-21510-3-git-send-email-jean.pihet@linaro.org>
-	<20131209171719.GA16631@krava.brq.redhat.com>
-Date: Mon, 9 Dec 2013 19:02:02 +0100
-Message-ID: <CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf: unwinding: use the per-feature check flags
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Mon, 9 Dec 2013 13:02:15 -0500
+Date: Mon, 9 Dec 2013 18:01:55 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
-        Will Deacon <will.deacon@arm.com>, Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core
+ running without PCI on ARM64
+Message-ID: <20131209180155.GG19163@arm.com>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
+ <201312091735.05014.arnd@arndb.de>
+ <20131209165548.GE19163@arm.com>
+ <201312091820.23006.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201312091820.23006.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Mon, Dec 09, 2013 at 05:20:22PM +0000, Arnd Bergmann wrote:
+> On Monday 09 December 2013, Catalin Marinas wrote:
+> > CONFIG_PCI does not exist on arm64 yet (we have some internal patches
+> > but may not be ready to be posted before the holidays; they try to share
+> > code with other archs, so more discussions before merging). We could add
+> > CONFIG_PCI and some dummy functions on arm64 for development (not to be
+> > upstreamed) or Hanjun could continue to use the current patch before we
+> > get PCI working. In the order of priorities, we'll have to merge PCI
+> > before ACPI anyway.
+> 
+> Well, lack of PCI support on ARM64 is a much better reason for accepting
+> the patch than potential use on non-server platforms of course.
 
-On 9 December 2013 18:17, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Sat, Dec 07, 2013 at 11:17:41AM +0100, Jean Pihet wrote:
->> Use the per-feature check flags for the unwinding feature in order
->> to correctly compile the libunwind and libunwind-debug-frame feature
->> checks.
->>
->> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set
->> in 'make -C tools/perf'
->>
->> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->
-> SNIP
->
->> +BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
->>
->>  ###############################
->>
->>  test-all:
->> -     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
->> +     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
->
-> hum, the test-all build command should have every possible flags we use, right?
-> including LIBUNWIND_CFLAGS, LIBUNWIND_LDFLAGS
-Oh yes you are right. I am overlooked the test-all feature (which
-never builds on my modest embedded systems).
-$(LIBUNWIND_LIBS) should be replaced by $(LIBUNWIND_CFLAGS)
-$(LIBUNWIND_LDFLAGS), is that a reasonable approach?
+As I said above about priorities, we are not in a hurry to merge ACPI
+for arm64 before PCI is supported.
 
->
-> also, this patch no longer applies on acme's perf/core
-I am using a recent mainline (3.12-rc2).
+> What is the status of the PCI work though? I suspect it won't be all
+> that hard to add minimal PCI support for a simple mmconfig plus
+> fixed I/O space based host of the kind that qemu can easily provide.
 
-Let me correct the patch on acme's perf/core. Is that OK?
+Liviu (ARM engineer) has been working on generalising the microblaze
+code (which is very similar to powerpc) and enable it on arm64. The
+patches will be posted soon (though may slip into the new year) but
+there will be many discussions on how to do this best, so I don't expect
+a quick merge.
 
-Thx for reviewing!
-Jean
+In parallel, Will is looking at getting PCI to work with kvmtool and
+that's something we could merge sooner (but again, in the new year).
 
->
-> jirka
+> The hard part that we want to share code with other architectures is
+> supporting pluggable host controllers, and I think we can defer that
+> a bit.
+
+Indeed, this would take time.
+
+-- 
+Catalin
