@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab3LINHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:07:35 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:62678 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932548Ab3LINHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:07:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386040811-27946-1-git-send-email-acourbot@nvidia.com>
-References: <CAAVeFu+LLR-EwiRskE_VBQwPrnXAdt-ahfcH08mOXsFuStFMJg@mail.gmail.com>
-	<1386040811-27946-1-git-send-email-acourbot@nvidia.com>
-Date: Mon, 9 Dec 2013 14:07:29 +0100
-Message-ID: <CACRpkdYvN6ONNWWvxtHJC0WiuoZ8VzitsQR4bJrCoajnT0aX=A@mail.gmail.com>
-Subject: Re: [PATCH v3] gpio: better lookup method for platform GPIOs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933599Ab3LINKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:10:43 -0500
+Received: from mga09.intel.com ([134.134.136.24]:57434 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933562Ab3LINKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 08:10:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,857,1378882800"; 
+   d="scan'208";a="449172775"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 0/4] perf tools: Pedantic fixes for mmap_pages
+Date: Mon,  9 Dec 2013 15:18:36 +0200
+Message-Id: <1386595120-22978-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 3, 2013 at 4:20 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+Hi
 
-> Change the format of the platform GPIO lookup tables to make them less
-> confusing and improve lookup efficiency.
->
-> The previous format was a single linked-list that required to compare
-> the device name and function ID of every single GPIO defined for each
-> lookup. Switch that to a list of per-device tables, so that the lookup
-> can be done in two steps, omitting the GPIOs that are not relevant for a
-> particular device.
->
-> The matching rules are now defined as follows:
-> - The device name must match *exactly*, and can be NULL for GPIOs not
->   assigned to a particular device,
-> - If the function ID in the lookup table is NULL, the con_id argument of
->   gpiod_get() will not be used for lookup. However, if it is defined, it
->   must match exactly.
-> - The index must always match.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
-> Changes since v2:
-> - Removed size member of the gpiod_lookup_table struct (thanks Heikki!)
-> - Added Andy's reviewed-by
+Here are some pedantic fixes for mmap_pages.
 
-Merged in v3.13-rc3 into my devel branch and applied this on top
-today.
 
-Thanks!
-Linus Walleij
+Adrian Hunter (4):
+      perf tools: Remove unnecessary parentheses
+      perf tools: Fix max mmap_pages
+      perf tools: Fix mmap pages rounding to power of 2
+      perf tools: Fix display of incorrect mmap pages
+
+ tools/perf/builtin-record.c |  2 +-
+ tools/perf/util/evlist.c    | 10 ++++++----
+ tools/perf/util/util.h      | 12 ++++++++++++
+ 3 files changed, 19 insertions(+), 5 deletions(-)
+
+
+Regards
+Adrian
