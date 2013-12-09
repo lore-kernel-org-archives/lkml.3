@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760380Ab3LISiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:38:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52871 "EHLO
+	id S1761294Ab3LISjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:39:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52874 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab3LISh6 (ORCPT
+	with ESMTP id S1755920Ab3LISjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:37:58 -0500
-Date: Mon, 9 Dec 2013 10:39:27 -0800
+	Mon, 9 Dec 2013 13:39:17 -0500
+Date: Mon, 9 Dec 2013 10:40:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Ethan Zhao <ethan.kernel@gmail.com>
 Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] xen/debugfs: Check debugfs initialization before
- using it
-Message-ID: <20131209183927.GB28986@kroah.com>
-References: <1386583012-506-1-git-send-email-ethan.kernel@gmail.com>
- <20131209111900.GC6562@kroah.com>
- <CABawtvNZn8VPjP-Bs3Zw9HJw134iZRx8dWbGgPbWFA4CyJjsZA@mail.gmail.com>
+Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
+Message-ID: <20131209184050.GC28986@kroah.com>
+References: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
+ <20131208140100.GA22793@kroah.com>
+ <CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
+ <20131209082527.GA26950@kroah.com>
+ <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
+ <20131209085526.GB4125@kroah.com>
+ <CABawtvPhE9enmt2NdSemVsDRp6ca38xyQSTO2mEujx0kikWtoA@mail.gmail.com>
+ <20131209111747.GA6562@kroah.com>
+ <CABawtvNUBwTVzFfR4UotCexARN4+As5wKEPyGmRzN7-xZ6J00w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABawtvNZn8VPjP-Bs3Zw9HJw134iZRx8dWbGgPbWFA4CyJjsZA@mail.gmail.com>
+In-Reply-To: <CABawtvNUBwTVzFfR4UotCexARN4+As5wKEPyGmRzN7-xZ6J00w@mail.gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 09:49:36PM +0800, Ethan Zhao wrote:
-> On Mon, Dec 9, 2013 at 7:19 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Dec 09, 2013 at 05:56:52PM +0800, Ethan Zhao wrote:
-> >> From: "ethan.zhao" <ethan.kernel@gmail.com>
-> >>
-> >> Should check debugfs initialization with debugfs_initialized() before using it,
-> >> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
-> >> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
-> >>
-> >> V3: add warning message when debugfs not configured or disabled.
-> >
-> > That's not what this patch does...
-> >
-> >> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
-> >> ---
-> >>  arch/x86/xen/debugfs.c | 6 ++++++
-> >>  1 file changed, 6 insertions(+)
-> >>
-> >> diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
-> >> index c8377fb..85c0e0e 100644
-> >> --- a/arch/x86/xen/debugfs.c
-> >> +++ b/arch/x86/xen/debugfs.c
-> >> @@ -9,12 +9,18 @@ static struct dentry *d_xen_debug;
-> >>
-> >>  struct dentry * __init xen_init_debugfs(void)
-> >>  {
-> >> +     if (!debugfs_initialized()) {
-> >> +             d_xen_debug = NULL;
-> >> +             goto nodebugfs;
-> >> +     }
-> >
-> > Again, why is this even needed?
-> >
-> > What problem in the existing code are you trying to solve?
-> >
-> What I want to ask who is so smart and fake some many functions when
-> CONFIG_DEBUG_FS is not configured/defined and the build could pass
-> without any error ?
+On Mon, Dec 09, 2013 at 09:42:23PM +0800, Ethan Zhao wrote:
+> Greg,
+>     I am the man who built a Xen dom0, but couldn't see debugfs
+> directory and files as expected. there is no warning or tip for me to
+> enable the CONFIG_DEBUG_FS=y in .config , it cost me minutes to figure
+> out what's
+> the matter. and I know should check defugfs config and initialization as
+> zswap_debugfs, tracer_debugfs ,rproc_debugfs did. Is it useless ? if
+> it could save me just 1 minute next time ?
 
-That's the way this has always worked.
+So you would want a "warning" showing up for every single part of the
+kernel that uses debugfs for when it isn't enabled?  That doesn't make
+too much sense now, does it?
 
-> What is the motive make him wrote some many fake function and why he
-> wrote the debugfs_initialized() function seem 'useless' at all ?
-
-To make the caller code easier, and smaller, and to not care if debugfs
-is enabled in the kernel build or not at all.
-
-Ok, I answered your questions, now care to answer mine?
+If you need/want debugfs then enable it in the kernel build, it's not
+that hard, right?
 
 greg k-h
