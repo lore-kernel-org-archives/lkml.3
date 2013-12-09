@@ -1,87 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761450Ab3LIR4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:56:46 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42844 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916Ab3LIR4n (ORCPT
+	id S1761465Ab3LIR5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:57:15 -0500
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:39498 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760514Ab3LIR5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:56:43 -0500
-Date: Mon, 9 Dec 2013 17:56:40 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <b42378@freescale.com>
-Cc: lgirdwood@gmail.com, alsa-devel@alsa-project.org, tiwai@suse.de,
-        perex@perex.cz, linux-kernel@vger.kernel.org
-Message-ID: <20131209175640.GL29268@sirena.org.uk>
-References: <cover.1386344000.git.b42378@freescale.com>
- <105d07ac1a77bf99872d75608c97b3342079bfb7.1386344000.git.b42378@freescale.com>
+	Mon, 9 Dec 2013 12:57:11 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WK7GFmZHL0+Wby+V"
-Content-Disposition: inline
-In-Reply-To: <105d07ac1a77bf99872d75608c97b3342079bfb7.1386344000.git.b42378@freescale.com>
-X-Cookie: It's clever, but is it art?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/2] ASoC: fsl: imx-wm8962: Grant hw_params/free()
- permission to control FLL
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <52A5ECF4.6030301@redhat.com>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-5-git-send-email-wens@csie.org> <52A5A52C.50605@st.com> <52A5ECF4.6030301@redhat.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Tue, 10 Dec 2013 01:56:49 +0800
+X-Google-Sender-Auth: HBxmNgrlkJiz6OxRIWrj_E7rNmE
+Message-ID: <CAGb2v64LNxnz--vn0u9zwmt7MQJZ=uz2fs0H3zDSse_XDfdK4Q@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 04/10] net: stmmac: sunxi platfrom
+ extensions for GMAC in Allwinner A20 SoC's
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: linux-sunxi <linux-sunxi@googlegroups.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---WK7GFmZHL0+Wby+V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Dec 10, 2013 at 12:16 AM, Hans de Goede <hdegoede@redhat.com> wrote:
+> Hi,
+>
+>
+> On 12/09/2013 12:10 PM, srinivas kandagatla wrote:
+>>
+>> Hi Chen,
+>> Good to know that Allwinner uses gmac.
+>>
+>> On ST SoC, we have very similar requirements, before we merge any of
+>> these changes I think we need to come up with common way to solve both
+>> Allwinner and ST SOCs use cases.
+>>
+>> I have already posted few patches on to net-dev
+>> http://lkml.org/lkml/2013/11/12/243 to add Glue driver on top of stmmac
+>> driver.
+>>
+>>
+>> There are few reasons for the way I have done it.
+>>
+>> 1> I did not want to modify gmac driver in any sense to when a new SOC
+>> support is added.
+>> 2> As the SOC specific glue logic sits on top of standard GMAC IP, it
+>> makes sense to represent it proper harware hierarchy.
+>
+>
+> On top often is not the correct term / how things are done in practice.
+>
+> Most of the time the glue are modifications to the ip block, iow in
+> hardware they are not nested / hierarchical at all. We've had similar
+> constructs for ahci platform drivers and there we are actively trying to
+> move away from the whole nested platform devices as that has various
+> issues:
+>
+> 1) It is wrong / does not reflect reality
+> 2) It breaks deferred probing which is often used on SOCs
+>
+> I actually think Wens' approach using a SOC specific init function
+> in platform data is sound, and this is also used a lot else where.
+>
+> As for using the nested approach elsewhere, I only know about AHCI
+> platform driver doing that, and there we are actively trying to move
+> away from it.
+>
+>
+> Now reading this has also made me take a closer look at wens' patch
+> for this. Wens, I see that you directly modify registers in the ccm
+> that is a big no-no instead you should add a helper function to
+> sunxi-clk.c and use that, see ie:
+> https://bitbucket.org/emiliolopez/linux/commits/2b95847d9aa4aa13317dd7358ffcbd951dcb5eff?at=master
 
-On Fri, Dec 06, 2013 at 11:38:29PM +0800, Nicolin Chen wrote:
+Yes, this has been raised by Maxime. The odd "GMAC_IF_TYPE_RGMII" or
+"gmac interface type bit" has been bugging me.
 
-> +static int imx_hifi_hw_free(struct snd_pcm_substream *substream)
-> +{
-> +	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-> +	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-> +
-> +	/* Don't diable FLL if still having multiple substreams running */
-> +	if (codec_dai->active != 1)
-> +		return 0;
-> +
-> +	return imx_wm8962_disable_fll(codec_dai);
+Additionally, the TX clock has 2 inputs (not counting MII [1]).
+The internal one is most likely controlled by the GMAC. The clock
+rate is set internally to match the link speed. The external clock
+source has controllable dividers to get the correct clock rate.
+This shouldn't be hard to model with CCF though.
 
-This will still disable the FLL if there's an analogue bypass path
-active.  I'd suggest changing enable() and disable() to reference count.
+In hardware, this is probably a mux between the GMAC clock generator
+and the GMAC data transmit logic.
 
-> +		if (dapm->bias_level == SND_SOC_BIAS_STANDBY)
-> +			return imx_wm8962_enable_fll(codec_dai, 44100,
-> +						SNDRV_PCM_FORMAT_S16_LE);
+My current plan is to choose MII when the clock is disabled,
+and choose either of the inputs when it is enabled. I will
+have to learn more about the CCF first.
 
-It might be slightly nicer to keep the static variable for the frequency
-- that way if we start up due to set_bias_level() we'll keep the last
-rate played which might be more likely to avoid locking playbacks out.
-Very minor thing though, I wouldn't worry about it.
+[1] In MII mode, the TX clock is sent by the PHY to the MAC.
+    From the MAC's viewpoint, it seems like a clock source.
+    However, from the PHY's viewpoint, it is the provider.
+    In RGMII mode, the MAC provides the TX clock to the PHY,
+    and times the TX data lines to the clock. So in a way,
+    the PHY is the true consumer of the TX clock.
 
---WK7GFmZHL0+Wby+V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ChenYu
 
-iQIcBAEBAgAGBQJSpgRUAAoJELSic+t+oim9ewAQAILMo5W/BBTQL3v3jecE/dAd
-1Efz3wXx7mybOui2V8vu1wbM61KBBruD0h/v8iddm/HIBAdV434NVNBqpub9rtGU
-15GjfCkxIFiAWqrn8+eXKhCMj0QuB9Fzne6uq81M7ueun5CC/uiXdS6dGT6hSaN0
-KkFnt8TbHSVs7DiQ+EDZsEGTj8VMOONfD5wpn85tsktFHxvcSsYNwwmpBGKOhwqO
-FI8wqKTKmm16PAFUFx5Kgq752ZUPdSzTilqTxVuShdLmWxbRGiPv5ha7cEn8rUOR
-UejZC3+nmInhBi+tNREUY9Gd8Q9LITIcxOk1FJYalDfw5YWIi4l6rgpcS/J790/q
-EzYKz1Dl37Tqm/rU5ipfl6o7fICKDLnOBAm/WxyOdgC5Ob4RYviWSiZfAIbmOMo8
-jB8/iIs65pEVcY22gxhkVIvw9gA8dvZYEEtenQ9fJf73I94dBPUMUm2jPyxBzv/n
-4sKFTxt/ep0hy4UQGfxW+a0HYRorBgk5tbb0dicVAbUqa/UeG8YToyVTaE/+CoO2
-64F8QsvWTQWHpIuWl5yjKaWTiBTYs/q0KorB76zYONt+/n+AdestZ61ZsiBvFO0B
-Xe1sa3LzeqeifEgF7EnVrGSRMNvwoxTRz9WttJpG9MusvQ28oBgJMPpE2fzWRHgg
-35qB+u5XcYP1CaYr6RbF
-=i13n
------END PGP SIGNATURE-----
-
---WK7GFmZHL0+Wby+V--
+> Giuseppe, I get the feeling the 0x148 registers st-gmac is using is
+> the same story, but I could be wrong. One important reason why accessing
+> regs like this directly is a big no no is because it is impossible to
+> do proper locking between multiple users, so 2 users doing read / modify /
+> write
+> could end up racing. So accesses to such registers should always happen
+> through a single driver.
+>
+>
+> Regards,
+>
+> Hans
