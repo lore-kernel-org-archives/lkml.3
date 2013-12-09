@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760943Ab3LIJeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:34:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752124Ab3LIJeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:34:06 -0500
-Message-ID: <52A58E8A.3050401@suse.cz>
-Date: Mon, 09 Dec 2013 10:34:02 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
-        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kernel BUG in munlock_vma_pages_range
-References: <52A3D0C3.1080504@oracle.com>
-In-Reply-To: <52A3D0C3.1080504@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760980Ab3LIJen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:34:43 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:65498 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab3LIJei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 04:34:38 -0500
+Message-ID: <1386581672.7152.108.camel@host5.omatika.ru>
+Subject: Re: [PATCH 5/9] ARM: dts: provide DMA config to pxamci
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        DOCUMENTATION <linux-doc@vger.kernel.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Date: Mon, 09 Dec 2013 13:34:32 +0400
+In-Reply-To: <52A587A0.1050503@gmail.com>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+	 <1386543229-1542-6-git-send-email-ynvich@gmail.com>
+	 <201312090233.58592.arnd@arndb.de> <52A587A0.1050503@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2013 02:52 AM, Sasha Levin wrote:
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-> I've stumbled on the following spew.
->
-> The code seems to be in munlock_vma_pages_range():
->
->           page = follow_page_mask(vma, start, FOLL_GET | FOLL_DUMP,
->                           &page_mask);
->
->           if (page && !IS_ERR(page)) {
->                   if (PageTransHuge(page)) {		<<==== HERE
->                           lock_page(page);
->
->
-> This is new code added in "mm: munlock: batch non-THP page isolation and munlock+putback
-> using pagevec". I've Cc'ed involved parties.
+On Mon, 2013-12-09 at 10:04 +0100, Daniel Mack wrote:
+> On 12/09/2013 02:33 AM, Arnd Bergmann wrote:
+> > On Sunday 08 December 2013, Sergei Ianovich wrote:
+> >> Non-dts implementation supply required DMA channel numbers as
+> >> IORESOURCE_DMA. However, there is was no way to get them from
+> >> device tree.
+> > 
+> > I just wrote a lengthy reply to this email to explain in what ways
+> > you got it wrong, but then I saw that Daniel has already done all
+> > the work in the right way in August, so nevermind that.
+> > 
+> > It hasn't made it upstream yet, but see http://list-archives.org/2013/08/07/linux-mtd-lists-infradead-org/patch-00-20-arm-pxa-move-core-and-drivers-to-dmaengine/f/3444199144
+> > for how it's done. Maybe Daniel can comment on the status of his
+> > patches.
+> 
+> I recently rebased all my patches on top of 3.13-rc3, and will resend in
+> couple of days.
+> 
+> The real problem here is that by reworking the DMA related PXA bits, all
+> drivers have to be changed at once, and a gradual transition seems
+> impossible. For that, I was asking for help in areas where I don't have
+> any hardware to test my patches on, but unfortunately, nobody got back
+> to me yet.
 
-Hello, I will look at it, thanks.
-Do you have specific reproduction instructions?
+Nice to have Daniel in this conversation. Your patch series is a big and
+important work. However, I am not sure I will ever land as is exactly
+for this reason.
 
-Vlastimil
+DMA is a per-physical-device concept, not per-platform. Only the DMA
+controller is per-platform. This means we need to rewrite all platform
+drivers at once. This is roughly equivalent to adding a new platform
+support in one patch, which is not going to work.
 
-> [  356.390309] kernel BUG at include/linux/page-flags.h:415!
-> [  356.390309] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  356.395160] Dumping ftrace buffer:
-> [  356.395160]    (ftrace buffer empty)
-> [  356.395160] Modules linked in:
-> [  356.395160] CPU: 36 PID: 10919 Comm: trinity-child74 Not tainted
-> 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4045
-> [  356.395160] task: ffff880f731e0000 ti: ffff880f731e8000 task.ti: ffff880f731e8000
-> [  356.395160] RIP: 0010:[<ffffffff812636c9>]  [<ffffffff812636c9>] munlock_vma_pages_range+0x89/0x1b0
-> [  356.395160] RSP: 0018:ffff880f731e9b58  EFLAGS: 00010286
-> [  356.395160] RAX: 002fffff80008000 RBX: 00007f91cd801000 RCX: 0000000000000000
-> [  356.395160] RDX: ffffea003ded0040 RSI: 00000000000013f1 RDI: 00000000ffffffff
-> [  356.395160] RBP: ffff880f731e9c18 R08: 00000000e26e4584 R09: 0000000000000001
-> [  356.395160] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea003ded0040
-> [  356.395160] R13: ffff880f733a8400 R14: 00007f91cdeea000 R15: ffff880f731e9be4
-> [  356.395160] FS:  0000000000000000(0000) GS:ffff880fdba00000(0000) knlGS:0000000000000000
-> [  356.395160] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  356.395160] CR2: 0000000000000000 CR3: 0000000f7314a000 CR4: 00000000000006e0
-> [  356.395160] Stack:
-> [  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> [  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> [  356.395160]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> [  356.395160] Call Trace:
-> [  356.395160]  [<ffffffff81264c89>] exit_mmap+0x59/0x170
-> [  356.395160]  [<ffffffff8129a4a0>] ? __khugepaged_exit+0xe0/0x150
-> [  356.395160]  [<ffffffff81292d2b>] ? kmem_cache_free+0x24b/0x310
-> [  356.395160]  [<ffffffff8129a4a0>] ? __khugepaged_exit+0xe0/0x150
-> [  356.395160]  [<ffffffff81127eec>] mmput+0x7c/0xf0
-> [  356.395160]  [<ffffffff8112c18d>] exit_mm+0x18d/0x1a0
-> [  356.395160]  [<ffffffff811c8d85>] ? acct_collect+0x175/0x1b0
-> [  356.395160]  [<ffffffff8112ceef>] do_exit+0x26f/0x4e0
-> [  356.395160]  [<ffffffff8112d209>] do_group_exit+0xa9/0xe0
-> [  356.395160]  [<ffffffff81311ff0>] get_signal_to_deliver+0x460/0x4b0
-> [  356.395160]  [<ffffffff81067c3b>] do_signal+0x4b/0x120
-> [  356.395160]  [<ffffffff842a4405>] ? _raw_spin_unlock+0x35/0x60
-> [  356.395160]  [<ffffffff81168d36>] ? vtime_account_user+0x96/0xb0
-> [  356.395160]  [<ffffffff8122ccbf>] ? context_tracking_user_exit+0xaf/0x160
-> [  356.395160]  [<ffffffff81067f9a>] do_notify_resume+0x5a/0xe0
-> [  356.395160]  [<ffffffff842ad0f0>] int_signal+0x12/0x17
-> [  356.395160] Code: 48 89 de 4c 89 ef e8 17 7f ff ff 49 89 c4 48 85 c0 0f 84 eb 00 00 00 48 3d 00
-> f0 ff ff 0f 87 df 00 00 00 48 8b 00 66 85 c0 79 0f <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 49
-> 8b 04 24 f6 c4
-> [  356.395160] RIP  [<ffffffff812636c9>] munlock_vma_pages_range+0x89/0x1b0
-> [  356.395160]  RSP <ffff880f731e9b58>
->
+In patch 08/20 in the series above, you change 10% lines of the pxa mmc
+driver. If we don't count boilerplate lines, this will amount to over
+50%. In other word, the output is a new driver.
+
+My proposal in to actually add new drivers for each platform device with
+DMA and mark new ones EXPERIMENTAL. When they receive adequate testing
+we remove the tag and mark the old one OBSOLETE. When we have a new
+driver for every device presently supported, we will drop the whole old
+series.
+
+This should be very close to a gradual transition.
+
+While we are in transition, I propose that we allow 'hackish' support
+for device tree in the existing drivers. Platform devices are declared
+in dtsi files, so when we move to a new driver we just change the
+compatible string there. Actual devices with their one dts file won't
+need any change. They will need a dtb recompile, though. This way we can
+begin a migration to device tree in pxa immediately.
+
+The patch series does just that.
 
