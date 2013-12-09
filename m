@@ -1,3236 +1,3361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab3LIKfv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:35:51 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:19834 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab3LIKfo (ORCPT
+	id S932714Ab3LIKg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:36:56 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:34582 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751999Ab3LIKgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:35:44 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 09 Dec 2013 02:32:25 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <linus.walleij@linaro.org>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <rob@landley.net>, <thierry.reding@gmail.com>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Ashwini Ghuge <aghuge@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 2/2] pinctrl: tegra: add pinmux controller driver for Tegra124
-Date: Mon, 9 Dec 2013 16:02:20 +0530
-Message-ID: <1386585140-1137-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com>
-References: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Dec 2013 05:36:44 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: trivial@kernel.org
+Cc: arend@broadcom.com, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] [TRIVIAL] treewide: fix occurrences of "the the "
+Date: Mon,  9 Dec 2013 11:36:26 +0100
+Message-Id: <1386585386-7541-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <5281E797.9030101@broadcom.com>
+References: <5281E797.9030101@broadcom.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ashwini Ghuge <aghuge@nvidia.com>
+Fix all occurrences of "the the " in the source code,
+comments and documentation.
 
-This adds a driver for the Tegra124 pinmux, and required
-parameterization data for Tegra124.
+The replacement couldn't be automated because sometimes
+the first "the" was meant to be another word.
 
-The driver uses the common Tegra pincontrol driver utility
-functions to implement the majority of the driver.
+Example: "according the the"
+meaning: "according to the"
 
-This driver is not compatible with the earlier NVIDIA's SoCs,
-hence add new compatibile as "nvidia,tegra124-pinmux".
+Note that I sometimes took the opportunity to fix
+other spelling issues or typos in the same sentences.
+I also fixed a few checkpatch errors in the same
+lines.
 
-Originally written by Ashwini Gguhe.
-Thierry:
-	- Cleanups in patches.
-ldewangan:
-        - Fix some entries for groups.
-	- Fix MUX enums and group sequence.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-Signed-off-by: Ashwini Ghuge <aghuge@nvidia.com>
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+This is an update to the patch sent several times since Sep. 12, 2013
 ---
-Changes from V1:
-- Lots of cleanups and fixes for string separator by Thierry.
-- Fixes for some of group entries.
+ Documentation/ABI/testing/sysfs-devices-memory                 | 2 +-
+ Documentation/DocBook/media/v4l/controls.xml                   | 2 +-
+ Documentation/DocBook/media/v4l/vidioc-g-parm.xml              | 2 +-
+ Documentation/devicetree/bindings/arm/msm/timer.txt            | 2 +-
+ Documentation/devicetree/bindings/ata/cavium-compact-flash.txt | 2 +-
+ Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt        | 2 +-
+ Documentation/devicetree/bindings/mtd/fsmc-nand.txt            | 2 +-
+ Documentation/email-clients.txt                                | 2 +-
+ Documentation/filesystems/autofs4-mount-control.txt            | 6 +++---
+ Documentation/futex-requeue-pi.txt                             | 2 +-
+ Documentation/input/multi-touch-protocol.txt                   | 2 +-
+ Documentation/io-mapping.txt                                   | 2 +-
+ Documentation/kmemcheck.txt                                    | 2 +-
+ Documentation/networking/spider_net.txt                        | 2 +-
+ Documentation/phy.txt                                          | 2 +-
+ Documentation/power/devices.txt                                | 2 +-
+ Documentation/security/Smack.txt                               | 2 +-
+ Documentation/static-keys.txt                                  | 2 +-
+ Documentation/trace/ring-buffer-design.txt                     | 2 +-
+ Documentation/usb/WUSB-Design-overview.txt                     | 2 +-
+ Documentation/virtual/kvm/api.txt                              | 2 +-
+ Documentation/vm/unevictable-lru.txt                           | 2 +-
+ arch/arm/Kconfig                                               | 2 +-
+ arch/arm/include/asm/unwind.h                                  | 2 +-
+ arch/arm/mach-omap2/omap_hwmod.c                               | 6 +++---
+ arch/arm/mach-pxa/stargate2.c                                  | 2 +-
+ arch/blackfin/mach-common/entry.S                              | 2 +-
+ arch/c6x/platforms/cache.c                                     | 2 +-
+ arch/ia64/include/asm/spinlock.h                               | 2 +-
+ arch/ia64/include/asm/uv/uv_hub.h                              | 2 +-
+ arch/m68k/platform/coldfire/intc-2.c                           | 2 +-
+ arch/metag/kernel/process.c                                    | 2 +-
+ arch/microblaze/kernel/entry.S                                 | 2 +-
+ arch/mips/alchemy/devboards/pm.c                               | 2 +-
+ arch/mips/include/asm/octeon/cvmx-pip.h                        | 2 +-
+ arch/mips/include/asm/spinlock.h                               | 2 +-
+ arch/mips/kernel/smtc.c                                        | 2 +-
+ arch/mips/kvm/kvm_mips.c                                       | 2 +-
+ arch/mips/mm/c-octeon.c                                        | 4 ++--
+ arch/mips/netlogic/xlr/fmn.c                                   | 2 +-
+ arch/powerpc/include/asm/epapr_hcalls.h                        | 2 +-
+ arch/powerpc/include/asm/hw_breakpoint.h                       | 2 +-
+ arch/powerpc/kernel/head_64.S                                  | 2 +-
+ arch/powerpc/mm/gup.c                                          | 2 +-
+ arch/powerpc/mm/hugetlbpage.c                                  | 2 +-
+ arch/powerpc/platforms/52xx/mpc52xx_gpt.c                      | 2 +-
+ arch/powerpc/platforms/chrp/setup.c                            | 2 +-
+ arch/powerpc/platforms/powernv/pci-ioda.c                      | 2 +-
+ arch/s390/mm/gup.c                                             | 2 +-
+ arch/sparc/kernel/pci.c                                        | 2 +-
+ arch/sparc/mm/gup.c                                            | 2 +-
+ arch/tile/include/asm/irqflags.h                               | 2 +-
+ arch/tile/include/gxio/trio.h                                  | 2 +-
+ arch/tile/kernel/single_step.c                                 | 2 +-
+ arch/x86/include/asm/spinlock.h                                | 2 +-
+ arch/x86/include/asm/uv/uv_hub.h                               | 2 +-
+ arch/x86/kvm/x86.c                                             | 2 +-
+ arch/x86/mm/gup.c                                              | 4 ++--
+ arch/x86/xen/setup.c                                           | 2 +-
+ arch/xtensa/include/asm/initialize_mmu.h                       | 2 +-
+ arch/xtensa/kernel/entry.S                                     | 4 ++--
+ drivers/acpi/acpica/accommon.h                                 | 2 +-
+ drivers/block/drbd/drbd_main.c                                 | 2 +-
+ drivers/char/apm-emulation.c                                   | 2 +-
+ drivers/char/xilinx_hwicap/fifo_icap.c                         | 2 +-
+ drivers/cpuidle/driver.c                                       | 2 +-
+ drivers/crypto/picoxcell_crypto.c                              | 2 +-
+ drivers/crypto/ux500/hash/hash_core.c                          | 2 +-
+ drivers/gpio/gpio-ich.c                                        | 2 +-
+ drivers/gpu/drm/i915/i915_gem.c                                | 2 +-
+ drivers/gpu/drm/i915/intel_display.c                           | 4 ++--
+ drivers/gpu/drm/radeon/atombios.h                              | 4 ++--
+ drivers/gpu/drm/radeon/r300_reg.h                              | 2 +-
+ drivers/gpu/drm/radeon/radeon_device.c                         | 2 +-
+ drivers/gpu/drm/radeon/radeon_fence.c                          | 2 +-
+ drivers/gpu/drm/radeon/radeon_gart.c                           | 2 +-
+ drivers/hv/channel.c                                           | 4 ++--
+ drivers/hv/vmbus_drv.c                                         | 2 +-
+ drivers/hwmon/pmbus/ucd9200.c                                  | 2 +-
+ drivers/infiniband/hw/ipath/ipath_common.h                     | 2 +-
+ drivers/infiniband/hw/qib/qib.h                                | 2 +-
+ drivers/input/mouse/gpio_mouse.c                               | 2 +-
+ drivers/input/touchscreen/atmel_mxt_ts.c                       | 2 +-
+ drivers/isdn/hardware/mISDN/hfcsusb.c                          | 2 +-
+ drivers/lguest/core.c                                          | 2 +-
+ drivers/media/dvb-frontends/tda1002x.h                         | 2 +-
+ drivers/media/dvb-frontends/tda10048.c                         | 2 +-
+ drivers/media/pci/cx88/cx88-dsp.c                              | 2 +-
+ drivers/media/pci/ivtv/ivtv-yuv.c                              | 2 +-
+ drivers/media/pci/saa7164/saa7164-core.c                       | 2 +-
+ drivers/media/platform/davinci/vpbe.c                          | 2 +-
+ drivers/media/platform/exynos4-is/fimc-capture.c               | 2 +-
+ drivers/media/platform/omap3isp/isp.c                          | 2 +-
+ drivers/media/usb/dvb-usb/friio-fe.c                           | 2 +-
+ drivers/media/usb/dvb-usb/friio.c                              | 2 +-
+ drivers/media/usb/dvb-usb/friio.h                              | 2 +-
+ drivers/media/usb/gspca/finepix.c                              | 2 +-
+ drivers/media/usb/tm6000/tm6000-cards.c                        | 2 +-
+ drivers/media/usb/uvc/uvc_video.c                              | 2 +-
+ drivers/memory/emif.c                                          | 2 +-
+ drivers/message/fusion/mptspi.c                                | 2 +-
+ drivers/mfd/db8500-prcmu.c                                     | 2 +-
+ drivers/misc/sgi-gru/grukservices.c                            | 2 +-
+ drivers/misc/sgi-xp/xpc_uv.c                                   | 2 +-
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c                         | 2 +-
+ drivers/mtd/ubi/ubi.h                                          | 4 ++--
+ drivers/mtd/ubi/wl.c                                           | 2 +-
+ drivers/net/ethernet/calxeda/xgmac.c                           | 2 +-
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c                     | 2 +-
+ drivers/net/ethernet/emulex/benet/be_main.c                    | 2 +-
+ drivers/net/ethernet/intel/e1000/e1000_hw.c                    | 2 +-
+ drivers/net/ethernet/intel/e1000e/ich8lan.c                    | 2 +-
+ drivers/net/ethernet/intel/igb/e1000_82575.c                   | 2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c                  | 2 +-
+ drivers/net/ethernet/neterion/s2io.c                           | 2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c              | 2 +-
+ drivers/net/wimax/i2400m/i2400m.h                              | 4 ++--
+ drivers/net/wimax/i2400m/rx.c                                  | 2 +-
+ drivers/net/wimax/i2400m/tx.c                                  | 2 +-
+ drivers/net/wireless/ath/ath10k/rx_desc.h                      | 2 +-
+ drivers/net/wireless/ath/ath6kl/hif.h                          | 2 +-
+ drivers/net/wireless/ath/ath6kl/sdio.c                         | 2 +-
+ drivers/net/wireless/ath/ath9k/ar9002_phy.c                    | 2 +-
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c                    | 2 +-
+ drivers/net/wireless/ath/wcn36xx/hal.h                         | 6 +++---
+ drivers/net/wireless/brcm80211/brcmsmac/main.c                 | 2 +-
+ drivers/net/wireless/iwlwifi/mvm/fw-api-tx.h                   | 4 ++--
+ drivers/net/wireless/iwlwifi/mvm/phy-ctxt.c                    | 4 ++--
+ drivers/of/base.c                                              | 2 +-
+ drivers/pci/hotplug/acpiphp_glue.c                             | 2 +-
+ drivers/pcmcia/pxa2xx_hx4700.c                                 | 2 +-
+ drivers/power/power_supply_sysfs.c                             | 5 +++--
+ drivers/rtc/rtc-rs5c372.c                                      | 2 +-
+ drivers/s390/net/qeth_core_main.c                              | 2 +-
+ drivers/scsi/bfa/bfa_fcs_rport.c                               | 2 +-
+ drivers/scsi/fcoe/fcoe.c                                       | 6 +++---
+ drivers/scsi/fcoe/fcoe_ctlr.c                                  | 4 ++--
+ drivers/scsi/isci/host.h                                       | 2 +-
+ drivers/scsi/isci/remote_device.h                              | 2 +-
+ drivers/scsi/isci/remote_node_context.h                        | 2 +-
+ drivers/scsi/isci/task.c                                       | 2 +-
+ drivers/scsi/lpfc/lpfc_attr.c                                  | 8 ++++----
+ drivers/scsi/lpfc/lpfc_els.c                                   | 2 +-
+ drivers/scsi/lpfc/lpfc_hbadisc.c                               | 4 ++--
+ drivers/scsi/lpfc/lpfc_init.c                                  | 2 +-
+ drivers/scsi/lpfc/lpfc_mbox.c                                  | 2 +-
+ drivers/scsi/lpfc/lpfc_sli.c                                   | 2 +-
+ drivers/scsi/pm8001/pm8001_hwi.c                               | 2 +-
+ drivers/spi/spi-ppc4xx.c                                       | 2 +-
+ drivers/staging/android/binder.h                               | 2 +-
+ drivers/staging/et131x/et131x.c                                | 2 +-
+ drivers/staging/lustre/lustre/llite/file.c                     | 2 +-
+ drivers/staging/lustre/lustre/ptlrpc/pinger.c                  | 2 +-
+ drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c             | 4 ++--
+ drivers/staging/rtl8188eu/core/rtw_cmd.c                       | 2 +-
+ drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c              | 2 +-
+ drivers/staging/rtl8712/rtl871x_cmd.c                          | 2 +-
+ drivers/staging/sep/sep_main.c                                 | 6 +++---
+ drivers/staging/tidspbridge/include/dspbridge/drv.h            | 4 ++--
+ drivers/staging/tidspbridge/pmgr/dev.c                         | 2 +-
+ drivers/staging/wlags49_h2/README.wlags49                      | 2 +-
+ drivers/target/target_core_alua.c                              | 4 ++--
+ drivers/usb/host/xhci-ring.c                                   | 2 +-
+ drivers/usb/serial/cypress_m8.c                                | 2 +-
+ drivers/usb/serial/mos7720.c                                   | 4 ++--
+ drivers/usb/wusbcore/devconnect.c                              | 2 +-
+ drivers/uwb/drp-ie.c                                           | 2 +-
+ drivers/video/omap/sossi.c                                     | 2 +-
+ drivers/video/sis/sis_accel.c                                  | 2 +-
+ fs/autofs4/dev-ioctl.c                                         | 2 +-
+ fs/btrfs/dev-replace.c                                         | 2 +-
+ fs/btrfs/send.c                                                | 2 +-
+ fs/btrfs/tree-log.c                                            | 2 +-
+ fs/dcache.c                                                    | 4 ++--
+ fs/ecryptfs/keystore.c                                         | 2 +-
+ fs/ext2/ext2.h                                                 | 2 +-
+ fs/ext4/inline.c                                               | 4 ++--
+ fs/f2fs/segment.h                                              | 2 +-
+ fs/ocfs2/localalloc.c                                          | 2 +-
+ fs/sysfs/file.c                                                | 2 +-
+ fs/xfs/xfs_export.c                                            | 2 +-
+ include/drm/drm_rect.h                                         | 2 +-
+ include/linux/mm.h                                             | 2 +-
+ include/linux/moduleparam.h                                    | 2 +-
+ include/linux/skbuff.h                                         | 2 +-
+ include/net/caif/caif_layer.h                                  | 2 +-
+ include/net/ip6_fib.h                                          | 2 +-
+ include/net/wimax.h                                            | 2 +-
+ init/main.c                                                    | 2 +-
+ kernel/jump_label.c                                            | 2 +-
+ kernel/printk/printk.c                                         | 2 +-
+ kernel/smp.c                                                   | 2 +-
+ kernel/trace/ring_buffer.c                                     | 2 +-
+ lib/bitmap.c                                                   | 2 +-
+ lib/dynamic_queue_limits.c                                     | 2 +-
+ lib/earlycpio.c                                                | 2 +-
+ lib/syscall.c                                                  | 2 +-
+ mm/hugetlb.c                                                   | 2 +-
+ mm/page_alloc.c                                                | 2 +-
+ net/bluetooth/hci_conn.c                                       | 2 +-
+ net/bluetooth/hci_core.c                                       | 2 +-
+ net/sctp/chunk.c                                               | 4 ++--
+ net/sunrpc/auth_generic.c                                      | 2 +-
+ net/tipc/link.c                                                | 2 +-
+ net/wimax/op-rfkill.c                                          | 2 +-
+ scripts/tracing/draw_functrace.py                              | 2 +-
+ security/apparmor/context.c                                    | 2 +-
+ security/keys/keyctl.c                                         | 2 +-
+ sound/pci/hda/hda_codec.c                                      | 2 +-
+ sound/pci/hda/patch_sigmatel.c                                 | 2 +-
+ sound/pci/ice1712/prodigy192.c                                 | 2 +-
+ sound/soc/codecs/wm9713.c                                      | 2 +-
+ sound/soc/fsl/fsl_dma.c                                        | 2 +-
+ sound/soc/fsl/fsl_ssi.c                                        | 2 +-
+ sound/sparc/dbri.c                                             | 2 +-
+ tools/perf/Documentation/perf-diff.txt                         | 2 +-
+ tools/power/x86/turbostat/turbostat.8                          | 4 ++--
+ tools/thermal/tmon/pid.c                                       | 2 +-
+ 218 files changed, 253 insertions(+), 252 deletions(-)
 
- drivers/pinctrl/Kconfig            |    4 +
- drivers/pinctrl/Makefile           |    1 +
- drivers/pinctrl/pinctrl-tegra124.c | 3137 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 3142 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pinctrl/pinctrl-tegra124.c
-
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 5e4418f..fe50557 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -269,6 +269,10 @@ config PINCTRL_TEGRA114
- 	bool
- 	select PINCTRL_TEGRA
+diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+index 7405de26ee60..4b3c0208d0a5 100644
+--- a/Documentation/ABI/testing/sysfs-devices-memory
++++ b/Documentation/ABI/testing/sysfs-devices-memory
+@@ -45,7 +45,7 @@ Description:
+ 		The file /sys/devices/system/memory/memoryX/state
+ 		is read-write.  When read, its contents show the
+ 		online/offline state of the memory section.  When written,
+-		root can toggle the the online/offline state of a removable
++		root can toggle the online/offline state of a removable
+ 		memory section (see removable file description above)
+ 		using the following commands.
+ 		# echo online > /sys/devices/system/memory/memoryX/state
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index 7a3b49b3cc3b..7cfc7c21e128 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -3303,7 +3303,7 @@ giving priority to the center of the metered area.</entry>
+ 		<row>
+ 		  <entry><constant>V4L2_EXPOSURE_METERING_MATRIX</constant>&nbsp;</entry>
+ 		  <entry>A multi-zone metering. The light intensity is measured
+-in several points of the frame and the the results are combined. The
++in several points of the frame and the results are combined. The
+ algorithm of the zones selection and their significance in calculating the
+ final value is device dependent.</entry>
+ 		</row>
+diff --git a/Documentation/DocBook/media/v4l/vidioc-g-parm.xml b/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
+index f4e28e7d4751..721728745407 100644
+--- a/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
++++ b/Documentation/DocBook/media/v4l/vidioc-g-parm.xml
+@@ -267,7 +267,7 @@ is intended for still imaging applications. The idea is to get the
+ best possible image quality that the hardware can deliver. It is not
+ defined how the driver writer may achieve that; it will depend on the
+ hardware and the ingenuity of the driver writer. High quality mode is
+-a different mode from the the regular motion video capture modes. In
++a different mode from the regular motion video capture modes. In
+ high quality mode:<itemizedlist>
+ 		  <listitem>
+ 		    <para>The driver may be able to capture higher
+diff --git a/Documentation/devicetree/bindings/arm/msm/timer.txt b/Documentation/devicetree/bindings/arm/msm/timer.txt
+index c6ef8f13dc7e..74607b6c1117 100644
+--- a/Documentation/devicetree/bindings/arm/msm/timer.txt
++++ b/Documentation/devicetree/bindings/arm/msm/timer.txt
+@@ -8,7 +8,7 @@ Properties:
+                "qcom,kpss-timer" - krait subsystem
+                "qcom,scss-timer" - scorpion subsystem
  
-+config PINCTRL_TEGRA124
-+	bool
-+	select PINCTRL_TEGRA
-+
- config PINCTRL_TZ1090
- 	bool "Toumaz Xenif TZ1090 pin control driver"
- 	depends on SOC_TZ1090
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index dcb01a4..d7ae9b1 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -49,6 +49,7 @@ obj-$(CONFIG_PINCTRL_TEGRA)	+= pinctrl-tegra.o
- obj-$(CONFIG_PINCTRL_TEGRA20)	+= pinctrl-tegra20.o
- obj-$(CONFIG_PINCTRL_TEGRA30)	+= pinctrl-tegra30.o
- obj-$(CONFIG_PINCTRL_TEGRA114)	+= pinctrl-tegra114.o
-+obj-$(CONFIG_PINCTRL_TEGRA124)	+= pinctrl-tegra124.o
- obj-$(CONFIG_PINCTRL_TZ1090)	+= pinctrl-tz1090.o
- obj-$(CONFIG_PINCTRL_TZ1090_PDC)	+= pinctrl-tz1090-pdc.o
- obj-$(CONFIG_PINCTRL_U300)	+= pinctrl-u300.o
-diff --git a/drivers/pinctrl/pinctrl-tegra124.c b/drivers/pinctrl/pinctrl-tegra124.c
-new file mode 100644
-index 0000000..17daef4
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-tegra124.c
-@@ -0,0 +1,3137 @@
-+/*
-+ * Pinctrl data for the NVIDIA Tegra124 pinmux
-+ *
-+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+
-+#include "pinctrl-tegra.h"
-+
-+/*
-+ * Most pins affected by the pinmux can also be GPIOs. Define these first.
-+ * These must match how the GPIO driver names/numbers its pins.
-+ */
-+#define _GPIO(offset)				(offset)
-+
-+#define TEGRA_PIN_CLK_32K_OUT_PA0		_GPIO(0)
-+#define TEGRA_PIN_UART3_CTS_N_PA1		_GPIO(1)
-+#define TEGRA_PIN_DAP2_FS_PA2			_GPIO(2)
-+#define TEGRA_PIN_DAP2_SCLK_PA3			_GPIO(3)
-+#define TEGRA_PIN_DAP2_DIN_PA4			_GPIO(4)
-+#define TEGRA_PIN_DAP2_DOUT_PA5			_GPIO(5)
-+#define TEGRA_PIN_SDMMC3_CLK_PA6		_GPIO(6)
-+#define TEGRA_PIN_SDMMC3_CMD_PA7		_GPIO(7)
-+#define TEGRA_PIN_PB0				_GPIO(8)
-+#define TEGRA_PIN_PB1				_GPIO(9)
-+#define TEGRA_PIN_SDMMC3_DAT3_PB4		_GPIO(12)
-+#define TEGRA_PIN_SDMMC3_DAT2_PB5		_GPIO(13)
-+#define TEGRA_PIN_SDMMC3_DAT1_PB6		_GPIO(14)
-+#define TEGRA_PIN_SDMMC3_DAT0_PB7		_GPIO(15)
-+#define TEGRA_PIN_UART3_RTS_N_PC0		_GPIO(16)
-+#define TEGRA_PIN_UART2_TXD_PC2			_GPIO(18)
-+#define TEGRA_PIN_UART2_RXD_PC3			_GPIO(19)
-+#define TEGRA_PIN_GEN1_I2C_SCL_PC4		_GPIO(20)
-+#define TEGRA_PIN_GEN1_I2C_SDA_PC5		_GPIO(21)
-+#define TEGRA_PIN_PC7				_GPIO(23)
-+#define TEGRA_PIN_PG0				_GPIO(48)
-+#define TEGRA_PIN_PG1				_GPIO(49)
-+#define TEGRA_PIN_PG2				_GPIO(50)
-+#define TEGRA_PIN_PG3				_GPIO(51)
-+#define TEGRA_PIN_PG4				_GPIO(52)
-+#define TEGRA_PIN_PG5				_GPIO(53)
-+#define TEGRA_PIN_PG6				_GPIO(54)
-+#define TEGRA_PIN_PG7				_GPIO(55)
-+#define TEGRA_PIN_PH0				_GPIO(56)
-+#define TEGRA_PIN_PH1				_GPIO(57)
-+#define TEGRA_PIN_PH2				_GPIO(58)
-+#define TEGRA_PIN_PH3				_GPIO(59)
-+#define TEGRA_PIN_PH4				_GPIO(60)
-+#define TEGRA_PIN_PH5				_GPIO(61)
-+#define TEGRA_PIN_PH6				_GPIO(62)
-+#define TEGRA_PIN_PH7				_GPIO(63)
-+#define TEGRA_PIN_PI0				_GPIO(64)
-+#define TEGRA_PIN_PI1				_GPIO(65)
-+#define TEGRA_PIN_PI2				_GPIO(66)
-+#define TEGRA_PIN_PI3				_GPIO(67)
-+#define TEGRA_PIN_PI4				_GPIO(68)
-+#define TEGRA_PIN_PI5				_GPIO(69)
-+#define TEGRA_PIN_PI6				_GPIO(70)
-+#define TEGRA_PIN_PI7				_GPIO(71)
-+#define TEGRA_PIN_PJ0				_GPIO(72)
-+#define TEGRA_PIN_PJ2				_GPIO(74)
-+#define TEGRA_PIN_UART2_CTS_N_PJ5		_GPIO(77)
-+#define TEGRA_PIN_UART2_RTS_N_PJ6		_GPIO(78)
-+#define TEGRA_PIN_PJ7				_GPIO(79)
-+#define TEGRA_PIN_PK0				_GPIO(80)
-+#define TEGRA_PIN_PK1				_GPIO(81)
-+#define TEGRA_PIN_PK2				_GPIO(82)
-+#define TEGRA_PIN_PK3				_GPIO(83)
-+#define TEGRA_PIN_PK4				_GPIO(84)
-+#define TEGRA_PIN_SPDIF_OUT_PK5			_GPIO(85)
-+#define TEGRA_PIN_SPDIF_IN_PK6			_GPIO(86)
-+#define TEGRA_PIN_PK7				_GPIO(87)
-+#define TEGRA_PIN_DAP1_FS_PN0			_GPIO(104)
-+#define TEGRA_PIN_DAP1_DIN_PN1			_GPIO(105)
-+#define TEGRA_PIN_DAP1_DOUT_PN2			_GPIO(106)
-+#define TEGRA_PIN_DAP1_SCLK_PN3			_GPIO(107)
-+#define TEGRA_PIN_USB_VBUS_EN0_PN4		_GPIO(108)
-+#define TEGRA_PIN_USB_VBUS_EN1_PN5		_GPIO(109)
-+#define TEGRA_PIN_HDMI_INT_PN7			_GPIO(111)
-+#define TEGRA_PIN_ULPI_DATA7_PO0		_GPIO(112)
-+#define TEGRA_PIN_ULPI_DATA0_PO1		_GPIO(113)
-+#define TEGRA_PIN_ULPI_DATA1_PO2		_GPIO(114)
-+#define TEGRA_PIN_ULPI_DATA2_PO3		_GPIO(115)
-+#define TEGRA_PIN_ULPI_DATA3_PO4		_GPIO(116)
-+#define TEGRA_PIN_ULPI_DATA4_PO5		_GPIO(117)
-+#define TEGRA_PIN_ULPI_DATA5_PO6		_GPIO(118)
-+#define TEGRA_PIN_ULPI_DATA6_PO7		_GPIO(119)
-+#define TEGRA_PIN_DAP3_FS_PP0			_GPIO(120)
-+#define TEGRA_PIN_DAP3_DIN_PP1			_GPIO(121)
-+#define TEGRA_PIN_DAP3_DOUT_PP2			_GPIO(122)
-+#define TEGRA_PIN_DAP3_SCLK_PP3			_GPIO(123)
-+#define TEGRA_PIN_DAP4_FS_PP4			_GPIO(124)
-+#define TEGRA_PIN_DAP4_DIN_PP5			_GPIO(125)
-+#define TEGRA_PIN_DAP4_DOUT_PP6			_GPIO(126)
-+#define TEGRA_PIN_DAP4_SCLK_PP7			_GPIO(127)
-+#define TEGRA_PIN_KB_COL0_PQ0			_GPIO(128)
-+#define TEGRA_PIN_KB_COL1_PQ1			_GPIO(129)
-+#define TEGRA_PIN_KB_COL2_PQ2			_GPIO(130)
-+#define TEGRA_PIN_KB_COL3_PQ3			_GPIO(131)
-+#define TEGRA_PIN_KB_COL4_PQ4			_GPIO(132)
-+#define TEGRA_PIN_KB_COL5_PQ5			_GPIO(133)
-+#define TEGRA_PIN_KB_COL6_PQ6			_GPIO(134)
-+#define TEGRA_PIN_KB_COL7_PQ7			_GPIO(135)
-+#define TEGRA_PIN_KB_ROW0_PR0			_GPIO(136)
-+#define TEGRA_PIN_KB_ROW1_PR1			_GPIO(137)
-+#define TEGRA_PIN_KB_ROW2_PR2			_GPIO(138)
-+#define TEGRA_PIN_KB_ROW3_PR3			_GPIO(139)
-+#define TEGRA_PIN_KB_ROW4_PR4			_GPIO(140)
-+#define TEGRA_PIN_KB_ROW5_PR5			_GPIO(141)
-+#define TEGRA_PIN_KB_ROW6_PR6			_GPIO(142)
-+#define TEGRA_PIN_KB_ROW7_PR7			_GPIO(143)
-+#define TEGRA_PIN_KB_ROW8_PS0			_GPIO(144)
-+#define TEGRA_PIN_KB_ROW9_PS1			_GPIO(145)
-+#define TEGRA_PIN_KB_ROW10_PS2			_GPIO(146)
-+#define TEGRA_PIN_KB_ROW11_PS3			_GPIO(147)
-+#define TEGRA_PIN_KB_ROW12_PS4			_GPIO(148)
-+#define TEGRA_PIN_KB_ROW13_PS5			_GPIO(149)
-+#define TEGRA_PIN_KB_ROW14_PS6			_GPIO(150)
-+#define TEGRA_PIN_KB_ROW15_PS7			_GPIO(151)
-+#define TEGRA_PIN_KB_ROW16_PT0			_GPIO(152)
-+#define TEGRA_PIN_KB_ROW17_PT1			_GPIO(153)
-+#define TEGRA_PIN_GEN2_I2C_SCL_PT5		_GPIO(157)
-+#define TEGRA_PIN_GEN2_I2C_SDA_PT6		_GPIO(158)
-+#define TEGRA_PIN_SDMMC4_CMD_PT7		_GPIO(159)
-+#define TEGRA_PIN_PU0				_GPIO(160)
-+#define TEGRA_PIN_PU1				_GPIO(161)
-+#define TEGRA_PIN_PU2				_GPIO(162)
-+#define TEGRA_PIN_PU3				_GPIO(163)
-+#define TEGRA_PIN_PU4				_GPIO(164)
-+#define TEGRA_PIN_PU5				_GPIO(165)
-+#define TEGRA_PIN_PU6				_GPIO(166)
-+#define TEGRA_PIN_PV0				_GPIO(168)
-+#define TEGRA_PIN_PV1				_GPIO(169)
-+#define TEGRA_PIN_SDMMC3_CD_N_PV2		_GPIO(170)
-+#define TEGRA_PIN_SDMMC1_WP_N_PV3		_GPIO(171)
-+#define TEGRA_PIN_DDC_SCL_PV4			_GPIO(172)
-+#define TEGRA_PIN_DDC_SDA_PV5			_GPIO(173)
-+#define TEGRA_PIN_GPIO_W2_AUD_PW2		_GPIO(178)
-+#define TEGRA_PIN_GPIO_W3_AUD_PW3		_GPIO(179)
-+#define TEGRA_PIN_DAP_MCLK1_PW4			_GPIO(180)
-+#define TEGRA_PIN_CLK2_OUT_PW5			_GPIO(181)
-+#define TEGRA_PIN_UART3_TXD_PW6			_GPIO(182)
-+#define TEGRA_PIN_UART3_RXD_PW7			_GPIO(183)
-+#define TEGRA_PIN_DVFS_PWM_PX0			_GPIO(184)
-+#define TEGRA_PIN_GPIO_X1_AUD_PX1		_GPIO(185)
-+#define TEGRA_PIN_DVFS_CLK_PX2			_GPIO(186)
-+#define TEGRA_PIN_GPIO_X3_AUD_PX3		_GPIO(187)
-+#define TEGRA_PIN_GPIO_X4_AUD_PX4		_GPIO(188)
-+#define TEGRA_PIN_GPIO_X5_AUD_PX5		_GPIO(189)
-+#define TEGRA_PIN_GPIO_X6_AUD_PX6		_GPIO(190)
-+#define TEGRA_PIN_GPIO_X7_AUD_PX7		_GPIO(191)
-+#define TEGRA_PIN_ULPI_CLK_PY0			_GPIO(192)
-+#define TEGRA_PIN_ULPI_DIR_PY1			_GPIO(193)
-+#define TEGRA_PIN_ULPI_NXT_PY2			_GPIO(194)
-+#define TEGRA_PIN_ULPI_STP_PY3			_GPIO(195)
-+#define TEGRA_PIN_SDMMC1_DAT3_PY4		_GPIO(196)
-+#define TEGRA_PIN_SDMMC1_DAT2_PY5		_GPIO(197)
-+#define TEGRA_PIN_SDMMC1_DAT1_PY6		_GPIO(198)
-+#define TEGRA_PIN_SDMMC1_DAT0_PY7		_GPIO(199)
-+#define TEGRA_PIN_SDMMC1_CLK_PZ0		_GPIO(200)
-+#define TEGRA_PIN_SDMMC1_CMD_PZ1		_GPIO(201)
-+#define TEGRA_PIN_PWR_I2C_SCL_PZ6		_GPIO(206)
-+#define TEGRA_PIN_PWR_I2C_SDA_PZ7		_GPIO(207)
-+#define TEGRA_PIN_SDMMC4_DAT0_PAA0		_GPIO(208)
-+#define TEGRA_PIN_SDMMC4_DAT1_PAA1		_GPIO(209)
-+#define TEGRA_PIN_SDMMC4_DAT2_PAA2		_GPIO(210)
-+#define TEGRA_PIN_SDMMC4_DAT3_PAA3		_GPIO(211)
-+#define TEGRA_PIN_SDMMC4_DAT4_PAA4		_GPIO(212)
-+#define TEGRA_PIN_SDMMC4_DAT5_PAA5		_GPIO(213)
-+#define TEGRA_PIN_SDMMC4_DAT6_PAA6		_GPIO(214)
-+#define TEGRA_PIN_SDMMC4_DAT7_PAA7		_GPIO(215)
-+#define TEGRA_PIN_PBB0				_GPIO(216)
-+#define TEGRA_PIN_CAM_I2C_SCL_PBB1		_GPIO(217)
-+#define TEGRA_PIN_CAM_I2C_SDA_PBB2		_GPIO(218)
-+#define TEGRA_PIN_PBB3				_GPIO(219)
-+#define TEGRA_PIN_PBB4				_GPIO(220)
-+#define TEGRA_PIN_PBB5				_GPIO(221)
-+#define TEGRA_PIN_PBB6				_GPIO(222)
-+#define TEGRA_PIN_PBB7				_GPIO(223)
-+#define TEGRA_PIN_CAM_MCLK_PCC0			_GPIO(224)
-+#define TEGRA_PIN_PCC1				_GPIO(225)
-+#define TEGRA_PIN_PCC2				_GPIO(226)
-+#define TEGRA_PIN_SDMMC4_CLK_PCC4		_GPIO(228)
-+#define TEGRA_PIN_CLK2_REQ_PCC5			_GPIO(229)
-+#define TEGRA_PIN_PEX_L0_RST_N_PDD1		_GPIO(233)
-+#define TEGRA_PIN_PEX_L0_CLKREQ_N_PDD2		_GPIO(234)
-+#define TEGRA_PIN_PEX_WAKE_N_PDD3		_GPIO(235)
-+#define TEGRA_PIN_PEX_L1_RST_N_PDD5		_GPIO(237)
-+#define TEGRA_PIN_PEX_L1_CLKREQ_N_PDD6		_GPIO(238)
-+#define TEGRA_PIN_CLK3_OUT_PEE0			_GPIO(240)
-+#define TEGRA_PIN_CLK3_REQ_PEE1			_GPIO(241)
-+#define TEGRA_PIN_DAP_MCLK1_REQ_PEE2		_GPIO(242)
-+#define TEGRA_PIN_HDMI_CEC_PEE3			_GPIO(243)
-+#define TEGRA_PIN_SDMMC3_CLK_LB_OUT_PEE4	_GPIO(244)
-+#define TEGRA_PIN_SDMMC3_CLK_LB_IN_PEE5		_GPIO(245)
-+#define TEGRA_PIN_DP_HPD_PFF0			_GPIO(248)
-+#define TEGRA_PIN_USB_VBUS_EN2_PFF1		_GPIO(249)
-+#define TEGRA_PIN_PFF2				_GPIO(250)
-+
-+/* All non-GPIO pins follow */
-+#define NUM_GPIOS	(TEGRA_PIN_PFF2 + 1)
-+#define _PIN(offset)	(NUM_GPIOS + (offset))
-+
-+/* Non-GPIO pins */
-+#define TEGRA_PIN_CORE_PWR_REQ			_PIN(0)
-+#define TEGRA_PIN_CPU_PWR_REQ			_PIN(1)
-+#define TEGRA_PIN_PWR_INT_N			_PIN(2)
-+#define TEGRA_PIN_GMI_CLK_LB			_PIN(3)
-+#define TEGRA_PIN_RESET_OUT_N			_PIN(4)
-+#define TEGRA_PIN_OWR				_PIN(5)
-+#define TEGRA_PIN_CLK_32K_IN			_PIN(6)
-+#define TEGRA_PIN_JTAG_RTCK			_PIN(7)
-+
-+static const struct pinctrl_pin_desc  tegra124_pins[] = {
-+	PINCTRL_PIN(TEGRA_PIN_CLK_32K_OUT_PA0, "CLK_32K_OUT PA0"),
-+	PINCTRL_PIN(TEGRA_PIN_UART3_CTS_N_PA1, "UART3_CTS_N PA1"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP2_FS_PA2, "DAP2_FS PA2"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP2_SCLK_PA3, "DAP2_SCLK PA3"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP2_DIN_PA4, "DAP2_DIN PA4"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP2_DOUT_PA5, "DAP2_DOUT PA5"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_CLK_PA6, "SDMMC3_CLK PA6"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_CMD_PA7, "SDMMC3_CMD PA7"),
-+	PINCTRL_PIN(TEGRA_PIN_PB0, "PB0"),
-+	PINCTRL_PIN(TEGRA_PIN_PB1, "PB1"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_DAT3_PB4, "SDMMC3_DAT3 PB4"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_DAT2_PB5, "SDMMC3_DAT2 PB5"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_DAT1_PB6, "SDMMC3_DAT1 PB6"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_DAT0_PB7, "SDMMC3_DAT0 PB7"),
-+	PINCTRL_PIN(TEGRA_PIN_UART3_RTS_N_PC0, "UART3_RTS_N PC0"),
-+	PINCTRL_PIN(TEGRA_PIN_UART2_TXD_PC2, "UART2_TXD PC2"),
-+	PINCTRL_PIN(TEGRA_PIN_UART2_RXD_PC3, "UART2_RXD PC3"),
-+	PINCTRL_PIN(TEGRA_PIN_GEN1_I2C_SCL_PC4, "GEN1_I2C_SCL PC4"),
-+	PINCTRL_PIN(TEGRA_PIN_GEN1_I2C_SDA_PC5, "GEN1_I2C_SDA PC5"),
-+	PINCTRL_PIN(TEGRA_PIN_PC7, "PC7"),
-+	PINCTRL_PIN(TEGRA_PIN_PG0, "PG0"),
-+	PINCTRL_PIN(TEGRA_PIN_PG1, "PG1"),
-+	PINCTRL_PIN(TEGRA_PIN_PG2, "PG2"),
-+	PINCTRL_PIN(TEGRA_PIN_PG3, "PG3"),
-+	PINCTRL_PIN(TEGRA_PIN_PG4, "PG4"),
-+	PINCTRL_PIN(TEGRA_PIN_PG5, "PG5"),
-+	PINCTRL_PIN(TEGRA_PIN_PG6, "PG6"),
-+	PINCTRL_PIN(TEGRA_PIN_PG7, "PG7"),
-+	PINCTRL_PIN(TEGRA_PIN_PH0, "PH0"),
-+	PINCTRL_PIN(TEGRA_PIN_PH1, "PH1"),
-+	PINCTRL_PIN(TEGRA_PIN_PH2, "PH2"),
-+	PINCTRL_PIN(TEGRA_PIN_PH3, "PH3"),
-+	PINCTRL_PIN(TEGRA_PIN_PH4, "PH4"),
-+	PINCTRL_PIN(TEGRA_PIN_PH5, "PH5"),
-+	PINCTRL_PIN(TEGRA_PIN_PH6, "PH6"),
-+	PINCTRL_PIN(TEGRA_PIN_PH7, "PH7"),
-+	PINCTRL_PIN(TEGRA_PIN_PI0, "PI0"),
-+	PINCTRL_PIN(TEGRA_PIN_PI1, "PI1"),
-+	PINCTRL_PIN(TEGRA_PIN_PI2, "PI2"),
-+	PINCTRL_PIN(TEGRA_PIN_PI3, "PI3"),
-+	PINCTRL_PIN(TEGRA_PIN_PI4, "PI4"),
-+	PINCTRL_PIN(TEGRA_PIN_PI5, "PI5"),
-+	PINCTRL_PIN(TEGRA_PIN_PI6, "PI6"),
-+	PINCTRL_PIN(TEGRA_PIN_PI7, "PI7"),
-+	PINCTRL_PIN(TEGRA_PIN_PJ0, "PJ0"),
-+	PINCTRL_PIN(TEGRA_PIN_PJ2, "PJ2"),
-+	PINCTRL_PIN(TEGRA_PIN_UART2_CTS_N_PJ5, "UART2_CTS_N PJ5"),
-+	PINCTRL_PIN(TEGRA_PIN_UART2_RTS_N_PJ6, "UART2_RTS_N PJ6"),
-+	PINCTRL_PIN(TEGRA_PIN_PJ7, "PJ7"),
-+	PINCTRL_PIN(TEGRA_PIN_PK0, "PK0"),
-+	PINCTRL_PIN(TEGRA_PIN_PK1, "PK1"),
-+	PINCTRL_PIN(TEGRA_PIN_PK2, "PK2"),
-+	PINCTRL_PIN(TEGRA_PIN_PK3, "PK3"),
-+	PINCTRL_PIN(TEGRA_PIN_PK4, "PK4"),
-+	PINCTRL_PIN(TEGRA_PIN_SPDIF_OUT_PK5, "SPDIF_OUT PK5"),
-+	PINCTRL_PIN(TEGRA_PIN_SPDIF_IN_PK6, "SPDIF_IN PK6"),
-+	PINCTRL_PIN(TEGRA_PIN_PK7, "PK7"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP1_FS_PN0, "DAP1_FS PN0"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP1_DIN_PN1, "DAP1_DIN PN1"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP1_DOUT_PN2, "DAP1_DOUT PN2"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP1_SCLK_PN3, "DAP1_SCLK PN3"),
-+	PINCTRL_PIN(TEGRA_PIN_USB_VBUS_EN0_PN4, "USB_VBUS_EN0 PN4"),
-+	PINCTRL_PIN(TEGRA_PIN_USB_VBUS_EN1_PN5, "USB_VBUS_EN1 PN5"),
-+	PINCTRL_PIN(TEGRA_PIN_HDMI_INT_PN7, "HDMI_INT PN7"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA7_PO0, "ULPI_DATA7 PO0"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA0_PO1, "ULPI_DATA0 PO1"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA1_PO2, "ULPI_DATA1 PO2"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA2_PO3, "ULPI_DATA2 PO3"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA3_PO4, "ULPI_DATA3 PO4"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA4_PO5, "ULPI_DATA4 PO5"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA5_PO6, "ULPI_DATA5 PO6"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DATA6_PO7, "ULPI_DATA6 PO7"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP3_FS_PP0, "DAP3_FS PP0"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP3_DIN_PP1, "DAP3_DIN PP1"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP3_DOUT_PP2, "DAP3_DOUT PP2"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP3_SCLK_PP3, "DAP3_SCLK PP3"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP4_FS_PP4, "DAP4_FS PP4"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP4_DIN_PP5, "DAP4_DIN PP5"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP4_DOUT_PP6, "DAP4_DOUT PP6"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP4_SCLK_PP7, "DAP4_SCLK PP7"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL0_PQ0, "KB_COL0 PQ0"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL1_PQ1, "KB_COL1 PQ1"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL2_PQ2, "KB_COL2 PQ2"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL3_PQ3, "KB_COL3 PQ3"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL4_PQ4, "KB_COL4 PQ4"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL5_PQ5, "KB_COL5 PQ5"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL6_PQ6, "KB_COL6 PQ6"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_COL7_PQ7, "KB_COL7 PQ7"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW0_PR0, "KB_ROW0 PR0"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW1_PR1, "KB_ROW1 PR1"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW2_PR2, "KB_ROW2 PR2"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW3_PR3, "KB_ROW3 PR3"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW4_PR4, "KB_ROW4 PR4"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW5_PR5, "KB_ROW5 PR5"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW6_PR6, "KB_ROW6 PR6"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW7_PR7, "KB_ROW7 PR7"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW8_PS0, "KB_ROW8 PS0"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW9_PS1, "KB_ROW9 PS1"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW10_PS2, "KB_ROW10 PS2"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW11_PS3, "KB_ROW10 PS3"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW12_PS4, "KB_ROW10 PS4"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW13_PS5, "KB_ROW10 PS5"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW14_PS6, "KB_ROW10 PS6"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW15_PS7, "KB_ROW10 PS7"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW16_PT0, "KB_ROW10 PT0"),
-+	PINCTRL_PIN(TEGRA_PIN_KB_ROW17_PT1, "KB_ROW10 PT1"),
-+	PINCTRL_PIN(TEGRA_PIN_GEN2_I2C_SCL_PT5, "GEN2_I2C_SCL PT5"),
-+	PINCTRL_PIN(TEGRA_PIN_GEN2_I2C_SDA_PT6, "GEN2_I2C_SDA PT6"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_CMD_PT7, "SDMMC4_CMD PT7"),
-+	PINCTRL_PIN(TEGRA_PIN_PU0, "PU0"),
-+	PINCTRL_PIN(TEGRA_PIN_PU1, "PU1"),
-+	PINCTRL_PIN(TEGRA_PIN_PU2, "PU2"),
-+	PINCTRL_PIN(TEGRA_PIN_PU3, "PU3"),
-+	PINCTRL_PIN(TEGRA_PIN_PU4, "PU4"),
-+	PINCTRL_PIN(TEGRA_PIN_PU5, "PU5"),
-+	PINCTRL_PIN(TEGRA_PIN_PU6, "PU6"),
-+	PINCTRL_PIN(TEGRA_PIN_PV0, "PV0"),
-+	PINCTRL_PIN(TEGRA_PIN_PV1, "PV1"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_CD_N_PV2, "SDMMC3_CD_N PV2"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_WP_N_PV3, "SDMMC1_WP_N PV3"),
-+	PINCTRL_PIN(TEGRA_PIN_DDC_SCL_PV4, "DDC_SCL PV4"),
-+	PINCTRL_PIN(TEGRA_PIN_DDC_SDA_PV5, "DDC_SDA PV5"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_W2_AUD_PW2, "GPIO_W2_AUD PW2"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_W3_AUD_PW3, "GPIO_W3_AUD PW3"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP_MCLK1_PW4, "DAP_MCLK1 PW4"),
-+	PINCTRL_PIN(TEGRA_PIN_CLK2_OUT_PW5, "CLK2_OUT PW5"),
-+	PINCTRL_PIN(TEGRA_PIN_UART3_TXD_PW6, "UART3_TXD PW6"),
-+	PINCTRL_PIN(TEGRA_PIN_UART3_RXD_PW7, "UART3_RXD PW7"),
-+	PINCTRL_PIN(TEGRA_PIN_DVFS_PWM_PX0, "DVFS_PWM PX0"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_X1_AUD_PX1, "GPIO_X1_AUD PX1"),
-+	PINCTRL_PIN(TEGRA_PIN_DVFS_CLK_PX2, "DVFS_CLK PX2"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_X3_AUD_PX3, "GPIO_X3_AUD PX3"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_X4_AUD_PX4, "GPIO_X4_AUD PX4"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_X5_AUD_PX5, "GPIO_X5_AUD PX5"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_X6_AUD_PX6, "GPIO_X6_AUD PX6"),
-+	PINCTRL_PIN(TEGRA_PIN_GPIO_X7_AUD_PX7, "GPIO_X7_AUD PX7"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_CLK_PY0, "ULPI_CLK PY0"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_DIR_PY1, "ULPI_DIR PY1"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_NXT_PY2, "ULPI_NXT PY2"),
-+	PINCTRL_PIN(TEGRA_PIN_ULPI_STP_PY3, "ULPI_STP PY3"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_DAT3_PY4, "SDMMC1_DAT3 PY4"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_DAT2_PY5, "SDMMC1_DAT2 PY5"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_DAT1_PY6, "SDMMC1_DAT1 PY6"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_DAT0_PY7, "SDMMC1_DAT0 PY7"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_CLK_PZ0, "SDMMC1_CLK PZ0"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC1_CMD_PZ1, "SDMMC1_CMD PZ1"),
-+	PINCTRL_PIN(TEGRA_PIN_PWR_I2C_SCL_PZ6, "PWR_I2C_SCL PZ6"),
-+	PINCTRL_PIN(TEGRA_PIN_PWR_I2C_SDA_PZ7, "PWR_I2C_SDA PZ7"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT0_PAA0, "SDMMC4_DAT0 PAA0"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT1_PAA1, "SDMMC4_DAT1 PAA1"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT2_PAA2, "SDMMC4_DAT2 PAA2"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT3_PAA3, "SDMMC4_DAT3 PAA3"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT4_PAA4, "SDMMC4_DAT4 PAA4"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT5_PAA5, "SDMMC4_DAT5 PAA5"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT6_PAA6, "SDMMC4_DAT6 PAA6"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_DAT7_PAA7, "SDMMC4_DAT7 PAA7"),
-+	PINCTRL_PIN(TEGRA_PIN_PBB0, "PBB0"),
-+	PINCTRL_PIN(TEGRA_PIN_CAM_I2C_SCL_PBB1, "CAM_I2C_SCL PBB1"),
-+	PINCTRL_PIN(TEGRA_PIN_CAM_I2C_SDA_PBB2, "CAM_I2C_SDA PBB2"),
-+	PINCTRL_PIN(TEGRA_PIN_PBB3, "PBB3"),
-+	PINCTRL_PIN(TEGRA_PIN_PBB4, "PBB4"),
-+	PINCTRL_PIN(TEGRA_PIN_PBB5, "PBB5"),
-+	PINCTRL_PIN(TEGRA_PIN_PBB6, "PBB6"),
-+	PINCTRL_PIN(TEGRA_PIN_PBB7, "PBB7"),
-+	PINCTRL_PIN(TEGRA_PIN_CAM_MCLK_PCC0, "CAM_MCLK PCC0"),
-+	PINCTRL_PIN(TEGRA_PIN_PCC1, "PCC1"),
-+	PINCTRL_PIN(TEGRA_PIN_PCC2, "PCC2"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC4_CLK_PCC4, "SDMMC4_CLK PCC4"),
-+	PINCTRL_PIN(TEGRA_PIN_CLK2_REQ_PCC5, "CLK2_REQ PCC5"),
-+	PINCTRL_PIN(TEGRA_PIN_PEX_L0_RST_N_PDD1, "PEX_L0_RST_N PDD1"),
-+	PINCTRL_PIN(TEGRA_PIN_PEX_L0_CLKREQ_N_PDD2, "PEX_L0_CLKREQ_N PDD2"),
-+	PINCTRL_PIN(TEGRA_PIN_PEX_WAKE_N_PDD3, "PEX_WAKE_N PDD3"),
-+	PINCTRL_PIN(TEGRA_PIN_PEX_L1_RST_N_PDD5, "PEX_L1_RST_N PDD5"),
-+	PINCTRL_PIN(TEGRA_PIN_PEX_L1_CLKREQ_N_PDD6, "PEX_L1_CLKREQ_N PDD6"),
-+	PINCTRL_PIN(TEGRA_PIN_CLK3_OUT_PEE0, "CLK3_OUT PEE0"),
-+	PINCTRL_PIN(TEGRA_PIN_CLK3_REQ_PEE1, "CLK3_REQ PEE1"),
-+	PINCTRL_PIN(TEGRA_PIN_DAP_MCLK1_REQ_PEE2, "DAP_MCLK1_REQ PEE2"),
-+	PINCTRL_PIN(TEGRA_PIN_HDMI_CEC_PEE3, "HDMI_CEC PEE3"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_CLK_LB_OUT_PEE4, "SDMMC3_CLK_LB_OUT PEE4"),
-+	PINCTRL_PIN(TEGRA_PIN_SDMMC3_CLK_LB_IN_PEE5, "SDMMC3_CLK_LB_IN PEE5"),
-+	PINCTRL_PIN(TEGRA_PIN_CORE_PWR_REQ, "CORE_PWR_REQ"),
-+	PINCTRL_PIN(TEGRA_PIN_CPU_PWR_REQ, "CPU_PWR_REQ"),
-+	PINCTRL_PIN(TEGRA_PIN_OWR, "OWR"),
-+	PINCTRL_PIN(TEGRA_PIN_PWR_INT_N, "PWR_INT_N"),
-+	PINCTRL_PIN(TEGRA_PIN_RESET_OUT_N, "RESET_OUT_N"),
-+	PINCTRL_PIN(TEGRA_PIN_DP_HPD_PFF0, "DP_HPD PFF0"),
-+	PINCTRL_PIN(TEGRA_PIN_USB_VBUS_EN2_PFF1, "USB_VBUS_EN2 PFF1"),
-+	PINCTRL_PIN(TEGRA_PIN_PFF2, "PFF2"),
-+	PINCTRL_PIN(TEGRA_PIN_CLK_32K_IN, "CLK_32K_IN"),
-+	PINCTRL_PIN(TEGRA_PIN_GMI_CLK_LB, "GMI_CLK_LB"),
-+	PINCTRL_PIN(TEGRA_PIN_JTAG_RTCK, "JTAG_RTCK"),
-+};
-+
-+static const unsigned clk_32k_out_pa0_pins[] = {
-+	TEGRA_PIN_CLK_32K_OUT_PA0,
-+};
-+
-+static const unsigned uart3_cts_n_pa1_pins[] = {
-+	TEGRA_PIN_UART3_CTS_N_PA1,
-+};
-+
-+static const unsigned dap2_fs_pa2_pins[] = {
-+	TEGRA_PIN_DAP2_FS_PA2,
-+};
-+
-+static const unsigned dap2_sclk_pa3_pins[] = {
-+	TEGRA_PIN_DAP2_SCLK_PA3,
-+};
-+
-+static const unsigned dap2_din_pa4_pins[] = {
-+	TEGRA_PIN_DAP2_DIN_PA4,
-+};
-+
-+static const unsigned dap2_dout_pa5_pins[] = {
-+	TEGRA_PIN_DAP2_DOUT_PA5,
-+};
-+
-+static const unsigned sdmmc3_clk_pa6_pins[] = {
-+	TEGRA_PIN_SDMMC3_CLK_PA6,
-+};
-+
-+static const unsigned sdmmc3_cmd_pa7_pins[] = {
-+	TEGRA_PIN_SDMMC3_CMD_PA7,
-+};
-+
-+static const unsigned pb0_pins[] = {
-+	TEGRA_PIN_PB0,
-+};
-+
-+static const unsigned pb1_pins[] = {
-+	TEGRA_PIN_PB1,
-+};
-+
-+static const unsigned sdmmc3_dat3_pb4_pins[] = {
-+	TEGRA_PIN_SDMMC3_DAT3_PB4,
-+};
-+
-+static const unsigned sdmmc3_dat2_pb5_pins[] = {
-+	TEGRA_PIN_SDMMC3_DAT2_PB5,
-+};
-+
-+static const unsigned sdmmc3_dat1_pb6_pins[] = {
-+	TEGRA_PIN_SDMMC3_DAT1_PB6,
-+};
-+
-+static const unsigned sdmmc3_dat0_pb7_pins[] = {
-+	TEGRA_PIN_SDMMC3_DAT0_PB7,
-+};
-+
-+static const unsigned uart3_rts_n_pc0_pins[] = {
-+	TEGRA_PIN_UART3_RTS_N_PC0,
-+};
-+
-+static const unsigned uart2_txd_pc2_pins[] = {
-+	TEGRA_PIN_UART2_TXD_PC2,
-+};
-+
-+static const unsigned uart2_rxd_pc3_pins[] = {
-+	TEGRA_PIN_UART2_RXD_PC3,
-+};
-+
-+static const unsigned gen1_i2c_scl_pc4_pins[] = {
-+	TEGRA_PIN_GEN1_I2C_SCL_PC4,
-+};
-+
-+static const unsigned gen1_i2c_sda_pc5_pins[] = {
-+	TEGRA_PIN_GEN1_I2C_SDA_PC5,
-+};
-+
-+static const unsigned pc7_pins[] = {
-+	TEGRA_PIN_PC7,
-+};
-+
-+static const unsigned pg0_pins[] = {
-+	TEGRA_PIN_PG0,
-+};
-+
-+static const unsigned pg1_pins[] = {
-+	TEGRA_PIN_PG1,
-+};
-+
-+static const unsigned pg2_pins[] = {
-+	TEGRA_PIN_PG2,
-+};
-+
-+static const unsigned pg3_pins[] = {
-+	TEGRA_PIN_PG3,
-+};
-+
-+static const unsigned pg4_pins[] = {
-+	TEGRA_PIN_PG4,
-+};
-+
-+static const unsigned pg5_pins[] = {
-+	TEGRA_PIN_PG5,
-+};
-+
-+static const unsigned pg6_pins[] = {
-+	TEGRA_PIN_PG6,
-+};
-+
-+static const unsigned pg7_pins[] = {
-+	TEGRA_PIN_PG7,
-+};
-+
-+static const unsigned ph0_pins[] = {
-+	TEGRA_PIN_PH0,
-+};
-+
-+static const unsigned ph1_pins[] = {
-+	TEGRA_PIN_PH1,
-+};
-+
-+static const unsigned ph2_pins[] = {
-+	TEGRA_PIN_PH2,
-+};
-+
-+static const unsigned ph3_pins[] = {
-+	TEGRA_PIN_PH3,
-+};
-+
-+static const unsigned ph4_pins[] = {
-+	TEGRA_PIN_PH4,
-+};
-+
-+static const unsigned ph5_pins[] = {
-+	TEGRA_PIN_PH5,
-+};
-+
-+static const unsigned ph6_pins[] = {
-+	TEGRA_PIN_PH6,
-+};
-+
-+static const unsigned ph7_pins[] = {
-+	TEGRA_PIN_PH7,
-+};
-+
-+static const unsigned pi0_pins[] = {
-+	TEGRA_PIN_PI0,
-+};
-+
-+static const unsigned pi1_pins[] = {
-+	TEGRA_PIN_PI1,
-+};
-+
-+static const unsigned pi2_pins[] = {
-+	TEGRA_PIN_PI2,
-+};
-+
-+static const unsigned pi3_pins[] = {
-+	TEGRA_PIN_PI3,
-+};
-+
-+static const unsigned pi4_pins[] = {
-+	TEGRA_PIN_PI4,
-+};
-+
-+static const unsigned pi5_pins[] = {
-+	TEGRA_PIN_PI5,
-+};
-+
-+static const unsigned pi6_pins[] = {
-+	TEGRA_PIN_PI6,
-+};
-+
-+static const unsigned pi7_pins[] = {
-+	TEGRA_PIN_PI7,
-+};
-+
-+static const unsigned pj0_pins[] = {
-+	TEGRA_PIN_PJ0,
-+};
-+
-+static const unsigned pj2_pins[] = {
-+	TEGRA_PIN_PJ2,
-+};
-+
-+static const unsigned uart2_cts_n_pj5_pins[] = {
-+	TEGRA_PIN_UART2_CTS_N_PJ5,
-+};
-+
-+static const unsigned uart2_rts_n_pj6_pins[] = {
-+	TEGRA_PIN_UART2_RTS_N_PJ6,
-+};
-+
-+static const unsigned pj7_pins[] = {
-+	TEGRA_PIN_PJ7,
-+};
-+
-+static const unsigned pk0_pins[] = {
-+	TEGRA_PIN_PK0,
-+};
-+
-+static const unsigned pk1_pins[] = {
-+	TEGRA_PIN_PK1,
-+};
-+
-+static const unsigned pk2_pins[] = {
-+	TEGRA_PIN_PK2,
-+};
-+
-+static const unsigned pk3_pins[] = {
-+	TEGRA_PIN_PK3,
-+};
-+
-+static const unsigned pk4_pins[] = {
-+	TEGRA_PIN_PK4,
-+};
-+
-+static const unsigned spdif_out_pk5_pins[] = {
-+	TEGRA_PIN_SPDIF_OUT_PK5,
-+};
-+
-+static const unsigned spdif_in_pk6_pins[] = {
-+	TEGRA_PIN_SPDIF_IN_PK6,
-+};
-+
-+static const unsigned pk7_pins[] = {
-+	TEGRA_PIN_PK7,
-+};
-+
-+static const unsigned dap1_fs_pn0_pins[] = {
-+	TEGRA_PIN_DAP1_FS_PN0,
-+};
-+
-+static const unsigned dap1_din_pn1_pins[] = {
-+	TEGRA_PIN_DAP1_DIN_PN1,
-+};
-+
-+static const unsigned dap1_dout_pn2_pins[] = {
-+	TEGRA_PIN_DAP1_DOUT_PN2,
-+};
-+
-+static const unsigned dap1_sclk_pn3_pins[] = {
-+	TEGRA_PIN_DAP1_SCLK_PN3,
-+};
-+
-+static const unsigned usb_vbus_en0_pn4_pins[] = {
-+	TEGRA_PIN_USB_VBUS_EN0_PN4,
-+};
-+
-+static const unsigned usb_vbus_en1_pn5_pins[] = {
-+	TEGRA_PIN_USB_VBUS_EN1_PN5,
-+};
-+
-+static const unsigned hdmi_int_pn7_pins[] = {
-+	TEGRA_PIN_HDMI_INT_PN7,
-+};
-+
-+static const unsigned ulpi_data7_po0_pins[] = {
-+	TEGRA_PIN_ULPI_DATA7_PO0,
-+};
-+
-+static const unsigned ulpi_data0_po1_pins[] = {
-+	TEGRA_PIN_ULPI_DATA0_PO1,
-+};
-+
-+static const unsigned ulpi_data1_po2_pins[] = {
-+	TEGRA_PIN_ULPI_DATA1_PO2,
-+};
-+
-+static const unsigned ulpi_data2_po3_pins[] = {
-+	TEGRA_PIN_ULPI_DATA2_PO3,
-+};
-+
-+static const unsigned ulpi_data3_po4_pins[] = {
-+	TEGRA_PIN_ULPI_DATA3_PO4,
-+};
-+
-+static const unsigned ulpi_data4_po5_pins[] = {
-+	TEGRA_PIN_ULPI_DATA4_PO5,
-+};
-+
-+static const unsigned ulpi_data5_po6_pins[] = {
-+	TEGRA_PIN_ULPI_DATA5_PO6,
-+};
-+
-+static const unsigned ulpi_data6_po7_pins[] = {
-+	TEGRA_PIN_ULPI_DATA6_PO7,
-+};
-+
-+static const unsigned dap3_fs_pp0_pins[] = {
-+	TEGRA_PIN_DAP3_FS_PP0,
-+};
-+
-+static const unsigned dap3_din_pp1_pins[] = {
-+	TEGRA_PIN_DAP3_DIN_PP1,
-+};
-+
-+static const unsigned dap3_dout_pp2_pins[] = {
-+	TEGRA_PIN_DAP3_DOUT_PP2,
-+};
-+
-+static const unsigned dap3_sclk_pp3_pins[] = {
-+	TEGRA_PIN_DAP3_SCLK_PP3,
-+};
-+
-+static const unsigned dap4_fs_pp4_pins[] = {
-+	TEGRA_PIN_DAP4_FS_PP4,
-+};
-+
-+static const unsigned dap4_din_pp5_pins[] = {
-+	TEGRA_PIN_DAP4_DIN_PP5,
-+};
-+
-+static const unsigned dap4_dout_pp6_pins[] = {
-+	TEGRA_PIN_DAP4_DOUT_PP6,
-+};
-+
-+static const unsigned dap4_sclk_pp7_pins[] = {
-+	TEGRA_PIN_DAP4_SCLK_PP7,
-+};
-+
-+static const unsigned kb_col0_pq0_pins[] = {
-+	TEGRA_PIN_KB_COL0_PQ0,
-+};
-+
-+static const unsigned kb_col1_pq1_pins[] = {
-+	TEGRA_PIN_KB_COL1_PQ1,
-+};
-+
-+static const unsigned kb_col2_pq2_pins[] = {
-+	TEGRA_PIN_KB_COL2_PQ2,
-+};
-+
-+static const unsigned kb_col3_pq3_pins[] = {
-+	TEGRA_PIN_KB_COL3_PQ3,
-+};
-+
-+static const unsigned kb_col4_pq4_pins[] = {
-+	TEGRA_PIN_KB_COL4_PQ4,
-+};
-+
-+static const unsigned kb_col5_pq5_pins[] = {
-+	TEGRA_PIN_KB_COL5_PQ5,
-+};
-+
-+static const unsigned kb_col6_pq6_pins[] = {
-+	TEGRA_PIN_KB_COL6_PQ6,
-+};
-+
-+static const unsigned kb_col7_pq7_pins[] = {
-+	TEGRA_PIN_KB_COL7_PQ7,
-+};
-+
-+static const unsigned kb_row0_pr0_pins[] = {
-+	TEGRA_PIN_KB_ROW0_PR0,
-+};
-+
-+static const unsigned kb_row1_pr1_pins[] = {
-+	TEGRA_PIN_KB_ROW1_PR1,
-+};
-+
-+static const unsigned kb_row2_pr2_pins[] = {
-+	TEGRA_PIN_KB_ROW2_PR2,
-+};
-+
-+static const unsigned kb_row3_pr3_pins[] = {
-+	TEGRA_PIN_KB_ROW3_PR3,
-+};
-+
-+static const unsigned kb_row4_pr4_pins[] = {
-+	TEGRA_PIN_KB_ROW4_PR4,
-+};
-+
-+static const unsigned kb_row5_pr5_pins[] = {
-+	TEGRA_PIN_KB_ROW5_PR5,
-+};
-+
-+static const unsigned kb_row6_pr6_pins[] = {
-+	TEGRA_PIN_KB_ROW6_PR6,
-+};
-+
-+static const unsigned kb_row7_pr7_pins[] = {
-+	TEGRA_PIN_KB_ROW7_PR7,
-+};
-+
-+static const unsigned kb_row8_ps0_pins[] = {
-+	TEGRA_PIN_KB_ROW8_PS0,
-+};
-+
-+static const unsigned kb_row9_ps1_pins[] = {
-+	TEGRA_PIN_KB_ROW9_PS1,
-+};
-+
-+static const unsigned kb_row10_ps2_pins[] = {
-+	TEGRA_PIN_KB_ROW10_PS2,
-+};
-+
-+static const unsigned kb_row11_ps3_pins[] = {
-+	TEGRA_PIN_KB_ROW11_PS3,
-+};
-+
-+static const unsigned kb_row12_ps4_pins[] = {
-+	TEGRA_PIN_KB_ROW12_PS4,
-+};
-+
-+static const unsigned kb_row13_ps5_pins[] = {
-+	TEGRA_PIN_KB_ROW13_PS5,
-+};
-+
-+static const unsigned kb_row14_ps6_pins[] = {
-+	TEGRA_PIN_KB_ROW14_PS6,
-+};
-+
-+static const unsigned kb_row15_ps7_pins[] = {
-+	TEGRA_PIN_KB_ROW15_PS7,
-+};
-+
-+static const unsigned kb_row16_pt0_pins[] = {
-+	TEGRA_PIN_KB_ROW16_PT0,
-+};
-+
-+static const unsigned kb_row17_pt1_pins[] = {
-+	TEGRA_PIN_KB_ROW17_PT1,
-+};
-+
-+static const unsigned gen2_i2c_scl_pt5_pins[] = {
-+	TEGRA_PIN_GEN2_I2C_SCL_PT5,
-+};
-+
-+static const unsigned gen2_i2c_sda_pt6_pins[] = {
-+	TEGRA_PIN_GEN2_I2C_SDA_PT6,
-+};
-+
-+static const unsigned sdmmc4_cmd_pt7_pins[] = {
-+	TEGRA_PIN_SDMMC4_CMD_PT7,
-+};
-+
-+static const unsigned pu0_pins[] = {
-+	TEGRA_PIN_PU0,
-+};
-+
-+static const unsigned pu1_pins[] = {
-+	TEGRA_PIN_PU1,
-+};
-+
-+static const unsigned pu2_pins[] = {
-+	TEGRA_PIN_PU2,
-+};
-+
-+static const unsigned pu3_pins[] = {
-+	TEGRA_PIN_PU3,
-+};
-+
-+static const unsigned pu4_pins[] = {
-+	TEGRA_PIN_PU4,
-+};
-+
-+static const unsigned pu5_pins[] = {
-+	TEGRA_PIN_PU5,
-+};
-+
-+static const unsigned pu6_pins[] = {
-+	TEGRA_PIN_PU6,
-+};
-+
-+static const unsigned pv0_pins[] = {
-+	TEGRA_PIN_PV0,
-+};
-+
-+static const unsigned pv1_pins[] = {
-+	TEGRA_PIN_PV1,
-+};
-+
-+static const unsigned sdmmc3_cd_n_pv2_pins[] = {
-+	TEGRA_PIN_SDMMC3_CD_N_PV2,
-+};
-+
-+static const unsigned sdmmc1_wp_n_pv3_pins[] = {
-+	TEGRA_PIN_SDMMC1_WP_N_PV3,
-+};
-+
-+static const unsigned ddc_scl_pv4_pins[] = {
-+	TEGRA_PIN_DDC_SCL_PV4,
-+};
-+
-+static const unsigned ddc_sda_pv5_pins[] = {
-+	TEGRA_PIN_DDC_SDA_PV5,
-+};
-+
-+static const unsigned gpio_w2_aud_pw2_pins[] = {
-+	TEGRA_PIN_GPIO_W2_AUD_PW2,
-+};
-+
-+static const unsigned gpio_w3_aud_pw3_pins[] = {
-+	TEGRA_PIN_GPIO_W3_AUD_PW3,
-+};
-+
-+static const unsigned dap_mclk1_pw4_pins[] = {
-+	TEGRA_PIN_DAP_MCLK1_PW4,
-+};
-+
-+static const unsigned clk2_out_pw5_pins[] = {
-+	TEGRA_PIN_CLK2_OUT_PW5,
-+};
-+
-+static const unsigned uart3_txd_pw6_pins[] = {
-+	TEGRA_PIN_UART3_TXD_PW6,
-+};
-+
-+static const unsigned uart3_rxd_pw7_pins[] = {
-+	TEGRA_PIN_UART3_RXD_PW7,
-+};
-+
-+static const unsigned dvfs_pwm_px0_pins[] = {
-+	TEGRA_PIN_DVFS_PWM_PX0,
-+};
-+
-+static const unsigned gpio_x1_aud_px1_pins[] = {
-+	TEGRA_PIN_GPIO_X1_AUD_PX1,
-+};
-+
-+static const unsigned dvfs_clk_px2_pins[] = {
-+	TEGRA_PIN_DVFS_CLK_PX2,
-+};
-+
-+static const unsigned gpio_x3_aud_px3_pins[] = {
-+	TEGRA_PIN_GPIO_X3_AUD_PX3,
-+};
-+
-+static const unsigned gpio_x4_aud_px4_pins[] = {
-+	TEGRA_PIN_GPIO_X4_AUD_PX4,
-+};
-+
-+static const unsigned gpio_x5_aud_px5_pins[] = {
-+	TEGRA_PIN_GPIO_X5_AUD_PX5,
-+};
-+
-+static const unsigned gpio_x6_aud_px6_pins[] = {
-+	TEGRA_PIN_GPIO_X6_AUD_PX6,
-+};
-+
-+static const unsigned gpio_x7_aud_px7_pins[] = {
-+	TEGRA_PIN_GPIO_X7_AUD_PX7,
-+};
-+
-+static const unsigned ulpi_clk_py0_pins[] = {
-+	TEGRA_PIN_ULPI_CLK_PY0,
-+};
-+
-+static const unsigned ulpi_dir_py1_pins[] = {
-+	TEGRA_PIN_ULPI_DIR_PY1,
-+};
-+
-+static const unsigned ulpi_nxt_py2_pins[] = {
-+	TEGRA_PIN_ULPI_NXT_PY2,
-+};
-+
-+static const unsigned ulpi_stp_py3_pins[] = {
-+	TEGRA_PIN_ULPI_STP_PY3,
-+};
-+
-+static const unsigned sdmmc1_dat3_py4_pins[] = {
-+	TEGRA_PIN_SDMMC1_DAT3_PY4,
-+};
-+
-+static const unsigned sdmmc1_dat2_py5_pins[] = {
-+	TEGRA_PIN_SDMMC1_DAT2_PY5,
-+};
-+
-+static const unsigned sdmmc1_dat1_py6_pins[] = {
-+	TEGRA_PIN_SDMMC1_DAT1_PY6,
-+};
-+
-+static const unsigned sdmmc1_dat0_py7_pins[] = {
-+	TEGRA_PIN_SDMMC1_DAT0_PY7,
-+};
-+
-+static const unsigned sdmmc1_clk_pz0_pins[] = {
-+	TEGRA_PIN_SDMMC1_CLK_PZ0,
-+};
-+
-+static const unsigned sdmmc1_cmd_pz1_pins[] = {
-+	TEGRA_PIN_SDMMC1_CMD_PZ1,
-+};
-+
-+static const unsigned pwr_i2c_scl_pz6_pins[] = {
-+	TEGRA_PIN_PWR_I2C_SCL_PZ6,
-+};
-+
-+static const unsigned pwr_i2c_sda_pz7_pins[] = {
-+	TEGRA_PIN_PWR_I2C_SDA_PZ7,
-+};
-+
-+static const unsigned sdmmc4_dat0_paa0_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT0_PAA0,
-+};
-+
-+static const unsigned sdmmc4_dat1_paa1_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT1_PAA1,
-+};
-+
-+static const unsigned sdmmc4_dat2_paa2_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT2_PAA2,
-+};
-+
-+static const unsigned sdmmc4_dat3_paa3_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT3_PAA3,
-+};
-+
-+static const unsigned sdmmc4_dat4_paa4_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT4_PAA4,
-+};
-+
-+static const unsigned sdmmc4_dat5_paa5_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT5_PAA5,
-+};
-+
-+static const unsigned sdmmc4_dat6_paa6_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT6_PAA6,
-+};
-+
-+static const unsigned sdmmc4_dat7_paa7_pins[] = {
-+	TEGRA_PIN_SDMMC4_DAT7_PAA7,
-+};
-+
-+static const unsigned pbb0_pins[] = {
-+	TEGRA_PIN_PBB0,
-+};
-+
-+static const unsigned cam_i2c_scl_pbb1_pins[] = {
-+	TEGRA_PIN_CAM_I2C_SCL_PBB1,
-+};
-+
-+static const unsigned cam_i2c_sda_pbb2_pins[] = {
-+	TEGRA_PIN_CAM_I2C_SDA_PBB2,
-+};
-+
-+static const unsigned pbb3_pins[] = {
-+	TEGRA_PIN_PBB3,
-+};
-+
-+static const unsigned pbb4_pins[] = {
-+	TEGRA_PIN_PBB4,
-+};
-+
-+static const unsigned pbb5_pins[] = {
-+	TEGRA_PIN_PBB5,
-+};
-+
-+static const unsigned pbb6_pins[] = {
-+	TEGRA_PIN_PBB6,
-+};
-+
-+static const unsigned pbb7_pins[] = {
-+	TEGRA_PIN_PBB7,
-+};
-+
-+static const unsigned cam_mclk_pcc0_pins[] = {
-+	TEGRA_PIN_CAM_MCLK_PCC0,
-+};
-+
-+static const unsigned pcc1_pins[] = {
-+	TEGRA_PIN_PCC1,
-+};
-+
-+static const unsigned pcc2_pins[] = {
-+	TEGRA_PIN_PCC2,
-+};
-+
-+static const unsigned sdmmc4_clk_pcc4_pins[] = {
-+	TEGRA_PIN_SDMMC4_CLK_PCC4,
-+};
-+
-+static const unsigned clk2_req_pcc5_pins[] = {
-+	TEGRA_PIN_CLK2_REQ_PCC5,
-+};
-+
-+static const unsigned pex_l0_rst_n_pdd1_pins[] = {
-+	TEGRA_PIN_PEX_L0_RST_N_PDD1,
-+};
-+
-+static const unsigned pex_l0_clkreq_n_pdd2_pins[] = {
-+	TEGRA_PIN_PEX_L0_CLKREQ_N_PDD2,
-+};
-+
-+static const unsigned pex_wake_n_pdd3_pins[] = {
-+	TEGRA_PIN_PEX_WAKE_N_PDD3,
-+};
-+
-+static const unsigned pex_l1_rst_n_pdd5_pins[] = {
-+	TEGRA_PIN_PEX_L1_RST_N_PDD5,
-+};
-+
-+static const unsigned pex_l1_clkreq_n_pdd6_pins[] = {
-+	TEGRA_PIN_PEX_L1_CLKREQ_N_PDD6,
-+};
-+
-+static const unsigned clk3_out_pee0_pins[] = {
-+	TEGRA_PIN_CLK3_OUT_PEE0,
-+};
-+
-+static const unsigned clk3_req_pee1_pins[] = {
-+	TEGRA_PIN_CLK3_REQ_PEE1,
-+};
-+
-+static const unsigned dap_mclk1_req_pee2_pins[] = {
-+	TEGRA_PIN_DAP_MCLK1_REQ_PEE2,
-+};
-+
-+static const unsigned hdmi_cec_pee3_pins[] = {
-+	TEGRA_PIN_HDMI_CEC_PEE3,
-+};
-+
-+static const unsigned sdmmc3_clk_lb_out_pee4_pins[] = {
-+	TEGRA_PIN_SDMMC3_CLK_LB_OUT_PEE4,
-+};
-+
-+static const unsigned sdmmc3_clk_lb_in_pee5_pins[] = {
-+	TEGRA_PIN_SDMMC3_CLK_LB_IN_PEE5,
-+};
-+static const unsigned dp_hpd_pff0_pins[] = {
-+	TEGRA_PIN_DP_HPD_PFF0,
-+};
-+
-+static const unsigned usb_vbus_en2_pff1_pins[] = {
-+	TEGRA_PIN_USB_VBUS_EN2_PFF1,
-+};
-+
-+static const unsigned pff2_pins[] = {
-+	TEGRA_PIN_PFF2,
-+};
-+
-+static const unsigned core_pwr_req_pins[] = {
-+	TEGRA_PIN_CORE_PWR_REQ,
-+};
-+
-+static const unsigned cpu_pwr_req_pins[] = {
-+	TEGRA_PIN_CPU_PWR_REQ,
-+};
-+
-+static const unsigned owr_pins[] = {
-+	TEGRA_PIN_OWR,
-+};
-+
-+static const unsigned pwr_int_n_pins[] = {
-+	TEGRA_PIN_PWR_INT_N,
-+};
-+
-+static const unsigned reset_out_n_pins[] = {
-+	TEGRA_PIN_RESET_OUT_N,
-+};
-+
-+static const unsigned clk_32k_in_pins[] = {
-+	TEGRA_PIN_CLK_32K_IN,
-+};
-+
-+static const unsigned gmi_clk_lb_pins[] = {
-+	TEGRA_PIN_GMI_CLK_LB,
-+};
-+
-+static const unsigned jtag_rtck_pins[] = {
-+	TEGRA_PIN_JTAG_RTCK,
-+};
-+
-+static const unsigned drive_ao1_pins[] = {
-+	TEGRA_PIN_KB_ROW0_PR0,
-+	TEGRA_PIN_KB_ROW1_PR1,
-+	TEGRA_PIN_KB_ROW2_PR2,
-+	TEGRA_PIN_KB_ROW3_PR3,
-+	TEGRA_PIN_KB_ROW4_PR4,
-+	TEGRA_PIN_KB_ROW5_PR5,
-+	TEGRA_PIN_KB_ROW6_PR6,
-+	TEGRA_PIN_KB_ROW7_PR7,
-+	TEGRA_PIN_PWR_I2C_SCL_PZ6,
-+	TEGRA_PIN_PWR_I2C_SDA_PZ7,
-+};
-+
-+static const unsigned drive_ao2_pins[] = {
-+	TEGRA_PIN_CLK_32K_OUT_PA0,
-+	TEGRA_PIN_CLK_32K_IN,
-+	TEGRA_PIN_KB_COL0_PQ0,
-+	TEGRA_PIN_KB_COL1_PQ1,
-+	TEGRA_PIN_KB_COL2_PQ2,
-+	TEGRA_PIN_KB_COL3_PQ3,
-+	TEGRA_PIN_KB_COL4_PQ4,
-+	TEGRA_PIN_KB_COL5_PQ5,
-+	TEGRA_PIN_KB_COL6_PQ6,
-+	TEGRA_PIN_KB_COL7_PQ7,
-+	TEGRA_PIN_KB_ROW8_PS0,
-+	TEGRA_PIN_KB_ROW9_PS1,
-+	TEGRA_PIN_KB_ROW10_PS2,
-+	TEGRA_PIN_KB_ROW11_PS3,
-+	TEGRA_PIN_KB_ROW12_PS4,
-+	TEGRA_PIN_KB_ROW13_PS5,
-+	TEGRA_PIN_KB_ROW14_PS6,
-+	TEGRA_PIN_KB_ROW15_PS7,
-+	TEGRA_PIN_KB_ROW16_PT0,
-+	TEGRA_PIN_KB_ROW17_PT1,
-+	TEGRA_PIN_SDMMC3_CD_N_PV2,
-+	TEGRA_PIN_CORE_PWR_REQ,
-+	TEGRA_PIN_CPU_PWR_REQ,
-+	TEGRA_PIN_PWR_INT_N,
-+};
-+
-+static const unsigned drive_at1_pins[] = {
-+	TEGRA_PIN_PH0,
-+	TEGRA_PIN_PH1,
-+	TEGRA_PIN_PH2,
-+	TEGRA_PIN_PH3,
-+};
-+
-+static const unsigned drive_at2_pins[] = {
-+	TEGRA_PIN_PG0,
-+	TEGRA_PIN_PG1,
-+	TEGRA_PIN_PG2,
-+	TEGRA_PIN_PG3,
-+	TEGRA_PIN_PG4,
-+	TEGRA_PIN_PG5,
-+	TEGRA_PIN_PG6,
-+	TEGRA_PIN_PG7,
-+	TEGRA_PIN_PI0,
-+	TEGRA_PIN_PI1,
-+	TEGRA_PIN_PI3,
-+	TEGRA_PIN_PI4,
-+	TEGRA_PIN_PI7,
-+	TEGRA_PIN_PK0,
-+	TEGRA_PIN_PK2,
-+};
-+
-+static const unsigned drive_at3_pins[] = {
-+	TEGRA_PIN_PC7,
-+	TEGRA_PIN_PJ0,
-+};
-+
-+static const unsigned drive_at4_pins[] = {
-+	TEGRA_PIN_PB0,
-+	TEGRA_PIN_PB1,
-+	TEGRA_PIN_PJ0,
-+	TEGRA_PIN_PJ7,
-+	TEGRA_PIN_PK7,
-+};
-+
-+static const unsigned drive_at5_pins[] = {
-+	TEGRA_PIN_GEN2_I2C_SCL_PT5,
-+	TEGRA_PIN_GEN2_I2C_SDA_PT6,
-+};
-+
-+static const unsigned drive_cdev1_pins[] = {
-+	TEGRA_PIN_DAP_MCLK1_PW4,
-+	TEGRA_PIN_DAP_MCLK1_REQ_PEE2,
-+};
-+
-+static const unsigned drive_cdev2_pins[] = {
-+	TEGRA_PIN_CLK2_OUT_PW5,
-+	TEGRA_PIN_CLK2_REQ_PCC5,
-+};
-+
-+static const unsigned drive_dap1_pins[] = {
-+	TEGRA_PIN_DAP1_FS_PN0,
-+	TEGRA_PIN_DAP1_DIN_PN1,
-+	TEGRA_PIN_DAP1_DOUT_PN2,
-+	TEGRA_PIN_DAP1_SCLK_PN3,
-+};
-+
-+static const unsigned drive_dap2_pins[] = {
-+	TEGRA_PIN_DAP2_FS_PA2,
-+	TEGRA_PIN_DAP2_SCLK_PA3,
-+	TEGRA_PIN_DAP2_DIN_PA4,
-+	TEGRA_PIN_DAP2_DOUT_PA5,
-+};
-+
-+static const unsigned drive_dap3_pins[] = {
-+	TEGRA_PIN_DAP3_FS_PP0,
-+	TEGRA_PIN_DAP3_DIN_PP1,
-+	TEGRA_PIN_DAP3_DOUT_PP2,
-+	TEGRA_PIN_DAP3_SCLK_PP3,
-+};
-+
-+static const unsigned drive_dap4_pins[] = {
-+	TEGRA_PIN_DAP4_FS_PP4,
-+	TEGRA_PIN_DAP4_DIN_PP5,
-+	TEGRA_PIN_DAP4_DOUT_PP6,
-+	TEGRA_PIN_DAP4_SCLK_PP7,
-+};
-+
-+static const unsigned drive_dbg_pins[] = {
-+	TEGRA_PIN_GEN1_I2C_SCL_PC4,
-+	TEGRA_PIN_GEN1_I2C_SDA_PC5,
-+	TEGRA_PIN_PU0,
-+	TEGRA_PIN_PU1,
-+	TEGRA_PIN_PU2,
-+	TEGRA_PIN_PU3,
-+	TEGRA_PIN_PU4,
-+	TEGRA_PIN_PU5,
-+	TEGRA_PIN_PU6,
-+};
-+
-+static const unsigned drive_sdio3_pins[] = {
-+	TEGRA_PIN_SDMMC3_CLK_PA6,
-+	TEGRA_PIN_SDMMC3_CMD_PA7,
-+	TEGRA_PIN_SDMMC3_DAT3_PB4,
-+	TEGRA_PIN_SDMMC3_DAT2_PB5,
-+	TEGRA_PIN_SDMMC3_DAT1_PB6,
-+	TEGRA_PIN_SDMMC3_DAT0_PB7,
-+	TEGRA_PIN_SDMMC3_CLK_LB_OUT_PEE4,
-+	TEGRA_PIN_SDMMC3_CLK_LB_IN_PEE5,
-+};
-+
-+static const unsigned drive_spi_pins[] = {
-+	TEGRA_PIN_DVFS_PWM_PX0,
-+	TEGRA_PIN_GPIO_X1_AUD_PX1,
-+	TEGRA_PIN_DVFS_CLK_PX2,
-+	TEGRA_PIN_GPIO_X3_AUD_PX3,
-+	TEGRA_PIN_GPIO_X4_AUD_PX4,
-+	TEGRA_PIN_GPIO_X5_AUD_PX5,
-+	TEGRA_PIN_GPIO_X6_AUD_PX6,
-+	TEGRA_PIN_GPIO_X7_AUD_PX7,
-+	TEGRA_PIN_GPIO_W2_AUD_PW2,
-+	TEGRA_PIN_GPIO_W3_AUD_PW3,
-+};
-+
-+static const unsigned drive_uaa_pins[] = {
-+	TEGRA_PIN_ULPI_DATA0_PO1,
-+	TEGRA_PIN_ULPI_DATA1_PO2,
-+	TEGRA_PIN_ULPI_DATA2_PO3,
-+	TEGRA_PIN_ULPI_DATA3_PO4,
-+};
-+
-+static const unsigned drive_uab_pins[] = {
-+	TEGRA_PIN_ULPI_DATA7_PO0,
-+	TEGRA_PIN_ULPI_DATA4_PO5,
-+	TEGRA_PIN_ULPI_DATA5_PO6,
-+	TEGRA_PIN_ULPI_DATA6_PO7,
-+	TEGRA_PIN_PV0,
-+	TEGRA_PIN_PV1,
-+};
-+
-+static const unsigned drive_uart2_pins[] = {
-+	TEGRA_PIN_UART2_TXD_PC2,
-+	TEGRA_PIN_UART2_RXD_PC3,
-+	TEGRA_PIN_UART2_CTS_N_PJ5,
-+	TEGRA_PIN_UART2_RTS_N_PJ6,
-+};
-+
-+static const unsigned drive_uart3_pins[] = {
-+	TEGRA_PIN_UART3_CTS_N_PA1,
-+	TEGRA_PIN_UART3_RTS_N_PC0,
-+	TEGRA_PIN_UART3_TXD_PW6,
-+	TEGRA_PIN_UART3_RXD_PW7,
-+};
-+
-+static const unsigned drive_sdio1_pins[] = {
-+	TEGRA_PIN_SDMMC1_DAT3_PY4,
-+	TEGRA_PIN_SDMMC1_DAT2_PY5,
-+	TEGRA_PIN_SDMMC1_DAT1_PY6,
-+	TEGRA_PIN_SDMMC1_DAT0_PY7,
-+	TEGRA_PIN_SDMMC1_CLK_PZ0,
-+	TEGRA_PIN_SDMMC1_CMD_PZ1,
-+};
-+
-+static const unsigned drive_ddc_pins[] = {
-+	TEGRA_PIN_DDC_SCL_PV4,
-+	TEGRA_PIN_DDC_SDA_PV5,
-+};
-+
-+static const unsigned drive_gma_pins[] = {
-+	TEGRA_PIN_SDMMC4_CLK_PCC4,
-+	TEGRA_PIN_SDMMC4_CMD_PT7,
-+	TEGRA_PIN_SDMMC4_DAT0_PAA0,
-+	TEGRA_PIN_SDMMC4_DAT1_PAA1,
-+	TEGRA_PIN_SDMMC4_DAT2_PAA2,
-+	TEGRA_PIN_SDMMC4_DAT3_PAA3,
-+	TEGRA_PIN_SDMMC4_DAT4_PAA4,
-+	TEGRA_PIN_SDMMC4_DAT5_PAA5,
-+	TEGRA_PIN_SDMMC4_DAT6_PAA6,
-+	TEGRA_PIN_SDMMC4_DAT7_PAA7,
-+};
-+
-+static const unsigned drive_gme_pins[] = {
-+	TEGRA_PIN_PBB0,
-+	TEGRA_PIN_CAM_I2C_SCL_PBB1,
-+	TEGRA_PIN_CAM_I2C_SDA_PBB2,
-+	TEGRA_PIN_PBB3,
-+	TEGRA_PIN_PCC2,
-+};
-+
-+static const unsigned drive_gmf_pins[] = {
-+	TEGRA_PIN_PBB4,
-+	TEGRA_PIN_PBB5,
-+	TEGRA_PIN_PBB6,
-+	TEGRA_PIN_PBB7,
-+};
-+
-+static const unsigned drive_gmg_pins[] = {
-+	TEGRA_PIN_CAM_MCLK_PCC0,
-+};
-+
-+static const unsigned drive_gmh_pins[] = {
-+	TEGRA_PIN_PCC1,
-+};
-+
-+static const unsigned drive_owr_pins[] = {
-+	TEGRA_PIN_SDMMC3_CD_N_PV2,
-+	TEGRA_PIN_OWR,
-+};
-+
-+static const unsigned drive_uda_pins[] = {
-+	TEGRA_PIN_ULPI_CLK_PY0,
-+	TEGRA_PIN_ULPI_DIR_PY1,
-+	TEGRA_PIN_ULPI_NXT_PY2,
-+	TEGRA_PIN_ULPI_STP_PY3,
-+};
-+
-+static const unsigned drive_gpv_pins[] = {
-+	TEGRA_PIN_PEX_L0_RST_N_PDD1,
-+	TEGRA_PIN_PEX_L0_CLKREQ_N_PDD2,
-+	TEGRA_PIN_PEX_WAKE_N_PDD3,
-+	TEGRA_PIN_PEX_L1_RST_N_PDD5,
-+	TEGRA_PIN_PEX_L1_CLKREQ_N_PDD6,
-+	TEGRA_PIN_USB_VBUS_EN2_PFF1,
-+	TEGRA_PIN_PFF2,
-+};
-+
-+static const unsigned drive_cec_pins[] = {
-+	TEGRA_PIN_HDMI_CEC_PEE3,
-+};
-+
-+static const unsigned drive_dev3_pins[] = {
-+	TEGRA_PIN_CLK3_OUT_PEE0,
-+	TEGRA_PIN_CLK3_REQ_PEE1,
-+};
-+
-+static const unsigned drive_at6_pins[] = {
-+	TEGRA_PIN_PK1,
-+	TEGRA_PIN_PK3,
-+	TEGRA_PIN_PK4,
-+	TEGRA_PIN_PI2,
-+	TEGRA_PIN_PI5,
-+	TEGRA_PIN_PI6,
-+	TEGRA_PIN_PH4,
-+	TEGRA_PIN_PH5,
-+	TEGRA_PIN_PH6,
-+	TEGRA_PIN_PH7,
-+};
-+
-+static const unsigned drive_dap5_pins[] = {
-+	TEGRA_PIN_SPDIF_IN_PK6,
-+	TEGRA_PIN_SPDIF_OUT_PK5,
-+	TEGRA_PIN_DP_HPD_PFF0,
-+};
-+
-+static const unsigned drive_usb_vbus_en_pins[] = {
-+	TEGRA_PIN_USB_VBUS_EN0_PN4,
-+	TEGRA_PIN_USB_VBUS_EN1_PN5,
-+};
-+
-+static const unsigned drive_ao3_pins[] = {
-+	TEGRA_PIN_RESET_OUT_N,
-+};
-+
-+static const unsigned drive_ao0_pins[] = {
-+	TEGRA_PIN_JTAG_RTCK,
-+};
-+
-+static const unsigned drive_hv0_pins[] = {
-+	TEGRA_PIN_HDMI_INT_PN7,
-+};
-+
-+static const unsigned drive_sdio4_pins[] = {
-+	TEGRA_PIN_SDMMC1_WP_N_PV3,
-+};
-+
-+static const unsigned drive_ao4_pins[] = {
-+	TEGRA_PIN_JTAG_RTCK,
-+};
-+
-+enum tegra_mux {
-+	TEGRA_MUX_BLINK,
-+	TEGRA_MUX_CEC,
-+	TEGRA_MUX_CLDVFS,
-+	TEGRA_MUX_CLK12,
-+	TEGRA_MUX_CPU,
-+	TEGRA_MUX_DAP,
-+	TEGRA_MUX_DAP1,
-+	TEGRA_MUX_DAP2,
-+	TEGRA_MUX_DEV3,
-+	TEGRA_MUX_DISPLAYA,
-+	TEGRA_MUX_DISPLAYA_ALT,
-+	TEGRA_MUX_DISPLAYB,
-+	TEGRA_MUX_DTV,
-+	TEGRA_MUX_EXTPERIPH1,
-+	TEGRA_MUX_EXTPERIPH2,
-+	TEGRA_MUX_EXTPERIPH3,
-+	TEGRA_MUX_GMI,
-+	TEGRA_MUX_GMI_ALT,
-+	TEGRA_MUX_HDA,
-+	TEGRA_MUX_HSI,
-+	TEGRA_MUX_I2C1,
-+	TEGRA_MUX_I2C2,
-+	TEGRA_MUX_I2C3,
-+	TEGRA_MUX_I2C4,
-+	TEGRA_MUX_I2CPWR,
-+	TEGRA_MUX_I2S0,
-+	TEGRA_MUX_I2S1,
-+	TEGRA_MUX_I2S2,
-+	TEGRA_MUX_I2S3,
-+	TEGRA_MUX_I2S4,
-+	TEGRA_MUX_IRDA,
-+	TEGRA_MUX_KBC,
-+	TEGRA_MUX_OWR,
-+	TEGRA_MUX_PMI,
-+	TEGRA_MUX_PWM0,
-+	TEGRA_MUX_PWM1,
-+	TEGRA_MUX_PWM2,
-+	TEGRA_MUX_PWM3,
-+	TEGRA_MUX_PWRON,
-+	TEGRA_MUX_RESET_OUT_N,
-+	TEGRA_MUX_RSVD1,
-+	TEGRA_MUX_RSVD2,
-+	TEGRA_MUX_RSVD3,
-+	TEGRA_MUX_RSVD4,
-+	TEGRA_MUX_SDMMC1,
-+	TEGRA_MUX_SDMMC2,
-+	TEGRA_MUX_SDMMC3,
-+	TEGRA_MUX_SDMMC4,
-+	TEGRA_MUX_SOC,
-+	TEGRA_MUX_SPDIF,
-+	TEGRA_MUX_SPI1,
-+	TEGRA_MUX_SPI2,
-+	TEGRA_MUX_SPI3,
-+	TEGRA_MUX_SPI4,
-+	TEGRA_MUX_SPI5,
-+	TEGRA_MUX_SPI6,
-+	TEGRA_MUX_TRACE,
-+	TEGRA_MUX_UARTA,
-+	TEGRA_MUX_UARTB,
-+	TEGRA_MUX_UARTC,
-+	TEGRA_MUX_UARTD,
-+	TEGRA_MUX_ULPI,
-+	TEGRA_MUX_USB,
-+	TEGRA_MUX_VGP1,
-+	TEGRA_MUX_VGP2,
-+	TEGRA_MUX_VGP3,
-+	TEGRA_MUX_VGP4,
-+	TEGRA_MUX_VGP5,
-+	TEGRA_MUX_VGP6,
-+	TEGRA_MUX_VI,
-+	TEGRA_MUX_VI_ALT1,
-+	TEGRA_MUX_VI_ALT3,
-+	TEGRA_MUX_VIMCLK2,
-+	TEGRA_MUX_VIMCLK2_ALT,
-+	TEGRA_MUX_SATA,
-+	TEGRA_MUX_CCLA,
-+	TEGRA_MUX_PE0,
-+	TEGRA_MUX_PE,
-+	TEGRA_MUX_PE1,
-+	TEGRA_MUX_DP,
-+	TEGRA_MUX_RTCK,
-+	TEGRA_MUX_SYS,
-+	TEGRA_MUX_CLK,
-+	TEGRA_MUX_TMDS,
-+};
-+
-+static const char * const blink_groups[] = {
-+	"clk_32k_out_pa0",
-+};
-+
-+static const char * const cec_groups[] = {
-+	"hdmi_cec_pee3",
-+};
-+
-+static const char * const cldvfs_groups[] = {
-+	"ph2",
-+	"ph3",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"dvfs_pwm_px0",
-+	"dvfs_clk_px2",
-+};
-+
-+static const char * const clk12_groups[] = {
-+	"sdmmc1_wp_n_pv3",
-+	"sdmmc1_clk_pz0",
-+};
-+
-+static const char * const cpu_groups[] = {
-+	"cpu_pwr_req",
-+};
-+
-+static const char * const dap_groups[] = {
-+	"dap_mclk1_pee2",
-+	"clk2_req_pcc5",
-+};
-+
-+static const char * const dap1_groups[] = {
-+	"dap_mclk1_pee2",
-+};
-+
-+static const char * const dap2_groups[] = {
-+	"dap_mclk1_pw4",
-+	"gpio_x4_aud_px4",
-+};
-+
-+static const char * const dev3_groups[] = {
-+	"clk3_req_pee1",
-+};
-+
-+static const char * const displaya_groups[] = {
-+	"dap3_fs_pp0",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"ph1",
-+	"pi4",
-+	"pbb3",
-+	"pbb4",
-+	"pbb5",
-+	"kb_row3_pr3",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
-+	"kb_row6_pr6",
-+	"kb_col3_pq3",
-+	"sdmmc3_dat2_pb5",
-+};
-+
-+static const char * const displaya_alt_groups[] = {
-+	"kb_row6_pr6",
-+};
-+
-+static const char * const displayb_groups[] = {
-+	"dap3_fs_pp0",
-+	"dap3_din_pp1",
-+	"dap3_sclk_pp3",
-+
-+	"pu3",
-+	"pu4",
-+	"pu5",
-+
-+	"pbb3",
-+	"pbb4",
-+	"pbb6",
-+
-+	"kb_row3_pr3",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
-+	"kb_row6_pr6",
-+
-+	"sdmmc3_dat3_pb4",
-+};
-+
-+static const char * const dtv_groups[] = {
-+	"uart3_cts_n_pa1",
-+	"uart3_rts_n_pc0",
-+	"dap4_fs_pp4",
-+	"dap4_dout_pp6",
-+	"pi7",
-+	"ph0",
-+	"ph6",
-+	"ph7",
-+};
-+
-+static const char * const extperiph1_groups[] = {
-+	"dap_mclk1_pw4",
-+};
-+
-+static const char * const extperiph2_groups[] = {
-+	"clk2_out_pw5",
-+};
-+
-+static const char * const extperiph3_groups[] = {
-+	"clk3_out_pee0",
-+};
-+
-+static const char * const gmi_groups[] = {
-+	"uart2_cts_n_pj5",
-+	"uart2_rts_n_pj6",
-+	"uart3_txd_pw6",
-+	"uart3_rxd_pw7",
-+	"uart3_cts_n_pa1",
-+	"uart3_rts_n_pc0",
-+
-+	"pu0",
-+	"pu1",
-+	"pu2",
-+	"pu3",
-+	"pu4",
-+	"pu5",
-+	"pu6",
-+
-+	"dap4_fs_pp4",
-+	"dap4_din_pp5",
-+	"dap4_dout_pp6",
-+	"dap4_sclk_pp7",
-+
-+	"pc7",
-+
-+	"pg0",
-+	"pg1",
-+	"pg2",
-+	"pg3",
-+	"pg4",
-+	"pg5",
-+	"pg6",
-+	"pg7",
-+
-+	"ph0",
-+	"ph1",
-+	"ph2",
-+	"ph3",
-+	"ph4",
-+	"ph5",
-+	"ph6",
-+	"ph7",
-+
-+	"pi0",
-+	"pi1",
-+	"pi2",
-+	"pi3",
-+	"pi4",
-+	"pi5",
-+	"pi6",
-+	"pi7",
-+
-+	"pj0",
-+	"pj2",
-+
-+	"pk0",
-+	"pk1",
-+	"pk2",
-+	"pk3",
-+	"pk4",
-+
-+	"pj7",
-+	"pb0",
-+	"pb1",
-+	"pk7",
-+
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc4_dat7_paa7",
-+	"sdmmc4_clk_pcc4",
-+	"sdmmc4_cmd_pt7",
-+	"gmi_clk_lb",
-+
-+	"dap1_fs_pn0",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_sclk_pn3",
-+
-+	"dap2_fs_pa2",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+	"dap2_sclk_pa3",
-+
-+	"dvfs_pwm_px0",
-+	"dvfs_clk_px2",
-+	"gpio_x1_aud_px1",
-+	"gpio_x3_aud_px3",
-+	"gpio_x4_aud_px4",
-+	"gpio_x5_aud_px5",
-+	"gpio_x6_aud_px6",
-+};
-+
-+static const char * const gmi_alt_groups[] = {
-+	"pc7",
-+	"pk4",
-+	"pj7",
-+};
-+
-+static const char * const hda_groups[] = {
-+	"dap1_fs_pn0",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_sclk_pn3",
-+	"dap2_fs_pa2",
-+	"dap2_sclk_pa3",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+};
-+
-+static const char * const hsi_groups[] = {
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
-+};
-+
-+static const char * const i2c1_groups[] = {
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+	"gpio_w2_aud_pw2",
-+	"gpio_w3_aud_pw3",
-+};
-+
-+static const char * const i2c2_groups[] = {
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+};
-+
-+static const char * const i2c3_groups[] = {
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+	"cam_i2c_scl_pbb1",
-+	"cam_i2c_sda_pbb2",
-+};
-+
-+static const char * const i2c4_groups[] = {
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+};
-+
-+static const char * const i2cpwr_groups[] = {
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+};
-+
-+static const char * const i2s0_groups[] = {
-+	"dap1_fs_pn0",
-+	"dap1_din_pn1",
-+	"dap1_dout_pn2",
-+	"dap1_sclk_pn3",
-+};
-+
-+static const char * const i2s1_groups[] = {
-+	"dap2_fs_pa2",
-+	"dap2_sclk_pa3",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+};
-+
-+static const char * const i2s2_groups[] = {
-+	"dap3_fs_pp0",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"dap3_sclk_pp3",
-+};
-+
-+static const char * const i2s3_groups[] = {
-+	"dap4_fs_pp4",
-+	"dap4_din_pp5",
-+	"dap4_dout_pp6",
-+	"dap4_sclk_pp7",
-+};
-+
-+static const char * const i2s4_groups[] = {
-+	"pcc1",
-+	"pbb6",
-+	"pbb7",
-+	"pcc2",
-+};
-+
-+static const char * const irda_groups[] = {
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+};
-+
-+static const char * const kbc_groups[] = {
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row2_pr2",
-+	"kb_row3_pr3",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
-+	"kb_row6_pr6",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+	"kb_row16_pt0",
-+	"kb_row17_pt1",
-+
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col3_pq3",
-+	"kb_col4_pq4",
-+	"kb_col5_pq5",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+};
-+
-+static const char * const owr_groups[] = {
-+	"pu0",
-+	"kb_col4_pq4",
-+	"owr",
-+	"sdmmc3_cd_n_pv2",
-+};
-+
-+static const char * const pmi_groups[] = {
-+	"pwr_int_n",
-+};
-+
-+static const char * const pwm0_groups[] = {
-+	"sdmmc1_dat2_py5",
-+	"uart3_rts_n_pc0",
-+	"pu3",
-+	"ph0",
-+	"sdmmc3_dat3_pb4",
-+};
-+
-+static const char * const pwm1_groups[] = {
-+	"sdmmc1_dat1_py6",
-+	"pu4",
-+	"ph1",
-+	"sdmmc3_dat2_pb5",
-+};
-+
-+static const char * const pwm2_groups[] = {
-+	"pu5",
-+	"ph2",
-+	"kb_col3_pq3",
-+	"sdmmc3_dat1_pb6",
-+};
-+
-+static const char * const pwm3_groups[] = {
-+	"pu6",
-+	"ph3",
-+	"sdmmc3_cmd_pa7",
-+};
-+
-+static const char * const pwron_groups[] = {
-+	"core_pwr_req",
-+};
-+
-+static const char * const reset_out_n_groups[] = {
-+	"reset_out_n",
-+};
-+
-+static const char * const rsvd1_groups[] = {
-+	"pv0",
-+	"pv1",
-+
-+	"hdmi_int_pn7",
-+	"pu1",
-+	"pu2",
-+	"pc7",
-+	"pi7",
-+	"pk0",
-+	"pj0",
-+	"pj2",
-+	"pk2",
-+	"pi3",
-+	"pi6",
-+
-+	"pg0",
-+	"pg1",
-+	"pg2",
-+	"pg3",
-+	"pg4",
-+	"pg5",
-+	"pg6",
-+	"pg7",
-+
-+	"pi0",
-+	"pi1",
-+
-+	"gpio_x7_aud_px7",
-+
-+	"reset_out_n",
-+};
-+
-+static const char * const rsvd2_groups[] = {
-+	"pv0",
-+	"pv1",
-+
-+	"sdmmc1_dat0_py7",
-+	"clk2_out_pw5",
-+	"clk2_req_pcc5",
-+	"hdmi_int_pn7",
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+
-+	"uart3_txd_pw6",
-+	"uart3_rxd_pw7",
-+
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+
-+	"clk2_out_pee0",
-+	"clk2_req_pee1",
-+	"pc7",
-+	"pi5",
-+	"pj0",
-+	"pj2",
-+
-+	"pk4",
-+	"pk2",
-+	"pi3",
-+	"pi6",
-+	"pg0",
-+	"pg1",
-+	"pg5",
-+	"pg6",
-+	"pg7",
-+
-+	"ph4",
-+	"ph5",
-+	"pj7",
-+	"pb0",
-+	"pb1",
-+	"pk7",
-+	"pi0",
-+	"pi1",
-+
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+	"sdmmc4_clk_pcc4",
-+	"sdmmc4_cmd_pt7",
-+	"sdmmc4_dat7_paa7",
-+	"pcc1",
-+	"pbb6",
-+	"pbb7",
-+	"pcc2",
-+	"jtag_rtck",
-+
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row2_pr2",
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col5_pq5",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+
-+	"core_pwr_req",
-+	"cpu_pwr_req",
-+	"pwr_int_n",
-+	"clk_32k_in",
-+	"owr",
-+
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+	"gpio_x1_aud_px1",
-+
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_dat0_pb7",
-+
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_wake_n_pdd3",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l1_clkreq_n_pdd6",
-+	"hdmi_cec_pee3",
-+
-+	"gpio_w2_aud_pw2",
-+	"usb_vbus_en0_pn4",
-+	"usb_vbus_en1_pn5",
-+	"sdmmc3_clk_lb_out_pee4",
-+	"sdmmc3_clk_lb_in_pee5",
-+	"gmi_clk_lb",
-+	"reset_out_n",
-+	"kb_row16_pt0",
-+	"kb_row17_pt1",
-+	"dp_hpd_pff0",
-+	"usb_vbus_en2_pff1",
-+	"pff2",
-+};
-+
-+static const char * const rsvd3_groups[] = {
-+	"dap3_sclk_pp3",
-+	"pv0",
-+	"pv1",
-+	"sdmmc1_clk_pz0",
-+	"clk2_out_pw5",
-+	"clk2_req_pcc5",
-+	"hdmi_int_pn7",
-+
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+
-+	"pu6",
-+
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+
-+	"dap4_din_pp5",
-+	"dap4_sclk_pp7",
-+
-+	"clk3_out_pee0",
-+	"clk3_req_pee1",
-+
-+	"sdmmc4_dat5_paa5",
-+	"gpio_pcc1",
-+	"cam_i2c_scl_pbb1",
-+	"cam_i2c_sda_pbb2",
-+	"pbb5",
-+	"pbb7",
-+	"jtag_rtck",
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row2_pr2",
-+	"kb_row4_pr4",
-+	"kb_row5_pr5",
-+	"kb_row9_ps1",
-+	"kb_row10_ps2",
-+	"kb_row11_ps3",
-+	"kb_row12_ps4",
-+	"kb_row15_ps7",
-+
-+	"clk_32k_out_pa0",
-+	"core_pwr_req",
-+	"cpu_pwr_req",
-+	"pwr_int_n",
-+	"clk_32k_in",
-+	"owr",
-+
-+	"dap_mclk1_pw4",
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_dat0_pb7",
-+
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_wake_n_pdd3",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l1_clkreq_n_pdd6",
-+	"hdmi_cec_pee3",
-+
-+	"sdmmc3_cd_n_pv2",
-+	"usb_vbus_en0_pn4",
-+	"usb_vbus_en1_pn5",
-+	"sdmmc3_clk_lb_out_pee4",
-+	"sdmmc3_clk_lb_in_pee5",
-+	"reset_out_n",
-+	"kb_row16_pt0",
-+	"kb_row17_pt1",
-+	"dp_hpd_pff0",
-+	"usb_vbus_en2_pff1",
-+	"pff2",
-+};
-+
-+static const char * const rsvd4_groups[] = {
-+	"dap3_dout_pp2",
-+	"pv0",
-+	"pv1",
-+	"sdmmc1_clk_pz0",
-+
-+	"clk2_out_pw5",
-+	"clk2_req_pcc5",
-+	"hdmi_int_pn7",
-+	"ddc_scl_pv4",
-+	"ddc_sda_pv5",
-+
-+	"uart2_rts_n_pj6",
-+	"uart2_cts_n_pj5",
-+	"uart3_txd_pw6",
-+	"uart3_rxd_pw7",
-+
-+	"pu0",
-+	"pu1",
-+	"pu2",
-+
-+	"gen1_i2c_scl_pc4",
-+	"gen1_i2c_sda_pc5",
-+
-+	"dap4_fs_pp4",
-+	"dap4_dout_pp6",
-+	"dap4_din_pp5",
-+	"dap4_sclk_pp7",
-+
-+	"clk3_out_pee0",
-+	"clk3_req_pee1",
-+
-+	"pi5",
-+	"pk1",
-+	"pk2",
-+	"pg0",
-+	"pg1",
-+	"pg2",
-+	"pg3",
-+	"ph4",
-+	"ph5",
-+	"pb0",
-+	"pb1",
-+	"pk7",
-+	"pi0",
-+	"pi1",
-+	"pi2",
-+
-+	"gen2_i2c_scl_pt5",
-+	"gen2_i2c_sda_pt6",
-+
-+	"sdmmc4_cmd_pt7",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat5_paa5",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc4_dat7_paa7",
-+
-+	"jtag_rtck",
-+	"pwr_i2c_scl_pz6",
-+	"pwr_i2c_sda_pz7",
-+
-+	"kb_row0_pr0",
-+	"kb_row1_pr1",
-+	"kb_row2_pr2",
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col5_pq5",
-+
-+	"clk_32k_out_pa0",
-+	"core_pwr_req",
-+	"cpu_pwr_req",
-+	"pwr_int_n",
-+	"clk_32k_in",
-+	"owr",
-+
-+	"dap1_fs_pn0",
-+	"dap1_din_pn1",
-+	"dap1_sclk_pn3",
-+	"dap_mclk1_req_pee2",
-+	"dap_mclk1_pw5",
-+
-+	"dap2_fs_pa2",
-+	"dap2_din_pa4",
-+	"dap2_dout_pa5",
-+	"dap2_sclk_pa3",
-+
-+	"dvfs_pwm_px0",
-+	"dvfs_clk_px2",
-+	"gpio_x1_aud_px1",
-+	"gpio_x3_aud_px3",
-+
-+	"gpio_x5_aud_px5",
-+	"gpio_x7_aud_px7",
-+
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l0_clkreq_n_pdd2",
-+	"pex_wake_n_pdd3",
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l1_clkreq_n_pdd6",
-+	"hdmi_cec_pee3",
-+
-+	"sdmmc3_cd_n_pv2",
-+	"usb_vbus_en0_pn4",
-+	"usb_vbus_en1_pn5",
-+	"sdmmc3_clk_lb_out_pee4",
-+	"sdmmc3_clk_lb_in_pee5",
-+	"gmi_clk_lb",
-+
-+	"dp_hpd_pff0",
-+	"usb_vbus_en2_pff1",
-+	"pff2",
-+};
-+
-+static const char * const sdmmc1_groups[] = {
-+	"sdmmc1_clk_pz0",
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat3_py4",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat0_py7",
-+	"clk2_out_pw5",
-+	"clk2_req_pcc",
-+	"uart3_cts_n_pa1",
-+	"sdmmc1_wp_n_pv3",
-+};
-+
-+static const char * const sdmmc2_groups[] = {
-+	"pi5",
-+	"pk1",
-+	"pk3",
-+	"pk4",
-+	"pi6",
-+	"ph4",
-+	"ph5",
-+	"ph6",
-+	"ph7",
-+	"pi2",
-+	"cam_mclk_pcc0",
-+	"pcc1",
-+	"pbb0",
-+	"cam_i2c_scl_pbb1",
-+	"cam_i2c_sda_pbb2",
-+	"pbb3",
-+	"pbb4",
-+	"pbb5",
-+	"pbb6",
-+	"pbb7",
-+	"pcc2",
-+	"gmi_clk_lb",
-+};
-+
-+static const char * const sdmmc3_groups[] = {
-+	"pk0",
-+	"pcc2",
-+
-+	"kb_col4_pq4",
-+	"kb_col5_pq5",
-+
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_cmd_pa7",
-+	"sdmmc3_dat0_pb7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc3_dat2_pb5",
-+	"sdmmc3_dat3_pb4",
-+
-+	"sdmmc3_cd_n_pv2",
-+	"sdmmc3_clk_lb_in_pee5",
-+	"sdmmc3_clk_lb_out_pee4",
-+};
-+
-+static const char * const sdmmc4_groups[] = {
-+	"sdmmc4_clk_pcc4",
-+	"sdmmc4_cmd_pt7",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat5_paa5",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc4_dat7_paa7",
-+};
-+
-+static const char * const soc_groups[] = {
-+	"pk0",
-+	"pj2",
-+	"kb_row15_ps7",
-+	"clk_32k_out_pa0",
-+};
-+
-+static const char * const spdif_groups[] = {
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat3_py4",
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
-+	"spdif_in_pk6",
-+	"spdif_out_pk5",
-+};
-+
-+static const char * const spi1_groups[] = {
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
-+	"gpio_x3_aud_px3",
-+	"gpio_x4_aud_px4",
-+	"gpio_x5_aud_px5",
-+	"gpio_x6_aud_px6",
-+	"gpio_x7_aud_px7",
-+	"gpio_w3_aud_pw3",
-+};
-+
-+static const char * const spi2_groups[] = {
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
-+
-+	"kb_row13_ps5",
-+	"kb_row14_ps6",
-+	"kb_row15_ps7",
-+	"kb_col0_pq0",
-+	"kb_col1_pq1",
-+	"kb_col2_pq2",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+	"gpio_x4_aud_px4",
-+	"gpio_x5_aud_px5",
-+	"gpio_x6_aud_px6",
-+	"gpio_x7_aud_px7",
-+	"gpio_w2_aud_pw2",
-+	"gpio_w3_aud_pw3",
-+};
-+
-+static const char * const spi3_groups[] = {
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"sdmmc4_dat0_paa0",
-+	"sdmmc4_dat1_paa1",
-+	"sdmmc4_dat2_paa2",
-+	"sdmmc4_dat3_paa3",
-+	"sdmmc4_dat4_paa4",
-+	"sdmmc4_dat5_paa5",
-+	"sdmmc4_dat6_paa6",
-+	"sdmmc3_clk_pa6",
-+	"sdmmc3_cmd_pa7",
-+	"sdmmc3_dat0_pb7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc3_dat2_pb5",
-+	"sdmmc3_dat3_pb4",
-+};
-+
-+static const char * const spi4_groups[] = {
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat3_py4",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat0_py7",
-+
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
-+	"uart2_rts_n_pj6",
-+	"uart2_cts_n_pj5",
-+	"uart3_txd_pw6",
-+	"uart3_rxd_pw7",
-+
-+	"pi3",
-+	"pg4",
-+	"pg5",
-+	"pg6",
-+	"pg7",
-+	"ph3",
-+	"pi4",
-+	"sdmmc1_wp_n_pv3",
-+};
-+
-+static const char * const spi5_groups[] = {
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
-+	"dap3_fs_pp0",
-+	"dap3_din_pp1",
-+	"dap3_dout_pp2",
-+	"dap3_sclk_pp3",
-+};
-+
-+static const char * const spi6_groups[] = {
-+	"dvfs_pwm_px0",
-+	"gpio_x1_aud_px1",
-+	"gpio_x3_aud_px3",
-+	"dvfs_clk_px2",
-+	"gpio_x6_aud_px6",
-+	"gpio_w2_aud_pw2",
-+	"gpio_w3_aud_pw3",
-+};
-+
-+static const char * const trace_groups[] = {
-+	"pi2",
-+	"pi4",
-+	"pi7",
-+	"ph0",
-+	"ph6",
-+	"ph7",
-+	"pg2",
-+	"pg3",
-+	"pk1",
-+	"pk3",
-+};
-+
-+static const char * const uarta_groups[] = {
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
-+
-+	"sdmmc1_cmd_pz1",
-+	"sdmmc1_dat3_py4",
-+	"sdmmc1_dat2_py5",
-+	"sdmmc1_dat1_py6",
-+	"sdmmc1_dat0_py7",
-+
-+
-+	"uart2_rxd_pc3",
-+	"uart2_txd_pc2",
-+	"uart2_rts_n_pj6",
-+	"uart2_cts_n_pj5",
-+
-+	"pu0",
-+	"pu1",
-+	"pu2",
-+	"pu3",
-+	"pu4",
-+	"pu5",
-+	"pu6",
-+
-+	"kb_row7_pr7",
-+	"kb_row8_ps0",
-+	"kb_row9_ps1",
-+	"kb_row10_ps2",
-+	"kb_col3_pq3",
-+	"kb_col4_pq4",
-+
-+	"sdmmc3_cmd_pa7",
-+	"sdmmc3_dat1_pb6",
-+	"sdmmc1_wp_n_pv3",
-+
-+};
-+
-+static const char * const uartb_groups[] = {
-+	"uart2_rts_n_pj6",
-+	"uart2_cts_n_pj5",
-+};
-+
-+static const char * const uartc_groups[] = {
-+	"uart3_txd_pw6",
-+	"uart3_rxd_pw7",
-+	"uart3_cts_n_pa1",
-+	"uart3_rts_n_pc0",
-+	"kb_row16_pt0",
-+	"kn_row17_pt1",
-+};
-+
-+static const char * const uartd_groups[] = {
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
-+	"pj7",
-+	"pb0",
-+	"pb1",
-+	"pk7",
-+	"kb_col6_pq6",
-+	"kb_col7_pq7",
-+};
-+
-+static const char * const ulpi_groups[] = {
-+	"ulpi_data0_po1",
-+	"ulpi_data1_po2",
-+	"ulpi_data2_po3",
-+	"ulpi_data3_po4",
-+	"ulpi_data4_po5",
-+	"ulpi_data5_po6",
-+	"ulpi_data6_po7",
-+	"ulpi_data7_po0",
-+	"ulpi_clk_py0",
-+	"ulpi_dir_py1",
-+	"ulpi_nxt_py2",
-+	"ulpi_stp_py3",
-+};
-+
-+static const char * const usb_groups[] = {
-+	"pj0",
-+	"usb_vbus_en0_pn4",
-+	"usb_vbus_en1_pn5",
-+	"usb_vbus_en2_pff1",
-+};
-+
-+static const char * const vgp1_groups[] = {
-+	"cam_i2c_scl_pbb1",
-+};
-+
-+static const char * const vgp2_groups[] = {
-+	"cam_i2c_sda_pbb2",
-+};
-+
-+static const char * const vgp3_groups[] = {
-+	"pbb3",
-+};
-+
-+static const char * const vgp4_groups[] = {
-+	"pbb4",
-+};
-+
-+static const char * const vgp5_groups[] = {
-+	"pbb5",
-+};
-+
-+static const char * const vgp6_groups[] = {
-+	"pbb0",
-+};
-+
-+static const char * const vi_groups[] = {
-+	"cam_mclk_pcc0",
-+};
-+
-+static const char * const vi_alt1_groups[] = {
-+	"cam_mclk_pcc0",
-+};
-+
-+static const char * const vi_alt3_groups[] = {
-+	"cam_mclk_pcc0",
-+};
-+
-+static const char * const vimclk2_groups[] = {
-+	"pbb0",
-+};
-+
-+static const char * const vimclk2_alt_groups[] = {
-+	"pbb0",
-+};
-+
-+static const char * const sata_groups[] = {
-+	"dap_mclk1_req_pee2",
-+	"dap1_dout_pn2",
-+	"pff2",
-+};
-+
-+static const char * const ccla_groups[] = {
-+	"pk3",
-+};
-+
-+static const char * const rtck_groups[] = {
-+	"jtag_rtck",
-+};
-+
-+static const char * const sys_groups[] = {
-+	"kb_row3_pr3",
-+};
-+
-+static const char * const pe0_groups[] = {
-+	"pex_l0_rst_n_pdd1",
-+	"pex_l0_clkreq_n_pdd2",
-+};
-+
-+static const char * const pe_groups[] = {
-+	"pex_wake_n_pdd3",
-+};
-+
-+static const char * const pe1_groups[] = {
-+	"pex_l1_rst_n_pdd5",
-+	"pex_l1_clkreq_n_pdd6",
-+};
-+
-+static const char * const dp_groups[] = {
-+	"dp_hpd_pff0",
-+};
-+
-+static const char * const clk_groups[] = {
-+	"clk_32k_in",
-+};
-+
-+static const char * const tmds_groups[] = {
-+	"pg4",
-+	"ph1",
-+	"ph2",
-+};
-+
-+#define FUNCTION(fname)					\
-+	{						\
-+		.name = #fname,				\
-+		.groups = fname##_groups,		\
-+		.ngroups = ARRAY_SIZE(fname##_groups),	\
-+	}
-+
-+static const struct tegra_function tegra124_functions[] = {
-+	FUNCTION(blink),
-+	FUNCTION(cec),
-+	FUNCTION(cldvfs),
-+	FUNCTION(clk12),
-+	FUNCTION(cpu),
-+	FUNCTION(dap),
-+	FUNCTION(dap1),
-+	FUNCTION(dap2),
-+	FUNCTION(dev3),
-+	FUNCTION(displaya),
-+	FUNCTION(displaya_alt),
-+	FUNCTION(displayb),
-+	FUNCTION(dtv),
-+	FUNCTION(extperiph1),
-+	FUNCTION(extperiph2),
-+	FUNCTION(extperiph3),
-+	FUNCTION(gmi),
-+	FUNCTION(gmi_alt),
-+	FUNCTION(hda),
-+	FUNCTION(hsi),
-+	FUNCTION(i2c1),
-+	FUNCTION(i2c2),
-+	FUNCTION(i2c3),
-+	FUNCTION(i2c4),
-+	FUNCTION(i2cpwr),
-+	FUNCTION(i2s0),
-+	FUNCTION(i2s1),
-+	FUNCTION(i2s2),
-+	FUNCTION(i2s3),
-+	FUNCTION(i2s4),
-+	FUNCTION(irda),
-+	FUNCTION(kbc),
-+	FUNCTION(owr),
-+	FUNCTION(pmi),
-+	FUNCTION(pwm0),
-+	FUNCTION(pwm1),
-+	FUNCTION(pwm2),
-+	FUNCTION(pwm3),
-+	FUNCTION(pwron),
-+	FUNCTION(reset_out_n),
-+	FUNCTION(rsvd1),
-+	FUNCTION(rsvd2),
-+	FUNCTION(rsvd3),
-+	FUNCTION(rsvd4),
-+	FUNCTION(sdmmc1),
-+	FUNCTION(sdmmc2),
-+	FUNCTION(sdmmc3),
-+	FUNCTION(sdmmc4),
-+	FUNCTION(soc),
-+	FUNCTION(spdif),
-+	FUNCTION(spi1),
-+	FUNCTION(spi2),
-+	FUNCTION(spi3),
-+	FUNCTION(spi4),
-+	FUNCTION(spi5),
-+	FUNCTION(spi6),
-+	FUNCTION(trace),
-+	FUNCTION(uarta),
-+	FUNCTION(uartb),
-+	FUNCTION(uartc),
-+	FUNCTION(uartd),
-+	FUNCTION(ulpi),
-+	FUNCTION(usb),
-+	FUNCTION(vgp1),
-+	FUNCTION(vgp2),
-+	FUNCTION(vgp3),
-+	FUNCTION(vgp4),
-+	FUNCTION(vgp5),
-+	FUNCTION(vgp6),
-+	FUNCTION(vi),
-+	FUNCTION(vi_alt1),
-+	FUNCTION(vi_alt3),
-+	FUNCTION(vimclk2),
-+	FUNCTION(vimclk2_alt),
-+	FUNCTION(sata),
-+	FUNCTION(ccla),
-+	FUNCTION(pe0),
-+	FUNCTION(pe),
-+	FUNCTION(pe1),
-+	FUNCTION(dp),
-+	FUNCTION(rtck),
-+	FUNCTION(sys),
-+	FUNCTION(clk),
-+	FUNCTION(tmds),
-+};
-+
-+#define DRV_PINGROUP_REG_A	0x868	/* bank 0 */
-+#define PINGROUP_REG_A		0x3000	/* bank 1 */
-+
-+#define PINGROUP_REG_Y(r)	((r) - PINGROUP_REG_A)
-+#define PINGROUP_REG_N(r)	-1
-+
-+#define PINGROUP(pg_name, f0, f1, f2, f3, f_safe, r, od, ior, rcv_sel)	\
-+	{								\
-+		.name = #pg_name,					\
-+		.pins = pg_name##_pins,					\
-+		.npins = ARRAY_SIZE(pg_name##_pins),			\
-+		.funcs = {						\
-+			TEGRA_MUX_ ## f0,				\
-+			TEGRA_MUX_ ## f1,				\
-+			TEGRA_MUX_ ## f2,				\
-+			TEGRA_MUX_ ## f3,				\
-+		},							\
-+		.func_safe = TEGRA_MUX_ ## f_safe,			\
-+		.mux_reg = PINGROUP_REG_Y(r),				\
-+		.mux_bank = 1,						\
-+		.mux_bit = 0,						\
-+		.pupd_reg = PINGROUP_REG_Y(r),				\
-+		.pupd_bank = 1,						\
-+		.pupd_bit = 2,						\
-+		.tri_reg = PINGROUP_REG_Y(r),				\
-+		.tri_bank = 1,						\
-+		.tri_bit = 4,						\
-+		.einput_reg = PINGROUP_REG_Y(r),			\
-+		.einput_bank = 1,					\
-+		.einput_bit = 5,					\
-+		.odrain_reg = PINGROUP_REG_##od(r),			\
-+		.odrain_bank = 1,					\
-+		.odrain_bit = 6,					\
-+		.lock_reg = PINGROUP_REG_Y(r),				\
-+		.lock_bank = 1,						\
-+		.lock_bit = 7,						\
-+		.ioreset_reg = PINGROUP_REG_##ior(r),			\
-+		.ioreset_bank = 1,					\
-+		.ioreset_bit = 8,					\
-+		.rcv_sel_reg = PINGROUP_REG_##rcv_sel(r),		\
-+		.rcv_sel_bank = 1,					\
-+		.rcv_sel_bit = 9,					\
-+		.drv_reg = -1,						\
-+		.drvtype_reg = -1,					\
-+	}
-+
-+#define DRV_PINGROUP_DVRTYPE_Y(r) ((r) - DRV_PINGROUP_REG_A)
-+#define DRV_PINGROUP_DVRTYPE_N(r) -1
-+
-+#define DRV_PINGROUP(pg_name, r, hsm_b, schmitt_b, lpmd_b,		\
-+		     drvdn_b, drvdn_w, drvup_b, drvup_w,		\
-+		     slwr_b, slwr_w, slwf_b, slwf_w,			\
-+		     drvtype)						\
-+	{								\
-+		.name = "drive_" #pg_name,				\
-+		.pins = drive_##pg_name##_pins,				\
-+		.npins = ARRAY_SIZE(drive_##pg_name##_pins),		\
-+		.mux_reg = -1,						\
-+		.pupd_reg = -1,						\
-+		.tri_reg = -1,						\
-+		.einput_reg = -1,					\
-+		.odrain_reg = -1,					\
-+		.lock_reg = -1,						\
-+		.ioreset_reg = -1,					\
-+		.rcv_sel_reg = -1,					\
-+		.drv_reg = DRV_PINGROUP_DVRTYPE_Y(r),			\
-+		.drv_bank = 0,						\
-+		.hsm_bit = hsm_b,					\
-+		.schmitt_bit = schmitt_b,				\
-+		.lpmd_bit = lpmd_b,					\
-+		.drvdn_bit = drvdn_b,					\
-+		.drvdn_width = drvdn_w,					\
-+		.drvup_bit = drvup_b,					\
-+		.drvup_width = drvup_w,					\
-+		.slwr_bit = slwr_b,					\
-+		.slwr_width = slwr_w,					\
-+		.slwf_bit = slwf_b,					\
-+		.slwf_width = slwf_w,					\
-+		.drvtype_reg = DRV_PINGROUP_DVRTYPE_##drvtype(r),	\
-+		.drvtype_bank = 0,					\
-+		.drvtype_bit = 6,					\
-+	}
-+
-+static const struct tegra_pingroup tegra124_groups[] = {
-+       /*       pg_name,                f0,         f1,         f2,           f3,          safe,       r,      od, ior, rcv_sel */
-+       PINGROUP(ulpi_data0_po1,         SPI3,       HSI,        UARTA,        ULPI,        SPI3,       0x3000,  N,  N,  N),
-+       PINGROUP(ulpi_data1_po2,         SPI3,       HSI,        UARTA,        ULPI,        SPI3,       0x3004,  N,  N,  N),
-+       PINGROUP(ulpi_data2_po3,         SPI3,       HSI,        UARTA,        ULPI,        SPI3,       0x3008,  N,  N,  N),
-+       PINGROUP(ulpi_data3_po4,         SPI3,       HSI,        UARTA,        ULPI,        SPI3,       0x300c,  N,  N,  N),
-+       PINGROUP(ulpi_data4_po5,         SPI2,       HSI,        UARTA,        ULPI,        SPI2,       0x3010,  N,  N,  N),
-+       PINGROUP(ulpi_data5_po6,         SPI2,       HSI,        UARTA,        ULPI,        SPI2,       0x3014,  N,  N,  N),
-+       PINGROUP(ulpi_data6_po7,         SPI2,       HSI,        UARTA,        ULPI,        SPI2,       0x3018,  N,  N,  N),
-+       PINGROUP(ulpi_data7_po0,         SPI2,       HSI,        UARTA,        ULPI,        SPI2,       0x301c,  N,  N,  N),
-+       PINGROUP(ulpi_clk_py0,           SPI1,       SPI5,       UARTD,        ULPI,        SPI1,       0x3020,  N,  N,  N),
-+       PINGROUP(ulpi_dir_py1,           SPI1,       SPI5,       UARTD,        ULPI,        SPI1,       0x3024,  N,  N,  N),
-+       PINGROUP(ulpi_nxt_py2,           SPI1,       SPI5,       UARTD,        ULPI,        SPI1,       0x3028,  N,  N,  N),
-+       PINGROUP(ulpi_stp_py3,           SPI1,       SPI5,       UARTD,        ULPI,        SPI1,       0x302c,  N,  N,  N),
-+       PINGROUP(dap3_fs_pp0,            I2S2,       SPI5,       DISPLAYA,     DISPLAYB,    I2S2,       0x3030,  N,  N,  N),
-+       PINGROUP(dap3_din_pp1,           I2S2,       SPI5,       DISPLAYA,     DISPLAYB,    I2S2,       0x3034,  N,  N,  N),
-+       PINGROUP(dap3_dout_pp2,          I2S2,       SPI5,       DISPLAYA,     RSVD4,       I2S2,       0x3038,  N,  N,  N),
-+       PINGROUP(dap3_sclk_pp3,          I2S2,       SPI5,       RSVD3,        DISPLAYB,    I2S2,       0x303c,  N,  N,  N),
-+       PINGROUP(pv0,                    RSVD1,      RSVD2,      RSVD3,        RSVD4,       RSVD1,      0x3040,  N,  N,  N),
-+       PINGROUP(pv1,                    RSVD1,      RSVD2,      RSVD3,        RSVD4,       RSVD1,      0x3044,  N,  N,  N),
-+       PINGROUP(sdmmc1_clk_pz0,         SDMMC1,     CLK12,      RSVD3,        RSVD4,       RSVD3,      0x3048,  N,  N,  N),
-+       PINGROUP(sdmmc1_cmd_pz1,         SDMMC1,     SPDIF,      SPI4,         UARTA,       SDMMC1,     0x304c,  N,  N,  N),
-+       PINGROUP(sdmmc1_dat3_py4,        SDMMC1,     SPDIF,      SPI4,         UARTA,       SDMMC1,     0x3050,  N,  N,  N),
-+       PINGROUP(sdmmc1_dat2_py5,        SDMMC1,     PWM0,       SPI4,         UARTA,       SDMMC1,     0x3054,  N,  N,  N),
-+       PINGROUP(sdmmc1_dat1_py6,        SDMMC1,     PWM1,       SPI4,         UARTA,       SDMMC1,     0x3058,  N,  N,  N),
-+       PINGROUP(sdmmc1_dat0_py7,        SDMMC1,     RSVD2,      SPI4,         UARTA,       SDMMC1,     0x305c,  N,  N,  N),
-+       PINGROUP(clk2_out_pw5,           EXTPERIPH2, RSVD2,      RSVD3,        RSVD4,       EXTPERIPH2, 0x3068,  N,  N,  N),
-+       PINGROUP(clk2_req_pcc5,          DAP,        RSVD2,      RSVD3,        RSVD4,       DAP,        0x306c,  N,  N,  N),
-+       PINGROUP(hdmi_int_pn7,           RSVD1,      RSVD2,      RSVD3,        RSVD4,       RSVD1,      0x3110,  N,  N,  Y),
-+       PINGROUP(ddc_scl_pv4,            I2C4,       RSVD2,      RSVD3,        RSVD4,       I2C4,       0x3114,  N,  N,  Y),
-+       PINGROUP(ddc_sda_pv5,            I2C4,       RSVD2,      RSVD3,        RSVD4,       I2C4,       0x3118,  N,  N,  Y),
-+       PINGROUP(uart2_rxd_pc3,          IRDA,       SPDIF,      UARTA,        SPI4,        IRDA,       0x3164,  N,  N,  N),
-+       PINGROUP(uart2_txd_pc2,          IRDA,       SPDIF,      UARTA,        SPI4,        IRDA,       0x3168,  N,  N,  N),
-+       PINGROUP(uart2_rts_n_pj6,        UARTA,      UARTB,      GMI,          SPI4,        UARTA,      0x316c,  N,  N,  N),
-+       PINGROUP(uart2_cts_n_pj5,        UARTA,      UARTB,      GMI,          SPI4,        UARTA,      0x3170,  N,  N,  N),
-+       PINGROUP(uart3_txd_pw6,          UARTC,      RSVD2,      GMI,          SPI4,        UARTC,      0x3174,  N,  N,  N),
-+       PINGROUP(uart3_rxd_pw7,          UARTC,      RSVD2,      GMI,          SPI4,        UARTC,      0x3178,  N,  N,  N),
-+       PINGROUP(uart3_cts_n_pa1,        UARTC,      SDMMC1,     DTV,          GMI,         UARTC,      0x317c,  N,  N,  N),
-+       PINGROUP(uart3_rts_n_pc0,        UARTC,      PWM0,       DTV,          GMI,         UARTC,      0x3180,  N,  N,  N),
-+       PINGROUP(pu0,                    OWR,        UARTA,      GMI,          RSVD4,       RSVD4,      0x3184,  N,  N,  N),
-+       PINGROUP(pu1,                    RSVD1,      UARTA,      GMI,          RSVD4,       RSVD4,      0x3188,  N,  N,  N),
-+       PINGROUP(pu2,                    RSVD1,      UARTA,      GMI,          RSVD4,       RSVD4,      0x318c,  N,  N,  N),
-+       PINGROUP(pu3,                    PWM0,       UARTA,      GMI,          DISPLAYB,    PWM0,       0x3190,  N,  N,  N),
-+       PINGROUP(pu4,                    PWM1,       UARTA,      GMI,          DISPLAYB,    PWM1,       0x3194,  N,  N,  N),
-+       PINGROUP(pu5,                    PWM2,       UARTA,      GMI,          DISPLAYB,    PWM2,       0x3198,  N,  N,  N),
-+       PINGROUP(pu6,                    PWM3,       UARTA,      RSVD3,        GMI,         RSVD3,      0x319c,  N,  N,  N),
-+       PINGROUP(gen1_i2c_scl_pc4,       I2C1,       RSVD2,      RSVD3,        RSVD4,       I2C1,       0x31a0,  Y,  N,  N),
-+       PINGROUP(gen1_i2c_sda_pc5,       I2C1,       RSVD2,      RSVD3,        RSVD4,       I2C1,       0x31a4,  Y,  N,  N),
-+       PINGROUP(dap4_fs_pp4,            I2S3,       GMI,        DTV,          RSVD4,       I2S3,       0x31a8,  N,  N,  N),
-+       PINGROUP(dap4_din_pp5,           I2S3,       GMI,        RSVD3,        RSVD4,       I2S3,       0x31ac,  N,  N,  N),
-+       PINGROUP(dap4_dout_pp6,          I2S3,       GMI,        DTV,          RSVD4,       I2S3,       0x31b0,  N,  N,  N),
-+       PINGROUP(dap4_sclk_pp7,          I2S3,       GMI,        RSVD3,        RSVD4,       I2S3,       0x31b4,  N,  N,  N),
-+       PINGROUP(clk3_out_pee0,          EXTPERIPH3, RSVD2,      RSVD3,        RSVD4,       RSVD3,      0x31b8,  N,  N,  N),
-+       PINGROUP(clk3_req_pee1,          DEV3,       RSVD2,      RSVD3,        RSVD4,       RSVD4,      0x31bc,  N,  N,  N),
-+       PINGROUP(pc7,                    RSVD1,      RSVD2,      GMI,          GMI_ALT,     RSVD1,      0x31c0,  N,  N,  N),
-+       PINGROUP(pi5,                    SDMMC2,     RSVD2,      GMI,          RSVD4,       GMI,        0x31c4,  N,  N,  N),
-+       PINGROUP(pi7,                    RSVD1,      TRACE,      GMI,          DTV,         RSVD1,      0x31c8,  N,  N,  N),
-+       PINGROUP(pk0,                    RSVD1,      SDMMC3,     GMI,          SOC,         RSVD1,      0x31cc,  N,  N,  N),
-+       PINGROUP(pk1,                    SDMMC2,     TRACE,      GMI,          RSVD4,       GMI,        0x31d0,  N,  N,  N),
-+       PINGROUP(pj0,                    RSVD1,      RSVD2,      GMI,          USB,         RSVD1,      0x31d4,  N,  N,  N),
-+       PINGROUP(pj2,                    RSVD1,      RSVD2,      GMI,          SOC,         RSVD1,      0x31d8,  N,  N,  N),
-+       PINGROUP(pk3,                    SDMMC2,     TRACE,      GMI,          CCLA,        GMI,        0x31dc,  N,  N,  N),
-+       PINGROUP(pk4,                    SDMMC2,     RSVD2,      GMI,          GMI_ALT,     GMI,        0x31e0,  N,  N,  N),
-+       PINGROUP(pk2,                    RSVD1,      RSVD2,      GMI,          RSVD4,       RSVD4,      0x31e4,  N,  N,  N),
-+       PINGROUP(pi3,                    RSVD1,      RSVD2,      GMI,          SPI4,        RSVD1,      0x31e8,  N,  N,  N),
-+       PINGROUP(pi6,                    RSVD1,      RSVD2,      GMI,          SDMMC2,      RSVD1,      0x31ec,  N,  N,  N),
-+       PINGROUP(pg0,                    RSVD1,      RSVD2,      GMI,          RSVD4,       RSVD4,      0x31f0,  N,  N,  N),
-+       PINGROUP(pg1,                    RSVD1,      RSVD2,      GMI,          RSVD4,       RSVD4,      0x31f4,  N,  N,  N),
-+       PINGROUP(pg2,                    RSVD1,      TRACE,      GMI,          RSVD4,       RSVD4,      0x31f8,  N,  N,  N),
-+       PINGROUP(pg3,                    RSVD1,      TRACE,      GMI,          RSVD4,       RSVD4,      0x31fc,  N,  N,  N),
-+       PINGROUP(pg4,                    RSVD1,      TMDS,       GMI,          SPI4,        RSVD1,      0x3200,  N,  N,  N),
-+       PINGROUP(pg5,                    RSVD1,      RSVD2,      GMI,          SPI4,        RSVD1,      0x3204,  N,  N,  N),
-+       PINGROUP(pg6,                    RSVD1,      RSVD2,      GMI,          SPI4,        RSVD1,      0x3208,  N,  N,  N),
-+       PINGROUP(pg7,                    RSVD1,      RSVD2,      GMI,          SPI4,        RSVD1,      0x320c,  N,  N,  N),
-+       PINGROUP(ph0,                    PWM0,       TRACE,      GMI,          DTV,         GMI,        0x3210,  N,  N,  N),
-+       PINGROUP(ph1,                    PWM1,       TMDS,       GMI,          DISPLAYA,    GMI,        0x3214,  N,  N,  N),
-+       PINGROUP(ph2,                    PWM2,       TMDS,       GMI,          CLDVFS,      GMI,        0x3218,  N,  N,  N),
-+       PINGROUP(ph3,                    PWM3,       SPI4,       GMI,          CLDVFS,      GMI,        0x321c,  N,  N,  N),
-+       PINGROUP(ph4,                    SDMMC2,     RSVD2,      GMI,          RSVD4,       GMI,        0x3220,  N,  N,  N),
-+       PINGROUP(ph5,                    SDMMC2,     RSVD2,      GMI,          RSVD4,       GMI,        0x3224,  N,  N,  N),
-+       PINGROUP(ph6,                    SDMMC2,     TRACE,      GMI,          DTV,         GMI,        0x3228,  N,  N,  N),
-+       PINGROUP(ph7,                    SDMMC2,     TRACE,      GMI,          DTV,         GMI,        0x322c,  N,  N,  N),
-+       PINGROUP(pj7,                    UARTD,      RSVD2,      GMI,          GMI_ALT,     RSVD2,      0x3230,  N,  N,  N),
-+       PINGROUP(pb0,                    UARTD,      RSVD2,      GMI,          RSVD4,       RSVD2,      0x3234,  N,  N,  N),
-+       PINGROUP(pb1,                    UARTD,      RSVD2,      GMI,          RSVD4,       RSVD2,      0x3238,  N,  N,  N),
-+       PINGROUP(pk7,                    UARTD,      RSVD2,      GMI,          RSVD4,       RSVD2,      0x323c,  N,  N,  N),
-+       PINGROUP(pi0,                    RSVD1,      RSVD2,      GMI,          RSVD4,       RSVD4,      0x3240,  N,  N,  N),
-+       PINGROUP(pi1,                    RSVD1,      RSVD2,      GMI,          RSVD4,       RSVD1,      0x3244,  N,  N,  N),
-+       PINGROUP(pi2,                    SDMMC2,     TRACE,      GMI,          RSVD4,       GMI,        0x3248,  N,  N,  N),
-+       PINGROUP(pi4,                    SPI4,       TRACE,      GMI,          DISPLAYA,    GMI,        0x324c,  N,  N,  N),
-+       PINGROUP(gen2_i2c_scl_pt5,       I2C2,       RSVD2,      GMI,          RSVD4,       RSVD2,      0x3250,  Y,  N,  N),
-+       PINGROUP(gen2_i2c_sda_pt6,       I2C2,       RSVD2,      GMI,          RSVD4,       RSVD2,      0x3254,  Y,  N,  N),
-+       PINGROUP(sdmmc4_clk_pcc4,        SDMMC4,     RSVD2,      GMI,          RSVD4,       RSVD2,      0x3258,  N,  Y,  N),
-+       PINGROUP(sdmmc4_cmd_pt7,         SDMMC4,     RSVD2,      GMI,          RSVD4,       RSVD2,      0x325c,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat0_paa0,       SDMMC4,     SPI3,       GMI,          RSVD4,       SDMMC4,     0x3260,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat1_paa1,       SDMMC4,     SPI3,       GMI,          RSVD4,       SDMMC4,     0x3264,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat2_paa2,       SDMMC4,     SPI3,       GMI,          RSVD4,       SDMMC4,     0x3268,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat3_paa3,       SDMMC4,     SPI3,       GMI,          RSVD4,       SDMMC4,     0x326c,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat4_paa4,       SDMMC4,     SPI3,       GMI,          RSVD4,       SDMMC4,     0x3270,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat5_paa5,       SDMMC4,     SPI3,       RSVD3,        RSVD4,       SDMMC4,     0x3274,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat6_paa6,       SDMMC4,     SPI3,       GMI,          RSVD4,       SDMMC4,     0x3278,  N,  Y,  N),
-+       PINGROUP(sdmmc4_dat7_paa7,       SDMMC4,     RSVD1,      GMI,          RSVD4,       SDMMC4,     0x327c,  N,  Y,  N),
-+       PINGROUP(cam_mclk_pcc0,          VI,         VI_ALT1,    VI_ALT3,      SDMMC2,      VI,         0x3284,  N,  N,  N),
-+       PINGROUP(pcc1,                   I2S4,       RSVD1,      RSVD3,        SDMMC2,      I2S4,       0x3288,  N,  N,  N),
-+       PINGROUP(pbb0,                   VGP6,       VIMCLK2,    SDMMC2,       VIMCLK2_ALT, VGP6,       0x328c,  N,  N,  N),
-+       PINGROUP(cam_i2c_scl_pbb1,       VGP1,       I2C3,       RSVD3,        SDMMC2,      VGP1,       0x3290,  Y,  N,  N),
-+       PINGROUP(cam_i2c_sda_pbb2,       VGP2,       I2C3,       RSVD3,        SDMMC2,      VGP2,       0x3294,  Y,  N,  N),
-+       PINGROUP(pbb3,                   VGP3,       DISPLAYA,   DISPLAYB,     SDMMC2,      VGP3,       0x3298,  N,  N,  N),
-+       PINGROUP(pbb4,                   VGP4,       DISPLAYA,   DISPLAYB,     SDMMC2,      VGP4,       0x329c,  N,  N,  N),
-+       PINGROUP(pbb5,                   VGP5,       DISPLAYA,   RSVD3,        SDMMC2,      VGP5,       0x32a0,  N,  N,  N),
-+       PINGROUP(pbb6,                   I2S4,       RSVD2,      DISPLAYB,     SDMMC2,      I2S4,       0x32a4,  N,  N,  N),
-+       PINGROUP(pbb7,                   I2S4,       RSVD2,      RSVD3,        SDMMC2,      I2S4,       0x32a8,  N,  N,  N),
-+       PINGROUP(pcc2,                   I2S4,       RSVD2,      SDMMC3,       SDMMC2,      I2S4,       0x32ac,  N,  N,  N),
-+       PINGROUP(jtag_rtck,              RTCK,       RSVD2,      RSVD3,        RSVD4,       RTCK,       0x32b0,  N,  N,  N),
-+       PINGROUP(pwr_i2c_scl_pz6,        I2CPWR,     RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x32b4,  Y,  N,  N),
-+       PINGROUP(pwr_i2c_sda_pz7,        I2CPWR,     RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x32b8,  Y,  N,  N),
-+       PINGROUP(kb_row0_pr0,            KBC,        RSVD2,      RSVD3,        RSVD4,       RSVD4,      0x32bc,  N,  N,  N),
-+       PINGROUP(kb_row1_pr1,            KBC,        RSVD2,      RSVD3,        RSVD4,       RSVD4,      0x32c0,  N,  N,  N),
-+       PINGROUP(kb_row2_pr2,            KBC,        RSVD2,      RSVD3,        RSVD4,       RSVD4,      0x32c4,  N,  N,  N),
-+       PINGROUP(kb_row3_pr3,            KBC,        DISPLAYA,   SYS,          DISPLAYB,    KBC,        0x32c8,  N,  N,  N),
-+       PINGROUP(kb_row4_pr4,            KBC,        DISPLAYA,   RSVD3,        DISPLAYB,    RSVD3,      0x32cc,  N,  N,  N),
-+       PINGROUP(kb_row5_pr5,            KBC,        DISPLAYA,   RSVD3,        DISPLAYB,    RSVD3,      0x32d0,  N,  N,  N),
-+       PINGROUP(kb_row6_pr6,            KBC,        DISPLAYA,   DISPLAYA_ALT, DISPLAYB,    KBC,        0x32d4,  N,  N,  N),
-+       PINGROUP(kb_row7_pr7,            KBC,        RSVD2,      CLDVFS,       UARTA,       RSVD2,      0x32d8,  N,  N,  N),
-+       PINGROUP(kb_row8_ps0,            KBC,        RSVD2,      CLDVFS,       UARTA,       RSVD2,      0x32dc,  N,  N,  N),
-+       PINGROUP(kb_row9_ps1,            KBC,        RSVD2,      RSVD3,        UARTA,       KBC,        0x32e0,  N,  N,  N),
-+       PINGROUP(kb_row10_ps2,           KBC,        RSVD2,      RSVD3,        UARTA,       KBC,        0x32e4,  N,  N,  N),
-+       PINGROUP(kb_row11_ps3,           KBC,        RSVD2,      RSVD3,        IRDA,        RSVD3,      0x32e8,  N,  N,  N),
-+       PINGROUP(kb_row12_ps4,           KBC,        RSVD2,      RSVD3,        IRDA,        RSVD3,      0x32ec,  N,  N,  N),
-+       PINGROUP(kb_row13_ps5,           KBC,        RSVD2,      SPI2,         RSVD4,       RSVD4,      0x32f0,  N,  N,  N),
-+       PINGROUP(kb_row14_ps6,           KBC,        RSVD2,      SPI2,         RSVD4,       RSVD4,      0x32f4,  N,  N,  N),
-+       PINGROUP(kb_row15_ps7,           KBC,        SOC,        RSVD3,        RSVD4,       KBC,        0x32f8,  N,  N,  N),
-+       PINGROUP(kb_col0_pq0,            KBC,        RSVD2,      SPI2,         RSVD4,       RSVD4,      0x32fc,  N,  N,  N),
-+       PINGROUP(kb_col1_pq1,            KBC,        RSVD2,      SPI2,         RSVD4,       RSVD4,      0x3300,  N,  N,  N),
-+       PINGROUP(kb_col2_pq2,            KBC,        RSVD2,      SPI2,         RSVD4,       RSVD4,      0x3304,  N,  N,  N),
-+       PINGROUP(kb_col3_pq3,            KBC,        DISPLAYA,   PWM2,         UARTA,       KBC,        0x3308,  N,  N,  N),
-+       PINGROUP(kb_col4_pq4,            KBC,        OWR,        SDMMC3,       UARTA,       KBC,        0x330c,  N,  N,  N),
-+       PINGROUP(kb_col5_pq5,            KBC,        RSVD2,      SDMMC3,       RSVD4,       RSVD4,      0x3310,  N,  N,  N),
-+       PINGROUP(kb_col6_pq6,            KBC,        RSVD2,      SPI2,         UARTD,       RSVD2,      0x3314,  N,  N,  N),
-+       PINGROUP(kb_col7_pq7,            KBC,        RSVD2,      SPI2,         UARTD,       RSVD2,      0x3318,  N,  N,  N),
-+       PINGROUP(clk_32k_out_pa0,        BLINK,      SOC,        RSVD3,        RSVD4,       RSVD3,      0x331c,  N,  N,  N),
-+       PINGROUP(core_pwr_req,           PWRON,      RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x3324,  N,  N,  N),
-+       PINGROUP(cpu_pwr_req,            CPU,        RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x3328,  N,  N,  N),
-+       PINGROUP(pwr_int_n,              PMI,        RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x332c,  N,  N,  N),
-+       PINGROUP(clk_32k_in,             CLK,        RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x3330,  N,  N,  N),
-+       PINGROUP(owr,                    OWR,        RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x3334,  N,  N,  Y),
-+       PINGROUP(dap1_fs_pn0,            I2S0,       HDA,        GMI,          RSVD4,       RSVD4,      0x3338,  N,  N,  N),
-+       PINGROUP(dap1_din_pn1,           I2S0,       HDA,        GMI,          RSVD4,       RSVD4,      0x333c,  N,  N,  N),
-+       PINGROUP(dap1_dout_pn2,          I2S0,       HDA,        GMI,          SATA,        I2S0,       0x3340,  N,  N,  N),
-+       PINGROUP(dap1_sclk_pn3,          I2S0,       HDA,        GMI,          RSVD4,       I2S0,       0x3344,  N,  N,  N),
-+       PINGROUP(dap_mclk1_req_pee2,     DAP,        DAP1,       SATA,         RSVD4,       DAP,        0x3348,  N,  N,  N),
-+       PINGROUP(dap_mclk1_pw4,          EXTPERIPH1, DAP2,       RSVD3,        RSVD4,       RSVD3,      0x334c,  N,  N,  N),
-+       PINGROUP(spdif_in_pk6,           SPDIF,      RSVD2,      RSVD3,        I2C3,        RSVD3,      0x3350,  N,  N,  N),
-+       PINGROUP(spdif_out_pk5,          SPDIF,      RSVD2,      RSVD3,        I2C3,        RSVD3,      0x3354,  N,  N,  N),
-+       PINGROUP(dap2_fs_pa2,            I2S1,       HDA,        GMI,          RSVD4,       I2S1,       0x3358,  N,  N,  N),
-+       PINGROUP(dap2_din_pa4,           I2S1,       HDA,        GMI,          RSVD4,       I2S1,       0x335c,  N,  N,  N),
-+       PINGROUP(dap2_dout_pa5,          I2S1,       HDA,        GMI,          RSVD4,       I2S1,       0x3360,  N,  N,  N),
-+       PINGROUP(dap2_sclk_pa3,          I2S1,       HDA,        GMI,          RSVD4,       I2S1,       0x3364,  N,  N,  N),
-+       PINGROUP(dvfs_pwm_px0,           SPI6,       CLDVFS,     GMI,          RSVD4,       SPI6,       0x3368,  N,  N,  N),
-+       PINGROUP(gpio_x1_aud_px1,        SPI6,       RSVD2,      GMI,          RSVD4,       SPI6,       0x336c,  N,  N,  N),
-+       PINGROUP(gpio_x3_aud_px3,        SPI6,       SPI1,       GMI,          RSVD4,       SPI6,       0x3370,  N,  N,  N),
-+       PINGROUP(dvfs_clk_px2,           SPI6,       CLDVFS,     GMI,          RSVD4,       SPI6,       0x3374,  N,  N,  N),
-+       PINGROUP(gpio_x4_aud_px4,        GMI,        SPI1,       SPI2,         DAP2,        SPI1,       0x3378,  N,  N,  N),
-+       PINGROUP(gpio_x5_aud_px5,        GMI,        SPI1,       SPI2,         RSVD4,       SPI1,       0x337c,  N,  N,  N),
-+       PINGROUP(gpio_x6_aud_px6,        SPI6,       SPI1,       SPI2,         GMI,         SPI1,       0x3380,  N,  N,  N),
-+       PINGROUP(gpio_x7_aud_px7,        RSVD1,      SPI1,       SPI2,         RSVD4,       SPI1,       0x3384,  N,  N,  N),
-+       PINGROUP(sdmmc3_clk_pa6,         SDMMC3,     RSVD2,      RSVD3,        SPI3,        SDMMC3,     0x3390,  N,  N,  N),
-+       PINGROUP(sdmmc3_cmd_pa7,         SDMMC3,     PWM3,       UARTA,        SPI3,        SDMMC3,     0x3394,  N,  N,  N),
-+       PINGROUP(sdmmc3_dat0_pb7,        SDMMC3,     RSVD2,      RSVD3,        SPI3,        SDMMC3,     0x3398,  N,  N,  N),
-+       PINGROUP(sdmmc3_dat1_pb6,        SDMMC3,     PWM2,       UARTA,        SPI3,        SDMMC3,     0x339c,  N,  N,  N),
-+       PINGROUP(sdmmc3_dat2_pb5,        SDMMC3,     PWM1,       DISPLAYA,     SPI3,        SDMMC3,     0x33a0,  N,  N,  N),
-+       PINGROUP(sdmmc3_dat3_pb4,        SDMMC3,     PWM0,       DISPLAYB,     SPI3,        SDMMC3,     0x33a4,  N,  N,  N),
-+       PINGROUP(pex_l0_rst_n_pdd1,      PE0,        RSVD2,      RSVD3,        RSVD4,       PE0,        0x33bc,  N,  N,  N),
-+       PINGROUP(pex_l0_clkreq_n_pdd2,   PE0,        RSVD2,      RSVD3,        RSVD4,       PE0,        0x33c0,  N,  N,  N),
-+       PINGROUP(pex_wake_n_pdd3,        PE,         RSVD2,      RSVD3,        RSVD4,       PE,         0x33c4,  N,  N,  N),
-+       PINGROUP(pex_l1_rst_n_pdd5,      PE1,        RSVD2,      RSVD3,        RSVD4,       PE1,        0x33cc,  N,  N,  N),
-+       PINGROUP(pex_l1_clkreq_n_pdd6,   PE1,        RSVD2,      RSVD3,        RSVD4,       PE1,        0x33d0,  N,  N,  N),
-+       PINGROUP(hdmi_cec_pee3,          CEC,        RSVD2,      RSVD3,        RSVD4,       CEC,        0x33e0,  Y,  N,  N),
-+       PINGROUP(sdmmc1_wp_n_pv3,        SDMMC1,     CLK12,      SPI4,         UARTA,       SDMMC1,     0x33e4,  N,  N,  N),
-+       PINGROUP(sdmmc3_cd_n_pv2,        SDMMC3,     OWR,        RSVD3,        RSVD4,       SDMMC3,     0x33e8,  N,  N,  N),
-+       PINGROUP(gpio_w2_aud_pw2,        SPI6,       RSVD2,      SPI2,         I2C1,        RSVD2,      0x33ec,  N,  N,  N),
-+       PINGROUP(gpio_w3_aud_pw3,        SPI6,       SPI1,       SPI2,         I2C1,        SPI1,       0x33f0,  N,  N,  N),
-+       PINGROUP(usb_vbus_en0_pn4,       USB,        RSVD2,      RSVD3,        RSVD4,       USB,        0x33f4,  Y,  N,  N),
-+       PINGROUP(usb_vbus_en1_pn5,       USB,        RSVD2,      RSVD3,        RSVD4,       USB,        0x33f8,  Y,  N,  N),
-+       PINGROUP(sdmmc3_clk_lb_out_pee4, SDMMC3,     RSVD2,      RSVD3,        RSVD4,       SDMMC3,     0x33fc,  N,  N,  N),
-+       PINGROUP(sdmmc3_clk_lb_in_pee5,  SDMMC3,     RSVD2,      RSVD3,        RSVD4,       SDMMC3,     0x3400,  N,  N,  N),
-+       PINGROUP(gmi_clk_lb,             SDMMC2,     RSVD2,      GMI,          RSVD4,       SDMMC2,     0x3404,  N,  N,  N),
-+       PINGROUP(reset_out_n,            RSVD1,      RSVD2,      RSVD3,        RESET_OUT_N, RSVD1,      0x3408,  N,  N,  N),
-+       PINGROUP(kb_row16_pt0,           KBC,        RSVD2,      RSVD3,        UARTC,       KBC,        0x340c,  N,  N,  N),
-+       PINGROUP(kb_row17_pt1,           KBC,        RSVD2,      RSVD3,        UARTC,       KBC,        0x3410,  N,  N,  N),
-+       PINGROUP(usb_vbus_en2_pff1,      USB,        RSVD2,      RSVD3,        RSVD4,       USB,        0x3414,  Y,  N,  N),
-+       PINGROUP(pff2,                   SATA,       RSVD2,      RSVD3,        RSVD4,       RSVD2,      0x3418,  Y,  N,  N),
-+       PINGROUP(dp_hpd_pff0,            DP,         RSVD2,      RSVD3,        RSVD4,       DP,         0x3430,  N,  N,  N),
-+
-+	/* pg_name, r, hsm_b, schmitt_b, lpmd_b, drvdn_b, drvdn_w, drvup_b, drvup_w, slwr_b, slwr_w, slwf_b, slwf_w, drvtype */
-+       DRV_PINGROUP(ao1,         0x868,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(ao2,         0x86c,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(at1,         0x870,  2,  3,  4,  12,  7,  20,  7,  28,  2,  30,  2,  Y),
-+       DRV_PINGROUP(at2,         0x874,  2,  3,  4,  12,  7,  20,  7,  28,  2,  30,  2,  Y),
-+       DRV_PINGROUP(at3,         0x878,  2,  3,  4,  12,  7,  20,  7,  28,  2,  30,  2,  Y),
-+       DRV_PINGROUP(at4,         0x87c,  2,  3,  4,  12,  7,  20,  7,  28,  2,  30,  2,  Y),
-+       DRV_PINGROUP(at5,         0x880,  2,  3,  4,  14,  5,  19,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(cdev1,       0x884,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(cdev2,       0x888,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(dap1,        0x890,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(dap2,        0x894,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(dap3,        0x898,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(dap4,        0x89c,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(dbg,         0x8a0,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(sdio3,       0x8b0,  2,  3, -1,  12,  7,  20,  7,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(spi,         0x8b4,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(uaa,         0x8b8,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(uab,         0x8bc,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(uart2,       0x8c0,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(uart3,       0x8c4,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(sdio1,       0x8ec,  2,  3, -1,  12,  7,  20,  7,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(ddc,         0x8fc,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(gma,         0x900,  2,  3,  4,  14,  5,  20,  5,  28,  2,  30,  2,  Y),
-+       DRV_PINGROUP(gme,         0x910,  2,  3,  4,  14,  5,  19,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(gmf,         0x914,  2,  3,  4,  14,  5,  19,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(gmg,         0x918,  2,  3,  4,  14,  5,  19,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(gmh,         0x91c,  2,  3,  4,  14,  5,  19,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(owr,         0x920,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(uda,         0x924,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(gpv,         0x928,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(dev3,        0x92c,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(cec,         0x938,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(at6,         0x994,  2,  3,  4,  12,  7,  20,  7,  28,  2,  30,  2,  Y),
-+       DRV_PINGROUP(dap5,        0x998,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(usb_vbus_en, 0x99c,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(ao3,         0x9a8,  2,  3,  4,  12,  5,  -1, -1,  28,  2,  -1, -1,  N),
-+       DRV_PINGROUP(ao0,         0x9b0,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(hv0,         0x9b4,  2,  3,  4,  12,  5,  -1, -1,  28,  2,  -1, -1,  N),
-+       DRV_PINGROUP(sdio4,       0x9c4,  2,  3,  4,  12,  5,  20,  5,  28,  2,  30,  2,  N),
-+       DRV_PINGROUP(ao4,         0x9c8,  2,  3,  4,  12,  7,  20,  7,  28,  2,  30,  2,  Y),
-+};
-+
-+static const struct tegra_pinctrl_soc_data tegra124_pinctrl = {
-+	.ngpios = NUM_GPIOS,
-+	.pins = tegra124_pins,
-+	.npins = ARRAY_SIZE(tegra124_pins),
-+	.functions = tegra124_functions,
-+	.nfunctions = ARRAY_SIZE(tegra124_functions),
-+	.groups = tegra124_groups,
-+	.ngroups = ARRAY_SIZE(tegra124_groups),
-+};
-+
-+static int tegra124_pinctrl_probe(struct platform_device *pdev)
-+{
-+	return tegra_pinctrl_probe(pdev, &tegra124_pinctrl);
-+}
-+
-+static struct of_device_id tegra124_pinctrl_of_match[] = {
-+	{ .compatible = "nvidia,tegra124-pinmux", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, tegra124_pinctrl_of_match);
-+
-+static struct platform_driver tegra124_pinctrl_driver = {
-+	.driver = {
-+		.name = "tegra124-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = tegra124_pinctrl_of_match,
-+	},
-+	.probe = tegra124_pinctrl_probe,
-+	.remove = tegra_pinctrl_remove,
-+};
-+module_platform_driver(tegra124_pinctrl_driver);
-+
-+MODULE_AUTHOR("Ashwini Ghuge <aghuge@nvidia.com>");
-+MODULE_DESCRIPTION("NVIDIA Tegra124 pinctrl driver");
-+MODULE_LICENSE("GPL v2");
+-- interrupts : Interrupts for the the debug timer, the first general purpose
++- interrupts : Interrupts for the debug timer, the first general purpose
+                timer, and optionally a second general purpose timer in that
+                order.
+ 
+diff --git a/Documentation/devicetree/bindings/ata/cavium-compact-flash.txt b/Documentation/devicetree/bindings/ata/cavium-compact-flash.txt
+index 93986a5a8018..3bacc8e0931e 100644
+--- a/Documentation/devicetree/bindings/ata/cavium-compact-flash.txt
++++ b/Documentation/devicetree/bindings/ata/cavium-compact-flash.txt
+@@ -9,7 +9,7 @@ Properties:
+ 
+   Compatibility with many Cavium evaluation boards.
+ 
+-- reg: The base address of the the CF chip select banks.  Depending on
++- reg: The base address of the CF chip select banks.  Depending on
+   the device configuration, there may be one or two banks.
+ 
+ - cavium,bus-width: The width of the connection to the CF devices.  Valid
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt b/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
+index d63194a2c848..ada4e2973323 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio-pcf857x.txt
+@@ -39,7 +39,7 @@ Optional Properties:
+   - lines-initial-states: Bitmask that specifies the initial state of each
+   line. When a bit is set to zero, the corresponding line will be initialized to
+   the input (pulled-up) state. When the  bit is set to one, the line will be
+-  initialized the the low-level output state. If the property is not specified
++  initialized the low-level output state. If the property is not specified
+   all lines will be initialized to the input state.
+ 
+   The I/O expander can detect input state changes, and thus optionally act as
+diff --git a/Documentation/devicetree/bindings/mtd/fsmc-nand.txt b/Documentation/devicetree/bindings/mtd/fsmc-nand.txt
+index ec42935f3908..5235cbc551b0 100644
+--- a/Documentation/devicetree/bindings/mtd/fsmc-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/fsmc-nand.txt
+@@ -9,7 +9,7 @@ Required properties:
+ Optional properties:
+ - bank-width : Width (in bytes) of the device.  If not present, the width
+   defaults to 1 byte
+-- nand-skip-bbtscan: Indicates the the BBT scanning should be skipped
++- nand-skip-bbtscan: Indicates the BBT scanning should be skipped
+ - timings: array of 6 bytes for NAND timings. The meanings of these bytes
+   are:
+   byte 0 TCLR  : CLE to RE delay in number of AHB clock cycles, only 4 bits
+diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+index 860c29a472ad..e9f5daccbd02 100644
+--- a/Documentation/email-clients.txt
++++ b/Documentation/email-clients.txt
+@@ -104,7 +104,7 @@ Then from the "Message" menu item, select insert file and choose your patch.
+ As an added bonus you can customise the message creation toolbar menu
+ and put the "insert file" icon there.
+ 
+-Make the the composer window wide enough so that no lines wrap. As of
++Make the composer window wide enough so that no lines wrap. As of
+ KMail 1.13.5 (KDE 4.5.4), KMail will apply word wrapping when sending
+ the email if the lines wrap in the composer window. Having word wrapping
+ disabled in the Options menu isn't enough. Thus, if your patch has very
+diff --git a/Documentation/filesystems/autofs4-mount-control.txt b/Documentation/filesystems/autofs4-mount-control.txt
+index 4c95935cbcf4..e54896427b4a 100644
+--- a/Documentation/filesystems/autofs4-mount-control.txt
++++ b/Documentation/filesystems/autofs4-mount-control.txt
+@@ -255,7 +255,7 @@ AUTOFS_DEV_IOCTL_OPENMOUNT and AUTOFS_DEV_IOCTL_CLOSEMOUNT
+ 
+ Obtain and release a file descriptor for an autofs managed mount point
+ path. The open call requires an initialized struct autofs_dev_ioctl with
+-the the path field set and the size field adjusted appropriately as well
++the path field set and the size field adjusted appropriately as well
+ as the arg1 field set to the device number of the autofs mount. The
+ device number can be obtained from the mount options shown in
+ /proc/mounts. The close call requires an initialized struct
+@@ -373,7 +373,7 @@ variation uses the path and optionally arg1 set to an autofs mount type.
+ The call returns 1 if this is a mount point and sets arg1 to the device
+ number of the mount and field arg2 to the relevant super block magic
+ number (described below) or 0 if it isn't a mountpoint. In both cases
+-the the device number (as returned by new_encode_dev()) is returned
++the device number (as returned by new_encode_dev()) is returned
+ in field arg1.
+ 
+ If supplied with a file descriptor we're looking for a specific mount,
+@@ -387,7 +387,7 @@ is one or 0 if it isn't a mountpoint.
+ If a path is supplied (and the ioctlfd field is set to -1) then the path
+ is looked up and is checked to see if it is the root of a mount. If a
+ type is also given we are looking for a particular autofs mount and if
+-a match isn't found a fail is returned. If the the located path is the
++a match isn't found a fail is returned. If the located path is the
+ root of a mount 1 is returned along with the super magic of the mount
+ or 0 otherwise.
+ 
+diff --git a/Documentation/futex-requeue-pi.txt b/Documentation/futex-requeue-pi.txt
+index 9dc1ff4fd536..31b16610c416 100644
+--- a/Documentation/futex-requeue-pi.txt
++++ b/Documentation/futex-requeue-pi.txt
+@@ -67,7 +67,7 @@ pthread_cond_wait_pi(cond, mutex)
+ 	   lock(cond->__data.__lock);
+ 	} while(...)
+ 	unlock(cond->__data.__lock);
+-        /* the kernel acquired the the mutex for us */
++        /* the kernel acquired the mutex for us */
+ }
+ 
+ pthread_cond_broadcast_pi(cond)
+diff --git a/Documentation/input/multi-touch-protocol.txt b/Documentation/input/multi-touch-protocol.txt
+index de139b18184a..7b4f59c09ee2 100644
+--- a/Documentation/input/multi-touch-protocol.txt
++++ b/Documentation/input/multi-touch-protocol.txt
+@@ -372,7 +372,7 @@ simple scheme, which is compatible with earlier usage, is:
+ 
+ Rationale: We have no information about the orientation of the touching
+ ellipse, so approximate it with an inscribed circle instead. The tool
+-ellipse should align with the the vector (T - C), so the diameter must
++ellipse should align with the vector (T - C), so the diameter must
+ increase with distance(T, C). Finally, assume that the touch diameter is
+ equal to the tool thickness, and we arrive at the formulas above.
+ 
+diff --git a/Documentation/io-mapping.txt b/Documentation/io-mapping.txt
+index 473e43b2d588..5ca78426f54c 100644
+--- a/Documentation/io-mapping.txt
++++ b/Documentation/io-mapping.txt
+@@ -38,7 +38,7 @@ maps are more efficient:
+ 
+ 	void io_mapping_unmap_atomic(void *vaddr)
+ 
+-		'vaddr' must be the the value returned by the last
++		'vaddr' must be the value returned by the last
+ 		io_mapping_map_atomic_wc call. This unmaps the specified
+ 		page and allows the task to sleep once again.
+ 
+diff --git a/Documentation/kmemcheck.txt b/Documentation/kmemcheck.txt
+index 9398a501fdb9..a41bdebbe87b 100644
+--- a/Documentation/kmemcheck.txt
++++ b/Documentation/kmemcheck.txt
+@@ -541,7 +541,7 @@ initialized. This is the beginning of the struct:
+ 92         } _sifields;
+ 93 } siginfo_t;
+ 
+-On 64-bit, the int is 4 bytes long, so it must the the union member that has
++On 64-bit, the int is 4 bytes long, so it must the union member that has
+ not been initialized. We can verify this using gdb:
+ 
+ 	$ gdb vmlinux
+diff --git a/Documentation/networking/spider_net.txt b/Documentation/networking/spider_net.txt
+index 4b4adb8eb14f..b0b75f8463b3 100644
+--- a/Documentation/networking/spider_net.txt
++++ b/Documentation/networking/spider_net.txt
+@@ -73,7 +73,7 @@ Thus, in an idle system, the GDACTDPA, tail and head pointers will
+ all be pointing at the same descr, which should be "empty". All of the
+ other descrs in the ring should be "empty" as well.
+ 
+-The show_rx_chain() routine will print out the the locations of the
++The show_rx_chain() routine will print out the locations of the
+ GDACTDPA, tail and head pointers. It will also summarize the contents
+ of the ring, starting at the tail pointer, and listing the status
+ of the descrs that follow.
+diff --git a/Documentation/phy.txt b/Documentation/phy.txt
+index 0103e4b15b0e..603b353cb000 100644
+--- a/Documentation/phy.txt
++++ b/Documentation/phy.txt
+@@ -82,7 +82,7 @@ the string arguments should contain the phy name as given in the dt data and
+ in the case of non-dt boot, it should contain the label of the PHY.
+ The only difference between the two APIs is that devm_phy_get associates the
+ device with the PHY using devres on successful PHY get. On driver detach,
+-release function is invoked on the the devres data and devres data is freed.
++release function is invoked on the devres data and devres data is freed.
+ 
+ 5. Releasing a reference to the PHY
+ 
+diff --git a/Documentation/power/devices.txt b/Documentation/power/devices.txt
+index a66c9821b5ce..47d46dff70f7 100644
+--- a/Documentation/power/devices.txt
++++ b/Documentation/power/devices.txt
+@@ -391,7 +391,7 @@ When resuming from freeze, standby or memory sleep, the phases are:
+ 	the resume methods.  This generally involves undoing the actions of the
+ 	preceding suspend_late phase.
+ 
+-    3	The resume methods should bring the the device back to its operating
++    3	The resume methods should bring the device back to its operating
+ 	state, so that it can perform normal I/O.  This generally involves
+ 	undoing the actions of the suspend phase.
+ 
+diff --git a/Documentation/security/Smack.txt b/Documentation/security/Smack.txt
+index 7a2d30c132e3..5ea996f21d6c 100644
+--- a/Documentation/security/Smack.txt
++++ b/Documentation/security/Smack.txt
+@@ -3,7 +3,7 @@
+     "Good for you, you've decided to clean the elevator!"
+     - The Elevator, from Dark Star
+ 
+-Smack is the the Simplified Mandatory Access Control Kernel.
++Smack is the Simplified Mandatory Access Control Kernel.
+ Smack is a kernel based implementation of mandatory access
+ control that includes simplicity in its primary design goals.
+ 
+diff --git a/Documentation/static-keys.txt b/Documentation/static-keys.txt
+index 9f5263d3152c..e5f46e7da54d 100644
+--- a/Documentation/static-keys.txt
++++ b/Documentation/static-keys.txt
+@@ -116,7 +116,7 @@ The branch(es) can then be switched via:
+ 	static_key_slow_dec(&key);
+ 
+ Thus, 'static_key_slow_inc()' means 'make the branch true', and
+-'static_key_slow_dec()' means 'make the the branch false' with appropriate
++'static_key_slow_dec()' means 'make the branch false' with appropriate
+ reference counting. For example, if the key is initialized true, a
+ static_key_slow_dec(), will switch the branch to false. And a subsequent
+ static_key_slow_inc(), will change the branch back to true. Likewise, if the
+diff --git a/Documentation/trace/ring-buffer-design.txt b/Documentation/trace/ring-buffer-design.txt
+index 7d350b496585..ff747b6fa39b 100644
+--- a/Documentation/trace/ring-buffer-design.txt
++++ b/Documentation/trace/ring-buffer-design.txt
+@@ -683,7 +683,7 @@ against nested writers.
+   cmpxchg(tail_page, temp_page, next_page)
+ 
+ The above will update the tail page if it is still pointing to the expected
+-page. If this fails, a nested write pushed it forward, the the current write
++page. If this fails, a nested write pushed it forward, the current write
+ does not need to push it.
+ 
+ 
+diff --git a/Documentation/usb/WUSB-Design-overview.txt b/Documentation/usb/WUSB-Design-overview.txt
+index 4c5e37939344..1cd07c017cf6 100644
+--- a/Documentation/usb/WUSB-Design-overview.txt
++++ b/Documentation/usb/WUSB-Design-overview.txt
+@@ -25,7 +25,7 @@ updated content.
+     * Design-overview.txt-1.8
+ 
+ This code implements a Ultra Wide Band stack for Linux, as well as
+-drivers for the the USB based UWB radio controllers defined in the
++drivers for the USB based UWB radio controllers defined in the
+ Wireless USB 1.0 specification (including Wireless USB host controller
+ and an Intel WiNET controller).
+ 
+diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+index a30035dd4c26..60a67b3c4bc8 100644
+--- a/Documentation/virtual/kvm/api.txt
++++ b/Documentation/virtual/kvm/api.txt
+@@ -1462,7 +1462,7 @@ struct kvm_lapic_state {
+ 	char regs[KVM_APIC_REG_SIZE];
+ };
+ 
+-Copies the input argument into the the Local APIC registers.  The data format
++Copies the input argument into the Local APIC registers.  The data format
+ and layout are the same as documented in the architecture manual.
+ 
+ 
+diff --git a/Documentation/vm/unevictable-lru.txt b/Documentation/vm/unevictable-lru.txt
+index a68db7692ee8..441dd2266531 100644
+--- a/Documentation/vm/unevictable-lru.txt
++++ b/Documentation/vm/unevictable-lru.txt
+@@ -453,7 +453,7 @@ putback_lru_page() function to add migrated pages back to the LRU.
+ mmap(MAP_LOCKED) SYSTEM CALL HANDLING
+ -------------------------------------
+ 
+-In addition the the mlock()/mlockall() system calls, an application can request
++In addition to the mlock()/mlockall() system calls, an application can request
+ that a region of memory be mlocked supplying the MAP_LOCKED flag to the mmap()
+ call.  Furthermore, any mmap() call or brk() call that expands the heap by a
+ task that has previously called mlockall() with the MCL_FUTURE flag will result
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c1f1a7eee953..4d2ec7a54360 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2026,7 +2026,7 @@ config ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND
+ 	bool "Extend with bootloader kernel arguments"
+ 	help
+ 	  The command-line arguments provided by the boot loader will be
+-	  appended to the the device tree bootargs property.
++	  appended to the device tree bootargs property.
+ 
+ endchoice
+ 
+diff --git a/arch/arm/include/asm/unwind.h b/arch/arm/include/asm/unwind.h
+index d1c3f3a71c94..4f697edd0bad 100644
+--- a/arch/arm/include/asm/unwind.h
++++ b/arch/arm/include/asm/unwind.h
+@@ -22,7 +22,7 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
+-/* Unwind reason code according the the ARM EABI documents */
++/* Unwind reason code according to the ARM EABI documents */
+ enum unwind_reason_code {
+ 	URC_OK = 0,			/* operation completed successfully */
+ 	URC_CONTINUE_UNWIND = 8,
+diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+index e3f0ecaf87dd..33a14bbc4747 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -721,7 +721,7 @@ static int _del_initiator_dep(struct omap_hwmod *oh, struct omap_hwmod *init_oh)
+ }
+ 
+ /**
+- * _init_main_clk - get a struct clk * for the the hwmod's main functional clk
++ * _init_main_clk - get a struct clk * for the hwmod's main functional clk
+  * @oh: struct omap_hwmod *
+  *
+  * Called from _init_clocks().  Populates the @oh _clk (main
+@@ -759,7 +759,7 @@ static int _init_main_clk(struct omap_hwmod *oh)
+ }
+ 
+ /**
+- * _init_interface_clks - get a struct clk * for the the hwmod's interface clks
++ * _init_interface_clks - get a struct clk * for the hwmod's interface clks
+  * @oh: struct omap_hwmod *
+  *
+  * Called from _init_clocks().  Populates the @oh OCP slave interface
+@@ -802,7 +802,7 @@ static int _init_interface_clks(struct omap_hwmod *oh)
+ }
+ 
+ /**
+- * _init_opt_clk - get a struct clk * for the the hwmod's optional clocks
++ * _init_opt_clk - get a struct clk * for the hwmod's optional clocks
+  * @oh: struct omap_hwmod *
+  *
+  * Called from _init_clocks().  Populates the @oh omap_hwmod_opt_clk
+diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
+index 01de542432a6..6f92e75b6c35 100644
+--- a/arch/arm/mach-pxa/stargate2.c
++++ b/arch/arm/mach-pxa/stargate2.c
+@@ -423,7 +423,7 @@ static void __init imote2_stargate2_init(void)
+ }
+ 
+ #ifdef CONFIG_MACH_INTELMOTE2
+-/* As the the imote2 doesn't currently have a conventional SD slot
++/* As the imote2 doesn't currently have a conventional SD slot
+  * there is no option to hotplug cards, making all this rather simple
+  */
+ static int imote2_mci_get_ro(struct device *dev)
+diff --git a/arch/blackfin/mach-common/entry.S b/arch/blackfin/mach-common/entry.S
+index 86b5a095c5a1..9c8612385e00 100644
+--- a/arch/blackfin/mach-common/entry.S
++++ b/arch/blackfin/mach-common/entry.S
+@@ -480,7 +480,7 @@ ENTRY(_trap) /* Exception: 4th entry into system event table(supervisor mode)*/
+ #ifdef CONFIG_EXACT_HWERR
+ 	/* Make sure all pending read/writes complete. This will ensure any
+ 	 * accesses which could cause hardware errors completes, and signal
+-	 * the the hardware before we do something silly, like crash the
++	 * the hardware before we do something silly, like crash the
+ 	 * kernel. We don't need to work around anomaly 05000312, since
+ 	 * we are already atomic
+ 	 */
+diff --git a/arch/c6x/platforms/cache.c b/arch/c6x/platforms/cache.c
+index 86318a16a252..dc21f94aaaaf 100644
+--- a/arch/c6x/platforms/cache.c
++++ b/arch/c6x/platforms/cache.c
+@@ -437,7 +437,7 @@ void __init c6x_cache_init(void)
+ 	if (!cache_base)
+ 		return;
+ 
+-	/* Set L2 caches on the the whole L2 SRAM memory */
++	/* Set L2 caches on the whole L2 SRAM memory */
+ 	L2_cache_set_mode(L2MODE_SIZE);
+ 
+ 	/* Enable L1 */
+diff --git a/arch/ia64/include/asm/spinlock.h b/arch/ia64/include/asm/spinlock.h
+index 45698cd15b7b..bd6ea40f3ef9 100644
+--- a/arch/ia64/include/asm/spinlock.h
++++ b/arch/ia64/include/asm/spinlock.h
+@@ -23,7 +23,7 @@
+  * the queue, and the other indicating the current tail. The lock is acquired
+  * by atomically noting the tail and incrementing it by one (thus adding
+  * ourself to the queue and noting our position), then waiting until the head
+- * becomes equal to the the initial value of the tail.
++ * becomes equal to the initial value of the tail.
+  * The pad bits in the middle are used to prevent the next_ticket number
+  * overflowing into the now_serving number.
+  *
+diff --git a/arch/ia64/include/asm/uv/uv_hub.h b/arch/ia64/include/asm/uv/uv_hub.h
+index 53e9dfacd073..3ea4168f28f7 100644
+--- a/arch/ia64/include/asm/uv/uv_hub.h
++++ b/arch/ia64/include/asm/uv/uv_hub.h
+@@ -257,7 +257,7 @@ static inline int uv_numa_blade_id(void)
+ 	return 0;
+ }
+ 
+-/* Convert a cpu number to the the UV blade number */
++/* Convert a cpu number to the UV blade number */
+ static inline int uv_cpu_to_blade_id(int cpu)
+ {
+ 	return 0;
+diff --git a/arch/m68k/platform/coldfire/intc-2.c b/arch/m68k/platform/coldfire/intc-2.c
+index 995093357c59..f74f0e473119 100644
+--- a/arch/m68k/platform/coldfire/intc-2.c
++++ b/arch/m68k/platform/coldfire/intc-2.c
+@@ -7,7 +7,7 @@
+  * family, the 5270, 5271, 5274, 5275, and the 528x family which have two such
+  * controllers, and the 547x and 548x families which have only one of them.
+  *
+- * The external 7 fixed interrupts are part the the Edge Port unit of these
++ * The external 7 fixed interrupts are part of the Edge Port unit of these
+  * ColdFire parts. They can be configured as level or edge triggered.
+  *
+  * (C) Copyright 2009-2011, Greg Ungerer <gerg@snapgear.com>
+diff --git a/arch/metag/kernel/process.c b/arch/metag/kernel/process.c
+index 483dff986a23..30052da1f1a4 100644
+--- a/arch/metag/kernel/process.c
++++ b/arch/metag/kernel/process.c
+@@ -211,7 +211,7 @@ int copy_thread(unsigned long clone_flags, unsigned long usp,
+ 	/*
+ 	 * Get a pointer to where the new child's register block should have
+ 	 * been pushed.
+-	 * The Meta's stack grows upwards, and the context is the the first
++	 * The Meta's stack grows upwards, and the context is the first
+ 	 * thing to be pushed by TBX (phew)
+ 	 */
+ 	*childregs = *current_pt_regs();
+diff --git a/arch/microblaze/kernel/entry.S b/arch/microblaze/kernel/entry.S
+index 0536bc021cc6..b417be09196d 100644
+--- a/arch/microblaze/kernel/entry.S
++++ b/arch/microblaze/kernel/entry.S
+@@ -445,7 +445,7 @@ TRAP_return:		/* Make global symbol for debugging */
+ 
+ 
+ /* This the initial entry point for a new child thread, with an appropriate
+-   stack in place that makes it look the the child is in the middle of an
++   stack in place that makes it look like the child is in the middle of an
+    syscall.  This function is actually `returned to' from switch_thread
+    (copy_thread makes ret_from_fork the return address in each new thread's
+    saved context).  */
+diff --git a/arch/mips/alchemy/devboards/pm.c b/arch/mips/alchemy/devboards/pm.c
+index b86bff31d1d3..6363d3c93496 100644
+--- a/arch/mips/alchemy/devboards/pm.c
++++ b/arch/mips/alchemy/devboards/pm.c
+@@ -16,7 +16,7 @@
+  * Generic suspend userspace interface for Alchemy development boards.
+  * This code exports a few sysfs nodes under /sys/power/db1x/ which
+  * can be used by userspace to en/disable all au1x-provided wakeup
+- * sources and configure the timeout after which the the TOYMATCH2 irq
++ * sources and configure the timeout after which the TOYMATCH2 irq
+  * is to trigger a wakeup.
+  */
+ 
+diff --git a/arch/mips/include/asm/octeon/cvmx-pip.h b/arch/mips/include/asm/octeon/cvmx-pip.h
+index df69bfd2b006..4ec669f5b0d4 100644
+--- a/arch/mips/include/asm/octeon/cvmx-pip.h
++++ b/arch/mips/include/asm/octeon/cvmx-pip.h
+@@ -503,7 +503,7 @@ static inline void cvmx_pip_tag_mask_clear(uint64_t mask_index)
+  *	    offsetof() to determine the offsets into packet headers.
+  *	    For example, offsetof(ethhdr, protocol) returns the offset
+  *	    of the ethernet protocol field.  The bitmask selects which
+- *	    bytes to include the the tag, with bit offset X selecting
++ *	    bytes to include in the tag, with bit offset X selecting
+  *	    byte at offset X from the beginning of the packet data.
+  * @len:    Number of bytes to include. Usually this is the sizeof()
+  *	    the field.
+diff --git a/arch/mips/include/asm/spinlock.h b/arch/mips/include/asm/spinlock.h
+index 78d201fb6c87..b6f41f6b6c70 100644
+--- a/arch/mips/include/asm/spinlock.h
++++ b/arch/mips/include/asm/spinlock.h
+@@ -31,7 +31,7 @@
+  * the queue, and the other indicating the current tail. The lock is acquired
+  * by atomically noting the tail and incrementing it by one (thus adding
+  * ourself to the queue and noting our position), then waiting until the head
+- * becomes equal to the the initial value of the tail.
++ * becomes equal to the initial value of the tail.
+  */
+ 
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+diff --git a/arch/mips/kernel/smtc.c b/arch/mips/kernel/smtc.c
+index dfc1b911be04..cfde409cf48d 100644
+--- a/arch/mips/kernel/smtc.c
++++ b/arch/mips/kernel/smtc.c
+@@ -908,7 +908,7 @@ void smtc_send_ipi(int cpu, int type, unsigned int action)
+ 
+ 		if ((tcstatus & TCSTATUS_IXMT) != 0) {
+ 			/*
+-			 * If we're in the the irq-off version of the wait
++			 * If we're in the irq-off version of the wait
+ 			 * loop, we need to force exit from the wait and
+ 			 * do a direct post of the IPI.
+ 			 */
+diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
+index 73b34827826c..ce754de84f6f 100644
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -1198,7 +1198,7 @@ int __init kvm_mips_init(void)
+ 	/* On MIPS, kernel modules are executed from "mapped space", which requires TLBs.
+ 	 * The TLB handling code is statically linked with the rest of the kernel (kvm_tlb.c)
+ 	 * to avoid the possibility of double faulting. The issue is that the TLB code
+-	 * references routines that are part of the the KVM module,
++	 * references routines that are part of the KVM module,
+ 	 * which are only available once the module is loaded.
+ 	 */
+ 	kvm_mips_gfn_to_pfn = gfn_to_pfn;
+diff --git a/arch/mips/mm/c-octeon.c b/arch/mips/mm/c-octeon.c
+index c8efdb5b6ee0..0e8e350a46b7 100644
+--- a/arch/mips/mm/c-octeon.c
++++ b/arch/mips/mm/c-octeon.c
+@@ -349,7 +349,7 @@ static void co_cache_error_call_notifiers(unsigned long val)
+ }
+ 
+ /*
+- * Called when the the exception is recoverable
++ * Called when the exception is recoverable
+  */
+ 
+ asmlinkage void cache_parity_error_octeon_recoverable(void)
+@@ -358,7 +358,7 @@ asmlinkage void cache_parity_error_octeon_recoverable(void)
+ }
+ 
+ /**
+- * Called when the the exception is not recoverable
++ * Called when the exception is not recoverable
+  */
+ 
+ asmlinkage void cache_parity_error_octeon_non_recoverable(void)
+diff --git a/arch/mips/netlogic/xlr/fmn.c b/arch/mips/netlogic/xlr/fmn.c
+index d428e8471eec..1d1eb1e10ae2 100644
+--- a/arch/mips/netlogic/xlr/fmn.c
++++ b/arch/mips/netlogic/xlr/fmn.c
+@@ -144,7 +144,7 @@ void xlr_percpu_fmn_init(void)
+ 	 * For sending FMN messages, we need credits on the destination
+ 	 * bucket. Program the credits this core has on the 128 possible
+ 	 * destination buckets.
+-	 * We cannot use a loop here, because the the first argument has
++	 * We cannot use a loop here, because the first argument has
+ 	 * to be a constant integer value.
+ 	 */
+ 	COP2_CC_INIT_CPU_DEST(0, cpu_fmn_info->credit_config);
+diff --git a/arch/powerpc/include/asm/epapr_hcalls.h b/arch/powerpc/include/asm/epapr_hcalls.h
+index 86b0ac79990c..51dd1f613865 100644
+--- a/arch/powerpc/include/asm/epapr_hcalls.h
++++ b/arch/powerpc/include/asm/epapr_hcalls.h
+@@ -246,7 +246,7 @@ static inline unsigned int ev_int_get_mask(unsigned int interrupt,
+  * ev_int_eoi - signal the end of interrupt processing
+  * @interrupt: the interrupt number
+  *
+- * This function signals the end of processing for the the specified
++ * This function signals the end of processing for the specified
+  * interrupt, which must be the interrupt currently in service. By
+  * definition, this is also the highest-priority interrupt.
+  *
+diff --git a/arch/powerpc/include/asm/hw_breakpoint.h b/arch/powerpc/include/asm/hw_breakpoint.h
+index eb0f4ac75c4c..091791030ee6 100644
+--- a/arch/powerpc/include/asm/hw_breakpoint.h
++++ b/arch/powerpc/include/asm/hw_breakpoint.h
+@@ -30,7 +30,7 @@ struct arch_hw_breakpoint {
+ 	u16		len; /* length of the target data symbol */
+ };
+ 
+-/* Note: Don't change the the first 6 bits below as they are in the same order
++/* Note: Don't change the first 6 bits below as they are in the same order
+  * as the dabr and dabrx.
+  */
+ #define HW_BRK_TYPE_READ		0x01
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index 2ae41aba4053..1d6bda145732 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -93,7 +93,7 @@ __secondary_hold_acknowledge:
+ #ifdef CONFIG_RELOCATABLE
+ 	/* This flag is set to 1 by a loader if the kernel should run
+ 	 * at the loaded address instead of the linked address.  This
+-	 * is used by kexec-tools to keep the the kdump kernel in the
++	 * is used by kexec-tools to keep the kdump kernel in the
+ 	 * crash_kernel region.  The loader is responsible for
+ 	 * observing the alignment requirement.
+ 	 */
+diff --git a/arch/powerpc/mm/gup.c b/arch/powerpc/mm/gup.c
+index c5f734e20b0f..575aeee9da40 100644
+--- a/arch/powerpc/mm/gup.c
++++ b/arch/powerpc/mm/gup.c
+@@ -155,7 +155,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 * the pagetables from being freed on powerpc.
+ 	 *
+ 	 * So long as we atomically load page table pointers versus teardown,
+-	 * we can follow the address down to the the page and take a ref on it.
++	 * we can follow the address down to the page and take a ref on it.
+ 	 */
+ 	local_irq_save(flags);
+ 
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 90bb6d9409bf..65db97c8f98c 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -941,7 +941,7 @@ void flush_dcache_icache_hugepage(struct page *page)
+  * (4) hugepd pointer, bottom two bits == 00, next 4 bits indicate size of table
+  *
+  * So long as we atomically load page table pointers we are safe against teardown,
+- * we can follow the address down to the the page and take a ref on it.
++ * we can follow the address down to the page and take a ref on it.
+  */
+ 
+ pte_t *find_linux_pte_or_hugepte(pgd_t *pgdir, unsigned long ea, unsigned *shift)
+diff --git a/arch/powerpc/platforms/52xx/mpc52xx_gpt.c b/arch/powerpc/platforms/52xx/mpc52xx_gpt.c
+index 692998244d2c..a2ce00831362 100644
+--- a/arch/powerpc/platforms/52xx/mpc52xx_gpt.c
++++ b/arch/powerpc/platforms/52xx/mpc52xx_gpt.c
+@@ -9,7 +9,7 @@
+  * Free Software Foundation;  either version 2 of the  License, or (at your
+  * option) any later version.
+  *
+- * This file is a driver for the the General Purpose Timer (gpt) devices
++ * This file is a driver for the General Purpose Timer (gpt) devices
+  * found on the MPC5200 SoC.  Each timer has an IO pin which can be used
+  * for GPIO or can be used to raise interrupts.  The timer function can
+  * be used independently from the IO pin, or it can be used to control
+diff --git a/arch/powerpc/platforms/chrp/setup.c b/arch/powerpc/platforms/chrp/setup.c
+index c665d7de6c99..baeb4df3fb28 100644
+--- a/arch/powerpc/platforms/chrp/setup.c
++++ b/arch/powerpc/platforms/chrp/setup.c
+@@ -251,7 +251,7 @@ static void briq_restart(char *cmd)
+  * Per default, input/output-device points to the keyboard/screen
+  * If no card is installed, the built-in serial port is used as a fallback.
+  * But unfortunately, the firmware does not connect /chosen/{stdin,stdout}
+- * the the built-in serial node. Instead, a /failsafe node is created.
++ * to the built-in serial node. Instead, a /failsafe node is created.
+  */
+ static void chrp_init_early(void)
+ {
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+index 084cdfa40682..c92edd859e70 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -927,7 +927,7 @@ static void pnv_pci_init_ioda_msis(struct pnv_phb *phb) { }
+ 
+ /*
+  * This function is supposed to be called on basis of PE from top
+- * to bottom style. So the the I/O or MMIO segment assigned to
++ * to bottom style. So the I/O or MMIO segment assigned to
+  * parent PE could be overrided by its child PEs if necessary.
+  */
+ static void pnv_ioda_setup_pe_seg(struct pci_controller *hose,
+diff --git a/arch/s390/mm/gup.c b/arch/s390/mm/gup.c
+index 639fce464008..2f03d7badf95 100644
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -187,7 +187,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 * prevent the pagetables from being freed on s390.
+ 	 *
+ 	 * So long as we atomically load page table pointers versus teardown,
+-	 * we can follow the address down to the the page and take a ref on it.
++	 * we can follow the address down to the page and take a ref on it.
+ 	 */
+ 	local_irq_save(flags);
+ 	pgdp = pgd_offset(mm, addr);
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index cb021453de2a..a2a8f4d6507a 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -305,7 +305,7 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
+ 	/* We can't actually use the firmware value, we have
+ 	 * to read what is in the register right now.  One
+ 	 * reason is that in the case of IDE interfaces the
+-	 * firmware can sample the value before the the IDE
++	 * firmware can sample the value before the IDE
+ 	 * interface is programmed into native mode.
+ 	 */
+ 	pci_read_config_dword(dev, PCI_CLASS_REVISION, &class);
+diff --git a/arch/sparc/mm/gup.c b/arch/sparc/mm/gup.c
+index c4d3da68b800..f3520cde45f1 100644
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -189,7 +189,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 * the pagetables from being freed on sparc.
+ 	 *
+ 	 * So long as we atomically load page table pointers versus teardown,
+-	 * we can follow the address down to the the page and take a ref on it.
++	 * we can follow the address down to the page and take a ref on it.
+ 	 */
+ 	local_irq_disable();
+ 
+diff --git a/arch/tile/include/asm/irqflags.h b/arch/tile/include/asm/irqflags.h
+index 71af5747874d..f7f64c80c5b2 100644
+--- a/arch/tile/include/asm/irqflags.h
++++ b/arch/tile/include/asm/irqflags.h
+@@ -116,7 +116,7 @@
+  * Note that in particular, the tile timer interrupt comes and goes
+  * from this set, since we have no other way to turn off the timer.
+  * Likewise, INTCTRL_K is removed and re-added during device
+- * interrupts, as is the the hardwall UDN_FIREWALL interrupt.
++ * interrupts, as is the hardwall UDN_FIREWALL interrupt.
+  * We use a low bit (MEM_ERROR) as our sentinel value and make sure it
+  * is always claimed as an "active interrupt" so we can query that bit
+  * to know our current state.
+diff --git a/arch/tile/include/gxio/trio.h b/arch/tile/include/gxio/trio.h
+index df10a662cc25..50a3d5cbad20 100644
+--- a/arch/tile/include/gxio/trio.h
++++ b/arch/tile/include/gxio/trio.h
+@@ -206,7 +206,7 @@ typedef struct {
+ /* Initialize a TRIO context.
+  *
+  * This function allocates a TRIO "service domain" and maps the MMIO
+- * registers into the the caller's VA space.
++ * registers into the caller's VA space.
+  *
+  * @param trio_index Which TRIO shim; Gx36 must pass 0.
+  * @param context Context object to be initialized.
+diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
+index de07fa7d1315..c554ffbb50f7 100644
+--- a/arch/tile/kernel/single_step.c
++++ b/arch/tile/kernel/single_step.c
+@@ -277,7 +277,7 @@ P("\n");
+ 
+ /*
+  * Called after execve() has started the new image.  This allows us
+- * to reset the info state.  Note that the the mmap'ed memory, if there
++ * to reset the info state.  Note that the mmap'ed memory, if there
+  * was any, has already been unmapped by the exec.
+  */
+ void single_step_execve(void)
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index bf156ded74b5..59213c3b0053 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -72,7 +72,7 @@ static __always_inline int arch_spin_value_unlocked(arch_spinlock_t lock)
+  * the queue, and the other indicating the current tail. The lock is acquired
+  * by atomically noting the tail and incrementing it by one (thus adding
+  * ourself to the queue and noting our position), then waiting until the head
+- * becomes equal to the the initial value of the tail.
++ * becomes equal to the initial value of the tail.
+  *
+  * We use an xadd covering *both* parts of the lock, to increment the tail and
+  * also load the position of the head, which takes care of memory ordering
+diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
+index a30836c8ac4d..d81914578c9b 100644
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -522,7 +522,7 @@ static inline int uv_numa_blade_id(void)
+ 	return uv_hub_info->numa_blade_id;
+ }
+ 
+-/* Convert a cpu number to the the UV blade number */
++/* Convert a cpu number to the UV blade number */
+ static inline int uv_cpu_to_blade_id(int cpu)
+ {
+ 	return uv_cpu_to_blade[cpu];
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 21ef1ba184ae..cbf44328b296 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7067,7 +7067,7 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+ 	if (current->mm == kvm->mm) {
+ 		/*
+ 		 * Free memory regions allocated on behalf of userspace,
+-		 * unless the the memory map has changed due to process exit
++		 * unless the memory map has changed due to process exit
+ 		 * or fd copying.
+ 		 */
+ 		struct kvm_userspace_memory_region mem;
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index dd74e46828c0..d9d367e59db6 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -275,7 +275,7 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 *
+ 	 * So long as we atomically load page table pointers versus teardown
+ 	 * (which we do on x86, with the above PAE exception), we can follow the
+-	 * address down to the the page and take a ref on it.
++	 * address down to the page and take a ref on it.
+ 	 */
+ 	local_irq_save(flags);
+ 	pgdp = pgd_offset(mm, addr);
+@@ -347,7 +347,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 *
+ 	 * So long as we atomically load page table pointers versus teardown
+ 	 * (which we do on x86, with the above PAE exception), we can follow the
+-	 * address down to the the page and take a ref on it.
++	 * address down to the page and take a ref on it.
+ 	 */
+ 	local_irq_disable();
+ 	pgdp = pgd_offset(mm, addr);
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 68c054f59de6..4498fa4baa7c 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -463,7 +463,7 @@ char * __init xen_memory_setup(void)
+ 	 *  - mfn_list
+ 	 *  - xen_start_info
+ 	 * See comment above "struct start_info" in <xen/interface/xen.h>
+-	 * We tried to make the the memblock_reserve more selective so
++	 * We tried to make the memblock_reserve more selective so
+ 	 * that it would be clear what region is reserved. Sadly we ran
+ 	 * in the problem wherein on a 64-bit hypervisor with a 32-bit
+ 	 * initial domain, the pt_base has the cr3 value which is not
+diff --git a/arch/xtensa/include/asm/initialize_mmu.h b/arch/xtensa/include/asm/initialize_mmu.h
+index 722553f17db3..3c8e71ad5242 100644
+--- a/arch/xtensa/include/asm/initialize_mmu.h
++++ b/arch/xtensa/include/asm/initialize_mmu.h
+@@ -6,7 +6,7 @@
+  *      For the new V3 MMU we remap the TLB from virtual == physical
+  *      to the standard Linux mapping used in earlier MMU's.
+  *
+- *      The the MMU we also support a new configuration register that
++ *      In the MMU we also support a new configuration register that
+  *      specifies how the S32C1I instruction operates with the cache
+  *      controller.
+  *
+diff --git a/arch/xtensa/kernel/entry.S b/arch/xtensa/kernel/entry.S
+index 21dbe6bdb8ed..91615d5f1956 100644
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -830,14 +830,14 @@ ENDPROC(unrecoverable_exception)
+  * of the proper size instead.
+  *
+  * This algorithm simply backs out the register changes started by the user
+- * excpetion handler, makes it appear that we have started a window underflow
++ * exception handler, makes it appear that we have started a window underflow
+  * by rotating the window back and then setting the old window base (OWB) in
+  * the 'ps' register with the rolled back window base. The 'movsp' instruction
+  * will be re-executed and this time since the next window frames is in the
+  * active AR registers it won't cause an exception.
+  *
+  * If the WindowUnderflow code gets a TLB miss the page will get mapped
+- * the the partial windeowUnderflow will be handeled in the double exception
++ * and the partial windeowUnderflow will be handeled in the double exception
+  * handler.
+  *
+  * Entry condition:
+diff --git a/drivers/acpi/acpica/accommon.h b/drivers/acpi/acpica/accommon.h
+index 8a6c4a0d22db..90fe27f6f156 100644
+--- a/drivers/acpi/acpica/accommon.h
++++ b/drivers/acpi/acpica/accommon.h
+@@ -47,7 +47,7 @@
+ /*
+  * Common set of includes for all ACPICA source files.
+  * We put them here because we don't want to duplicate them
+- * in the the source code again and again.
++ * in the source code again and again.
+  *
+  * Note: The order of these include files is important.
+  */
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 9e3818b1bc83..64c5680850cd 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2700,7 +2700,7 @@ enum drbd_ret_code conn_new_minor(struct drbd_tconn *tconn, unsigned int minor,
+ 	}
+ 
+ 	add_disk(disk);
+-	kref_init(&mdev->kref); /* one ref for both idrs and the the add_disk */
++	kref_init(&mdev->kref); /* one ref for both idrs and the add_disk */
+ 
+ 	/* inherit the connection state */
+ 	mdev->state.conn = tconn->cstate;
+diff --git a/drivers/char/apm-emulation.c b/drivers/char/apm-emulation.c
+index 46118f845948..6834b0108663 100644
+--- a/drivers/char/apm-emulation.c
++++ b/drivers/char/apm-emulation.c
+@@ -559,7 +559,7 @@ static int apm_suspend_notifier(struct notifier_block *nb,
+ 		wake_up_interruptible(&apm_waitqueue);
+ 
+ 		/*
+-		 * Wait for the the suspend_acks_pending variable to drop to
++		 * Wait for the suspend_acks_pending variable to drop to
+ 		 * zero, meaning everybody acked the suspend event (or the
+ 		 * process was killed.)
+ 		 *
+diff --git a/drivers/char/xilinx_hwicap/fifo_icap.c b/drivers/char/xilinx_hwicap/fifo_icap.c
+index 02225eb19cf6..619f3a30ec55 100644
+--- a/drivers/char/xilinx_hwicap/fifo_icap.c
++++ b/drivers/char/xilinx_hwicap/fifo_icap.c
+@@ -111,7 +111,7 @@ static inline u32 fifo_icap_fifo_read(struct hwicap_drvdata *drvdata)
+ }
+ 
+ /**
+- * fifo_icap_set_read_size - Set the the size register.
++ * fifo_icap_set_read_size - Set the size register.
+  * @drvdata: a pointer to the drvdata.
+  * @data: the size of the following read transaction, in words.
+  **/
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 06dbe7c86199..482b2cbb2ee9 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -168,7 +168,7 @@ static void __cpuidle_driver_init(struct cpuidle_driver *drv)
+ 	/*
+ 	 * Look for the timer stop flag in the different states, so that we know
+ 	 * if the broadcast timer has to be set up.  The loop is in the reverse
+-	 * order, because usually one of the deeper states have this flag set.
++	 * order, because usually one of the deeper states has this flag set.
+ 	 */
+ 	for (i = drv->state_count - 1; i >= 0 ; i--) {
+ 		if (drv->states[i].flags & CPUIDLE_FLAG_TIMER_STOP) {
+diff --git a/drivers/crypto/picoxcell_crypto.c b/drivers/crypto/picoxcell_crypto.c
+index a6175ba6d238..f61829284324 100644
+--- a/drivers/crypto/picoxcell_crypto.c
++++ b/drivers/crypto/picoxcell_crypto.c
+@@ -53,7 +53,7 @@
+ #define CMD0_IRQ_THRESHOLD   1
+ 
+ /*
+- * The timeout period (in jiffies) for a PDU. When the the number of PDUs in
++ * The timeout period (in jiffies) for a PDU. When the number of PDUs in
+  * flight is greater than the STAT_IRQ_THRESHOLD or 0 the timer is disabled.
+  * When there are packets in flight but lower than the threshold, we enable
+  * the timer and at expiry, attempt to remove any processed packets from the
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index 1c73f4fbc252..2f2a4276a014 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -435,7 +435,7 @@ static int hash_get_device_data(struct hash_ctx *ctx,
+  * @keylen:		The lengt of the key.
+  *
+  * Note! This function DOES NOT write to the NBLW registry, even though
+- * specified in the the hw design spec. Either due to incorrect info in the
++ * specified in the hw design spec. Either due to incorrect info in the
+  * spec or due to a bug in the hw.
+  */
+ static void hash_hw_write_key(struct hash_device_data *device_data,
+diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
+index 814addb62d2c..ee45a3d504f7 100644
+--- a/drivers/gpio/gpio-ich.c
++++ b/drivers/gpio/gpio-ich.c
+@@ -399,7 +399,7 @@ static int ichx_gpio_probe(struct platform_device *pdev)
+ 
+ 	/*
+ 	 * If necessary, determine the I/O address of ACPI/power management
+-	 * registers which are needed to read the the GPE0 register for GPI pins
++	 * registers which are needed to read the GPE0 register for GPI pins
+ 	 * 0 - 15 on some chipsets.
+ 	 */
+ 	if (!ichx_priv.desc->uses_gpe0)
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 12bbd5eac70d..8ab860127b1e 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2147,7 +2147,7 @@ int __i915_add_request(struct intel_ring_buffer *ring,
+ 
+ 	/* Whilst this request exists, batch_obj will be on the
+ 	 * active_list, and so will hold the active reference. Only when this
+-	 * request is retired will the the batch_obj be moved onto the
++	 * request is retired will the batch_obj be moved onto the
+ 	 * inactive_list and lose its active reference. Hence we do not need
+ 	 * to explicitly hold another reference here.
+ 	 */
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 7ec8b488bb1d..059b7870f7c5 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2213,7 +2213,7 @@ void intel_display_handle_reset(struct drm_device *dev)
+ 	 * will get its events and not get stuck.
+ 	 *
+ 	 * Also update the base address of all primary
+-	 * planes to the the last fb to make sure we're
++	 * planes to the last fb to make sure we're
+ 	 * showing the correct fb after a reset.
+ 	 *
+ 	 * Need to make two loops over the crtcs so that we
+@@ -9420,7 +9420,7 @@ static int __intel_set_mode(struct drm_crtc *crtc,
+ 	}
+ 
+ 	/* Only after disabling all output pipelines that will be changed can we
+-	 * update the the output configuration. */
++	 * update the output configuration. */
+ 	intel_modeset_update_state(dev, prepare_pipes);
+ 
+ 	if (dev_priv->display.modeset_global_resources)
+diff --git a/drivers/gpu/drm/radeon/atombios.h b/drivers/gpu/drm/radeon/atombios.h
+index 92be50c39ffd..2be3040b28f1 100644
+--- a/drivers/gpu/drm/radeon/atombios.h
++++ b/drivers/gpu/drm/radeon/atombios.h
+@@ -2802,8 +2802,8 @@ ucMaxNBVoltageHigh:     Voltage regulator dependent PWM value. High 8 bits of  t
+ ucMinNBVoltageHigh:     Voltage regulator dependent PWM value. High 8 bits of the value for the min voltage.Set this one to 0x00 if VC without PWM or no VC at all.
+ 
+ 
+-usInterNBVoltageLow:    Voltage regulator dependent PWM value. The value makes the the voltage >=Min NB voltage but <=InterNBVoltageHigh. Set this to 0x0000 if VC without PWM or no VC at all.
+-usInterNBVoltageHigh:   Voltage regulator dependent PWM value. The value makes the the voltage >=InterNBVoltageLow but <=Max NB voltage.Set this to 0x0000 if VC without PWM or no VC at all.
++usInterNBVoltageLow:    Voltage regulator dependent PWM value. The value makes the voltage >=Min NB voltage but <=InterNBVoltageHigh. Set this to 0x0000 if VC without PWM or no VC at all.
++usInterNBVoltageHigh:   Voltage regulator dependent PWM value. The value makes the voltage >=InterNBVoltageLow but <=Max NB voltage.Set this to 0x0000 if VC without PWM or no VC at all.
+ */
+ 
+ 
+diff --git a/drivers/gpu/drm/radeon/r300_reg.h b/drivers/gpu/drm/radeon/r300_reg.h
+index 00c0d2ba22d3..36af5f14f622 100644
+--- a/drivers/gpu/drm/radeon/r300_reg.h
++++ b/drivers/gpu/drm/radeon/r300_reg.h
+@@ -353,7 +353,7 @@
+ #       define R300_PVS_CNTL_1_PROGRAM_START_SHIFT   0
+ #       define R300_PVS_CNTL_1_POS_END_SHIFT         10
+ #       define R300_PVS_CNTL_1_PROGRAM_END_SHIFT     20
+-/* Addresses are relative the the vertex program parameters area. */
++/* Addresses are relative to the vertex program parameters area. */
+ #define R300_VAP_PVS_CNTL_2                 0x22D4
+ #       define R300_PVS_CNTL_2_PARAM_OFFSET_SHIFT 0
+ #       define R300_PVS_CNTL_2_PARAM_COUNT_SHIFT  16
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 39b033b441d2..ae6a65c79bd6 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -321,7 +321,7 @@ void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell)
+ 
+ /*
+  * radeon_wb_*()
+- * Writeback is the the method by which the the GPU updates special pages
++ * Writeback is the method by which the GPU updates special pages
+  * in memory with the status of certain GPU events (fences, ring pointers,
+  * etc.).
+  */
+diff --git a/drivers/gpu/drm/radeon/radeon_fence.c b/drivers/gpu/drm/radeon/radeon_fence.c
+index d3a86e43c012..fdda9f838043 100644
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -45,7 +45,7 @@
+  * for GPU/CPU synchronization.  When the fence is written,
+  * it is expected that all buffers associated with that fence
+  * are no longer in use by the associated ring on the GPU and
+- * that the the relevant GPU caches have been flushed.  Whether
++ * that the relevant GPU caches have been flushed.  Whether
+  * we use a scratch register or memory location depends on the asic
+  * and whether writeback is enabled.
+  */
+diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+index 3044e504f4ec..f37441e33d86 100644
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -405,7 +405,7 @@ void radeon_gart_fini(struct radeon_device *rdev)
+  * (uncached system pages).
+  * Each VM has an ID associated with it and there is a page table
+  * associated with each VMID.  When execting a command buffer,
+- * the kernel tells the the ring what VMID to use for that command
++ * the kernel tells the ring what VMID to use for that command
+  * buffer.  VMIDs are allocated dynamically as commands are submitted.
+  * The userspace drivers maintain their own address space and the kernel
+  * sets up their pages tables accordingly when they submit their
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index cea623c36ae2..cc959350da68 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -542,7 +542,7 @@ EXPORT_SYMBOL_GPL(vmbus_close);
+  * vmbus_sendpacket() - Send the specified buffer on the given channel
+  * @channel: Pointer to vmbus_channel structure.
+  * @buffer: Pointer to the buffer you want to receive the data into.
+- * @bufferlen: Maximum size of what the the buffer will hold
++ * @bufferlen: Maximum size of what the buffer will hold
+  * @requestid: Identifier of the request
+  * @type: Type of packet that is being send e.g. negotiate, time
+  * packet etc.
+@@ -717,7 +717,7 @@ EXPORT_SYMBOL_GPL(vmbus_sendpacket_multipagebuffer);
+  * vmbus_recvpacket() - Retrieve the user packet on the specified channel
+  * @channel: Pointer to vmbus_channel structure.
+  * @buffer: Pointer to the buffer you want to receive the data into.
+- * @bufferlen: Maximum size of what the the buffer will hold
++ * @bufferlen: Maximum size of what the buffer will hold
+  * @buffer_actual_len: The actual size of the data after it was received
+  * @requestid: Identifier of the request
+  *
+diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+index 48aad4faea06..52bcb6c36862 100644
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -888,7 +888,7 @@ void vmbus_device_unregister(struct hv_device *device_obj)
+ 
+ 
+ /*
+- * VMBUS is an acpi enumerated device. Get the the IRQ information
++ * VMBUS is an acpi enumerated device. Get the IRQ information
+  * from DSDT.
+  */
+ 
+diff --git a/drivers/hwmon/pmbus/ucd9200.c b/drivers/hwmon/pmbus/ucd9200.c
+index 033d6aca47d3..d41d7e3bf31c 100644
+--- a/drivers/hwmon/pmbus/ucd9200.c
++++ b/drivers/hwmon/pmbus/ucd9200.c
+@@ -117,7 +117,7 @@ static int ucd9200_probe(struct i2c_client *client,
+ 	 * This only affects the READ_IOUT and READ_TEMPERATURE2 registers.
+ 	 * READ_IOUT will return the sum of currents of all phases of a rail,
+ 	 * and READ_TEMPERATURE2 will return the maximum temperature detected
+-	 * for the the phases of the rail.
++	 * for the phases of the rail.
+ 	 */
+ 	for (i = 0; i < info->pages; i++) {
+ 		/*
+diff --git a/drivers/infiniband/hw/ipath/ipath_common.h b/drivers/infiniband/hw/ipath/ipath_common.h
+index 28cfe97cf1e9..231b54591e2b 100644
+--- a/drivers/infiniband/hw/ipath/ipath_common.h
++++ b/drivers/infiniband/hw/ipath/ipath_common.h
+@@ -87,7 +87,7 @@
+  * These 3 values (SDR and DDR may be ORed for auto-speed
+  * negotiation) are used for the 3rd argument to path_f_set_ib_cfg
+  * with cmd IPATH_IB_CFG_SPD_ENB, by direct calls or via sysfs.  They
+- * are also the the possible values for ipath_link_speed_enabled and active
++ * are also the possible values for ipath_link_speed_enabled and active
+  * The values were chosen to match values used within the IB spec.
+  */
+ #define IPATH_IB_SDR 1
+diff --git a/drivers/infiniband/hw/qib/qib.h b/drivers/infiniband/hw/qib/qib.h
+index 1946101419a3..1adecf0d2eb9 100644
+--- a/drivers/infiniband/hw/qib/qib.h
++++ b/drivers/infiniband/hw/qib/qib.h
+@@ -333,7 +333,7 @@ struct qib_verbs_txreq {
+  * These 7 values (SDR, DDR, and QDR may be ORed for auto-speed
+  * negotiation) are used for the 3rd argument to path_f_set_ib_cfg
+  * with cmd QIB_IB_CFG_SPD_ENB, by direct calls or via sysfs.  They
+- * are also the the possible values for qib_link_speed_enabled and active
++ * are also the possible values for qib_link_speed_enabled and active
+  * The values were chosen to match values used within the IB spec.
+  */
+ #define QIB_IB_SDR 1
+diff --git a/drivers/input/mouse/gpio_mouse.c b/drivers/input/mouse/gpio_mouse.c
+index 6b44413f54e3..59f820e6354f 100644
+--- a/drivers/input/mouse/gpio_mouse.c
++++ b/drivers/input/mouse/gpio_mouse.c
+@@ -18,7 +18,7 @@
+ 
+ /*
+  * Timer function which is run every scan_ms ms when the device is opened.
+- * The dev input variable is set to the the input_dev pointer.
++ * The dev input variable is set to the input_dev pointer.
+  */
+ static void gpio_mouse_scan(struct input_polled_dev *dev)
+ {
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 59aa24002c7b..9842375c7b4e 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1017,7 +1017,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 
+ 		frame_size = ((*(fw->data + pos) << 8) | *(fw->data + pos + 1));
+ 
+-		/* We should add 2 at frame size as the the firmware data is not
++		/* We should add 2 at frame size as the firmware data is not
+ 		 * included the CRC bytes.
+ 		 */
+ 		frame_size += 2;
+diff --git a/drivers/isdn/hardware/mISDN/hfcsusb.c b/drivers/isdn/hardware/mISDN/hfcsusb.c
+index 114f3bcba1b0..24c15bfb2199 100644
+--- a/drivers/isdn/hardware/mISDN/hfcsusb.c
++++ b/drivers/isdn/hardware/mISDN/hfcsusb.c
+@@ -1566,7 +1566,7 @@ reset_hfcsusb(struct hfcsusb *hw)
+ 	write_reg(hw, HFCUSB_USB_SIZE, (hw->packet_size / 8) |
+ 		  ((hw->packet_size / 8) << 4));
+ 
+-	/* set USB_SIZE_I to match the the wMaxPacketSize for ISO transfers */
++	/* set USB_SIZE_I to match the wMaxPacketSize for ISO transfers */
+ 	write_reg(hw, HFCUSB_USB_SIZE_I, hw->iso_packet_size);
+ 
+ 	/* enable PCM/GCI master mode */
+diff --git a/drivers/lguest/core.c b/drivers/lguest/core.c
+index 0bf1e4edf04d..def8b3511e59 100644
+--- a/drivers/lguest/core.c
++++ b/drivers/lguest/core.c
+@@ -205,7 +205,7 @@ void __lgwrite(struct lg_cpu *cpu, unsigned long addr, const void *b,
+ /*:*/
+ 
+ /*H:030
+- * Let's jump straight to the the main loop which runs the Guest.
++ * Let's jump straight to the main loop which runs the Guest.
+  * Remember, this is called by the Launcher reading /dev/lguest, and we keep
+  * going around and around until something interesting happens.
+  */
+diff --git a/drivers/media/dvb-frontends/tda1002x.h b/drivers/media/dvb-frontends/tda1002x.h
+index e404b6e44802..ce0fb855c705 100644
+--- a/drivers/media/dvb-frontends/tda1002x.h
++++ b/drivers/media/dvb-frontends/tda1002x.h
+@@ -1,6 +1,6 @@
+ /*
+     TDA10021/TDA10023  - Single Chip Cable Channel Receiver driver module
+-			 used on the the Siemens DVB-C cards
++			 used on the Siemens DVB-C cards
+ 
+     Copyright (C) 1999 Convergence Integrated Media GmbH <ralph@convergence.de>
+     Copyright (C) 2004 Markus Schulz <msc@antzsystem.de>
+diff --git a/drivers/media/dvb-frontends/tda10048.c b/drivers/media/dvb-frontends/tda10048.c
+index 71fb63299de7..17534ff576ca 100644
+--- a/drivers/media/dvb-frontends/tda10048.c
++++ b/drivers/media/dvb-frontends/tda10048.c
+@@ -1134,7 +1134,7 @@ struct dvb_frontend *tda10048_attach(const struct tda10048_config *config,
+ 		state->pll_pfactor = 0;
+ 	}
+ 
+-	/* Establish any defaults the the user didn't pass */
++	/* Establish any defaults the user didn't pass */
+ 	tda10048_establish_defaults(&state->frontend);
+ 
+ 	/* Set the xtal and freq defaults */
+diff --git a/drivers/media/pci/cx88/cx88-dsp.c b/drivers/media/pci/cx88/cx88-dsp.c
+index a9907265ff66..1f8820f5f8c0 100644
+--- a/drivers/media/pci/cx88/cx88-dsp.c
++++ b/drivers/media/pci/cx88/cx88-dsp.c
+@@ -37,7 +37,7 @@
+ 	 (compat_remainder(carrier + tone, srate)) / srate * 2 * INT_PI))
+ 
+ /* We calculate the baseband frequencies of the carrier and the pilot tones
+- * based on the the sampling rate of the audio rds fifo. */
++ * based on the sampling rate of the audio rds fifo. */
+ 
+ #define FREQ_A2_CARRIER         baseband_freq(54687.5, 2689.36, 0.0)
+ #define FREQ_A2_DUAL            baseband_freq(54687.5, 2689.36, 274.1)
+diff --git a/drivers/media/pci/ivtv/ivtv-yuv.c b/drivers/media/pci/ivtv/ivtv-yuv.c
+index 2ad65eb29832..00e0818abfc9 100644
+--- a/drivers/media/pci/ivtv/ivtv-yuv.c
++++ b/drivers/media/pci/ivtv/ivtv-yuv.c
+@@ -555,7 +555,7 @@ static void ivtv_yuv_handle_vertical(struct ivtv *itv, struct yuv_frame_info *f)
+ 	reg_2964 = (reg_2964 << 16) + reg_2964 + (reg_2964 * 46 / 94);
+ 
+ 	/* Okay, we've wasted time working out the correct value,
+-	   but if we use it, it fouls the the window alignment.
++	   but if we use it, it fouls the window alignment.
+ 	   Fudge it to what we want... */
+ 	reg_2964 = 0x00010001 + ((reg_2964 & 0x0000FFFF) - (reg_2964 >> 16));
+ 	reg_2968 = 0x00010001 + ((reg_2968 & 0x0000FFFF) - (reg_2968 >> 16));
+diff --git a/drivers/media/pci/saa7164/saa7164-core.c b/drivers/media/pci/saa7164/saa7164-core.c
+index 57ef5456f1e8..0515103e38aa 100644
+--- a/drivers/media/pci/saa7164/saa7164-core.c
++++ b/drivers/media/pci/saa7164/saa7164-core.c
+@@ -636,7 +636,7 @@ static irqreturn_t saa7164_irq(int irq, void *dev_id)
+ 	}
+ 
+ 	/* Check that the hardware is accessible. If the status bytes are
+-	 * 0xFF then the device is not accessible, the the IRQ belongs
++	 * 0xFF then the device is not accessible, the IRQ belongs
+ 	 * to another driver.
+ 	 * 4 x u32 interrupt registers.
+ 	 */
+diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
+index 33b9660b7f77..6ea16e20449d 100644
+--- a/drivers/media/platform/davinci/vpbe.c
++++ b/drivers/media/platform/davinci/vpbe.c
+@@ -316,7 +316,7 @@ static int vpbe_set_default_output(struct vpbe_device *vpbe_dev)
+  * vpbe_get_output - Get output
+  * @vpbe_dev - vpbe device ptr
+  *
+- * return current vpbe output to the the index
++ * return current vpbe output to the index
+  */
+ static unsigned int vpbe_get_output(struct vpbe_device *vpbe_dev)
+ {
+diff --git a/drivers/media/platform/exynos4-is/fimc-capture.c b/drivers/media/platform/exynos4-is/fimc-capture.c
+index fb27ff7e1e07..0a9140ba9219 100644
+--- a/drivers/media/platform/exynos4-is/fimc-capture.c
++++ b/drivers/media/platform/exynos4-is/fimc-capture.c
+@@ -505,7 +505,7 @@ static int fimc_capture_open(struct file *file)
+ 
+ 		if (ret == 0 && vc->user_subdev_api && vc->inh_sensor_ctrls) {
+ 			/*
+-			 * Recreate controls of the the video node to drop
++			 * Recreate controls of the video node to drop
+ 			 * any controls inherited from the sensor subdev.
+ 			 */
+ 			fimc_ctrls_delete(vc->ctx);
+diff --git a/drivers/media/platform/omap3isp/isp.c b/drivers/media/platform/omap3isp/isp.c
+index 1c3608039663..a9987990b9a0 100644
+--- a/drivers/media/platform/omap3isp/isp.c
++++ b/drivers/media/platform/omap3isp/isp.c
+@@ -1671,7 +1671,7 @@ void omap3isp_print_status(struct isp_device *isp)
+  * To solve this problem power management support is split into prepare/complete
+  * and suspend/resume operations. The pipelines are stopped in prepare() and the
+  * ISP clocks get disabled in suspend(). Similarly, the clocks are reenabled in
+- * resume(), and the the pipelines are restarted in complete().
++ * resume(), and the pipelines are restarted in complete().
+  *
+  * TODO: PM dependencies between the ISP and sensors are not modeled explicitly
+  * yet.
+diff --git a/drivers/media/usb/dvb-usb/friio-fe.c b/drivers/media/usb/dvb-usb/friio-fe.c
+index d56f927fc31a..b5d2e805380d 100644
+--- a/drivers/media/usb/dvb-usb/friio-fe.c
++++ b/drivers/media/usb/dvb-usb/friio-fe.c
+@@ -2,7 +2,7 @@
+  *
+  * Copyright (C) 2009 Akihiro Tsukada <tskd2@yahoo.co.jp>
+  *
+- * This module is based off the the gl861 and vp702x modules.
++ * This module is based off the gl861 and vp702x modules.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/media/usb/dvb-usb/friio.c b/drivers/media/usb/dvb-usb/friio.c
+index 474a17e4db0c..4c7f8fed8046 100644
+--- a/drivers/media/usb/dvb-usb/friio.c
++++ b/drivers/media/usb/dvb-usb/friio.c
+@@ -2,7 +2,7 @@
+  *
+  * Copyright (C) 2009 Akihiro Tsukada <tskd2@yahoo.co.jp>
+  *
+- * This module is based off the the gl861 and vp702x modules.
++ * This module is based off the gl861 and vp702x modules.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/media/usb/dvb-usb/friio.h b/drivers/media/usb/dvb-usb/friio.h
+index 0f461ca10cb9..82d19dcdebc0 100644
+--- a/drivers/media/usb/dvb-usb/friio.h
++++ b/drivers/media/usb/dvb-usb/friio.h
+@@ -2,7 +2,7 @@
+  *
+  * Copyright (C) 2009 Akihiro Tsukada <tskd2@yahoo.co.jp>
+  *
+- * This module is based off the the gl861 and vp702x modules.
++ * This module is based off the gl861 and vp702x modules.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+diff --git a/drivers/media/usb/gspca/finepix.c b/drivers/media/usb/gspca/finepix.c
+index 52bdb569760b..414c1b752911 100644
+--- a/drivers/media/usb/gspca/finepix.c
++++ b/drivers/media/usb/gspca/finepix.c
+@@ -143,7 +143,7 @@ again:
+ 				 * for, then it's the end of the
+ 				 * frame. Sometimes the jpeg is not complete,
+ 				 * but there's nothing we can do. We also end
+-				 * here if the the jpeg ends right at the end
++				 * here if the jpeg ends right at the end
+ 				 * of the frame. */
+ 				gspca_frame_add(gspca_dev, LAST_PACKET,
+ 						data, len);
+diff --git a/drivers/media/usb/tm6000/tm6000-cards.c b/drivers/media/usb/tm6000/tm6000-cards.c
+index 1ccaaddaa307..e43f8629436b 100644
+--- a/drivers/media/usb/tm6000/tm6000-cards.c
++++ b/drivers/media/usb/tm6000/tm6000-cards.c
+@@ -1313,7 +1313,7 @@ static int tm6000_usb_probe(struct usb_interface *interface,
+ 		le16_to_cpu(dev->udev->descriptor.idProduct),
+ 		interface->altsetting->desc.bInterfaceNumber);
+ 
+-/* check if the the device has the iso in endpoint at the correct place */
++/* check if the device has the iso in endpoint at the correct place */
+ 	if (!dev->isoc_in.endp) {
+ 		printk(KERN_ERR "tm6000: probing error: no IN ISOC endpoint!\n");
+ 		rc = -ENODEV;
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index 899cb6d1c4a4..34e9e3e1652d 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -992,7 +992,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
+ 	}
+ 
+ 	/* Synchronize to the input stream by waiting for the FID bit to be
+-	 * toggled when the the buffer state is not UVC_BUF_STATE_ACTIVE.
++	 * toggled when the buffer state is not UVC_BUF_STATE_ACTIVE.
+ 	 * stream->last_fid is initialized to -1, so the first isochronous
+ 	 * frame will always be in sync.
+ 	 *
+diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
+index 04644e7b42b1..303b322756c7 100644
+--- a/drivers/memory/emif.c
++++ b/drivers/memory/emif.c
+@@ -373,7 +373,7 @@ static const struct lpddr2_addressing *get_addressing_table(
+ }
+ 
+ /*
+- * Find the the right timing table from the array of timing
++ * Find the right timing table from the array of timing
+  * tables of the device using DDR clock frequency
+  */
+ static const struct lpddr2_timings *get_timings_table(struct emif_data *emif,
+diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
+index 5653e505f91f..eb9640c39bf7 100644
+--- a/drivers/message/fusion/mptspi.c
++++ b/drivers/message/fusion/mptspi.c
+@@ -101,7 +101,7 @@ static u8	mptspiInternalCtx = MPT_MAX_PROTOCOL_DRIVERS; /* Used only for interna
+  *	@target: per target private data
+  *	@sdev: SCSI device
+  *
+- * 	Update the target negotiation parameters based on the the Inquiry
++ *	Update the target negotiation parameters based on the Inquiry
+  *	data, adapter capabilities, and NVRAM settings.
+  **/
+ static void
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index b9ce60c301de..e63b854221aa 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -897,7 +897,7 @@ void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
+  * @opp: The new ARM operating point to which transition is to be made
+  * Returns: 0 on success, non-zero on failure
+  *
+- * This function sets the the operating point of the ARM.
++ * This function sets the operating point of the ARM.
+  */
+ int db8500_prcmu_set_arm_opp(u8 opp)
+ {
+diff --git a/drivers/misc/sgi-gru/grukservices.c b/drivers/misc/sgi-gru/grukservices.c
+index 913de07e577c..6482a9c4eb44 100644
+--- a/drivers/misc/sgi-gru/grukservices.c
++++ b/drivers/misc/sgi-gru/grukservices.c
+@@ -48,7 +48,7 @@
+  * kernel/user requirements.
+  *
+  * Blade percpu resources reserved for kernel use. These resources are
+- * reserved whenever the the kernel context for the blade is loaded. Note
++ * reserved whenever the kernel context for the blade is loaded. Note
+  * that the kernel context is not guaranteed to be always available. It is
+  * loaded on demand & can be stolen by a user if the user demand exceeds the
+  * kernel demand. The kernel can always reload the kernel context but
+diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
+index b9e2000969f0..a90b40823cf2 100644
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -1594,7 +1594,7 @@ out_2:
+ 		 * by xpc_notify_senders_of_disconnect_uv(), and to also get an
+ 		 * error returned here will confuse them. Additionally, since
+ 		 * in this case the channel is being disconnected we don't need
+-		 * to put the the msg_slot back on the free list.
++		 * to put the msg_slot back on the free list.
+ 		 */
+ 		if (cmpxchg(&msg_slot->func, func, NULL) != func) {
+ 			ret = xpSuccess;
+diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+index dabbc14db563..65931b51d843 100644
+--- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
++++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+@@ -967,7 +967,7 @@ static uint8_t gpmi_read_byte(struct mtd_info *mtd)
+ /*
+  * Handles block mark swapping.
+  * It can be called in swapping the block mark, or swapping it back,
+- * because the the operations are the same.
++ * because the operations are the same.
+  */
+ static void block_mark_swapping(struct gpmi_nand_data *this,
+ 				void *payload, void *auxiliary)
+diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+index 8ea6297a208f..86cabd9cc166 100644
+--- a/drivers/mtd/ubi/ubi.h
++++ b/drivers/mtd/ubi/ubi.h
+@@ -253,7 +253,7 @@ struct ubi_fm_pool {
+ 
+ /**
+  * struct ubi_volume - UBI volume description data structure.
+- * @dev: device object to make use of the the Linux device model
++ * @dev: device object to make use of the Linux device model
+  * @cdev: character device object to create character device
+  * @ubi: reference to the UBI device description object
+  * @vol_id: volume ID
+@@ -381,7 +381,7 @@ struct ubi_debug_info {
+ 
+ /**
+  * struct ubi_device - UBI device description structure
+- * @dev: UBI device object to use the the Linux device model
++ * @dev: UBI device object to use for the Linux device model
+  * @cdev: character device object to create character device
+  * @ubi_num: UBI device number
+  * @ubi_name: UBI device name
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 02317c1c0238..a4ee3a342303 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -722,7 +722,7 @@ static int prot_queue_del(struct ubi_device *ubi, int pnum)
+ /**
+  * sync_erase - synchronously erase a physical eraseblock.
+  * @ubi: UBI device description object
+- * @e: the the physical eraseblock to erase
++ * @e: the physical eraseblock to erase
+  * @torture: if the physical eraseblock has to be tortured
+  *
+  * This function returns zero in case of success and a negative error code in
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index 4fc5c8ef5121..ad12d53e67f0 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -1235,7 +1235,7 @@ static int xgmac_rx(struct xgmac_priv *priv, int limit)
+  *  @budget : maximum number of packets that the current CPU can receive from
+  *	      all interfaces.
+  *  Description :
+- *   This function implements the the reception process.
++ *   This function implements the reception process.
+  *   Also it runs the TX completion thread
+  */
+ static int xgmac_poll(struct napi_struct *napi, int budget)
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
+index 4cbb2f9850be..065da7406d4c 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/t4_hw.c
+@@ -2467,7 +2467,7 @@ int t4_fwaddrspace_write(struct adapter *adap, unsigned int mbox,
+  *     @data: len bytes to hold the data read
+  *     @len: amount of data to read from window.  Must be <=
+  *            MEMWIN0_APERATURE after adjusting for 16B for T4 and
+- *            128B for T5 alignment requirements of the the memory window.
++ *            128B for T5 alignment requirements of the memory window.
+  *
+  *     Read len bytes of data from MC starting at @addr.
+  */
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index fee64bf10446..23f95bf13426 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -2247,7 +2247,7 @@ static irqreturn_t be_intx(int irq, void *dev)
+ 	}
+ 	be_eq_notify(adapter, eqo->q.id, false, true, num_evts);
+ 
+-	/* Return IRQ_HANDLED only for the the first spurious intr
++	/* Return IRQ_HANDLED only for the first spurious intr
+ 	 * after a valid intr to stop the kernel from branding
+ 	 * this irq as a bad one!
+ 	 */
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_hw.c b/drivers/net/ethernet/intel/e1000/e1000_hw.c
+index 2879b9631e15..0c988a290767 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_hw.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_hw.c
+@@ -4068,7 +4068,7 @@ static s32 e1000_do_read_eeprom(struct e1000_hw *hw, u16 offset, u16 words,
+  * @hw: Struct containing variables accessed by shared code
+  *
+  * Reads the first 64 16 bit words of the EEPROM and sums the values read.
+- * If the the sum of the 64 16 bit words is 0xBABA, the EEPROM's checksum is
++ * If the sum of the 64 16 bit words is 0xBABA, the EEPROM's checksum is
+  * valid.
+  */
+ s32 e1000_validate_eeprom_checksum(struct e1000_hw *hw)
+diff --git a/drivers/net/ethernet/intel/e1000e/ich8lan.c b/drivers/net/ethernet/intel/e1000e/ich8lan.c
+index 42f0f6717511..6cb1e4eb591c 100644
+--- a/drivers/net/ethernet/intel/e1000e/ich8lan.c
++++ b/drivers/net/ethernet/intel/e1000e/ich8lan.c
+@@ -3536,7 +3536,7 @@ static s32 e1000_id_led_init_pchlan(struct e1000_hw *hw)
+  *  @hw: pointer to the HW structure
+  *
+  *  ICH8 use the PCI Express bus, but does not contain a PCI Express Capability
+- *  register, so the the bus width is hard coded.
++ *  register, so the bus width is hard coded.
+  **/
+ static s32 e1000_get_bus_info_ich8lan(struct e1000_hw *hw)
+ {
+diff --git a/drivers/net/ethernet/intel/igb/e1000_82575.c b/drivers/net/ethernet/intel/igb/e1000_82575.c
+index 47c2d10df826..71aca7caadf9 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_82575.c
++++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+@@ -2083,7 +2083,7 @@ out:
+  *  igb_reset_mdicnfg_82580 - Reset MDICNFG destination and com_mdio bits
+  *  @hw: pointer to the HW structure
+  *
+- *  This resets the the MDICNFG.Destination and MDICNFG.Com_MDIO bits based on
++ *  This resets the MDICNFG.Destination and MDICNFG.Com_MDIO bits based on
+  *  the values found in the EEPROM.  This addresses an issue in which these
+  *  bits are not restored from EEPROM after reset.
+  **/
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index cc06854296a3..6c5c418aed5d 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -223,7 +223,7 @@ static void ixgbe_check_minimum_link(struct ixgbe_adapter *adapter,
+ 	enum pcie_link_width width = PCIE_LNK_WIDTH_UNKNOWN;
+ 	struct pci_dev *pdev;
+ 
+-	/* determine whether to use the the parent device
++	/* determine whether to use the parent device
+ 	 */
+ 	if (ixgbe_pcie_from_parent(&adapter->hw))
+ 		pdev = adapter->pdev->bus->parent->self;
+diff --git a/drivers/net/ethernet/neterion/s2io.c b/drivers/net/ethernet/neterion/s2io.c
+index 9eeddbd0b2c7..a3a4c1ccdd90 100644
+--- a/drivers/net/ethernet/neterion/s2io.c
++++ b/drivers/net/ethernet/neterion/s2io.c
+@@ -2167,7 +2167,7 @@ static int verify_xena_quiescence(struct s2io_nic *sp)
+ 
+ 	/*
+ 	 * In PCI 33 mode, the P_PLL is not used, and therefore,
+-	 * the the P_PLL_LOCK bit in the adapter_status register will
++	 * the P_PLL_LOCK bit in the adapter_status register will
+ 	 * not be asserted.
+ 	 */
+ 	if (!(val64 & ADAPTER_STATUS_P_PLL_LOCK) &&
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+index 64b4639f43b6..39fe59db9e60 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_mdio.c
+@@ -83,7 +83,7 @@ static int axienet_mdio_read(struct mii_bus *bus, int phy_id, int reg)
+  * returns:	0 on success, -ETIMEDOUT on a timeout
+  *
+  * Writes the value to the requested register by first writing the value
+- * into MWD register. The the MCR register is then appropriately setup
++ * into MWD register. The MCR register is then appropriately setup
+  * to finish the write operation.
+  */
+ static int axienet_mdio_write(struct mii_bus *bus, int phy_id, int reg,
+diff --git a/drivers/net/wimax/i2400m/i2400m.h b/drivers/net/wimax/i2400m/i2400m.h
+index 5a34e72bab9a..6113a29f01bc 100644
+--- a/drivers/net/wimax/i2400m/i2400m.h
++++ b/drivers/net/wimax/i2400m/i2400m.h
+@@ -250,14 +250,14 @@ struct i2400m_barker_db;
+  *
+  * @bus_setup: [optional fill] Function called by the bus-generic code
+  *     [i2400m_setup()] to setup the basic bus-specific communications
+- *     to the the device needed to load firmware. See LIFE CYCLE above.
++ *     to the device needed to load firmware. See LIFE CYCLE above.
+  *
+  *     NOTE: Doesn't need to upload the firmware, as that is taken
+  *     care of by the bus-generic code.
+  *
+  * @bus_release: [optional fill] Function called by the bus-generic
+  *     code [i2400m_release()] to shutdown the basic bus-specific
+- *     communications to the the device needed to load firmware. See
++ *     communications to the device needed to load firmware. See
+  *     LIFE CYCLE above.
+  *
+  *     This function does not need to reset the device, just tear down
+diff --git a/drivers/net/wimax/i2400m/rx.c b/drivers/net/wimax/i2400m/rx.c
+index 0b602951ff6b..4466ee71d1e4 100644
+--- a/drivers/net/wimax/i2400m/rx.c
++++ b/drivers/net/wimax/i2400m/rx.c
+@@ -693,7 +693,7 @@ void __i2400m_roq_queue(struct i2400m *i2400m, struct i2400m_roq *roq,
+ 	 * right spot where to insert the packet; we know the queue is
+ 	 * not empty, so we are not the first ones; we also know we
+ 	 * are not going to be the last ones. The list is sorted, so
+-	 * we have to insert before the the first guy with an nsn_itr
++	 * we have to insert before the first guy with an nsn_itr
+ 	 * greater that our nsn. */
+ 	skb_queue_walk(&roq->queue, skb_itr) {
+ 		roq_data_itr = (struct i2400m_roq_data *) &skb_itr->cb;
+diff --git a/drivers/net/wimax/i2400m/tx.c b/drivers/net/wimax/i2400m/tx.c
+index f20886ade1cc..1f7b2b922fae 100644
+--- a/drivers/net/wimax/i2400m/tx.c
++++ b/drivers/net/wimax/i2400m/tx.c
+@@ -233,7 +233,7 @@
+  *    i2400m_tx_skip_tail()     Marks unusable FIFO tail space
+  *    i2400m->bus_tx_kick()
+  *
+- * Now i2400m->bus_tx_kick() is the the bus-specific driver backend
++ * Now i2400m->bus_tx_kick() is the bus-specific driver backend
+  * implementation; that would do:
+  *
+  * i2400m->bus_tx_kick()
+diff --git a/drivers/net/wireless/ath/ath10k/rx_desc.h b/drivers/net/wireless/ath/ath10k/rx_desc.h
+index 1c584c4b019c..f34f24d362ed 100644
+--- a/drivers/net/wireless/ath/ath10k/rx_desc.h
++++ b/drivers/net/wireless/ath/ath10k/rx_desc.h
+@@ -77,7 +77,7 @@ struct rx_attention {
+  *		first_msdu is set.
+  *
+  * peer_idx_invalid
+- *		Indicates no matching entries within the the max search
++ *		Indicates no matching entries within the max search
+  *		count.  Only set when first_msdu is set.
+  *
+  * peer_idx_timeout
+diff --git a/drivers/net/wireless/ath/ath6kl/hif.h b/drivers/net/wireless/ath/ath6kl/hif.h
+index 61f6b21fb0ae..cb15404bea71 100644
+--- a/drivers/net/wireless/ath/ath6kl/hif.h
++++ b/drivers/net/wireless/ath/ath6kl/hif.h
+@@ -98,7 +98,7 @@ struct bus_request {
+  *     emode - This indicates the whether the command is to be executed in a
+  *             blocking or non-blocking fashion (HIF_SYNCHRONOUS/
+  *             HIF_ASYNCHRONOUS). The read/write data paths in HTC have been
+- *             implemented using the asynchronous mode allowing the the bus
++ *             implemented using the asynchronous mode allowing the bus
+  *             driver to indicate the completion of operation through the
+  *             registered callback routine. The requirement primarily comes
+  *             from the contexts these operations get called from (a driver's
+diff --git a/drivers/net/wireless/ath/ath6kl/sdio.c b/drivers/net/wireless/ath/ath6kl/sdio.c
+index 7126bdd4236c..f3827982d51b 100644
+--- a/drivers/net/wireless/ath/ath6kl/sdio.c
++++ b/drivers/net/wireless/ath/ath6kl/sdio.c
+@@ -1176,7 +1176,7 @@ static int ath6kl_sdio_bmi_read(struct ath6kl *ar, u8 *buf, u32 len)
+ 	 *        Wait for first 4 bytes to be in FIFO
+ 	 *        If CONSERVATIVE_BMI_READ is enabled, also wait for
+ 	 *        a BMI command credit, which indicates that the ENTIRE
+-	 *        response is available in the the FIFO
++	 *        response is available in the FIFO
+ 	 *
+ 	 *  CASE 3: length > 128
+ 	 *        Wait for the first 4 bytes to be in FIFO
+diff --git a/drivers/net/wireless/ath/ath9k/ar9002_phy.c b/drivers/net/wireless/ath/ath9k/ar9002_phy.c
+index f087117b2e6b..403cda240e46 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9002_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_phy.c
+@@ -639,7 +639,7 @@ static void ar9002_hw_spectral_scan_config(struct ath_hw *ah,
+ 		REG_CLR_BIT(ah, AR_PHY_SPECTRAL_SCAN,
+ 			    AR_PHY_SPECTRAL_SCAN_SHORT_REPEAT);
+ 
+-	/* on AR92xx, the highest bit of count will make the the chip send
++	/* on AR92xx, the highest bit of count will make the chip send
+ 	 * spectral samples endlessly. Check if this really was intended,
+ 	 * and fix otherwise.
+ 	 */
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+index d39b79f5e841..61ab51069d17 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
+@@ -1620,7 +1620,7 @@ static void ar9003_hw_spectral_scan_config(struct ath_hw *ah,
+ 	REG_SET_BIT(ah, AR_PHY_RADAR_0, AR_PHY_RADAR_0_FFT_ENA);
+ 	REG_SET_BIT(ah, AR_PHY_SPECTRAL_SCAN, AR_PHY_SPECTRAL_SCAN_ENABLE);
+ 
+-	/* on AR93xx and newer, count = 0 will make the the chip send
++	/* on AR93xx and newer, count = 0 will make the chip send
+ 	 * spectral samples endlessly. Check if this really was intended,
+ 	 * and fix otherwise.
+ 	 */
+diff --git a/drivers/net/wireless/ath/wcn36xx/hal.h b/drivers/net/wireless/ath/wcn36xx/hal.h
+index c02dbc618724..9339cc6ee18a 100644
+--- a/drivers/net/wireless/ath/wcn36xx/hal.h
++++ b/drivers/net/wireless/ath/wcn36xx/hal.h
+@@ -1609,7 +1609,7 @@ struct wcn36xx_hal_config_bss_params {
+ 
+ 	/* HAL should update the existing BSS entry, if this flag is set.
+ 	 * UMAC will set this flag in case of reassoc, where we want to
+-	 * resue the the old BSSID and still return success 0 = Add, 1 =
++	 * reuse the old BSSID and still return success 0 = Add, 1 =
+ 	 * Update */
+ 	u8 action;
+ 
+@@ -1746,7 +1746,7 @@ struct wcn36xx_hal_config_bss_params_v1 {
+ 
+ 	/* HAL should update the existing BSS entry, if this flag is set.
+ 	 * UMAC will set this flag in case of reassoc, where we want to
+-	 * resue the the old BSSID and still return success 0 = Add, 1 =
++	 * reuse the old BSSID and still return success 0 = Add, 1 =
+ 	 * Update */
+ 	u8 action;
+ 
+@@ -3739,7 +3739,7 @@ struct wcn36xx_hal_dump_cmd_rsp_msg {
+ 	/* Length of the responce message */
+ 	u32 rsp_length;
+ 
+-	/* FIXME: Currently considering the the responce will be less than
++	/* FIXME: Currently considering that the responce will be less than
+ 	 * 100bytes */
+ 	u8 rsp_buffer[DUMPCMD_RSP_BUFFER];
+ } __packed;
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+index 8138f1cff4e5..e353e7caf878 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+@@ -3819,7 +3819,7 @@ static void brcms_b_set_shortslot(struct brcms_hardware *wlc_hw, bool shortslot)
+ }
+ 
+ /*
+- * Suspend the the MAC and update the slot timing
++ * Suspend the MAC and update the slot timing
+  * for standard 11b/g (20us slots) or shortslot 11g (9us slots).
+  */
+ static void brcms_c_switch_shortslot(struct brcms_c_info *wlc, bool shortslot)
+diff --git a/drivers/net/wireless/iwlwifi/mvm/fw-api-tx.h b/drivers/net/wireless/iwlwifi/mvm/fw-api-tx.h
+index d606197bde8f..c03e73f835b8 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/fw-api-tx.h
++++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-tx.h
+@@ -194,7 +194,7 @@ enum iwl_tx_flags {
+  *	cleared. Combination of RATE_MCS_*
+  * @sta_id: index of destination station in FW station table
+  * @sec_ctl: security control, TX_CMD_SEC_*
+- * @initial_rate_index: index into the the rate table for initial TX attempt.
++ * @initial_rate_index: index into the rate table for initial TX attempt.
+  *	Applied if TX_CMD_FLG_STA_RATE_MSK is set, normally 0 for data frames.
+  * @key: security key
+  * @next_frame_flags: TX_CMD_SEC_* and TX_CMD_NEXT_FRAME_*
+@@ -545,7 +545,7 @@ struct iwl_beacon_notif {
+ 
+ /**
+  * enum iwl_dump_control - dump (flush) control flags
+- * @DUMP_TX_FIFO_FLUSH: Dump MSDUs until the the FIFO is empty
++ * @DUMP_TX_FIFO_FLUSH: Dump MSDUs until the FIFO is empty
+  *	and the TFD queues are empty.
+  */
+ enum iwl_dump_control {
+diff --git a/drivers/net/wireless/iwlwifi/mvm/phy-ctxt.c b/drivers/net/wireless/iwlwifi/mvm/phy-ctxt.c
+index a8652ddd6bed..89061e08c409 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/phy-ctxt.c
++++ b/drivers/net/wireless/iwlwifi/mvm/phy-ctxt.c
+@@ -65,7 +65,7 @@
+ #include "fw-api.h"
+ #include "mvm.h"
+ 
+-/* Maps the driver specific channel width definition to the the fw values */
++/* Maps the driver specific channel width definition to the fw values */
+ static inline u8 iwl_mvm_get_channel_width(struct cfg80211_chan_def *chandef)
+ {
+ 	switch (chandef->width) {
+@@ -86,7 +86,7 @@ static inline u8 iwl_mvm_get_channel_width(struct cfg80211_chan_def *chandef)
+ 
+ /*
+  * Maps the driver specific control channel position (relative to the center
+- * freq) definitions to the the fw values
++ * freq) definitions to the fw values
+  */
+ static inline u8 iwl_mvm_get_ctrl_pos(struct cfg80211_chan_def *chandef)
+ {
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index f807d0edabf3..fcc7b6e59c06 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -1762,7 +1762,7 @@ static void of_alias_add(struct alias_prop *ap, struct device_node *np,
+  * of_alias_scan - Scan all properties of 'aliases' node
+  *
+  * The function scans all the properties of 'aliases' node and populate
+- * the the global lookup table with the properties.  It returns the
++ * the global lookup table with the properties.  It returns the
+  * number of alias_prop found, or error code in error case.
+  *
+  * @dt_alloc:	An allocator that provides a virtual address to memory
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 1cf605f67673..d1cf8a3461e1 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -36,7 +36,7 @@
+  *    when the bridge is scanned and it loses a refcount when the bridge
+  *    is removed.
+  *  - When a P2P bridge is present, we elevate the refcount on the subordinate
+- *    bus. It loses the refcount when the the driver unloads.
++ *    bus. It loses the refcount when the driver unloads.
+  */
+ 
+ #define pr_fmt(fmt) "acpiphp_glue: " fmt
+diff --git a/drivers/pcmcia/pxa2xx_hx4700.c b/drivers/pcmcia/pxa2xx_hx4700.c
+index 7dfef3ee5b53..40511e39cea5 100644
+--- a/drivers/pcmcia/pxa2xx_hx4700.c
++++ b/drivers/pcmcia/pxa2xx_hx4700.c
+@@ -33,7 +33,7 @@ static int hx4700_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ 	/*
+ 	 * IRQ type must be set before soc_pcmcia_hw_init() calls request_irq().
+ 	 * The asic3 default IRQ type is level trigger low level detect, exactly
+-	 * the the signal present on GPIOD4_CF_nCD when a CF card is inserted.
++	 * the signal present on GPIOD4_CF_nCD when a CF card is inserted.
+ 	 * If the IRQ type is not changed, the asic3 interrupt handler will loop
+ 	 * repeatedly because it is unable to clear the level trigger interrupt.
+ 	 */
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 44420d1e9094..aa6d52ef8f3f 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -294,8 +294,9 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 
+ 		ret = power_supply_show_property(dev, attr, prop_buf);
+ 		if (ret == -ENODEV || ret == -ENODATA) {
+-			/* When a battery is absent, we expect -ENODEV. Don't abort;
+-			   send the uevent with at least the the PRESENT=0 property */
++			/* When a battery is absent, we expect -ENODEV.
++			 * Don't abort; send the uevent with at least
++			 * the PRESENT=0 property */
+ 			ret = 0;
+ 			continue;
+ 		}
+diff --git a/drivers/rtc/rtc-rs5c372.c b/drivers/rtc/rtc-rs5c372.c
+index ccf54f06396b..2108302cc965 100644
+--- a/drivers/rtc/rtc-rs5c372.c
++++ b/drivers/rtc/rtc-rs5c372.c
+@@ -122,7 +122,7 @@ static int rs5c_get_regs(struct rs5c372 *rs5c)
+ 	 * least 80219 chips; this works around that bug.
+ 	 *
+ 	 * The third method on the other hand doesn't work for the SMBus-only
+-	 * configurations, so we use the the first method there, stripping off
++	 * configurations, so we use the first method there, stripping off
+ 	 * the extra register in the process.
+ 	 */
+ 	if (rs5c->smbus) {
+diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
+index eb4e1f809feb..6f93c519606c 100644
+--- a/drivers/s390/net/qeth_core_main.c
++++ b/drivers/s390/net/qeth_core_main.c
+@@ -3374,7 +3374,7 @@ static void qeth_flush_buffers(struct qeth_qdio_out_q *queue, int index,
+ 			if (!atomic_read(&queue->set_pci_flags_count)) {
+ 				/*
+ 				 * there's no outstanding PCI any more, so we
+-				 * have to request a PCI to be sure the the PCI
++				 * have to request a PCI to be sure that the PCI
+ 				 * will wake at some time in the future then we
+ 				 * can flush packed buffers that might still be
+ 				 * hanging around, which can happen if no
+diff --git a/drivers/scsi/bfa/bfa_fcs_rport.c b/drivers/scsi/bfa/bfa_fcs_rport.c
+index 2035b0d64351..e62a7346428a 100644
+--- a/drivers/scsi/bfa/bfa_fcs_rport.c
++++ b/drivers/scsi/bfa/bfa_fcs_rport.c
+@@ -1983,7 +1983,7 @@ bfa_fcs_rport_gidpn_response(void *fcsarg, struct bfa_fcxp_s *fcxp, void *cbarg,
+ 			/*
+ 			 * Device's PID has changed. We need to cleanup
+ 			 * and re-login. If there is another device with
+-			 * the the newly discovered pid, send an scn notice
++			 * the newly discovered pid, send an scn notice
+ 			 * so that its new pid can be discovered.
+ 			 */
+ 			list_for_each(qe, &rport->port->rport_q) {
+diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
+index f3170008ae71..854ac59389b8 100644
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -510,7 +510,7 @@ static void fcoe_interface_cleanup(struct fcoe_interface *fcoe)
+  * @skb:      The receive skb
+  * @netdev:   The associated net device
+  * @ptype:    The packet_type structure which was used to register this handler
+- * @orig_dev: The original net_device the the skb was received on.
++ * @orig_dev: The original net_device that the skb was received on.
+  *	      (in case dev is a bond)
+  *
+  * Returns: 0 for success
+@@ -2716,7 +2716,7 @@ module_exit(fcoe_exit);
+  * fcoe_flogi_resp() - FCoE specific FLOGI and FDISC response handler
+  * @seq: active sequence in the FLOGI or FDISC exchange
+  * @fp: response frame, or error encoded in a pointer (timeout)
+- * @arg: pointer the the fcoe_ctlr structure
++ * @arg: pointer to the fcoe_ctlr structure
+  *
+  * This handles MAC address management for FCoE, then passes control on to
+  * the libfc FLOGI response handler.
+@@ -2745,7 +2745,7 @@ done:
+  * fcoe_logo_resp() - FCoE specific LOGO response handler
+  * @seq: active sequence in the LOGO exchange
+  * @fp: response frame, or error encoded in a pointer (timeout)
+- * @arg: pointer the the fcoe_ctlr structure
++ * @arg: pointer to the fcoe_ctlr structure
+  *
+  * This handles MAC address management for FCoE, then passes control on to
+  * the libfc LOGO response handler.
+diff --git a/drivers/scsi/fcoe/fcoe_ctlr.c b/drivers/scsi/fcoe/fcoe_ctlr.c
+index 34a1b1f333b4..65a53a9eb059 100644
+--- a/drivers/scsi/fcoe/fcoe_ctlr.c
++++ b/drivers/scsi/fcoe/fcoe_ctlr.c
+@@ -213,7 +213,7 @@ static int fcoe_sysfs_fcf_add(struct fcoe_fcf *new)
+ 		 * that doesn't have a priv (fcf was deleted). However,
+ 		 * libfcoe will always delete FCFs before trying to add
+ 		 * them. This is ensured because both recv_adv and
+-		 * age_fcfs are protected by the the fcoe_ctlr's mutex.
++		 * age_fcfs are protected by the fcoe_ctlr's mutex.
+ 		 * This means that we should never get a FCF with a
+ 		 * non-NULL priv pointer.
+ 		 */
+@@ -694,7 +694,7 @@ static int fcoe_ctlr_encaps(struct fcoe_ctlr *fip, struct fc_lport *lport,
+  *
+  * The caller must check that the length is a multiple of 4.
+  * The SKB must have enough headroom (28 bytes) and tailroom (8 bytes).
+- * The the skb must also be an fc_frame.
++ * The skb must also be an fc_frame.
+  *
+  * This is called from the lower-level driver with spinlocks held,
+  * so we must not take a mutex here.
+diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
+index 4911310a38f5..cc2b2c0d22eb 100644
+--- a/drivers/scsi/isci/host.h
++++ b/drivers/scsi/isci/host.h
+@@ -244,7 +244,7 @@ enum sci_controller_states {
+ 	SCIC_INITIALIZED,
+ 
+ 	/**
+-	 * This state indicates the the controller is in the process of becoming
++	 * This state indicates that the controller is in the process of becoming
+ 	 * ready (i.e. starting).  In this state no new IO operations are permitted.
+ 	 * This state is entered from the INITIALIZED state.
+ 	 */
+diff --git a/drivers/scsi/isci/remote_device.h b/drivers/scsi/isci/remote_device.h
+index 47a013fffae7..07af745220eb 100644
+--- a/drivers/scsi/isci/remote_device.h
++++ b/drivers/scsi/isci/remote_device.h
+@@ -198,7 +198,7 @@ enum sci_status sci_remote_device_reset_complete(
+  * permitted.  This state is entered from the INITIAL state.  This state
+  * is entered from the STOPPING state.
+  *
+- * @SCI_DEV_STARTING: This state indicates the the remote device is in
++ * @SCI_DEV_STARTING: This state indicates that the remote device is in
+  * the process of becoming ready (i.e. starting).  In this state no new
+  * IO operations are permitted.  This state is entered from the STOPPED
+  * state.
+diff --git a/drivers/scsi/isci/remote_node_context.h b/drivers/scsi/isci/remote_node_context.h
+index c7ee81d01125..f22950b12b8b 100644
+--- a/drivers/scsi/isci/remote_node_context.h
++++ b/drivers/scsi/isci/remote_node_context.h
+@@ -154,7 +154,7 @@ enum sci_remote_node_context_destination_state {
+ /**
+  * struct sci_remote_node_context - This structure contains the data
+  *    associated with the remote node context object.  The remote node context
+- *    (RNC) object models the the remote device information necessary to manage
++ *    (RNC) object models the remote device information necessary to manage
+  *    the silicon RNC.
+  */
+ struct sci_remote_node_context {
+diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
+index 0d30ca849e8f..63da523e73a6 100644
+--- a/drivers/scsi/isci/task.c
++++ b/drivers/scsi/isci/task.c
+@@ -67,7 +67,7 @@
+ /**
+ * isci_task_refuse() - complete the request to the upper layer driver in
+ *     the case where an I/O needs to be completed back in the submit path.
+-* @ihost: host on which the the request was queued
++* @ihost: host on which the request was queued
+ * @task: request to complete
+ * @response: response code for the completed task.
+ * @status: status code for the completed task.
+diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
+index 00656fc92b93..5da6568e2e50 100644
+--- a/drivers/scsi/lpfc/lpfc_attr.c
++++ b/drivers/scsi/lpfc/lpfc_attr.c
+@@ -1654,7 +1654,7 @@ lpfc_##attr##_show(struct device *dev, struct device_attribute *attr, \
+  * takes a default argument, a minimum and maximum argument.
+  *
+  * lpfc_##attr##_init: Initializes an attribute.
+- * @phba: pointer the the adapter structure.
++ * @phba: pointer to the adapter structure.
+  * @val: integer attribute value.
+  *
+  * Validates the min and max values then sets the adapter config field
+@@ -1687,7 +1687,7 @@ lpfc_##attr##_init(struct lpfc_hba *phba, uint val) \
+  * into a function with the name lpfc_hba_queue_depth_set
+  *
+  * lpfc_##attr##_set: Sets an attribute value.
+- * @phba: pointer the the adapter structure.
++ * @phba: pointer to the adapter structure.
+  * @val: integer attribute value.
+  *
+  * Description:
+@@ -1820,7 +1820,7 @@ lpfc_##attr##_show(struct device *dev, struct device_attribute *attr, \
+  * lpfc_##attr##_init: validates the min and max values then sets the
+  * adapter config field accordingly, or uses the default if out of range
+  * and prints an error message.
+- * @phba: pointer the the adapter structure.
++ * @phba: pointer to the adapter structure.
+  * @val: integer attribute value.
+  *
+  * Returns:
+@@ -1852,7 +1852,7 @@ lpfc_##attr##_init(struct lpfc_vport *vport, uint val) \
+  * lpfc_##attr##_set: validates the min and max values then sets the
+  * adapter config field if in the valid range. prints error message
+  * and does not set the parameter if invalid.
+- * @phba: pointer the the adapter structure.
++ * @phba: pointer to the adapter structure.
+  * @val:	integer attribute value.
+  *
+  * Returns:
+diff --git a/drivers/scsi/lpfc/lpfc_els.c b/drivers/scsi/lpfc/lpfc_els.c
+index 110445f0c58d..1ced9822c051 100644
+--- a/drivers/scsi/lpfc/lpfc_els.c
++++ b/drivers/scsi/lpfc/lpfc_els.c
+@@ -5783,7 +5783,7 @@ reject_out:
+  * @rrq: Pointer to the rrq struct.
+  *
+  * Build a ELS RRQ command and send it to the target. If the issue_iocb is
+- * Successful the the completion handler will clear the RRQ.
++ * successful, the completion handler will clear the RRQ.
+  *
+  * Return codes
+  *   0 - Successfully sent rrq els iocb.
+diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
+index 883ea2d9f237..345ad3150ccf 100644
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -2014,7 +2014,7 @@ static void lpfc_sli4_fcf_pri_list_del(struct lpfc_hba *phba,
+  * @phba: pointer to lpfc hba data structure.
+  * @fcf_index the index of the fcf record to update
+  * This routine acquires the hbalock and then set the LPFC_FCF_FLOGI_FAILED
+- * flag so the the round robin slection for the particular priority level
++ * flag so that the round robin selection for the particular priority level
+  * will try a different fcf record that does not have this bit set.
+  * If the fcf record is re-read for any reason this flag is cleared brfore
+  * adding it to the priority list.
+@@ -5705,7 +5705,7 @@ lpfc_nlp_get(struct lpfc_nodelist *ndlp)
+ }
+ 
+ /* This routine decrements the reference count for a ndlp structure. If the
+- * count goes to 0, this indicates the the associated nodelist should be
++ * count goes to 0, this indicates that the associated nodelist should be
+  * freed. Returning 1 indicates the ndlp resource has been released; on the
+  * other hand, returning 0 indicates the ndlp resource has not been released
+  * yet.
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index 68c94cc85c35..dd1f6e9ead10 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -3783,7 +3783,7 @@ lpfc_sli4_async_link_evt(struct lpfc_hba *phba,
+ 	bf_set(lpfc_mbx_read_top_link_spd, la,
+ 	       lpfc_sli4_parse_latt_link_speed(phba, acqe_link));
+ 
+-	/* Fake the the following irrelvant fields */
++	/* Fake the following irrelevant fields */
+ 	bf_set(lpfc_mbx_read_top_topology, la, LPFC_TOPOLOGY_PT_PT);
+ 	bf_set(lpfc_mbx_read_top_alpa_granted, la, 0);
+ 	bf_set(lpfc_mbx_read_top_il, la, 0);
+diff --git a/drivers/scsi/lpfc/lpfc_mbox.c b/drivers/scsi/lpfc/lpfc_mbox.c
+index 1f292e29d566..d9a9ddbf1771 100644
+--- a/drivers/scsi/lpfc/lpfc_mbox.c
++++ b/drivers/scsi/lpfc/lpfc_mbox.c
+@@ -2265,7 +2265,7 @@ lpfc_sli4_dump_cfg_rg23(struct lpfc_hba *phba, struct lpfcMboxq *mbox)
+  * information via a READ_FCF mailbox command. This mailbox command also is used
+  * to indicate where received unsolicited frames from this FCF will be sent. By
+  * default this routine will set up the FCF to forward all unsolicited frames
+- * the the RQ ID passed in the @phba. This can be overridden by the caller for
++ * that the RQ ID passed in the @phba. This can be overridden by the caller for
+  * more complicated setups.
+  **/
+ void
+diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+index 8f580fda443f..3b47f86d01f8 100644
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -16341,7 +16341,7 @@ out:
+  * the offset after the write object mailbox has completed. @size is used to
+  * determine the end of the object and whether the eof bit should be set.
+  *
+- * Return 0 is successful and offset will contain the the new offset to use
++ * Return 0 is successful and offset will contain the new offset to use
+  * for the next write.
+  * Return negative value for error cases.
+  **/
+diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
+index 0a1296a87d66..051a475cbe10 100644
+--- a/drivers/scsi/pm8001/pm8001_hwi.c
++++ b/drivers/scsi/pm8001/pm8001_hwi.c
+@@ -3255,7 +3255,7 @@ int pm8001_mpi_local_phy_ctl(struct pm8001_hba_info *pm8001_ha, void *piomb)
+  *
+  * when HBA driver received the identify done event or initiate FIS received
+  * event(for SATA), it will invoke this function to notify the sas layer that
+- * the sas toplogy has formed, please discover the the whole sas domain,
++ * the sas toplogy has formed, please discover the whole sas domain,
+  * while receive a broadcast(change) primitive just tell the sas
+  * layer to discover the changed domain rather than the whole domain.
+  */
+diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
+index 5ee56726f8d0..be2b89e0889c 100644
+--- a/drivers/spi/spi-ppc4xx.c
++++ b/drivers/spi/spi-ppc4xx.c
+@@ -355,7 +355,7 @@ static void spi_ppc4xx_enable(struct ppc4xx_spi *hw)
+ {
+ 	/*
+ 	 * On all 4xx PPC's the SPI bus is shared/multiplexed with
+-	 * the 2nd I2C bus. We need to enable the the SPI bus before
++	 * the 2nd I2C bus. We need to enable the SPI bus before
+ 	 * using it.
+ 	 */
+ 
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index cbe345168067..98161a5f0f1a 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -246,7 +246,7 @@ enum binder_driver_return_protocol {
+ 
+ 	BR_FAILED_REPLY = _IO('r', 17),
+ 	/*
+-	 * The the last transaction (either a bcTRANSACTION or
++	 * The last transaction (either a bcTRANSACTION or
+ 	 * a bcATTEMPT_ACQUIRE) failed (e.g. out of memory).  No parameters.
+ 	 */
+ };
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index ab8b29d2cb26..ca4f75dcbbea 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -1239,7 +1239,7 @@ static void et1310_config_rxmac_regs(struct et131x_adapter *adapter)
+ 	/* Initialize the Space Available Register */
+ 	writel(0, &rxmac->space_avail);
+ 
+-	/* Initialize the the mif_ctrl register
++	/* Initialize the mif_ctrl register
+ 	 * bit 3:  Receive code error. One or more nibbles were signaled as
+ 	 *	   errors  during the reception of the packet.  Clear this
+ 	 *	   bit in Gigabit, set it in 100Mbit.  This was derived
+diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+index fb85a58db058..7540b8e912ca 100644
+--- a/drivers/staging/lustre/lustre/llite/file.c
++++ b/drivers/staging/lustre/lustre/llite/file.c
+@@ -318,7 +318,7 @@ int ll_file_release(struct inode *inode, struct file *file)
+ 	fd = LUSTRE_FPRIVATE(file);
+ 	LASSERT(fd != NULL);
+ 
+-	/* The last ref on @file, maybe not the the owner pid of statahead.
++	/* The last ref on @file, maybe not the owner pid of statahead.
+ 	 * Different processes can open the same dir, "ll_opendir_key" means:
+ 	 * it is me that should stop the statahead thread. */
+ 	if (S_ISDIR(inode->i_mode) && lli->lli_opendir_key == fd &&
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/pinger.c b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
+index 4d340f4a2198..5de07b8852ff 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/pinger.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
+@@ -507,7 +507,7 @@ struct timeout_item* ptlrpc_new_timeout(int time, enum timeout_event event,
+ }
+ 
+ /**
+- * Register timeout event on the the pinger thread.
++ * Register timeout event on the pinger thread.
+  * Note: the timeout list is an sorted list with increased timeout value.
+  */
+ static struct timeout_item*
+diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
+index 304579096562..a8bbd7fb26f2 100644
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
+@@ -216,7 +216,7 @@ ieee80211_rx_frame_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb,
+ {
+ 	struct ieee80211_hdr_4addr *hdr;
+ 
+-	// cheat the the hdr type
++	/* cheat the hdr type */
+ 	hdr = (struct ieee80211_hdr_4addr *)skb->data;
+ 
+ 	/* On the struct stats definition there is written that
+@@ -485,7 +485,7 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
+ 	struct ieee80211_crypt_data *crypt = NULL;
+ 	int keyidx = 0;
+ 
+-	// cheat the the hdr type
++	/* cheat the hdr type */
+ 	hdr = (struct ieee80211_hdr_4addr *)skb->data;
+ 	stats = &ieee->stats;
+ 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+index f45f4eddb741..45532e09c348 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
++++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+@@ -968,7 +968,7 @@ _func_enter_;
+ 
+ 	psecnetwork->IELength = 0;
+ 	/*  Added by Albert 2009/02/18 */
+-	/*  If the the driver wants to use the bssid to create the connection. */
++	/*  If the driver wants to use the bssid to create the connection. */
+ 	/*  If not,  we have to copy the connecting AP's MAC address to it so that */
+ 	/*  the driver just has the bssid information for PMKIDList searching. */
+ 
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+index e730ed64c0fe..5981ef17a520 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+@@ -926,7 +926,7 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
+ 
+ 	int i;
+ 	struct ieee80211_rxb *rxb = NULL;
+-	// cheat the the hdr type
++	/* cheat the hdr type */
+ 	hdr = (struct ieee80211_hdr_4addr *)skb->data;
+ 	stats = &ieee->stats;
+ 
+diff --git a/drivers/staging/rtl8712/rtl871x_cmd.c b/drivers/staging/rtl8712/rtl871x_cmd.c
+index 7e324315e6ad..e36d10182e93 100644
+--- a/drivers/staging/rtl8712/rtl871x_cmd.c
++++ b/drivers/staging/rtl8712/rtl871x_cmd.c
+@@ -536,7 +536,7 @@ u8 r8712_joinbss_cmd(struct _adapter  *padapter, struct wlan_network *pnetwork)
+ 		memcpy(&psecuritypriv->authenticator_ie[1],
+ 			&psecnetwork->IEs[12], (256-1));
+ 	psecnetwork->IELength = 0;
+-	/* If the the driver wants to use the bssid to create the connection.
++	/* If the driver wants to use the bssid to create the connection.
+ 	 * If not,  we copy the connecting AP's MAC address to it so that
+ 	 * the driver just has the bssid information for PMKIDList searching.
+ 	 */
+diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
+index 1e80a4013b8c..41bbfca3c7ff 100644
+--- a/drivers/staging/sep/sep_main.c
++++ b/drivers/staging/sep/sep_main.c
+@@ -1207,7 +1207,7 @@ static int sep_lock_user_pages(struct sep_device *sep,
+ 	int error = 0;
+ 	u32 count;
+ 	int result;
+-	/* The the page of the end address of the user space buffer */
++	/* The page of the end address of the user space buffer */
+ 	u32 end_page;
+ 	/* The page of the start address of the user space buffer */
+ 	u32 start_page;
+@@ -1406,7 +1406,7 @@ static int sep_lli_table_secure_dma(struct sep_device *sep,
+ {
+ 	int error = 0;
+ 	u32 count;
+-	/* The the page of the end address of the user space buffer */
++	/* The page of the end address of the user space buffer */
+ 	u32 end_page;
+ 	/* The page of the start address of the user space buffer */
+ 	u32 start_page;
+@@ -1725,7 +1725,7 @@ static void *sep_shared_area_bus_to_virt(struct sep_device *sep,
+  * @num_table_entries: number of entries
+  * @table_data_size: total data size
+  *
+- * Walk the the list of the print created tables and print all the data
++ * Walk the list of the print created tables and print all the data
+  */
+ static void sep_debug_print_lli_tables(struct sep_device *sep,
+ 	struct sep_lli_entry *lli_table_ptr,
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+index b0c7708321b2..ee44aaea6dee 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+@@ -253,7 +253,7 @@ extern int drv_get_dev_object(u32 index,
+ /*
+  *  ======== drv_get_next_dev_object ========
+  *  Purpose:
+- *      Returns the Ptr to the Next Device Object from the the List
++ *      Returns the Ptr to the Next Device Object from the List
+  *  Parameters:
+  *      hdev_obj:     Handle to the Device Object
+  *  Requires:
+@@ -269,7 +269,7 @@ extern u32 drv_get_next_dev_object(u32 hdev_obj);
+ /*
+  *  ======== drv_get_next_dev_extension ========
+  *  Purpose:
+- *      Returns the Ptr to the Next Device Extension from the the List
++ *      Returns the Ptr to the Next Device Extension from the List
+  *  Parameters:
+  *      dev_extension:      Handle to the Device Extension
+  *  Requires:
+diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
+index 6234ffb5e8a3..408bb6ba571a 100644
+--- a/drivers/staging/tidspbridge/pmgr/dev.c
++++ b/drivers/staging/tidspbridge/pmgr/dev.c
+@@ -897,7 +897,7 @@ int dev_get_dev_type(struct dev_object *dev_obj, u8 *dev_type)
+  *
+  *      1. All Bridge function pointers which are NULL; and
+  *      2. All function slots in the struct dev_object structure which have no
+- *         corresponding slots in the the Bridge's interface, because the Bridge
++ *         corresponding slots in the Bridge's interface, because the Bridge
+  *         is of an *older* version.
+  *  Parameters:
+  *      intf_fxns:      Interface fxn Structure of the Bridge's Dev Object.
+diff --git a/drivers/staging/wlags49_h2/README.wlags49 b/drivers/staging/wlags49_h2/README.wlags49
+index f65acd6f5f54..368a22b32f23 100644
+--- a/drivers/staging/wlags49_h2/README.wlags49
++++ b/drivers/staging/wlags49_h2/README.wlags49
+@@ -396,7 +396,7 @@ Version 7.22 abg - July 28, 2004
+     TxKey=1
+ 
+     this configures eth1 to associate to the ESSID 'some_network' with
+-    encryption on, where the the first encryption key is 'net01' and the key to
++    encryption on, where the first encryption key is 'net01' and the key to
+     use for encryption is Key 1.
+ 
+     Note that this only works on Agere hardware which uses this driver. For
+diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
+index fdcee326bfbc..070107b444dc 100644
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -325,8 +325,8 @@ target_emulate_set_target_port_groups(struct se_cmd *cmd)
+ 			spin_unlock(&dev->t10_alua.tg_pt_gps_lock);
+ 		} else {
+ 			/*
+-			 * Extract the RELATIVE TARGET PORT IDENTIFIER to identify
+-			 * the Target Port in question for the the incoming
++			 * Extact the RELATIVE TARGET PORT IDENTIFIER to identify
++			 * the Target Port in question for the incoming
+ 			 * SET_TARGET_PORT_GROUPS op.
+ 			 */
+ 			rtpi = get_unaligned_be16(ptr + 2);
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 53c2e296467f..cd69b21be962 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1809,7 +1809,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
+ 
+ 	/*
+ 	 * Check to see if xhci-hub.c is waiting on RExit to U0 transition (or
+-	 * RExit to a disconnect state).  If so, let the the driver know it's
++	 * RExit to a disconnect state).  If so, let the driver know it's
+ 	 * out of the RExit state.
+ 	 */
+ 	if (!DEV_SUPERSPEED(temp) &&
+diff --git a/drivers/usb/serial/cypress_m8.c b/drivers/usb/serial/cypress_m8.c
+index 558605d646f3..b69b3370c415 100644
+--- a/drivers/usb/serial/cypress_m8.c
++++ b/drivers/usb/serial/cypress_m8.c
+@@ -263,7 +263,7 @@ static int analyze_baud_rate(struct usb_serial_port *port, speed_t new_rate)
+ 		/*
+ 		 * Mike Isely <isely@pobox.com> 2-Feb-2008: The
+ 		 * Cypress app note that describes this mechanism
+-		 * states the the low-speed part can't handle more
++		 * states that the low-speed part can't handle more
+ 		 * than 800 bytes/sec, in which case 4800 baud is the
+ 		 * safest speed for a part like that.
+ 		 */
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index 439c951f261b..e953f1ed401a 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -432,7 +432,7 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
+ }
+ 
+ /*
+- * This is the the common top part of all parallel port callback operations that
++ * This is the common top part of all parallel port callback operations that
+  * send synchronous messages to the device.  This implements convoluted locking
+  * that avoids two scenarios: (1) a port operation is called after usbserial
+  * has called our release function, at which point struct mos7715_parport has
+@@ -471,7 +471,7 @@ static int parport_prologue(struct parport *pp)
+ }
+ 
+ /*
+- * This is the the common bottom part of all parallel port functions that send
++ * This is the common bottom part of all parallel port functions that send
+  * synchronous messages to the device.
+  */
+ static inline void parport_epilogue(struct parport *pp)
+diff --git a/drivers/usb/wusbcore/devconnect.c b/drivers/usb/wusbcore/devconnect.c
+index f14e7929ba22..f3cd603310ac 100644
+--- a/drivers/usb/wusbcore/devconnect.c
++++ b/drivers/usb/wusbcore/devconnect.c
+@@ -46,7 +46,7 @@
+  *
+  * ASSUMPTIONS:
+  *
+- *  - We use the the as device address the port number where it is
++ *  - We use as device address the port number where it is
+  *    connected (port 0 doesn't exist). For unauth, it is 128 + that.
+  *
+  * ROADMAP:
+diff --git a/drivers/uwb/drp-ie.c b/drivers/uwb/drp-ie.c
+index b7d4f6b75eef..caa4cb40334d 100644
+--- a/drivers/uwb/drp-ie.c
++++ b/drivers/uwb/drp-ie.c
+@@ -262,7 +262,7 @@ int uwb_drp_ie_update(struct uwb_rsv *rsv)
+  * We are given a zone id and the MAS bitmap of bits that need to be set in
+  * this zone. Note that this zone may already have bits set and this only
+  * adds settings - we cannot simply assign the MAS bitmap contents to the
+- * zone contents. We iterate over the the bits (MAS) in the zone and set the
++ * zone contents. We iterate over the bits (MAS) in the zone and set the
+  * bits that are set in the given MAS bitmap.
+  */
+ static
+diff --git a/drivers/video/omap/sossi.c b/drivers/video/omap/sossi.c
+index d4e7684e7045..501bc08dc125 100644
+--- a/drivers/video/omap/sossi.c
++++ b/drivers/video/omap/sossi.c
+@@ -370,7 +370,7 @@ static void sossi_set_bits_per_cycle(int bpc)
+ 	int bus_pick_count, bus_pick_width;
+ 
+ 	/*
+-	 * We set explicitly the the bus_pick_count as well, although
++	 * We set explicitly the bus_pick_count as well, although
+ 	 * with remapping/reordering disabled it will be calculated by HW
+ 	 * as (32 / bus_pick_width).
+ 	 */
+diff --git a/drivers/video/sis/sis_accel.c b/drivers/video/sis/sis_accel.c
+index ceb434c95c0d..9177b8056356 100644
+--- a/drivers/video/sis/sis_accel.c
++++ b/drivers/video/sis/sis_accel.c
+@@ -215,7 +215,7 @@ SiS310SubsequentScreenToScreenCopy(struct sis_video_info *ivideo, int src_x, int
+ 	 * and destination blitting areas overlap and
+ 	 * adapt the bitmap addresses synchronously
+ 	 * if the coordinates exceed the valid range.
+-	 * The the areas do not overlap, we do our
++	 * If the areas do not overlap, we do our
+ 	 * normal check.
+ 	 */
+ 	if((mymax - mymin) < height) {
+diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+index 1818ce7f5a06..fb7713815f66 100644
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -492,7 +492,7 @@ static int autofs_dev_ioctl_askumount(struct file *fp,
+  * located path is the root of a mount we return 1 along with
+  * the super magic of the mount or 0 otherwise.
+  *
+- * In both cases the the device number (as returned by
++ * In both cases the device number (as returned by
+  * new_encode_dev()) is also returned.
+  */
+ static int autofs_dev_ioctl_ismountpoint(struct file *fp,
+diff --git a/fs/btrfs/dev-replace.c b/fs/btrfs/dev-replace.c
+index 2cfc3dfff64f..d4f7f42e3e9e 100644
+--- a/fs/btrfs/dev-replace.c
++++ b/fs/btrfs/dev-replace.c
+@@ -801,7 +801,7 @@ int btrfs_dev_replace_is_ongoing(struct btrfs_dev_replace *dev_replace)
+ 		 * something that can happen if the dev_replace
+ 		 * procedure is suspended by an umount and then
+ 		 * the tgtdev is missing (or "btrfs dev scan") was
+-		 * not called and the the filesystem is remounted
++		 * not called and the filesystem is remounted
+ 		 * in degraded state. This does not stop the
+ 		 * dev_replace procedure. It needs to be canceled
+ 		 * manually if the cancelation is wanted.
+diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
+index 6837fe87f3a6..309599e493f0 100644
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -2738,7 +2738,7 @@ verbose_printk("btrfs: process_recorded_refs %llu\n", sctx->cur_ino);
+ 		/*
+ 		 * We may have refs where the parent directory does not exist
+ 		 * yet. This happens if the parent directories inum is higher
+-		 * the the current inum. To handle this case, we create the
++		 * than the current inum. To handle this case, we create the
+ 		 * parent directory out of order. But we need to check if this
+ 		 * did already happen before due to other refs in the same dir.
+ 		 */
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index 9f7fc51ca334..f63472ecaef5 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -2582,7 +2582,7 @@ int btrfs_sync_log(struct btrfs_trans_handle *trans,
+ 	mutex_unlock(&log_root_tree->log_mutex);
+ 
+ 	/*
+-	 * nobody else is going to jump in and write the the ctree
++	 * nobody else is going to jump in and write the ctree
+ 	 * super here because the log_commit atomic below is protecting
+ 	 * us.  We must be called with a transaction handle pinning
+ 	 * the running transaction open, so a full commit can't hop
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 4bdb300b16e2..3d739837c11a 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1966,8 +1966,8 @@ EXPORT_SYMBOL(d_splice_alias);
+  * same inode, only the actual correct case is stored in the dcache for
+  * case-insensitive filesystems.
+  *
+- * For a case-insensitive lookup match and if the the case-exact dentry
+- * already exists in in the dcache, use it and return it.
++ * For a case-insensitive lookup match and if the case-exact dentry
++ * already exists in the dcache, use it and return it.
+  *
+  * If no entry exists with the exact case name, allocate new dentry with
+  * the exact case, and return the spliced entry.
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 4725a07f003c..bcdfbc7568d7 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -900,7 +900,7 @@ struct ecryptfs_parse_tag_70_packet_silly_stack {
+  * @filename: This function kmalloc's the memory for the filename
+  * @filename_size: This function sets this to the amount of memory
+  *                 kmalloc'd for the filename
+- * @packet_size: This function sets this to the the number of octets
++ * @packet_size: This function sets this to the number of octets
+  *               in the packet parsed
+  * @mount_crypt_stat: The mount-wide cryptographic context
+  * @data: The memory location containing the start of the tag 70
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index d9a17d0b124d..c9c6f2e5a0a0 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -51,7 +51,7 @@ struct ext2_block_alloc_info {
+ 	/*
+ 	 * Was i_next_alloc_goal in ext2_inode_info
+ 	 * is the *physical* companion to i_next_alloc_block.
+-	 * it the the physical block number of the block which was most-recentl
++	 * it is the physical block number of the block which was most-recently
+ 	 * allocated to this file.  This give us the goal (target) for the next
+ 	 * allocation when we detect linearly ascending requests.
+ 	 */
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index bae987549dc3..65211a1ae6d7 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -276,7 +276,7 @@ static int ext4_create_inline_data(handle_t *handle,
+ 		len = 0;
+ 	}
+ 
+-	/* Insert the the xttr entry. */
++	/* Insert the xttr entry. */
+ 	i.value = value;
+ 	i.value_len = len;
+ 
+@@ -832,7 +832,7 @@ out:
+ 
+ /*
+  * Prepare the write for the inline data.
+- * If the the data can be written into the inode, we just read
++ * If the data can be written into the inode, we just read
+  * the page and make it uptodate, and start the journal.
+  * Otherwise read the page, makes it dirty so that it can be
+  * handle in writepages(the i_disksize update is left to the
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 269f690b4e24..23f17daa2479 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -157,7 +157,7 @@ struct seg_entry {
+ 	unsigned short valid_blocks;	/* # of valid blocks */
+ 	unsigned char *cur_valid_map;	/* validity bitmap of blocks */
+ 	/*
+-	 * # of valid blocks and the validity bitmap stored in the the last
++	 * # of valid blocks and the validity bitmap stored in the last
+ 	 * checkpoint pack. This information is used by the SSR mode.
+ 	 */
+ 	unsigned short ckpt_valid_blocks;
+diff --git a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
+index cd5496b7a0a3..dd27d2b14f60 100644
+--- a/fs/ocfs2/localalloc.c
++++ b/fs/ocfs2/localalloc.c
+@@ -690,7 +690,7 @@ int ocfs2_reserve_local_alloc_bits(struct ocfs2_super *osb,
+ 		/*
+ 		 * Under certain conditions, the window slide code
+ 		 * might have reduced the number of bits available or
+-		 * disabled the the local alloc entirely. Re-check
++		 * disabled the local alloc entirely. Re-check
+ 		 * here and return -ENOSPC if necessary.
+ 		 */
+ 		status = -ENOSPC;
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index b94f93685093..9aec35c7fcd8 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -267,7 +267,7 @@ static int flush_write_buffer(struct sysfs_open_file *of, char *buf, loff_t off,
+  * There is no easy way for us to know if userspace is only doing a partial
+  * write, so we don't support them. We expect the entire buffer to come on
+  * the first write.  Hint: if you're writing a value, first read the file,
+- * modify only the the value you're changing, then write entire buffer
++ * modify only the value you're changing, then write entire buffer
+  * back.
+  */
+ static ssize_t sysfs_write_file(struct file *file, const char __user *user_buf,
+diff --git a/fs/xfs/xfs_export.c b/fs/xfs/xfs_export.c
+index 1399e187d425..77a43bcad6f5 100644
+--- a/fs/xfs/xfs_export.c
++++ b/fs/xfs/xfs_export.c
+@@ -71,7 +71,7 @@ xfs_fs_encode_fh(
+ 		fileid_type = FILEID_INO32_GEN_PARENT;
+ 
+ 	/*
+-	 * If the the filesystem may contain 64bit inode numbers, we need
++	 * If the filesystem may contain 64bit inode numbers, we need
+ 	 * to use larger file handles that can represent them.
+ 	 *
+ 	 * While we only allocate inodes that do not fit into 32 bits any
+diff --git a/include/drm/drm_rect.h b/include/drm/drm_rect.h
+index d1286297567b..1f6d6c3e195c 100644
+--- a/include/drm/drm_rect.h
++++ b/include/drm/drm_rect.h
+@@ -120,7 +120,7 @@ static inline int drm_rect_height(const struct drm_rect *r)
+ }
+ 
+ /**
+- * drm_rect_visible - determine if the the rectangle is visible
++ * drm_rect_visible - determine if the rectangle is visible
+  * @r: rectangle whose visibility is returned
+  *
+  * RETURNS:
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1cedd000cf29..d2b807469731 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -183,7 +183,7 @@ extern pgprot_t protection_map[16];
+ #define FAULT_FLAG_USER		0x80	/* The fault originated in userspace */
+ 
+ /*
+- * vm_fault is filled by the the pagefault handler and passed to the vma's
++ * vm_fault is filled by the pagefault handler and passed to the vma's
+  * ->fault function. The vma's ->fault is responsible for returning a bitmask
+  * of VM_FAULT_xxx flags that give details about how the fault was handled.
+  *
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index c3eb102a9cc8..cf956c945ced 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -94,7 +94,7 @@ struct kparam_array
+  * ".") the kernel commandline parameter.  Note that - is changed to _, so
+  * the user can use "foo-bar=1" even for variable "foo_bar".
+  *
+- * @perm is 0 if the the variable is not to appear in sysfs, or 0444
++ * @perm is 0 if the variable is not to appear in sysfs, or 0444
+  * for world-readable, 0644 for root-writable, etc.  Note that if it
+  * is writable, you may need to use kparam_block_sysfs_write() around
+  * accesses (esp. charp, which can be kfreed when it changes).
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index bec1cc7d5e3c..afa73b15cf09 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2495,7 +2495,7 @@ static inline bool skb_defer_rx_timestamp(struct sk_buff *skb)
+  * must call this function to return the skb back to the stack, with
+  * or without a timestamp.
+  *
+- * @skb: clone of the the original outgoing packet
++ * @skb: clone of the original outgoing packet
+  * @hwtstamps: hardware time stamps, may be NULL if not available
+  *
+  */
+diff --git a/include/net/caif/caif_layer.h b/include/net/caif/caif_layer.h
+index 94e5ed64dc6d..e9a8d524ab06 100644
+--- a/include/net/caif/caif_layer.h
++++ b/include/net/caif/caif_layer.h
+@@ -184,7 +184,7 @@ struct cflayer {
+ 	 *	CAIF packet downwards in the stack.
+ 	 *	Packet handling rules:
+ 	 *	      - The CAIF packet (cfpkt) ownership is passed to the
+-	 *		transmit function. This means that the the packet
++	 *		transmit function. This means that the packet
+ 	 *		cannot be accessed after passing it to the below
+ 	 *		layer using dn->transmit().
+ 	 *
+diff --git a/include/net/ip6_fib.h b/include/net/ip6_fib.h
+index 2182525e4d74..ca94298e9a74 100644
+--- a/include/net/ip6_fib.h
++++ b/include/net/ip6_fib.h
+@@ -100,7 +100,7 @@ struct rt6_info {
+ 	struct in6_addr			rt6i_gateway;
+ 
+ 	/* Multipath routes:
+-	 * siblings is a list of rt6_info that have the the same metric/weight,
++	 * siblings is a list of rt6_info that have the same metric/weight,
+ 	 * destination, but not the same gateway. nsiblings is just a cache
+ 	 * to speed up lookup.
+ 	 */
+diff --git a/include/net/wimax.h b/include/net/wimax.h
+index 98498e1daa06..74602ef06494 100644
+--- a/include/net/wimax.h
++++ b/include/net/wimax.h
+@@ -43,7 +43,7 @@
+  *
+  * USAGE
+  *
+- * Embed a `struct wimax_dev` at the beginning of the the device's
++ * Embed a `struct wimax_dev` at the beginning of the device's
+  * private structure, initialize and register it. For details, see
+  * `struct wimax_dev`s documentation.
+  *
+diff --git a/init/main.c b/init/main.c
+index febc511e078a..575b4624e54a 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -494,7 +494,7 @@ asmlinkage void __init start_kernel(void)
+ 	debug_objects_early_init();
+ 
+ 	/*
+-	 * Set up the the initial canary ASAP:
++	 * Set up the initial canary ASAP:
+ 	 */
+ 	boot_init_stack_canary();
+ 
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 9019f15deab2..6e82ca9e2735 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -17,7 +17,7 @@
+ 
+ #ifdef HAVE_JUMP_LABEL
+ 
+-/* mutex to protect coming/going of the the jump_label table */
++/* mutex to protect coming/going of the jump_label table */
+ static DEFINE_MUTEX(jump_label_mutex);
+ 
+ void jump_label_lock(void)
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index be7c86bae576..88b2e602ad02 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2720,7 +2720,7 @@ EXPORT_SYMBOL_GPL(kmsg_dump_get_line);
+  * @len: length of line placed into buffer
+  *
+  * Start at the end of the kmsg buffer and fill the provided buffer
+- * with as many of the the *youngest* kmsg records that fit into it.
++ * with as many of the *youngest* kmsg records that fit into it.
+  * If the buffer is large enough, all available kmsg records will be
+  * copied with a single call.
+  *
+diff --git a/kernel/smp.c b/kernel/smp.c
+index bd9f94028838..22187cbf95ef 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -609,7 +609,7 @@ EXPORT_SYMBOL(on_each_cpu_mask);
+  * for all the required CPUs to finish. This may include the local
+  * processor.
+  * @cond_func:	A callback function that is passed a cpu id and
+- *		the the info parameter. The function is called
++ *		the info parameter. The function is called
+  *		with preemption disabled. The function should
+  *		return a blooean value indicating whether to IPI
+  *		the specified CPU.
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index cc2f66f68dc5..04fb64169be9 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2874,7 +2874,7 @@ rb_decrement_entry(struct ring_buffer_per_cpu *cpu_buffer,
+  * This function lets the user discard an event in the ring buffer
+  * and then that event will not be read later.
+  *
+- * This function only works if it is called before the the item has been
++ * This function only works if it is called before the item has been
+  * committed. It will try to free the event from the ring buffer
+  * if another event has not been added behind it.
+  *
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 06f7e4fe8d2d..8fa2ad3b2a21 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -882,7 +882,7 @@ EXPORT_SYMBOL(bitmap_bitremap);
+  * read it, you're overqualified for your current job.)
+  *
+  * In other words, @orig is mapped onto (surjectively) @dst,
+- * using the the map { <n, m> | the n-th bit of @relmap is the
++ * using the map { <n, m> | the n-th bit of @relmap is the
+  * m-th set bit of @relmap }.
+  *
+  * Any set bits in @orig above bit number W, where W is the
+diff --git a/lib/dynamic_queue_limits.c b/lib/dynamic_queue_limits.c
+index 0777c5a45fa0..2ad6fc394f07 100644
+--- a/lib/dynamic_queue_limits.c
++++ b/lib/dynamic_queue_limits.c
+@@ -60,7 +60,7 @@ void dql_completed(struct dql *dql, unsigned int count)
+ 		 * the whole interval (the check above).
+ 		 *
+ 		 * If there is slack, the amount of execess data queued above
+-		 * the the amount needed to prevent starvation, the queue limit
++		 * the amount needed to prevent starvation, the queue limit
+ 		 * can be decreased.  To avoid hysteresis we consider the
+ 		 * minimum amount of slack found over several iterations of the
+ 		 * completion routine.
+diff --git a/lib/earlycpio.c b/lib/earlycpio.c
+index 3eb3e4722b8e..9d4da0a6a6ed 100644
+--- a/lib/earlycpio.c
++++ b/lib/earlycpio.c
+@@ -50,7 +50,7 @@ enum cpio_fields {
+ /**
+  * cpio_data find_cpio_data - Search for files in an uncompressed cpio
+  * @path:       The directory to search for, including a slash at the end
+- * @data:       Pointer to the the cpio archive or a header inside
++ * @data:       Pointer to the cpio archive or a header inside
+  * @len:        Remaining length of the cpio based on data pointer
+  * @nextoff:    When a matching file is found, this is the offset from the
+  *              beginning of the cpio to the beginning of the next file, not the
+diff --git a/lib/syscall.c b/lib/syscall.c
+index 58710eefeac8..90fc637eff76 100644
+--- a/lib/syscall.c
++++ b/lib/syscall.c
+@@ -31,7 +31,7 @@ static int collect_syscall(struct task_struct *target, long *callno,
+  * @pc:			filled with user PC
+  *
+  * If @target is blocked in a system call, returns zero with *@callno
+- * set to the the call's number and @args filled in with its arguments.
++ * set to the call's number and @args filled in with its arguments.
+  * Registers not used for system call arguments may not be available and
+  * it is not kosher to use &struct user_regset calls while the system
+  * call is still in progress.  Note we may get this result if @target
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index dee6cf4e6d34..e4665e8df41e 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1137,7 +1137,7 @@ static void return_unused_surplus_pages(struct hstate *h,
+ 	 * evenly across all nodes with memory. Iterate across these nodes
+ 	 * until we can no longer free unreserved surplus pages. This occurs
+ 	 * when the nodes with surplus pages have no free pages.
+-	 * free_pool_huge_page() will balance the the freed pages across the
++	 * free_pool_huge_page() will balance the freed pages across the
+ 	 * on-line nodes with memory and will handle the hstate accounting.
+ 	 */
+ 	while (nr_pages--) {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580a5f075ed0..7c205648391d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4108,7 +4108,7 @@ static int __meminit zone_batchsize(struct zone *zone)
+  * locking.
+  *
+  * Any new users of pcp->batch and pcp->high should ensure they can cope with
+- * those fields changing asynchronously (acording the the above rule).
++ * those fields changing asynchronously (according to the above rule).
+  *
+  * mutex_is_locked(&pcp_batch_high_lock) required when calling this function
+  * outside of boot time (or some other assurance that no concurrent updaters
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index ba5366c320da..60e1d50d5617 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -765,7 +765,7 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
+ 	return 0;
+ }
+ 
+-/* Encrypt the the link */
++/* Encrypt the link */
+ static void hci_conn_encrypt(struct hci_conn *conn)
+ {
+ 	BT_DBG("hcon %p", conn);
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index 6ccc4eb9e55e..4b1cd624dbb8 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -1257,7 +1257,7 @@ static void hci_init3_req(struct hci_request *req, unsigned long opt)
+ 	 * Delete Stored Link Key command. They are clearly indicating its
+ 	 * absence in the bit mask of supported commands.
+ 	 *
+-	 * Check the supported commands and only if the the command is marked
++	 * Check the supported commands and only if the command is marked
+ 	 * as supported send it. If not supported assume that the controller
+ 	 * does not have actual support for stored link keys which makes this
+ 	 * command redundant anyway.
+diff --git a/net/sctp/chunk.c b/net/sctp/chunk.c
+index f2044fcb9dd1..4a8d5cc43f06 100644
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -200,8 +200,8 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 		sizeof(struct sctphdr) - sizeof(struct sctp_data_chunk)) & ~3;
+ 
+ 	max = asoc->frag_point;
+-	/* If the the peer requested that we authenticate DATA chunks
+-	 * we need to account for bundling of the AUTH chunks along with
++	/* If the peer requested that we authenticate DATA chunks
++	 * we need to accound for bundling of the AUTH chunks along with
+ 	 * DATA.
+ 	 */
+ 	if (sctp_auth_send_cid(SCTP_CID_DATA, asoc)) {
+diff --git a/net/sunrpc/auth_generic.c b/net/sunrpc/auth_generic.c
+index ed04869b2d4f..99e14bb88952 100644
+--- a/net/sunrpc/auth_generic.c
++++ b/net/sunrpc/auth_generic.c
+@@ -184,7 +184,7 @@ void rpc_destroy_generic_auth(void)
+ }
+ 
+ /*
+- * Test the the current time (now) against the underlying credential key expiry
++ * Test the current time (now) against the underlying credential key expiry
+  * minus a timeout and setup notification.
+  *
+  * The normal case:
+diff --git a/net/tipc/link.c b/net/tipc/link.c
+index 69cd9bf3f561..1114acd3df10 100644
+--- a/net/tipc/link.c
++++ b/net/tipc/link.c
+@@ -833,7 +833,7 @@ int tipc_link_send_buf(struct tipc_link *l_ptr, struct sk_buff *buf)
+ 
+ /*
+  * tipc_link_send(): same as tipc_link_send_buf(), but the link to use has
+- * not been selected yet, and the the owner node is not locked
++ * not been selected yet, and the owner node is not locked
+  * Called by TIPC internal users, e.g. the name distributor
+  */
+ int tipc_link_send(struct sk_buff *buf, u32 dest, u32 selector)
+diff --git a/net/wimax/op-rfkill.c b/net/wimax/op-rfkill.c
+index 403078d670a9..b21863009913 100644
+--- a/net/wimax/op-rfkill.c
++++ b/net/wimax/op-rfkill.c
+@@ -135,7 +135,7 @@ EXPORT_SYMBOL_GPL(wimax_report_rfkill_hw);
+  * @state: New state of the RF kill switch. %WIMAX_RF_ON radio on,
+  *     %WIMAX_RF_OFF radio off.
+  *
+- * Reports changes in the software RF switch state to the the WiMAX
++ * Reports changes in the software RF switch state to the WiMAX
+  * stack.
+  *
+  * The main use is during initialization, so the driver can query the
+diff --git a/scripts/tracing/draw_functrace.py b/scripts/tracing/draw_functrace.py
+index db40fa04cd51..9eb8c74b69a1 100644
+--- a/scripts/tracing/draw_functrace.py
++++ b/scripts/tracing/draw_functrace.py
+@@ -8,7 +8,7 @@ This script parses a trace provided by the function tracer in
+ kernel/trace/trace_functions.c
+ The resulted trace is processed into a tree to produce a more human
+ view of the call stack by drawing textual but hierarchical tree of
+-calls. Only the functions's names and the the call time are provided.
++calls. Only the functions's names and the call time are provided.
+ 
+ Usage:
+ 	Be sure that you have CONFIG_FUNCTION_TRACER
+diff --git a/security/apparmor/context.c b/security/apparmor/context.c
+index 3064c6ced87c..7b9769e7985a 100644
+--- a/security/apparmor/context.c
++++ b/security/apparmor/context.c
+@@ -13,7 +13,7 @@
+  * License.
+  *
+  *
+- * AppArmor sets confinement on every task, via the the aa_task_cxt and
++ * AppArmor sets confinement on every task, via the aa_task_cxt and
+  * the aa_task_cxt.profile, both of which are required and are not allowed
+  * to be NULL.  The aa_task_cxt is not reference counted and is unique
+  * to each cred (which is reference count).  The profile pointed to by
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index cee72ce64222..a3f339164361 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -459,7 +459,7 @@ error:
+  * keyring, otherwise replace the link to the matching key with a link to the
+  * new key.
+  *
+- * The key must grant the caller Link permission and the the keyring must grant
++ * The key must grant the caller Link permission and the keyring must grant
+  * the caller Write permission.  Furthermore, if an additional link is created,
+  * the keyring's quota will be extended.
+  *
+diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
+index 69178c4f4113..99aa6fb13d2d 100644
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -4994,7 +4994,7 @@ EXPORT_SYMBOL_HDA(snd_hda_power_save);
+  * @nid: NID to check / update
+  *
+  * Check whether the given NID is in the amp list.  If it's in the list,
+- * check the current AMP status, and update the the power-status according
++ * check the current AMP status, and update the power-status according
+  * to the mute status.
+  *
+  * This function is supposed to be set or called from the check_power_status
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index 088a5afbd1b9..92ff5e680e51 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -859,7 +859,7 @@ static int stac_auto_create_beep_ctls(struct hda_codec *codec,
+ 	static struct snd_kcontrol_new beep_vol_ctl =
+ 		HDA_CODEC_VOLUME(NULL, 0, 0, 0);
+ 
+-	/* check for mute support for the the amp */
++	/* check for mute support for the amp */
+ 	if ((caps & AC_AMPCAP_MUTE) >> AC_AMPCAP_MUTE_SHIFT) {
+ 		const struct snd_kcontrol_new *temp;
+ 		if (spec->anabeep_nid == nid)
+diff --git a/sound/pci/ice1712/prodigy192.c b/sound/pci/ice1712/prodigy192.c
+index e610339f7601..6f8e5638a703 100644
+--- a/sound/pci/ice1712/prodigy192.c
++++ b/sound/pci/ice1712/prodigy192.c
+@@ -31,7 +31,7 @@
+  *		  Experimentally I found out that only a combination of
+  *		  OCKS0=1, OCKS1=1 (128fs, 64fs output) and ice1724 -
+  *		  VT1724_MT_I2S_MCLK_128X=0 (256fs input) yields correct
+- *		  sampling rate. That means the the FPGA doubles the
++ *		  sampling rate. That means that the FPGA doubles the
+  *		  MCK01 rate.
+  *
+  *	Copyright (c) 2003 Takashi Iwai <tiwai@suse.de>
+diff --git a/sound/soc/codecs/wm9713.c b/sound/soc/codecs/wm9713.c
+index acea8927905b..64835c2b12a6 100644
+--- a/sound/soc/codecs/wm9713.c
++++ b/sound/soc/codecs/wm9713.c
+@@ -695,7 +695,7 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int source)
+ 	u64 Kpart;
+ 	unsigned int K, Ndiv, Nmod, target;
+ 
+-	/* The the PLL output is always 98.304MHz. */
++	/* The PLL output is always 98.304MHz. */
+ 	target = 98304000;
+ 
+ 	/* If the input frequency is over 14.4MHz then scale it down. */
+diff --git a/sound/soc/fsl/fsl_dma.c b/sound/soc/fsl/fsl_dma.c
+index fb9bb9eb5ca3..a2e6df5dd576 100644
+--- a/sound/soc/fsl/fsl_dma.c
++++ b/sound/soc/fsl/fsl_dma.c
+@@ -171,7 +171,7 @@ static void fsl_dma_abort_stream(struct snd_pcm_substream *substream)
+ /**
+  * fsl_dma_update_pointers - update LD pointers to point to the next period
+  *
+- * As each period is completed, this function changes the the link
++ * As each period is completed, this function changes the link
+  * descriptor pointers for that period to point to the next period.
+  */
+ static void fsl_dma_update_pointers(struct fsl_dma_private *dma_private)
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index 35e277379b86..beaa6ec35b62 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -1013,7 +1013,7 @@ static int fsl_ssi_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	/* Initialize the the device_attribute structure */
++	/* Initialize the device_attribute structure */
+ 	dev_attr = &ssi_private->dev_attr;
+ 	sysfs_attr_init(&dev_attr->attr);
+ 	dev_attr->attr.name = "statistics";
+diff --git a/sound/sparc/dbri.c b/sound/sparc/dbri.c
+index eee7afcae375..a28b953c904e 100644
+--- a/sound/sparc/dbri.c
++++ b/sound/sparc/dbri.c
+@@ -615,7 +615,7 @@ A circular command buffer is used here. A new command is being added
+ while another can be executed. The scheme works by adding two WAIT commands
+ after each sent batch of commands. When the next batch is prepared it is
+ added after the WAIT commands then the WAITs are replaced with single JUMP
+-command to the new batch. The the DBRI is forced to reread the last WAIT
++command to the new batch. The DBRI is forced to reread the last WAIT
+ command (replaced by the JUMP by then). If the DBRI is still executing
+ previous commands the request to reread the WAIT command is ignored.
+ 
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index fdfceee0ffd0..29b9bcd9d3ab 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -180,7 +180,7 @@ If specified the 'Weighted diff' column is displayed with value 'd' computed as:
+ 
+   - period being the hist entry period value
+ 
+-  - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
++  - WEIGHT-A/WEIGHT-B being user suplied weights in the '-c' option
+     behind ':' separator like '-c wdiff:1,2'.
+     - WIEGHT-A being the weight of the data file
+     - WIEGHT-B being the weight of the baseline data file
+diff --git a/tools/power/x86/turbostat/turbostat.8 b/tools/power/x86/turbostat/turbostat.8
+index b4ddb748356c..7e8aa3fe7ba7 100644
+--- a/tools/power/x86/turbostat/turbostat.8
++++ b/tools/power/x86/turbostat/turbostat.8
+@@ -35,9 +35,9 @@ The \fB-c MSR#\fP option includes the delta of the specified 32-bit MSR counter.
+ .PP
+ The \fB-C MSR#\fP option includes the delta of the specified 64-bit MSR counter.
+ .PP
+-The \fB-m MSR#\fP option includes the the specified 32-bit MSR value.
++The \fB-m MSR#\fP option includes the specified 32-bit MSR value.
+ .PP
+-The \fB-M MSR#\fP option includes the the specified 64-bit MSR value.
++The \fB-M MSR#\fP option includes the specified 64-bit MSR value.
+ .PP
+ The \fB-i interval_sec\fP option prints statistics every \fiinterval_sec\fP seconds.
+ The default is 5 seconds.
+diff --git a/tools/thermal/tmon/pid.c b/tools/thermal/tmon/pid.c
+index fd7e9e9d6f4a..1aa7faa0e0e0 100644
+--- a/tools/thermal/tmon/pid.c
++++ b/tools/thermal/tmon/pid.c
+@@ -38,7 +38,7 @@
+ 
+ /**************************************************************************
+  * PID (Proportional-Integral-Derivative) controller is commonly used in
+- * linear control system, consider the the process.
++ * linear control system, consider the process.
+  * G(s) = U(s)/E(s)
+  * kp = proportional gain
+  * ki = integral gain
 -- 
-1.7.1.1
+1.8.3.2
 
