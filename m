@@ -1,37 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933904Ab3LIQLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:11:21 -0500
-Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:15882 "EHLO
-	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932706Ab3LIQLU (ORCPT
+	id S933924Ab3LIQMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:12:06 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:41379 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933816Ab3LIQMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:11:20 -0500
-Date: Mon, 9 Dec 2013 16:11:19 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "ethan.zhao" <ethan.kernel@gmail.com>
-cc: alokk@calsoftinc.com, shobhit@calsoftinc.com, shai@scalex86.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/slab.c: check pointer slabp before using it in
- alloc_slabmgmt()
-In-Reply-To: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com>
-Message-ID: <00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com>
-References: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 9 Dec 2013 11:12:02 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.131
+In-Reply-To: <1922780.plAOmhqzpW@amdc1227>
+References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org> <1922780.plAOmhqzpW@amdc1227>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Tue, 10 Dec 2013 00:11:40 +0800
+X-Google-Sender-Auth: dnEASEJGQ1uuLkpupWXGFTcgHkE
+Message-ID: <CAGS+omDq95paoHsf5-i2gbRoSGvqn36zNO93KHGi2FGhfGMsrw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: EXYNOS: pmu: Constify data tables
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: kgene.kim@samsung.com, Heiko Stuebner <heiko@sntech.de>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Doug Andersen <dianders@chromium.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Dec 2013, ethan.zhao wrote:
+Hi Tomasz,
 
-> Move the NULL check of slabp to the right place before refer its memeber in
-> function alloc_slabmgmt().
+Thank you for the reviews.
 
-I am having trouble to find the code you are modifying. Which kernel
-release is this? The code you are referring to has been rewritten in the
-meantime or this is some other code basis.
+On Dec 9, 2013 5:15 AM, "Tomasz Figa" <t.figa@samsung.com> wrote:
+>
+> Hi Daniel,
+>
+> On Thursday 21 of November 2013 02:21:24 Daniel Kurtz wrote:
+> > These tables are all immutable, make them const to save 4416 bytes of RAM.
+> >
+> > size arch/arm/mach-exynos/pmu.o
+> >    text          data     bss
+> >     848          4420       4         // before
+> >    5264             4       4         // after
+>
+> I'm not sure where the mentioned saving of RAM is. Moving data between
+> sections is not supposed to make it use less memory, I believe.
 
+You are correct.  This was my misunderstanding from doing too much
+work with microcontrollers, where .text sections are accessed in place
+from FLASH for code and const data, but .data memory is copied from a
+FLASH section to a second RAM section at init for access at runtime.
+Most modern Linux systems copy/decompress their code and data sections
+from external storage to RAM anyway, so there is no actual memory
+savings (except potentially the compiler may be able to optimize a bit
+more with the const hint).
+
+>
+> Anyway, it's a good practice to mark constant data as const, to disallow
+> changing them at runtime by mistake, so the patch is fine. Except some
+> issues I commented on inline.
+
+Were there supposed to be inline comments?  I don't see any.
+
+Best Regards,
+-djk
+
+>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>
+> Best regards,
+> Tomasz
+>
