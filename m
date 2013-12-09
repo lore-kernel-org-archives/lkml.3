@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934033Ab3LIQR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:17:28 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:43651 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933838Ab3LIQRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:17:24 -0500
+	id S934048Ab3LIQRm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:17:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932923Ab3LIQRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:17:39 -0500
+Message-ID: <52A5ECF4.6030301@redhat.com>
+Date: Mon, 09 Dec 2013 17:16:52 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1386284438-11099-2-git-send-email-tim.kryger@linaro.org>
-References: <1386284438-11099-1-git-send-email-tim.kryger@linaro.org>
-	<1386284438-11099-2-git-send-email-tim.kryger@linaro.org>
-Date: Mon, 9 Dec 2013 08:17:21 -0800
-Message-ID: <CAEPRUYr3u6z+6CKf+u+hEMo+D4Nz=P43zKJGBJy=ZDVyNBBt4A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: bcm_defconfig: CONFIG_OABI_COMPAT default off
-From: Christian Daudt <bcm@fixthebug.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        ARM Linux List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches List <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-sunxi@googlegroups.com, Chen-Yu Tsai <wens@csie.org>
+CC: Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 04/10] net: stmmac: sunxi platfrom extensions
+ for GMAC in Allwinner A20 SoC's
+References: <1386350983-13281-1-git-send-email-wens@csie.org> <1386350983-13281-5-git-send-email-wens@csie.org> <52A5A52C.50605@st.com>
+In-Reply-To: <52A5A52C.50605@st.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 3:00 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> Now that CONFIG_OABI_COMPAT is off by default, remove the explicit
-> disabling of this feature.
->
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  arch/arm/configs/bcm_defconfig | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-> index 287ac1d..574e046 100644
-> --- a/arch/arm/configs/bcm_defconfig
-> +++ b/arch/arm/configs/bcm_defconfig
-> @@ -29,7 +29,6 @@ CONFIG_ARCH_BCM_MOBILE=y
->  CONFIG_ARM_THUMBEE=y
->  CONFIG_PREEMPT=y
->  CONFIG_AEABI=y
-> -# CONFIG_OABI_COMPAT is not set
->  # CONFIG_COMPACTION is not set
->  CONFIG_ZBOOT_ROM_TEXT=0x0
->  CONFIG_ZBOOT_ROM_BSS=0x0
-> --
-> 1.8.0.1
->
-Applied to armsoc/for-3.14/soc
+Hi,
 
- thanks,
-   csd
+On 12/09/2013 12:10 PM, srinivas kandagatla wrote:
+> Hi Chen,
+> Good to know that Allwinner uses gmac.
+>
+> On ST SoC, we have very similar requirements, before we merge any of
+> these changes I think we need to come up with common way to solve both
+> Allwinner and ST SOCs use cases.
+>
+> I have already posted few patches on to net-dev
+> http://lkml.org/lkml/2013/11/12/243 to add Glue driver on top of stmmac
+> driver.
+>
+>
+> There are few reasons for the way I have done it.
+>
+> 1> I did not want to modify gmac driver in any sense to when a new SOC
+> support is added.
+> 2> As the SOC specific glue logic sits on top of standard GMAC IP, it
+> makes sense to represent it proper harware hierarchy.
+
+On top often is not the correct term / how things are done in practice.
+
+Most of the time the glue are modifications to the ip block, iow in
+hardware they are not nested / hierarchical at all. We've had similar
+constructs for ahci platform drivers and there we are actively trying to
+move away from the whole nested platform devices as that has various
+issues:
+
+1) It is wrong / does not reflect reality
+2) It breaks deferred probing which is often used on SOCs
+
+I actually think Wens' approach using a SOC specific init function
+in platform data is sound, and this is also used a lot else where.
+
+As for using the nested approach elsewhere, I only know about AHCI
+platform driver doing that, and there we are actively trying to move
+away from it.
+
+
+Now reading this has also made me take a closer look at wens' patch
+for this. Wens, I see that you directly modify registers in the ccm
+that is a big no-no instead you should add a helper function to
+sunxi-clk.c and use that, see ie:
+https://bitbucket.org/emiliolopez/linux/commits/2b95847d9aa4aa13317dd7358ffcbd951dcb5eff?at=master
+
+
+Giuseppe, I get the feeling the 0x148 registers st-gmac is using is
+the same story, but I could be wrong. One important reason why accessing
+regs like this directly is a big no no is because it is impossible to
+do proper locking between multiple users, so 2 users doing read / modify / write
+could end up racing. So accesses to such registers should always happen
+through a single driver.
+
+
+Regards,
+
+Hans
