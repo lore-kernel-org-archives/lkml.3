@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760875Ab3LIIdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:33:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48254 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215Ab3LIIdc (ORCPT
+	id S1760860Ab3LIIfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:35:48 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:55761 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760057Ab3LIIfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:33:32 -0500
-Date: Sun, 8 Dec 2013 22:46:54 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
-Message-ID: <20131209064654.GA20485@kroah.com>
-References: <1384589723.7840.1.camel@phoenix>
- <1386125959.1974.309@driftwood>
- <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+	Mon, 9 Dec 2013 03:35:46 -0500
+X-Sasl-enc: rbQqCZWVnjDqfMgGv3xnDCOgz95cofZ6XC820pkTl+pI 1386578144
+Date: Mon, 9 Dec 2013 00:21:52 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the
+ driver-core.current tree
+Message-ID: <20131209082152.GA26809@kroah.com>
+References: <20131209144712.57a50d7ed468ae8a4d57a0bf@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+In-Reply-To: <20131209144712.57a50d7ed468ae8a4d57a0bf@canb.auug.org.au>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
-> 2013/12/4 Rob Landley <rob@landley.net>:
-> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
-> >>
-> >> The deleted variable is always 1 in current code.
-> >> Initialize deleted variable to be 0, so delete_path() will be called only
-> >> when
-> >> necessary.
-> >>
-> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> >
-> >
-> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
-> > nobody's objected to this, you might want to forward it to
-> > trivial@kernel.org.
-> >
-> > That said, you could describe what it _does_ a little more?
+On Mon, Dec 09, 2013 at 02:47:12PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> I was expecting Greg to pick up this patch.
+> Today's linux-next merge of the driver-core tree got a conflict in
+> fs/sysfs/file.c between commit a8b14744429f ("sysfs: give different
+> locking key to regular and bin files") from the driver-core.current tree
+> and commit 414985ae23c0 ("sysfs, kernfs: move file core code to
+> fs/kernfs/file.c") (among others) from the driver-core tree.
 > 
-> I thought the description is pretty clear.
-> What the patch does is changing the init value of deleted variable to 0.
-> The intention of this change is to avoid unnecessary delete_path() call.
+> I just dropped the driver-core.current tree commit as I don't see what
+> needs to be done after the other changes in the driver-core tree.
 
-I agree the logic is a bit odd here, but are you seeing an "unnecessary"
-delete_path() call happening?  The code has always been like this from
-what I can tell...
+Tejun said he would provide a merge fixup as we knew this was going to
+be a problem :)
 
 thanks,
 
