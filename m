@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760416Ab3LIGSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:18:16 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55328 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754078Ab3LIGSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:18:15 -0500
-Message-ID: <1386569840.5159.40.camel@pasglop>
-Subject: Re: [PATCH][RESEND] powerpc: remove unused REDBOOT Kconfig parameter
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: paulus@samba.org, galak@kernel.crashing.org, vitb@kernel.crashing.org,
-        marcelo@kvack.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 09 Dec 2013 17:17:20 +1100
-In-Reply-To: <1386566860-19785-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1383554336-3829-1-git-send-email-michael.opdenacker@free-electrons.com>
-	 <1386566860-19785-1-git-send-email-michael.opdenacker@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760607Ab3LIGUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:20:19 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57542 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760519Ab3LIGUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 01:20:15 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-29-52a5611cff26
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 01/17] tracing/uprobes: Fix documentation of uprobe registration syntax
+Date: Mon,  9 Dec 2013 15:19:49 +0900
+Message-Id: <1386570005-3368-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-09 at 06:27 +0100, Michael Opdenacker wrote:
-> This removes the REDBOOT Kconfig parameter,
-> which was no longer used anywhere in the source code
-> and Makefiles.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-It hasn't been lost :-) It's still in patchwork and it's even in my
-queue.
+The uprobe syntax requires an offset after a file path not a symbol.
 
-Cheers,
-Ben.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ Documentation/trace/uprobetracer.txt | 10 +++++-----
+ kernel/trace/trace_uprobe.c          |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  arch/powerpc/Kconfig                | 3 ---
->  arch/powerpc/platforms/83xx/Kconfig | 1 -
->  arch/powerpc/platforms/8xx/Kconfig  | 1 -
->  3 files changed, 5 deletions(-)
-> 
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index b44b52c0a8f0..70dc283050b5 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -209,9 +209,6 @@ config DEFAULT_UIMAGE
->  	  Used to allow a board to specify it wants a uImage built by default
->  	default n
->  
-> -config REDBOOT
-> -	bool
-> -
->  config ARCH_HIBERNATION_POSSIBLE
->  	bool
->  	default y
-> diff --git a/arch/powerpc/platforms/83xx/Kconfig b/arch/powerpc/platforms/83xx/Kconfig
-> index 670a033264c0..2bdc8c862c46 100644
-> --- a/arch/powerpc/platforms/83xx/Kconfig
-> +++ b/arch/powerpc/platforms/83xx/Kconfig
-> @@ -99,7 +99,6 @@ config SBC834x
->  config ASP834x
->  	bool "Analogue & Micro ASP 834x"
->  	select PPC_MPC834x
-> -	select REDBOOT
->  	help
->  	  This enables support for the Analogue & Micro ASP 83xx
->  	  board.
-> diff --git a/arch/powerpc/platforms/8xx/Kconfig b/arch/powerpc/platforms/8xx/Kconfig
-> index 8dec3c0911ad..bd6f1a1cf922 100644
-> --- a/arch/powerpc/platforms/8xx/Kconfig
-> +++ b/arch/powerpc/platforms/8xx/Kconfig
-> @@ -45,7 +45,6 @@ config PPC_EP88XC
->  config PPC_ADDER875
->  	bool "Analogue & Micro Adder 875"
->  	select CPM1
-> -	select REDBOOT
->  	help
->  	  This enables support for the Analogue & Micro Adder 875
->  	  board.
-
+diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+index d9c3e682312c..8f1a8b8956fc 100644
+--- a/Documentation/trace/uprobetracer.txt
++++ b/Documentation/trace/uprobetracer.txt
+@@ -19,15 +19,15 @@ user to calculate the offset of the probepoint in the object.
+ 
+ Synopsis of uprobe_tracer
+ -------------------------
+-  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a uprobe
+-  r[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a return uprobe (uretprobe)
+-  -:[GRP/]EVENT                                  : Clear uprobe or uretprobe event
++  p[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS] : Set a uprobe
++  r[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS] : Set a return uprobe (uretprobe)
++  -:[GRP/]EVENT                           : Clear uprobe or uretprobe event
+ 
+   GRP           : Group name. If omitted, "uprobes" is the default value.
+   EVENT         : Event name. If omitted, the event name is generated based
+-                  on SYMBOL+offs.
++                  on PATH+OFFSET.
+   PATH          : Path to an executable or a library.
+-  SYMBOL[+offs] : Symbol+offset where the probe is inserted.
++  OFFSET        : Offset where the probe is inserted.
+ 
+   FETCHARGS     : Arguments. Each probe can have up to 128 args.
+    %REG         : Fetch register REG
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index b6dcc42ef7f5..c77b92d61551 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -211,7 +211,7 @@ end:
+ 
+ /*
+  * Argument syntax:
+- *  - Add uprobe: p|r[:[GRP/]EVENT] PATH:SYMBOL [FETCHARGS]
++ *  - Add uprobe: p|r[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS]
+  *
+  *  - Remove uprobe: -:[GRP/]EVENT
+  */
+-- 
+1.7.11.7
 
