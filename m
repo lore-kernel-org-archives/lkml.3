@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab3LJEHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 23:07:09 -0500
-Received: from ozlabs.org ([203.10.76.45]:56064 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763Ab3LJEHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 23:07:07 -0500
-Date: Tue, 10 Dec 2013 15:06:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: linux-next: build failure after merge of the pinctrl tree
-Message-Id: <20131210150659.4bb4ed87c3e30cac03500a56@canb.auug.org.au>
-In-Reply-To: <20131210140218.645eaf6983481bafe5833eef@canb.auug.org.au>
-References: <20131210140218.645eaf6983481bafe5833eef@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Dec_2013_15_06_59_+1100_WXNZN3jEeHVUfqkU"
+	id S1752207Ab3LJEIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 23:08:36 -0500
+Received: from [72.2.119.174] ([72.2.119.174]:51692 "EHLO sv.456.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750858Ab3LJEIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 23:08:32 -0500
+X-Greylist: delayed 18072 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 23:08:32 EST
+Message-ID: <20131209230604.85864jnvaqx7ft98@72.2.119.174>
+Date: Mon, 09 Dec 2013 23:06:04 +0000
+From: Fernando Gonzalez <gonzalezfernan918@gmail.com>
+Reply-to: gfernando814@gmail.com
+To: gonzalezfernan918@gmail.com
+Subject: Ref: TM/ASSO/P01/6834/03/013
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - sv.456.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - gmail.com
+X-Get-Message-Sender-Via: sv.456.com: authenticated_id: info@komner.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Dec_2013_15_06_59_+1100_WXNZN3jEeHVUfqkU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ref: TM/ASSO/P01/6834/03/013
 
-Hi Linus,
+Guten Tag,
 
-On Tue, 10 Dec 2013 14:02:18 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the pinctrl tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> sound/soc/fsl/eukrea-tlv320.c:28:28: fatal error: asm/mach-types.h: No su=
-ch file or directory
->  #include <asm/mach-types.h>
->                             ^
->=20
-> Probably caused by commit 6bca8471566c ("pinctrl: select dependency on OF
-> for MSM driver").  the build of eukrea-tlv320.c depends on CONFIG_OF
-> which is not normally set for as x86_64 build, but the above commit
-> caused it to be selected (I think).
->=20
-> I have used the pinctrl tree from next-20131206 again.
+Date: 09-12-2013
 
-It turns out that this is build failure is actually caused by a commit in
-the sound-asoc tree (436aa86f0414 "ASoC: eukrea-tlv320: Add DT support"),
-but was exposed by the pinctrl tree commit.
+Als erstes, möchte ich um Ihr Vertrauen in diese Transaktion bitten;  
+dies ist streng vertraulich. Ich weiß dass, Transaktionen dieser art,  
+jeden ängstlich und beunruhigt machen können, aber ich versichere  
+Ihnen, dass am Ende alles gut laufen wird. Es wird Sie sicherlich  
+überraschen dieses Schreiben  zu erhalten, da wir uns vorher nie  
+begegneten. Mein Name ist Mr. Fernando Gonzalez, Finanz Beamter von  
+dem verstorbenen Mr. Alexander Holzammer.
 
-So I am not sure if the pinctrl tree needs fixing (I think it did select
-CONFIG_OF where it would normally not be).
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+Meine Absicht Sie zu kontaktieren, besteht darin, Ihre Mitwirkung das  
+eingezahlte Geld des Verstorbenen Kunden von zu sichern, um zu  
+verhindern dass es beschlagnahmt oder verzollt wird vom Staat. Wobei  
+dieses Geld im Wert von 32.600.000, 00 Euros plus zinsen von dem  
+verstorbenen eingezahlt wurde, bevor er starb. Er starb mit seiner  
+einzige tochter in Automobil unfall. Da er nicht wusste dass ihn  
+dieser unglueck passieren wuerde, konnte er so sein gut verdientes  
+geld nicht weiter vererben.
 
---Signature=_Tue__10_Dec_2013_15_06_59_+1100_WXNZN3jEeHVUfqkU
-Content-Type: application/pgp-signature
+Die Bank hat mich den entgultige Notiz gegeben um einen Nachfolger aus  
+der Verwandtschaft zu kontaktieren, bevor das Geld zum Eigentum des  
+Staates wird. Trotz aller  Mühe jemanden zu finden der mit dem  
+Verstorbenen in Verwandtschaft steht, war die Suche erfolglos. Aus  
+diesem Grund habe ich sie kontaktiert. Eigentlich bitte ich Sie um  
+Ihre Einwilligung, Sie der Bank zu repräsentieren als Nachfolger  
+Verwandter des Geldes meiner verstorbenen Kunden, da Sie den gleichen  
+Nachnamen haben und somit der Betrag an Sie ausgezahlt werden kann.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Alle legalen Dokumente, die Sie benötigen, um Anspruch auf das Geld  
+als Verwandte Person des Verstorbenen zu erlangen, werde ich ihnen auf  
+legale Art und Weise verschaffen. Alles was ich brauche ist eine  
+sichere Kooporation, um diese Transaktion zu ermöglichen. Ich möchte  
+vorschlagen, dass 5% von dem Geld an Hilfsorganisationen verschenkt  
+werden, andere 5% für umkosten während die übrigen 90 % gleichmäßig an  
+uns beide verteilt werden. Ich möchte ihnen vergewissern, dass dieser  
+Auftrag völlig Risikofrei ist. Ich werde meine Position als seiner  
+Finanz Beamter des Verstobenen nutzen, um diese Transaktion  
+erfolgreich durchzuführen.
 
-iQIcBAEBCAAGBQJSppNnAAoJEMDTa8Ir7ZwV3PYP/2BO9/2Tvu9AAV3zpPTv1HN1
-EUO8tbbqEcwsEFSSY64/nPUGTOcyrN781203Os3zu/Dk8MkOE6wHxDDP5+0ui4Gq
-1cre8xfv6dqhOQBopheBwyA5OWABCZ17rTZm54hXbZ4LyB/0E1AGJsYdVmzo59Kf
-u9D9mtW7CQVO/cf9CoLYEjLv30B9HLUBQcber4f8ZaAONbIJMaPDrJQdOvlz8Wjd
-Mmfoj5QDRDN7eU8TGfvTYr0f3iaKD8YSuDVRykyZcNmTGWITJdNL+y/IFyBbKBJY
-uiCgWzWYNT8HRBPPiPMPS0E8uWVY76WJYWPqklm5FUlBThal4fBMdy2SCxMO94d8
-JCiNIahAg65h6/7JzIC8fZfUXVLsLnWz7uE5jl8kz6suUw/nA5phS4NCo7gvlHJ/
-B0exh6ak7O0UBYA6n6Yxwh1Yk+UUAOonP5jYKrmHnShTp6ddXWEcBMpo4mOhVCTL
-zfZcy/Ny9QXq9X63Wg5atljmFGnhZxoC93u9Bb05je18K7MEe3qi2gXcMF355icJ
-x5nA5OkwSTsm3rgGLOIfvxAMA0zFG+5FQ0HGuWVUbq7uKCnzvT4QO+rRn30XHEyL
-w9+8y6q32W0WZ/QYJcKPpkhodtV6nuETpmyquDMjTOExdvsRySMs5SuyZ5kvcoAa
-AtK4MuAIA+Qeufc9gyUM
-=mwQG
------END PGP SIGNATURE-----
+Kontaktieren sie mich bitte unter meiner Telefonnumer: 0034910822760  
+oder fax: 0034 911311734 oder schicken Sie mir einfach eine E-mail an  
+gonzalezfernan918@gmail.com  Die geplante Transaktion wird unter  
+autorisierter Anordnung durchgeführt, was zu ihrem Schutz beiträgt.  
+Wenn dieses Angebot nicht Ihrer Moral entspricht, dann bitte ich Sie  
+um Entschuldigung und darum dieses Schreiben zu vergessen. Falls sie  
+Jedoch wünschen mit mir dieses Ziel zu erreichen, dann bitte ich Sie  
+mich zu kontaktieren, für weitere Details.
 
---Signature=_Tue__10_Dec_2013_15_06_59_+1100_WXNZN3jEeHVUfqkU--
+Mit Freundlichen Grüßen,
+Mr. Fernando Gonzalez.
+
+
