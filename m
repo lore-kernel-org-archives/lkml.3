@@ -1,284 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761343Ab3LIK6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:58:04 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36137 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab3LIKxD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:53:03 -0500
-Subject: [PATCH -tip v5 01/18] kprobes: Prohibit probing on .entry.text code
-To: Ingo Molnar <mingo@kernel.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 09 Dec 2013 10:47:20 +0000
-Message-ID: <20131209104720.13397.60897.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal>
-References: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal>
-User-Agent: StGit/0.16
+	id S933179Ab3LIK7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:59:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760978Ab3LIK7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 05:59:19 -0500
+Date: Mon, 9 Dec 2013 13:02:51 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH net 2/2] macvtap: signal truncated packets
+Message-ID: <20131209110251.GE15055@redhat.com>
+References: <1386584717-5776-1-git-send-email-jasowang@redhat.com>
+ <1386584717-5776-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386584717-5776-2-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.entry.text is a code area which is used for interrupt/syscall
-entries, and there are many sensitive codes.
-Thus, it is better to prohibit probing on all of such codes
-instead of a part of that.
-Since some symbols are already registered on kprobe blacklist,
-this also removes them from the blacklist.
+On Mon, Dec 09, 2013 at 06:25:17PM +0800, Jason Wang wrote:
+> macvtap_put_user() never return a value grater than iov length, this in fact
+> bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
+> returning the size of packet plus the possible vlan header to let the truncated
+> checking work.
+> 
+> Cc: Vlad Yasevich <vyasevich@gmail.com>
+> Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-Changes from previous:
- - Introduce arch_within_kprobe_blacklist() which checks
-   the address is within the .kprobes.text (generic,x86) or
-   .entry.text (x86), for fixing build issue on !x86.
+Same comments as for tun really, but here it's also
+kind of ugly to call a variable copied if we don't copy.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/entry_32.S     |   33 ---------------------------------
- arch/x86/kernel/entry_64.S     |   20 --------------------
- arch/x86/kernel/kprobes/core.c |    8 ++++++++
- include/linux/kprobes.h        |    1 +
- kernel/kprobes.c               |   13 ++++++++-----
- 5 files changed, 17 insertions(+), 58 deletions(-)
+Also, maybe we should name the variable "copied" for tun,
+this would make the code more similar.
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 51e2988..02c2fef 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -315,10 +315,6 @@ ENTRY(ret_from_kernel_thread)
- ENDPROC(ret_from_kernel_thread)
- 
- /*
-- * Interrupt exit functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--/*
-  * Return to user mode is not as complex as all this looks,
-  * but we want the default path for a system call return to
-  * go as quickly as possible which is why some of this is
-@@ -372,10 +368,6 @@ need_resched:
- END(resume_kernel)
- #endif
- 	CFI_ENDPROC
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- /* SYSENTER_RETURN points to after the "sysenter" instruction in
-    the vsyscall page.  See vsyscall-sysentry.S, which defines the symbol.  */
-@@ -495,10 +487,6 @@ sysexit_audit:
- 	PTGS_TO_GS_EX
- ENDPROC(ia32_sysenter_target)
- 
--/*
-- * syscall stub including irq exit should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- 	# system call handler stub
- ENTRY(system_call)
- 	RING0_INT_FRAME			# can't unwind into user space anyway
-@@ -691,10 +679,6 @@ syscall_badsys:
- 	jmp resume_userspace
- END(syscall_badsys)
- 	CFI_ENDPROC
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- .macro FIXUP_ESPFIX_STACK
- /*
-@@ -781,10 +765,6 @@ common_interrupt:
- ENDPROC(common_interrupt)
- 	CFI_ENDPROC
- 
--/*
-- *  Irq entries should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- #define BUILD_INTERRUPT3(name, nr, fn)	\
- ENTRY(name)				\
- 	RING0_INT_FRAME;		\
-@@ -961,10 +941,6 @@ ENTRY(spurious_interrupt_bug)
- 	jmp error_code
- 	CFI_ENDPROC
- END(spurious_interrupt_bug)
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- #ifdef CONFIG_XEN
- /* Xen doesn't set %esp to be precisely what the normal sysenter
-@@ -1239,11 +1215,6 @@ return_to_handler:
- 	jmp *%ecx
- #endif
- 
--/*
-- * Some functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--
- #ifdef CONFIG_TRACING
- ENTRY(trace_page_fault)
- 	RING0_EC_FRAME
-@@ -1453,7 +1424,3 @@ ENTRY(async_page_fault)
- END(async_page_fault)
- #endif
- 
--/*
-- * End of kprobes section
-- */
--	.popsection
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index e21b078..c48f8f9 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -487,8 +487,6 @@ ENDPROC(native_usergs_sysret64)
- 	TRACE_IRQS_OFF
- 	.endm
- 
--/* save complete stack frame */
--	.pushsection .kprobes.text, "ax"
- ENTRY(save_paranoid)
- 	XCPT_FRAME 1 RDI+8
- 	cld
-@@ -517,7 +515,6 @@ ENTRY(save_paranoid)
- 1:	ret
- 	CFI_ENDPROC
- END(save_paranoid)
--	.popsection
- 
- /*
-  * A newly forked process directly context switches into this address.
-@@ -975,10 +972,6 @@ END(interrupt)
- 	call \func
- 	.endm
- 
--/*
-- * Interrupt entry/exit should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- 	/*
- 	 * The interrupt stubs push (~vector+0x80) onto the stack and
- 	 * then jump to common_interrupt.
-@@ -1113,10 +1106,6 @@ ENTRY(retint_kernel)
- 
- 	CFI_ENDPROC
- END(common_interrupt)
--/*
-- * End of kprobes section
-- */
--       .popsection
- 
- /*
-  * APIC interrupts.
-@@ -1477,11 +1466,6 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
- 	hyperv_callback_vector hyperv_vector_handler
- #endif /* CONFIG_HYPERV */
- 
--/*
-- * Some functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
- paranoiderrorentry stack_segment do_stack_segment
-@@ -1898,7 +1882,3 @@ ENTRY(ignore_sysret)
- 	CFI_ENDPROC
- END(ignore_sysret)
- 
--/*
-- * End of kprobes section
-- */
--	.popsection
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 79a3f96..c01e70f 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -1066,6 +1066,14 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	return 0;
- }
- 
-+bool arch_within_kprobe_blacklist(unsigned long addr)
-+{
-+	return  (addr >= (unsigned long)__kprobes_text_start &&
-+		 addr < (unsigned long)__kprobes_text_end) ||
-+		(addr >= (unsigned long)__entry_text_start &&
-+		 addr < (unsigned long)__entry_text_end);
-+}
-+
- int __init arch_init_kprobes(void)
- {
- 	return 0;
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index 925eaf2..cdf9251 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -265,6 +265,7 @@ extern void arch_disarm_kprobe(struct kprobe *p);
- extern int arch_init_kprobes(void);
- extern void show_registers(struct pt_regs *regs);
- extern void kprobes_inc_nmissed_count(struct kprobe *p);
-+extern bool arch_within_kprobe_blacklist(unsigned long addr);
- 
- struct kprobe_insn_cache {
- 	struct mutex mutex;
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index ceeadfc..5b5ac76 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -96,9 +96,6 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
- static struct kprobe_blackpoint kprobe_blacklist[] = {
- 	{"preempt_schedule",},
- 	{"native_get_debugreg",},
--	{"irq_entries_start",},
--	{"common_interrupt",},
--	{"mcount",},	/* mcount can be called from everywhere */
- 	{NULL}    /* Terminator */
- };
- 
-@@ -1324,12 +1321,18 @@ out:
- 	return ret;
- }
- 
-+bool __weak arch_within_kprobe_blacklist(unsigned long addr)
-+{
-+	/* The __kprobes marked functions and entry code must not be probed */
-+	return addr >= (unsigned long)__kprobes_text_start &&
-+	       addr < (unsigned long)__kprobes_text_end;
-+}
-+
- static int __kprobes in_kprobes_functions(unsigned long addr)
- {
- 	struct kprobe_blackpoint *kb;
- 
--	if (addr >= (unsigned long)__kprobes_text_start &&
--	    addr < (unsigned long)__kprobes_text_end)
-+	if (arch_within_kprobe_blacklist(addr))
- 		return -EINVAL;
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
+> ---
+> The patch is needed for stable.
+> ---
+>  drivers/net/macvtap.c | 27 ++++++++++++++-------------
+>  1 file changed, 14 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+> index 957cc5c..7544a0c 100644
+> --- a/drivers/net/macvtap.c
+> +++ b/drivers/net/macvtap.c
+> @@ -767,10 +767,14 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+>  				const struct sk_buff *skb,
+>  				const struct iovec *iv, int len)
+>  {
+> -	int ret;
+> +	int ret, off;
+>  	int vnet_hdr_len = 0;
+>  	int vlan_offset = 0;
+>  	int copied;
+> +	struct {
+> +		__be16 h_vlan_proto;
+> +		__be16 h_vlan_TCI;
+> +	} veth;
+>  
+>  	if (q->flags & IFF_VNET_HDR) {
+>  		struct virtio_net_hdr vnet_hdr;
+> @@ -785,16 +789,13 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+>  		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+>  			return -EFAULT;
+>  	}
+> -	copied = vnet_hdr_len;
+> +	off = copied = vnet_hdr_len;
+>  
+>  	if (!vlan_tx_tag_present(skb))
+>  		len = min_t(int, skb->len, len);
+>  	else {
+>  		int copy;
+> -		struct {
+> -			__be16 h_vlan_proto;
+> -			__be16 h_vlan_TCI;
+> -		} veth;
+> +
+>  		veth.h_vlan_proto = skb->vlan_proto;
+>  		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
+>  
+> @@ -802,22 +803,22 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+>  		len = min_t(int, skb->len + VLAN_HLEN, len);
+>  
+>  		copy = min_t(int, vlan_offset, len);
+> -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+> +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, off, copy);
+>  		len -= copy;
+> -		copied += copy;
+> +		off += copy;
+>  		if (ret || !len)
+>  			goto done;
+>  
+>  		copy = min_t(int, sizeof(veth), len);
+> -		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
+> +		ret = memcpy_toiovecend(iv, (void *)&veth, off, copy);
+>  		len -= copy;
+> -		copied += copy;
+> +		off += copy;
+>  		if (ret || !len)
+>  			goto done;
+>  	}
+>  
+> -	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+> -	copied += len;
+> +	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, off, len);
+> +	copied += skb->len + (vlan_offset ? sizeof(veth) : 0);
+>  
+>  done:
+>  	return ret ? ret : copied;
+> @@ -875,7 +876,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+>  	}
+>  
+>  	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+> -	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
+> +	ret = min_t(ssize_t, ret, len);
+>  	if (ret > 0)
+>  		iocb->ki_pos = ret;
+>  out:
 
 
+
+> -- 
+> 1.8.3.2
