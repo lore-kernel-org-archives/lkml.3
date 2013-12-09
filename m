@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab3LIV52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:57:28 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39091 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761685Ab3LIVwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:24 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v3 04/23] mm/memblock: remove unnecessary inclusions of bootmem.h
-Date: Mon, 9 Dec 2013 16:50:37 -0500
-Message-ID: <1386625856-12942-5-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+	id S933226Ab3LIV5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:57:25 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:35564 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761687Ab3LIVwZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:52:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <52A63AD4.2030101@zytor.com>
+References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
+	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
+	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
+	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>
+	<CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
+	<52A63AD4.2030101@zytor.com>
+Date: Mon, 9 Dec 2013 13:52:25 -0800
+Message-ID: <CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
+Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+On Mon, Dec 9, 2013 at 1:49 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>>> PT_LOAD being non-zero causing randomization to be turned off seems like
+>>> quite unexpected behavior to me, with a great potential to cause a lot of
+>>> confusion.
+>>
+>> There should be no difference between dynamic executable and PIE
+>> with non-zero vaddr when choosing where to load them.
+>>
+>
+> Why is that?  It would seem to be a big difference between a relocatable
+> binary (PIE) and one with a load address fixed at link time.
+>
 
-Clean-up to remove depedency with bootmem headers.
+PIE with non-zero vaddr should be loaded at non-zero
+vaddr.  Otherwise, PIE may not work as expected.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- drivers/char/mem.c  |    1 -
- mm/memory_hotplug.c |    1 -
- 2 files changed, 2 deletions(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index f895a8c..92c5937 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -22,7 +22,6 @@
- #include <linux/device.h>
- #include <linux/highmem.h>
- #include <linux/backing-dev.h>
--#include <linux/bootmem.h>
- #include <linux/splice.h>
- #include <linux/pfn.h>
- #include <linux/export.h>
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 489f235..cf1736d 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -9,7 +9,6 @@
- #include <linux/swap.h>
- #include <linux/interrupt.h>
- #include <linux/pagemap.h>
--#include <linux/bootmem.h>
- #include <linux/compiler.h>
- #include <linux/export.h>
- #include <linux/pagevec.h>
 -- 
-1.7.9.5
-
+H.J.
