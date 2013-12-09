@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760973Ab3LIJIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:08:06 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:63850 "EHLO
+	id S932718Ab3LIJJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:09:52 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49911 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760750Ab3LIJIA (ORCPT
+	with ESMTP id S1760928Ab3LIJIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:08:00 -0500
-X-AuditID: 9c93017d-b7b46ae000000e86-b1-52a5886f2fd9
+	Mon, 9 Dec 2013 04:08:06 -0500
+X-AuditID: 9c93017d-b7b46ae000000e86-bb-52a5886fff27
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
@@ -18,43 +18,43 @@ Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
         Vlastimil Babka <vbabka@suse.cz>,
         Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 0/7] correct and clean-up migration related stuff
-Date: Mon,  9 Dec 2013 18:10:41 +0900
-Message-Id: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 5/7] mm/compaction: respect ignore_skip_hint in update_pageblock_skip
+Date: Mon,  9 Dec 2013 18:10:46 +0900
+Message-Id: <1386580248-22431-6-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the patchset for correcting and cleaning-up migration
-related stuff. These are random correction and clean-up, so
-please see each patches ;)
+update_pageblock_skip() only fits to compaction which tries to isolate by
+pageblock unit. If isolate_migratepages_range() is called by CMA, it try to
+isolate regardless of pageblock unit and it don't reference
+get_pageblock_skip() by ignore_skip_hint. We should also respect it on
+update_pageblock_skip() to prevent from setting the wrong information.
 
-Thanks.
+Cc: <stable@vger.kernel.org> # 3.7+
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Naoya Horiguchi (1):
-  mm/migrate: add comment about permanent failure path
-
-Joonsoo Kim (6):
-  mm/migrate: correct failure handling if !hugepage_migration_support()
-  mm/mempolicy: correct putback method for isolate pages if failed
-  mm/migrate: remove putback_lru_pages, fix comment on
-    putback_movable_pages
-  mm/compaction: respect ignore_skip_hint in update_pageblock_skip
-  mm/migrate: remove unused function, fail_migrate_page()
-  mm/migrate: remove result argument on page allocation function for
-    migration
-
- include/linux/migrate.h        |    8 +----
- include/linux/page-isolation.h |    3 +-
- mm/compaction.c                |    7 ++--
- mm/memory-failure.c            |   10 ++++--
- mm/mempolicy.c                 |    8 ++---
- mm/migrate.c                   |   74 +++++++++++++---------------------------
- mm/page_isolation.c            |    3 +-
- 7 files changed, 44 insertions(+), 69 deletions(-)
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 805165b..f58bcd0 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -134,6 +134,10 @@ static void update_pageblock_skip(struct compact_control *cc,
+ 			bool migrate_scanner)
+ {
+ 	struct zone *zone = cc->zone;
++
++	if (cc->ignore_skip_hint)
++		return;
++
+ 	if (!page)
+ 		return;
+ 
 -- 
 1.7.9.5
 
