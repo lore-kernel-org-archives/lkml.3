@@ -1,221 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3LIIDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:03:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22951 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab3LIIDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:03:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,856,1378882800"; 
-   d="scan'208";a="449048043"
-Message-ID: <52A57B12.1090609@intel.com>
-Date: Mon, 09 Dec 2013 10:10:58 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH V2 2/3] perf script: Add an option to print the source
- line number
-References: <1386315778-11633-1-git-send-email-adrian.hunter@intel.com> <1386315778-11633-3-git-send-email-adrian.hunter@intel.com> <52A4ADC8.3020202@gmail.com>
-In-Reply-To: <52A4ADC8.3020202@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932313Ab3LIIES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:04:18 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:48464 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab3LIIEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 03:04:16 -0500
+X-AuditID: cbfee690-b7f676d00000310d-ea-52a5797e1fae
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Cc: "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Joonyoung Shim'" <jy0922.shim@samsung.com>,
+        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <20131206100215.GA27763@core.coreip.homeip.net>
+In-reply-to: <20131206100215.GA27763@core.coreip.homeip.net>
+Subject: Re: [PATCH] Input: samsung-keypad - favor platform data if present
+Date: Mon, 09 Dec 2013 17:04:14 +0900
+Message-id: <001101cef4b5$4072b400$c1581c00$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac7yakPnOJWNMnQxQuSJUXrT3kCJ/wCSsuaw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zQ926yqVBBk9nWFkcXvSC0eLywkus
+	Fi/uXWSxuPnpG6vF5V1z2CxO/ulltDg2YwmjA7vHzll32T3uXNvD5tG3ZRWjx+dNcgEsUVw2
+	Kak5mWWpRfp2CVwZryb9ZC+YzlLR+EGggXEzcxcjJ4eEgInEpFOr2CBsMYkL99aD2UICyxgl
+	djz3h6nZum8CO0R8EaPE3z6vLkYuIPsXo8SC7euZQBJsAmoSX74cBisSEfCTWD7tAjtIEbPA
+	OUaJA6enM0J0W0t8PnEXrIFTwEairf8K2DZhAW+J7TuPg9WwCKhK/Pg7BayGV8BW4kjHN0YI
+	W1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveAn3DAXSpusSjv7oQNxhJPLg6mxWiRERi34t3jCD3
+	SAg8Ypc4//kJG8QuAYlvkw+xQPTKSmw6AA0USYmDK26wTGCUmIVk8ywkm2ch2TwLyYoFjCyr
+	GEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MUIidsIOxnsHrA8xJgOtn8gsJZqcD4z4vJJ4Q2Mz
+	IwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphakFsUXleakFh9iZOLglGpg7JF96v1OzPa4
+	5gyli0fKDq3XvOCXXbbrTPjZX/yMy7NiLm4Vvy798p/HviX5s4y697r9eL8rtijD+K50emZJ
+	ROKU3cGrDszYtflkTQzH9CuKS7NTn4c/NEoVOxcjoFqz6cqPJ7PnHm7NmVvWcOen3brfK9k9
+	1/Q1HnRkPvJP9Msjzq//VotoHlZiKc5INNRiLipOBABvKoQQ7gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd26yqVBBvO7zSwOL3rBaHF54SVW
+	ixf3LrJY3Pz0jdXi8q45bBYn//QyWhybsYTRgd1j56y77B53ru1h8+jbsorR4/MmuQCWqAZG
+	m4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygE5QUyhJz
+	SoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGa8m/WQvmM5S0fhBoIFxM3MXIyeH
+	hICJxNZ9E9ghbDGJC/fWs4HYQgKLGCX+9nl1MXIB2b8YJRZsX88EkmATUJP48uUwWIOIgJ/E
+	8mkX2EGKmAXOMUocOD2dEaLbWuLzibtgDZwCNhJt/VfApgoLeEts33kcrIZFQFXix98pYDW8
+	ArYSRzq+MULYghI/Jt9jAbGZBbQk1u88zgRhy0tsXvMW6GoOoEvVJR791YW4wUjiwdXZrBAl
+	IhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYIT
+	wjPpHYyrGiwOMQpwMCrx8K5gXRokxJpYVlyZe4hRgoNZSYTXPAooxJuSWFmVWpQfX1Sak1p8
+	iDEZ6NGJzFKiyfnAZJVXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1M
+	HJxSDYztF+ylP226+2hRZWZL7QU18VvVa+7oXK6a81J2ZZ25LJNztcCNS8q2d9sLg12CTNM3
+	vk1LEjqTceqwdoDrzP/CUTbGkoK3brQd5tD+sU5GTuH6uV/Cm9t2xu15a6sZHJFYNfHo/SjB
+	pr9ClyqdciZYPTFa+yMuUCR93l9dnU0FE9qfS+7beEGJpTgj0VCLuag4EQCb+yDbTAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/13 19:35, David Ahern wrote:
-> On 12/6/13, 12:42 AM, Adrian Hunter wrote:
->> Add field 'srcline' that displays the source file name
->> and line number associated with the sample ip.  The
->> information displayed is the same as from addr2line.
+On Friday, December 06, 2013 7:02 PM, Dmitry Torokhov wrote:
 > 
-> example output?
+> We should be able to override firmware-provided parameters with in-kernel
+> data, if needed. To that effect favor platform data, if present, over
+> devicetree data.
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 
-            grep 10701/10701 2497321.421013:  ffffffff81043ffa native_write_msr_safe+0xa ([kernel.kallsyms])
-  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/arch/x86/include/asm/msr.h:95
-            grep 10701/10701 2497321.421984:  ffffffff8165b6b3 _raw_spin_lock+0x13 ([kernel.kallsyms])
-  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/arch/x86/include/asm/spinlock.h:54
-            grep 10701/10701 2497321.421990:  ffffffff810b64b3 tick_sched_timer+0x53 ([kernel.kallsyms])
-  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/kernel/time/tick-sched.c:840
-            grep 10701/10701 2497321.421992:  ffffffff8106f63f run_timer_softirq+0x2f ([kernel.kallsyms])
-  /usr/src/debug/kernel-3.9.fc17/linux-3.9.10-100.fc17.x86_64/kernel/timer.c:1372
+It looks good.
 
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
+Best regards,
+Jingoo Han
 
-> 
->>
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>   tools/perf/Documentation/perf-script.txt |  2 +-
->>   tools/perf/builtin-script.c              | 10 ++++++++++
->>   tools/perf/util/map.c                    | 17 +++++++++++++++++
->>   tools/perf/util/map.h                    |  2 ++
->>   tools/perf/util/session.c                |  8 ++++++++
->>   tools/perf/util/session.h                |  1 +
->>   6 files changed, 39 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/perf/Documentation/perf-script.txt
->> b/tools/perf/Documentation/perf-script.txt
->> index cfdbb1e..c2a5071 100644
->> --- a/tools/perf/Documentation/perf-script.txt
->> +++ b/tools/perf/Documentation/perf-script.txt
->> @@ -115,7 +115,7 @@ OPTIONS
->>   -f::
->>   --fields::
->>           Comma separated list of fields to print. Options are:
->> -        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, symoff.
->> +        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr,
->> symoff, srcline.
->>           Field list can be prepended with the type, trace, sw or hw,
->>           to indicate to which event type the field list applies.
->>           e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
->> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
->> index 4484886..7a571fb 100644
->> --- a/tools/perf/builtin-script.c
->> +++ b/tools/perf/builtin-script.c
->> @@ -43,6 +43,7 @@ enum perf_output_field {
->>       PERF_OUTPUT_DSO             = 1U << 9,
->>       PERF_OUTPUT_ADDR            = 1U << 10,
->>       PERF_OUTPUT_SYMOFFSET       = 1U << 11,
->> +    PERF_OUTPUT_SRCLINE         = 1U << 12,
->>   };
->>
->>   struct output_option {
->> @@ -61,6 +62,7 @@ struct output_option {
->>       {.str = "dso",   .field = PERF_OUTPUT_DSO},
->>       {.str = "addr",  .field = PERF_OUTPUT_ADDR},
->>       {.str = "symoff", .field = PERF_OUTPUT_SYMOFFSET},
->> +    {.str = "srcline", .field = PERF_OUTPUT_SRCLINE},
->>   };
->>
->>   /* default set to maintain compatibility with current format */
->> @@ -210,6 +212,11 @@ static int perf_evsel__check_attr(struct perf_evsel
->> *evsel,
->>                  "to DSO.\n");
->>           return -EINVAL;
->>       }
->> +    if (PRINT_FIELD(SRCLINE) && !PRINT_FIELD(IP)) {
->> +        pr_err("Display of source line number requested but sample IP is
->> not\n"
->> +               "selected. Hence, no address to lookup the source line
->> number.\n");
->> +        return -EINVAL;
->> +    }
->>
->>       if ((PRINT_FIELD(PID) || PRINT_FIELD(TID)) &&
->>           perf_evsel__check_stype(evsel, PERF_SAMPLE_TID, "TID",
->> @@ -245,6 +252,9 @@ static void set_print_ip_opts(struct perf_event_attr
->> *attr)
->>
->>       if (PRINT_FIELD(SYMOFFSET))
->>           output[type].print_ip_opts |= PRINT_IP_OPT_SYMOFFSET;
->> +
->> +    if (PRINT_FIELD(SRCLINE))
->> +        output[type].print_ip_opts |= PRINT_IP_OPT_SRCLINE;
->>   }
->>
->>   /*
->> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
->> index ef5bc91..9b9bd71 100644
->> --- a/tools/perf/util/map.c
->> +++ b/tools/perf/util/map.c
->> @@ -11,6 +11,7 @@
->>   #include "strlist.h"
->>   #include "vdso.h"
->>   #include "build-id.h"
->> +#include "util.h"
->>   #include <linux/string.h>
->>
->>   const char *map_type__name[MAP__NR_TYPES] = {
->> @@ -252,6 +253,22 @@ size_t map__fprintf_dsoname(struct map *map, FILE *fp)
->>       return fprintf(fp, "%s", dsoname);
->>   }
->>
->> +int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
->> +             FILE *fp)
->> +{
->> +    char *srcline;
->> +    int ret = 0;
->> +
->> +    if (map && map->dso) {
->> +        srcline = get_srcline(map->dso,
->> +                      map__rip_2objdump(map, addr));
->> +        if (srcline != SRCLINE_UNKNOWN)
->> +            ret = fprintf(fp, "%s%s", prefix, srcline);
->> +        free_srcline(srcline);
->> +    }
->> +    return ret;
->> +}
->> +
->>   /**
->>    * map__rip_2objdump - convert symbol start address to objdump address.
->>    * @map: memory map
->> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
->> index e4e259c..18068c6 100644
->> --- a/tools/perf/util/map.h
->> +++ b/tools/perf/util/map.h
->> @@ -103,6 +103,8 @@ struct map *map__clone(struct map *map);
->>   int map__overlap(struct map *l, struct map *r);
->>   size_t map__fprintf(struct map *map, FILE *fp);
->>   size_t map__fprintf_dsoname(struct map *map, FILE *fp);
->> +int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
->> +             FILE *fp);
->>
->>   int map__load(struct map *map, symbol_filter_t filter);
->>   struct symbol *map__find_symbol(struct map *map,
->> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
->> index c236b38..e748f29 100644
->> --- a/tools/perf/util/session.c
->> +++ b/tools/perf/util/session.c
->> @@ -1497,6 +1497,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel,
->> struct perf_sample *sample,
->>       int print_dso = print_opts & PRINT_IP_OPT_DSO;
->>       int print_symoffset = print_opts & PRINT_IP_OPT_SYMOFFSET;
->>       int print_oneline = print_opts & PRINT_IP_OPT_ONELINE;
->> +    int print_srcline = print_opts & PRINT_IP_OPT_SRCLINE;
->>       char s = print_oneline ? ' ' : '\t';
->>
->>       if (symbol_conf.use_callchain && sample->callchain) {
->> @@ -1546,6 +1547,10 @@ void perf_evsel__print_ip(struct perf_evsel *evsel,
->> struct perf_sample *sample,
->>                   printf(")");
->>               }
->>
->> +            if (print_srcline)
->> +                map__fprintf_srcline(node->map, addr, "\n  ",
->> +                             stdout);
->> +
->>               if (!print_oneline)
->>                   printf("\n");
->>
->> @@ -1575,6 +1580,9 @@ next:
->>               map__fprintf_dsoname(al->map, stdout);
->>               printf(")");
->>           }
->> +
->> +        if (print_srcline)
->> +            map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
->>       }
->>   }
-> 
-> Why newline followed by space?
+> ---
+>  drivers/input/keyboard/samsung-keypad.c | 36 +++++++++++++++++++--------------
+>  1 file changed, 21 insertions(+), 15 deletions(-)
 
-It looked better that way to me.
-
-> 
-> Otherwise, Acked-by: David Ahern <dsahern@gmail.com>
-> 
-> 
-> 
 
