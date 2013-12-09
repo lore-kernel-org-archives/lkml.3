@@ -1,180 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760411Ab3LIKNt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:13:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54575 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab3LIKNr (ORCPT
+	id S1760956Ab3LIKOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:14:01 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:33388 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760448Ab3LIKN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:13:47 -0500
-Message-ID: <52A597C4.3050406@linaro.org>
-Date: Mon, 09 Dec 2013 11:13:24 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESEND] clocksource: misc drivers: remove deprecated
- IRQF_DISABLED
-References: <1381639028-6791-1-git-send-email-michael.opdenacker@free-electrons.com> <1386580330-4187-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1386580330-4187-1-git-send-email-michael.opdenacker@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 9 Dec 2013 05:13:58 -0500
+From: Ivaylo DImitrov <ivo.g.dimitrov.75@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: joe@perches.com, omar.ramirez@copitl.com, pali.rohar@gmail.com,
+        pavel@ucw.cz, linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: [PATCH v2] Staging: TIDSPBRIDGE: Remove UUID helper
+Date: Mon,  9 Dec 2013 12:13:16 +0200
+Message-Id: <1386583996-5648-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
+In-Reply-To: <20131208071857.GA12104@kroah.com>
+References: <20131208071857.GA12104@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 10:12 AM, Michael Opdenacker wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
->
-> It's a NOOP since 2.6.35 and it will be removed one day.
->
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-Hi Michael,
+Custom uuid helper function is needed only in rmgr/dbdcd.c and doesn't
+need to be exported. It can also be made way simpler by using sscanf.
 
-the three patches are applied to my tree for 3.14.
+Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+---
+ drivers/staging/tidspbridge/Makefile               |    2 +-
+ drivers/staging/tidspbridge/gen/uuidutil.c         |   85 --------------------
+ .../tidspbridge/include/dspbridge/uuidutil.h       |   18 ----
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   49 ++++++++++-
+ 4 files changed, 46 insertions(+), 108 deletions(-)
+ delete mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
 
-I changed a bit the changelog by replacing 'proposes to remove' by 
-'removes' and added a capitalized letter for the first character of the 
-short description (eg. remove deprecated => Remove deprecated).
-
-In the future please take care of that.
-
-Thanks for the cleanups.
-
-   -- Daniel
-
-
-
->   drivers/clocksource/cadence_ttc_timer.c | 3 +--
->   drivers/clocksource/cs5535-clockevt.c   | 2 +-
->   drivers/clocksource/dw_apb_timer.c      | 3 +--
->   drivers/clocksource/nomadik-mtu.c       | 2 +-
->   drivers/clocksource/samsung_pwm_timer.c | 2 +-
->   drivers/clocksource/sh_cmt.c            | 3 +--
->   drivers/clocksource/sh_mtu2.c           | 3 +--
->   drivers/clocksource/sh_tmu.c            | 3 +--
->   8 files changed, 8 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-> index b2bb3a4bc205..dc35962ab59c 100644
-> --- a/drivers/clocksource/cadence_ttc_timer.c
-> +++ b/drivers/clocksource/cadence_ttc_timer.c
-> @@ -388,8 +388,7 @@ static void __init ttc_setup_clockevent(struct clk *clk,
->   	__raw_writel(0x1,  ttcce->ttc.base_addr + TTC_IER_OFFSET);
->
->   	err = request_irq(irq, ttc_clock_event_interrupt,
-> -			  IRQF_DISABLED | IRQF_TIMER,
-> -			  ttcce->ce.name, ttcce);
-> +			  IRQF_TIMER, ttcce->ce.name, ttcce);
->   	if (WARN_ON(err)) {
->   		kfree(ttcce);
->   		return;
-> diff --git a/drivers/clocksource/cs5535-clockevt.c b/drivers/clocksource/cs5535-clockevt.c
-> index ea210482dd20..db2105290898 100644
-> --- a/drivers/clocksource/cs5535-clockevt.c
-> +++ b/drivers/clocksource/cs5535-clockevt.c
-> @@ -131,7 +131,7 @@ static irqreturn_t mfgpt_tick(int irq, void *dev_id)
->
->   static struct irqaction mfgptirq  = {
->   	.handler = mfgpt_tick,
-> -	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TIMER | IRQF_SHARED,
-> +	.flags = IRQF_NOBALANCING | IRQF_TIMER | IRQF_SHARED,
->   	.name = DRV_NAME,
->   };
->
-> diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
-> index e54ca1062d8e..f3656a6b0382 100644
-> --- a/drivers/clocksource/dw_apb_timer.c
-> +++ b/drivers/clocksource/dw_apb_timer.c
-> @@ -243,8 +243,7 @@ dw_apb_clockevent_init(int cpu, const char *name, unsigned rating,
->   	dw_ced->irqaction.dev_id	= &dw_ced->ced;
->   	dw_ced->irqaction.irq		= irq;
->   	dw_ced->irqaction.flags		= IRQF_TIMER | IRQF_IRQPOLL |
-> -					  IRQF_NOBALANCING |
-> -					  IRQF_DISABLED;
-> +					  IRQF_NOBALANCING;
->
->   	dw_ced->eoi = apbt_eoi;
->   	err = setup_irq(irq, &dw_ced->irqaction);
-> diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
-> index ed7b73b508e0..152a3f3875ee 100644
-> --- a/drivers/clocksource/nomadik-mtu.c
-> +++ b/drivers/clocksource/nomadik-mtu.c
-> @@ -187,7 +187,7 @@ static irqreturn_t nmdk_timer_interrupt(int irq, void *dev_id)
->
->   static struct irqaction nmdk_timer_irq = {
->   	.name		= "Nomadik Timer Tick",
-> -	.flags		= IRQF_DISABLED | IRQF_TIMER,
-> +	.flags		= IRQF_TIMER,
->   	.handler	= nmdk_timer_interrupt,
->   	.dev_id		= &nmdk_clkevt,
->   };
-> diff --git a/drivers/clocksource/samsung_pwm_timer.c b/drivers/clocksource/samsung_pwm_timer.c
-> index 85082e8d3052..5645cfc90c41 100644
-> --- a/drivers/clocksource/samsung_pwm_timer.c
-> +++ b/drivers/clocksource/samsung_pwm_timer.c
-> @@ -264,7 +264,7 @@ static irqreturn_t samsung_clock_event_isr(int irq, void *dev_id)
->
->   static struct irqaction samsung_clock_event_irq = {
->   	.name		= "samsung_time_irq",
-> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
->   	.handler	= samsung_clock_event_isr,
->   	.dev_id		= &time_event_device,
->   };
-> diff --git a/drivers/clocksource/sh_cmt.c b/drivers/clocksource/sh_cmt.c
-> index 0965e9848b3d..c6186339dd52 100644
-> --- a/drivers/clocksource/sh_cmt.c
-> +++ b/drivers/clocksource/sh_cmt.c
-> @@ -726,8 +726,7 @@ static int sh_cmt_setup(struct sh_cmt_priv *p, struct platform_device *pdev)
->   	p->irqaction.name = dev_name(&p->pdev->dev);
->   	p->irqaction.handler = sh_cmt_interrupt;
->   	p->irqaction.dev_id = p;
-> -	p->irqaction.flags = IRQF_DISABLED | IRQF_TIMER | \
-> -			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
-> +	p->irqaction.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING;
->
->   	/* get hold of clock */
->   	p->clk = clk_get(&p->pdev->dev, "cmt_fck");
-> diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-> index 3cf12834681e..ec871bb1c146 100644
-> --- a/drivers/clocksource/sh_mtu2.c
-> +++ b/drivers/clocksource/sh_mtu2.c
-> @@ -302,8 +302,7 @@ static int sh_mtu2_setup(struct sh_mtu2_priv *p, struct platform_device *pdev)
->   	p->irqaction.handler = sh_mtu2_interrupt;
->   	p->irqaction.dev_id = p;
->   	p->irqaction.irq = irq;
-> -	p->irqaction.flags = IRQF_DISABLED | IRQF_TIMER | \
-> -			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
-> +	p->irqaction.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING;
->
->   	/* get hold of clock */
->   	p->clk = clk_get(&p->pdev->dev, "mtu2_fck");
-> diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
-> index 63557cda0a7d..75b935d53924 100644
-> --- a/drivers/clocksource/sh_tmu.c
-> +++ b/drivers/clocksource/sh_tmu.c
-> @@ -462,8 +462,7 @@ static int sh_tmu_setup(struct sh_tmu_priv *p, struct platform_device *pdev)
->   	p->irqaction.handler = sh_tmu_interrupt;
->   	p->irqaction.dev_id = p;
->   	p->irqaction.irq = irq;
-> -	p->irqaction.flags = IRQF_DISABLED | IRQF_TIMER | \
-> -			     IRQF_IRQPOLL  | IRQF_NOBALANCING;
-> +	p->irqaction.flags = IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING;
->
->   	/* get hold of clock */
->   	p->clk = clk_get(&p->pdev->dev, "tmu_fck");
->
-
-
+diff --git a/drivers/staging/tidspbridge/Makefile b/drivers/staging/tidspbridge/Makefile
+index 230e3e6..2e77734 100644
+--- a/drivers/staging/tidspbridge/Makefile
++++ b/drivers/staging/tidspbridge/Makefile
+@@ -1,6 +1,6 @@
+ obj-$(CONFIG_TIDSPBRIDGE)	+= tidspbridge.o
+ 
+-libgen = gen/gh.o gen/uuidutil.o
++libgen = gen/gh.o
+ libcore = core/chnl_sm.o core/msg_sm.o core/io_sm.o core/tiomap3430.o \
+ 		core/tiomap3430_pwr.o core/tiomap_io.o \
+ 		core/ue_deh.o core/wdt.o core/dsp-clock.o core/sync.o
+diff --git a/drivers/staging/tidspbridge/gen/uuidutil.c b/drivers/staging/tidspbridge/gen/uuidutil.c
+deleted file mode 100644
+index b7d8313..0000000
+--- a/drivers/staging/tidspbridge/gen/uuidutil.c
++++ /dev/null
+@@ -1,85 +0,0 @@
+-/*
+- * uuidutil.c
+- *
+- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
+- *
+- * This file contains the implementation of UUID helper functions.
+- *
+- * Copyright (C) 2005-2006 Texas Instruments, Inc.
+- *
+- * This package is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+- */
+-#include <linux/types.h>
+-
+-/*  ----------------------------------- Host OS */
+-#include <dspbridge/host_os.h>
+-
+-/*  ----------------------------------- DSP/BIOS Bridge */
+-#include <dspbridge/dbdefs.h>
+-
+-/*  ----------------------------------- This */
+-#include <dspbridge/uuidutil.h>
+-
+-static s32 uuid_hex_to_bin(char *buf, s32 len)
+-{
+-	s32 i;
+-	s32 result = 0;
+-	int value;
+-
+-	for (i = 0; i < len; i++) {
+-		value = hex_to_bin(*buf++);
+-		result *= 16;
+-		if (value > 0)
+-			result += value;
+-	}
+-
+-	return result;
+-}
+-
+-/*
+- *  ======== uuid_uuid_from_string ========
+- *  Purpose:
+- *      Converts a string to a struct dsp_uuid.
+- */
+-void uuid_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
+-{
+-	s32 j;
+-
+-	uuid_obj->data1 = uuid_hex_to_bin(sz_uuid, 8);
+-	sz_uuid += 8;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	uuid_obj->data2 = (u16) uuid_hex_to_bin(sz_uuid, 4);
+-	sz_uuid += 4;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	uuid_obj->data3 = (u16) uuid_hex_to_bin(sz_uuid, 4);
+-	sz_uuid += 4;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	uuid_obj->data4 = (u8) uuid_hex_to_bin(sz_uuid, 2);
+-	sz_uuid += 2;
+-
+-	uuid_obj->data5 = (u8) uuid_hex_to_bin(sz_uuid, 2);
+-	sz_uuid += 2;
+-
+-	/* Step over underscore */
+-	sz_uuid++;
+-
+-	for (j = 0; j < 6; j++) {
+-		uuid_obj->data6[j] = (u8) uuid_hex_to_bin(sz_uuid, 2);
+-		sz_uuid += 2;
+-	}
+-}
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h b/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
+index 414bf71..b4951a1 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
+@@ -21,22 +21,4 @@
+ 
+ #define MAXUUIDLEN  37
+ 
+-/*
+- *  ======== uuid_uuid_from_string ========
+- *  Purpose:
+- *      Converts an ANSI string to a dsp_uuid.
+- *  Parameters:
+- *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
+- *      uuid_obj:      Pointer to a dsp_uuid object.
+- *  Returns:
+- *  Requires:
+- *      uuid_obj & sz_uuid are non-NULL values.
+- *  Ensures:
+- *  Details:
+- *      We assume the string representation of a UUID has the following format:
+- *      "12345678_1234_1234_1234_123456789abc".
+- */
+-extern void uuid_uuid_from_string(char *sz_uuid,
+-				  struct dsp_uuid *uuid_obj);
+-
+ #endif /* UUIDUTIL_ */
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+index 3d2a26f..11b13af 100644
+--- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -74,6 +74,47 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				   enum nldr_phase phase);
+ 
+ /*
++ *  ======== dcd_uuid_from_string ========
++ *  Purpose:
++ *      Converts an ANSI string to a dsp_uuid.
++ *  Parameters:
++ *      sz_uuid:    Pointer to a string that represents a dsp_uuid object.
++ *      uuid_obj:      Pointer to a dsp_uuid object.
++ *  Returns:
++ *      0:        Success.
++ *      -EINVAL:  Coversion failed
++ *  Requires:
++ *      uuid_obj & sz_uuid are non-NULL values.
++ *  Ensures:
++ *  Details:
++ *      We assume the string representation of a UUID has the following format:
++ *      "12345678_1234_1234_1234_123456789abc".
++ */
++static int dcd_uuid_from_string(char *sz_uuid, struct dsp_uuid *uuid_obj)
++{
++	char c;
++	u64 t;
++	struct dsp_uuid uuid_tmp;
++
++	/*
++	 * sscanf implementation cannot deal with hh format modifier
++	 * if the converted value doesn't fit in u32. So, convert the
++	 * last six bytes to u64 and memcpy what is needed
++	 */
++	if(sscanf(sz_uuid, "%8x%c%4hx%c%4hx%c%2hhx%2hhx%c%llx",
++	       &uuid_tmp.data1, &c, &uuid_tmp.data2, &c,
++	       &uuid_tmp.data3, &c, &uuid_tmp.data4,
++	       &uuid_tmp.data5, &c, &t) != 10)
++		return -EINVAL;
++
++	t = cpu_to_be64(t);
++	memcpy(&uuid_tmp.data6[0], ((char*)&t) + 2, 6);
++	*uuid_obj = uuid_tmp;
++
++	return 0;
++}
++
++/*
+  *  ======== dcd_auto_register ========
+  *  Purpose:
+  *      Parses the supplied image and resigsters with DCD.
+@@ -253,7 +294,7 @@ int dcd_enumerate_object(s32 index, enum dsp_dcdobjtype obj_type,
+ 		if (!status) {
+ 			/* Create UUID value using string retrieved from
+ 			 * registry. */
+-			uuid_uuid_from_string(sz_value, &dsp_uuid_obj);
++			dcd_uuid_from_string(sz_value, &dsp_uuid_obj);
+ 
+ 			*uuid_obj = dsp_uuid_obj;
+ 
+@@ -581,7 +622,7 @@ int dcd_get_objects(struct dcd_manager *hdcd_mgr,
+ 		psz_cur = psz_coff_buf;
+ 		while ((token = strsep(&psz_cur, seps)) && *token != '\0') {
+ 			/*  Retrieve UUID string. */
+-			uuid_uuid_from_string(token, &dsp_uuid_obj);
++			dcd_uuid_from_string(token, &dsp_uuid_obj);
+ 
+ 			/*  Retrieve object type */
+ 			token = strsep(&psz_cur, seps);
+@@ -1001,7 +1042,7 @@ static int get_attrs_from_buf(char *psz_buf, u32 ul_buf_size,
+ 		token = strsep(&psz_cur, seps);
+ 
+ 		/* dsp_uuid ui_node_id */
+-		uuid_uuid_from_string(token,
++		dcd_uuid_from_string(token,
+ 				      &gen_obj->obj_data.node_obj.ndb_props.
+ 				      ui_node_id);
+ 		token = strsep(&psz_cur, seps);
+@@ -1400,7 +1441,7 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				break;
+ 			} else {
+ 				/* Retrieve UUID string. */
+-				uuid_uuid_from_string(token,
++				dcd_uuid_from_string(token,
+ 						      &(dep_lib_uuids
+ 							[dep_libs]));
+ 				/* Is this library persistent? */
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.5.6.1
 
