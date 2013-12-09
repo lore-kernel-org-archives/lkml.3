@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933657Ab3LIN11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:27:27 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59142 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933351Ab3LIN1Z (ORCPT
+	id S933696Ab3LIN1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:27:46 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:19221 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933351Ab3LIN1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:27:25 -0500
-Message-ID: <52A5C53B.1030003@hurleysoftware.com>
-Date: Mon, 09 Dec 2013 08:27:23 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 5/5] tty: Halve flip buffer GFP_ATOMIC memory
- consumption
-References: <1385140198-5822-1-git-send-email-peter@hurleysoftware.com> <1385140198-5822-6-git-send-email-peter@hurleysoftware.com> <20131209010112.GA31052@kroah.com>
-In-Reply-To: <20131209010112.GA31052@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+	Mon, 9 Dec 2013 08:27:43 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-9a-52a5c54da351
+From: Tomasz Figa <t.figa@samsung.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, Heiko Stuebner <heiko@sntech.de>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Doug Andersen <dianders@chromium.org>
+Subject: Re: [PATCH 2/3] ARM: SAMSUNG: Let s3c_pm_do_restore_*() take const
+ sleep_save
+Date: Mon, 09 Dec 2013 14:27:30 +0100
+Message-id: <1388884.PZXKrtOKJT@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
+In-reply-to: <1384971686-7208-2-git-send-email-djkurtz@chromium.org>
+References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org>
+ <1384971686-7208-2-git-send-email-djkurtz@chromium.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xa7q+R5cGGcydJGPxeM1iJouGqyEW
+	k9YdYLI4u+wgm0XjjPmsFv8fvWa16F1wlc1i0+NrrBaXd81hs5hxfh+Txe3LvA7cHi3NPWwe
+	sxsusnj8XfWC2WPzknqPvi2rGD22X5vH7PF5k1wAexSXTUpqTmZZapG+XQJXxrkpCQVTWSv+
+	tN5iaWDsYOli5OSQEDCR2Pb0FBOELSZx4d56ti5GLg4hgaWMEp8eNDFBOF1MEqdf7mIFqWIT
+	UJP43PAIqIqDQ0RAXeLXDSeQGmaBRmaJW8/3g00SFoiQ+H17NjOIzSKgKtHV9JsFpJ5XQFPi
+	/RV5kDA/UOu7bU/BykUF3CRe7NvCDmJzCrhIHD77kRHEFhKolVixbA4biM0rICjxY/I9sKOZ
+	BeQl9u2fygpha0ms33mcaQKj4CwkZbOQlM1CUraAkXkVo2hqaXJBcVJ6rqFecWJucWleul5y
+	fu4mRkjEfNnBuPiY1SFGAQ5GJR7eFaxLg4RYE8uKK3MPMUpwMCuJ8IrtAgrxpiRWVqUW5ccX
+	leakFh9iZOLglGpgFNa5+mC+41s+dVHG6y0TkxyL3f28BC1cb+4XESt55Pd7IV9YTT9L7NOF
+	P8u7Zrx9NNUqbJbrV9Yi/qhTX05/MJlTWZzvXHRaRWyatd2i9IIp/VVLvvqLqxZc8RF9+3VB
+	4cqXc9nq6/5eW6i09GDSvot1bNHvprzvZb7iZ9t2uORKiPuZva7WSizFGYmGWsxFxYkAkUUt
+	jXYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2013 08:01 PM, Greg Kroah-Hartman wrote:
-> On Fri, Nov 22, 2013 at 12:09:58PM -0500, Peter Hurley wrote:
->> tty flip buffers use GFP_ATOMIC allocations for received data
->> which is to be processed by the line discipline. For each byte
->> received, an extra byte is used to indicate the error status of
->> that byte.
->>
->> Instead, if the received data is error-free, encode the entire
->> buffer without status bytes.
->>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
->> ---
->>   drivers/tty/tty_buffer.c | 45 +++++++++++++++++++++++++++++++++++----------
->>   include/linux/tty.h      |  4 ++++
->>   include/linux/tty_flip.h |  8 ++++++--
->>   3 files changed, 45 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
->> index 6a3620e..c4fe20e 100644
->> --- a/drivers/tty/tty_buffer.c
->> +++ b/drivers/tty/tty_buffer.c
->> @@ -100,6 +100,7 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
->>   	p->next = NULL;
->>   	p->commit = 0;
->>   	p->read = 0;
->> +	p->flags = 0;
->>   }
->>
->>   /**
->> @@ -230,31 +231,49 @@ void tty_buffer_flush(struct tty_struct *tty)
->>    *	tty_buffer_request_room		-	grow tty buffer if needed
->>    *	@tty: tty structure
->>    *	@size: size desired
->> + *	@flags: buffer flags if new buffer allocated (default = 0)
->>    *
->>    *	Make at least size bytes of linear space available for the tty
->>    *	buffer. If we fail return the size we managed to find.
->> + *
->> + *	Will change over to a new buffer if the current buffer is encoded as
->> + *	TTY_NORMAL (so has no flags buffer) and the new buffer requires
->> + *	a flags buffer.
->>    */
->> -int tty_buffer_request_room(struct tty_port *port, size_t size)
->> +int __tty_buffer_request_room(struct tty_port *port, size_t size, int flags)
->>   {
->>   	struct tty_bufhead *buf = &port->buf;
->>   	struct tty_buffer *b, *n;
->> -	int left;
->> +	int left, change;
->>
->>   	b = buf->tail;
->> -	left = b->size - b->used;
->> +	if (b->flags & TTYB_NORMAL)
->> +		left = 2 * b->size - b->used;
->> +	else
->> +		left = b->size - b->used;
->>
->> -	if (left < size) {
->> +	change = (b->flags & TTYB_NORMAL) && (~flags & TTYB_NORMAL);
->> +	if (change || left < size) {
->>   		/* This is the slow path - looking for new buffers to use */
->>   		if ((n = tty_buffer_alloc(port, size)) != NULL) {
->> +			n->flags = flags;
->>   			buf->tail = n;
->>   			b->commit = b->used;
->>   			smp_mb();
->>   			b->next = n;
->> -		} else
->> +		} else if (change)
->> +			size = 0;
->> +		else
->>   			size = left;
->>   	}
->>   	return size;
->>   }
->> +EXPORT_SYMBOL_GPL(__tty_buffer_request_room);
->
-> Why are you exporting this?  There is no function prototype anywhere, so
-> no one can even try to call it, it should just be static, right?
+Hi Daniel,
 
-Yes, sorry. Thanks for catching this.
+On Thursday 21 of November 2013 02:21:25 Daniel Kurtz wrote:
+> The restore functions do not modify the passed in struct sleep_save,
+> so that parameter can be const.
+> 
+> This allows us to pass in const struct.  This allows us to use const
+> structs sleep_save to define system registers that will always be
+> restored to a constant value.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  arch/arm/plat-samsung/include/plat/pm.h | 4 ++--
+>  arch/arm/plat-samsung/pm.c              | 4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
 
-> I've applied the first 4 patches in this series, care to fix this one
-> up?
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-Patch coming.
+Best regards,
+Tomasz
+
