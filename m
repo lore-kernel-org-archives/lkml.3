@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934039Ab3LIQfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:35:00 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:30017 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932938Ab3LIQe5 (ORCPT
+	id S934078Ab3LIQfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:35:25 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:62161 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932989Ab3LIQfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:34:57 -0500
-X-AuditID: cbfec7f5-b7fd16d000007299-1d-52a5f12f53b8
-From: Tomasz Figa <t.figa@samsung.com>
-To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
+	Mon, 9 Dec 2013 11:35:21 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core running without PCI on ARM64
+Date: Mon, 9 Dec 2013 17:35:04 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tarek Dakhran <t.dakhran@samsung.com>, Dave.Martin@arm.com,
-        nicolas.pitre@linaro.org, tomasz.figa@gmail.com
-Subject: Re: [PATCH v4 2/4] clk: exynos5410: register clocks using common clock
- framework
-Date: Mon, 09 Dec 2013 17:34:44 +0100
-Message-id: <1914850.6CAa0SzDWP@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
-In-reply-to: <1385456288-20398-3-git-send-email-v.tyrtov@samsung.com>
-References: <1385456288-20398-1-git-send-email-v.tyrtov@samsung.com>
- <1385456288-20398-3-git-send-email-v.tyrtov@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsVy+t/xq7r6H5cGGZyaI2sxad0BJot5n2Ut
-	mubuYbSYf+Qcq8X/R69ZLc69Wslo0bvgKpvFpsfXWC0Wti1hsbi8aw6bxYzz+5gsbl/mtVh6
-	/SKTxdMJF9ksPj37x24xYfpaFovDK4CmrXs5ncViy88ORotXB9tYLNY/P8VosXnTVGaLVbv+
-	MFpMnfGD3UHCY828NYweLc09bB4LPl9h9/i76gWzx85Zd9k9Vi7/wubxavVMVo871/awebw7
-	d47dY/OSeo9X11g8+rasYvTYfm0es8fnTXIeG+eGBvBHcdmkpOZklqUW6dslcGVcPLWAsWAe
-	Z8XGlm1sDYy72LsYOTkkBEwkHn9bwQhhi0lcuLeerYuRi0NIYCmjxN7/V5ggnC4midWNu1hB
-	qtgE1CQ+NzxiA7FFBHQkVr+7AGYzC2xjk7jTqg1iCwtES7x6uJ4ZxGYRUJX4ur8frJdXQFOi
-	/24jWJxfQF3i3banTCC2qICbxIt9W8Au4hRwldj4rQvsIiGBeon+OYuhegUlfky+xwKxS15i
-	3/6prBC2lsT6nceZJjAKzkJSNgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525i
-	hKSArzsYlx6zOsQowMGoxMMbwLw0SIg1say4MvcQowQHs5IIb8NroBBvSmJlVWpRfnxRaU5q
-	8SFGJg5OqQZGjh/aeq8XfdTJDF0jdP6oE5d89v8z7cFSEt+iK5ysNq5QZ56w+u0/aUXvlQc1
-	HObN912yhfHzF/NvDzImhpxY8GrDupa1R4NlNi/Jss2er2eXMs181p8Qo1Jjgey/mTJOCR/u
-	LShl5tn8UMLqcpOUqfQMgbzYj8/inAMFLuXnnj9nM6kr5Y+MEktxRqKhFnNRcSIAsQa0rd8C	AAA=
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <20131209115050.GA19163@arm.com> <52A5C024.5050702@linaro.org>
+In-Reply-To: <52A5C024.5050702@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312091735.05014.arnd@arndb.de>
+X-Provags-ID: V02:K0:uhIRpu5nVFDoS9tC3DVAHt04fIfUVSOb319IXTjDonu
+ A+sTaMGPQ3vRXHn7RcfpDovRjYPhPJ60vjKb+lMQh+rZL/bkBF
+ WcHv1jBDIU5pryxkoI3d1bm2ZAVtOY7mpKoHSUeHuXa7WbVNI+
+ J3ffU9uKXQbegPIXbdYLqZ8XGctzOW/eD9bRT6eBy2x7g52GL0
+ /yl2sXJ0wura1nDKqhMu5JMaiJTLxA4j0GKYUvIhmebGzDneuA
+ t/B4zjrmvwrZI5il5VXN9MBat91r1NmzkGreUpAAGRSMwCJiwG
+ WIBg9vyrULaB5SrpOXe9C/3gl67W2+92azVJrLlcYgrtDptE7d
+ 9cwAKSVuH9N7gPveS1+w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vyacheslav, Tarek,
+On Monday 09 December 2013, Hanjun Guo wrote:
+> On 2013-12-9 19:50, Catalin Marinas wrote:
+> > On Mon, Dec 09, 2013 at 04:12:24AM +0000, Hanjun Guo wrote:
+> >>
+> >> I think the concern here is that ACPI is only for server platform or not.
+> >>
+> >> Since ACPI has lots of content related to power management, I think ACPI
+> >> can be used for mobile devices and other platform too, not only for ARM
+> >> servers, and with this patch, we can support both requirement.
+> > 
+> > 'Can be used' is one thing, will it really be used is another? I don't
+> > think so, it was (well, is) difficult enough to make the transition to
+> > FDT, I don't see how ACPI would solve the current issues.
 
-On Tuesday 26 of November 2013 12:58:06 Vyacheslav Tyrtov wrote:
-> From: Tarek Dakhran <t.dakhran@samsung.com>
+Exactly. In particular we don't want people to get the wrong idea about
+where we are heading, so making it possible to use this code on embedded
+systems for me is a reason *not* to take the patch.
+
+> > I see ACPI as a server distro requirement and there are indeed benefits
+> > in abstracting the hardware behind standard description, AML. Of course,
+> > this would work even better with probe-able buses like PCIe and I'm
+> > pretty sure this would be the case on high-end servers. But even if a
+> > server distro like RHEL supports a SoC without PCIe, I would expect them
+> > to only provide a single binary Image with CONFIG_PCI enabled.
+> > 
+> > This patch is small enough and allows ACPI build with !CONFIG_PCI for
+> > the time being but longer term I would expect such SoCs without PCI to
+> > be able to run on a kernel with CONFIG_PCI enabled.
 > 
-> The EXYNOS5410 clocks are statically listed and registered
-> using the Samsung specific common clock helper functions.
-> 
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-> ---
->  .../devicetree/bindings/clock/exynos5410-clock.txt |  54 +++++
->  drivers/clk/samsung/Makefile                       |   1 +
->  drivers/clk/samsung/clk-exynos5410.c               | 239 +++++++++++++++++++++
->  include/dt-bindings/clock/exynos5410.h             |  32 +++
->  4 files changed, 326 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
->  create mode 100644 drivers/clk/samsung/clk-exynos5410.c
->  create mode 100644 include/dt-bindings/clock/exynos5410.h
+> Yes, we will support PCI in ACPI in the long run, and we just make PCI
+> optional for ACPI in this patch.
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+Do you mean there is a problem running your code with PCI /enabled/ at the
+moment? If so, I'd suggest fixing that instead since you will have to fix
+it anyway.
 
-This should go through Samsung tree, I guess, since it's a dependency
-of other patches in this series and doesn't depend on any things from
-clock tree. Mike, Kukjin, are you okay with this?
-
-Best regards,
-Tomasz
-
+	Arnd
