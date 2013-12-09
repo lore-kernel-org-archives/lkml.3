@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933924Ab3LIQMG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:12:06 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:41379 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933816Ab3LIQMC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:12:02 -0500
+	id S933928Ab3LIQN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:13:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856Ab3LIQN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:13:57 -0500
+Message-ID: <52A5EC3E.2050301@redhat.com>
+Date: Mon, 09 Dec 2013 11:13:50 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1922780.plAOmhqzpW@amdc1227>
-References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org> <1922780.plAOmhqzpW@amdc1227>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Tue, 10 Dec 2013 00:11:40 +0800
-X-Google-Sender-Auth: dnEASEJGQ1uuLkpupWXGFTcgHkE
-Message-ID: <CAGS+omDq95paoHsf5-i2gbRoSGvqn36zNO93KHGi2FGhfGMsrw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ARM: EXYNOS: pmu: Constify data tables
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: kgene.kim@samsung.com, Heiko Stuebner <heiko@sntech.de>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Doug Andersen <dianders@chromium.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/18] mm: numa: Defer TLB flush for THP migration as
+ long as possible
+References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-13-git-send-email-mgorman@suse.de>
+In-Reply-To: <1386572952-1191-13-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+On 12/09/2013 02:09 AM, Mel Gorman wrote:
 
-Thank you for the reviews.
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index cfb4190..5372521 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1759,6 +1759,12 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+>  		goto out_fail;
+>  	}
+>  
+> +	/* PTL provides a memory barrier with change_protection_range */
+> +	ptl = pmd_lock(mm, pmd);
+> +	if (tlb_flush_pending(mm))
+> +		flush_tlb_range(vma, mmun_start, mmun_end);
+> +	spin_unlock(ptl);
+> +
+>  	/* Prepare a page as a migration target */
+>  	__set_page_locked(new_page);
+>  	SetPageSwapBacked(new_page);
 
-On Dec 9, 2013 5:15 AM, "Tomasz Figa" <t.figa@samsung.com> wrote:
->
-> Hi Daniel,
->
-> On Thursday 21 of November 2013 02:21:24 Daniel Kurtz wrote:
-> > These tables are all immutable, make them const to save 4416 bytes of RAM.
-> >
-> > size arch/arm/mach-exynos/pmu.o
-> >    text          data     bss
-> >     848          4420       4         // before
-> >    5264             4       4         // after
->
-> I'm not sure where the mentioned saving of RAM is. Moving data between
-> sections is not supposed to make it use less memory, I believe.
+I don't think there is a need for that extra memory barrier.
 
-You are correct.  This was my misunderstanding from doing too much
-work with microcontrollers, where .text sections are accessed in place
-from FLASH for code and const data, but .data memory is copied from a
-FLASH section to a second RAM section at init for access at runtime.
-Most modern Linux systems copy/decompress their code and data sections
-from external storage to RAM anyway, so there is no actual memory
-savings (except potentially the compiler may be able to optimize a bit
-more with the const hint).
+On the "set_tlb_flush_pending, turn ptes into NUMA ones" side, we
+have a barrier in the form of the page table lock.
 
->
-> Anyway, it's a good practice to mark constant data as const, to disallow
-> changing them at runtime by mistake, so the patch is fine. Except some
-> issues I commented on inline.
+We only end up in this code path if the pte/pmd already is a NUMA
+one, and we take several spinlocks along the way to doing this test.
+That provides for the memory barrier in this code path.
 
-Were there supposed to be inline comments?  I don't see any.
-
-Best Regards,
--djk
-
->
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->
-> Best regards,
-> Tomasz
->
+-- 
+All rights reversed
