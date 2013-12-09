@@ -1,138 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850Ab3LILsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 06:48:14 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14059 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab3LILsK (ORCPT
+	id S933088Ab3LILtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 06:49:19 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39141 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab3LILtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 06:48:10 -0500
-X-AuditID: cbfec7f5-b7fd16d000007299-c3-52a5adf7a910
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org, Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH] net: sk == 0xffffffff fix - not for commit
-Date: Mon, 09 Dec 2013 12:47:52 +0100
-Message-id: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t/xa7rf1y4NMvjYqGYx62U7i8XB+/UW
-	c863sFg0L17PZrFu/WImiwebL7JaXGh7xWpxtukNu8XlXXPYLBYta2W2WHvkLrvFguMtrBbH
-	FohZfN3bxeLA57Fl5U0mj7Zrq5g89s9dw+6x7s8rJo8tv7+zefR8T/bo27KK0eP4je1MHksn
-	LWTy+LxJLoArissmJTUnsyy1SN8ugStj1impgktGFT96JzI2MD7U7GLk4JAQMJFou1TexcgJ
-	ZIpJXLi3nq2LkYtDSGApo8St5yvZIZx+JomTR76ygVSxCRhL7D3YwQhiiwgoSGzufcYKUsQs
-	0MoisbatA6xIWMBaouPxJzCbRUBV4sbDKWA2r4CLxOqXbxkh1slLPL3fxzaBkXsBI8MqRtHU
-	0uSC4qT0XCO94sTc4tK8dL3k/NxNjJCw/LqDcekxq0OMAhyMSjy8AcxLg4RYE8uKK3MPMUpw
-	MCuJ8P6fDxTiTUmsrEotyo8vKs1JLT7EyMTBKdXAWP/V4+3HL8KpCxT8P+re7uMt23XsFu/P
-	u1NPF63Zrj635vwXU5U4hu8uK3ysZY/fr/y4Q1+J28B7Qo2sov2j3ozXm4xqano0Ep7f2T9p
-	TtRbWTmHv8lP3r1puaYXsVJaQlf/LWOcZezs2XPZP5wOsJRR9mDTVTv/81T3Gs+/QoIzr+eU
-	6eXNVmIpzkg01GIuKk4EAD2+K1YpAgAA
+	Mon, 9 Dec 2013 06:49:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <5292ED4D.7070403@ti.com>
+References: <1384158778-27555-1-git-send-email-yuvaraj.cd@samsung.com>
+	<1384158778-27555-2-git-send-email-yuvaraj.cd@samsung.com>
+	<CAKuRcOKwe5ka__SGAi8CV6L7=M7cJH_yj-WxBE79MC+-p9EUwg@mail.gmail.com>
+	<5292ED4D.7070403@ti.com>
+Date: Mon, 9 Dec 2013 17:19:13 +0530
+Message-ID: <CAKuRcOJ2w6y7d3+GFxTKbEp87hV1mg15CLR+nuU=98M3DmNogA@mail.gmail.com>
+Subject: Re: [PATCH V2 1/2] Phy: Exynos: Add Exynos5250 sata phy driver
+From: Yuvaraj Kumar <yuvaraj.cd@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <mark.rutland@arm.com>, sachin.kamat@linaro.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>, aditya.ps@samsung.com,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
+        Girish K S <ks.giri@samsung.com>,
+        Vasanth Ananthan <vasanth.a@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOT FOR COMMITTING TO MAINLINE.
-
-With g_ether loaded the sk occasionally becomes 0xffffffff.
-It happens usually after transferring few hundreds of kilobytes to few
-tens of megabytes. If sk is 0xffffffff then dereferencing it causes
-kernel panic.
-
-This is a *workaround*. I don't know enough net code to understand the core
-of the problem. However, with this patch applied the problems are gone,
-or at least pushed farther away.
-
-The relevant stack trace below:
-
-[   53.583351] Unable to handle kernel NULL pointer dereference at virtual address 00000011                                                                                                         ]
-[   53.590077] pgd = c0004000
-[   53.592761] [00000011] *pgd=00000000
-[   53.596319] Internal error: Oops: 17 [#1] PREEMPT ARM
-[   53.601223] Modules linked in: usb_f_ecm g_ether u_ether libcomposite
-[   53.607641] CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc6+ #157
-[   53.613962] task: c058e5d8 ti: c0584000 task.ti: c0584000
-[   53.619345] PC is at tcp_v4_early_demux+0xbc/0x150
-[   53.624105] LR is at __inet_lookup_established+0x25c/0x2e0
-[   53.629562] pc : [<c03595a4>]    lr : [<c033fc0c>]    psr: a0000113
-[   53.629562] sp : c0585d08  ip : c0585cd0  fp : c0585d2c
-[   53.640997] r10: c058cf84  r9 : c05c1768  r8 : e7b22740
-[   53.646197] r7 : 00000000  r6 : 00002cb7  r5 : ffffffff  r4 : e7b22740
-[   53.652697] r3 : c0304504  r2 : c0585cb8  r1 : e6d3e070  r0 : ffffffff
-[   53.659198] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[   53.666476] Control: 10c5387d  Table: 57b48019  DAC: 00000015
-[   53.672194] Process swapper (pid: 0, stack limit = 0xc0584238)
-[   53.678001] Stack: (0xc0585d08 to 0xc0586000)
-[   53.682338] 5d00:                   0381a8c0 0000eb89 00000002 c0585d20 e7b6e810 e7b22758
-[   53.690484] 5d20: c0585d5c c0585d30 c03377f0 c03594f4 c00104e8 c0028ef4 c058cf70 c058ddec
-[   53.698629] 5d40: 00000008 e7806000 00000000 e7b22740 c0585dac c0585d60 c0311dd4 c0337480
-[   53.706775] 5d60: c058cf78 00000000 60000113 ffffffff c0585dfc e7b22740 c0014368 c058cf84
-[   53.714921] 5d80: 00000000 e7b22740 00000000 c05c8b14 00000002 c05c8b60 00000000 00100100
-[   53.723067] 5da0: c0585dc4 c0585db0 c0312f8c c0311c20 e7b22740 00000000 c0585dfc c0585dc8
-[   53.731212] 5dc0: c031390c c0312f60 00200200 c05c8b44 00000000 c05c8b60 0000000c 0000012a
-[   53.739358] 5de0: c05c8b00 c059c548 00000001 00000040 c0585e3c c0585e00 c031331c c0313874
-[   53.747503] 5e00: c05c8ce3 c0584000 c05ca6c0 ffff3f7c c0028504 00000003 0000000c c05ceb10
-[   53.755650] 5e20: c05ceb0c 00000001 c0584000 c0584000 c0585ea4 c0585e40 c0028968 c0313238
-[   53.763795] 5e40: c005cc94 c005eb24 00200000 c059b3e0 ffff3f7b c059c548 c05ceac0 0000000a
-[   53.771941] 5e60: 00000000 c059e6d8 c0584000 0000000c 00000101 c05c8d70 00000000 60000193
-[   53.780086] 5e80: c0584000 00000000 c0619b00 00000000 412fc082 c0584038 c0585ebc c0585ea8
-[   53.788232] 5ea0: c0028c40 c0028814 00000000 c0584000 c0585ed4 c0585ec0 c0028fb8 c0028bd0
-[   53.796378] 5ec0: c05b5018 00000058 c0585ef4 c0585ed8 c00104e8 c0028ef4 00000020 c0619b28
-[   53.804524] 5ee0: c0585f20 00000001 c0585f1c c0585ef8 c00085dc c00104a8 c058c734 c00106d4
-[   53.812670] 5f00: 60000013 ffffffff c0585f54 c058c0d0 c0585f74 c0585f20 c0014344 c0008578
-[   53.820815] 5f20: 00000000 00002a9c 00000000 c058c734 c0584038 c05c92ac c0584000 c05c8c08
-[   53.828961] 5f40: c058c0d0 412fc082 c0584038 c0585f74 c0585f68 c0585f68 c00106d0 c00106d4
-[   53.837107] 5f60: 60000013 ffffffff c0585f9c c0585f78 c005c2ac c00106ac c058c040 c0584000
-[   53.845252] 5f80: c0584000 c0584000 c03aa868 ffffffff c0585fb4 c0585fa0 c03a2458 c005c198
-[   53.853398] 5fa0: 00000000 c058ca08 c0585ff4 c0585fb8 c053aa74 c03a23d0 ffffffff ffffffff
-[   53.861544] 5fc0: c053a540 00000000 00000000 c0566058 00000000 10c53c7d c058c05c c0566054
-[   53.869689] 5fe0: c058f88c 30004059 00000000 c0585ff8 30008070 c053a7c8 00000000 00000000
-[   53.877848] [<c03595a4>] (tcp_v4_early_demux+0xbc/0x150) from [<c03377f0>] (ip_rcv+0x37c/0x590)
-[   53.886510] [<c03377f0>] (ip_rcv+0x37c/0x590) from [<c0311dd4>] (__netif_receive_skb_core+0x1c0/0x624)
-[   53.895779] [<c0311dd4>] (__netif_receive_skb_core+0x1c0/0x624) from [<c0312f8c>] (__netif_receive_skb+0x38/0x88)
-[   53.906003] [<c0312f8c>] (__netif_receive_skb+0x38/0x88) from [<c031390c>] (process_backlog+0xa4/0x15c)
-[   53.915361] [<c031390c>] (process_backlog+0xa4/0x15c) from [<c031331c>] (net_rx_action+0xf0/0x230)
-[   53.924290] [<c031331c>] (net_rx_action+0xf0/0x230) from [<c0028968>] (__do_softirq+0x160/0x35c)
-[   53.933040] [<c0028968>] (__do_softirq+0x160/0x35c) from [<c0028c40>] (do_softirq+0x7c/0x80)
-[   53.941444] [<c0028c40>] (do_softirq+0x7c/0x80) from [<c0028fb8>] (irq_exit+0xd0/0x10c)
-[   53.949423] [<c0028fb8>] (irq_exit+0xd0/0x10c) from [<c00104e8>] (handle_IRQ+0x4c/0x94)
-[   53.957390] [<c00104e8>] (handle_IRQ+0x4c/0x94) from [<c00085dc>] (vic_handle_irq+0x70/0xac)
-[   53.965795] [<c00085dc>] (vic_handle_irq+0x70/0xac) from [<c0014344>] (__irq_svc+0x44/0x78)
-[   53.974106] Exception stack(0xc0585f20 to 0xc0585f68)
-[   53.979137] 5f20: 00000000 00002a9c 00000000 c058c734 c0584038 c05c92ac c0584000 c05c8c08
-[   53.987283] 5f40: c058c0d0 412fc082 c0584038 c0585f74 c0585f68 c0585f68 c00106d0 c00106d4
-[   53.995423] 5f60: 60000013 ffffffff
-[   53.998898] [<c0014344>] (__irq_svc+0x44/0x78) from [<c00106d4>] (arch_cpu_idle+0x34/0x40)
-[   54.007133] [<c00106d4>] (arch_cpu_idle+0x34/0x40) from [<c005c2ac>] (cpu_startup_entry+0x120/0x26c)
-[   54.016236] [<c005c2ac>] (cpu_startup_entry+0x120/0x26c) from [<c03a2458>] (rest_init+0x94/0x98)
-[   54.024992] [<c03a2458>] (rest_init+0x94/0x98) from [<c053aa74>] (start_kernel+0x2b8/0x2c4)
-[   54.033299] Code: e3043504 e5845010 e34c3030 e5843064 (e5d53012)
-
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
----
- net/ipv4/tcp_ipv4.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index b14266b..c6a318f 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1868,7 +1868,7 @@ void tcp_v4_early_demux(struct sk_buff *skb)
- 				       iph->saddr, th->source,
- 				       iph->daddr, ntohs(th->dest),
- 				       skb->skb_iif);
--	if (sk) {
-+	if (!IS_ERR_OR_NULL(sk)) {
- 		skb->sk = sk;
- 		skb->destructor = sock_edemux;
- 		if (sk->sk_state != TCP_TIME_WAIT) {
--- 
-1.7.0.4
-
+On Mon, Nov 25, 2013 at 11:55 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi,
+>
+> On Friday 22 November 2013 11:31 AM, Yuvaraj Kumar wrote:
+>> Any comments on this patch?
+>>
+>> On Mon, Nov 11, 2013 at 2:02 PM, Yuvaraj Kumar C D <yuvaraj.cd@gmail.com> wrote:
+>>> This patch adds the sata phy driver for Exynos5250.Exynos5250 sata
+>>> phy comprises of CMU and TRSV blocks which are of I2C register Map.
+>>> So this patch also adds a i2c client driver, which is used configure
+>>> the CMU and TRSV block of exynos5250 SATA PHY.
+>>>
+>>> This patch incorporates the generic phy framework to deal with sata
+>>> phy.
+>>>
+>>> This patch depends on the below patches
+>>>         [1].drivers: phy: add generic PHY framework
+>>>                 by Kishon Vijay Abraham I<kishon@ti.com>
+>>>         [2].ata: ahci_platform: Manage SATA PHY
+>>>                 by Roger Quadros <rogerq@ti.com>
+>>> Changes from V1:
+>>>         1.Adapted to latest version of Generic PHY framework
+>>>         2.Removed exynos_sata_i2c_remove function.
+>>>
+>>> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>>> Signed-off-by: Girish K S <ks.giri@samsung.com>
+>>> Signed-off-by: Vasanth Ananthan <vasanth.a@samsung.com>
+>>> ---
+>>>  drivers/phy/Kconfig               |    7 ++
+>>>  drivers/phy/Makefile              |    1 +
+>>>  drivers/phy/exynos5250_phy_i2c.c  |   43 +++++++
+>>>  drivers/phy/sata_phy_exynos5250.c |  245 +++++++++++++++++++++++++++++++++++++
+>>>  drivers/phy/sata_phy_exynos5250.h |   33 +++++
+>>>  5 files changed, 329 insertions(+)
+>>>  create mode 100644 drivers/phy/exynos5250_phy_i2c.c
+>>>  create mode 100644 drivers/phy/sata_phy_exynos5250.c
+>>>  create mode 100644 drivers/phy/sata_phy_exynos5250.h
+>>>
+>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>>> index 349bef2..8afd423 100644
+>>> --- a/drivers/phy/Kconfig
+>>> +++ b/drivers/phy/Kconfig
+>>> @@ -15,4 +15,11 @@ config GENERIC_PHY
+>>>           phy users can obtain reference to the PHY. All the users of this
+>>>           framework should select this config.
+>>>
+>>> +config EXYNOS5250_SATA_PHY
+>>> +       tristate "Exynos5250 Sata SerDes/PHY driver"
+>>> +       depends on GENERIC_PHY && SOC_EXYNOS5250
+>
+> select GENERIC_PHY?
+Ok
+>>> +       help
+>>> +         Support for Exynos5250 sata SerDes/Phy found on Samsung
+>>> +         SoCs.
+>
+> checkpatch gives a warning if it doesn't have atleast 4 help lines :-s
+Ok.I will add more description.
+>>> +
+>>>  endmenu
+>>> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+>>> index 9e9560f..824f47b 100644
+>>> --- a/drivers/phy/Makefile
+>>> +++ b/drivers/phy/Makefile
+>>> @@ -3,3 +3,4 @@
+>>>  #
+>>>
+>>>  obj-$(CONFIG_GENERIC_PHY)      += phy-core.o
+>>> +obj-$(CONFIG_EXYNOS5250_SATA_PHY)      += sata_phy_exynos5250.o exynos5250_phy_i2c.o
+>>> diff --git a/drivers/phy/exynos5250_phy_i2c.c b/drivers/phy/exynos5250_phy_i2c.c
+>>> new file mode 100644
+>>> index 0000000..752c8fe
+>>> --- /dev/null
+>>> +++ b/drivers/phy/exynos5250_phy_i2c.c
+>>> @@ -0,0 +1,43 @@
+>>> +/*
+>>> + * Copyright (C) 2013 Samsung Electronics Co.Ltd
+>>> + * Author:
+>>> + *     Yuvaraj C D <yuvaraj.cd@samsung.com>
+>>> + *
+>>> + * This program is free software; you can redistribute  it and/or modify it
+>>> + * under  the terms of  the GNU General  Public License as published by the
+>>> + * Free Software Foundation;  either version 2 of the  License, or (at your
+>>> + * option) any later version.
+>>> + *
+>>> + */
+>>> +
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/i2c.h>
+>>> +#include <linux/module.h>
+>>> +#include "sata_phy_exynos5250.h"
+>
+> arrange these headers in alphabetical order.. so it's easier to check if a
+> header has already been added while adding new headers.
+ok.
+>>> +
+>>> +static int exynos_sata_i2c_probe(struct i2c_client *client,
+>>> +               const struct i2c_device_id *i2c_id)
+>>> +{
+>>> +       sataphy_attach_i2c_client(client);
+>>> +
+>>> +       dev_info(&client->adapter->dev,
+>>> +               "attached %s into sataphy i2c adapter successfully\n",
+>>> +               client->name);
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static const struct i2c_device_id phy_i2c_device_match[] = {
+>>> +       { "sata-phy-i2c", 0 },
+>
+> pls use .compatible to assign compatible strings. Do you have dt documentation?
+it is of the type i2c_device_id.I think above is true for "of_device_id" type.
+For some reason i2c client drivers do need ".id_table" rather than
+".of_match_table" to get probed.
+Please refer http://comments.gmane.org/gmane.linux.drivers.i2c/15169
+> It should be *exynos,sata-phy-i2c*.
+Ok. I can use "exynos,sata-phy-i2c".
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, phy_i2c_device_match);
+>>> +
+>>> +struct i2c_driver sataphy_i2c_driver = {
+>>> +       .probe    = exynos_sata_i2c_probe,
+>>> +       .id_table = phy_i2c_device_match,
+>>> +       .driver   = {
+>>> +               .name = "sata-phy-i2c",
+>>> +               .owner = THIS_MODULE,
+>>> +               .of_match_table = (void *)phy_i2c_device_match,
+>
+> use of_match_ptr here.
+I think " .of_match_table " not required .With the above reference I
+can remove it?
+>>> +               },
+>>> +};
+>>> diff --git a/drivers/phy/sata_phy_exynos5250.c b/drivers/phy/sata_phy_exynos5250.c
+>>> new file mode 100644
+>>> index 0000000..13f4ce0
+>>> --- /dev/null
+>>> +++ b/drivers/phy/sata_phy_exynos5250.c
+>>> @@ -0,0 +1,245 @@
+>>> +/*
+>>> + * Samsung SATA SerDes(PHY) driver
+>>> + *
+>>> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
+>>> + * Authors: Girish K S <ks.giri@samsung.com>
+>>> + *         Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 as
+>>> + * published by the Free Software Foundation.
+>>> + */
+>>> +
+>>> +#include <linux/delay.h>
+>>> +#include <linux/io.h>
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/of.h>
+>>> +#include <linux/of_address.h>
+>>> +#include <linux/phy/phy.h>
+>>> +#include <linux/i2c.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/spinlock.h>
+>>> +#include <linux/clk.h>
+>>> +#include "sata_phy_exynos5250.h"
+>
+> arrange these in alphabetical order..
+Ok .
+>>> +
+>>> +static struct i2c_client *phy_i2c_client;
+>
+> using globals :-s
+> how are you planning to handle when your SoC have multiple instances of this IP?
+This driver is very specific for exynos5250, which has only one SATA
+controller and a dedicated i2c controller for SATA PHY communication.
+>>> +
+>>> +struct exynos_sata_phy {
+>>> +       struct phy *phy;
+>>> +       struct clk *phyclk;
+>>> +       void __iomem *regs;
+>>> +       void __iomem *pmureg;
+>
+> Tomasz mentioned in some other patch about using syscon interface for setting
+> pmureg. I think it's applicable here too.
+Ok.i will move to regmap framework.
+>>> +};
+>>> +
+>>> +static bool wait_for_reg_status(void __iomem *base, u32 reg, u32 checkbit,
+>>> +                               u32 status)
+>>> +{
+>>> +       unsigned long timeout = jiffies + usecs_to_jiffies(1000);
+>>> +       while (time_before(jiffies, timeout)) {
+>>> +               if ((readl(base + reg) & checkbit) == status)
+>>> +                       return true;
+>>> +       }
+>>> +       return false;
+>>> +}
+>>> +
+>>> +void sataphy_attach_i2c_client(struct i2c_client *sata_phy)
+>
+> exynos_sata_phy_i2c_client?
+Ok
+>>> +{
+>>> +       if (sata_phy)
+>>> +               phy_i2c_client = sata_phy;
+>
+> you should return EPROBE_DEFER if sata_phy is NULL so that your i2c client will
+> try and attach with this driver again.
+Ok
+>>> +}
+>>> +
+>>> +static int __set_phy_state(struct exynos_sata_phy *state, unsigned int on)
+>>> +{
+>>> +       u32 reg;
+>>> +
+>>> +       reg = readl(state->pmureg);
+>>> +       if (on)
+>>> +               reg |= EXYNOS_SATA_PHY_EN;
+>>> +       else
+>>> +               reg &= ~EXYNOS_SATA_PHY_EN;
+>>> +       writel(reg, state->pmureg);
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static int exynos_sata_phy_power_on(struct phy *phy)
+>>> +{
+>>> +       struct exynos_sata_phy *state = phy_get_drvdata(phy);
+>>> +
+>>> +       return __set_phy_state(state, 1);
+>>> +}
+>>> +
+>>> +static int exynos_sata_phy_power_off(struct phy *phy)
+>>> +{
+>>> +       struct exynos_sata_phy *state = phy_get_drvdata(phy);
+>>> +
+>>> +       return __set_phy_state(state, 0);
+>>> +}
+>>> +
+>>> +static int exynos_sataphy_parse_dt(struct device *dev,
+>>> +                               struct exynos_sata_phy *sata)
+>>> +{
+> exynos_sata_phy_parse_dt
+>>> +       struct device_node *np = dev->of_node;
+>>> +       struct device_node *sataphy_pmu;
+>>> +
+>>> +       sataphy_pmu = of_get_child_by_name(np, "sataphy-pmu");
+>>> +       if (!sataphy_pmu) {
+>>> +               dev_err(dev, "No PMU interface for sata-phy\n");
+>>> +               return -ENODEV;
+>>> +       }
+>>> +
+>>> +       sata->pmureg = of_iomap(sataphy_pmu, 0);
+>>> +       if (!sata->pmureg) {
+>>> +               dev_err(dev, "Can't get sata-phy pmu control register\n");
+>>> +               of_node_put(sataphy_pmu);
+>>> +               return -ENXIO;
+>>> +       }
+>
+> As mentioned earlier you should use syscon interface for setting pmu registers.
+Ok.
+>>> +
+>>> +       of_node_put(sataphy_pmu);
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static int exynos_sata_phy_init(struct phy *phy)
+>>> +{
+>>> +       u32 val;
+>>> +       int ret = 0;
+>>> +       u8 buf[] = { 0x3A, 0x0B };
+>>> +       struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
+>>> +
+>>> +       if (!phy_i2c_client)
+>>> +               return -EPROBE_DEFER;
+>>> +
+>>> +       writel(EXYNOS_SATA_PHY_EN, sata_phy->pmureg);
+>>> +
+>>> +       val = 0;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +       val |= 0xFF;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +       val |= LINK_RESET;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +       val |= RESET_CMN_RST_N;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>>> +       val &= ~PHCTRLM_REF_RATE;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>>> +
+>>> +       /* High speed enable for Gen3 */
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>>> +       val |= PHCTRLM_HIGH_SPEED;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
+>>> +
+>>> +       val |= CTRL0_P0_PHY_CALIBRATED_SEL | CTRL0_P0_PHY_CALIBRATED;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_CTRL0);
+>>> +
+>>> +       writel(0x2, sata_phy->regs + EXYNOS5_SATA_MODE0);
+>>> +
+>>> +       ret = i2c_master_send(phy_i2c_client, buf, sizeof(buf));
+>>> +       if (ret < 0)
+>>> +               return -ENXIO;
+>
+> huh.. Shouldn't this be done in your phy_i2c driver? Then you won't need the
+> attach i2c client stuff.
+we are configuring the SATA PHY TX and RX Bit Width Select using the
+i2c client driver.Unless we reset and configure the SATA PHY
+controller,anything on this particular i2c bus is unregonized.
+>>> +
+>>> +       /* release cmu reset */
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +       val &= ~RESET_CMN_RST_N;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +
+>>> +       val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +       val |= RESET_CMN_RST_N;
+>>> +       writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
+>>> +
+>>> +       return (wait_for_reg_status(sata_phy->regs, EXYNOS5_SATA_PHSATA_STATM,
+>>> +               PHSTATM_PLL_LOCKED, 1)) ? 0 : -EINVAL;
+>>> +
+>>> +}
+>>> +
+>>> +static struct phy_ops exynos_sata_phy_ops = {
+>>> +       .init           = exynos_sata_phy_init,
+>>> +       .power_on       = exynos_sata_phy_power_on,
+>>> +       .power_off      = exynos_sata_phy_power_off,
+>
+> you don't need exit callback that is complimentary to init?
+>>> +       .owner          = THIS_MODULE,
+>>> +};
+>>> +
+>>> +static int exynos_sata_phy_probe(struct platform_device *pdev)
+>>> +{
+>>> +       struct exynos_sata_phy *sata;
+>>> +       struct device *dev = &pdev->dev;
+>>> +       struct resource *res;
+>>> +       struct phy_provider *phy_provider;
+>>> +       int ret = 0;
+>>> +
+>>> +       sata = devm_kzalloc(dev, sizeof(*sata), GFP_KERNEL);
+>>> +       if (!sata)
+>>> +               return -ENOMEM;
+>>> +
+>>> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> +
+>>> +       sata->regs = devm_ioremap_resource(dev, res);
+>>> +       if (IS_ERR(sata->regs))
+>>> +               return PTR_ERR(sata->regs);
+>>> +
+>>> +       dev_set_drvdata(dev, sata);
+>>> +
+>>> +       if (i2c_add_driver(&sataphy_i2c_driver)) {
+>>> +               dev_err(dev, "failed to register sataphy i2c driver\n");
+>>> +               return -ENOENT;
+>>> +       }
+>>> +
+>>> +       sata->phyclk = devm_clk_get(dev, "sata_phyctrl");
+>>> +       if (IS_ERR(sata->phyclk)) {
+>>> +               dev_err(dev, "failed to get clk for PHY\n");
+>>> +               return PTR_ERR(sata->phyclk);
+>>> +       }
+>>> +
+>>> +       ret = clk_prepare_enable(sata->phyclk);
+>>> +       if (ret < 0) {
+>>> +               dev_err(dev, "failed to enable source clk\n");
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       if (dev->of_node) {
+>>> +               ret = exynos_sataphy_parse_dt(dev, sata);
+>>> +               if (ret)
+>>> +                       return ret;
+>>> +       }
+>>> +
+>>> +       phy_provider = devm_of_phy_provider_register(dev,
+>>> +                                       of_phy_simple_xlate);
+>>> +       if (IS_ERR(phy_provider))
+>>> +               return PTR_ERR(phy_provider);
+>>> +
+>>> +       sata->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
+>>> +       if (IS_ERR(sata->phy)) {
+>>> +               dev_err(dev, "failed to create PHY\n");
+>>> +               return PTR_ERR(sata->phy);
+>>> +       }
+>>> +       phy_set_drvdata(sata->phy, sata);
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static const struct of_device_id exynos_sata_phy_of_match[] = {
+>>> +       { .compatible = "samsung,exynos5250-sata-phy" },
+>>> +       { },
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, exynos_sata_phy_of_match);
+>>> +
+>>> +static struct platform_driver exynos_sata_phy_driver = {
+>>> +       .probe  = exynos_sata_phy_probe,
+>>> +       .driver = {
+>>> +               .of_match_table = exynos_sata_phy_of_match,
+>
+> use of_match_ptr..
+>>> +               .name  = "samsung,sata-phy",
+>>> +               .owner = THIS_MODULE,
+>>> +       }
+>>> +};
+>>> +module_platform_driver(exynos_sata_phy_driver);
+>>> +
+>>> +MODULE_DESCRIPTION("Samsung SerDes PHY driver");
+>>> +MODULE_LICENSE("GPL");
+>
+> GPL v2?
+ok
+>>> +MODULE_AUTHOR("ks.giri <ks.giri@samsung.com>");
+>>> +MODULE_AUTHOR("Yuvaraj C D <yuvaraj.cd@samsung.com>");
+>>> diff --git a/drivers/phy/sata_phy_exynos5250.h b/drivers/phy/sata_phy_exynos5250.h
+>>> new file mode 100644
+>>> index 0000000..64e38a1
+>>> --- /dev/null
+>>> +++ b/drivers/phy/sata_phy_exynos5250.h
+>>> @@ -0,0 +1,33 @@
+>>> +/*
+>>> + *
+>>> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+>>> + * Author:
+>>> + *     Yuvaraj Kumar C D<yuvaraj.cd@samsung.com>
+>>> + *
+>>> + * This program is free software; you can redistribute  it and/or modify it
+>>> + * under  the terms of  the GNU General  Public License as published by the
+>>> + * Free Software Foundation;  either version 2 of the  License, or (at your
+>>> + * option) any later version.
+>>> + */
+>>> +
+>>> +#define EXYNOS5_SATA_RESET             0x4
+>>> +#define EXYNOS5_SATA_MODE0              0x10
+>>> +#define EXYNOS5_SATA_CTRL0              0x14
+>>> +#define EXYNOS5_SATA_STAT0             0x18
+>>> +#define EXYNOS5_SATA_PHSATA_CTRLM       0xE0
+>>> +#define EXYNOS5_SATA_PHSATA_CTRL0       0xE4
+>>> +#define EXYNOS5_SATA_PHSATA_STATM       0xF0
+>>> +#define EXYNOS5_SATA_PHSTAT0            0xF4
+>
+> use tabs instead of spaces.. looks like there is some alignment problem.
+Ok.
+>
+> Thanks
+> Kishon
