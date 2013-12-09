@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829Ab3LIP55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:57:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932555Ab3LIP5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:57:55 -0500
-Message-ID: <52A5E87B.9080209@redhat.com>
-Date: Mon, 09 Dec 2013 10:57:47 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933821Ab3LIQA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:00:26 -0500
+Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:53508 "EHLO
+	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932566Ab3LIQAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:00:25 -0500
+Date: Mon, 9 Dec 2013 16:00:24 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Rik van Riel <riel@redhat.com>
+cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/15] mm: fix TLB flush race between migration, and
+ change_protection_range
+In-Reply-To: <52A29278.9000609@redhat.com>
+Message-ID: <00000142d816866f-615798f8-74d8-401c-b35a-88aa1dbc8eb5-000000@email.amazonses.com>
+References: <1386060721-3794-1-git-send-email-mgorman@suse.de> <1386060721-3794-15-git-send-email-mgorman@suse.de> <529E641A.7040804@redhat.com> <20131203234637.GS11295@suse.de> <529F3D51.1090203@redhat.com> <20131204160741.GC11295@suse.de>
+ <20131206141331.10880d2b@annuminas.surriel.com> <00000142c99cf5b0-69cc9987-aa36-4889-af6a-1a45032d0d13-000000@email.amazonses.com> <52A23FD1.3040102@redhat.com> <00000142ca7218fe-a5566a24-0ef5-4545-8a98-d33116b7d703-000000@email.amazonses.com>
+ <52A29278.9000609@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/18] mm: numa: Clear numa hinting information on mprotect
-References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-10-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386572952-1191-10-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.127.232.35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 02:09 AM, Mel Gorman wrote:
-> On a protection change it is no longer clear if the page should be still
-> accessible.  This patch clears the NUMA hinting fault bits on a protection
-> change.
+On Fri, 6 Dec 2013, Rik van Riel wrote:
 
-I had to think about this one, because my first thought was
-"wait, aren't NUMA ptes inaccessible already?".
+> > Ok then what are you trying to fix?
+>
+> It would help if you had actually read the patch.
 
-Then I thought about doing things like adding read or write
-permission in the mprotect, eg. changing from PROT_NONE to
-PROT_READ ... and it became unclear what to do with the NUMA
-bit in that case...
+I read the patch. Please update the documentation to accurately describe
+the race.
 
-This patch clears up some confusing situations :)
+>From what I can see this race affects only huge pages and the basic issue
+seems to be that huge pages do not use migration entries but directly
+replace the pmd (migrate_misplaced_transhuge_page() f.e.).
 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+That is not safe and there may be multiple other races as we add more
+general functionality to huge pages. An intermediate stage is needed
+that allows the clearing out of remote tlb entries before the new tlb
+entry becomes visible.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
+Then you wont need this code anymore.
