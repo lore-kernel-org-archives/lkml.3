@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761523Ab3LITNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:13:53 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46135 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761202Ab3LITNw (ORCPT
+	id S932541Ab3LITO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:14:56 -0500
+Received: from mail-yh0-f48.google.com ([209.85.213.48]:60434 "EHLO
+	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932186Ab3LITOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 14:13:52 -0500
-Date: Mon, 9 Dec 2013 20:13:50 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] softirq: Use ffs in __do_softirq
-Message-ID: <20131209191348.GB1811@localhost.localdomain>
-References: <cover.1384656563.git.joe@perches.com>
- <8d10077333476c5c0e054cf060006999cf150f0c.1384656563.git.joe@perches.com>
- <20131209184454.GA1811@localhost.localdomain>
- <1386615406.8168.16.camel@joe-AO722>
+	Mon, 9 Dec 2013 14:14:53 -0500
+Date: Mon, 9 Dec 2013 16:14:39 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 01/14] tools lib traceevent: Get rid of malloc_or_die()
+ in show_error()
+Message-ID: <20131209191439.GG8098@ghostprotocols.net>
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+ <1386567251-22751-2-git-send-email-namhyung@kernel.org>
+ <20131209183009.GC8098@ghostprotocols.net>
+ <20131209140342.5f72298f@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386615406.8168.16.camel@joe-AO722>
+In-Reply-To: <20131209140342.5f72298f@gandalf.local.home>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 10:56:46AM -0800, Joe Perches wrote:
-> On Mon, 2013-12-09 at 19:44 +0100, Frederic Weisbecker wrote:
-> > On Sun, Nov 17, 2013 at 01:55:10AM -0800, Joe Perches wrote:
-> > > Possible speed improvement of the __do_softirq function by using ffs
-> > > instead of using a while loop with an & 1 test then single bit shift.
-> []
-> > Perhaps using for_each_set_bit() would simplify that more?
+Em Mon, Dec 09, 2013 at 02:03:42PM -0500, Steven Rostedt escreveu:
+> On Mon, 9 Dec 2013 15:30:09 -0300
+> Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 > 
-> It might simplify the appearance of the code but it
-> would/could expand the amount of generated code because
-> for_each_set_bit uses an address_of(unsigned long) and
-> the value tested is an unsigned int.
 > 
-> extra dereferences, can't be in a register, etc...
+> > > +		error = malloc(MAX_ERR_STR_SIZE);
+> > > +		if (error == NULL) {
+> > > +			/* no memory */
+> > > +			*error_str = "failed to allocate memory";
+> > > +			return;
+> > 
+> > Can *error_str point to either malloc'ed or constant strings? Who
+> > releases the allocated memory?
+> > 
+> 
+> Good question. Perhaps we should have a flag that states if the string
+> is allocated or not. Or better yet, since the only reason it would be
+> pointing to a static string is if the string for error_str itself
+> failed to allocate. Then we could use a string within pevent for it:
+> 
+> static char *pevent_failed_error_alloc = "failed to allocate memory";
+> 
+> Then in the freeing of error str:
+> 
+> void pevent_free_error_str(error_str)
+> {
+> 	if (error_str != pevent_failed_error_alloc)
+> 		free(error_str);
+> }
 
-I'm not sure that would matter that much. But yeah it appears that find_first_bit/find_next_bit
-aren't even overriden in x86. So they are function calls. Although I guess that most
-of the time only one softirq is pending at a time.
+That is a possibility, yes, then any other routine that works in such a
+way could check against this string, but what is wrong with returning a
+value to that function and checking against < 0?
 
-But anyway perhaps we want that path to stay very optimized, so you're
-patch look ok.
-
-Thanks.
+- Arnaldo
