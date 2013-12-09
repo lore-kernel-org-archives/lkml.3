@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab3LIJuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:50:06 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:44241 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab3LIJuB (ORCPT
+	id S933173Ab3LIJvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:51:21 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:34204 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932303Ab3LIJvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:50:01 -0500
-Message-ID: <52A59244.2000908@gmail.com>
-Date: Mon, 09 Dec 2013 10:49:56 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Sergei Ianovich <ynvich@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: Re: [PATCH 4/9] ARM: pxa: remove unused variable
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>	 <1386543229-1542-1-git-send-email-ynvich@gmail.com>	 <1386543229-1542-5-git-send-email-ynvich@gmail.com>	 <52A585D9.4000605@gmail.com> <1386582151.7152.113.camel@host5.omatika.ru>
-In-Reply-To: <1386582151.7152.113.camel@host5.omatika.ru>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Dec 2013 04:51:19 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: aacraid@adaptec.com, JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] [SCSI] aacraid: remove deprecated IRQF_DISABLED
+Date: Mon,  9 Dec 2013 10:51:14 +0100
+Message-Id: <1386582674-4826-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1381036825-10585-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1381036825-10585-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 10:42 AM, Sergei Ianovich wrote:
-> On Mon, 2013-12-09 at 09:56 +0100, Daniel Mack wrote:
->> A similar patch was already merged by Haojian recently. You should
->> probably rebase your patch stack on top of his maintainer tree.
-> 
-> I've just come across the patch you mention in the arm mailing list.
-> 
-> Could you please provide a link to Haojian's official public repository?
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/scsi/aacraid/rx.c  | 2 +-
+ drivers/scsi/aacraid/sa.c  | 3 +--
+ drivers/scsi/aacraid/src.c | 4 ++--
+ 3 files changed, 4 insertions(+), 5 deletions(-)
 
-According to MAINTAINERS, it's here:
-
-  git://github.com/hzhuang1/linux.git
-
-But it seems it hasn't seen an update recently. Haojian?
-
-> If possible, a link link to your repository will also be very helpful.
-
-  https://github.com/zonque/linux/tree/pxa-dma-v2
-
-
-Daniel
+diff --git a/drivers/scsi/aacraid/rx.c b/drivers/scsi/aacraid/rx.c
+index dada38aeacc0..bf077ce95bfe 100644
+--- a/drivers/scsi/aacraid/rx.c
++++ b/drivers/scsi/aacraid/rx.c
+@@ -646,7 +646,7 @@ int _aac_rx_init(struct aac_dev *dev)
+ 	dev->sync_mode = 0;	/* sync. mode not supported */
+ 	dev->msi = aac_msi && !pci_enable_msi(dev->pdev);
+ 	if (request_irq(dev->pdev->irq, dev->a_ops.adapter_intr,
+-			IRQF_SHARED|IRQF_DISABLED, "aacraid", dev) < 0) {
++			IRQF_SHARED, "aacraid", dev) < 0) {
+ 		if (dev->msi)
+ 			pci_disable_msi(dev->pdev);
+ 		printk(KERN_ERR "%s%d: Interrupt unavailable.\n",
+diff --git a/drivers/scsi/aacraid/sa.c b/drivers/scsi/aacraid/sa.c
+index 2244f315f33b..e66477c98240 100644
+--- a/drivers/scsi/aacraid/sa.c
++++ b/drivers/scsi/aacraid/sa.c
+@@ -387,8 +387,7 @@ int aac_sa_init(struct aac_dev *dev)
+ 		goto error_irq;
+ 	dev->sync_mode = 0;	/* sync. mode not supported */
+ 	if (request_irq(dev->pdev->irq, dev->a_ops.adapter_intr,
+-			IRQF_SHARED|IRQF_DISABLED,
+-			"aacraid", (void *)dev ) < 0) {
++			IRQF_SHARED, "aacraid", (void *)dev) < 0) {
+ 		printk(KERN_WARNING "%s%d: Interrupt unavailable.\n",
+ 			name, instance);
+ 		goto error_iounmap;
+diff --git a/drivers/scsi/aacraid/src.c b/drivers/scsi/aacraid/src.c
+index 7e17107643d4..9c65aed26212 100644
+--- a/drivers/scsi/aacraid/src.c
++++ b/drivers/scsi/aacraid/src.c
+@@ -647,7 +647,7 @@ int aac_src_init(struct aac_dev *dev)
+ 	dev->msi = aac_msi && !pci_enable_msi(dev->pdev);
+ 
+ 	if (request_irq(dev->pdev->irq, dev->a_ops.adapter_intr,
+-			IRQF_SHARED|IRQF_DISABLED, "aacraid", dev) < 0) {
++			IRQF_SHARED, "aacraid", dev) < 0) {
+ 
+ 		if (dev->msi)
+ 			pci_disable_msi(dev->pdev);
+@@ -804,7 +804,7 @@ int aac_srcv_init(struct aac_dev *dev)
+ 		goto error_iounmap;
+ 	dev->msi = aac_msi && !pci_enable_msi(dev->pdev);
+ 	if (request_irq(dev->pdev->irq, dev->a_ops.adapter_intr,
+-		IRQF_SHARED|IRQF_DISABLED, "aacraid", dev) < 0) {
++		IRQF_SHARED, "aacraid", dev) < 0) {
+ 		if (dev->msi)
+ 			pci_disable_msi(dev->pdev);
+ 		printk(KERN_ERR "%s%d: Interrupt unavailable.\n",
+-- 
+1.8.3.2
 
