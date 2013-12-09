@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab3LIO4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 09:56:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40797 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761102Ab3LIO4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 09:56:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,858,1378882800"; 
-   d="scan'208";a="447005522"
-Date: Mon, 9 Dec 2013 22:56:51 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: sleeping function called from invalid context at
- kernel/locking/rwsem.c:20
-Message-ID: <20131209145651.GV5135@yliu-dev.sh.intel.com>
-References: <20131205031051.GC5135@yliu-dev.sh.intel.com>
- <20131205225019.GA32005@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205225019.GA32005@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933573Ab3LIO7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 09:59:50 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:35174 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab3LIO7t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 09:59:49 -0500
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 00/13] staging/lustre: sync with external tree, set 3
+Date: Mon,  9 Dec 2013 22:56:52 +0800
+Message-Id: <1386601025-422-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 05:50:19PM -0500, Tejun Heo wrote:
-> On Thu, Dec 05, 2013 at 11:10:51AM +0800, Yuanhan Liu wrote:
-> > Greetings,
-> > 
-> > I got the below dmesg and the first bad commit is
-> > 
-> > commit 4b93dc9b1c684d0587fe44d36bbfdf45bd3bea9d
-> > Author:     Tejun Heo <tj@kernel.org>
-> > AuthorDate: Thu Nov 28 14:54:43 2013 -0500
-> > Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > CommitDate: Fri Nov 29 18:16:08 2013 -0800
-> > 
-> >     sysfs, kernfs: prepare mount path for kernfs
-> 
-> Oops, can you please try the following patch?
+Hi Greg,
 
-Sorry for being a bit late, but, it does work!
+The first patch is a cleanup. The rest were ported from external tree.
+Please see if they can be merged.
 
-	--yliu
-> 
-> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-> index e7e3aa8..8d07527 100644
-> --- a/fs/sysfs/mount.c
-> +++ b/fs/sysfs/mount.c
-> @@ -45,8 +45,10 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
->  
->  static void sysfs_kill_sb(struct super_block *sb)
->  {
-> +	void *ns = (void *)kernfs_super_ns(sb);
-> +
->  	kernfs_kill_sb(sb);
-> -	kobj_ns_drop(KOBJ_NS_TYPE_NET, (void *)kernfs_super_ns(sb));
-> +	kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
->  }
->  
->  static struct file_system_type sysfs_fs_type = {
+Thanks,
+Tao
+
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+
+Andreas Dilger (1):
+  staging/lustre/idl: remove LASSERT/CLASSERT from lustre_idl.h
+
+Andriy Skulysh (1):
+  staging/lustre/ptlrpc: flock deadlock detection does not work
+
+Artem Blagodarenko (2):
+  staging/lustre/mgs: set_param -P option that sets value permanently
+  staging/lustre/obdclass: remove extra break in class_process_config
+
+Doug Oucharek (1):
+  staging/lustre/lnet: Add LNet Router Priority parameter
+
+JC Lafoucriere (2):
+  staging/lustre/api: HSM import uses new released pattern
+  staging/lustre/lustre_user.h: remove obsolete comments
+
+John L. Hammond (1):
+  staging/lustre/llite: pass correct pointer to obd_iocontrol()
+
+Lai Siyao (2):
+  staging/lustre/llite: remove ll_d_root_ops
+  staging/lustre/llite: don't d_add for create only files
+
+Mikhail Pershin (2):
+  staging/lustre/target: move OUT to the unified target code
+  staging/lustre/seq: remove seq_{query,handle}
+
+Peng Tao (1):
+  staging/lustre: remove server macros from lustre_net.h
+
+ .../lustre/include/linux/libcfs/libcfs_ioctl.h     |    1 +
+ .../staging/lustre/include/linux/lnet/lib-lnet.h   |    5 +-
+ .../staging/lustre/include/linux/lnet/lib-types.h  |    2 +-
+ drivers/staging/lustre/lnet/lnet/api-ni.c          |    5 +-
+ drivers/staging/lustre/lnet/lnet/config.c          |   39 +++-
+ drivers/staging/lustre/lnet/lnet/lib-move.c        |    6 +
+ drivers/staging/lustre/lnet/lnet/router.c          |   19 +-
+ drivers/staging/lustre/lnet/lnet/router_proc.c     |   16 +-
+ .../lustre/lustre/include/lustre/lustre_idl.h      |   48 +---
+ .../lustre/lustre/include/lustre/lustre_user.h     |   23 +-
+ drivers/staging/lustre/lustre/include/lustre_cfg.h |    2 +
+ .../staging/lustre/lustre/include/lustre_disk.h    |    2 +
+ .../lustre/lustre/include/lustre_dlm_flags.h       |   14 +-
+ drivers/staging/lustre/lustre/include/lustre_fid.h |    6 -
+ drivers/staging/lustre/lustre/include/lustre_net.h |  234 --------------------
+ drivers/staging/lustre/lustre/include/obd_class.h  |    9 +-
+ drivers/staging/lustre/lustre/ldlm/ldlm_flock.c    |   41 +++-
+ drivers/staging/lustre/lustre/llite/dcache.c       |   41 +---
+ drivers/staging/lustre/lustre/llite/dir.c          |   23 +-
+ drivers/staging/lustre/lustre/llite/file.c         |  118 ++++++++--
+ .../staging/lustre/lustre/llite/llite_internal.h   |    7 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |   44 ++--
+ drivers/staging/lustre/lustre/llite/llite_nfs.c    |    6 +-
+ drivers/staging/lustre/lustre/llite/namei.c        |   33 ++-
+ drivers/staging/lustre/lustre/llite/statahead.c    |    7 +-
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |   32 +--
+ drivers/staging/lustre/lustre/mgc/mgc_request.c    |   90 ++++++--
+ .../lustre/lustre/obdclass/lprocfs_status.c        |    1 +
+ .../staging/lustre/lustre/obdclass/obd_config.c    |   51 ++++-
+ drivers/staging/lustre/lustre/ptlrpc/wiretest.c    |   60 +++++
+ 30 files changed, 511 insertions(+), 474 deletions(-)
+
+-- 
+1.7.9.5
+
