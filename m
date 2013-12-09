@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760793Ab3LIIal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:30:41 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:37904 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759949Ab3LIIaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:30:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386565230-19228-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381550411-5824-1-git-send-email-michael.opdenacker@free-electrons.com>
-	<1386565230-19228-1-git-send-email-michael.opdenacker@free-electrons.com>
-Date: Mon, 9 Dec 2013 09:30:38 +0100
-Message-ID: <CACRpkdb5EchUkdA4vUnyaWp5AS2b1p6UNcA9emwivDTxQzPzuw@mail.gmail.com>
-Subject: Re: [PATCH][RESEND] ARM: misc: remove deprecated IRQF_DISABLED
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg Ungerer <gerg@uclinux.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1760806Ab3LIIc1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:32:27 -0500
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:53771
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760702Ab3LIIcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 03:32:24 -0500
+From: "yibin.gong@freescale.com" <yibin.gong@freescale.com>
+To: Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: RE: [PATCH] regulator: pfuze100: Fix address of FABID
+Thread-Topic: [PATCH] regulator: pfuze100: Fix address of FABID
+Thread-Index: AQHO9K/Bq9cBMeRZHEuGPTP6jt8RzJpLiL3A
+Date: Mon, 9 Dec 2013 08:32:21 +0000
+Message-ID: <92b2d00a0ca849d2a81b0ba90554a4fc@BLUPR03MB036.namprd03.prod.outlook.com>
+References: <1386573859.5508.0.camel@phoenix>
+In-Reply-To: <1386573859.5508.0.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.216]
+x-forefront-prvs: 00550ABE1F
+x-forefront-antispam-report: SFV:NSPM;SFS:(377454003)(13464003)(199002)(189002)(65816001)(47446002)(79102001)(76576001)(46102001)(53806001)(76796001)(33646001)(77096001)(63696002)(69226001)(31966008)(83072001)(76786001)(74502001)(56776001)(54316002)(47736001)(50986001)(47976001)(74706001)(76482001)(80976001)(74316001)(87266001)(74366001)(85306002)(81686001)(2656002)(56816005)(87936001)(90146001)(80022001)(59766001)(74662001)(77982001)(66066001)(4396001)(81816001)(81542001)(54356001)(51856001)(19580405001)(19580395003)(83322001)(85852002)(74876001)(81342001)(49866001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB036;H:BLUPR03MB036.namprd03.prod.outlook.com;CLIP:192.88.158.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rB98WWl9003633
 
-On Mon, Dec 9, 2013 at 6:00 AM, Michael Opdenacker
-<michael.opdenacker@free-electrons.com> wrote:
+Acked-by: Robin Gong <b38343@freescale.com>
 
-> This patch proposes to remove the use of the IRQF_DISABLED flag
-> from miscellaneous code in mach-xxx and plat-xxx
->
-> This flag is a NOOP since 2.6.35 and it will be removed one day.
->
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+-----Original Message-----
+From: Axel Lin [mailto:axel.lin@ingics.com] 
+Sent: Monday, December 09, 2013 3:24 PM
+To: Mark Brown
+Cc: Gong Yibin-B38343; Liam Girdwood; linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: pfuze100: Fix address of FABID
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+According to the datasheet, the address of FABID is 0x4. Fix it.
 
-Yours,
-Linus Walleij
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/pfuze100-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index 032df37..8b5e4c7 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -38,7 +38,7 @@
+ 
+ #define PFUZE100_DEVICEID	0x0
+ #define PFUZE100_REVID		0x3
+-#define PFUZE100_FABID		0x3
++#define PFUZE100_FABID		0x4
+ 
+ #define PFUZE100_SW1ABVOL	0x20
+ #define PFUZE100_SW1CVOL	0x2e
+-- 
+1.8.1.2
+
+
+
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
