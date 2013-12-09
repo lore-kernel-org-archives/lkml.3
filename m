@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab3LIU5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:57:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933010Ab3LIU5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:57:22 -0500
-Date: Mon, 9 Dec 2013 21:57:19 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Boyer <jwboyer@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-In-Reply-To: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1761381Ab3LIVAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:00:37 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:45310 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab3LIVAb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:00:31 -0500
+Message-ID: <52A62F68.906@samsung.com>
+Date: Tue, 10 Dec 2013 06:00:24 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tomasz Figa <t.figa@samsung.com>
+CC: Daniel Kurtz <djkurtz@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Doug Andersen <dianders@chromium.org>, linux-kernel@vger.kernel.org,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>, kgene.kim@samsung.com,
+        Ben Dooks <ben-linux@fluff.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: EXYNOS: pmu: Constify data tables
+References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org> <1922780.plAOmhqzpW@amdc1227> <CAGS+omDq95paoHsf5-i2gbRoSGvqn36zNO93KHGi2FGhfGMsrw@mail.gmail.com> <30145891.cE1204QWiC@amdc1227>
+In-Reply-To: <30145891.cE1204QWiC@amdc1227>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013, H.J. Lu wrote:
+On 12/10/13 01:15, Tomasz Figa wrote:
+> On Tuesday 10 of December 2013 00:11:40 Daniel Kurtz wrote:
+>> Hi Tomasz,
+>>
+>> Thank you for the reviews.
+>>
+>> On Dec 9, 2013 5:15 AM, "Tomasz Figa"<t.figa@samsung.com>  wrote:
+>>>
+>>> Hi Daniel,
+>>>
+>>> On Thursday 21 of November 2013 02:21:24 Daniel Kurtz wrote:
+>>>> These tables are all immutable, make them const to save 4416 bytes of RAM.
+>>>>
+>>>> size arch/arm/mach-exynos/pmu.o
+>>>>     text          data     bss
+>>>>      848          4420       4         // before
+>>>>     5264             4       4         // after
+>>>
+>>> I'm not sure where the mentioned saving of RAM is. Moving data between
+>>> sections is not supposed to make it use less memory, I believe.
+>>
+>> You are correct.  This was my misunderstanding from doing too much
+>> work with microcontrollers, where .text sections are accessed in place
+>> from FLASH for code and const data, but .data memory is copied from a
+>> FLASH section to a second RAM section at init for access at runtime.
+>> Most modern Linux systems copy/decompress their code and data sections
+>> from external storage to RAM anyway, so there is no actual memory
+>> savings (except potentially the compiler may be able to optimize a bit
+>> more with the const hint).
+>>
+>>>
+>>> Anyway, it's a good practice to mark constant data as const, to disallow
+>>> changing them at runtime by mistake, so the patch is fine. Except some
+>>> issues I commented on inline.
+>>
+>> Were there supposed to be inline comments?  I don't see any.
+>
+> Oops, sorry for this, forgot to remove the last sentence. I initially had
+> one question about the constant pointers below, but I read through the
+> full code again and answered it myself.
+>
+> The patch is fine.
+>
+> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
+>
+OK, applied 1 to 3 patches into cleanup.
 
-> Normally, a PIE executable has zero virtual address on the first PT_LOAD
-> segment and kernel will load such executable at random address when
-> randomization is enabled.  If randomization is disabled, kernel will load
-> it at a fixed address.  But if a PIE executable has non-zero virtual
-> address on the first PT_LOAD segment, kernel will load such executable
-> at the non-zero virtual address when randomization is enabled. But when
-> randomization is disabled, kernel ignores the non-zero virtual address
-> at the non-zero virtual address when randomization is enabled. 
-
-Hmm ... isn't actually this the thing that needs to be fixed instead? 
-
-IOW, when randomization is enabled, is there a reason not to load on 
-randomized address? (even if the first PT_LOAD segment has non-zero 
-vaddr?)
-
-> But when randomization is disabled, kernel ignores the non-zero virtual 
-> address on the first PT_LOAD segment and loads it at the fixed address.  
-> This patch makes kernel consistent by loading PIE executable with 
-> non-zero virtual address at the non-zero virtual address, regardless if 
-> randomization is enabled or disabled.
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Kukjin
