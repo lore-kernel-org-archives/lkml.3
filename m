@@ -1,332 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761225Ab3LIPMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 10:12:37 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53930 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760719Ab3LIPMd (ORCPT
+	id S933694Ab3LIPQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 10:16:53 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:57613 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932291Ab3LIPQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 10:12:33 -0500
-Message-ID: <52A5DDD8.4030007@hitachi.com>
-Date: Tue, 10 Dec 2013 00:12:24 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 07/17] tracing/probes: Move fetch function helpers to
- trace_probe.h
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-8-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1386570005-3368-8-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Dec 2013 10:16:52 -0500
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
+        mark.rutland@arm.com, tomasz.figa@gmail.com, adam.jaremko@gmail.com,
+        sylvester.nawrocki@gmail.com, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v8] clk: add MOXA ART SoCs clock driver
+Date: Mon,  9 Dec 2013 16:16:03 +0100
+Message-Id: <1386602163-28479-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1381330482-13846-1-git-send-email-jonas.jensen@gmail.com>
+References: <1381330482-13846-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/09 15:19), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Move fetch function helper macros/functions to the header file and
-> make them external.  This is preparation of supporting uprobe fetch
-> table in next patch.
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+This patch adds MOXA ART SoCs clock driver support.
 
-This looks OK for me.
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Notes:
+    Thanks for the replies.
+    
+    As indicated by Sylwester, that it's discouraged to use hardware
+    to register DT properties (multiplier-* divisor-*),
+    I decided to remove them.
+    
+    They were only added as extra safety in cases where the
+    implementation must be changed.
+    Code readability is better of without them, and when something
+    needs to change, it's probably better to do it directly.
+    
+    Changes since v7:
+    
+    1. remove hardware to register properties (multiplier-* divisor-*)
+    2. remove redundant parentheses
+    3. check clk_register_fixed_rate() return value
+    
+    Applies to next-20131209
 
-Thanks!
+ .../bindings/clock/moxa,moxart-clock.txt           |  37 +++++++
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-moxart.c                           | 112 +++++++++++++++++++++
+ 3 files changed, 150 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+ create mode 100644 drivers/clk/clk-moxart.c
 
-> ---
->  kernel/trace/trace_probe.c | 74 ++++++++--------------------------------------
->  kernel/trace/trace_probe.h | 64 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 77 insertions(+), 61 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index d8347b01ce89..c26bc9eaa2ac 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -35,19 +35,15 @@ const char *reserved_field_names[] = {
->  	FIELD_STRING_FUNC,
->  };
->  
-> -/* Printing function type */
-> -#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
-> -#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
-> -
->  /* Printing  in basic type function template */
->  #define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt)				\
-> -static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
-> +__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
->  						const char *name,	\
->  						void *data, void *ent)	\
->  {									\
->  	return trace_seq_printf(s, " %s=" fmt, name, *(type *)data);	\
->  }									\
-> -static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
-> +const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
->  
->  DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "0x%x")
->  DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "0x%x")
-> @@ -58,23 +54,12 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
->  DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
->  DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
->  
-> -static inline void *get_rloc_data(u32 *dl)
-> -{
-> -	return (u8 *)dl + get_rloc_offs(*dl);
-> -}
-> -
-> -/* For data_loc conversion */
-> -static inline void *get_loc_data(u32 *dl, void *ent)
-> -{
-> -	return (u8 *)ent + get_rloc_offs(*dl);
-> -}
-> -
->  /* For defining macros, define string/string_size types */
->  typedef u32 string;
->  typedef u32 string_size;
->  
->  /* Print type function for string type */
-> -static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
-> +__kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
->  						  const char *name,
->  						  void *data, void *ent)
->  {
-> @@ -87,7 +72,7 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
->  					(const char *)get_loc_data(data, ent));
->  }
->  
-> -static const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
-> +const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
->  
->  #define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
->  /*
-> @@ -111,7 +96,7 @@ DEFINE_FETCH_##method(u64)
->  
->  /* Data fetch function templates */
->  #define DEFINE_FETCH_reg(type)						\
-> -static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
-> +__kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
->  					void *offset, void *dest)	\
->  {									\
->  	*(type *)dest = (type)regs_get_register(regs,			\
-> @@ -123,7 +108,7 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
->  #define fetch_reg_string_size	NULL
->  
->  #define DEFINE_FETCH_stack(type)					\
-> -static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
-> +__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
->  					  void *offset, void *dest)	\
->  {									\
->  	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
-> @@ -135,7 +120,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
->  #define fetch_stack_string_size	NULL
->  
->  #define DEFINE_FETCH_retval(type)					\
-> -static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
-> +__kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
->  					  void *dummy, void *dest)	\
->  {									\
->  	*(type *)dest = (type)regs_return_value(regs);			\
-> @@ -146,7 +131,7 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
->  #define fetch_retval_string_size	NULL
->  
->  #define DEFINE_FETCH_memory(type)					\
-> -static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
-> +__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
->  					  void *addr, void *dest)	\
->  {									\
->  	type retval;							\
-> @@ -160,7 +145,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
->   * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
->   * length and relative data location.
->   */
-> -static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
-> +__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
->  						      void *addr, void *dest)
->  {
->  	long ret;
-> @@ -197,7 +182,7 @@ static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
->  }
->  
->  /* Return the length of string -- including null terminal byte */
-> -static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
-> +__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
->  							void *addr, void *dest)
->  {
->  	mm_segment_t old_fs;
-> @@ -268,7 +253,7 @@ static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
->  }
->  
->  #define DEFINE_FETCH_symbol(type)					\
-> -static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
-> +__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
->  					  void *data, void *dest)	\
->  {									\
->  	struct symbol_cache *sc = data;					\
-> @@ -288,7 +273,7 @@ struct deref_fetch_param {
->  };
->  
->  #define DEFINE_FETCH_deref(type)					\
-> -static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
-> +__kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
->  					    void *data, void *dest)	\
->  {									\
->  	struct deref_fetch_param *dprm = data;				\
-> @@ -329,7 +314,7 @@ struct bitfield_fetch_param {
->  };
->  
->  #define DEFINE_FETCH_bitfield(type)					\
-> -static __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
-> +__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
->  					    void *data, void *dest)	\
->  {									\
->  	struct bitfield_fetch_param *bprm = data;			\
-> @@ -374,39 +359,6 @@ free_bitfield_fetch_param(struct bitfield_fetch_param *data)
->  	kfree(data);
->  }
->  
-> -/* Default (unsigned long) fetch type */
-> -#define __DEFAULT_FETCH_TYPE(t) u##t
-> -#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-> -#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
-> -#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
-> -
-> -#define ASSIGN_FETCH_FUNC(method, type)	\
-> -	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
-> -
-> -#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
-> -	{.name = _name,				\
-> -	 .size = _size,					\
-> -	 .is_signed = sign,				\
-> -	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
-> -	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
-> -	 .fmttype = _fmttype,				\
-> -	 .fetch = {					\
-> -ASSIGN_FETCH_FUNC(reg, ftype),				\
-> -ASSIGN_FETCH_FUNC(stack, ftype),			\
-> -ASSIGN_FETCH_FUNC(retval, ftype),			\
-> -ASSIGN_FETCH_FUNC(memory, ftype),			\
-> -ASSIGN_FETCH_FUNC(symbol, ftype),			\
-> -ASSIGN_FETCH_FUNC(deref, ftype),			\
-> -ASSIGN_FETCH_FUNC(bitfield, ftype),			\
-> -	  }						\
-> -	}
-> -
-> -#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
-> -	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
-> -
-> -#define FETCH_TYPE_STRING	0
-> -#define FETCH_TYPE_STRSIZE	1
-> -
->  /* Fetch type information table */
->  static const struct fetch_type fetch_type_table[] = {
->  	/* Special types */
-> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-> index 2c979cb66367..7c6be146f444 100644
-> --- a/kernel/trace/trace_probe.h
-> +++ b/kernel/trace/trace_probe.h
-> @@ -81,6 +81,17 @@
->   */
->  #define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
->  
-> +static inline void *get_rloc_data(u32 *dl)
-> +{
-> +	return (u8 *)dl + get_rloc_offs(*dl);
-> +}
-> +
-> +/* For data_loc conversion */
-> +static inline void *get_loc_data(u32 *dl, void *ent)
-> +{
-> +	return (u8 *)ent + get_rloc_offs(*dl);
-> +}
-> +
->  /* Data fetch function type */
->  typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
->  /* Printing function type */
-> @@ -115,6 +126,59 @@ struct fetch_param {
->  	void 			*data;
->  };
->  
-> +#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
-> +#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
-> +
-> +/* Printing  in basic type function template */
-> +#define DECLARE_BASIC_PRINT_TYPE_FUNC(type, fmt)			\
-> +__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
-> +					 const char *name,		\
-> +					 void *data, void *ent);	\
-> +extern const char PRINT_TYPE_FMT_NAME(type)[];
-> +
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(u8 , "%x")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(u16, "%x")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(u32, "%x")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(u64, "%Lx")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(s8,  "%d")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(s16, "%d")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(s32, "%d")
-> +DECLARE_BASIC_PRINT_TYPE_FUNC(s64, "%Ld")
-> +
-> +/* Default (unsigned long) fetch type */
-> +#define __DEFAULT_FETCH_TYPE(t) u##t
-> +#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-> +#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
-> +#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
-> +
-> +#define ASSIGN_FETCH_FUNC(method, type)	\
-> +	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
-> +
-> +#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
-> +	{.name = _name,				\
-> +	 .size = _size,					\
-> +	 .is_signed = sign,				\
-> +	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
-> +	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
-> +	 .fmttype = _fmttype,				\
-> +	 .fetch = {					\
-> +ASSIGN_FETCH_FUNC(reg, ftype),				\
-> +ASSIGN_FETCH_FUNC(stack, ftype),			\
-> +ASSIGN_FETCH_FUNC(retval, ftype),			\
-> +ASSIGN_FETCH_FUNC(memory, ftype),			\
-> +ASSIGN_FETCH_FUNC(symbol, ftype),			\
-> +ASSIGN_FETCH_FUNC(deref, ftype),			\
-> +ASSIGN_FETCH_FUNC(bitfield, ftype),			\
-> +	  }						\
-> +	}
-> +
-> +#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
-> +	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
-> +
-> +#define FETCH_TYPE_STRING	0
-> +#define FETCH_TYPE_STRSIZE	1
-> +
-> +
->  struct probe_arg {
->  	struct fetch_param	fetch;
->  	struct fetch_param	fetch_size;
-> 
-
-
+diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+new file mode 100644
+index 0000000..bc59ceb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/moxa,moxart-clock.txt
+@@ -0,0 +1,37 @@
++Device Tree Clock bindings for arch-moxart
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++MOXA ART SoCs allow to determine PLL output and APB frequencies
++by reading registers holding multiplier and divisor information.
++
++Required properties:
++- compatible : Must be "moxa,moxart-pll-clock" or "moxa,moxart-apb-clock"
++- #clock-cells : Should be 0
++- reg : Should contain registers location and length
++- clocks : Should contain phandle to parent clock
++
++Optional properties for "moxa,moxart-pll-clock":
++- clock-output-names : Should contain clock name
++
++Optional properties for "moxa,moxart-apb-clock":
++- clock-output-names : Should contain clock name
++
++
++For example:
++
++	clk_pll: clk_pll@98100000 {
++		compatible = "moxa,moxart-pll-clock";
++		#clock-cells = <0>;
++		reg = <0x98100000 0x34>;
++		clocks = <&ref12>;
++	};
++
++	clk_apb: clk_apb@98100000 {
++		compatible = "moxa,moxart-apb-clock";
++		#clock-cells = <0>;
++		reg = <0x98100000 0x34>;
++		clocks = <&pll0>;
++	};
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index ace7309..f07eb3b 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -12,6 +12,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+ obj-$(CONFIG_ARCH_EFM32)	+= clk-efm32gg.o
++obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+ obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+ obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
+diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+new file mode 100644
+index 0000000..f0436a3
+--- /dev/null
++++ b/drivers/clk/clk-moxart.c
+@@ -0,0 +1,112 @@
++/*
++ * MOXA ART SoCs clock driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/io.h>
++#include <linux/of_address.h>
++#include <linux/clkdev.h>
++
++void __init moxart_of_pll_clk_init(struct device_node *node)
++{
++	static void __iomem *base;
++	struct clk *clk, *ref_clk;
++	unsigned long rate;
++	unsigned int mul;
++	const char *name = node->name;
++
++	of_property_read_string(node, "clock-output-names", &name);
++
++	base = of_iomap(node, 0);
++	if (!base) {
++		pr_err("%s: of_iomap failed\n", node->full_name);
++		return;
++	}
++
++	mul = readl(base + 0x30) >> 3 & 0x3f;
++	iounmap(base);
++
++	ref_clk = of_clk_get(node, 0);
++	if (IS_ERR(ref_clk)) {
++		pr_err("%s: of_clk_get failed\n", node->full_name);
++		return;
++	}
++
++	rate = mul * clk_get_rate(ref_clk);
++
++	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
++	if (IS_ERR(clk)) {
++		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
++		return;
++	}
++
++	clk_register_clkdev(clk, NULL, name);
++	of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++CLK_OF_DECLARE(moxart_pll_clock, "moxa,moxart-pll-clock",
++	       moxart_of_pll_clk_init);
++
++void __init moxart_of_apb_clk_init(struct device_node *node)
++{
++	static void __iomem *base;
++	struct clk *clk, *pll_clk;
++	unsigned long rate;
++	unsigned int div, val;
++	const char *name = node->name;
++
++	of_property_read_string(node, "clock-output-names", &name);
++
++	base = of_iomap(node, 0);
++	if (!base) {
++		pr_err("%s: of_iomap failed\n", node->full_name);
++		return;
++	}
++
++	val = readl(base + 0xc) >> 4 & 0x7;
++	iounmap(base);
++
++	switch (val) {
++	case 1:
++		div = 3;
++		break;
++	case 2:
++		div = 4;
++		break;
++	case 3:
++		div = 6;
++		break;
++	case 4:
++		div = 8;
++		break;
++	default:
++		div = 2;
++		break;
++	}
++
++	pll_clk = of_clk_get(node, 0);
++	if (IS_ERR(pll_clk)) {
++		pr_err("%s: of_clk_get failed\n", node->full_name);
++		return;
++	}
++
++	rate = clk_get_rate(pll_clk) / (div * 2);
++
++	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
++	if (IS_ERR(clk)) {
++		pr_err("%s: clk_register_fixed_rate failed\n", node->full_name);
++		return;
++	}
++
++	clk_register_clkdev(clk, NULL, name);
++	of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++CLK_OF_DECLARE(moxart_apb_clock, "moxa,moxart-apb-clock",
++	       moxart_of_apb_clk_init);
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.2.1
 
