@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760664Ab3LIHOh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 02:14:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39377 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760557Ab3LIHOe (ORCPT
+	id S1760829Ab3LIHQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 02:16:01 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:34165 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760557Ab3LIHP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 02:14:34 -0500
-Message-ID: <52A56DA1.1010808@ti.com>
-Date: Mon, 9 Dec 2013 12:43:37 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 9 Dec 2013 02:15:59 -0500
+Message-ID: <52A56DE5.5010206@st.com>
+Date: Mon, 9 Dec 2013 08:14:45 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: <balbi@ti.com>, <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>
-Subject: Re: [PATCH v3 04/10] usb: dwc3: use quirks to know if a particualr
- platform doesn't have PHY
-References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1385373690-12170-5-git-send-email-kishon@ti.com> <20131204144027.GB21055@xps8300> <52A01E86.50406@ti.com> <20131205075828.GA32583@xps8300>
-In-Reply-To: <20131205075828.GA32583@xps8300>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-sunxi@googlegroups.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing
+ hardware
+References: <1386350983-13281-1-git-send-email-wens@csie.org> <1386350983-13281-2-git-send-email-wens@csie.org>
+In-Reply-To: <1386350983-13281-2-git-send-email-wens@csie.org>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.128]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Chen-Yu
 
-On Thursday 05 December 2013 01:28 PM, Heikki Krogerus wrote:
-> Hi,
+On 12/6/2013 6:29 PM, Chen-Yu Tsai wrote:
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> ---
 >
-> On Thu, Dec 05, 2013 at 12:04:46PM +0530, Kishon Vijay Abraham I wrote:
->> On Wednesday 04 December 2013 08:10 PM, Heikki Krogerus wrote:
->>> On Mon, Nov 25, 2013 at 03:31:24PM +0530, Kishon Vijay Abraham I wrote:
->>>> There can be systems which does not have an external phy, so get
->>>> phy only if no quirks are added that indicates the PHY is not present.
->>>> Introduced two quirk flags to indicate the *absence* of usb2 phy and
->>>> usb3 phy. Also remove checking if return value is -ENXIO since it's now
->>>> changed to always enable usb_phy layer.
->>>
->>> Can you guys explain why is something like this needed? Like with
->>> clocks and gpios, the device drivers shouldn't need to care any more
->>> if the platform has the phys or not. -ENODEV tells you your platform
->>
->> Shouldn't we report if a particular platform needs a PHY and not able to get
->> it. How will a user know if a particular controller is not working because it's
->> not able to get and initialize the PHYs? Don't you think in such cases it's
->> better to fail (and return from probe) because the controller will not work
->> anyway without the PHY?
+> Guiseppe previously stated that the "stmmaceth" clock is the
+> main clock that drives the IP. The stmmac driver does not
+> enable this clock during the probe phase. When the driver is
+> built in to the kernel, this is fine because the clock maybe
+> on by default, or the boot loader had enabled it.
 >
-> My point is that you do not need to separately tell this to the driver
-> like you do with the quirks (if you did, then you would need to fix
-> your framework and not hack the drivers).
->
-> Like I said, ENODEV tells you that there is no phy on this platform
-> for you, allowing you to safely continue. If your phy driver is not
-> loaded, the framework already returns EPROBE_DEFER, right. Any other
+> If stmmac is built as a module, when the module is loaded,
+> the clock may be found unused and disabled by the kernel.
 
-right. but that doesn't consider broken dt data. With quirks we'll able 
-to tell if a controller in a particular platform has PHY or not without 
-depending on the dt data.
-> error when getting the phy you can consider critical. They are the
-> errors telling you that you do need a phy on this platform, but
-> something actually went wrong when getting it.
-Not on all scenarios though :-s
+the clk_prepare_enable is then called in the open.
+Is it not working for you?
+Do you mean that the stmmac_hw_init fails if you do not move
+the clk_get and clk_prepare_enable on top of the stmmac_dvr_probe?
 
-Thanks
-Kishon
+Peppe
+
+>
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 24 +++++++++++++----------
+>   1 file changed, 14 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> index 8d4ccd3..7da71ed 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -2688,10 +2688,17 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+>   	if ((phyaddr >= 0) && (phyaddr <= 31))
+>   		priv->plat->phy_addr = phyaddr;
+>
+> +	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
+> +	if (IS_ERR(priv->stmmac_clk)) {
+> +		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
+> +		goto error_clk_get;
+> +	}
+> +	clk_prepare_enable(priv->stmmac_clk);
+> +
+>   	/* Init MAC and get the capabilities */
+>   	ret = stmmac_hw_init(priv);
+>   	if (ret)
+> -		goto error_free_netdev;
+> +		goto error_hw_init;
+>
+>   	ndev->netdev_ops = &stmmac_netdev_ops;
+>
+> @@ -2729,12 +2736,6 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+>   		goto error_netdev_register;
+>   	}
+>
+> -	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
+> -	if (IS_ERR(priv->stmmac_clk)) {
+> -		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
+> -		goto error_clk_get;
+> -	}
+> -
+>   	/* If a specific clk_csr value is passed from the platform
+>   	 * this means that the CSR Clock Range selection cannot be
+>   	 * changed at run-time and it is fixed. Viceversa the driver'll try to
+> @@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
+>   		}
+>   	}
+>
+> +	clk_disable_unprepare(priv->stmmac_clk);
+> +
+>   	return priv;
+>
+>   error_mdio_register:
+> -	clk_put(priv->stmmac_clk);
+> -error_clk_get:
+>   	unregister_netdev(ndev);
+>   error_netdev_register:
+>   	netif_napi_del(&priv->napi);
+> -error_free_netdev:
+> +error_hw_init:
+> +	clk_disable_unprepare(priv->stmmac_clk);
+> +	clk_put(priv->stmmac_clk);
+> +error_clk_get:
+>   	free_netdev(ndev);
+>
+>   	return NULL;
+>
+
