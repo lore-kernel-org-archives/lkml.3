@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933945Ab3LIQUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:20:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59596 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932796Ab3LIQUj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:20:39 -0500
-Message-ID: <52A5EDD4.20506@ti.com>
-Date: Mon, 9 Dec 2013 11:20:36 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S933962Ab3LIQWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:22:41 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52924 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932796Ab3LIQWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:22:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: <lee.jones@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v3 05/15] mfd: menelaus: Use for_each_set_bit()
+Date: Mon, 9 Dec 2013 10:21:15 -0600
+Message-ID: <1386606085-26838-5-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.8.4.GIT
+In-Reply-To: <1386606085-26838-1-git-send-email-balbi@ti.com>
+References: <20131209161422.GC24047@saruman.home>
+ <1386606085-26838-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC v1 0/9] gpio: davinci: reuse for keystone arch
-References: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com> <CACRpkdYKRWZJm8nRGSHV8DUehd9d0rh6y8R4HMvkimKhWezD2g@mail.gmail.com>
-In-Reply-To: <CACRpkdYKRWZJm8nRGSHV8DUehd9d0rh6y8R4HMvkimKhWezD2g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sekhar,
+That macro just helps removing some extra line of code and hides ffs()
+calls.
 
-On Friday 29 November 2013 03:37 AM, Linus Walleij wrote:
-> On Tue, Nov 26, 2013 at 8:40 PM, Grygorii Strashko
-> <grygorii.strashko@ti.com> wrote:
-> 
->> [1] Depends on patch:
->> "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
->> https://lkml.org/lkml/2013/11/8/22
->>
->> [2] and depends on series from Prabhakar Lad:
->> "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
->> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
-> 
-> So this needs to go through the same tree as these patches.
-> 
-> And I suggested that Sekhar queue them and either take them
-> directly up to ARM SoC or send me a pull request to take it through
-> the GPIO tree.
-> 
-Are you going to collect all the Davinci gpio patches create a pull
-request for Linus Walleij ?
+While at that, also fix a variable shadowing bug where 'int irq' was
+being redeclared inside inner loop while it was also argument to
+interrupt handler.
 
-Let us know so that if needed, we can put these patches together
-on a tree for Linus W to pull from.
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/mfd/menelaus.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-I would like to get these patches in 3.14 queue. Thanks
+diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+index 11dc4d3..9ccbb79 100644
+--- a/drivers/mfd/menelaus.c
++++ b/drivers/mfd/menelaus.c
+@@ -795,24 +795,22 @@ static irqreturn_t menelaus_irq(int irq, void *_menelaus)
+ {
+ 	struct menelaus_chip *menelaus = _menelaus;
+ 	void (*handler)(struct menelaus_chip *menelaus);
+-	unsigned isr;
++	unsigned long isr;
++	unsigned long i;
+ 
+ 	isr = (menelaus_read_reg(MENELAUS_INT_STATUS2)
+ 			& ~menelaus->mask2) << 8;
+ 	isr |= menelaus_read_reg(MENELAUS_INT_STATUS1)
+ 		& ~menelaus->mask1;
+ 
+-	while (isr) {
+-		int irq = fls(isr) - 1;
+-		isr &= ~(1 << irq);
+-
++	for_each_set_bit(i, &isr, 16) {
+ 		mutex_lock(&menelaus->lock);
+-		menelaus_disable_irq(irq);
+-		menelaus_ack_irq(irq);
+-		handler = menelaus->handlers[irq];
++		menelaus_disable_irq(i);
++		menelaus_ack_irq(i);
++		handler = menelaus->handlers[i];
+ 		if (handler)
+ 			handler(menelaus);
+-		menelaus_enable_irq(irq);
++		menelaus_enable_irq(i);
+ 		mutex_unlock(&menelaus->lock);
+ 	}
+ 
+-- 
+1.8.4.GIT
 
-Regards,
-Ssantosh
