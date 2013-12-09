@@ -1,77 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab3LIJJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:09:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23421 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932730Ab3LIJJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:09:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,856,1378882800"; 
-   d="scan'208";a="421550951"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-acpi @ vger . kernel . org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2] SFI: fix compilation warnings
-Date: Mon,  9 Dec 2013 11:09:21 +0200
-Message-Id: <1386580161-27718-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932901Ab3LIJKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:10:37 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63850 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760819Ab3LIJIF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 04:08:05 -0500
+X-AuditID: 9c93017d-b7b46ae000000e86-b9-52a5886fc14c
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 4/7] mm/migrate: remove putback_lru_pages, fix comment on putback_movable_pages
+Date: Mon,  9 Dec 2013 18:10:45 +0900
+Message-Id: <1386580248-22431-5-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When build kernel with make W=1 we get the following compiler error.
+Some part of putback_lru_pages() and putback_movable_pages() is
+duplicated, so it could confuse us what we should use.
+We can remove putback_lru_pages() since it is not really needed now.
+This makes us undestand and maintain the code more easily.
 
-In file included from drivers/sfi/sfi_acpi.c:66:0:
-include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
-include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
-  if (!acpi_table_parse(signature, handler))
-  ^
-  cc1: some warnings being treated as errors
+And comment on putback_movable_pages() is stale now, so fix it.
 
-The patch add linux/acpi.h to the top of file.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
-Changes to v2:
-- fix for build when ACPI=n, SFI=y
- drivers/sfi/sfi_acpi.c   | 2 +-
- include/linux/sfi_acpi.h | 4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
-index 5e753d7..5589ec5 100644
---- a/drivers/sfi/sfi_acpi.c
-+++ b/drivers/sfi/sfi_acpi.c
-@@ -60,7 +60,7 @@
- #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index f5096b5..e4671f9 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -35,7 +35,6 @@ enum migrate_reason {
  
- #include <linux/kernel.h>
--#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
-+#include <linux/acpi.h>
+ #ifdef CONFIG_MIGRATION
  
- #include <linux/sfi.h>
- #include "sfi_core.h"
-diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
-index 2cfcb79..ecc2344 100644
---- a/include/linux/sfi_acpi.h
-+++ b/include/linux/sfi_acpi.h
-@@ -60,7 +60,9 @@
- #define _LINUX_SFI_ACPI_H
+-extern void putback_lru_pages(struct list_head *l);
+ extern void putback_movable_pages(struct list_head *l);
+ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+@@ -58,7 +57,6 @@ extern int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct buffer_head *head, enum migrate_mode mode);
+ #else
  
- #ifdef CONFIG_SFI
--#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+-static inline void putback_lru_pages(struct list_head *l) {}
+ static inline void putback_movable_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index b7c1716..1debdea 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1569,7 +1569,13 @@ static int __soft_offline_page(struct page *page, int flags)
+ 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+ 					MIGRATE_SYNC, MR_MEMORY_FAILURE);
+ 		if (ret) {
+-			putback_lru_pages(&pagelist);
++			if (!list_empty(&pagelist)) {
++				list_del(&page->lru);
++				dec_zone_page_state(page, NR_ISOLATED_ANON +
++						page_is_file_cache(page));
++				putback_lru_page(page);
++			}
 +
-+#include <acpi/acpi.h>
-+#include <linux/acpi.h>
+ 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 				pfn, ret, page->flags);
+ 			if (ret > 0)
+diff --git a/mm/migrate.c b/mm/migrate.c
+index b1cfd01..cdafdc0 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -71,28 +71,12 @@ int migrate_prep_local(void)
+ }
  
- extern int sfi_acpi_table_parse(char *signature, char *oem_id,
- 				char *oem_table_id,
+ /*
+- * Add isolated pages on the list back to the LRU under page lock
+- * to avoid leaking evictable pages back onto unevictable list.
+- */
+-void putback_lru_pages(struct list_head *l)
+-{
+-	struct page *page;
+-	struct page *page2;
+-
+-	list_for_each_entry_safe(page, page2, l, lru) {
+-		list_del(&page->lru);
+-		dec_zone_page_state(page, NR_ISOLATED_ANON +
+-				page_is_file_cache(page));
+-			putback_lru_page(page);
+-	}
+-}
+-
+-/*
+  * Put previously isolated pages back onto the appropriate lists
+  * from where they were once taken off for compaction/migration.
+  *
+- * This function shall be used instead of putback_lru_pages(),
+- * whenever the isolated pageset has been built by isolate_migratepages_range()
++ * This function shall be used whenever the isolated pageset has been
++ * built from lru, balloon, hugetlbfs page. See isolate_migratepages_range()
++ * and isolate_huge_page().
+  */
+ void putback_movable_pages(struct list_head *l)
+ {
+@@ -1704,6 +1688,12 @@ int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
+ 	nr_remaining = migrate_pages(&migratepages, alloc_misplaced_dst_page,
+ 				     node, MIGRATE_ASYNC, MR_NUMA_MISPLACED);
+ 	if (nr_remaining) {
++		if (!list_empty(&migratepages)) {
++			list_del(&page->lru);
++			dec_zone_page_state(page, NR_ISOLATED_ANON +
++					page_is_file_cache(page));
++			putback_lru_page(page);
++		}
+ 		putback_lru_pages(&migratepages);
+ 		isolated = 0;
+ 	} else
 -- 
-1.8.4.4
+1.7.9.5
 
