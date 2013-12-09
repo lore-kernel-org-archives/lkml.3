@@ -1,59 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761629Ab3LIVvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:51:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44812 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681Ab3LIVvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:51:21 -0500
-Date: Mon, 9 Dec 2013 22:51:18 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Boyer <jwboyer@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-In-Reply-To: <CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1312092250010.24835@pobox.suse.cz>
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com> <alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz> <CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com> <alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>
- <CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1761642Ab3LIVwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:52:07 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47264 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab3LIVwD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:52:03 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v3 00/23] mm: Use memblock interface instead of bootmem
+Date: Mon, 9 Dec 2013 16:50:33 -0500
+Message-ID: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013, H.J. Lu wrote:
+Tejun, Andrew and Yinghai,
 
-> >> No, please don't do that.  Normally, PIE has zero load address and kernel
-> >> can load it anywhere.  There are multiple reasons why PIE has non-zero
-> >> load address.  Saying you need to load a program above 4GB under x86-64,
-> >> you can't do that with normal dynamic executable.  PIE with non-zero load
-> >> address is the only way to do that on x86-64.
-> >
-> > Hmm, so if it's because of 4G PT_LOAD limit, how about at least adding
-> 
-> Yes.
-> 
-> > randomized offset to the supplied vaddr?
-> 
-> Yes, people who build PIE with non-zero vaddr can use
->  randomized vaddr. 
+Here is the refreshed version of earlier series [1] addressing all
+comments from v2. As mentioned earlier, this series is the last
+bottleneck now for me to enable the coherency on keystone ARM
+LPAE architecture on which the physical memory starts after 4BG.
+I would like to get these patches in next merge window(3.14), so
+it will be great to add these for linux-next testing if you are
+happy with the patchset.
 
-I don't follow you here. Do you suggest compile-time randomzation?
+For convenience, the re-based series on top of 3.13-rc1 is available
+on my git tree [2].
 
-> > PT_LOAD being non-zero causing randomization to be turned off seems like
-> > quite unexpected behavior to me, with a great potential to cause a lot of
-> > confusion.
-> >
-> 
-> There should be no difference between dynamic executable and PIE
-> with non-zero vaddr when choosing where to load them.
+To recap on the original issue, current memblock APIs don't work on
+32 PAE or LPAE extension arches where the physical memory start
+address beyond 4GB. The problem was discussed here [3] where
+Tejun, Yinghai(thanks) proposed a way forward with memblock interfaces.
+Based on the proposal, this series adds necessary memblock interfaces
+and convert the core kernel code to use them. Architectures already
+converted to NO_BOOTMEM use these new interfaces and other which still
+uses bootmem, these new interfaces just fallback to exiting bootmem APIs.
 
-Could you please elaborate why do you think this statement is true?
+So no functional change in behavior. In long run, once all the architectures
+moves to NO_BOOTMEM, we can get rid of bootmem layer completely. This is
+one step to remove the core code dependency with bootmem and also
+gives path for architectures to move away from bootmem.
 
-Thanks,
+Testing is done on ARM architecture with 32 bit ARM LAPE machines
+with normal as well sparse(faked) memory model.
 
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+
+Grygorii Strashko (9):
+  mm/memblock: debug: correct displaying of upper memory boundary
+  mm/memblock: debug: don't free reserved array if
+    !ARCH_DISCARD_MEMBLOCK
+  mm/bootmem: remove duplicated declaration of __free_pages_bootmem()
+  mm/memblock: remove unnecessary inclusions of bootmem.h
+  mm/memblock: drop WARN and use SMP_CACHE_BYTES as a default alignment
+  mm/memblock: reorder parameters of memblock_find_in_range_node
+  mm/memblock: switch to use NUMA_NO_NODE instead of MAX_NUMNODES
+  mm/hugetlb: Use memblock apis for early memory allocations
+  mm/page_cgroup: Use memblock apis for early memory allocations
+
+Santosh Shilimkar (14):
+  mm/memblock: Add memblock memory allocation apis
+  mm/init: Use memblock apis for early memory allocations
+  mm/printk: Use memblock apis for early memory allocations
+  mm/page_alloc: Use memblock apis for early memory allocations
+  mm/power: Use memblock apis for early memory allocations
+  mm/lib/swiotlb: Use memblock apis for early memory allocations
+  mm/lib/cpumask: Use memblock apis for early memory allocations
+  mm/sparse: Use memblock apis for early memory allocations
+  mm/percpu: Use memblock apis for early memory allocations
+  mm/memory_hotplug: Use memblock apis for early memory allocations
+  mm/firmware: Use memblock apis for early memory allocations
+  mm/ARM: kernel: Use memblock apis for early memory allocations
+  mm/ARM: mm: Use memblock apis for early memory allocations
+  mm/ARM: OMAP: Use memblock apis for early memory allocations
+
+ arch/arm/kernel/devtree.c        |    2 +-
+ arch/arm/kernel/setup.c          |    2 +-
+ arch/arm/mach-omap2/omap_hwmod.c |    8 +-
+ arch/arm/mm/init.c               |    2 +-
+ drivers/char/mem.c               |    1 -
+ drivers/firmware/memmap.c        |    2 +-
+ include/linux/bootmem.h          |  152 +++++++++++++++++++++-
+ include/linux/memblock.h         |    9 +-
+ init/main.c                      |    8 +-
+ kernel/power/snapshot.c          |    2 +-
+ kernel/printk/printk.c           |   10 +-
+ lib/cpumask.c                    |    4 +-
+ lib/swiotlb.c                    |   35 ++---
+ mm/hugetlb.c                     |   10 +-
+ mm/memblock.c                    |  261 +++++++++++++++++++++++++++++++++++---
+ mm/memory_hotplug.c              |    3 +-
+ mm/nobootmem.c                   |   10 +-
+ mm/page_alloc.c                  |   27 ++--
+ mm/page_cgroup.c                 |    5 +-
+ mm/percpu.c                      |   38 +++---
+ mm/sparse-vmemmap.c              |    6 +-
+ mm/sparse.c                      |   27 ++--
+ 22 files changed, 504 insertions(+), 120 deletions(-)
+
+Regards,
+Santosh
+[1] https://lkml.org/lkml/2013/12/2/1005
+[2] git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+for_3.14/memblock
+[3] https://lkml.org/lkml/2013/6/29/77
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
