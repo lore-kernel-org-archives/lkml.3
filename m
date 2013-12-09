@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761465Ab3LIR5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:57:15 -0500
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:39498 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760514Ab3LIR5L (ORCPT
+	id S1760942Ab3LIR7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:59:03 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:39155 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755695Ab3LIR66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:57:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <52A5ECF4.6030301@redhat.com>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <1386350983-13281-5-git-send-email-wens@csie.org> <52A5A52C.50605@st.com> <52A5ECF4.6030301@redhat.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Tue, 10 Dec 2013 01:56:49 +0800
-X-Google-Sender-Auth: HBxmNgrlkJiz6OxRIWrj_E7rNmE
-Message-ID: <CAGb2v64LNxnz--vn0u9zwmt7MQJZ=uz2fs0H3zDSse_XDfdK4Q@mail.gmail.com>
-Subject: Re: [linux-sunxi] Re: [PATCH 04/10] net: stmmac: sunxi platfrom
- extensions for GMAC in Allwinner A20 SoC's
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: linux-sunxi <linux-sunxi@googlegroups.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Dec 2013 12:58:58 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 02/10 v2] posix-timers: Remove dead process posix cpu timers caching
+Date: Mon,  9 Dec 2013 18:58:51 +0100
+Message-Id: <1386611931-4658-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Now that we removed dead thread posix cpu timers caching,
+lets remove the dead process wide version. This caching
+is similar to the per thread version but it should be even
+more rare:
 
-On Tue, Dec 10, 2013 at 12:16 AM, Hans de Goede <hdegoede@redhat.com> wrote:
-> Hi,
->
->
-> On 12/09/2013 12:10 PM, srinivas kandagatla wrote:
->>
->> Hi Chen,
->> Good to know that Allwinner uses gmac.
->>
->> On ST SoC, we have very similar requirements, before we merge any of
->> these changes I think we need to come up with common way to solve both
->> Allwinner and ST SOCs use cases.
->>
->> I have already posted few patches on to net-dev
->> http://lkml.org/lkml/2013/11/12/243 to add Glue driver on top of stmmac
->> driver.
->>
->>
->> There are few reasons for the way I have done it.
->>
->> 1> I did not want to modify gmac driver in any sense to when a new SOC
->> support is added.
->> 2> As the SOC specific glue logic sits on top of standard GMAC IP, it
->> makes sense to represent it proper harware hierarchy.
->
->
-> On top often is not the correct term / how things are done in practice.
->
-> Most of the time the glue are modifications to the ip block, iow in
-> hardware they are not nested / hierarchical at all. We've had similar
-> constructs for ahci platform drivers and there we are actively trying to
-> move away from the whole nested platform devices as that has various
-> issues:
->
-> 1) It is wrong / does not reflect reality
-> 2) It breaks deferred probing which is often used on SOCs
->
-> I actually think Wens' approach using a SOC specific init function
-> in platform data is sound, and this is also used a lot else where.
->
-> As for using the nested approach elsewhere, I only know about AHCI
-> platform driver doing that, and there we are actively trying to move
-> away from it.
->
->
-> Now reading this has also made me take a closer look at wens' patch
-> for this. Wens, I see that you directly modify registers in the ccm
-> that is a big no-no instead you should add a helper function to
-> sunxi-clk.c and use that, see ie:
-> https://bitbucket.org/emiliolopez/linux/commits/2b95847d9aa4aa13317dd7358ffcbd951dcb5eff?at=master
+* If the process id dead, we are not reading its timers
+status from a thread belonging to its group since they
+are all dead. So this caching only concern remote process
+timers reads. Now posix cpu timers using itimers or timer_settime()
+can't do remote process timers anyway so it's not even clear if there
+is actually a user for this caching.
 
-Yes, this has been raised by Maxime. The odd "GMAC_IF_TYPE_RGMII" or
-"gmac interface type bit" has been bugging me.
+* Unlike per thread timers caching, this only applies to
+zombies targets. Buried targets' process wide timers return
+0 values. But then again, timer_gettime() can't read remote
+process timers, so if the process is dead, there can't be
+any reader left anyway.
 
-Additionally, the TX clock has 2 inputs (not counting MII [1]).
-The internal one is most likely controlled by the GMAC. The clock
-rate is set internally to match the link speed. The external clock
-source has controllable dividers to get the correct clock rate.
-This shouldn't be hard to model with CCF though.
+Then again this caching seem to complicate the code for
+corner cases that are probably not worth it. So lets get
+rid of it.
 
-In hardware, this is probably a mux between the GMAC clock generator
-and the GMAC data transmit logic.
+Also remove the sample snapshot on dying process timer
+that is now useless, as suggested by Kosaki.
 
-My current plan is to choose MII when the clock is disabled,
-and choose either of the inputs when it is enabled. I will
-have to learn more about the CCF first.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/posix-cpu-timers.c | 35 +----------------------------------
+ 1 file changed, 1 insertion(+), 34 deletions(-)
 
-[1] In MII mode, the TX clock is sent by the PHY to the MAC.
-    From the MAC's viewpoint, it seems like a clock source.
-    However, from the PHY's viewpoint, it is the provider.
-    In RGMII mode, the MAC provides the TX clock to the PHY,
-    and times the TX data lines to the clock. So in a way,
-    the PHY is the true consumer of the TX clock.
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 3b7df86..c5d1ef5 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -453,23 +453,6 @@ void posix_cpu_timers_exit_group(struct task_struct *tsk)
+ 		       tsk->se.sum_exec_runtime + sig->sum_sched_runtime);
+ }
+ 
+-static void clear_dead_task(struct k_itimer *itimer, unsigned long long now)
+-{
+-	struct cpu_timer_list *timer = &itimer->it.cpu;
+-
+-	/*
+-	 * That's all for this thread or process.
+-	 * We leave our residual in expires to be reported.
+-	 */
+-	put_task_struct(timer->task);
+-	timer->task = NULL;
+-	if (timer->expires < now) {
+-		timer->expires = 0;
+-	} else {
+-		timer->expires -= now;
+-	}
+-}
+-
+ static inline int expires_gt(cputime_t expires, cputime_t new_exp)
+ {
+ 	return expires == 0 || expires > new_exp;
+@@ -832,16 +815,6 @@ static void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
+ 			goto dead;
+ 		} else {
+ 			cpu_timer_sample_group(timer->it_clock, p, &now);
+-			if (unlikely(p->exit_state) && thread_group_empty(p)) {
+-				read_unlock(&tasklist_lock);
+-				/*
+-				 * We've noticed that the thread is dead, but
+-				 * not yet reaped.  Take this opportunity to
+-				 * drop our task ref.
+-				 */
+-				clear_dead_task(timer, now);
+-				goto dead;
+-			}
+ 		}
+ 		read_unlock(&tasklist_lock);
+ 	}
+@@ -1092,14 +1065,8 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
+ 			read_unlock(&tasklist_lock);
+ 			goto out;
+ 		} else if (unlikely(p->exit_state) && thread_group_empty(p)) {
+-			/*
+-			 * We've noticed that the thread is dead, but
+-			 * not yet reaped.  Take this opportunity to
+-			 * drop our task ref.
+-			 */
+-			cpu_timer_sample_group(timer->it_clock, p, &now);
+-			clear_dead_task(timer, now);
+ 			read_unlock(&tasklist_lock);
++			/* Optimizations: if the process is dying, no need to rearm */
+ 			goto out;
+ 		}
+ 		spin_lock(&p->sighand->siglock);
+-- 
+1.8.3.1
 
-
-ChenYu
-
-> Giuseppe, I get the feeling the 0x148 registers st-gmac is using is
-> the same story, but I could be wrong. One important reason why accessing
-> regs like this directly is a big no no is because it is impossible to
-> do proper locking between multiple users, so 2 users doing read / modify /
-> write
-> could end up racing. So accesses to such registers should always happen
-> through a single driver.
->
->
-> Regards,
->
-> Hans
