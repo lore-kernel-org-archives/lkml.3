@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab3LINPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 08:15:00 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:19163 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932631Ab3LINO5 (ORCPT
+	id S933700Ab3LINQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 08:16:45 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:54738 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932667Ab3LINQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 08:14:57 -0500
-X-AuditID: cbfec7f4-b7f966d0000003d9-c6-52a5c24fa770
-From: Tomasz Figa <t.figa@samsung.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Heiko Stuebner <heiko@sntech.de>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
+	Mon, 9 Dec 2013 08:16:43 -0500
+Message-ID: <1386594997.7152.164.camel@host5.omatika.ru>
+Subject: Re: [PATCH 5/9] ARM: dts: provide DMA config to pxamci
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Doug Andersen <dianders@chromium.org>
-Subject: Re: [PATCH 1/3] ARM: EXYNOS: pmu: Constify data tables
-Date: Mon, 09 Dec 2013 14:14:45 +0100
-Message-id: <1922780.plAOmhqzpW@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
-In-reply-to: <1384971686-7208-1-git-send-email-djkurtz@chromium.org>
-References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xy7oBh5YGGZxSsXi8ZjGTRcPVEItJ
-	6w4wWZxddpDNonHGfFaL/49es1r0LrjKZrHp8TVWi8u75rBZzDi/j8ni9mVeB26PluYeNo/Z
-	DRdZPP6uesHssXlJvUffllWMHtuvzWP2+LxJLoA9issmJTUnsyy1SN8ugStj5p3XTAUbWSuu
-	7OlkaWD8x9zFyMkhIWAiseL3DXYIW0ziwr31bF2MXBxCAksZJX513WSBcLqYJPrmPWYDqWIT
-	UJP43PAIyObgEBFQl/h1wwmkhlmgkVni1vP9TCA1wgL2EusmbwabyiKgKrHr6hwWkHpeAU2J
-	A/tTQML8QK3vtj0FKxcVcJN4sW8LWDmngIvE5c+LwVYJCThLvJ17ixHE5hUQlPgx+R4LiM0s
-	IC+xb/9UVghbS2L9zuNMExgFZyEpm4WkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLz
-	czcxQiLmyw7GxcesDjEKcDAq8fCuYF0aJMSaWFZcmXuIUYKDWUmEV2wXUIg3JbGyKrUoP76o
-	NCe1+BAjEwenVAOjXmi70ZargnJ7Z6/V37wvXlzOwnp+tflS5sRzez+YtuXtnPnrwlfBpVp3
-	A6ZVfJP0nu95OiyoMf6d34TSp85Tp9hXFLjfnDbpVcHWQ8ZTk9foz9Cr8Dkue+vD6eJb0adl
-	2CYHTy7p99/4/ZZi+Y7zF0/lXOP8ULGCWWjefanimro9pZL/lQpMlFiKMxINtZiLihMBqQ54
-	rXYCAAA=
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        DOCUMENTATION <linux-doc@vger.kernel.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Date: Mon, 09 Dec 2013 17:16:37 +0400
+In-Reply-To: <52A59991.1060305@gmail.com>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+		 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+		 <1386543229-1542-6-git-send-email-ynvich@gmail.com>
+		 <201312090233.58592.arnd@arndb.de> <52A587A0.1050503@gmail.com>
+	 <1386581672.7152.108.camel@host5.omatika.ru> <52A59991.1060305@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Mon, 2013-12-09 at 11:21 +0100, Daniel Mack wrote:
+> On 12/09/2013 10:34 AM, Sergei Ianovich wrote:
+> > On Mon, 2013-12-09 at 10:04 +0100, Daniel Mack wrote:
+> >> On 12/09/2013 02:33 AM, Arnd Bergmann wrote:
+> >>> It hasn't made it upstream yet, but see http://list-archives.org/2013/08/07/linux-mtd-lists-infradead-org/patch-00-20-arm-pxa-move-core-and-drivers-to-dmaengine/f/3444199144
+> >>> for how it's done. Maybe Daniel can comment on the status of his
+> >>> patches.
+> >>
+...
+> The only real problem is the PXA camera driver, which does tricky things
+> like hot re-queuing of DMA descriptors. That one needs fixing before the
+> series can land.
 
-On Thursday 21 of November 2013 02:21:24 Daniel Kurtz wrote:
-> These tables are all immutable, make them const to save 4416 bytes of RAM.
-> 
-> size arch/arm/mach-exynos/pmu.o
->    text	   data	    bss
->     848	   4420	      4		// before
->    5264	      4	      4		// after
+My impression is that his series is hard to land. I've expressed my
+concerns about big changes in a separate mail.
 
-I'm not sure where the mentioned saving of RAM is. Moving data between
-sections is not supposed to make it use less memory, I believe.
+PXA device tree support issue is practically orthogonal. As of August
+2013, Daniel's dma series doesn't add any dt support. After new DMA is
+working, we will need to add dt support in the same drivers.
 
-Anyway, it's a good practice to mark constant data as const, to disallow
-changing them at runtime by mistake, so the patch is fine. Except some
-issues I commented on inline.
+Basically we have three options:
+A. Wait for Daniel DMA, than for PXA clock, than do dt support
+ pros: 
+ * correct order
+ cons:
+ * need to wait, possibly a long time
+ * dt boot not possible, while we wait
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+B. Provide 'hackish' support to dt, than correct hacks when DMA is
+merged.
+ pros:
+ * parallel development
+ * healthier kernel code (current PXA usb driver won't compile with dt
+enabled)
+ cons:
+ * wrong concept (like my patch 5/9) until DMA is working
+ * need to recompile dtb files when kernel changes
 
-Best regards,
-Tomasz
+C. Use 'fake' DMA provider dt binding to emulate existing DMA until new
+DMA is merged, than 
+ pros:
+ * parallel development
+ * healthier kernel code
+ * correct device trees from the beginning
+ cons:
+ * more work
+ * still need to recompile dtbs when clock support is merged
+
+Any ideas?
 
