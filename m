@@ -1,35 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761425Ab3LISAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 13:00:12 -0500
-Received: from host81-136-163-73.in-addr.btopenworld.com ([81.136.163.73]:56340
-	"EHLO de-server1.de-autism-anglia.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755755Ab3LISAK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 13:00:10 -0500
-X-Greylist: delayed 761 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 13:00:09 EST
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1761397Ab3LISAx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 13:00:53 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34130 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057Ab3LISAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 13:00:50 -0500
+Message-ID: <52A6054F.4080103@wwwdotorg.org>
+Date: Mon, 09 Dec 2013 11:00:47 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Guten Tag!!! 
-To: Recipients <sunzhi@hotmail.com>
-From: "Mr. SUN Zhijun" <sunzhi@hotmail.com>
-Date: Mon, 09 Dec 2013 18:45:08 +0100
-Reply-To: sun_zhijun001@qq.com
-Message-ID: <DE-SERVER1FGIUUJlNK00002a9d@de-server1.de-autism-anglia.local>
-X-OriginalArrivalTime: 09 Dec 2013 17:45:34.0242 (UTC) FILETIME=[7639A020:01CEF506]
+To: Michal Nazarewicz <mina86@mina86.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+CC: Laxman Dewangan <ldewangan@nvidia.com>, linux-spi@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] spi: tegra: use u32 for 32-bit register values
+References: <1385745164-10534-1-git-send-email-mpn@google.com> <1386516911-26388-1-git-send-email-mina86@mina86.com>
+In-Reply-To: <1386516911-26388-1-git-send-email-mina86@mina86.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guten Tag,
+On 12/08/2013 08:35 AM, Michal Nazarewicz wrote:
+> This series has only been compile-tested, but it does not introduce any
+> behaviour changes.
 
-Mein Name ist Mr.SUN Zhijun, ich mit der Bank of China zu arbeiten. Ich brauche Ihre Unterstützung in Durchführung einer Transaktion bei $ 18,5 Millionen Dollar geschätzt, möchte ich Ihnen 30% der gesamten Mittel als Ausgleich für Ihre Unterstützung in dieser Transaktion. Ich werde Sie über die vollständige Transaktion benachrichtigt nach Eingang Ihrer Antwort, wenn interessiert, bitte senden Sie mir Ihren vollständigen detials als unten, um meine E-Mail aufgeführt: sun_zhijun001@qq.com
+The series,
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-1. Vollständiger Name
-2.Private Telefonnummer
-3.Current Wohnadresse
-
-Mit freundlichen Grüßen,
-Mr.SUN Zhijun
+... although I will observe that the patch subjects, and even patch
+descriptions, don't describe all the other unrelated code
+transformations that are rolled into these patches...
