@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933560Ab3LIMs2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 07:48:28 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:16874 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932944Ab3LIMsZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 07:48:25 -0500
-X-AuditID: cbfec7f5-b7fd16d000007299-12-52a5bc17e3db
-From: Tomasz Figa <t.figa@samsung.com>
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-pm@vger.kernel.org, naveenkrishna.ch@gmail.com, rui.zhang@intel.com,
-        eduardo.valentin@ti.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.daniel@samsung.com,
-        kgene.kim@samsung.com, devicetree@vger.kernel.org,
-        b.zolnierkie@samsung.com, cpgs@samsung.com
-Subject: Re: [PATCH 2/4 v10] thermal: samsung: change base_common to more
- meaningful base_second
-Date: Mon, 09 Dec 2013 13:48:13 +0100
-Message-id: <2699941.H5LXh5yo1R@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
-In-reply-to: <1384866291-16034-1-git-send-email-ch.naveen@samsung.com>
-References: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com>
- <1384866291-16034-1-git-send-email-ch.naveen@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xa7rie5YGGVxcIWvRcDXEYuOM9awW
-	d58fZrR4eUjTYv6Rc6wWa/b/ZLLoXXCVzeLyrjlsFp97jzBazDi/j8li0bb/zBZPHvaxOfB4
-	7Jx1l91j8Z6XTB59W1Yxehy/sZ3J4/MmuQDWKC6blNSczLLUIn27BK6ME/9uMBdsFKj4sH4z
-	ewNjF28XIyeHhICJxIwt59ggbDGJC/fWA9lcHEICSxklfj2cwQrhdDFJXLu3mxWkik1ATeJz
-	wyOwDhGg7uOvzrCDFDELLGWSmL9sETNIQlggSaLl42GwIhYBVYmGz9/BmnkFNCVOPZrBBGLz
-	C6hLvNv2FMwWFXCTeLFvCzuIzQlk90+dww6xuYFRYuW7Y0wQzYISPybfYwGxmQXkJfbtn8oK
-	YWtJrN95nGkCo+AsJGWzkJTNQlK2gJF5FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZIxHzd
-	wbj0mNUhRgEORiUe3gDmpUFCrIllxZW5hxglOJiVRHjFdgGFeFMSK6tSi/Lji0pzUosPMTJx
-	cEo1MG5O2JQiP198XfEuBs06v/sPXN/9OZV6SMnxjJb6ohOvIx4wVZk6aH88ayS9TvXcynlG
-	vdldgVO2ijxo+n7+uyETp+hR40nys+/r9l0tXf+jPeX2n2j9nQ9mPz/tl2dqf1bEzjLoSnBn
-	3De9jhUsUy5s8rv56XXLka9WWow8PY+37NVftfyNb7sSS3FGoqEWc1FxIgBUhnXMdgIAAA==
+	id S933584Ab3LIMsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 07:48:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52031 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932944Ab3LIMsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 07:48:43 -0500
+Date: Mon, 9 Dec 2013 13:48:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131209124840.GC3597@dhcp22.suse.cz>
+References: <20131118165110.GE32623@dhcp22.suse.cz>
+ <20131122165100.GN3556@cmpxchg.org>
+ <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+ <20131202200221.GC5524@dhcp22.suse.cz>
+ <20131202212500.GN22729@cmpxchg.org>
+ <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+ <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
-
-On Tuesday 19 of November 2013 18:34:51 Naveen Krishna Chatradhi wrote:
-> On Exynos5440 and Exynos5420 there are registers common
-> across the TMU channels.
+On Wed 04-12-13 16:23:41, David Rientjes wrote:
+> On Wed, 4 Dec 2013, Michal Hocko wrote:
 > 
-> To support that, we introduced a ADDRESS_MULTIPLE flag in the
-> driver and the 2nd set of register base and size are provided
-> in the "reg" property of the node.
+> > > I'll repeat: Section 10 of Documentation/cgroups/memory.txt specifies what 
+> > > userspace should do when waking up; one of those options is not "check if 
+> > > the memcg is still actually oom in a short period of time once a charging 
+> > > task with a pending SIGKILL or in the exit path has been able to exit."
+> > > Users of this interface typically also disable the memcg oom killer 
+> > > through the same file, it's ludicrous to put the responsibility on 
+> > > userspace to determine if the wakeup is actionable and requires it to 
+> > > intervene in one of the methods listed in section 10.
+> > 
+> > David, you would need to show us that such a condition happens in real
+> > loads often enough that such a tweak is worth it. Repeating that a race
+> > exists doesn't help, because yeah it does and it will after your patch
+> > as well. So show us that it happens considerably less often with this
+> > check.
+> >  
 > 
-> As per Amit's suggestion, this patch changes the base_common
-> to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
+> Google depends on getting memory.oom_control notifications only when they 
+> are actionable, which is exactly how Documentation/cgroups/memory.txt 
+> describes how userspace should respond to such a notification.
 > 
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
-> Changes since v9:
-> Just respinning
+> "Actionable" here means that the kernel has exhausted its capabilities of 
+> allowing for future memory freeing, which is the entire premise of any oom 
+> killer.
 > 
-> Changes since v8:
->  None
->  .../devicetree/bindings/thermal/exynos-thermal.txt       |    4 ++--
->  drivers/thermal/samsung/exynos_tmu.c                     |   14 +++++++-------
->  drivers/thermal/samsung/exynos_tmu.h                     |    4 ++--
->  drivers/thermal/samsung/exynos_tmu_data.c                |    2 +-
->  4 files changed, 12 insertions(+), 12 deletions(-)
+> Giving a dying process or a process that is going to subsequently die 
+> access to memory reserves is a capability the kernel users to ensure 
+> progress is made in oom conditions.  It is not an exhaustion of 
+> capabilities.
+> 
+> Yes, we all know that subsequent to the userspace notification that memory 
+> may be freed and the kill no longer becomes required.  There is nothing 
+> that can be done about that, and it has never been implied that a memcg is 
+> guaranteed to still be oom when the process wakes up.
+> 
+> I'm referring to a siutation that can manifest in a number of ways: 
+> coincidental process exit, coincidental process being killed, 
+> VMPRESSURE_CRITICAL notification that results in a process being killed, 
+> or memory threshold notification that results in a process being killed.  
+> Regardless, we're talking about a situation where something is already 
+> in the exit path or has been killed and is simply attempting to free its 
+> memory.
 
-Please see my comments inline.
+You have already mentioned that. Several times in fact. And I do
+understand what you are saying. You are just not backing your claims
+with anything that would convince us that what you are trying to solve
+is an issue in the real life. So show us it is real, please.
 
-> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> index 284f530..116cca0 100644
-> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> @@ -11,8 +11,8 @@
->  - reg : Address range of the thermal registers. For soc's which has multiple
->  	instances of TMU and some registers are shared across all TMU's like
->  	interrupt related then 2 set of register has to supplied. First set
-> -	belongs	to each instance of TMU and second set belongs to common TMU
-> -	registers.
-> +	belongs	to each instance of TMU and second set belongs to second set
-> +	of common TMU registers.
+> Such a process simply needs access to memory reserves to make progress and 
+> free its memory as part of the exit path.  The process waiting on 
+> memory.oom_control does _not_ need to do any of the actions mentioned in 
+> Documentation/cgroups/memory.txt: reduce usage, enlarge the limit, kill a 
+> process, or move a process with charge migration.
+> 
+> It would be ridiculous to require anybody implementing such a process to 
+> check if the oom condition still exists after a period of time before 
+> taking such an action.
 
-Just a wording issue, I think: If this is "second set of common TMU
-registers", then where is the first set of common TMU registers?
+Why would you consider that ridiculous? If your memcg is oom already
+then waiting few seconds to let racing tasks finish doesn't sound that
+bad to me.
 
-Otherwise the patch looks fine.
+> It would be required to wait for any possible 
+> dying task or process with a pending SIGKILL to exit and there's no way to 
+> determine how long is long enough to wait or that it will get woken up 
+> again if it relies on a second signal for the same oom condition.  At the 
+> same time, the action taken by such a process would still be as racy as it 
+> would with the patch: we simply can't guarantee memory is not freed 
+> immediately after we issue the SIGKILL.
+> 
+> What we can control is that the kernel has exhausted its capabilities of 
+> allowing for future memory freeing at the time of notification.  That's 
+> the goal of the patch, at the same time making it consistent with the 
+> documentation.
 
-Best regards,
-Tomasz
-
+-- 
+Michal Hocko
+SUSE Labs
