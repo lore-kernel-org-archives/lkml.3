@@ -1,55 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760628Ab3LIGlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:41:35 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51100 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760549Ab3LIGld (ORCPT
+	id S932161Ab3LIGl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:41:57 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55015 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760356Ab3LIGlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:41:33 -0500
+	Mon, 9 Dec 2013 01:41:55 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com
+Subject: Re: [PATCH] sched: Revert need_resched() to look at TIF_NEED_RESCHED
+In-Reply-To: <20130927153003.GF15690@laptop.programming.kicks-ass.net>
+References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org> <20130927091427.GE24743@yliu-dev.sh.intel.com> <20130927153003.GF15690@laptop.programming.kicks-ass.net>
+User-Agent: Notmuch/0.16+99~g10596a5 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 09 Dec 2013 12:11:33 +0530
+Message-ID: <87y53ubk6a.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFi4uRsuPUjxAOWuMkeBYd1fmT_CQdVdeffVRN1yxPVRcWuALA@mail.gmail.com>
-References: <CAFi4uRvcUPvKvaeO5gZnjhMCFS+08MhEixJw-iN0AWbeBfiHvQ@mail.gmail.com>
-	<CAErSpo7rbf7dwSZ12uoVXaf6HoRNDn0Pxxy-Vo_6F9kk+p07Qg@mail.gmail.com>
-	<CABawtvNbkeXdQiBYD9Q+oRijw6VnT=FHdiFkjvFfh8Uw8KvO_A@mail.gmail.com>
-	<CAFi4uRsuPUjxAOWuMkeBYd1fmT_CQdVdeffVRN1yxPVRcWuALA@mail.gmail.com>
-Date: Mon, 9 Dec 2013 14:41:32 +0800
-Message-ID: <CABawtvNEE5LzywovC3X4GSAOkRpTkwoy-LWJ_UguOaK1br9F1A@mail.gmail.com>
-Subject: Re: NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Nick Pegg <nick@nickpegg.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        Jin Feng <joe.jin@oracle.com>, konrad.wilk@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13120906-5140-0000-0000-000004463D70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick,
-    You could try 7.3.21-k8-NAPI in tree or the out-of-tree version as
-Bjorn mentioned.
-To read and debug an old version driver is not a interesting thing for
-somebody to do.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Thanks,
-Ethan
+> Subject: sched: Revert need_resched() to look at TIF_NEED_RESCHED
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Fri Sep 27 17:20:30 CEST 2013
+>
+> Yuanhan reported a serious throughput regression in his pigz
+> benchmark. Using the ftrace patch I found that several idle paths
+> need more TLC before we can switch the generic need_resched() over to
+> preempt_need_resched.
+>
+> The preemption paths benefit most from preempt_need_resched and do
+> indeed use it; all other need_resched() users don't really care that
+> much so reverting need_resched() back to tif_need_resched() is the
+> simple and safe solution.
+>
+> Reported-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
-On Tue, Dec 3, 2013 at 9:33 PM, Nick Pegg <nick@nickpegg.com> wrote:
-> On Mon, Dec 2, 2013 at 10:51 PM, Ethan Zhao <ethan.kernel@gmail.com> wrote:
->> Bjorn,
->>    Seems not the same bug as  http://sourceforge.net/p/e1000/bugs/367/
->> ,  Nick is not running his kernel on bare metal, per the error log,
->> he runs his kernel as HVM DomU guest or Dom0 on XEN ?  so just a check
->> of NULL will not fix that.
->>
+I guess we still need to fix should_resched() I am hitting the below
+with upstream
+
+
+BUG: soft lockup - CPU#0 stuck for 23s! [qemu-system-ppc:4394]
+Modules linked in:
+CPU: 0 PID: 4394 Comm: qemu-system-ppc Not tainted 3.13.0-rc3+ #98
+task: c0000001d0788400 ti: c0000001dca00000 task.ti: c0000001dca00000
+NIP: c00000000082dd80 LR: c000000000081ae0 CTR: c000000000062ba0
+REGS: c0000001dca02f70 TRAP: 0901   Not tainted  (3.13.0-rc3+)
+MSR: 8000000000009032 <SF,EE,ME,IR,DR,RI>  CR: 24822024  XER: 00000000
+CFAR: c000000000081adc SOFTE: 1
+GPR00: c000000000081ae0 c0000001dca031f0 c000000000d67ab0 0000000000000001
+GPR04: 0000000071000002 0000000000000001 00000189a0d786b7 00000000018c0000
+GPR08: 0000000000000001 0000000000000000 0000000000000000 c000000000da0000
+GPR12: 0000000000000c00 c00000000fef0000
+NIP [c00000000082dd80] ._cond_resched+0x0/0x40
+LR [c000000000081ae0] .kvmppc_prepare_to_enter+0x2a0/0x2e0
+Call Trace:
+[c0000001dca031f0] [c000000000081ae0] .kvmppc_prepare_to_enter+0x2a0/0x2e0 (unreliable)
+[c0000001dca03290] [c00000000008f2cc] .kvmppc_handle_exit_pr+0xec/0xa40
+[c0000001dca03340] [c0000000000918c4] kvm_start_lightweight+0xac/0xbc
+[c0000001dca03510] [c00000000008efe0] .kvmppc_vcpu_run_pr+0x130/0x2a0
+[c0000001dca039e0] [c0000000000855bc] .kvmppc_vcpu_run+0x2c/0x40
+[c0000001dca03a50] [c000000000082c94] .kvm_arch_vcpu_ioctl_run+0x54/0x1b0
+[c0000001dca03ae0] [c00000000007d5f8] .kvm_vcpu_ioctl+0x478/0x740
+[c0000001dca03ca0] [c000000000218864] .do_vfs_ioctl+0x4a4/0x760
+[c0000001dca03d80] [c000000000218b78] .SyS_ioctl+0x58/0xb0
+[c0000001dca03e30] [c000000000009e58] syscall_exit+0x0/0x98
+Instruction dump:
+e92d0260 e94911c0 812a0004 5529f07e 5529103e 912a0004 38210080 e8010010
+ebc1fff0 ebe1fff8 7c0803a6 4e800020 <7c0802a6> 38600000 f8010010 f821ff91 
+
+
+The revert which Alexander tried had those
+
+http://mid.gmane.org/20131128132641.GP10022@twins.programming.kicks-ass.net
+
+
+> ---
+>  arch/x86/include/asm/preempt.h |    8 --------
+>  include/asm-generic/preempt.h  |    8 --------
+>  include/linux/sched.h          |    5 +++++
+>  3 files changed, 5 insertions(+), 16 deletions(-)
 >
-> Sorry, I neglected to say in my original email that the kernel is
-> running as a Xen Dom0. Per Todd's request, I've opened a bug report on
-> sourceforge and will follow up with this issue there:
-> https://sourceforge.net/p/e1000/bugs/385/
->
-> Thanks,
-> Nick
+> --- a/arch/x86/include/asm/preempt.h
+> +++ b/arch/x86/include/asm/preempt.h
+> @@ -80,14 +80,6 @@ static __always_inline bool __preempt_co
+>  }
+>  
+>  /*
+> - * Returns true when we need to resched -- even if we can not.
+> - */
+> -static __always_inline bool need_resched(void)
+> -{
+> -	return unlikely(test_preempt_need_resched());
+> -}
+> -
+> -/*
+>   * Returns true when we need to resched and can (barring IRQ state).
+>   */
+>  static __always_inline bool should_resched(void)
+> --- a/include/asm-generic/preempt.h
+> +++ b/include/asm-generic/preempt.h
+> @@ -85,14 +85,6 @@ static __always_inline bool __preempt_co
+>  }
+>  
+>  /*
+> - * Returns true when we need to resched -- even if we can not.
+> - */
+> -static __always_inline bool need_resched(void)
+> -{
+> -	return unlikely(test_preempt_need_resched());
+> -}
+> -
+> -/*
+>   * Returns true when we need to resched and can (barring IRQ state).
+>   */
+>  static __always_inline bool should_resched(void)
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2577,6 +2577,11 @@ static inline bool __must_check current_
+>  }
+>  #endif
+>  
+> +static __always_inline bool need_resched(void)
+> +{
+> +	return unlikely(tif_need_resched());
+> +}
+> +
+>  /*
+>   * Thread group CPU time accounting.
+>   */
+
+-aneesh
+
