@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933817Ab3LITka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:40:30 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55005 "EHLO
+	id S933981Ab3LITlO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:41:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54998 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123Ab3LIThZ (ORCPT
+	with ESMTP id S1761395Ab3LIThX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 14:37:25 -0500
+	Mon, 9 Dec 2013 14:37:23 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/21] tools lib traceevent: Get rid of malloc_or_die() in pevent_filter_add_filter_str()
-Date: Mon,  9 Dec 2013 16:37:08 -0300
-Message-Id: <1386617830-18926-20-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/21] perf evlist: Fix max mmap_pages
+Date: Mon,  9 Dec 2013 16:36:57 -0300
+Message-Id: <1386617830-18926-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386617830-18926-1-git-send-email-acme@infradead.org>
 References: <1386617830-18926-1-git-send-email-acme@infradead.org>
@@ -26,40 +30,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+'SIZE_MAX / page_size' is an upper limit for the maximum number of mmap
+pages, not a lower limit.  Change the condition accordingly.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386567251-22751-12-git-send-email-namhyung@kernel.org
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386595120-22978-3-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/parse-filter.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ tools/perf/util/evlist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 53e48eb112c3..a4d5bb23a110 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -1226,7 +1226,13 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
- 		else
- 			len = strlen(filter_str);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 4d0945c96ab2..98ec96b3a744 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -754,7 +754,7 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 	unsigned long max = UINT_MAX;
+ 	long pages;
  
--		this_event = malloc_or_die(len + 1);
-+		this_event = malloc(len + 1);
-+		if (this_event == NULL) {
-+			show_error(error_str, "Memory allocation failure");
-+			/* This can only happen when events is NULL, but still */
-+			free_events(events);
-+			return -1;
-+		}
- 		memcpy(this_event, filter_str, len);
- 		this_event[len] = 0;
+-	if (max < SIZE_MAX / page_size)
++	if (max > SIZE_MAX / page_size)
+ 		max = SIZE_MAX / page_size;
  
+ 	pages = parse_pages_arg(str, 1, max);
 -- 
 1.8.1.4
 
