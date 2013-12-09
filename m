@@ -1,134 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761255Ab3LIOuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 09:50:44 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:42645 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759232Ab3LIOum (ORCPT
+	id S1761265Ab3LIOw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 09:52:59 -0500
+Received: from claranet-outbound-smtp02.uk.clara.net ([195.8.89.35]:45458 "EHLO
+	claranet-outbound-smtp02.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759232Ab3LIOw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 09:50:42 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Margarita Manterola <margamanterola@gmail.com>,
-        Maximiliano Curia <maxy@gnuservers.com.ar>,
-        Stas Sergeev <stsp@users.sourceforge.net>
-Cc: Pavel Machek <pavel@ucw.cz>, Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, Caylan Van Larson <i@caylan.net>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3] n_tty: Fix buffer overruns with larger-than-4k pastes
-Date: Mon,  9 Dec 2013 09:50:04 -0500
-Message-Id: <1386600604-5092-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <529F7B35.4050509@list.ru>
-References: <529F7B35.4050509@list.ru>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 9 Dec 2013 09:52:58 -0500
+X-Greylist: delayed 1563 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 09:52:57 EST
+Date: Mon, 9 Dec 2013 14:26:06 +0000
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "open list:USB OHCI DRIVER" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 3/9] ARM: fix ohci-pxa27x build error with OF enabled
+Message-ID: <20131209142605.GA9345@s.cotton.clara.co.uk>
+References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
+ <1386543229-1542-1-git-send-email-ynvich@gmail.com>
+ <1386543229-1542-4-git-send-email-ynvich@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386543229-1542-4-git-send-email-ynvich@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Steve Cotton <steve@s.cotton.clara.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-readline() inadvertently triggers an error recovery path when
-pastes larger than 4k overrun the line discipline buffer. The
-error recovery path discards input when the line discipline buffer
-is full and operating in canonical mode and no newline has been
-received. Because readline() changes the termios to non-canonical
-mode to read the line char-by-char, the line discipline buffer
-can become full, and then when readline() restores termios back
-to canonical mode for the caller, the now-full line discipline
-buffer triggers the error recovery.
+On Mon, Dec 09, 2013 at 02:53 +0400, Sergei Ianovich wrote:
+> --->8---
+> $ make
+>   CC [M]  drivers/usb/host/ohci-pxa27x.o
+> drivers/usb/host/ohci-pxa27x.c: In function ‘ohci_pxa_of_init’:
+> drivers/usb/host/ohci-pxa27x.c:310:2: error: implicit declaration of function ‘dma_coerce_mask_and_coherent’ [-Werror=implicit-function-declaration]
+> drivers/usb/host/ohci-pxa27x.c:310:2: error: implicit declaration of function ‘DMA_BIT_MASK’ [-Werror=implicit-function-declaration]
+> --->8---
+> 
+> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+> CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> 
+>  # Changes to be committed:
+> ---
+>  drivers/usb/host/ohci-pxa27x.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/usb/host/ohci-pxa27x.c b/drivers/usb/host/ohci-pxa27x.c
+> index e89ac4d..97983fd 100644
+> --- a/drivers/usb/host/ohci-pxa27x.c
+> +++ b/drivers/usb/host/ohci-pxa27x.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/io.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+> +#include <linux/dma-mapping.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/platform_data/usb-ohci-pxa27x.h>
 
-When changing termios from non-canon to canon mode and the read
-buffer contains data, simulate an EOF push _without_ the
-DISABLED_CHAR in the read buffer. canon_copy_to_read_buf()
-correctly interprets this condition and will return data in the
-read buffer as one line.
+Hi Sergei,
 
-Importantly for the readline() problem, the termios can be
-changed back to non-canonical mode without changes to the read
-buffer occurring; ie., as if the previous termios change had not
-happened (as long as no intervening read took place).
+There's already a different patch for this
+in the linux-next/master and gregkh/usb/usb-linus trees, but
+not in the linux-next/stable or gregkh/usb/usb-next trees.
 
-Patch based on original proposal and discussion here
-https://bugzilla.kernel.org/show_bug.cgi?id=55991
-by Stas Sergeev <stsp@users.sourceforge.net>
+It adds that include 3 lines higher up, to keep the includes in
+alphabetical order.
 
-Reported-by: Margarita Manterola <margamanterola@gmail.com>
-Cc: Maximiliano Curia <maxy@gnuservers.com.ar>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Acked-by: Stas Sergeev <stsp@users.sourceforge.net>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
+commit 9876388edfa553960815110acae4544359b385b5
+Author:     Daniel Mack <zonque@gmail.com>
+AuthorDate: Fri Nov 15 14:19:02 2013 +0100
+Commit:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CommitDate: Wed Dec 4 16:57:46 2013 -0800
 
-v3 - Fix false-positive end-of-file indication when an actual
-     EOF push coincidentally happens to be the next input
-     char (but not @ line start)
-
- drivers/tty/n_tty.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 0f74945..e9e3e52 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -104,6 +104,7 @@ struct n_tty_data {
- 
- 	/* must hold exclusive termios_rwsem to reset these */
- 	unsigned char lnext:1, erasing:1, raw:1, real_raw:1, icanon:1;
-+	unsigned char push:1;
- 
- 	/* shared by producer and consumer */
- 	char read_buf[N_TTY_BUF_SIZE];
-@@ -1755,7 +1756,15 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
- 
- 	if (!old || (old->c_lflag ^ tty->termios.c_lflag) & ICANON) {
- 		bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
--		ldata->line_start = ldata->canon_head = ldata->read_tail;
-+		if (!L_ICANON(tty) || !read_cnt(ldata)) {
-+			ldata->line_start = ldata->canon_head = ldata->read_tail;
-+			ldata->push = 0;
-+		} else {
-+			set_bit((ldata->read_head - 1) & (N_TTY_BUF_SIZE - 1),
-+				ldata->read_flags);
-+			ldata->canon_head = ldata->read_head;
-+			ldata->push = 1;
-+		}
- 		ldata->erasing = 0;
- 		ldata->lnext = 0;
- 	}
-@@ -1958,6 +1967,12 @@ static int copy_from_read_buf(struct tty_struct *tty,
-  *	it copies one line of input up to and including the line-delimiting
-  *	character into the user-space buffer.
-  *
-+ *	NB: When termios is changed from non-canonical to canonical mode and
-+ *	the read buffer contains data, n_tty_set_termios() simulates an EOF
-+ *	push (as if C-d were input) _without_ the DISABLED_CHAR in the buffer.
-+ *	This causes data already processed as input to be immediately available
-+ *	as input although a newline has not been received.
-+ *
-  *	Called under the atomic_read_lock mutex
-  *
-  *	n_tty_read()/consumer path:
-@@ -2007,6 +2022,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
- 	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
- 		n--;
- 		eof_push = !n && ldata->read_tail != ldata->line_start;
-+		ldata->push = 0;
- 	}
- 
- 	n_tty_trace("%s: eol:%zu found:%d n:%zu c:%zu size:%zu more:%zu\n",
-@@ -2031,7 +2047,10 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
- 	ldata->read_tail += c;
- 
- 	if (found) {
--		ldata->line_start = ldata->read_tail;
-+		if (!ldata->push)
-+			ldata->line_start = ldata->read_tail;
-+		else
-+			ldata->push = 0;
- 		tty_audit_push(tty);
- 	}
- 	return eof_push ? -EAGAIN : 0;
--- 
-1.8.1.2
-
+Cheers,
+Steve
