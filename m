@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761054Ab3LIKqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:46:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46211 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760281Ab3LIKqM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:46:12 -0500
-Message-ID: <52A59F67.7060008@pengutronix.de>
-Date: Mon, 09 Dec 2013 11:45:59 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1761092Ab3LIKrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:47:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754965Ab3LIKr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 05:47:29 -0500
+Date: Mon, 9 Dec 2013 11:47:18 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCHSET 00/14] tools lib traceevent: Get rid of *die() calls
+ from parse-filter.c
+Message-ID: <20131209104718.GG1242@krava.brq.redhat.com>
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: Re: [PATCH] can: ems_usb: fix urb leaks on failure paths
-References: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1386371435-17597-1-git-send-email-khoroshilov@ispras.ru>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="8x4v4XrLHekBw42bbav4o8D45lMNw3pRf"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---8x4v4XrLHekBw42bbav4o8D45lMNw3pRf
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 09, 2013 at 02:33:57PM +0900, Namhyung Kim wrote:
+> Hello,
 
-On 12/07/2013 12:10 AM, Alexey Khoroshilov wrote:
-> There are a couple failure paths where urb leaks.
-> Is spare code within ems_usb_start_xmit(),
-> usb_free_urb() should be used to deallocate urb instead of usb_unanchor=
-_urb().
-> In ems_usb_start() there is no usb_free_urb() if usb_submit_urb() fails=
-=2E
->=20
-> Found by Linux Driver Verification project (linuxtesting.org).
->=20
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+SNIP
 
-Applied to the can-tree.
+> 
+>  tools/lib/traceevent/event-parse.h  |   3 +-
+>  tools/lib/traceevent/parse-filter.c | 432 +++++++++++++++++++++++++-----------
 
-Thx, Marc
+I guess we have plans to actualy use parse-filter.c right? ;-)
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+AFAICS currently there's no user and could (should?) be omited
+from compilation
 
+jirka
 
---8x4v4XrLHekBw42bbav4o8D45lMNw3pRf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlKln2cACgkQjTAFq1RaXHP1+QCdHK4Lx9tQ2zf25u2PnqGQeo9y
-pswAnRTHbjBrmdE/ducyCI1bIp/htdvN
-=arqc
------END PGP SIGNATURE-----
-
---8x4v4XrLHekBw42bbav4o8D45lMNw3pRf--
+>  2 files changed, 303 insertions(+), 132 deletions(-)
+> 
+> -- 
+> 1.7.11.7
+> 
