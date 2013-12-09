@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933326Ab3LILR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 06:17:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49135 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599Ab3LILR0 (ORCPT
+	id S1760764Ab3LILTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 06:19:14 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:45607 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358Ab3LILTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 06:17:26 -0500
-Date: Mon, 9 Dec 2013 03:19:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: konrad.wilk@oracle.com, raghavendra.kt@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] xen/debugfs: Check debugfs initialization before
- using it
-Message-ID: <20131209111900.GC6562@kroah.com>
-References: <1386583012-506-1-git-send-email-ethan.kernel@gmail.com>
+	Mon, 9 Dec 2013 06:19:12 -0500
+Message-ID: <52A5A7B5.2040904@gmail.com>
+Date: Mon, 09 Dec 2013 19:21:25 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386583012-506-1-git-send-email-ethan.kernel@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: James Hogan <james.hogan@imgtec.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/zswap.c: add BUG() for default case in zswap_writeback_entry()
+References: <52A53024.9090701@gmail.com> <52A5935A.4040709@imgtec.com> <52A5973A.7020509@gmail.com> <52A5990E.2080808@imgtec.com>
+In-Reply-To: <52A5990E.2080808@imgtec.com>
+Content-Type: multipart/mixed;
+ boundary="------------090306010206020002090309"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 05:56:52PM +0800, Ethan Zhao wrote:
-> From: "ethan.zhao" <ethan.kernel@gmail.com>
+This is a multi-part message in MIME format.
+--------------090306010206020002090309
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+
+On 12/09/2013 06:18 PM, James Hogan wrote:
+> On 09/12/13 10:11, Chen Gang wrote:
+>>> Since the metag compiler is stuck on an old version (gcc 4.2.4), which
+>>> is wrong to warn in this case, and newer versions of gcc don't appear to
+>>> warn about it anyway (I just checked with gcc 4.7.2 x86_64), I have no
+>>> objection to this warning remaining in the metag build.
+>>>
+>>
+>> Do you try "EXTRA_CFLAGS=-W" with gcc 4.7.2? I guess it will report the
+>> warning too, I don't feel the compiler is smart enough (except it lets
+>> the long function zswap_get_swap_cache_page really inline)  :-)
 > 
-> Should check debugfs initialization with debugfs_initialized() before using it,
-> Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
-> functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
+> EXTRA_CFLAGS=-W on gcc 4.7.2 gives me plenty of pointless unused
+> parameter warnings when compiling mm/zswap.o, but not the warning you're
+> trying to silence.
 > 
-> V3: add warning message when debugfs not configured or disabled.
 
-That's not what this patch does...
+Yeah, it will generate plenty of pointless warnings, although we still
+can often find valuable bugs in these warnings.
 
-> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
-> ---
->  arch/x86/xen/debugfs.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
-> index c8377fb..85c0e0e 100644
-> --- a/arch/x86/xen/debugfs.c
-> +++ b/arch/x86/xen/debugfs.c
-> @@ -9,12 +9,18 @@ static struct dentry *d_xen_debug;
->  
->  struct dentry * __init xen_init_debugfs(void)
->  {
-> +	if (!debugfs_initialized()) {
-> +		d_xen_debug = NULL;
-> +		goto nodebugfs;
-> +	}
+Oh, I tried gcc 4.6.3-2 rhel version, get the same result as yours (do
+not report warning), but for me, it is still a compiler's bug, it
+*should* report a warning for it, we can try below:
 
-Again, why is this even needed?
+ - modify zswap_get_swap_cache_page() to let it may return another value
+   (one sample modification is in attachment)
 
-What problem in the existing code are you trying to solve?
+ - compile again, it doesn't report related warning, either
 
+ - in this case, it *should* report related warning.
+
+Could you help to try it under gcc 4.7.2, thanks?
+
+
+BTW: gcc really exists some bugs about uninitialized variable, e.g.
+
+  one known bug: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=18501
+  kernel related: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=57856
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water and life which God blessed
+
+--------------090306010206020002090309
+Content-Type: text/x-patch;
+ name="diff.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="diff.patch"
+
+diff --git a/mm/zswap.c b/mm/zswap.c
+index 5a63f78..1853ef4 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -469,8 +469,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
+ 		 */
+ 		err = radix_tree_preload(GFP_KERNEL);
+ 		if (err)
+-			break;
+-
++			return -4;
+ 		/*
+ 		 * Swap entry may have been freed since our caller observed it.
+ 		 */
+
+--------------090306010206020002090309--
