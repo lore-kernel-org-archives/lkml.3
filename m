@@ -1,70 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174Ab3LIMJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 07:09:26 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:45289 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932643Ab3LIMJY (ORCPT
+	id S933275Ab3LIMNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 07:13:12 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:29156 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932532Ab3LIMNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 07:09:24 -0500
-Message-ID: <1386590958.7152.135.camel@host5.omatika.ru>
-Subject: Re: [PATCH 5/9] ARM: dts: provide DMA config to pxamci
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        DOCUMENTATION <linux-doc@vger.kernel.org>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Date: Mon, 09 Dec 2013 16:09:18 +0400
-In-Reply-To: <52A59991.1060305@gmail.com>
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
-		 <1386543229-1542-1-git-send-email-ynvich@gmail.com>
-		 <1386543229-1542-6-git-send-email-ynvich@gmail.com>
-		 <201312090233.58592.arnd@arndb.de> <52A587A0.1050503@gmail.com>
-	 <1386581672.7152.108.camel@host5.omatika.ru> <52A59991.1060305@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Dec 2013 07:13:07 -0500
+From: Rui Xiang <rui.xiang@huawei.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rui Xiang <rui.xiang@huawei.com>
+Subject: [PATCH RESEND 1/2] proc: change return values while get_proc_task err
+Date: Mon, 9 Dec 2013 20:11:54 +0800
+Message-ID: <1386591115-39392-1-git-send-email-rui.xiang@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-09 at 11:21 +0100, Daniel Mack wrote:
-> On 12/09/2013 10:34 AM, Sergei Ianovich wrote:
-> > Nice to have Daniel in this conversation. Your patch series is a big and
-> > important work. However, I am not sure I will ever land as is exactly
-> > for this reason.
-> 
-> Well, I wouldn't be so certain about that statement. As I wrote in the
-> cover letter, most of the work is actually done, and I successfully
-> tested the new DMA support with a some of the drivers I ported. Others
-> were ported blindly, and in case of no reaction, I'd dare to merge them
-> and wait for people to report back in case of trouble.
+While getting proc task error, it shoule return -ESRCH.
 
-If breaking things is an option, I am definitely wrong. I assumed the
-opposite.
+Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+---
+ fs/proc/base.c       | 25 +++++++++++++++----------
+ fs/proc/fd.c         |  8 +++++---
+ fs/proc/namespaces.c | 12 ++++++++----
+ fs/proc_namespace.c  |  2 +-
+ 4 files changed, 29 insertions(+), 18 deletions(-)
 
-> > My proposal in to actually add new drivers for each platform device with
-> > DMA and mark new ones EXPERIMENTAL.
-> 
-> That would cause tree-wide cross-dependencies between drivers, because
-> the two DMA controllers can't be used at the same time, and the PXA
-> specific API will be unavailable when the mmp-dma driver is selected. My
-> patch series (and the DMA controller framework for that matter) aims for
-> the opposite - the unification of APIs and drivers.
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 1485e38..65f78a9 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -174,9 +174,10 @@ static int get_task_root(struct task_struct *task, struct path *root)
+ static int proc_cwd_link(struct dentry *dentry, struct path *path)
+ {
+ 	struct task_struct *task = get_proc_task(dentry->d_inode);
+-	int result = -ENOENT;
++	int result = -ESRCH;
+ 
+ 	if (task) {
++		result = -ENOENT;
+ 		task_lock(task);
+ 		if (task->fs) {
+ 			get_fs_pwd(task->fs, path);
+@@ -191,7 +192,7 @@ static int proc_cwd_link(struct dentry *dentry, struct path *path)
+ static int proc_root_link(struct dentry *dentry, struct path *path)
+ {
+ 	struct task_struct *task = get_proc_task(dentry->d_inode);
+-	int result = -ENOENT;
++	int result = -ESRCH;
+ 
+ 	if (task) {
+ 		result = get_task_root(task, path);
+@@ -1438,11 +1439,11 @@ static int proc_exe_link(struct dentry *dentry, struct path *exe_path)
+ 
+ 	task = get_proc_task(dentry->d_inode);
+ 	if (!task)
+-		return -ENOENT;
++		return -ECHILD;
+ 	mm = get_task_mm(task);
+ 	put_task_struct(task);
+ 	if (!mm)
+-		return -ENOENT;
++		return -EINVAL;
+ 	exe_file = get_mm_exe_file(mm);
+ 	mmput(mm);
+ 	if (exe_file) {
+@@ -1799,11 +1800,12 @@ static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
+ 	struct mm_struct *mm;
+ 	int rc;
+ 
+-	rc = -ENOENT;
++	rc = -ESRCH;
+ 	task = get_proc_task(dentry->d_inode);
+ 	if (!task)
+ 		goto out;
+ 
++	rc = -EINVAL;
+ 	mm = get_task_mm(task);
+ 	put_task_struct(task);
+ 	if (!mm)
+@@ -1934,7 +1936,7 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		goto out;
+ 
+-	ret = -ENOENT;
++	ret = -ESRCH;
+ 	task = get_proc_task(file_inode(file));
+ 	if (!task)
+ 		goto out;
+@@ -2161,11 +2163,12 @@ static struct dentry *proc_pident_lookup(struct inode *dir,
+ 	struct task_struct *task = get_proc_task(dir);
+ 	const struct pid_entry *p, *last;
+ 
+-	error = -ENOENT;
++	error = -ESRCH;
+ 
+ 	if (!task)
+ 		goto out_no_task;
+ 
++	error = -ENOENT;
+ 	/*
+ 	 * Yes, it does not scale. And it should not. Don't add
+ 	 * new entries into /proc/<tgid>/ without very good reasons.
+@@ -2194,7 +2197,7 @@ static int proc_pident_readdir(struct file *file, struct dir_context *ctx,
+ 	const struct pid_entry *p;
+ 
+ 	if (!task)
+-		return -ENOENT;
++		return -ESRCH;
+ 
+ 	if (!dir_emit_dots(file, ctx))
+ 		goto out;
+@@ -3047,8 +3050,10 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
+ 	unsigned tid;
+ 	struct pid_namespace *ns;
+ 
+-	if (!leader)
++	if (!leader) {
++		result = -ESRCH;
+ 		goto out_no_task;
++	}
+ 
+ 	tid = name_to_int(dentry);
+ 	if (tid == ~0U)
+@@ -3152,7 +3157,7 @@ static int proc_task_readdir(struct file *file, struct dir_context *ctx)
+ 	int tid;
+ 
+ 	if (!task)
+-		return -ENOENT;
++		return -ESRCH;
+ 	rcu_read_lock();
+ 	if (pid_alive(task)) {
+ 		leader = task->group_leader;
+diff --git a/fs/proc/fd.c b/fs/proc/fd.c
+index 985ea88..0369cbc 100644
+--- a/fs/proc/fd.c
++++ b/fs/proc/fd.c
+@@ -23,7 +23,7 @@ static int seq_show(struct seq_file *m, void *v)
+ 
+ 	task = get_proc_task(m->private);
+ 	if (!task)
+-		return -ENOENT;
++		return -ESRCH;
+ 
+ 	files = get_files_struct(task);
+ 	put_task_struct(task);
+@@ -206,8 +206,10 @@ static struct dentry *proc_lookupfd_common(struct inode *dir,
+ 	int result = -ENOENT;
+ 	unsigned fd = name_to_int(dentry);
+ 
+-	if (!task)
++	if (!task) {
++		result = -ESRCH;
+ 		goto out_no_task;
++	}
+ 	if (fd == ~0U)
+ 		goto out;
+ 
+@@ -226,7 +228,7 @@ static int proc_readfd_common(struct file *file, struct dir_context *ctx,
+ 	unsigned int fd;
+ 
+ 	if (!p)
+-		return -ENOENT;
++		return -ESRCH;
+ 
+ 	if (!dir_emit_dots(file, ctx))
+ 		goto out;
+diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+index 49a7fff..cedb02b 100644
+--- a/fs/proc/namespaces.c
++++ b/fs/proc/namespaces.c
+@@ -119,12 +119,13 @@ static void *proc_ns_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	struct proc_inode *ei = PROC_I(inode);
+ 	struct task_struct *task;
+ 	struct path ns_path;
+-	void *error = ERR_PTR(-EACCES);
++	void *error = ERR_PTR(-ESRCH);
+ 
+ 	task = get_proc_task(inode);
+ 	if (!task)
+ 		goto out;
+ 
++	error = ERR_PTR(-EACCES);
+ 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+ 		goto out_put_task;
+ 
+@@ -152,12 +153,13 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
+ 	struct task_struct *task;
+ 	void *ns;
+ 	char name[50];
+-	int len = -EACCES;
++	int len = -ESRCH;
+ 
+ 	task = get_proc_task(inode);
+ 	if (!task)
+ 		goto out;
+ 
++	len = -EACCES;
+ 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+ 		goto out_put_task;
+ 
+@@ -218,7 +220,7 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
+ 	const struct proc_ns_operations **entry, **last;
+ 
+ 	if (!task)
+-		return -ENOENT;
++		return -ESRCH;
+ 
+ 	if (!dir_emit_dots(file, ctx))
+ 		goto out;
+@@ -254,8 +256,10 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
+ 
+ 	error = -ENOENT;
+ 
+-	if (!task)
++	if (!task) {
++		error = -ESRCH;
+ 		goto out_no_task;
++	}
+ 
+ 	last = &ns_entries[ARRAY_SIZE(ns_entries)];
+ 	for (entry = ns_entries; entry < last; entry++) {
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 439406e..f5cb5a3 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -230,7 +230,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ 	int ret = -EINVAL;
+ 
+ 	if (!task)
+-		goto err;
++		return -ESRCH;
+ 
+ 	rcu_read_lock();
+ 	nsp = task_nsproxy(task);
+-- 
+1.8.2.2
 
-Not sure I got this point. My proposal is to keep the existing DMA
-intact until we are ready to remove it. I understand this approach
-requires considerably more work inside DMA to allow both driver to
-coexist than wholesale replacement. I still think big change is risky.
 
