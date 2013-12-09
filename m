@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761210Ab3LIRkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:40:08 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64990 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760804Ab3LIRkE (ORCPT
+	id S1761295Ab3LIRlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:41:46 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58383 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab3LIRlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:40:04 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.236.217
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX191XX2bkZ+yBwzLSvSJR1RN
-Date: Mon, 9 Dec 2013 09:40:00 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Javier Martinez Canillas <javier@dowhile0.org>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] arm: omap: remove *.auto* from device names given
- in usb_bind_phy
-Message-ID: <20131209174000.GA12527@atomide.com>
-References: <1386331571-30903-1-git-send-email-kishon@ti.com>
- <1386331571-30903-3-git-send-email-kishon@ti.com>
- <CABxcv=n67gNq6ayx+t_mfZ0++UBKkXpH9avXvRKFEH4VUrwy0g@mail.gmail.com>
- <20131206210835.GM21086@saruman.home>
- <52A55E2C.7070500@ti.com>
- <CABxcv=kYAB5MKtW0O1RLZUXPxiTmoSDD0nuHB=Bjy2gy+wzvhQ@mail.gmail.com>
+	Mon, 9 Dec 2013 12:41:44 -0500
+Date: Mon, 9 Dec 2013 17:41:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Bengt Jonsson'" <bengt.g.jonsson@stericsson.com>
+Message-ID: <20131209174141.GF29268@sirena.org.uk>
+References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+ <000b01cef251$fc6df360$f549da20$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKRDem1CvcWhBwrN"
 Content-Disposition: inline
-In-Reply-To: <CABxcv=kYAB5MKtW0O1RLZUXPxiTmoSDD0nuHB=Bjy2gy+wzvhQ@mail.gmail.com>
+In-Reply-To: <000b01cef251$fc6df360$f549da20$%han@samsung.com>
+X-Cookie: It's clever, but is it art?
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/6] regulator: db8500-prcmu: use
+ devm_regulator_register()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Javier Martinez Canillas <javier@dowhile0.org> [131209 03:51]:
-> Hi Kishon,
-> 
-> On Mon, Dec 9, 2013 at 7:07 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> > Hi,
-> >
-> >
-> > On Saturday 07 December 2013 02:38 AM, Felipe Balbi wrote:
-> >>
-> >> Hi,
-> >>
-> >> On Fri, Dec 06, 2013 at 01:14:38PM +0100, Javier Martinez Canillas wrote:
-> >>>
-> >>> On Fri, Dec 6, 2013 at 1:06 PM, Kishon Vijay Abraham I <kishon@ti.com>
-> >>> wrote:
-> >>>>
-> >>>> Previously MUSB wrapper (OMAP) device used PLATFORM_DEVID_AUTO while
-> >>>> creating
-> >>>> MUSB core device. So in usb_bind_phy (binds the controller with the
-> >>>> PHY), the
-> >>>> device name of the controller had *.auto* in it. Since with using
-> >>>> PLATFORM_DEVID_AUTO, there is no way to know the exact device name in
-> >>>> advance,
-> >>>> the data given in usb_bind_phy became obsolete and usb_get_phy was
-> >>>> failing.
-> >>>> So MUSB wrapper was modified not to use PLATFORM_DEVID_AUTO.
-> >>>> Corresponding
-> >>>> change is done in board file here.
-> >>>>
-> >>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >>>> ---
-> >>>>   arch/arm/mach-omap2/board-2430sdp.c        |    2 +-
-> >>>>   arch/arm/mach-omap2/board-3430sdp.c        |    2 +-
-> >>>>   arch/arm/mach-omap2/board-cm-t35.c         |    2 +-
-> >>>>   arch/arm/mach-omap2/board-devkit8000.c     |    2 +-
-> >>>>   arch/arm/mach-omap2/board-ldp.c            |    2 +-
-> >>>>   arch/arm/mach-omap2/board-omap3beagle.c    |    2 +-
-> >>>>   arch/arm/mach-omap2/board-omap3logic.c     |    2 +-
-> >>>>   arch/arm/mach-omap2/board-omap3pandora.c   |    2 +-
-> >>>>   arch/arm/mach-omap2/board-omap3stalker.c   |    2 +-
-> >>>>   arch/arm/mach-omap2/board-omap3touchbook.c |    2 +-
-> >>>>   arch/arm/mach-omap2/board-overo.c          |    2 +-
-> >>>>   arch/arm/mach-omap2/board-rx51.c           |    2 +-
-> >>>>   12 files changed, 12 insertions(+), 12 deletions(-)
-> >>>>
-> >>>
-> >>> You can drop this patch since boards files are being removed for v3.14
-> >>
-> >>
-> >> if we can drop this patch, the whole series is invalid, since we'll be
-> >> using DT phandles to find PHYs going forward, no ?
-> >>
-> > yeah. But in one of the other threads, Tony seemed ok to take a patch that
-> > fixes the same issue in mach-omap2/twl-common.c. So it's better to confirm
-> > with Tony.
-> >
-> 
-> Yes, I just read the other thread ("[PATCH] omap: twl-common: Fix
-> musb-hdrc device name") and I see that these patches are fixing a
-> v3.13 regression and are meant for the -rc cycle and not for v3.14.
 
-Sorry guys, I'm a bit lost with these USB regression fixes.
-Which regression fix do we need for v3.13-rc series?
+--gKRDem1CvcWhBwrN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If there's an option, I'd rather not touch all the board-*.c files as
-those are about to get dropped for v3.14.
+On Fri, Dec 06, 2013 at 04:08:38PM +0900, Jingoo Han wrote:
+> Use devm_regulator_register() to make cleanup paths simpler.
 
-Regards,
+Applied, thanks.
 
-Tony
+--gKRDem1CvcWhBwrN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpgDSAAoJELSic+t+oim9akkP/Ru3LPvm8CgBkhlwpG0/W8XZ
+ugmNoB11MSriuPZSgica21TlhPMDtpqDIrkFX9Ie/V/6gJP7HwA/9iKNf5Od61I2
+1/YfJ7AEReLoyYfBNIRauj5meRtOfnJLHTWyyeZ2mYtpvieeyqaIJK37RGpxQTek
+c0wePMnTWv+yswjrvDAYR5yk6PuNUkaxrQeoPImz7Fb+WbrFcSNS7b0+2bOe2lIi
+76021/s0d9Lr7C4PEIoGtqso+dg0R05reHxFto75wKylkqUoYDVvSLDSQ32M6orK
+e9QYesI3EI76fJCsux8cecAufimAmL5R3ocorwdnQU/hFP/uSNqyXwyRMZYQIm90
+Ws2Z4Cu9OdCEx7MbA2MYuZzCalkZmTZzWF+QufrD3QDOnC/pE+plI29y32C7JqQS
+gAnf2kWc5L2Xs5v5UsThU3UpKM95Iras3eEkd564kOfSN/JD99Lo35awIXYooRvG
+4x8rlAGCRpJ62PNHmr+1SeCvy1r3iIqyTkUzm6lGQ/XjcsMwHmOw+t0mEGHgZV8A
+BVekAco/GiuwnK2ouV5fmOAPzorme68xlrc4v+3M52btgChXxtiQ/cKaaykd5tCA
+ynCdrXz3+MB/+P4pE1wecXDEa2G5vpLFZ+poGk/pKFXlFpU57xHyu5QTgAsRQqAF
+bOYZJ0wv0FPaM0uiidC/
+=ybuR
+-----END PGP SIGNATURE-----
+
+--gKRDem1CvcWhBwrN--
