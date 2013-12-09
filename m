@@ -1,263 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228Ab3LIQ1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:27:54 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52926 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933796Ab3LIQWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:22:39 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <lee.jones@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 11/15] mfd: menelaus: Start to use irqdomain
-Date: Mon, 9 Dec 2013 10:21:21 -0600
-Message-ID: <1386606085-26838-11-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.8.4.GIT
-In-Reply-To: <1386606085-26838-1-git-send-email-balbi@ti.com>
-References: <20131209161422.GC24047@saruman.home>
- <1386606085-26838-1-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S934077Ab3LIQ1u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:27:50 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:29952 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab3LIQ1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:27:42 -0500
+X-AuditID: cbfec7f5-b7fd16d000007299-0b-52a5ef7b15f3
+From: Tomasz Figa <t.figa@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-i2c@vger.kernel.org, sjg@chromium.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, wsa@the-dreams.de,
+        ben-linux@fluff.org, grant.likely@secretlab.ca, broonie@kernel.org,
+        dianders@chromium.org, cpgs@samsung.com
+Subject: Re: [PATCH 1/2 v2] i2c: exynos5: add support for HSI2C on Exynos5260
+ SoC
+Date: Mon, 09 Dec 2013 17:27:29 +0100
+Message-id: <47816304.YeQAZze1OM@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
+In-reply-to: <1385439977-19077-1-git-send-email-ch.naveen@samsung.com>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+ <1385439977-19077-1-git-send-email-ch.naveen@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xy7rV75cGGdzabG0xad0BJoupD5+w
+	Wdx9fpjR4uUhTYuzyw6yWbw6s5HNouPvF0aLy7vmsFnMOL+PyeLblm2MFitPzGJ24PaY3XCR
+	xePvqhfMHptWdbJ59G1Zxejx86WOx8lTT1g8Pm+SC2CP4rJJSc3JLEst0rdL4MpY/Nan4K9c
+	xcF7v1gaGH9LdDFyckgImEj8aPrGDmGLSVy4t56ti5GLQ0hgKaNE9/8DjBBOF5PE32cbWECq
+	2ATUJD43PGIDsUWAuo+/OsMOUsQs8I1R4tXD86wgCWGBYImd+5cygtgsAqoSHe/nMoHYvAJa
+	Emf7WplBbH4BdYl3256CxUUF3CRe7NsCdgYnkH18/mNmiM2NjBLTt81hgWgWlPgx+R6YzSwg
+	L7Fv/1RWCFtLYv3O40wTGAVnISmbhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNz
+	NzFCIufrDsalx6wOMQpwMCrx8AYwLw0SYk0sK67MPcQowcGsJMLb8BooxJuSWFmVWpQfX1Sa
+	k1p8iJGJg1OqgXGqMgu7LkOvx5PyHc1u5u3+5zRPHVw88VZlgbLt9rZ/W6cw9/CwBhS+zXDe
+	Vv85f+dFocS8988CAlv+L924Z9aW2Uu1v3xPn3/Twtb42XNmncXbly6c/aC+4wrPEybXq6Ge
+	3VZZWhdX/rt49tIzPTvz3skad6pj/kjJLVGr4g5/YrRrWse0E0JKLMUZiYZazEXFiQB/zRIK
+	egIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce an irq_chip and irq_domain for menelaus driver. Following
-patches will convert uses to traditional request_threaded_irq().
+Hi Naveen,
 
-While at that, some better error handling had to be added, so we could
-free irq descs we allocated.
+On Tuesday 26 of November 2013 09:56:17 Naveen Krishna Chatradhi wrote:
+> This patch adds new compatible to support HSI2C module on Exynos5260
+> HSI2C module on Exynos5260 needs to be reset during during initialization.
+> 
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+> Changes since v1:
+> Rebasing on linux-i2c for-next
+> 
+>  .../devicetree/bindings/i2c/i2c-exynos5.txt        |    6 +++-
+>  drivers/i2c/busses/i2c-exynos5.c                   |   31 ++++++++++++++++++--
+>  2 files changed, 34 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+> index 056732c..704ab92 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-exynos5.txt
+> @@ -5,7 +5,11 @@ at various speeds ranging from 100khz to 3.4Mhz.
+>  
+>  Required properties:
+>    - compatible: value should be.
+> -      -> "samsung,exynos5-hsi2c", for i2c compatible with exynos5 hsi2c.
+> +	-> "samsung,exynos5-hsi2c", for i2c compatible with HSI2C available on
+> +				Exynos5250/5420 SoCs.
+> +	-> "samsung,exynos5260-hsi2c", for i2c compatible with HSI2C available
+> +				on Exynos5260 SoCs.
+> +
+>    - reg: physical base address of the controller and length of memory mapped
+>      region.
+>    - interrupts: interrupt number to the cpu.
+> diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
+> index da39ff0..497ff91 100644
+> --- a/drivers/i2c/busses/i2c-exynos5.c
+> +++ b/drivers/i2c/busses/i2c-exynos5.c
+> @@ -184,14 +184,35 @@ struct exynos5_i2c {
+>  	 * 2. Fast speed upto 1Mbps
+>  	 */
+>  	int			speed_mode;
+> +
+> +	/* Version of HS-I2C Hardware */
+> +	unsigned int		version;
+> +};
+> +
+> +enum hsi2c_version {
+> +	EXYNOS_5,
+> +	EXYNOS_5260
+>  };
 
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/mfd/menelaus.c | 127 ++++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 120 insertions(+), 7 deletions(-)
+I don't like this kind of hardware versioningm as there might show up
+revisions that are previous revisions mixed together (e.g. some quirks
+from one and some quirks from another).
 
-diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-index aa3c579..e4f33b7 100644
---- a/drivers/mfd/menelaus.c
-+++ b/drivers/mfd/menelaus.c
-@@ -34,6 +34,7 @@
- #include <linux/module.h>
- #include <linux/i2c.h>
- #include <linux/interrupt.h>
-+#include <linux/irqdomain.h>
- #include <linux/sched.h>
- #include <linux/mutex.h>
- #include <linux/delay.h>
-@@ -47,6 +48,7 @@
- #include <asm/gpio.h>
- 
- #define DRIVER_NAME			"menelaus"
-+#define MENELAUS_NR_IRQS		16
- 
- #define MENELAUS_I2C_ADDRESS		0x72
- 
-@@ -168,11 +170,19 @@ struct menelaus_chip {
- 	u8			rtc_control;
- 	unsigned		uie:1;
- #endif
-+	int			irq_base;
- 	unsigned		vcore_hw_mode:1;
- 	u8			mask1, mask2;
-+	u8			ack1, ack2;
-+
- 	void			(*handlers[16])(struct menelaus_chip *);
- 	void			(*mmc_callback)(void *data, u8 mask);
- 	void			*mmc_callback_data;
-+
-+	unsigned		mask1_pending:1;
-+	unsigned		mask2_pending:1;
-+	unsigned		ack1_pending:1;
-+	unsigned		ack2_pending:1;
- };
- 
- static struct menelaus_chip *the_menelaus;
-@@ -235,6 +245,83 @@ static int menelaus_ack_irq(struct menelaus_chip *m, int irq)
- 		return menelaus_write_reg(m, MENELAUS_INT_ACK1, 1 << irq);
- }
- 
-+static void menelaus_irq_ack(struct irq_data *data)
-+{
-+	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
-+	int irq = data->irq - m->irq_base;
-+
-+	if (irq > 7) {
-+		m->ack2 |= BIT(irq);
-+		m->ack2_pending = true;
-+	} else {
-+		m->ack1 |= BIT(irq);
-+		m->ack1_pending = true;
-+	}
-+}
-+
-+static void menelaus_irq_mask(struct irq_data *data)
-+{
-+	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
-+	int irq = data->irq - m->irq_base;
-+
-+	if (irq > 7) {
-+		m->mask2 |= BIT(irq);
-+		m->mask2_pending = true;
-+	} else {
-+		m->mask1 |= BIT(irq);
-+		m->mask1_pending = true;
-+	}
-+}
-+
-+static void menelaus_irq_unmask(struct irq_data *data)
-+{
-+	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
-+	int irq = data->irq - m->irq_base;
-+
-+	if (irq > 7) {
-+		m->mask2 &= ~BIT(irq);
-+		m->mask2_pending = true;
-+	} else {
-+		m->mask1 &= ~BIT(irq);
-+		m->mask1_pending = true;
-+	}
-+}
-+
-+static void menelaus_irq_bus_lock(struct irq_data *data)
-+{
-+	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
-+
-+	mutex_lock(&m->lock);
-+}
-+
-+static void menelaus_irq_bus_sync_unlock(struct irq_data *data)
-+{
-+	struct menelaus_chip *m = irq_data_get_irq_chip_data(data);
-+
-+	if (m->ack1_pending)
-+		menelaus_write_reg(m, MENELAUS_INT_ACK1, m->ack1);
-+
-+	if (m->ack2_pending)
-+		menelaus_write_reg(m, MENELAUS_INT_ACK2, m->ack2);
-+
-+	if (m->mask1_pending)
-+		menelaus_write_reg(m, MENELAUS_INT_MASK1, m->mask1);
-+
-+	if (m->mask2_pending)
-+		menelaus_write_reg(m, MENELAUS_INT_MASK2, m->mask2);
-+
-+	mutex_unlock(&m->lock);
-+}
-+
-+static struct irq_chip menelaus_irq_chip = {
-+	.name		= "menelaus",
-+	.irq_ack	= menelaus_irq_ack,
-+	.irq_mask	= menelaus_irq_mask,
-+	.irq_unmask	= menelaus_irq_unmask,
-+	.irq_bus_lock	= menelaus_irq_bus_lock,
-+	.irq_bus_sync_unlock = menelaus_irq_bus_sync_unlock,
-+};
-+
- /* Adds a handler for an interrupt. Does not run in interrupt context */
- static int menelaus_add_irq_work(struct menelaus_chip *m, int irq,
- 		void (*handler)(struct menelaus_chip *))
-@@ -1186,8 +1273,11 @@ static int menelaus_probe(struct i2c_client *client,
- 			  const struct i2c_device_id *id)
- {
- 	struct menelaus_chip	*m;
-+	struct device_node	*node = client->dev.of_node;
- 	int			rev = 0, val;
- 	int			err = 0;
-+	int			irq_base;
-+	int			i;
- 	struct menelaus_platform_data *menelaus_pdata =
- 					dev_get_platdata(&client->dev);
- 
-@@ -1205,12 +1295,32 @@ static int menelaus_probe(struct i2c_client *client,
- 
- 	the_menelaus = m;
- 	m->client = client;
-+	mutex_init(&m->lock);
-+
-+	irq_base = irq_alloc_descs(-1, 0, MENELAUS_NR_IRQS, 0);
-+	if (irq_base < 0) {
-+		dev_err(&client->dev, "failed to allocate irq descs\n");
-+		return irq_base;
-+	}
-+
-+	irq_domain_add_legacy(node, MENELAUS_NR_IRQS, irq_base, 0,
-+			&irq_domain_simple_ops, m);
-+
-+	m->irq_base = irq_base;
-+
-+	for (i = irq_base; i < irq_base + MENELAUS_NR_IRQS; i++) {
-+		irq_set_chip_data(i, m);
-+		irq_set_chip_and_handler(i, &menelaus_irq_chip,
-+				handle_simple_irq);
-+		irq_set_nested_thread(i, 1);
-+		set_irq_flags(i, IRQF_VALID);
-+	}
- 
- 	/* If a true probe check the device */
- 	rev = menelaus_read_reg(m, MENELAUS_REV);
- 	if (rev < 0) {
- 		pr_err(DRIVER_NAME ": device not found");
--		return -ENODEV;
-+		goto fail_free_descs;
- 	}
- 
- 	/* Ack and disable all Menelaus interrupts */
-@@ -1230,17 +1340,15 @@ static int menelaus_probe(struct i2c_client *client,
- 		if (err) {
- 			dev_dbg(&client->dev,  "can't get IRQ %d, err %d\n",
- 					client->irq, err);
--			return err;
-+			goto fail_free_descs;
- 		}
- 	}
- 
--	mutex_init(&m->lock);
--
- 	pr_info("Menelaus rev %d.%d\n", rev >> 4, rev & 0x0f);
- 
- 	val = menelaus_read_reg(m, MENELAUS_VCORE_CTRL1);
- 	if (val < 0)
--		goto fail;
-+		goto fail_free_irq;
- 	if (val & (1 << 7))
- 		m->vcore_hw_mode = 1;
- 	else
-@@ -1249,14 +1357,18 @@ static int menelaus_probe(struct i2c_client *client,
- 	if (menelaus_pdata != NULL && menelaus_pdata->late_init != NULL) {
- 		err = menelaus_pdata->late_init(&client->dev);
- 		if (err < 0)
--			goto fail;
-+			goto fail_free_irq;
- 	}
- 
- 	menelaus_rtc_init(m);
- 
- 	return 0;
--fail:
-+fail_free_irq:
- 	free_irq(client->irq, m);
-+
-+fail_free_descs:
-+	irq_free_descs(irq_base, MENELAUS_NR_IRQS);
-+
- 	return err;
- }
- 
-@@ -1265,6 +1377,7 @@ static int menelaus_remove(struct i2c_client *client)
- 	struct menelaus_chip	*m = i2c_get_clientdata(client);
- 
- 	free_irq(client->irq, m);
-+	irq_free_descs(m->irq_base, MENELAUS_NR_IRQS);
- 	the_menelaus = NULL;
- 	return 0;
- }
--- 
-1.8.4.GIT
+IMHO better way to represent differences between hardware versions are
+variant structs that define characteristics of particular variants.
+
+For now, it doesn't really matter, though, as the only things that change
+are fifo depth and whether the reset is needed (although see my comment
+below on this). However if you could spot any other differences between
+these two versions that might affect the driver in future, it would be
+better to use a variant struct.
+
+>  
+>  static const struct of_device_id exynos5_i2c_match[] = {
+> -	{ .compatible = "samsung,exynos5-hsi2c" },
+> +	{
+> +		.compatible = "samsung,exynos5-hsi2c",
+> +		.data = (void *)EXYNOS_5 },
+> +	{
+> +		.compatible = "samsung,exynos5260-hsi2c",
+> +		.data = (void *)EXYNOS_5260 },
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(of, exynos5_i2c_match);
+>  
+> +static inline unsigned int exynos5_i2c_get_version(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id *match;
+> +
+> +	match = of_match_node(exynos5_i2c_match, pdev->dev.of_node);
+> +	return (unsigned int)match->data;
+> +}
+> +
+>  static void exynos5_i2c_clr_pend_irq(struct exynos5_i2c *i2c)
+>  {
+>  	writel(readl(i2c->regs + HSI2C_INT_STATUS),
+> @@ -692,7 +713,13 @@ static int exynos5_i2c_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		goto err_clk;
+>  
+> -	exynos5_i2c_init(i2c);
+> +	i2c->version = exynos5_i2c_get_version(pdev);
+> +
+> +	/* The HS-I2C core on Exynos5260 needs a reset to start with */
+> +	if (i2c->version == EXYNOS_5260)
+> +		exynos5_i2c_reset(i2c);
+> +	else
+> +		exynos5_i2c_init(i2c);
+
+What about simply calling exynos5_i2c_reset() here regardless of the
+version? I don't think it should cause any problems and could be even
+more reliable as the hardware would be always reset to its default state
+regardless of what the firmware does with it.
+
+Best regards,
+Tomasz
 
