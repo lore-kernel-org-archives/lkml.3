@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933996Ab3LIQPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:15:39 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:29125 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab3LIQPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:15:35 -0500
-X-AuditID: cbfec7f5-b7fd16d000007299-3c-52a5eca5a12b
-From: Tomasz Figa <t.figa@samsung.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: kgene.kim@samsung.com, Heiko Stuebner <heiko@sntech.de>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Doug Andersen <dianders@chromium.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] ARM: EXYNOS: pmu: Constify data tables
-Date: Mon, 09 Dec 2013 17:15:22 +0100
-Message-id: <30145891.cE1204QWiC@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11.3 (Linux/3.11.5-gentoo; KDE/4.11.3; x86_64; ; )
-In-reply-to: <CAGS+omDq95paoHsf5-i2gbRoSGvqn36zNO93KHGi2FGhfGMsrw@mail.gmail.com>
-References: <1384971686-7208-1-git-send-email-djkurtz@chromium.org>
- <1922780.plAOmhqzpW@amdc1227>
- <CAGS+omDq95paoHsf5-i2gbRoSGvqn36zNO93KHGi2FGhfGMsrw@mail.gmail.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t/xa7pL3ywNMvj+Xtri8ZrFTBYNV0Ms
-	Jq07wGRxdtlBNovGGfNZLf4/es1q0bvgKpvFpsfXWC0u75rDZjHj/D4mi9uXeR24PVqae9g8
-	ZjdcZPH4u+oFs8fmJfUefVtWMXpsvzaP2ePzJrkA9igum5TUnMyy1CJ9uwSujKYDpgUNfBUH
-	XtxhbmDczdXFyMkhIWAicXj/Y2YIW0ziwr31bCC2kMBSRombTwK7GLmA7C4miZ8rXrGCJNgE
-	1CQ+NzwCKuLgEBFQl/h1wwmkhlngC5PE/SuzWEBqhAXsJdZN3swOYrMIqEpMnnENbCivgJZE
-	1+3lYDX8QL3vtj1lArFFBdwkXuzbAlbPKRAs0bXxBBPE4lWMEr3zt0E1C0r8mHwPrJlZQF5i
-	3/6prBC2lsT6nceZJjAKzkJSNgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525i
-	hMTM1x2MS49ZHWIU4GBU4uENYF4aJMSaWFZcmXuIUYKDWUmEt+E1UIg3JbGyKrUoP76oNCe1
-	+BAjEwenVAPjgVMHLJ/+7jlYpT533ZxbVywNbi5g3+Ax7dv1ubezr9b7Kd7WqVo7UdJ7705z
-	xdcGWUUZwovOHxDs1w9Qk5xa+kDdJYjHv8X8qdmvXtdnNi3WvLfuPFL+7/x52oyS3Z+vNLHV
-	zOfyrrM/+4J1Z8POWaLaT1Tmiqv9tbQK2nHTbgv3OZfdWg90lViKMxINtZiLihMB8bumwncC	AAA=
+	id S934011Ab3LIQPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:15:54 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52500 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932938Ab3LIQPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:15:37 -0500
+Date: Mon, 9 Dec 2013 10:14:22 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/15] mfd: menelaus: Drop __exit section annotation
+Message-ID: <20131209161422.GC24047@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1386042188-12246-1-git-send-email-balbi@ti.com>
+ <20131203095136.GF11828@lee--X1>
+ <20131208190739.GA18977@saruman.home>
+ <20131209093748.GA12675@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ghzN8eJ9Qlbqn3iT"
+Content-Disposition: inline
+In-Reply-To: <20131209093748.GA12675@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 of December 2013 00:11:40 Daniel Kurtz wrote:
-> Hi Tomasz,
-> 
-> Thank you for the reviews.
-> 
-> On Dec 9, 2013 5:15 AM, "Tomasz Figa" <t.figa@samsung.com> wrote:
-> >
-> > Hi Daniel,
-> >
-> > On Thursday 21 of November 2013 02:21:24 Daniel Kurtz wrote:
-> > > These tables are all immutable, make them const to save 4416 bytes of RAM.
-> > >
-> > > size arch/arm/mach-exynos/pmu.o
-> > >    text          data     bss
-> > >     848          4420       4         // before
-> > >    5264             4       4         // after
-> >
-> > I'm not sure where the mentioned saving of RAM is. Moving data between
-> > sections is not supposed to make it use less memory, I believe.
-> 
-> You are correct.  This was my misunderstanding from doing too much
-> work with microcontrollers, where .text sections are accessed in place
-> from FLASH for code and const data, but .data memory is copied from a
-> FLASH section to a second RAM section at init for access at runtime.
-> Most modern Linux systems copy/decompress their code and data sections
-> from external storage to RAM anyway, so there is no actual memory
-> savings (except potentially the compiler may be able to optimize a bit
-> more with the const hint).
-> 
-> >
-> > Anyway, it's a good practice to mark constant data as const, to disallow
-> > changing them at runtime by mistake, so the patch is fine. Except some
-> > issues I commented on inline.
-> 
-> Were there supposed to be inline comments?  I don't see any.
+--ghzN8eJ9Qlbqn3iT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oops, sorry for this, forgot to remove the last sentence. I initially had
-one question about the constant pointers below, but I read through the
-full code again and answered it myself.
+Hi,
 
-The patch is fine.
+On Mon, Dec 09, 2013 at 09:37:48AM +0000, Lee Jones wrote:
+> > > The code looks mostly fine, but the implementation of the commit logs
+> > > seems lazy. Please submit a v3 using coherent sentences with full
+> > > explanations and correct punctuation.
+> >=20
+> > example ?
+>=20
+> All of your commit messages.
+>=20
+> > that macro just helps removing some extra
+>=20
+>   ^- Sentences start with an uppercase character.
+>=20
+> > line of code and hides ffs() calls.
+> >=20
+> > while at that, also fix a variable shadowing
+>=20
+>   ^- Sentences start with an uppercase character.
+>=20
+> > bug where 'int irq' was being redeclared inside
+> > inner loop while it was also argument to interrupt
+> > handler.
+>=20
+>   < ---------------   50 chars   ----------------- >
+>=20
+> Please use the full 72 char (or there abouts) width of the buffer.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+I don't see any mention of punctuation problems, however. Also, you're
+not complaining about the content at all, which tells me those sentences
+aren't as incoherent as you claimed before. But fair enough, I'll fix
+those up and add Aaro's Tested-by
 
-Best regards,
-Tomasz
+--=20
+balbi
 
+--ghzN8eJ9Qlbqn3iT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpexeAAoJEIaOsuA1yqRE3/IP/2PkBF7vCs18wGZHDeFgfDOI
+nGF+ykmHeVeMXhpb/8BcD4Oob+X3sBsZ60+WZ6cUizAt40Dzq02548JtydFMjBnb
+arb7qVmiYYvGEAHXP9nhm88q/+lBlB0Fu0i3i0pDhIHuxy4FieQmSidR/quDd5xW
+1LwHeAtMFhk89TnPwuDZtEGUxN0Qb/f8ojbjl3yIC5JFVhJEdwRl+orRCa8vUBUI
+1cvSWl/kAyKoazEkZ2Z9r9Qq/ge8FDEEyND672ng4Sq/t3sl6ck3minMplQ5+bUk
+laEHFZ5+X3K600wwxu4cFKX5Rf2MdUp8hgFrcahgRxGR4uOP4ILoWmBiBn4DSv2x
+J+Y0Yy0HEJh+OSGhCTYXaTLZmcpjVJXcgiK1lE8SXiYkj3Hy57YR4lF9d6HuKOUw
+KoxDngPIDTe4GTf/oruTzGcJbx7BNngU76E7ttJaBYgIXiG+nzkHKtLhKnh6mapG
+vZEY8hA6pIO1VKsFhv1fFbFZjag0sQ9LdRxWUdARb7QC5GpgHU/L6sYFpSVjzb+7
+HoNC2Rv6HzQFYVuIvjqJimkOOZ0vQV9txxciuUjBTqeaIrrHUMY6Ut5Wmcba5gze
+YUzDZ97lBPf/MNDmn5C07+APELLFJQCz5dg5n3YqESKe8yQgZYYT2idwsvHXrCJR
+7yiPXEl70roKe+heWZtB
+=3+qF
+-----END PGP SIGNATURE-----
+
+--ghzN8eJ9Qlbqn3iT--
