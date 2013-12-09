@@ -1,59 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab3LIQD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:03:28 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:52659 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932922Ab3LIQDY (ORCPT
+	id S933807Ab3LIQFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:05:24 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:21695 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932609Ab3LIQFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:03:24 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Chao Xu <caesarxuchao@gmail.com>
-Cc: linux-omap@vger.kernel.org, santosh.shilimkar@ti.com,
-        linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com, balbi@ti.com,
-        nm@ti.com
-Subject: Re: [RFC/RFT/PATCH V3] gpio: omap: refresh patch "be more aggressive with pm_runtime" against v3.12-rc5
-References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
-	<1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
-Date: Mon, 09 Dec 2013 08:03:21 -0800
-In-Reply-To: <1386477638-6331-1-git-send-email-caesarxuchao@gmail.com> (Chao
-	Xu's message of "Sat, 7 Dec 2013 22:40:38 -0600")
-Message-ID: <87r49m8112.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Dec 2013 11:05:21 -0500
+Date: Mon, 9 Dec 2013 11:05:19 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 04/14] tools lib traceevent: Get rid of malloc_or_die()
+ allocate_arg()
+Message-ID: <20131209110519.7e9fd95c@gandalf.local.home>
+In-Reply-To: <1386567251-22751-5-git-send-email-namhyung@kernel.org>
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+	<1386567251-22751-5-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chao Xu <caesarxuchao@gmail.com> writes:
+On Mon,  9 Dec 2013 14:34:01 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-> From: Felipe Balbi <balbi@ti.com>
->
-> try to keep gpio block suspended as much as possible.
+> @@ -409,8 +408,10 @@ create_arg_op(enum filter_op_type btype)
+>  	struct filter_arg *arg;
+>  
+>  	arg = allocate_arg();
+> -	arg->type = FILTER_ARG_OP;
+> -	arg->op.type = btype;
+> +	if (arg) {
+> +		arg->type = FILTER_ARG_OP;
+> +		arg->op.type = btype;
+> +	}
+>  
+>  	return arg;
+>  }
+> @@ -421,8 +422,10 @@ create_arg_exp(enum filter_exp_type etype)
+>  	struct filter_arg *arg;
+>  
+>  	arg = allocate_arg();
+> -	arg->type = FILTER_ARG_EXP;
+> -	arg->op.type = etype;
+> +	if (arg) {
+> +		arg->type = FILTER_ARG_EXP;
+> +		arg->op.type = etype;
+> +	}
+>  
+>  	return arg;
+>  }
+> @@ -433,9 +436,11 @@ create_arg_cmp(enum filter_exp_type etype)
+>  	struct filter_arg *arg;
+>  
+>  	arg = allocate_arg();
+> -	/* Use NUM and change if necessary */
+> -	arg->type = FILTER_ARG_NUM;
+> -	arg->op.type = etype;
+> +	if (arg) {
+> +		/* Use NUM and change if necessary */
+> +		arg->type = FILTER_ARG_NUM;
+> +		arg->op.type = etype;
+> +	}
+>  
+>  	return arg;
+>  }
+> @@ -896,8 +901,10 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
+>  	case FILTER_VAL_FALSE:
+>  		free_arg(arg);
+>  		arg = allocate_arg();
+> -		arg->type = FILTER_ARG_BOOLEAN;
+> -		arg->boolean.value = ret == FILTER_VAL_TRUE;
+> +		if (arg) {
+> +			arg->type = FILTER_ARG_BOOLEAN;
+> +			arg->boolean.value = ret == FILTER_VAL_TRUE;
+> +		}
 
-> Tested with pandaboard and a sysfs exported gpio.
->
-> Signed-off-by: Felipe Balbi <balbi at ti.com>
->
-> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added
-> revision check to enable aggressive pm_runtime on OMAP4-only. Because
-> am33xx_gpio_sysc.idlemodes seems to be wrongly marked as
-> SIDLE_SMART_WKUP, which might cause missed interrupts with this patch.
-> Tested on Pandaboard rev A2.]
-> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
+Just a nit, but I wonder if all these would look nicer if we just did:
 
-I have several problems with this patch.
+	arg = allocate_arg();
+	if (!arg)
+		return NULL;
+	[...]
 
-First, the changelog is missing a lot of information.  In particular, nowhere
-is it described what problem is this patch addressing  and how this
-patch addresses that problem.
+Instead of doing the work within an if statement.
 
-Second, I don't see any mention of off-mode, and I suspect there are
-issues with off-mode here that are not being addressed.
+Also, I prefer if (!arg) over if (arg == NULL), but I'm not going to
+fight over that ;-)
 
-Also, I *really* don't like any approach that is targetted at a single
-SoC.
+-- Steve
 
-Kevin
+>  	}
+>  
+>  	return arg;
+> @@ -1044,6 +1051,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+>  			switch (op_type) {
+>  			case OP_BOOL:
+>  				arg = create_arg_op(btype);
+> +				if (arg == NULL)
+> +					goto fail_alloc;
+>  				if (current_op)
+>  					ret = add_left(arg, current_op);
+>  				else
+> @@ -1054,6 +1063,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+>  
+>  			case OP_NOT:
+>  				arg = create_arg_op(btype);
+> +				if (arg == NULL)
+> +					goto fail_alloc;
+>  				if (current_op)
+>  					ret = add_right(current_op, arg, error_str);
+>  				if (ret < 0)
+> @@ -1073,6 +1084,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+>  					arg = create_arg_exp(etype);
+>  				else
+>  					arg = create_arg_cmp(ctype);
+> +				if (arg == NULL)
+> +					goto fail_alloc;
+>  
+>  				if (current_op)
+>  					ret = add_right(current_op, arg, error_str);
+> @@ -1106,11 +1119,16 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+>  		current_op = current_exp;
+>  
+>  	current_op = collapse_tree(current_op);
+> +	if (current_op == NULL)
+> +		goto fail_alloc;
+>  
+>  	*parg = current_op;
+>  
+>  	return 0;
+>  
+> + fail_alloc:
+> +	show_error(error_str, "failed to allocate filter arg");
+> +	goto fail;
+>   fail_print:
+>  	show_error(error_str, "Syntax error");
+>   fail:
+> @@ -1141,6 +1159,10 @@ process_event(struct event_format *event, const char *filter_str,
+>  	/* If parg is NULL, then make it into FALSE */
+>  	if (!*parg) {
+>  		*parg = allocate_arg();
+> +		if (*parg == NULL) {
+> +			show_error(error_str, "failed to allocate filter arg");
+> +			return -1;
+> +		}
+>  		(*parg)->type = FILTER_ARG_BOOLEAN;
+>  		(*parg)->boolean.value = FILTER_FALSE;
+>  	}
+> @@ -1164,6 +1186,10 @@ static int filter_event(struct event_filter *filter,
+>  	} else {
+>  		/* just add a TRUE arg */
+>  		arg = allocate_arg();
+> +		if (arg == NULL) {
+> +			show_error(error_str, "failed to allocate filter arg");
+> +			return -1;
+> +		}
+>  		arg->type = FILTER_ARG_BOOLEAN;
+>  		arg->boolean.value = FILTER_TRUE;
+>  	}
+> @@ -1399,6 +1425,9 @@ static int copy_filter_type(struct event_filter *filter,
+>  	if (strcmp(str, "TRUE") == 0 || strcmp(str, "FALSE") == 0) {
+>  		/* Add trivial event */
+>  		arg = allocate_arg();
+> +		if (arg == NULL)
+> +			return -1;
+> +
+>  		arg->type = FILTER_ARG_BOOLEAN;
+>  		if (strcmp(str, "TRUE") == 0)
+>  			arg->boolean.value = 1;
+
