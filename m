@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760293Ab3LICYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 21:24:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760165Ab3LICYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 21:24:40 -0500
-Date: Mon, 9 Dec 2013 10:23:36 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: mjg59@srcf.ucam.org, linux-efi@vger.kernel.org,
-        toshi kani <toshi.kani@hp.com>, matt@console-pimps.org, greg@kroah.com,
-        x86@kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        horms@verge.net.au, ebiederm@xmission.com, hpa@zytor.com,
-        vgoyal@redhat.com
-Subject: Re: [PATCH v4 06/12] efi: export efi runtime memory mapping to sysfs
-Message-ID: <20131209022335.GA3761@dhcp-16-126.nay.redhat.com>
-References: <1385445477-9665-1-git-send-email-dyoung@redhat.com>
- <1385445477-9665-7-git-send-email-dyoung@redhat.com>
- <20131127114402.GB32267@pd.tnic>
- <20131129094034.GI4186@dhcp-16-126.nay.redhat.com>
- <20131129115029.GB4266@pd.tnic>
- <20131202025942.GF3999@dhcp-16-126.nay.redhat.com>
- <20131202094020.GA7380@pd.tnic>
- <2141297830.13051543.1386406862068.JavaMail.root@redhat.com>
- <20131207133048.GA4183@pd.tnic>
+	id S1760198Ab3LIC2S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 21:28:18 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:20708 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755504Ab3LIC2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 21:28:16 -0500
+X-IronPort-AV: E=Sophos;i="4.93,854,1378828800"; 
+   d="scan'208";a="9218616"
+Message-ID: <52A52AFB.2020703@cn.fujitsu.com>
+Date: Mon, 09 Dec 2013 10:29:15 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131207133048.GA4183@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        toshi.okajima@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        serge.hallyn@ubuntu.com, eparis@redhat.com, ebiederm@xmission.com,
+        sgrubb@redhat.com
+Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
+References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com> <20131206213135.GA22445@mail.hallyn.com>
+In-Reply-To: <20131206213135.GA22445@mail.hallyn.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/09 10:27:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/09 10:27:59,
+	Serialize complete at 2013/12/09 10:27:59
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/13 at 02:30pm, Borislav Petkov wrote:
-> On Sat, Dec 07, 2013 at 04:01:02AM -0500, Dave Young wrote:
-> > Hi, all
-> > 
-> > Update my status:
-> > 
-> > I have finished most of thecode related changes including the krealloc
-> > fixes (both for original code and my new code). And I'm slowly
-> > moving the kexec related stuff to efi_kexec.c, this involves
-> > some other cleanups, such as:
-> > efi_systab_init:
-> >  -> move 64bit code to efi_64.c, move 32bit code to efi_32.c
-> > 
-> > efi_setup global variable is changing to physical address, ioremapping
-> > it when necessary instead of directly using the virt addr because
-> > previously the virt addr will be freed until entering virtual mode,
-> > it's possible a leak in case something is wrong in the middle also it
-> > occupies the ioremap slot a little bit long.
-> > 
-> > There's also other problems, so I still need a few days probably
-> > a week to carefully restructure the code.
-> 
-> Those are all lofty goals but beware that trying to solve it all at
-> once can be very painful and can cause unnecessary work for both coders
-> and reviewers. Especially if the patchset grows out of proportion which
-> makes it much harder to review and deal with.
-> 
-> So, from my experience and if I were you, I'd try to address the most
-> important issue I'm trying to fix, have 10ish nice clean patches and put
-> the rest on the TODO list. This is much easier to deal with for everyone
-> involved than trying to solve it all at once.
-> 
-> Besides, if you solve it all at once, what are you going to work on
-> afterwards? :-)
-> 
+Hi Serge,
 
-I like your suggestion for splitting kexec stuff to another file efi_kexec.c.
-but yes it needs more work and is bloating the patchset, I'm fine to leave
-it in TODO list.
+Thanks for your comments!
 
-Thanks
-Dave
+On 12/07/2013 05:31 AM, Serge E. Hallyn wrote:
+> Quoting Gao feng (gaofeng@cn.fujitsu.com):
+>> Here is the v1 patchset: http://lwn.net/Articles/549546/
+>>
+>> The main target of this patchset is allowing user in audit
+>> namespace to generate the USER_MSG type of audit message,
+>> some userspace tools need to generate audit message, or
+>> these tools will broken.
+>>
+>> And the login process in container may want to setup
+>> /proc/<pid>/loginuid, right now this value is unalterable
+>> once it being set. this will also broke the login problem
+>> in container. After this patchset, we can reset this loginuid
+>> to zero if task is running in a new audit namespace.
+>>
+>> Same with v1 patchset, in this patchset, only the privileged
+>> user in init_audit_ns and init_user_ns has rights to
+>> add/del audit rules. and these rules are gloabl. all
+>> audit namespace will comply with the rules.
+>>
+>> Compared with v1, v2 patch has some big changes.
+>> 1, the audit namespace is not assigned to user namespace.
+>>    since there is no available bit of flags for clone, we
+>>    create audit namespace through netlink, patch[18/20]
+>>    introduces a new audit netlink type AUDIT_CREATE_NS.
+>>    the privileged user in userns has rights to create a
+>>    audit namespace, it means the unprivileged user can
+>>    create auditns through create userns first. In order
+>>    to prevent them from doing harm to host, the default
+>>    audit_backlog_limit of un-init-audit-ns is zero(means
+>>    audit is unavailable in audit namespace). and it can't
+>>    be changed in auditns through netlink.
+> 
+> So the unprivileged user can create an audit-ns, but can't
+> then actually send any messages there?  I guess setting it
+> to something small would just be hacky?
+
+Yes, if unprivileged user wants to send audit message, he should
+ask privileged user to setup the audit_backlog_limit for him.
+
+I know it's a little of hack, but I don't have good idea :(
+
