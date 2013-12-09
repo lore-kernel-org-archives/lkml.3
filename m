@@ -1,169 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760551Ab3LIGcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 01:32:24 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:52994 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078Ab3LIGcV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 01:32:21 -0500
-Date: Sun, 8 Dec 2013 22:32:14 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Duson Lin <dusonlin@emc.com.tw>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH] Add: (1) Detection for newer Elantech touchpads, so that
- kernel doesn't fall-back to default PS/2 driver. (2) Enable hardware version
- 4 touchpad right click function.
-Message-ID: <20131209063213.GA30195@core.coreip.homeip.net>
-References: <1386557990-27445-1-git-send-email-dusonlin@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386557990-27445-1-git-send-email-dusonlin@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760618Ab3LIGdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 01:33:04 -0500
+Received: from ozlabs.org ([203.10.76.45]:56267 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760582Ab3LIGdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 01:33:01 -0500
+Date: Mon, 9 Dec 2013 17:32:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: linux-next: build failure after merge of the final tree (powerpc
+ tree related)
+Message-Id: <20131209173255.599c63da380bafbdcd98d47f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Dec_2013_17_32_55_+1100_IJEOCgQFQSR2n416"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Duson.
+--Signature=_Mon__9_Dec_2013_17_32_55_+1100_IJEOCgQFQSR2n416
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-On Mon, Dec 09, 2013 at 10:59:50AM +0800, Duson Lin wrote:
-> Modify:
-> (1) crc_enabled only support for v3 and v4 touchpad, so initialize crc_enabled as false first and
-> check this hardware flag when hw_version as 3 or 4.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-It looks to me there are several fixes rolled up together in this patch:
+arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+arch/powerpc/kernel/exceptions-64s.S:958: Error: attempt to move .org backw=
+ards
+arch/powerpc/kernel/exceptions-64s.S:959: Error: attempt to move .org backw=
+ards
+arch/powerpc/kernel/exceptions-64s.S:983: Error: attempt to move .org backw=
+ards
+arch/powerpc/kernel/exceptions-64s.S:984: Error: attempt to move .org backw=
+ards
+arch/powerpc/kernel/exceptions-64s.S:1003: Error: attempt to move .org back=
+wards
+arch/powerpc/kernel/exceptions-64s.S:1013: Error: attempt to move .org back=
+wards
+arch/powerpc/kernel/exceptions-64s.S:1014: Error: attempt to move .org back=
+wards
+arch/powerpc/kernel/exceptions-64s.S:1015: Error: attempt to move .org back=
+wards
+arch/powerpc/kernel/exceptions-64s.S:1016: Error: attempt to move .org back=
+wards
+arch/powerpc/kernel/exceptions-64s.S:1017: Error: attempt to move .org back=
+wards
+arch/powerpc/kernel/exceptions-64s.S:1018: Error: attempt to move .org back=
+wards
 
-1. Support for the new hardware signatures (8 and 10, although I already
-applied patch for 8)
-2. Fix to handle CRC check
-3. Changes to report BTN_RIGHT.
+Caused by commit 1e9b4507ed98 ("powerpc/book3s: handle machine check in
+Linux host").
 
-Could you please split them up please?
+I have reverted these commits (possibly some of these reverts are
+unnecessary):
 
-Also, I am not sure if we can simply start reporting BTN_RIGHT as
-present, even on devices that don't actually have the right button, as
-this will interfere with userspace providing emulation for multiple
-buttons.
+b63a0ffe35de "powerpc/powernv: Machine check exception handling"
+28446de2ce99 "powerpc/powernv: Remove machine check handling in OPAL"
+b5ff4211a829 "powerpc/book3s: Queue up and process delayed MCE events"
+36df96f8acaf "powerpc/book3s: Decode and save machine check event"
+ae744f3432d3 "powerpc/book3s: Flush SLB/TLBs if we get SLB/TLB machine chec=
+k errors on power8"
+e22a22740c1a "powerpc/book3s: Flush SLB/TLBs if we get SLB/TLB machine chec=
+k errors on power7"
+0440705049b0 "powerpc/book3s: Add flush_tlb operation in cpu_spec"
+4c703416efc0 "powerpc/book3s: Introduce a early machine check hook in cpu_s=
+pec"
+1c51089f777b "powerpc/book3s: Return from interrupt if coming from evil con=
+text"
+1e9b4507ed98 "powerpc/book3s: handle machine check in Linux host"
 
-Is it possible to determine if a given model had right button or not?
+--=20
+Cheers,
+Stephen Rothwell <sfr@canb.auug.org.au>
 
-Thanks.
+--Signature=_Mon__9_Dec_2013_17_32_55_+1100_IJEOCgQFQSR2n416
+Content-Type: application/pgp-signature
 
-> 
-> Signed-off-by: Duson Lin <dusonlin@emc.com.tw>
-> ---
->  drivers/input/mouse/elantech.c |   30 ++++++++++++++----------------
->  drivers/input/mouse/elantech.h |    2 +-
->  2 files changed, 15 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-> index 8551dca..b3627cf 100644
-> --- a/drivers/input/mouse/elantech.c
-> +++ b/drivers/input/mouse/elantech.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * Elantech Touchpad driver (v6)
-> + * Elantech Touchpad driver (v7)
->   *
->   * Copyright (C) 2007-2009 Arjan Opmeer <arjan@opmeer.net>
->   *
-> @@ -486,6 +486,7 @@ static void elantech_input_sync_v4(struct psmouse *psmouse)
->  	unsigned char *packet = psmouse->packet;
->  
->  	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-> +	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
->  	input_mt_report_pointer_emulation(dev, true);
->  	input_sync(dev);
->  }
-> @@ -1047,9 +1048,7 @@ static int elantech_set_input_params(struct psmouse *psmouse)
->  			 */
->  			psmouse_warn(psmouse, "couldn't query resolution data.\n");
->  		}
-> -		/* v4 is clickpad, with only one button. */
->  		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
-> -		__clear_bit(BTN_RIGHT, dev->keybit);
->  		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
->  		/* For X to recognize me as touchpad. */
->  		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-> @@ -1186,19 +1185,12 @@ static struct attribute_group elantech_attr_group = {
->  
->  static bool elantech_is_signature_valid(const unsigned char *param)
->  {
-> -	static const unsigned char rates[] = { 200, 100, 80, 60, 40, 20, 10 };
-> -	int i;
-> -
->  	if (param[0] == 0)
->  		return false;
->  
->  	if (param[1] == 0)
->  		return true;
->  
-> -	for (i = 0; i < ARRAY_SIZE(rates); i++)
-> -		if (param[2] == rates[i])
-> -			return false;
-> -
->  	return true;
->  }
->  
-> @@ -1298,6 +1290,14 @@ static int elantech_set_properties(struct elantech_data *etd)
->  {
->  	/* This represents the version of IC body. */
->  	int ver = (etd->fw_version & 0x0f0000) >> 16;
-> +	/*
-> +	 * The signatures of v3 and v4 packets change depending on the
-> +	 * value of this hardware flag. But the v1 and v2 have not crc
-> +	 * check mechanism and the same hardware flag are also defined
-> +	 * as other function. So crc_enabled must be initialized as false 
-> +	 * first and checking by different hw_version.
-> +	 */
-> +	etd->crc_enabled = false;
->  
->  	/* Early version of Elan touchpads doesn't obey the rule. */
->  	if (etd->fw_version < 0x020030 || etd->fw_version == 0x020600)
-> @@ -1309,10 +1309,14 @@ static int elantech_set_properties(struct elantech_data *etd)
->  			etd->hw_version = 2;
->  			break;
->  		case 5:
-> +			etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
->  			etd->hw_version = 3;
->  			break;
->  		case 6:
->  		case 7:
-> +		case 8:
-> +		case 10:
-> +			etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
->  			etd->hw_version = 4;
->  			break;
->  		default:
-> @@ -1343,12 +1347,6 @@ static int elantech_set_properties(struct elantech_data *etd)
->  			etd->reports_pressure = true;
->  	}
->  
-> -	/*
-> -	 * The signatures of v3 and v4 packets change depending on the
-> -	 * value of this hardware flag.
-> -	 */
-> -	etd->crc_enabled = ((etd->fw_version & 0x4000) == 0x4000);
-> -
->  	return 0;
->  }
->  
-> diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-> index 036a04a..c963ac8 100644
-> --- a/drivers/input/mouse/elantech.h
-> +++ b/drivers/input/mouse/elantech.h
-> @@ -1,5 +1,5 @@
->  /*
-> - * Elantech Touchpad driver (v6)
-> + * Elantech Touchpad driver (v7)
->   *
->   * Copyright (C) 2007-2009 Arjan Opmeer <arjan@opmeer.net>
->   *
-> -- 
-> 1.7.10.4
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
-Dmitry
+iQIcBAEBCAAGBQJSpWQbAAoJEMDTa8Ir7ZwVbDsP/igqKWHTyjYzHuL3fWutUSw4
+9VpPjC3q6bCLnBV/UcBLl2BVqepMSwsJsGZkQPvPaNTJpCbAZZZkFlXIaE2VQAUd
+Cml9gRVAy+BuqppTTuuj5wfeTBAMuO1oIs1+ysnLUKRe4nDmhzMahWmTn5ZpkZ0n
+0MWVsZA9BhNaqYuDibl2FpsoZVxBGa/p81LxQCuMnUkZ/YCvmEjhskUlwACh8GXg
+iPCD1PJ6O6/pZuCz6z7atmWgBC+okmtsKLtGicBHCEpIPu5acXbchKRi4dNgl9sC
+ZtKWKyl3nz7e75Epm6u8IYznCs9sLoBtzR/XVZQw6azugwAIAiAtK6sah9c8iipl
+aRlAhHpiceOqESmRSq6dbjqwBumuT3v5wd4aOJQkQ7M5O8aiLFnJ/G9a0iVCF93/
+09MIWRiv9ARWLYMhK3HBJ2QKfclqPyv6H7AGsIv5bkguP1DnzGRnQzW029OTHX9r
+iXW36EvEO3LWLass6U7vbGRwhDNxQ8ToYSJP6kgMJnxPtstKcFeEIbSsV1TrseG/
+OSD544lQMktKzMvpOUnpsk7utRizy4PBOjmg6ocJD9iipLWcs15cjTccUKIv3g45
+o1cXOwbVDJVxb4kdyABmhoLMOxw3jNztblaGW87ed91237jlxjNrhFcem9scc1+/
+FZAd4SYGMHLsLWPrYHC1
+=TDqO
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__9_Dec_2013_17_32_55_+1100_IJEOCgQFQSR2n416--
