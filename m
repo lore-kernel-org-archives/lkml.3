@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab3LIFIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 00:08:12 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:11356 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab3LIFIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 00:08:06 -0500
-X-IronPort-AV: E=Sophos;i="4.93,855,1378828800"; 
-   d="scan'208";a="9219722"
-Message-ID: <52A60695.1020504@cn.fujitsu.com>
-Date: Mon, 09 Dec 2013 13:06:13 -0500
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
-References: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131206115627.GA2279@ghostprotocols.net> <52A5DFC9.6020105@cn.fujitsu.com> <52A53C3A.2090107@gmail.com> <52A5FA13.9000000@cn.fujitsu.com> <52A547F4.6080904@gmail.com>
-In-Reply-To: <52A547F4.6080904@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/09 13:07:45,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/09 13:07:48,
-	Serialize complete at 2013/12/09 13:07:48
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753733Ab3LIFKV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 00:10:21 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:32805 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750821Ab3LIFKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 00:10:19 -0500
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: mcuos.com@gmail.com, linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH][RESEND] ARM: w90x900: remove deprecated IRQF_DISABLED
+Date: Mon,  9 Dec 2013 06:10:10 +0100
+Message-Id: <1386565810-19467-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <CAKT61h8QGU0ZZhms9WgMmyWhEmB_odTOfD0guihf6TfRpZ2YUw@mail.gmail.com>
+References: <CAKT61h8QGU0ZZhms9WgMmyWhEmB_odTOfD0guihf6TfRpZ2YUw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2013 11:32 PM, David Ahern wrote:
-> On 12/9/13, 10:12 AM, Dongsheng Yang wrote:
->> On 12/08/2013 10:42 PM, David Ahern wrote:
->>> On 12/9/13, 8:20 AM, Dongsheng Yang wrote:
->>>> How about introduce an option named --guestpid? Then we can make the
->>>> usage of perf kvm
->>>> more clear:
->>>>      * perf kvm --guestkallsyms --guestmodules --guestpid
->>>> [top|record|report]
->>>>          This usage is for only one guest and will not resolve the
->>>> symbols from other guests.
->>>
->>> If there is only 1 guest then there should not be a problem right? You
->>> give perf a single guest kallsyms as the "default" and it works.
->>> --guestpid adds no value in that case.
->>
->> Yes, if there is only one guest is running, "default" guest is "the"
->> guest. Then with my patch in this thread applied, it works well.
->>
->> But consider this scenario, there are two guests are running, but we
->> need to record-report one of them.
->>
->> --guestmount can achieve this request, but as a shortcut of guestmount,
->> --guest{kallysms, modules} dose not
->> support it well, right? So, I think we can discard the default guest,
->> and use guestpid in record-report.
->
-> No.
->
-> Use cases:
-> 1. one guest
-> --guestkallsyms and --guestmodules apply to default guest; user should 
-> supply files that apply to the one guest. Supplying any other kallsyms 
-> is just nonsense. *NO* other arguments are needed.
->
-> 2. more than 1 VM, *ALL* VMs running the same kernel
-> --guestkallsyms and --guestmodules apply to default guest; user should 
-> supply files that apply to all of guests. No other arguments are needed.
->
-> 3. more than 1 VM, VMs running different kernels. 1+ VMs running the 
-> same kernel
-> --guestmount allows user to supply files that apply to all of guests 
-> based on pid. --guestkallsyms/guestmodules is used for any guest not 
-> showing up in guestmount.
->
+This patch proposes to remove the use of the IRQF_DISABLED flag
 
-When more than 1 VM, the cases you provided is all about record-report 
-the symbols from __all__ guests. How about I want to record-report one 
-of them?
-Example:
-     There are 2 guests are running different kernels, I want to 
-record-report VM1.
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-Currently, we can use --guestmount to get the symbols of VM1, but we can 
-not remove the symbols of VM2 from report. It means the percentage of 
-each symbol is not  the symbol only in this VM1.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Acked-by: Wan zongshun <mcuos.com@gmail.com>
+---
+ arch/arm/mach-w90x900/time.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What I want with introducing guestpid is to record-report the symbols 
-only from VM1, and ignore VM2.
-
-> David
->
->
+diff --git a/arch/arm/mach-w90x900/time.c b/arch/arm/mach-w90x900/time.c
+index 30fbca844575..9230d3725599 100644
+--- a/arch/arm/mach-w90x900/time.c
++++ b/arch/arm/mach-w90x900/time.c
+@@ -111,7 +111,7 @@ static irqreturn_t nuc900_timer0_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction nuc900_timer0_irq = {
+ 	.name		= "nuc900-timer0",
+-	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+ 	.handler	= nuc900_timer0_interrupt,
+ };
+ 
+-- 
+1.8.3.2
 
