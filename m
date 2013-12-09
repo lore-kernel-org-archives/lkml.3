@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761347Ab3LIRF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:05:27 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34919 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761328Ab3LIRFX (ORCPT
+	id S1761364Ab3LIRGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:06:42 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:44891 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753671Ab3LIRGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:05:23 -0500
-Message-ID: <52A5F83F.4000207@oracle.com>
-Date: Mon, 09 Dec 2013 12:05:03 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 9 Dec 2013 12:06:35 -0500
+Date: Mon, 9 Dec 2013 17:06:17 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core
+ running without PCI on ARM64
+Message-ID: <20131209170617.GC30717@srcf.ucam.org>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
+ <20131209115050.GA19163@arm.com>
+ <52A5C024.5050702@linaro.org>
+ <201312091735.05014.arnd@arndb.de>
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
-        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kernel BUG in munlock_vma_pages_range
-References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz>
-In-Reply-To: <52A58E8A.3050401@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201312091735.05014.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
-> Hello, I will look at it, thanks.
-> Do you have specific reproduction instructions?
+On Mon, Dec 09, 2013 at 05:35:04PM +0100, Arnd Bergmann wrote:
 
-Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
-the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
-up testing on that part.
+> Exactly. In particular we don't want people to get the wrong idea about
+> where we are heading, so making it possible to use this code on embedded
+> systems for me is a reason *not* to take the patch.
 
+People are trying to deploy ACPI-based embedded x86, and most of the 
+ACPI/DT integration discussion seems to have been based on the idea that 
+this is a worthwhile thing to support. If we're not interested in doing 
+so then we should probably make that a whole kernel decision rather than 
+a per architecture one.
 
-Thanks,
-Sasha
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
