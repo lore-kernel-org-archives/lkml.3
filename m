@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3LIVtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:49:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37016 "EHLO mail.zytor.com"
+	id S1761619Ab3LIVtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:49:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684Ab3LIVtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:49:23 -0500
-Message-ID: <52A63AD4.2030101@zytor.com>
-Date: Mon, 09 Dec 2013 13:49:08 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>, Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz> <CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-In-Reply-To: <CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1761443Ab3LIVtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:49:53 -0500
+Date: Mon, 09 Dec 2013 16:49:38 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        rientjes@google.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Message-ID: <1386625778-kutyp5f6-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <52A592DE.7010302@huawei.com>
+References: <52A592DE.7010302@huawei.com>
+Subject: Re: [PATCH] mm: add show num_poisoned_pages when oom
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <52A592DE.7010302@huawei.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 09, 2013 at 05:52:30PM +0800, Xishi Qiu wrote:
+> Show num_poisoned_pages when oom, it is helpful to find the reason.
 > 
->> PT_LOAD being non-zero causing randomization to be turned off seems like
->> quite unexpected behavior to me, with a great potential to cause a lot of
->> confusion.
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>  lib/show_mem.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> There should be no difference between dynamic executable and PIE
-> with non-zero vaddr when choosing where to load them.
-> 
+> diff --git a/lib/show_mem.c b/lib/show_mem.c
+> index 5847a49..1cbdcd8 100644
+> --- a/lib/show_mem.c
+> +++ b/lib/show_mem.c
+> @@ -46,4 +46,7 @@ void show_mem(unsigned int filter)
+>  	printk("%lu pages in pagetable cache\n",
+>  		quicklist_total_size());
+>  #endif
+> +#ifdef CONFIG_MEMORY_FAILURE
+> +	printk("%lu pages poisoned\n", atomic_long_read(&num_poisoned_pages));
+> +#endif
+>  }
 
-Why is that?  It would seem to be a big difference between a relocatable
-binary (PIE) and one with a load address fixed at link time.
+I think that just "poisoned" could be confusing because this word seems to
+be used also in other context (like slab and list_debug handling.)
+"hwpoisoned" or "hardware corrupted" (which is the same label in /proc/meminfo)
+looks better to me.
 
-	-hpa
-
+Thanks,
+Naoya Horiguchi
