@@ -1,139 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761277Ab3LITNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 14:13:04 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:24532 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761202Ab3LITNC (ORCPT
+	id S1761523Ab3LITNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 14:13:53 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46135 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761202Ab3LITNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 14:13:02 -0500
-Message-ID: <52A6162D.7090008@siemens.com>
-Date: Mon, 09 Dec 2013 20:12:45 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 9 Dec 2013 14:13:52 -0500
+Date: Mon, 9 Dec 2013 20:13:50 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] softirq: Use ffs in __do_softirq
+Message-ID: <20131209191348.GB1811@localhost.localdomain>
+References: <cover.1384656563.git.joe@perches.com>
+ <8d10077333476c5c0e054cf060006999cf150f0c.1384656563.git.joe@perches.com>
+ <20131209184454.GA1811@localhost.localdomain>
+ <1386615406.8168.16.camel@joe-AO722>
 MIME-Version: 1.0
-To: Kim Phillips <kim.phillips@linaro.org>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kvm@vger.kernel.org, R65777@freescale.com, B07421@freescale.com,
-        B08248@freescale.com, christoffer.dall@linaro.org,
-        alex.williamson@redhat.com, a.motakis@virtualopensystems.com,
-        agraf@suse.de, B16395@freescale.com
-Subject: Re: [REPOST][PATCH 1/2] driver core: Add new device_driver flag to
- allow binding via sysfs only
-References: <20131203123446.42fbff34a8ebd7afd38159a5@linaro.org>	<529DFA09.1030707@siemens.com>	<20131205174530.a1d6e763e423d3baaa5992ad@linaro.org>	<1386283095.7375.63.camel@snotra.buserror.net> <20131209125802.0e2b86a3daa9d9ad5a7d43bf@linaro.org>
-In-Reply-To: <20131209125802.0e2b86a3daa9d9ad5a7d43bf@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386615406.8168.16.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-12-09 19:58, Kim Phillips wrote:
-> On Thu, 5 Dec 2013 16:38:15 -0600
-> Scott Wood <scottwood@freescale.com> wrote:
+On Mon, Dec 09, 2013 at 10:56:46AM -0800, Joe Perches wrote:
+> On Mon, 2013-12-09 at 19:44 +0100, Frederic Weisbecker wrote:
+> > On Sun, Nov 17, 2013 at 01:55:10AM -0800, Joe Perches wrote:
+> > > Possible speed improvement of the __do_softirq function by using ffs
+> > > instead of using a while loop with an & 1 test then single bit shift.
+> []
+> > Perhaps using for_each_set_bit() would simplify that more?
 > 
->> On Thu, 2013-12-05 at 17:45 +0000, Kim Phillips wrote:
->>> On Tue, 03 Dec 2013 16:34:33 +0100
->>> Jan Kiszka <jan.kiszka@siemens.com> wrote:
->>>
->>>> On 2013-12-03 13:34, Kim Phillips wrote:
->>>>> VFIO supports pass-through of devices to user space - for sake
->>>>> of illustration, say a PCI e1000 device:
->>>>>
->>>>> - the e1000 is first unbound from the PCI e1000 driver via sysfs
->>>>> - the vfio-pci driver is told via new_id that it now handles e1000 devices
->>>>> - the e1000 is explicitly bound to vfio-pci through sysfs
->>>>>
->>>>> However, now we have two drivers in the system that both handle e1000
->>>>> devices.  A hotplug event could then occur and it is ambiguous as to which
->>>>> driver will claim the device.  The desired semantics is that vfio-pci is
->>>>> only bound to devices by explicit request in sysfs.  This patch makes this
->>>>> possible by introducing a sysfs_bind_only flag in struct device_driver.
->>>>>
->>>>> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
->>>>> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
->>>>> ---
->>>>> rebased onto 3.13-rc2, and reposted from first submission which
->>>>> recieved no comments:
->>>>>
->>>>> https://lkml.org/lkml/2013/10/11/53
->>>>>
->>>>>  drivers/base/dd.c      | 5 ++++-
->>>>>  include/linux/device.h | 2 ++
->>>>>  2 files changed, 6 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
->>>>> index 0605176..b83b16d 100644
->>>>> --- a/drivers/base/dd.c
->>>>> +++ b/drivers/base/dd.c
->>>>> @@ -389,7 +389,7 @@ static int __device_attach(struct device_driver *drv, void *data)
->>>>>  {
->>>>>  	struct device *dev = data;
->>>>>  
->>>>> -	if (!driver_match_device(drv, dev))
->>>>> +	if (drv->sysfs_bind_only || !driver_match_device(drv, dev))
->>>>>  		return 0;
->>>>>  
->>>>>  	return driver_probe_device(drv, dev);
->>>>> @@ -476,6 +476,9 @@ static int __driver_attach(struct device *dev, void *data)
->>>>>   */
->>>>>  int driver_attach(struct device_driver *drv)
->>>>>  {
->>>>> +	if (drv->sysfs_bind_only)
->>>>> +		return 0;
->>>>> +
->>>>>  	return bus_for_each_dev(drv->bus, NULL, drv, __driver_attach);
->>>>>  }
->>>>>  EXPORT_SYMBOL_GPL(driver_attach);
->>>>> diff --git a/include/linux/device.h b/include/linux/device.h
->>>>> index 952b010..ed441d1 100644
->>>>> --- a/include/linux/device.h
->>>>> +++ b/include/linux/device.h
->>>>> @@ -200,6 +200,7 @@ extern struct klist *bus_get_device_klist(struct bus_type *bus);
->>>>>   * @owner:	The module owner.
->>>>>   * @mod_name:	Used for built-in modules.
->>>>>   * @suppress_bind_attrs: Disables bind/unbind via sysfs.
->>>>> + * @sysfs_bind_only: Only allow bind/unbind via sysfs.
->>>>>   * @of_match_table: The open firmware table.
->>>>>   * @acpi_match_table: The ACPI match table.
->>>>>   * @probe:	Called to query the existence of a specific device,
->>>>> @@ -233,6 +234,7 @@ struct device_driver {
->>>>>  	const char		*mod_name;	/* used for built-in modules */
->>>>>  
->>>>>  	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
->>>>> +	bool sysfs_bind_only;		/* only allow bind/unbind via sysfs */
->>>>>  
->>>>>  	const struct of_device_id	*of_match_table;
->>>>>  	const struct acpi_device_id	*acpi_match_table;
->>>>
->>>> I think I only discussed this with Stuart in person at the KVM Forum:
->>>> Why not deriving the property "sysfs bind only" from the fact that a
->>>> device does wild-card binding? Are there use cases that benefit from
->>>> decoupling both features?
->>>
->>> you mean merge the two new flags sysfs_bind_only and platform driver's
->>> match_any_dev into one new single driver flag, right?  good question.
->>
->> What would combining them solve, other than making it more likely that
->> Greg complains about the wildcard because it would no longer be handled
->> at the bus level where all the other matching goes on?
->>
->> They are logically separate things.  That doesn't change just because we
->> currently plan to use them together.
+> It might simplify the appearance of the code but it
+> would/could expand the amount of generated code because
+> for_each_set_bit uses an address_of(unsigned long) and
+> the value tested is an unsigned int.
 > 
-> Jan?  Given the above, what would be the advantage of merging
-> sysfs_bind_only and (PCI drivers' PCI_ANY_ID and platform drivers'
-> match_any_dev)?
+> extra dereferences, can't be in a register, etc...
 
-That you cannot configure (likely) meaningless or even harmful (bind-any
-+ auto-bind) configurations.
+I'm not sure that would matter that much. But yeah it appears that find_first_bit/find_next_bit
+aren't even overriden in x86. So they are function calls. Although I guess that most
+of the time only one softirq is pending at a time.
 
-I didn't follow if Greg expressed his opinion on this or a similar
-scenario before. If he prefers separate knobs for a certain reason, he
-likely wins.
+But anyway perhaps we want that path to stay very optimized, so you're
+patch look ok.
 
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Thanks.
