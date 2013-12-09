@@ -1,85 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761593Ab3LIVRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:17:36 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:53963 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761403Ab3LIVRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:17:35 -0500
-Message-ID: <52A63369.8010000@samsung.com>
-Date: Tue, 10 Dec 2013 06:17:29 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1761602Ab3LIVS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:18:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33136 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758864Ab3LIVS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:18:26 -0500
+Date: Mon, 9 Dec 2013 22:18:24 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] uprobes: Kill __replace_page(), change
+	uprobe_write_opcode() to rely on gup(WRITE)
+Message-ID: <20131209211824.GA15006@redhat.com>
 MIME-Version: 1.0
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-CC: ben-linux@fluff.org, kgene.kim@samsung.com, linux@arm.linux.org.uk,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH][RESEND] ARM: SAMSUNG: remove IRQF_DISABLED
-References: <000801cec874$%han@samsung.com> <1386579735-4065-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1386579735-4065-1-git-send-email-michael.opdenacker@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/13 18:02, Michael Opdenacker wrote:
-> This patch proposes to remove the use of the IRQF_DISABLED flag
->
-> It's a NOOP since 2.6.35 and it will be removed one day.
->
-> Signed-off-by: Michael Opdenacker<michael.opdenacker@free-electrons.com>
-> Reviewed-by: Jingoo Han<jg1.han@samsung.com>
-> ---
->   arch/arm/mach-s3c24xx/dma.c         | 2 +-
->   arch/arm/mach-s3c24xx/simtec-usb.c  | 3 +--
->   arch/arm/mach-s3c64xx/mach-smartq.c | 2 +-
->   3 files changed, 3 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/mach-s3c24xx/dma.c b/arch/arm/mach-s3c24xx/dma.c
-> index 4a65cba3295d..a8dafc174fe3 100644
-> --- a/arch/arm/mach-s3c24xx/dma.c
-> +++ b/arch/arm/mach-s3c24xx/dma.c
-> @@ -742,7 +742,7 @@ int s3c2410_dma_request(enum dma_ch channel,
->   		chan->irq_claimed = 1;
->   		local_irq_restore(flags);
->
-> -		err = request_irq(chan->irq, s3c2410_dma_irq, IRQF_DISABLED,
-> +		err = request_irq(chan->irq, s3c2410_dma_irq, 0,
->   				  client->name, (void *)chan);
->
->   		local_irq_save(flags);
-> diff --git a/arch/arm/mach-s3c24xx/simtec-usb.c b/arch/arm/mach-s3c24xx/simtec-usb.c
-> index 2ed2e32430dc..bb3eac6a7697 100644
-> --- a/arch/arm/mach-s3c24xx/simtec-usb.c
-> +++ b/arch/arm/mach-s3c24xx/simtec-usb.c
-> @@ -78,8 +78,7 @@ static void usb_simtec_enableoc(struct s3c2410_hcd_info *info, int on)
->
->   	if (on) {
->   		ret = request_irq(BAST_IRQ_USBOC, usb_simtec_ocirq,
-> -				  IRQF_DISABLED | IRQF_TRIGGER_RISING |
-> -				   IRQF_TRIGGER_FALLING,
-> +				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
->   				  "USB Over-current", info);
->   		if (ret != 0) {
->   			printk(KERN_ERR "failed to request usb oc irq\n");
-> diff --git a/arch/arm/mach-s3c64xx/mach-smartq.c b/arch/arm/mach-s3c64xx/mach-smartq.c
-> index a6b338fd0470..08a889c141da 100644
-> --- a/arch/arm/mach-s3c64xx/mach-smartq.c
-> +++ b/arch/arm/mach-s3c64xx/mach-smartq.c
-> @@ -106,7 +106,7 @@ static void smartq_usb_host_enableoc(struct s3c2410_hcd_info *info, int on)
->
->   	if (on) {
->   		ret = request_irq(gpio_to_irq(S3C64XX_GPL(10)),
-> -				  smartq_usb_host_ocirq, IRQF_DISABLED |
-> +				  smartq_usb_host_ocirq,
->   				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
->   				  "USB host overcurrent", info);
->   		if (ret != 0)
+Hello.
 
-Looks OK to me, applied.
+It is not clear to me if Linus still dislikes this change or not.
+Let me send the patch "officially" so that it can be nacked if I
+misunderstood the result of discussion.
 
-Thanks,
-Kukjin
+Changes:
+
+	- add a huge comment above gup(WRITE | FORCE)
+
+	- add WARN_ON(!(PageAnon() && page_mapcount() == 1))
+	  to ensure it works as expected
+
+If (say, on x86) we can avoid the pte games, we can simply add
+
+	if (IS_ENABLED(CONFIG_WHATEVER)) {
+		copy_to_page(...);
+		set_page_dirty_locked(page);
+		goto put;
+	}
+
+right after the 2nd get_user_pages().
+
+In any case I believe it would be very nice to kill __replace_page(),
+and even the fact this patch removes include(mm/internal.h) makes me
+think this patch makes sense. Assuming it is correct.
+
+Oleg.
+---
+
+int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr,
+			uprobe_opcode_t opcode)
+{
+	struct page *page;
+	struct vm_area_struct *vma;
+	pte_t *ptep, entry;
+	spinlock_t *ptlp;
+	int ret;
+
+	/* Read the page with vaddr into memory */
+	ret = get_user_pages(NULL, mm, vaddr, 1, 0, 1, &page, NULL);
+	if (ret < 0)
+		return ret;
+
+	ret = verify_opcode(page, vaddr, &opcode);
+	if (ret <= 0)
+		goto put;
+
+ retry:
+	put_page(page);
+	/*
+	 * Break the mapping unless the page is already anonymous and
+	 * unshare the page, see the WARN_ON() below.
+	 *
+	 * We never write to the VM_SHARED vma, every caller must check
+	 * valid_vma(). FOLL_WRITE | FOLL_FORCE should anonymize this
+	 * page unless uprobe_write_opcode() was already called in the
+	 * past or the application itself did mprotect(PROT_WRITE) and
+	 * wrote into this page.
+	 *
+	 * If it was already anonymous it can be shared due to dup_mm(),
+	 * in this case do_wp_page() or do_swap_page() will do another
+	 * cow to unshare, so we can safely modify it.
+	 */
+	ret = get_user_pages(NULL, mm, vaddr, 1, 1, 1, &page, &vma);
+	if (ret < 0)
+		return ret;
+
+	ptep = page_check_address(page, mm, vaddr, &ptlp, 0);
+	if (!ptep)
+		goto retry;
+
+	ret = 0;
+	if (WARN_ON(!PageAnon(page) || page_mapcount(page) != 1)) {
+		dump_page(page);
+		ret = -EFAULT;
+		goto unlock;
+	}
+
+	/* Unmap this page to ensure that nobody can execute it */
+	flush_cache_page(vma, vaddr, pte_pfn(*ptep));
+	entry = ptep_clear_flush(vma, vaddr, ptep);
+
+	/* Nobody can fault in this page, modify it */
+	copy_to_page(page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+
+	/* Restore the old mapping */
+	entry = pte_mkdirty(entry);
+	flush_icache_page(vma, page);
+	set_pte_at(mm, vaddr, ptep, entry);
+	update_mmu_cache(vma, vaddr, ptep);
+ unlock:
+	pte_unmap_unlock(ptep, ptlp);
+ put:
+	put_page(page);
+	return ret;
+}
+
