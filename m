@@ -1,95 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760501Ab3LIEKi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 23:10:38 -0500
-Received: from mail.fpasia.hk ([202.130.89.98]:58220 "EHLO fpa01n0.fpasia.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755693Ab3LIEKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 23:10:36 -0500
-Message-ID: <52A5430A.5010308@gtsys.com.hk>
-Date: Mon, 09 Dec 2013 12:11:54 +0800
-From: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+	id S1760504Ab3LIEMl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 23:12:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60945 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab3LIEMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Dec 2013 23:12:38 -0500
+Date: Sun, 8 Dec 2013 22:11:52 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Anton Tikhomirov <av.tikhomirov@samsung.com>
+Subject: Re: linux-next: build failure after merge of the usb-gadget tree
+Message-ID: <20131209041152.GC20608@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] usb: phy-generic: Add GPIO based ChipSelect
-References: <1385967919-13258-1-git-send-email-chris.ruehl@gtsys.com.hk> <1385967919-13258-2-git-send-email-chris.ruehl@gtsys.com.hk> <20131206202453.GF21086@saruman.home> <52A520BA.1000603@gtsys.com.hk> <20131209040705.GB20608@saruman.home>
-In-Reply-To: <20131209040705.GB20608@saruman.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WplhKdTI2c8ulnbP"
+Content-Disposition: inline
+In-Reply-To: <20131209145803.4aba29ca2eba4444070e43ce@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 09, 2013 12:07 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Mon, Dec 09, 2013 at 09:45:30AM +0800, Chris Ruehl wrote:
->> On Saturday, December 07, 2013 04:24 AM, Felipe Balbi wrote:
->>> Hi,
->>>
->>> On Mon, Dec 02, 2013 at 03:05:17PM +0800, Chris Ruehl wrote:
->>>> @@ -231,27 +249,40 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
->>>>   		return -ENOMEM;
->>>>
->>>>   	nop->reset_active_low = true;	/* default behaviour */
->>>> +	nop->cs_active_low = true;
->>>>
->>>>   	if (dev->of_node) {
->>>>   		struct device_node *node = dev->of_node;
->>>>   		enum of_gpio_flags flags;
->>>> +		enum of_gpio_flags csflags;
->>>>
->>>>   		if (of_property_read_u32(node, "clock-frequency",&clk_rate))
->>>>   			clk_rate = 0;
->>>>
->>>>   		needs_vcc = of_property_read_bool(node, "vcc-supply");
->>>> +
->>>>   		nop->gpio_reset = of_get_named_gpio_flags(node, "reset-gpios",
->>>>   								0,&flags);
->>>> +
->>> two unrelated changes
->>>
->>>>   		if (nop->gpio_reset == -EPROBE_DEFER)
->>>>   			return -EPROBE_DEFER;
->>>>
->>>>   		nop->reset_active_low = flags&  OF_GPIO_ACTIVE_LOW;
->>>>
->>>> +		nop->gpio_chipselect = of_get_named_gpio_flags(node, "cs-gpios",
->>>> +								0,&csflags);
->>>> +		if (gpio_is_valid(nop->gpio_chipselect))
->>>> +			nop->cs_active_low = csflags&  OF_GPIO_ACTIVE_LOW;
->>>> +
->>>>   	} else if (pdata) {
->>>>   		type = pdata->type;
->>>>   		clk_rate = pdata->clk_rate;
->>>>   		needs_vcc = pdata->needs_vcc;
->>>>   		nop->gpio_reset = pdata->gpio_reset;
->>>> +		nop->gpio_chipselect = pdata->gpio_chipselect;
->>>> +	} else {
->>>> +		nop->gpio_reset = -1;
->>> This line is already going upstream, please remove it, i'll handle the
->>> conflict later.
->>>
->> Beause the rest of the patch set is not ready to make it in the
->> upstream, I will checkout latest linux-next and send the patch again
->> as a single patch.
-> no, please *never* base any patches off of linux-next. That tree gets
-> recreated every day and can never be considered stable. Aim at using a
-> tag from Linus instead (v3.13-rc3, for example). It's a much better
-> development point than linux-next.
->
-> In case patch doesn't apply cleanly, different maintainers will have
-> their choice of rebasing it themselves or asking author to rebase on a
-> specific branch.
->
-> By default, however, use a tag from Linus.
->
-> cheers
->
+--WplhKdTI2c8ulnbP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the advice, I will follow :-)
+Hi,
 
-Chris
+On Mon, Dec 09, 2013 at 02:58:03PM +1100, Stephen Rothwell wrote:
+> Hi Felipe,
+>=20
+> After merging the usb-gadget tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/built-in.o: In function `otg_set_state':
+> (.text+0x14f7de): undefined reference to `usb_bus_start_enum'
+>=20
+> CONFIG_USB is 'm' in this build.
+>=20
+> I am not sure what changed to cause this, maybe e1d2e31975e1 ("usb: phy:
+> Add OTG FSM configuration option")?
+>=20
+> I have used the usb-gadget tree from next-20131206 for today.
+
+I see what caused it, will fix it up with a patch which should probably
+be backported a few kernels back. Thanks for letting me know.
+
+--=20
+balbi
+
+--WplhKdTI2c8ulnbP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpUMIAAoJEIaOsuA1yqRE9fIQAKa7mj9OH/Cz0oskSux3lpJM
+r40DhP/gVXiQfFnoNJ1+iKVzkbyI9WEK+FivSjwQp/9ujCM5P47FhTdL+JVUJWn4
+c203lR+SzNpZ1T0lIzELzZQTq+BdP8NYggLu47BCFvZSJOs5p5efjxPtG/IT5gqw
+hcItv/vGhDGdxZqKzbOTbDFDGzvQx4Km4pbSSyvm6Et8vYiUwJ+4OK+3dmAVPke7
+It7A7Gr42vog0Fu3ARrUhQ1c67Jpaja11kTDswhYZ9zpOHq1cEqhf8FWNFi8Q+Ir
+5LoDct+p63+teF9RzojkH+zxQ+Xk7m0v1XOUCT9nbvzbNWsSvAyjzUw3iTBX69CP
+RCnfc3ClFphtLC4bFQvZizH5nG/BW74+kEkHMAW+C6757KCmsUXqD0W2AbGRnhPp
+jyUdT7FrDwNtxqbLPJGRwxfB8MPYAgRCqd9ti3z2CzgtoSS9NCLJ7Jx3bvsXDFiH
+EIxfBq0Ux1BflUWSDSVxafImXQKc6ABtQ3gWFjjz2xS8g+rH72AF1W6d+cEa4f2x
+z9otsMDBigWz6DuZGxP7f8PihH+P6auQwDTPZp2GGowonCfXA92aGzPnICQKZxlr
+rDTEuFFToCE2wOSlZn8rotH1Xz3Bp0orHRwVkqTTwhyNAjeoxW/ICYDpMeS10w5d
+KO66Rex3Ou6JLB/VlKlQ
+=SaGK
+-----END PGP SIGNATURE-----
+
+--WplhKdTI2c8ulnbP--
