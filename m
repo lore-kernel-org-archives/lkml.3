@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761216Ab3LIJnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 04:43:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63297 "EHLO mx1.redhat.com"
+	id S933263Ab3LIJsV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 04:48:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761195Ab3LIJnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 04:43:40 -0500
+	id S1761180Ab3LIJnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 04:43:35 -0500
 From: Dave Young <dyoung@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
@@ -13,45 +13,139 @@ Cc: linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
         vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
         kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
         matt@console-pimps.org, toshi.kani@hp.com
-Subject: [PATCH v5 03/14] efi: remove unused variables in __map_region
-Date: Mon,  9 Dec 2013 17:42:16 +0800
-Message-Id: <1386582147-9802-4-git-send-email-dyoung@redhat.com>
+Subject: [PATCH v5 02/14] efi: use early_memremap and early_memunmap
+Date: Mon,  9 Dec 2013 17:42:15 +0800
+Message-Id: <1386582147-9802-3-git-send-email-dyoung@redhat.com>
 In-Reply-To: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
 References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-variables size and end is useless in this function, thus remove them.
+In arch/x86/platform/efi/efi.c and drivers/firmware/efi/efi.c turn to use
+early_memremap/early_memunmap instead of early_ioremap/early_iounmap so sparse
+will be happy.
 
-Reported-by: Toshi Kani <toshi.kani@hp.com>
 Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/platform/efi/efi_64.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ arch/x86/platform/efi/efi.c | 20 ++++++++++----------
+ drivers/firmware/efi/efi.c  |  4 ++--
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index bf286c3..c5a6491 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -148,15 +148,11 @@ void efi_setup_page_tables(void)
- static void __init __map_region(efi_memory_desc_t *md, u64 va)
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index f8ec4da..ef471d5 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -456,7 +456,7 @@ void __init efi_unmap_memmap(void)
  {
- 	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
--	unsigned long pf = 0, size;
--	u64 end;
-+	unsigned long pf = 0;
+ 	clear_bit(EFI_MEMMAP, &x86_efi_facility);
+ 	if (memmap.map) {
+-		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
++		early_memunmap(memmap.map, memmap.nr_map * memmap.desc_size);
+ 		memmap.map = NULL;
+ 	}
+ }
+@@ -493,7 +493,7 @@ static int __init efi_systab_init(void *phys)
+ 		efi_system_table_64_t *systab64;
+ 		u64 tmp = 0;
  
- 	if (!(md->attribute & EFI_MEMORY_WB))
- 		pf |= _PAGE_PCD;
+-		systab64 = early_ioremap((unsigned long)phys,
++		systab64 = early_memremap((unsigned long)phys,
+ 					 sizeof(*systab64));
+ 		if (systab64 == NULL) {
+ 			pr_err("Couldn't map the system table!\n");
+@@ -524,7 +524,7 @@ static int __init efi_systab_init(void *phys)
+ 		efi_systab.tables = systab64->tables;
+ 		tmp |= systab64->tables;
  
--	size = md->num_pages << PAGE_SHIFT;
--	end  = va + size;
--
- 	if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
- 		pr_warn("Error mapping PA 0x%llx -> VA 0x%llx!\n",
- 			   md->phys_addr, va);
+-		early_iounmap(systab64, sizeof(*systab64));
++		early_memunmap(systab64, sizeof(*systab64));
+ #ifdef CONFIG_X86_32
+ 		if (tmp >> 32) {
+ 			pr_err("EFI data located above 4GB, disabling EFI.\n");
+@@ -534,7 +534,7 @@ static int __init efi_systab_init(void *phys)
+ 	} else {
+ 		efi_system_table_32_t *systab32;
+ 
+-		systab32 = early_ioremap((unsigned long)phys,
++		systab32 = early_memremap((unsigned long)phys,
+ 					 sizeof(*systab32));
+ 		if (systab32 == NULL) {
+ 			pr_err("Couldn't map the system table!\n");
+@@ -555,7 +555,7 @@ static int __init efi_systab_init(void *phys)
+ 		efi_systab.nr_tables = systab32->nr_tables;
+ 		efi_systab.tables = systab32->tables;
+ 
+-		early_iounmap(systab32, sizeof(*systab32));
++		early_memunmap(systab32, sizeof(*systab32));
+ 	}
+ 
+ 	efi.systab = &efi_systab;
+@@ -586,7 +586,7 @@ static int __init efi_runtime_init(void)
+ 	 * address of several of the EFI runtime functions, needed to
+ 	 * set the firmware into virtual mode.
+ 	 */
+-	runtime = early_ioremap((unsigned long)efi.systab->runtime,
++	runtime = early_memremap((unsigned long)efi.systab->runtime,
+ 				sizeof(efi_runtime_services_t));
+ 	if (!runtime) {
+ 		pr_err("Could not map the runtime service table!\n");
+@@ -606,7 +606,7 @@ static int __init efi_runtime_init(void)
+ 	 * virtual mode.
+ 	 */
+ 	efi.get_time = phys_efi_get_time;
+-	early_iounmap(runtime, sizeof(efi_runtime_services_t));
++	early_memunmap(runtime, sizeof(efi_runtime_services_t));
+ 
+ 	return 0;
+ }
+@@ -614,7 +614,7 @@ static int __init efi_runtime_init(void)
+ static int __init efi_memmap_init(void)
+ {
+ 	/* Map the EFI memory map */
+-	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
++	memmap.map = early_memremap((unsigned long)memmap.phys_map,
+ 				   memmap.nr_map * memmap.desc_size);
+ 	if (memmap.map == NULL) {
+ 		pr_err("Could not map the memory map!\n");
+@@ -656,14 +656,14 @@ void __init efi_init(void)
+ 	/*
+ 	 * Show what we know for posterity
+ 	 */
+-	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
++	c16 = tmp = early_memremap(efi.systab->fw_vendor, 2);
+ 	if (c16) {
+ 		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+ 			vendor[i] = *c16++;
+ 		vendor[i] = '\0';
+ 	} else
+ 		pr_err("Could not map the firmware vendor!\n");
+-	early_iounmap(tmp, 2);
++	early_memunmap(tmp, 2);
+ 
+ 	pr_info("EFI v%u.%.02u by %s\n",
+ 		efi.systab->hdr.revision >> 16,
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index 2e2fbde..b716a66 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -253,7 +253,7 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
+ 			if (table64 >> 32) {
+ 				pr_cont("\n");
+ 				pr_err("Table located above 4GB, disabling EFI.\n");
+-				early_iounmap(config_tables,
++				early_memunmap(config_tables,
+ 					       efi.systab->nr_tables * sz);
+ 				return -EINVAL;
+ 			}
+@@ -269,6 +269,6 @@ int __init efi_config_init(efi_config_table_type_t *arch_tables)
+ 		tablep += sz;
+ 	}
+ 	pr_cont("\n");
+-	early_iounmap(config_tables, efi.systab->nr_tables * sz);
++	early_memunmap(config_tables, efi.systab->nr_tables * sz);
+ 	return 0;
+ }
 -- 
 1.8.3.1
 
