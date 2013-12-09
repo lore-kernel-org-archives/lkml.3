@@ -1,133 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760693Ab3LIFgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 00:36:46 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:13969 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab3LIFgm (ORCPT
+	id S1760741Ab3LIFhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 00:37:10 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51889 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab3LIFeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 00:36:42 -0500
-X-AuditID: cbfee61a-b7f796d000004313-d4-52a556e512fe
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: [f2fs-dev] [PATCH 3/3 V3] f2fs: introduce f2fs_cache_node_page() to
- add page into node_inode cache
-Date: Mon, 09 Dec 2013 13:35:48 +0800
-Message-id: <000a01cef4a0$9f2d64a0$dd882de0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac70n9mz0txnZc/tTOWEfp/VeuMSdw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jQd2nYUuDDGY9UrC4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+NS01+2gisiFVP2
-	djI2MB4X6GLk5JAQMJFYfWIHO4QtJnHh3nq2LkYuDiGB6YwSxzcdgXJ+MEo8aDkGVsUmoCKx
-	vOM/E4gtIqAoseH9BrA4s0CmxJzXk1lBbGGBXIlX2/YxgtgsAqoSdy+8A7N5BSwlmm5fYoGw
-	BSV+TL7HAtGrJbF+53EmCFteYvOat8wQFylI7Dj7mhFil57EgTlboerFJTYeucUygVFgFpJR
-	s5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBIfyM6kdjCsbLA4xCnAw
-	KvHwrmBdGiTEmlhWXJl7iFGCg1lJhFfpxJIgId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0D
-	hQTSE0tSs1NTC1KLYLJMHJxSDYyeOb082vsefv6+daYs84WjKtGH5X63F2/VVeU69S/PwMGs
-	MO1QvcNFPp6jKQsPz066x/n8gcXzL4sETrrMi9V742CilWh9W2XLnPaqj9tig8NnvCn5HvL6
-	JcfjZg6z2mCbh2KGxlNvOJf5nygvPn5UfW8z96I7TIkBnBrV53LfFez+sHKmSpgSS3FGoqEW
-	c1FxIgA9C3WVYQIAAA==
+	Mon, 9 Dec 2013 00:34:16 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-62-52a556549cc1
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 04/14] tools lib traceevent: Get rid of malloc_or_die() allocate_arg()
+Date: Mon,  9 Dec 2013 14:34:01 +0900
+Message-Id: <1386567251-22751-5-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces f2fs_cache_node_page(), in this function, page which is
-readed ahead will be copy to node_inode's mapping cache.
-It will avoid rereading these node pages.
+Also check return value and handle it.
 
-change log:
- o check validity of page by searching NAT suggested by Jaegeuk Kim.
- o add 'unlikely' for compiler optimization suggested by Jaegeuk Kim.
-
-Suggested-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- fs/f2fs/node.c |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
+ tools/lib/traceevent/parse-filter.c | 59 +++++++++++++++++++++++++++----------
+ 1 file changed, 44 insertions(+), 15 deletions(-)
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 099f06f..4c6da98 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1600,13 +1600,46 @@ static int ra_sum_pages(struct f2fs_sb_info *sbi, struct list_head *pages,
- 	return 0;
+diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+index 21d13a4f9a5f..35fac1fa376b 100644
+--- a/tools/lib/traceevent/parse-filter.c
++++ b/tools/lib/traceevent/parse-filter.c
+@@ -211,12 +211,7 @@ struct event_filter *pevent_filter_alloc(struct pevent *pevent)
+ 
+ static struct filter_arg *allocate_arg(void)
+ {
+-	struct filter_arg *arg;
+-
+-	arg = malloc_or_die(sizeof(*arg));
+-	memset(arg, 0, sizeof(*arg));
+-
+-	return arg;
++	return calloc(1, sizeof(struct filter_arg));
  }
  
-+/*
-+ * f2fs_cache_node_page() check validaty of input page by searching NAT.
-+ * Then, it will copy updated data of vaild page to node_inode cache.
-+ */
-+void f2fs_cache_node_page(struct f2fs_sb_info *sbi, struct page *page,
-+						nid_t nid, block_t blkaddr)
-+{
-+	struct address_space *mapping = sbi->node_inode->i_mapping;
-+	struct page *npage;
-+	struct node_info ni;
-+
-+	get_node_info(sbi, nid, &ni);
-+
-+	if (ni.blk_addr != blkaddr)
-+		return;
-+
-+	npage = grab_cache_page(mapping, nid);
-+	if (unlikely(!npage))
-+		return;
-+
-+	if (PageUptodate(npage)) {
-+		f2fs_put_page(npage, 1);
-+		return;
+ static void free_arg(struct filter_arg *arg)
+@@ -359,6 +354,10 @@ create_arg_item(struct event_format *event, const char *token,
+ 	struct filter_arg *arg;
+ 
+ 	arg = allocate_arg();
++	if (arg == NULL) {
++		show_error(error_str, "failed to allocate filter arg");
++		return NULL;
 +	}
-+
-+	memcpy(page_address(npage), page_address(page), PAGE_CACHE_SIZE);
-+
-+	SetPageUptodate(npage);
-+	f2fs_put_page(npage, 1);
-+
-+	return;
-+}
-+
- int restore_node_summary(struct f2fs_sb_info *sbi,
- 			unsigned int segno, struct f2fs_summary_block *sum)
- {
- 	struct f2fs_node *rn;
- 	struct f2fs_summary *sum_entry;
- 	struct page *page, *tmp;
--	block_t addr;
-+	block_t addr, blkaddr;
- 	int bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
- 	int i, last_offset, nrpages, err = 0;
- 	LIST_HEAD(page_list);
-@@ -1624,6 +1657,7 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
- 		if (err)
- 			return err;
  
-+		blkaddr = addr;
- 		list_for_each_entry_safe(page, tmp, &page_list, lru) {
+ 	switch (type) {
  
- 			lock_page(page);
-@@ -1633,6 +1667,8 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
- 				sum_entry->version = 0;
- 				sum_entry->ofs_in_node = 0;
- 				sum_entry++;
-+				f2fs_cache_node_page(sbi, page,
-+					le32_to_cpu(rn->footer.nid), blkaddr);
- 			} else {
- 				err = -EIO;
- 			}
-@@ -1640,6 +1676,7 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
- 			list_del(&page->lru);
- 			unlock_page(page);
- 			__free_pages(page, 0);
-+			blkaddr++;
- 		}
+@@ -409,8 +408,10 @@ create_arg_op(enum filter_op_type btype)
+ 	struct filter_arg *arg;
+ 
+ 	arg = allocate_arg();
+-	arg->type = FILTER_ARG_OP;
+-	arg->op.type = btype;
++	if (arg) {
++		arg->type = FILTER_ARG_OP;
++		arg->op.type = btype;
++	}
+ 
+ 	return arg;
+ }
+@@ -421,8 +422,10 @@ create_arg_exp(enum filter_exp_type etype)
+ 	struct filter_arg *arg;
+ 
+ 	arg = allocate_arg();
+-	arg->type = FILTER_ARG_EXP;
+-	arg->op.type = etype;
++	if (arg) {
++		arg->type = FILTER_ARG_EXP;
++		arg->op.type = etype;
++	}
+ 
+ 	return arg;
+ }
+@@ -433,9 +436,11 @@ create_arg_cmp(enum filter_exp_type etype)
+ 	struct filter_arg *arg;
+ 
+ 	arg = allocate_arg();
+-	/* Use NUM and change if necessary */
+-	arg->type = FILTER_ARG_NUM;
+-	arg->op.type = etype;
++	if (arg) {
++		/* Use NUM and change if necessary */
++		arg->type = FILTER_ARG_NUM;
++		arg->op.type = etype;
++	}
+ 
+ 	return arg;
+ }
+@@ -896,8 +901,10 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
+ 	case FILTER_VAL_FALSE:
+ 		free_arg(arg);
+ 		arg = allocate_arg();
+-		arg->type = FILTER_ARG_BOOLEAN;
+-		arg->boolean.value = ret == FILTER_VAL_TRUE;
++		if (arg) {
++			arg->type = FILTER_ARG_BOOLEAN;
++			arg->boolean.value = ret == FILTER_VAL_TRUE;
++		}
  	}
- 	return err;
+ 
+ 	return arg;
+@@ -1044,6 +1051,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 			switch (op_type) {
+ 			case OP_BOOL:
+ 				arg = create_arg_op(btype);
++				if (arg == NULL)
++					goto fail_alloc;
+ 				if (current_op)
+ 					ret = add_left(arg, current_op);
+ 				else
+@@ -1054,6 +1063,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 
+ 			case OP_NOT:
+ 				arg = create_arg_op(btype);
++				if (arg == NULL)
++					goto fail_alloc;
+ 				if (current_op)
+ 					ret = add_right(current_op, arg, error_str);
+ 				if (ret < 0)
+@@ -1073,6 +1084,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 					arg = create_arg_exp(etype);
+ 				else
+ 					arg = create_arg_cmp(ctype);
++				if (arg == NULL)
++					goto fail_alloc;
+ 
+ 				if (current_op)
+ 					ret = add_right(current_op, arg, error_str);
+@@ -1106,11 +1119,16 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 		current_op = current_exp;
+ 
+ 	current_op = collapse_tree(current_op);
++	if (current_op == NULL)
++		goto fail_alloc;
+ 
+ 	*parg = current_op;
+ 
+ 	return 0;
+ 
++ fail_alloc:
++	show_error(error_str, "failed to allocate filter arg");
++	goto fail;
+  fail_print:
+ 	show_error(error_str, "Syntax error");
+  fail:
+@@ -1141,6 +1159,10 @@ process_event(struct event_format *event, const char *filter_str,
+ 	/* If parg is NULL, then make it into FALSE */
+ 	if (!*parg) {
+ 		*parg = allocate_arg();
++		if (*parg == NULL) {
++			show_error(error_str, "failed to allocate filter arg");
++			return -1;
++		}
+ 		(*parg)->type = FILTER_ARG_BOOLEAN;
+ 		(*parg)->boolean.value = FILTER_FALSE;
+ 	}
+@@ -1164,6 +1186,10 @@ static int filter_event(struct event_filter *filter,
+ 	} else {
+ 		/* just add a TRUE arg */
+ 		arg = allocate_arg();
++		if (arg == NULL) {
++			show_error(error_str, "failed to allocate filter arg");
++			return -1;
++		}
+ 		arg->type = FILTER_ARG_BOOLEAN;
+ 		arg->boolean.value = FILTER_TRUE;
+ 	}
+@@ -1399,6 +1425,9 @@ static int copy_filter_type(struct event_filter *filter,
+ 	if (strcmp(str, "TRUE") == 0 || strcmp(str, "FALSE") == 0) {
+ 		/* Add trivial event */
+ 		arg = allocate_arg();
++		if (arg == NULL)
++			return -1;
++
+ 		arg->type = FILTER_ARG_BOOLEAN;
+ 		if (strcmp(str, "TRUE") == 0)
+ 			arg->boolean.value = 1;
 -- 
-1.7.9.5
+1.7.11.7
 
