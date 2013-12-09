@@ -1,170 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761079Ab3LIKv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:51:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab3LIKvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:51:54 -0500
-Date: Mon, 9 Dec 2013 12:55:29 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH net 1/2] tun: unbreak truncated packet signalling
-Message-ID: <20131209105529.GD15055@redhat.com>
-References: <1386584717-5776-1-git-send-email-jasowang@redhat.com>
+	id S1761172Ab3LIKwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:52:09 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42524 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761135Ab3LIKwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 05:52:04 -0500
+Date: Mon, 9 Dec 2013 10:51:55 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/2] pinctrl: tegra: Add devicetree binding document
+ for Tegra124
+Message-ID: <20131209105155.GC29303@e106331-lin.cambridge.arm.com>
+References: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386584717-5776-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 06:25:16PM +0800, Jason Wang wrote:
-> Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
-> (tuntap: hardware vlan tx support) breaks the truncated packet signal by never
-> return a length greater than iov length in tun_put_user(). This patch fixes this
-> by always return the length of packet plus possible vlan header. Caller can
-> detect the truncated packet by comparing the return value and the size of iov
-> length.
+On Mon, Dec 09, 2013 at 10:32:19AM +0000, Laxman Dewangan wrote:
+> This device tree binding document describes the Tegra124 pincontrol
+> DT bindings. This document lists all valid properties, names, mux
+> options of Tegra124 pins.
 > 
-> Reported-by: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-So writer gets back a value greater than what was written?
-
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 > ---
-> The patch is needed for stable.
-> ---
->  drivers/net/tun.c | 23 ++++++++++++-----------
->  1 file changed, 12 insertions(+), 11 deletions(-)
+> Changes from V1:
+> - Referred the dt-binding header file on describing the nodes.
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index e26cbea..dd1bd7a 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1183,7 +1183,11 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  			    const struct iovec *iv, int len)
->  {
->  	struct tun_pi pi = { 0, skb->protocol };
-> -	ssize_t total = 0;
-> +	struct {
-> +		__be16 h_vlan_proto;
-> +		__be16 h_vlan_TCI;
-> +	} veth;
-> +	ssize_t total = 0, off = 0;
+>  .../bindings/pinctrl/nvidia,tegra124-pinmux.txt    |  147 ++++++++++++++++++++
+>  1 files changed, 147 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
+> new file mode 100644
+> index 0000000..12ef772
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-pinmux.txt
+> @@ -0,0 +1,147 @@
+> +NVIDIA Tegra124 pinmux controller
+> +
+> +The Tegra124 pinctrl binding is very similar to the Tegra20 and Tegra30
+> +pinctrl binding, as described in nvidia,tegra20-pinmux.txt and
+> +nvidia,tegra30-pinmux.txt. In fact, this document assumes that binding as
+> +a baseline, and only documents the differences between the two bindings.
+> +
+> +Required properties:
+> +- compatible: "nvidia,tegra124-pinmux"
+> +- reg: Should contain the register physical address and length for each of
+> +  the pad control and mux registers. The first bank of address must be the
+> +  driver strength pad control register address and second bank address must
+> +  be pinmux register address.
 
-Why off = 0 here?
-We initialize it to total unconditionally, don't we?
+The wording here could be improved. The first sentence implies an entry
+for each individual register but I assume these are actually banks of
+registers (the sizes in the exanple imply this). The second sentence is
+more sepcific.
 
->  	int vlan_offset = 0;
->  
->  	if (!(tun->flags & TUN_NO_PI)) {
-> @@ -1248,14 +1252,11 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  		total += tun->vnet_hdr_sz;
->  	}
->  
-> +	off = total;
->  	if (!vlan_tx_tag_present(skb)) {
->  		len = min_t(int, skb->len, len);
->  	} else {
->  		int copy, ret;
-> -		struct {
-> -			__be16 h_vlan_proto;
-> -			__be16 h_vlan_TCI;
-> -		} veth;
->  
->  		veth.h_vlan_proto = skb->vlan_proto;
->  		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
-> @@ -1264,22 +1265,22 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  		len = min_t(int, skb->len + VLAN_HLEN, len);
->  
->  		copy = min_t(int, vlan_offset, len);
-> -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
-> +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, off, copy);
->  		len -= copy;
-> -		total += copy;
-> +		off += copy;
->  		if (ret || !len)
->  			goto done;
->  
->  		copy = min_t(int, sizeof(veth), len);
-> -		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
-> +		ret = memcpy_toiovecend(iv, (void *)&veth, off, copy);
->  		len -= copy;
-> -		total += copy;
-> +		off += copy;
->  		if (ret || !len)
->  			goto done;
+How about something like:
 
-This seems wrong: if one of the branches above is taken, total is
-never incremented.
+reg: Should contain a list of base address and size pairs for:
+ * first entry - the driver strength and pad control registers
+ * second entry - the pinmux registers
 
->  	}
->  
-> -	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
-> -	total += len;
-> +	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, off, len);
-> +	total += skb->len + (vlan_offset ? sizeof(veth) : 0);
->  
->  done:
->  	tun->dev->stats.tx_packets++;
+Are these banks well defined? Where do they end?
 
-I also think it's inelegant that the veth struct is now in the
-outside scope, and the extra ? is also ugly.
+Is there likely to be anything built as an extension of this? Does it
+possibly make sense to use reg-names?
 
-Here's a smaller patch to fix all these problems - what do you think?
+> +
+> +Tegra124 adds the following optional properties for pin configuration subnodes.
+> +The macros for options are defined in the
+> +	include/dt-binding/pinctrl/pinctrl-tegra.h.
+> +- nvidia,enable-input: Integer. Enable the pin's input path.
+> +		enable :TEGRA_PIN_ENABLE0 and
+> +		disable or output only: TEGRA_PIN_DISABLE.
+> +- nvidia,open-drain: Integer.
+> +		enable: TEGRA_PIN_ENABLE.
+> +		disable: TEGRA_PIN_DISABLE.
+> +- nvidia,lock: Integer. Lock the pin configuration against further changes
+> +    until reset.
+> +		enable: TEGRA_PIN_ENABLE.
+> +		disable: TEGRA_PIN_DISABLE.
+> +- nvidia,io-reset: Integer. Reset the IO path.
+> +		enable: TEGRA_PIN_ENABLE.
+> +		disable: TEGRA_PIN_DISABLE.
+> +- nvidia,rcv-sel: Integer. Select VIL/VIH receivers.
+> +		normal: TEGRA_PIN_DISABLE
+> +		high: TEGRA_PIN_ENABLE
+> +- nvidia,drive-type: Integer. Valid range 0...3.
 
+What do the values in this range mean?
 
+[...]
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> +Example:
+> +
+> +	pinmux: pinmux {
+> +		compatible = "nvidia,tegra124-pinmux";
+> +		reg = <0x70000868 0x164		/* Pad control registers */
+> +		       0x70003000 0x434>;	/* PinMux registers */
 
----
+Nit: please bracket these individually.
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 782e38b..3297e41 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1183,7 +1183,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 			    const struct iovec *iv, int len)
- {
- 	struct tun_pi pi = { 0, skb->protocol };
--	ssize_t total = 0;
-+	ssize_t total = 0, offset;
- 	int vlan_offset = 0;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
-@@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		total += tun->vnet_hdr_sz;
- 	}
- 
-+	offset = total;
-+	total += skb->len;
- 	if (!vlan_tx_tag_present(skb)) {
- 		len = min_t(int, skb->len, len);
- 	} else {
-@@ -1257,6 +1259,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 			__be16 h_vlan_TCI;
- 		} veth;
- 
-+		total += sizeof(veth);
-+
- 		veth.h_vlan_proto = skb->vlan_proto;
- 		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
- 
-@@ -1279,7 +1283,6 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 	}
- 
- 	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
--	total += len;
- 
- done:
- 	tun->dev->stats.tx_packets++;
-
-> -- 
-> 1.8.3.2
+Thanks,
+Mark.
