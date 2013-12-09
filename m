@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934014Ab3LIQli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:41:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40571 "EHLO mx1.redhat.com"
+	id S933992Ab3LIQpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:45:13 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51701 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933897Ab3LIQlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:41:37 -0500
-Date: Mon, 9 Dec 2013 14:41:09 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v2 3/7] mm/mempolicy: correct putback method for isolate
- pages if failed
-Message-ID: <20131209164108.GA14363@localhost.localdomain>
-References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1386580248-22431-4-git-send-email-iamjoonsoo.kim@lge.com>
+	id S933844Ab3LIQpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:45:09 -0500
+Message-ID: <52A5F355.9020704@ti.com>
+Date: Mon, 9 Dec 2013 11:44:05 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386580248-22431-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>
+CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 0/9] Reuse davinci-nand driver for Keystone arch
+References: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1386264358-9738-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 06:10:44PM +0900, Joonsoo Kim wrote:
-> queue_pages_range() isolates hugetlbfs pages and putback_lru_pages() can't
-> handle these. We should change it to putback_movable_pages().
-> 
-> Naoya said that it is worth going into stable, because it can break
-> in-use hugepage list.
-> 
-> Cc: <stable@vger.kernel.org> # 3.12
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index eca4a31..6d04d37 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -1318,7 +1318,7 @@ static long do_mbind(unsigned long start, unsigned long len,
->  		if (nr_failed && (flags & MPOL_MF_STRICT))
->  			err = -EIO;
->  	} else
-> -		putback_lru_pages(&pagelist);
-> +		putback_movable_pages(&pagelist);
->  
->  	up_write(&mm->mmap_sem);
->   mpol_out:
+David,
 
-Acked-by: Rafael Aquini <aquini@redhat.com>
-
-
-> -- 
-> 1.7.9.5
+On Thursday 05 December 2013 12:25 PM, Ivan Khoronzhuk wrote:
+> This series contains fixes and updates of Davinci nand driver in
+> order to reuse it for Keystone platform.
 > 
+> v2..v3:
+> - mtd: nand: davinci: don't set timings if AEMIF is used
+> 	dropped, it would be replaced by alone patch
+> 	ARM: davinci: aemif: get rid of davinci-nand driver dependency on aemif
+> 
+> v1..v2
+> The series is combination of two following series:
+> - Davinci nand driver fixes and updates:
+> https://lkml.org/lkml/2013/11/20/271
+> - Reuse davinci-nand driver for Keystone arch
+> https://lkml.org/lkml/2013/11/20/315
+> 
+> - mtd: nand: davinci: extend description of bindings
+> 	clarified changeset description
+> 
+> - mtd: nand: davinci: reuse driver for Keystone arch
+> 	removed "ti,keystone-nand" compatible from driver
+> 
+> Ivan Khoronzhuk (9):
+>   mtd: nand: davinci: fix driver registration
+>   mtd: nand: davinci: return ENOMEM if memory allocation is failed
+>   mtd: nand: davinci: check required ti,davinci-chipselect property
+>   mtd: nand: davinci: simplify error handling
+>   mtd: nand: davinci: move bindings under mtd
+>   mtd: nand: davinci: extend description of bindings
+>   mtd: nand: davinci: adjust DT properties to MTD generic
+>   mtd: nand: davinci: reuse driver for Keystone arch
+>   mtd: nand: davinci: don't request AEMIF address range
+> 
+Can you please pick up the $subject series if you are happy
+with it ?
+It lets us re-use Davinci nand driver on Keystone SOCs.
+
+Regards,
+Santosh
+
