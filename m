@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760475Ab3LIFiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 00:38:04 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61198 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab3LIFeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 00:34:15 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-5e-52a55654380a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 02/14] tools lib traceevent: Get rid of die in add_filter_type()
-Date: Mon,  9 Dec 2013 14:33:59 +0900
-Message-Id: <1386567251-22751-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1755510Ab3LIFnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 00:43:16 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:13314 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976Ab3LIFnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 00:43:15 -0500
+X-IronPort-AV: E=Sophos;i="4.93,856,1378828800"; 
+   d="scan'208";a="9219971"
+Message-ID: <52A60ED6.9050903@cn.fujitsu.com>
+Date: Mon, 09 Dec 2013 13:41:26 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
+References: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131206115627.GA2279@ghostprotocols.net> <52A5DFC9.6020105@cn.fujitsu.com> <52A53C3A.2090107@gmail.com> <52A5FA13.9000000@cn.fujitsu.com> <52A547F4.6080904@gmail.com> <52A60695.1020504@cn.fujitsu.com>
+In-Reply-To: <52A60695.1020504@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/09 13:42:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/09 13:42:58,
+	Serialize complete at 2013/12/09 13:42:58
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The realloc() should check return value and not to overwrite previous
-pointer in case of error.
+On 12/09/2013 01:06 PM, Dongsheng Yang wrote:
+> On 12/08/2013 11:32 PM, David Ahern wrote:
+>> On 12/9/13, 10:12 AM, Dongsheng Yang wrote:
+>>> On 12/08/2013 10:42 PM, David Ahern wrote:
+>>>> On 12/9/13, 8:20 AM, Dongsheng Yang wrote:
+>>>>> How about introduce an option named --guestpid? Then we can make the
+>>>>> usage of perf kvm
+>>>>> more clear:
+>>>>>      * perf kvm --guestkallsyms --guestmodules --guestpid
+>>>>> [top|record|report]
+>>>>>          This usage is for only one guest and will not resolve the
+>>>>> symbols from other guests.
+>>>>
+>>>> If there is only 1 guest then there should not be a problem right? You
+>>>> give perf a single guest kallsyms as the "default" and it works.
+>>>> --guestpid adds no value in that case.
+>>>
+>>> Yes, if there is only one guest is running, "default" guest is "the"
+>>> guest. Then with my patch in this thread applied, it works well.
+>>>
+>>> But consider this scenario, there are two guests are running, but we
+>>> need to record-report one of them.
+>>>
+>>> --guestmount can achieve this request, but as a shortcut of guestmount,
+>>> --guest{kallysms, modules} dose not
+>>> support it well, right? So, I think we can discard the default guest,
+>>> and use guestpid in record-report.
+>>
+>> No.
+>>
+>> Use cases:
+>> 1. one guest
+>> --guestkallsyms and --guestmodules apply to default guest; user 
+>> should supply files that apply to the one guest. Supplying any other 
+>> kallsyms is just nonsense. *NO* other arguments are needed.
+>>
+>> 2. more than 1 VM, *ALL* VMs running the same kernel
+>> --guestkallsyms and --guestmodules apply to default guest; user 
+>> should supply files that apply to all of guests. No other arguments 
+>> are needed.
+>>
+>> 3. more than 1 VM, VMs running different kernels. 1+ VMs running the 
+>> same kernel
+>> --guestmount allows user to supply files that apply to all of guests 
+>> based on pid. --guestkallsyms/guestmodules is used for any guest not 
+>> showing up in guestmount.
+>>
+>
+> When more than 1 VM, the cases you provided is all about record-report 
+> the symbols from __all__ guests. How about I want to record-report one 
+> of them?
+> Example:
+>     There are 2 guests are running different kernels, I want to 
+> record-report VM1.
+>
+> Currently, we can use --guestmount to get the symbols of VM1, but we 
+> can not remove the symbols of VM2 from report. It means the percentage 
+> of each symbol is not  the symbol only in this VM1.
+>
+> What I want with introducing guestpid is to record-report the symbols 
+> only from VM1, and ignore VM2.
+>
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/lib/traceevent/parse-filter.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+Besides, as we provide two usages of perf-kvm in manpage, guestmount-way 
+and guest{kallsyms,modules}-way, but the guest{kallsyms, modules} is not 
+used when
+there is only one guest is running, the guestmount is used in all 
+situations, it seems not reasonable. I think we can provide a guestpid 
+to make the guestkallsyms-way can be used in any situation.
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 0fc905c230ad..d9c239933992 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -161,11 +161,13 @@ add_filter_type(struct event_filter *filter, int id)
- 	if (filter_type)
- 		return filter_type;
- 
--	filter->event_filters =	realloc(filter->event_filters,
--					sizeof(*filter->event_filters) *
--					(filter->filters + 1));
--	if (!filter->event_filters)
--		die("Could not allocate filter");
-+	filter_type = realloc(filter->event_filters,
-+			      sizeof(*filter->event_filters) *
-+			      (filter->filters + 1));
-+	if (!filter_type)
-+		return NULL;
-+
-+	filter->event_filters = filter_type;
- 
- 	for (i = 0; i < filter->filters; i++) {
- 		if (filter->event_filters[i].event_id > id)
-@@ -1164,6 +1166,12 @@ static int filter_event(struct event_filter *filter,
- 	}
- 
- 	filter_type = add_filter_type(filter, event->id);
-+	if (filter_type == NULL) {
-+		show_error(error_str, "failed to add a new filter: %s",
-+			   filter_str ? filter_str : "true");
-+		return -1;
-+	}
-+
- 	if (filter_type->filter)
- 		free_arg(filter_type->filter);
- 	filter_type->filter = arg;
-@@ -1395,6 +1403,9 @@ static int copy_filter_type(struct event_filter *filter,
- 			arg->boolean.value = 0;
- 
- 		filter_type = add_filter_type(filter, event->id);
-+		if (filter_type == NULL)
-+			return -1;
-+
- 		filter_type->filter = arg;
- 
- 		free(str);
--- 
-1.7.11.7
+This way, user can understand and choose the usage easily.
+
+1. one or more guests you want to record-report, --guestmount-way. It 
+provides the full functionality of perf kvm.
+
+2. only one guest you want to record-report, --guestmount is also 
+available, and there is another usage for this most used case as a 
+shortcut , --guest{kallsyms, modules, pid}.
+
+Then the relationship between the two kinds of usage is more clear, 
+right? And in this way, we can make the result of perf-kvm more 
+foreseeable to user.
+
+>> David
+>>
+>>
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
