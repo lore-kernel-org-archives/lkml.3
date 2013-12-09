@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760997Ab3LIIKH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:10:07 -0500
-Received: from relay.parallels.com ([195.214.232.42]:35846 "EHLO
+	id S932292Ab3LIIKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:10:14 -0500
+Received: from relay.parallels.com ([195.214.232.42]:35857 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab3LIIGH (ORCPT
+	with ESMTP id S1752783Ab3LIIGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:06:07 -0500
+	Mon, 9 Dec 2013 03:06:08 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
         <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <cgroups@vger.kernel.org>, <devel@openvz.org>, <glommer@openvz.org>,
         <glommer@gmail.com>, <vdavydov@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH v13 01/16] memcg: make cache index determination more robust
-Date: Mon, 9 Dec 2013 12:05:42 +0400
-Message-ID: <47a73097257175128665d5f5952c4ba8e6b1768c.1386571280.git.vdavydov@parallels.com>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v13 12/16] fs: mark list_lru based shrinkers memcg aware
+Date: Mon, 9 Dec 2013 12:05:53 +0400
+Message-ID: <9e1005848996c3df5ceca9e8262edcf8211a893d.1386571280.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1386571280.git.vdavydov@parallels.com>
 References: <cover.1386571280.git.vdavydov@parallels.com>
@@ -28,51 +27,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@openvz.org>
+Since now list_lru automatically distributes objects among per-memcg
+lists and list_lru_{count,walk} employ information passed in the
+shrink_control argument to scan appropriate list, all shrinkers that
+keep objects in the list_lru structure can already work as memcg-aware.
+Let us mark them so.
 
-I caught myself doing something like the following outside memcg core:
-
-	memcg_id = -1;
-	if (memcg && memcg_kmem_is_active(memcg))
-		memcg_id = memcg_cache_id(memcg);
-
-to be able to handle all possible memcgs in a sane manner. In particular, the
-root cache will have kmemcg_id = -1 (just because we don't call memcg_kmem_init
-to the root cache since it is not limitable). We have always coped with that by
-making sure we sanitize which cache is passed to memcg_cache_id. Although this
-example is given for root, what we really need to know is whether or not a
-cache is kmem active.
-
-But outside the memcg core testing for root, for instance, is not trivial since
-we don't export mem_cgroup_is_root. I ended up realizing that this tests really
-belong inside memcg_cache_id. This patch moves a similar but stronger test
-inside memcg_cache_id and make sure it always return a meaningful value.
-
-Signed-off-by: Glauber Costa <glommer@openvz.org>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Dave Chinner <dchinner@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 ---
- mm/memcontrol.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/gfs2/quota.c  |    2 +-
+ fs/super.c       |    2 +-
+ fs/xfs/xfs_buf.c |    2 +-
+ fs/xfs/xfs_qm.c  |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f1a0ae6..02b5176 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3073,7 +3073,9 @@ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-  */
- int memcg_cache_id(struct mem_cgroup *memcg)
- {
--	return memcg ? memcg->kmemcg_id : -1;
-+	if (!memcg || !memcg_can_account_kmem(memcg))
-+		return -1;
-+	return memcg->kmemcg_id;
- }
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index f0435da..6cf6114 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -150,7 +150,7 @@ struct shrinker gfs2_qd_shrinker = {
+ 	.count_objects = gfs2_qd_shrink_count,
+ 	.scan_objects = gfs2_qd_shrink_scan,
+ 	.seeks = DEFAULT_SEEKS,
+-	.flags = SHRINKER_NUMA_AWARE,
++	.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE,
+ };
  
- /*
+ 
+diff --git a/fs/super.c b/fs/super.c
+index 8f9a81b..05bead8 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -219,7 +219,7 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
+ 	s->s_shrink.scan_objects = super_cache_scan;
+ 	s->s_shrink.count_objects = super_cache_count;
+ 	s->s_shrink.batch = 1024;
+-	s->s_shrink.flags = SHRINKER_NUMA_AWARE;
++	s->s_shrink.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
+ 	return s;
+ 
+ fail:
+diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
+index 5b2a49c..d8326b6 100644
+--- a/fs/xfs/xfs_buf.c
++++ b/fs/xfs/xfs_buf.c
+@@ -1679,7 +1679,7 @@ xfs_alloc_buftarg(
+ 	btp->bt_shrinker.count_objects = xfs_buftarg_shrink_count;
+ 	btp->bt_shrinker.scan_objects = xfs_buftarg_shrink_scan;
+ 	btp->bt_shrinker.seeks = DEFAULT_SEEKS;
+-	btp->bt_shrinker.flags = SHRINKER_NUMA_AWARE;
++	btp->bt_shrinker.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
+ 	register_shrinker(&btp->bt_shrinker);
+ 	return btp;
+ 
+diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+index aaacf8f..1f9bbb5 100644
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -903,7 +903,7 @@ xfs_qm_init_quotainfo(
+ 	qinf->qi_shrinker.count_objects = xfs_qm_shrink_count;
+ 	qinf->qi_shrinker.scan_objects = xfs_qm_shrink_scan;
+ 	qinf->qi_shrinker.seeks = DEFAULT_SEEKS;
+-	qinf->qi_shrinker.flags = SHRINKER_NUMA_AWARE;
++	qinf->qi_shrinker.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE;
+ 	register_shrinker(&qinf->qi_shrinker);
+ 	return 0;
+ }
 -- 
 1.7.10.4
 
