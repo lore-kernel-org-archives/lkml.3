@@ -1,196 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760839Ab3LIKZR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:25:17 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34534 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751412Ab3LIKZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:25:15 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: JBottomley@parallels.com, linuxdrivers@attotech.com,
-        achim_leubner@adaptec.com, xjtuwjp@gmail.com, lindar_liu@usish.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH][RESEND] [SCSI] misc drivers: remove deprecated IRQF_DISABLED
-Date: Mon,  9 Dec 2013 11:25:10 +0100
-Message-Id: <1386584710-5564-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1381038846-11686-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1381038846-11686-1-git-send-email-michael.opdenacker@free-electrons.com>
+	id S1761066Ab3LIKZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 05:25:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006Ab3LIKZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 05:25:50 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH net 2/2] macvtap: signal truncated packets
+Date: Mon,  9 Dec 2013 18:25:17 +0800
+Message-Id: <1386584717-5776-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1386584717-5776-1-git-send-email-jasowang@redhat.com>
+References: <1386584717-5776-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the use of the IRQF_DISABLED flag
+macvtap_put_user() never return a value grater than iov length, this in fact
+bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
+returning the size of packet plus the possible vlan header to let the truncated
+checking work.
 
-It's a NOOP since 2.6.35 and it will be removed one day.
-
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/scsi/aic7xxx_old.c        | 2 +-
- drivers/scsi/dtc.c                | 2 +-
- drivers/scsi/esas2r/esas2r_init.c | 2 +-
- drivers/scsi/g_NCR5380.c          | 2 +-
- drivers/scsi/gdth.c               | 6 +++---
- drivers/scsi/in2000.c             | 2 +-
- drivers/scsi/initio.c             | 2 +-
- drivers/scsi/pas16.c              | 2 +-
- drivers/scsi/pm8001/pm8001_init.c | 2 --
- drivers/scsi/t128.c               | 2 +-
- 10 files changed, 11 insertions(+), 13 deletions(-)
+The patch is needed for stable.
+---
+ drivers/net/macvtap.c | 27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/scsi/aic7xxx_old.c b/drivers/scsi/aic7xxx_old.c
-index 33ec9c643400..cdcc0dfc6582 100644
---- a/drivers/scsi/aic7xxx_old.c
-+++ b/drivers/scsi/aic7xxx_old.c
-@@ -8306,7 +8306,7 @@ aic7xxx_register(struct scsi_host_template *template, struct aic7xxx_host *p,
-               "aic7xxx", p));
-     if (result < 0)
-     {
--      result = (request_irq(p->irq, do_aic7xxx_isr, IRQF_DISABLED | IRQF_SHARED,
-+      result = (request_irq(p->irq, do_aic7xxx_isr, IRQF_SHARED,
-               "aic7xxx", p));
-     }
-   }
-diff --git a/drivers/scsi/dtc.c b/drivers/scsi/dtc.c
-index d01f01604140..eb29fe7eaf49 100644
---- a/drivers/scsi/dtc.c
-+++ b/drivers/scsi/dtc.c
-@@ -277,7 +277,7 @@ found:
- 		/* With interrupts enabled, it will sometimes hang when doing heavy
- 		 * reads. So better not enable them until I finger it out. */
- 		if (instance->irq != SCSI_IRQ_NONE)
--			if (request_irq(instance->irq, dtc_intr, IRQF_DISABLED,
-+			if (request_irq(instance->irq, dtc_intr, 0,
- 					"dtc", instance)) {
- 				printk(KERN_ERR "scsi%d : IRQ%d not free, interrupts disabled\n", instance->host_no, instance->irq);
- 				instance->irq = SCSI_IRQ_NONE;
-diff --git a/drivers/scsi/esas2r/esas2r_init.c b/drivers/scsi/esas2r/esas2r_init.c
-index b9750e296d71..6776931e25d4 100644
---- a/drivers/scsi/esas2r/esas2r_init.c
-+++ b/drivers/scsi/esas2r/esas2r_init.c
-@@ -231,7 +231,7 @@ use_legacy_interrupts:
- 
- static void esas2r_claim_interrupts(struct esas2r_adapter *a)
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index 957cc5c..7544a0c 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -767,10 +767,14 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 				const struct sk_buff *skb,
+ 				const struct iovec *iv, int len)
  {
--	unsigned long flags = IRQF_DISABLED;
-+	unsigned long flags = 0;
+-	int ret;
++	int ret, off;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+ 	int copied;
++	struct {
++		__be16 h_vlan_proto;
++		__be16 h_vlan_TCI;
++	} veth;
  
- 	if (a->intr_mode == INTR_MODE_LEGACY)
- 		flags |= IRQF_SHARED;
-diff --git a/drivers/scsi/g_NCR5380.c b/drivers/scsi/g_NCR5380.c
-index 5cec6c60ca22..7176365e916b 100644
---- a/drivers/scsi/g_NCR5380.c
-+++ b/drivers/scsi/g_NCR5380.c
-@@ -461,7 +461,7 @@ int __init generic_NCR5380_detect(struct scsi_host_template * tpnt)
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+@@ -785,16 +789,13 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+ 	}
+-	copied = vnet_hdr_len;
++	off = copied = vnet_hdr_len;
  
- 		if (instance->irq != SCSI_IRQ_NONE)
- 			if (request_irq(instance->irq, generic_NCR5380_intr,
--					IRQF_DISABLED, "NCR5380", instance)) {
-+					0, "NCR5380", instance)) {
- 				printk(KERN_WARNING "scsi%d : IRQ%d not free, interrupts disabled\n", instance->host_no, instance->irq);
- 				instance->irq = SCSI_IRQ_NONE;
- 			}
-diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
-index ce5ef0190bad..0f1ae13ce7c7 100644
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4711,7 +4711,7 @@ static int __init gdth_isa_probe_one(u32 isa_bios)
- 	printk("Configuring GDT-ISA HA at BIOS 0x%05X IRQ %u DRQ %u\n",
- 		isa_bios, ha->irq, ha->drq);
+ 	if (!vlan_tx_tag_present(skb))
+ 		len = min_t(int, skb->len, len);
+ 	else {
+ 		int copy;
+-		struct {
+-			__be16 h_vlan_proto;
+-			__be16 h_vlan_TCI;
+-		} veth;
++
+ 		veth.h_vlan_proto = skb->vlan_proto;
+ 		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
  
--	error = request_irq(ha->irq, gdth_interrupt, IRQF_DISABLED, "gdth", ha);
-+	error = request_irq(ha->irq, gdth_interrupt, 0, "gdth", ha);
- 	if (error) {
- 		printk("GDT-ISA: Unable to allocate IRQ\n");
- 		goto out_host_put;
-@@ -4843,7 +4843,7 @@ static int __init gdth_eisa_probe_one(u16 eisa_slot)
- 	printk("Configuring GDT-EISA HA at Slot %d IRQ %u\n",
- 		eisa_slot >> 12, ha->irq);
+@@ -802,22 +803,22 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		len = min_t(int, skb->len + VLAN_HLEN, len);
  
--	error = request_irq(ha->irq, gdth_interrupt, IRQF_DISABLED, "gdth", ha);
-+	error = request_irq(ha->irq, gdth_interrupt, 0, "gdth", ha);
- 	if (error) {
- 		printk("GDT-EISA: Unable to allocate IRQ\n");
- 		goto out_host_put;
-@@ -4979,7 +4979,7 @@ static int gdth_pci_probe_one(gdth_pci_str *pcistr, gdth_ha_str **ha_out)
- 		ha->irq);
+ 		copy = min_t(int, vlan_offset, len);
+-		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
++		ret = skb_copy_datagram_const_iovec(skb, 0, iv, off, copy);
+ 		len -= copy;
+-		copied += copy;
++		off += copy;
+ 		if (ret || !len)
+ 			goto done;
  
- 	error = request_irq(ha->irq, gdth_interrupt,
--				IRQF_DISABLED|IRQF_SHARED, "gdth", ha);
-+				IRQF_SHARED, "gdth", ha);
- 	if (error) {
- 		printk("GDT-PCI: Unable to allocate IRQ\n");
- 		goto out_host_put;
-diff --git a/drivers/scsi/in2000.c b/drivers/scsi/in2000.c
-index bf028218ac36..b1c4d831137d 100644
---- a/drivers/scsi/in2000.c
-+++ b/drivers/scsi/in2000.c
-@@ -2015,7 +2015,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
- 		write1_io(0, IO_FIFO_READ);	/* start fifo out in read mode */
- 		write1_io(0, IO_INTR_MASK);	/* allow all ints */
- 		x = int_tab[(switches & (SW_INT0 | SW_INT1)) >> SW_INT_SHIFT];
--		if (request_irq(x, in2000_intr, IRQF_DISABLED, "in2000", instance)) {
-+		if (request_irq(x, in2000_intr, 0, "in2000", instance)) {
- 			printk("in2000_detect: Unable to allocate IRQ.\n");
- 			detect_count--;
- 			continue;
-diff --git a/drivers/scsi/initio.c b/drivers/scsi/initio.c
-index 280d5af113d1..e5dae7b54d9a 100644
---- a/drivers/scsi/initio.c
-+++ b/drivers/scsi/initio.c
-@@ -2931,7 +2931,7 @@ static int initio_probe_one(struct pci_dev *pdev,
- 	shost->base = host->addr;
- 	shost->sg_tablesize = TOTAL_SG_ENTRY;
- 
--	error = request_irq(pdev->irq, i91u_intr, IRQF_DISABLED|IRQF_SHARED, "i91u", shost);
-+	error = request_irq(pdev->irq, i91u_intr, IRQF_SHARED, "i91u", shost);
- 	if (error < 0) {
- 		printk(KERN_WARNING "initio: Unable to request IRQ %d\n", pdev->irq);
- 		goto out_free_scbs;
-diff --git a/drivers/scsi/pas16.c b/drivers/scsi/pas16.c
-index 62f1a6031765..0d78a4d5576c 100644
---- a/drivers/scsi/pas16.c
-+++ b/drivers/scsi/pas16.c
-@@ -453,7 +453,7 @@ int __init pas16_detect(struct scsi_host_template * tpnt)
- 	    instance->irq = NCR5380_probe_irq(instance, PAS16_IRQS);
- 
- 	if (instance->irq != SCSI_IRQ_NONE) 
--	    if (request_irq(instance->irq, pas16_intr, IRQF_DISABLED,
-+	    if (request_irq(instance->irq, pas16_intr, 0,
- 			    "pas16", instance)) {
- 		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
- 		    instance->host_no, instance->irq);
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index 73a120d81b4d..72d2d07efeb0 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -713,11 +713,9 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
- 	/* SPCv controllers supports 64 msi-x */
- 	if (pm8001_ha->chip_id == chip_8001) {
- 		number_of_intr = 1;
--		flag |= IRQF_DISABLED;
- 	} else {
- 		number_of_intr = PM8001_MAX_MSIX_VEC;
- 		flag &= ~IRQF_SHARED;
--		flag |= IRQF_DISABLED;
+ 		copy = min_t(int, sizeof(veth), len);
+-		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
++		ret = memcpy_toiovecend(iv, (void *)&veth, off, copy);
+ 		len -= copy;
+-		copied += copy;
++		off += copy;
+ 		if (ret || !len)
+ 			goto done;
  	}
  
- 	max_entry = sizeof(pm8001_ha->msix_entries) /
-diff --git a/drivers/scsi/t128.c b/drivers/scsi/t128.c
-index f1e4b4148c75..a4abce9d526e 100644
---- a/drivers/scsi/t128.c
-+++ b/drivers/scsi/t128.c
-@@ -259,7 +259,7 @@ found:
- 	    instance->irq = NCR5380_probe_irq(instance, T128_IRQS);
+-	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+-	copied += len;
++	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, off, len);
++	copied += skb->len + (vlan_offset ? sizeof(veth) : 0);
  
- 	if (instance->irq != SCSI_IRQ_NONE) 
--	    if (request_irq(instance->irq, t128_intr, IRQF_DISABLED, "t128",
-+	    if (request_irq(instance->irq, t128_intr, 0, "t128",
- 			    instance)) {
- 		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
- 		    instance->host_no, instance->irq);
+ done:
+ 	return ret ? ret : copied;
+@@ -875,7 +876,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 	}
+ 
+ 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+-	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
++	ret = min_t(ssize_t, ret, len);
+ 	if (ret > 0)
+ 		iocb->ki_pos = ret;
+ out:
 -- 
 1.8.3.2
 
