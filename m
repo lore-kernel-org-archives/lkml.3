@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760843Ab3LIIYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 03:24:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48008 "EHLO
+	id S1760855Ab3LIIYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 03:24:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab3LIIYI (ORCPT
+	with ESMTP id S1753215Ab3LIIYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 03:24:08 -0500
-Date: Sun, 8 Dec 2013 17:30:19 -0800
+	Mon, 9 Dec 2013 03:24:41 -0500
+Date: Sun, 8 Dec 2013 17:39:56 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: "Preetam D'Souza" <preetamjdsouza@gmail.com>
-Cc: devel@driverdev.osuosl.org, swetland@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: android: fix parantheses coding style issue in
- alarm-dev.c
-Message-ID: <20131209013019.GA18048@kroah.com>
-References: <1386455752-17600-1-git-send-email-preetamjdsouza@gmail.com>
+To: Nicolin Chen <b42378@freescale.com>
+Cc: akpm@linux-foundation.org, joe@perches.com, nsekhar@ti.com,
+        khilman@deeprootsystems.com, linux@arm.linux.org.uk,
+        dan.j.williams@intel.com, vinod.koul@intel.com, m.chehab@samsung.com,
+        hjk@hansjkoch.de, perex@perex.cz, tiwai@suse.de, lgirdwood@gmail.com,
+        broonie@kernel.org, rmk+kernel@arm.linux.org.uk, eric.y.miao@gmail.com,
+        haojian.zhuang@gmail.com, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-media@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH][RESEND 5/8] uio: uio_pruss: use gen_pool_dma_alloc() to
+ allocate sram memory
+Message-ID: <20131209013956.GA5385@kroah.com>
+References: <cover.1383306365.git.b42378@freescale.com>
+ <f26a7fd466d22aaaeae9cf32d3c4c43c333e0b35.1383306365.git.b42378@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386455752-17600-1-git-send-email-preetamjdsouza@gmail.com>
+In-Reply-To: <f26a7fd466d22aaaeae9cf32d3c4c43c333e0b35.1383306365.git.b42378@freescale.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 07, 2013 at 02:35:52PM -0800, Preetam D'Souza wrote:
-> This patch fixes an unecessary return statement parantheses error
-> found in alarm-dev.c by the checkpatch.pl tool -- alarm-dev.c now has
-> no more errors/warnings!
+On Fri, Nov 01, 2013 at 07:48:18PM +0800, Nicolin Chen wrote:
+> Since gen_pool_dma_alloc() is introduced, we implement it to simplify code.
 > 
-> Signed-off-by: Preetam D'Souza <preetamjdsouza@gmail.com>
+> Signed-off-by: Nicolin Chen <b42378@freescale.com>
 > ---
->  drivers/staging/android/alarm-dev.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
 
-This was already fixed a while ago, what tree are you working against?
-
-sorry, I can't apply this again.
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
