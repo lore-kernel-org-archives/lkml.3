@@ -1,203 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384Ab3LIK7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 05:59:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933187Ab3LIK7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 05:59:36 -0500
-Date: Mon, 9 Dec 2013 05:59:33 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Tim Gardner <timg@tpi.com>
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>,
-        Dean Gehnert <deang@tpi.com>
-Subject: Re: [PATCH 2/5 linux-next V2] cifs: rename set_path_size and
- set_file_size
-Message-ID: <20131209055933.7db13040@tlielax.poochiereds.net>
-In-Reply-To: <1386536924-51726-2-git-send-email-timg@tpi.com>
-References: <1386536924-51726-1-git-send-email-timg@tpi.com>
-	<1386536924-51726-2-git-send-email-timg@tpi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933458Ab3LILAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 06:00:14 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:42173 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933087Ab3LILAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 06:00:11 -0500
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: stefano.stabellini@eu.citrix.com, konrad.wilk@oracle.com,
+        raghavendra.kt@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Ethan Zhao <ethan.kernel@gmail.com>
+Subject: [PATCH v4] xen/debugfs: Check debugfs initialization before using it
+Date: Mon,  9 Dec 2013 18:58:40 +0800
+Message-Id: <1386586720-789-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  8 Dec 2013 14:08:41 -0700
-Tim Gardner <timg@tpi.com> wrote:
+Should check debugfs initialization with debugfs_initialized() before using it,
+Because if it isn't initialized, the return value of fake debugfs_create_dir() etc
+functions would be ERR_PTR(-ENODEV), checking with NULL will not work.
 
-> These 2 method names are a bit confusing. Rename them
-> so that one can tell at a glance how they are to be used.
-> 
-> Cc: Steve French <sfrench@samba.org>
-> Cc: Jeff Layton <jlayton@redhat.com>
-> Cc: Dean Gehnert <deang@tpi.com>
-> Signed-off-by: Tim Gardner <timg@tpi.com>
-> ---
-> 
-> V2 - this is a new patch in the V2 series.
-> 
->  fs/cifs/cifsglob.h  |    4 ++--
->  fs/cifs/inode.c     |   15 +++++++++------
->  fs/cifs/smb1ops.c   |    6 +++---
->  fs/cifs/smb2inode.c |    2 +-
->  fs/cifs/smb2ops.c   |   14 +++++++-------
->  fs/cifs/smb2proto.h |    8 +++++---
->  6 files changed, 27 insertions(+), 22 deletions(-)
-> 
-> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-> index f918a99..8fd8eb2 100644
-> --- a/fs/cifs/cifsglob.h
-> +++ b/fs/cifs/cifsglob.h
-> @@ -270,10 +270,10 @@ struct smb_version_operations {
->  			    struct cifs_sb_info *, const char *,
->  			    u64 *uniqueid, FILE_ALL_INFO *);
->  	/* set size by path */
-> -	int (*set_path_size)(const unsigned int, struct cifs_tcon *,
-> +	int (*set_file_size_by_path)(const unsigned int, struct cifs_tcon *,
->  			     const char *, __u64, struct cifs_sb_info *, bool);
->  	/* set size by file handle */
-> -	int (*set_file_size)(const unsigned int, struct cifs_tcon *,
-> +	int (*set_file_size_by_handle)(const unsigned int, struct cifs_tcon *,
->  			     struct cifsFileInfo *, __u64, bool);
->  	/* set attributes */
->  	int (*set_file_info)(struct inode *, const char *, FILE_BASIC_INFO *,
-> diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-> index 36f9ebb..7181516 100644
-> --- a/fs/cifs/inode.c
-> +++ b/fs/cifs/inode.c
-> @@ -1925,9 +1925,11 @@ cifs_set_file_size(struct inode *inode, struct iattr *attrs,
->  	if (open_file) {
->  		tcon = tlink_tcon(open_file->tlink);
->  		server = tcon->ses->server;
-> -		if (server->ops->set_file_size)
-> -			rc = server->ops->set_file_size(xid, tcon, open_file,
-> -							attrs->ia_size, false);
-> +		if (server->ops->set_file_size_by_handle)
-> +			rc = server->ops->set_file_size_by_handle(xid, tcon,
-> +								  open_file,
-> +								  attrs->ia_size,
-> +								  false);
->  		else
->  			rc = -ENOSYS;
->  		cifsFileInfo_put(open_file);
-> @@ -1963,9 +1965,10 @@ cifs_set_file_size(struct inode *inode, struct iattr *attrs,
->  	 * valid, writeable file handle for it was found or because there was
->  	 * an error setting it by handle.
->  	 */
-> -	if (server->ops->set_path_size)
-> -		rc = server->ops->set_path_size(xid, tcon, full_path,
-> -						attrs->ia_size, cifs_sb, false);
-> +	if (server->ops->set_file_size_by_path)
-> +		rc = server->ops->set_file_size_by_path(xid, tcon, full_path,
-> +							attrs->ia_size, cifs_sb,
-> +							false);
->  	else
->  		rc = -ENOSYS;
->  	cifs_dbg(FYI, "SetEOF by path (setattrs) rc = %d\n", rc);
-> diff --git a/fs/cifs/smb1ops.c b/fs/cifs/smb1ops.c
-> index 14d4832..c5d9ec6 100644
-> --- a/fs/cifs/smb1ops.c
-> +++ b/fs/cifs/smb1ops.c
-> @@ -756,7 +756,7 @@ cifs_sync_write(const unsigned int xid, struct cifsFileInfo *cfile,
->  }
->  
->  static int
-> -smb_set_file_size(const unsigned int xid, struct cifs_tcon *tcon,
-> +smb_set_file_size_by_path(const unsigned int xid, struct cifs_tcon *tcon,
->  	      const char *full_path, __u64 size, struct cifs_sb_info *cifs_sb,
->  	      bool set_allocation)
->  {
-> @@ -1013,8 +1013,8 @@ struct smb_version_operations smb1_operations = {
->  	.query_path_info = cifs_query_path_info,
->  	.query_file_info = cifs_query_file_info,
->  	.get_srv_inum = cifs_get_srv_inum,
-> -	.set_path_size = smb_set_file_size,
-> -	.set_file_size = CIFSSMBSetFileSize,
-> +	.set_file_size_by_path = smb_set_file_size_by_path,
-> +	.set_file_size_by_handle = CIFSSMBSetFileSize,
->  	.set_file_info = smb_set_file_info,
->  	.set_compression = cifs_set_compression,
->  	.echo = CIFSSMBEcho,
-> diff --git a/fs/cifs/smb2inode.c b/fs/cifs/smb2inode.c
-> index 84c012a..78b590f 100644
-> --- a/fs/cifs/smb2inode.c
-> +++ b/fs/cifs/smb2inode.c
-> @@ -244,7 +244,7 @@ smb2_create_hardlink(const unsigned int xid, struct cifs_tcon *tcon,
->  }
->  
->  int
-> -smb2_set_path_size(const unsigned int xid, struct cifs_tcon *tcon,
-> +smb2_set_file_size_by_path(const unsigned int xid, struct cifs_tcon *tcon,
->  		   const char *full_path, __u64 size,
->  		   struct cifs_sb_info *cifs_sb, bool set_alloc)
->  {
-> diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
-> index 757da3e..dc7b1cb 100644
-> --- a/fs/cifs/smb2ops.c
-> +++ b/fs/cifs/smb2ops.c
-> @@ -688,7 +688,7 @@ smb2_sync_write(const unsigned int xid, struct cifsFileInfo *cfile,
->  }
->  
->  static int
-> -smb2_set_file_size(const unsigned int xid, struct cifs_tcon *tcon,
-> +smb2_set_file_size_by_handle(const unsigned int xid, struct cifs_tcon *tcon,
->  		   struct cifsFileInfo *cfile, __u64 size, bool set_alloc)
->  {
->  	__le64 eof = cpu_to_le64(size);
-> @@ -1131,8 +1131,8 @@ struct smb_version_operations smb20_operations = {
->  	.query_path_info = smb2_query_path_info,
->  	.get_srv_inum = smb2_get_srv_inum,
->  	.query_file_info = smb2_query_file_info,
-> -	.set_path_size = smb2_set_path_size,
-> -	.set_file_size = smb2_set_file_size,
-> +	.set_file_size_by_path = smb2_set_file_size_by_path,
-> +	.set_file_size_by_handle = smb2_set_file_size_by_handle,
->  	.set_file_info = smb2_set_file_info,
->  	.set_compression = smb2_set_compression,
->  	.mkdir = smb2_mkdir,
-> @@ -1205,8 +1205,8 @@ struct smb_version_operations smb21_operations = {
->  	.query_path_info = smb2_query_path_info,
->  	.get_srv_inum = smb2_get_srv_inum,
->  	.query_file_info = smb2_query_file_info,
-> -	.set_path_size = smb2_set_path_size,
-> -	.set_file_size = smb2_set_file_size,
-> +	.set_file_size_by_path = smb2_set_file_size_by_path,
-> +	.set_file_size_by_handle = smb2_set_file_size_by_handle,
->  	.set_file_info = smb2_set_file_info,
->  	.set_compression = smb2_set_compression,
->  	.mkdir = smb2_mkdir,
-> @@ -1280,8 +1280,8 @@ struct smb_version_operations smb30_operations = {
->  	.query_path_info = smb2_query_path_info,
->  	.get_srv_inum = smb2_get_srv_inum,
->  	.query_file_info = smb2_query_file_info,
-> -	.set_path_size = smb2_set_path_size,
-> -	.set_file_size = smb2_set_file_size,
-> +	.set_file_size_by_path = smb2_set_file_size_by_path,
-> +	.set_file_size_by_handle = smb2_set_file_size_by_handle,
->  	.set_file_info = smb2_set_file_info,
->  	.set_compression = smb2_set_compression,
->  	.mkdir = smb2_mkdir,
-> diff --git a/fs/cifs/smb2proto.h b/fs/cifs/smb2proto.h
-> index 93adc64..b6f3c13 100644
-> --- a/fs/cifs/smb2proto.h
-> +++ b/fs/cifs/smb2proto.h
-> @@ -62,9 +62,11 @@ extern int smb2_query_path_info(const unsigned int xid, struct cifs_tcon *tcon,
->  				struct cifs_sb_info *cifs_sb,
->  				const char *full_path, FILE_ALL_INFO *data,
->  				bool *adjust_tz, bool *symlink);
-> -extern int smb2_set_path_size(const unsigned int xid, struct cifs_tcon *tcon,
-> -			      const char *full_path, __u64 size,
-> -			      struct cifs_sb_info *cifs_sb, bool set_alloc);
-> +extern int smb2_set_file_size_by_path(const unsigned int xid,
-> +				      struct cifs_tcon *tcon,
-> +				      const char *full_path, __u64 size,
-> +				      struct cifs_sb_info *cifs_sb,
-> +				      bool set_alloc);
->  extern int smb2_set_file_info(struct inode *inode, const char *full_path,
->  			      FILE_BASIC_INFO *buf, const unsigned int xid);
->  extern int smb2_mkdir(const unsigned int xid, struct cifs_tcon *tcon,
+V2: change author name to normative format.
+V3: add warning message about debugfs not configured or disabled.
+V4: make the warning clear.
 
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+---
+ arch/x86/xen/debugfs.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
+index c8377fb..7f3804c 100644
+--- a/arch/x86/xen/debugfs.c
++++ b/arch/x86/xen/debugfs.c
+@@ -9,12 +9,19 @@ static struct dentry *d_xen_debug;
+ 
+ struct dentry * __init xen_init_debugfs(void)
+ {
++	if (!debugfs_initialized()) {
++		d_xen_debug = NULL;
++		pr_warning("Debugfs is not configured or not enabled\n");
++		goto nodebugfs;
++	}
++
+ 	if (!d_xen_debug) {
+ 		d_xen_debug = debugfs_create_dir("xen", NULL);
+ 
+ 		if (!d_xen_debug)
+ 			pr_warning("Could not create 'xen' debugfs directory\n");
+ 	}
++nodebugfs:
+ 
+ 	return d_xen_debug;
+ }
+-- 
+1.8.3.4 (Apple Git-47)
+
