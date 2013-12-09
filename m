@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751145Ab3LIXaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:30:16 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:52363 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750737Ab3LIXaL (ORCPT
+	id S1750983Ab3LIXey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 18:34:54 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:45364 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3LIXeu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:30:11 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgAIAHxRplJ5LHyk/2dsb2JhbABZgwe0UYVQgSgXdIIlAQEFOhwjEAgDGAkNGA8FJQMhE4gBwGwXFo4tTQcSDYQUA5gTkhSDPSiBLQgX
-Date: Tue, 10 Dec 2013 10:30:02 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Kees Cook <keescook@google.com>
-Cc: Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
-        xfs@oss.sgi.com
-Subject: Re: XFS security fix never sent to -stable?
-Message-ID: <20131209233002.GV31386@dastard>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+	Mon, 9 Dec 2013 18:34:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201312052304.22302.arnd@arndb.de>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org>
+	<20131203164111.GA13447@srcf.ucam.org>
+	<529F376F.8050005@linaro.org>
+	<201312052304.22302.arnd@arndb.de>
+Date: Mon, 9 Dec 2013 17:34:49 -0600
+Message-ID: <CAL_JsqKKKh7d61hJuSc8mGMCmeYB1hshHGS5ML4eRXWHmjZrgA@mail.gmail.com>
+Subject: Re: [RFC part1 PATCH 1/7] ACPI: Make ACPI core running without PCI on ARM64
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Al Stone <al.stone@linaro.org>, Linaro Patches <patches@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        linux-acpi@vger.kernel.org, Hanjun Guo <hanjun.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Jon Masters <jonathan@jonmasters.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[CC the xfs list. Kees - I shouldn't have to remind you to do this. ]
+On Thu, Dec 5, 2013 at 4:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 04 December 2013, Hanjun Guo wrote:
+>> On 2013年12月04日 00:41, Matthew Garrett wrote:
+>> > Given the number of #ifdefs you're adding, wouldn't it make more sense
+>> > to just add stub functions to include/linux/pci.h?
+>>
+>> Thanks for the suggestion :)
+>>
+>> I can add stub functions in include/linux/pci.h for raw_pci_read()/
+>> raw_pci_write(), then can remove #ifdefs for acpi_os_read/write_pci_configuration().
+>
+> Actually I wonder about the usefulness of this patch in either form: Since ACPI
+> on ARM64 is only for servers, I would very much expect them to always come with
+> PCI, either physical host bridges with attached devices, or logical PCI functions
+> used to describe the on-SoC I/O devices. Even in case of virtual machines, you'd
+> normally use PCI as the method to communicate data about the virtio channels.
+>
+> Can you name a realistic use-case where you'd want ACPI but not PCI?
 
-On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
-> Hi,
-> 
-> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
-> capability check to free eofblocks ioctl") is a security fix that was
-> never sent to -stable? From what I can see, it was introduced in 3.8
-> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
-> XFS_IOC_FREE_EOFBLOCKS ioctl").
-> 
-> I don't see this in the 3.8.y tree. Should it be added there and newer?
+Calxeda h/w. Yes, we do have PCI, but it is optional.
 
-Well, it's not really a security problem at all, given that it only
-affects speculative preallocation beyond EOF. i.e. it affects
-filesystem metadata that does not yet index any user data.
-
-Indeed, the kernel already does exactly what this ioctl does every 5
-minutes without user intervention. i.e. it's simply a maintenance
-task we need to execute periodically or on demand as a result of
-other events (e.g. from a userspace daemon that is listen to quota
-exhaustion messages).
-
-So apart from allowing a user to burn some CPU with the ioctl doing
-nothing but scanning, there's little in way of a security problem
-being exposed on kernels prior to 3.12 here.
-
-The reason for the cap check? Turning off this ioctl in containers
-restricted by user name spaces. i.e. new functionality added to XFS
-in 3.12 introduced curiously vague and difficult to explain new
-inode access restrictions, so we took the "be safe by default" route
-and only allowed the init namespace access to the ioctl....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Rob
