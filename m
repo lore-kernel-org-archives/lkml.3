@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab3LIUpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 15:45:19 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39967 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582Ab3LIUpP (ORCPT
+	id S933194Ab3LIUr1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 15:47:27 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:60999 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab3LIUrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 15:45:15 -0500
-Date: Mon, 9 Dec 2013 15:32:21 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2013-12-04
-Message-ID: <20131209203221.GD3359@tuxdriver.com>
-References: <20131204132527.GD1608@joana>
+	Mon, 9 Dec 2013 15:47:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131204132527.GD1608@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131209204323.GA25180@kroah.com>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
+	<1386546869-31900-2-git-send-email-yinghai@kernel.org>
+	<CAErSpo7HaAbsoy0n5sr_d3iPazEnpnO8WupJrDn2QR2Kid=EgQ@mail.gmail.com>
+	<CAE9FiQUebPPcTyHGssxTwJJ3GYx4aq-=infapvxOQgAm+PL4rA@mail.gmail.com>
+	<CAE9FiQUrTAnQkiS9SU3-pJ35-U9CqXQNQEceUUarf-WiPXCF2Q@mail.gmail.com>
+	<20131209204323.GA25180@kroah.com>
+Date: Mon, 9 Dec 2013 12:47:24 -0800
+X-Google-Sender-Auth: Es4gDo8u7iiyV7kQcoyq1Yu7f1k
+Message-ID: <CAE9FiQW60hW06sr=ahV6rEMRQ5kA04A_1mUtfZQAra__6ttNxw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: pcibus address to resource converting take bus
+ instead of dev
+From: Yinghai Lu <yinghai@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 11:25:27AM -0200, Gustavo Padovan wrote:
-> Hi John,
-> 
-> This is the first batch of patches intended for 3.14. There is nothing big here.
-> Most of the code are refactors, clean up, small fixes, plus some new device id
-> support.
-> 
-> Please pull or let me know of any problems! Thanks.
-> 
-> 	Gustavo
-> 
-> ---
-> The following changes since commit 4b074b07625f603d40d4d04937f8874a00415dc4:
-> 
->   Merge branch 'for-john' of git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next (2013-12-02 14:25:38 -0500)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to 201a5929c8c788f9ef53b010065c9ce70c9c06f0:
-> 
->   Bluetooth: Remove dead code from SMP encryption function (2013-12-04 11:09:05 -0200)
+On Mon, Dec 9, 2013 at 12:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Dec 09, 2013 at 12:03:18PM -0800, Yinghai Lu wrote:
+>> On Mon, Dec 9, 2013 at 11:21 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > On Mon, Dec 9, 2013 at 9:52 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >>
+>> >> Ugh.  Why would we add new functions with "__" prefixes?  There are
+>> >> only a handful of callers to pcibios_bus_to_resource() and
+>> >> pcibios_resource_to_bus().  We can just change them to supply a
+>> >> "struct pci_bus *" directly.  That's a better match for how the
+>> >> hardware works anyway.
+>> >
+>>
+>> Please double check if you are happy with the change.
+>> Hope that will not update stable tree maintainer guys.
+>
+> What do you mean by this?
 
-Pulling now...
+Do not want to change too much code, to upset stable tree maintainers.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+>
+> How is this a -stable kernel patch?
+
+We have stable patch that will need use the new function.
+
+[PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+
+Thanks
+
+Yinghai
