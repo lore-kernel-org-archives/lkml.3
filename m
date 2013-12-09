@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761241Ab3LIRCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 12:02:34 -0500
-Received: from 4.mo6.mail-out.ovh.net ([87.98.184.159]:50964 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761124Ab3LIRC3 (ORCPT
+	id S1761326Ab3LIRFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 12:05:01 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:26878 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1761279Ab3LIREx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 12:02:29 -0500
-Message-ID: <52A5F79D.9070408@overkiz.com>
-Date: Mon, 09 Dec 2013 18:02:21 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/6] ARM: at91/dt: define sama5d3 clocks
-References: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com> <201312091648.13802.arnd@arndb.de> <52A5ED03.2070306@overkiz.com> <201312091748.58386.arnd@arndb.de>
-In-Reply-To: <201312091748.58386.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 9 Dec 2013 12:04:53 -0500
+Date: Mon, 9 Dec 2013 12:04:50 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v5 12/18] ftrace/kprobes: Use NOKPROBE_SYMBOL macro
+ in ftrace
+Message-ID: <20131209120450.4da43296@gandalf.local.home>
+In-Reply-To: <20131209104746.13397.22146.stgit@kbuild-fedora.novalocal>
+References: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal>
+	<20131209104746.13397.22146.stgit@kbuild-fedora.novalocal>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 17868594473644161028
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 17:48, Arnd Bergmann wrote:
-> On Monday 09 December 2013, boris brezillon wrote:
->> Hello Arnd,
->>
->> On 09/12/2013 16:48, Arnd Bergmann wrote:
->>> On Monday 09 December 2013, boris brezillon wrote:
->>>>> You are adding "clock-names" properties in a lot of cases. Are you sure you
->>>>> are using the strings that are documented in the respective device bindings
->>>>> for each name? In a lot of cases, drivers just want an anonymous clock
->>>>> and we don't name them.
->>>> I rechecked it, and almost all drivers call [devm_]clk_get with a
->>>> specific clock
->>>> name, and as a result we must specify the "clock-names" property.
->>>> The only exceptions I found are the spi and PIT (Periodic Interval
->>>> Timer) drivers,
->>>> and "clock-names" property is not defined in these nodes.
->>> Yes, I understood that the *drivers* use the names, but are they actually
->>> documented in the device bindings? If not, it might be better to change the
->>> drivers.
->> We have to keep both clk system working for at91 platform (new CCF based
->> clk implementations and old clk implementations) for two reasons:
->> 1) the new clk implemetations are only compatible with DT enabled boards
->>       and some at91 boards are not yet ported to DT.
->> 2) we decided to move to the new clk implementations in multiple steps
->> (one SoC
->>       family after another) in order to ease PATCH review.
->>
->> If we change the drivers to avoid specific clock name request
->> ([devm]_clk_get(dev, NULL)),
->> we will have to change the old static clk lookup tables
->> (i.e.
->> http://lxr.free-electrons.com/source/arch/arm/mach-at91/at91sam9g45.c#L226,
->> http://lxr.free-electrons.com/source/arch/arm/mach-at91/at91sam9260.c#L202,
->> ...).
-> Yes, that is a bit painful, but we really need to ensure that the drivers
-> implement the documented binding. If they don't match we have to either
-> review and change all the binding documents, or change the static clock
-> tables and the drivers.
->
-> Note that I have not checked your binding documents for the devices in
-> question. If they already document these names, we don't need to change
-> anything.
+On Mon, 09 Dec 2013 10:47:46 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Are you talking about drivers or clk binding documentation ?
-In either cases they're not defined :-), but I'd like to know which 
-file(s) I
-should update.
 
-I'd rather not change the static clock lookup tables, but if you prefer this
-approach (and Nicolas agrees), I'll propose a series modifying the drivers
-and clk lookup table.
+> --- a/kernel/trace/trace_probe.h
+> +++ b/kernel/trace/trace_probe.h
+> @@ -124,8 +124,8 @@ struct probe_arg {
+>  	const struct fetch_type	*type;	/* Type of this argument */
+>  };
+>  
+> -static inline __kprobes void call_fetch(struct fetch_param *fprm,
+> -				 struct pt_regs *regs, void *dest)
+> +static inline void call_fetch(struct fetch_param *fprm,
+> +			      struct pt_regs *regs, void *dest)
+>  {
+>  	return fprm->fn(regs, fprm->data, dest);
+>  }
+> 
 
-Whatever solution is choosen, I guess I'll have to update the drivers dt
-binding documentation anyway ;-).
+Is this OK to be probed? I've had cases where a header "static inline"
+was not always inlined. Unless you have "__always_inline" this is not
+guaranteed to be inlined.
 
-Best Regards,
+As for the rest of the patch:
 
-Boris
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
->
-> 	Arnd
+-- Steve
 
