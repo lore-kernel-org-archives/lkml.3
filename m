@@ -1,51 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760141Ab3LIBNf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Dec 2013 20:13:35 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:51663 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab3LIBNe (ORCPT
+	id S1760166Ab3LIB0T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Dec 2013 20:26:19 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:59323 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759563Ab3LIB0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Dec 2013 20:13:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH 6/9] ARM: dts: pxa3xx: move declaration to header
-Date: Mon, 9 Dec 2013 02:13:27 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Daniel Mack <zonque@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com> <1386543229-1542-1-git-send-email-ynvich@gmail.com> <1386543229-1542-7-git-send-email-ynvich@gmail.com>
-In-Reply-To: <1386543229-1542-7-git-send-email-ynvich@gmail.com>
+	Sun, 8 Dec 2013 20:26:16 -0500
+Date: Mon, 9 Dec 2013 01:26:15 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: bcousson@baylibre.com, Roger Quadros <rogerq@ti.com>
+cc: tony@atomide.com, tomi.valkeinen@ti.com, balbi@ti.com, sr@denx.de,
+        David.Laight@ACULAB.COM, michael@amarulasolutions.com,
+        bigeasy@linutronix.de, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] ARM: OMAP4+: hwmod data: Don't prevent RESET of USB
+ Host module
+In-Reply-To: <1386080748-17005-2-git-send-email-rogerq@ti.com>
+Message-ID: <alpine.DEB.2.02.1312090125170.32309@utopia.booyaka.com>
+References: <1386080748-17005-1-git-send-email-rogerq@ti.com> <1386080748-17005-2-git-send-email-rogerq@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312090213.27395.arnd@arndb.de>
-X-Provags-ID: V02:K0:mnNY/GXbp0h0STscbgwrv6PWs+IsiKjbp/u0UuI1W2W
- vnd9N3wrH8b2/+lsh7hjitXXKtjZMSV6EFXfudmWz2bPP5aWM3
- OJPGf33MnvXhISI+PcVbXPOjzX0wZej8PWFVBSTseqh8OqPMeA
- Nr6bCb0aoKXt4k1G97OWi7+f6k2MtOgqKU8dTEYCSsmJoVfCbK
- n+GwketCZ/RZKefw8n/JeM8ztMbF61R/w46rj1BMUqIoQO6B2s
- zSyuraW3X6zuloIYB2pxaIY5k7bgyk+qP2BjQ+ZOchqslfBy0/
- Ere+6hEDQs652Uv1AXyD/P9ezfyPKZrJLHiqD50D9PxCE9CyHL
- kJLhwDf9ovmL9qdszbo8=
+Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-993088861-1386552375=:32309"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 08 December 2013, Sergei Ianovich wrote:
-> +#ifdef CONFIG_OF
-> +extern void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int));
-> +#endif /* CONFIG_OF */
-> +
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-In general, don't put declarations like this into #ifdef, unless you need
-an #else clause like
+--843723315-993088861-1386552375=:32309
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-static inline void pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int) {}
+Hi Beno=EEt,
 
-Same in patch 8.
+On Tue, 3 Dec 2013, Roger Quadros wrote:
 
-	Arnd
+> Without this, the USB devices are sometimes not detected on OMAP4 Panda
+> with u-boot v2013.10.
+>=20
+> Unlike what the comment states, errata i660 does not state that we
+> can't RESET the USB host module. Instead it states that RESET is the
+> only way to recover from a deadlock situation.
+>=20
+> RESET ensures that the module is in a known good state irrespective
+> of what bootloader does with the module, so it must be done at boot.
+>=20
+> Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+
+Acked-by: Paul Walmsley <paul@pwsan.com>
+
+Will you pick this up for the -rc series, or do you want me or Tony to? =20
+Roger writes that this one's pretty important.
+
+
+- Paul
+
+
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c | 12 ++----------
+>  arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 13 +++----------
+>  2 files changed, 5 insertions(+), 20 deletions(-)
+>=20
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-o=
+map2/omap_hwmod_44xx_data.c
+> index 1e5b12c..3318cae9 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> @@ -2937,7 +2937,7 @@ static struct omap_hwmod_class_sysconfig omap44xx_u=
+sb_host_hs_sysc =3D {
+>  =09.sysc_offs=09=3D 0x0010,
+>  =09.syss_offs=09=3D 0x0014,
+>  =09.sysc_flags=09=3D (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE |
+> -=09=09=09   SYSC_HAS_SOFTRESET),
+> +=09=09=09   SYSC_HAS_SOFTRESET | SYSC_HAS_RESET_STATUS),
+>  =09.idlemodes=09=3D (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+>  =09=09=09   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
+>  =09=09=09   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
+> @@ -3001,15 +3001,7 @@ static struct omap_hwmod omap44xx_usb_host_hs_hwmo=
+d =3D {
+>  =09 * hence HWMOD_SWSUP_MSTANDBY
+>  =09 */
+> =20
+> -=09/*
+> -=09 * During system boot; If the hwmod framework resets the module
+> -=09 * the module will have smart idle settings; which can lead to deadlo=
+ck
+> -=09 * (above Errata Id:i660); so, dont reset the module during boot;
+> -=09 * Use HWMOD_INIT_NO_RESET.
+> -=09 */
+> -
+> -=09.flags=09=09=3D HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
+> -=09=09=09  HWMOD_INIT_NO_RESET,
+> +=09.flags=09=09=3D HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+>  };
+> =20
+>  /*
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-o=
+map2/omap_hwmod_54xx_data.c
+> index 9e08d69..e297d62 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+> @@ -1544,7 +1544,8 @@ static struct omap_hwmod_class_sysconfig omap54xx_u=
+sb_host_hs_sysc =3D {
+>  =09.rev_offs=09=3D 0x0000,
+>  =09.sysc_offs=09=3D 0x0010,
+>  =09.sysc_flags=09=3D (SYSC_HAS_MIDLEMODE | SYSC_HAS_RESET_STATUS |
+> -=09=09=09   SYSC_HAS_SIDLEMODE | SYSC_HAS_SOFTRESET),
+> +=09=09=09   SYSC_HAS_SIDLEMODE | SYSC_HAS_SOFTRESET |
+> +=09=09=09   SYSC_HAS_RESET_STATUS),
+>  =09.idlemodes=09=3D (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+>  =09=09=09   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
+>  =09=09=09   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
+> @@ -1598,15 +1599,7 @@ static struct omap_hwmod omap54xx_usb_host_hs_hwmo=
+d =3D {
+>  =09 * hence HWMOD_SWSUP_MSTANDBY
+>  =09 */
+> =20
+> -=09/*
+> -=09 * During system boot; If the hwmod framework resets the module
+> -=09 * the module will have smart idle settings; which can lead to deadlo=
+ck
+> -=09 * (above Errata Id:i660); so, dont reset the module during boot;
+> -=09 * Use HWMOD_INIT_NO_RESET.
+> -=09 */
+> -
+> -=09.flags=09=09=3D HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
+> -=09=09=09  HWMOD_INIT_NO_RESET,
+> +=09.flags=09=09=3D HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+>  =09.main_clk=09=3D "l3init_60m_fclk",
+>  =09.prcm =3D {
+>  =09=09.omap4 =3D {
+> --=20
+> 1.8.3.2
+>=20
+
+
+- Paul
+--843723315-993088861-1386552375=:32309--
