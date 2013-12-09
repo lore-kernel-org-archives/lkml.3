@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab3LILVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 06:21:48 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48638 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760934Ab3LILVq (ORCPT
+	id S1760964Ab3LIL0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 06:26:35 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:37385 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753358Ab3LIL0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 06:21:46 -0500
-X-Sasl-enc: Svvq/D/MK17hqV5o1KXUImF96Xoux8Fx1O25SNFJ/pQg 1386588103
-Date: Mon, 9 Dec 2013 03:23:15 -0800
-From: Greg KH <greg@kroah.com>
-To: Vishal Annapurve <vannapurve@nvidia.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <tom.leiming@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb-storage: scsiglue: Changing the command result
-Message-ID: <20131209112315.GE6562@kroah.com>
-References: <113ACA888B71994BB56E5CF3704953486D664FCD42@BGMAIL02.nvidia.com>
- <20131209015905.GA5965@kroah.com>
- <52A590E7.9010603@nvidia.com>
+	Mon, 9 Dec 2013 06:26:33 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+BPKTghA9S+NrobaxC2dkKUi1ysHqCtnk=
+Date: Mon, 9 Dec 2013 06:26:10 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: andrew@lunn.ch, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: plat-orion: remove deprecated IRQF_DISABLED
+Message-ID: <20131209112610.GD10053@titan.lakedaemon.net>
+References: <1381549760-5432-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <20131017125414.GB22434@titan.lakedaemon.net>
+ <52A55187.3050907@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52A590E7.9010603@nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52A55187.3050907@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 03:14:07PM +0530, Vishal Annapurve wrote:
-> Hi Greg,
+On Mon, Dec 09, 2013 at 06:13:43AM +0100, Michael Opdenacker wrote:
+> Hi Jason,
 > 
-> Attached are the patches.
+> On 10/17/2013 02:54 PM, Jason Cooper wrote:
+> > On Sat, Oct 12, 2013 at 05:49:20AM +0200, Michael Opdenacker wrote:
+> >> This patch proposes to remove the use of the IRQF_DISABLED flag
+> >>
+> >> It's a NOOP since 2.6.35 and it will be removed one day.
+> >>
+> >> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> >> ---
+> >>  arch/arm/plat-orion/time.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> > Applied to mvebu/soc
+> 
+> Oops, I don't see this patch in mainline yet.
+> 
+> It is still in the tree? Did it just miss the last merge window?
 
-As Oliver said, I can't take these, please read
-Documentation/SubmittingPatches for how to do this properly.
+Yep, It's currently in mvebu/soc and arm-soc/mvebu/soc
 
-thanks,
+  eb4d552b933a arm: plat-orion: remove deprecated IRQF_DISABLED
 
-greg k-h
+thx,
+
+Jason.
