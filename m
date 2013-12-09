@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011Ab3LIQPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 11:15:54 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52500 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932938Ab3LIQPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 11:15:37 -0500
-Date: Mon, 9 Dec 2013 10:14:22 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 01/15] mfd: menelaus: Drop __exit section annotation
-Message-ID: <20131209161422.GC24047@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1386042188-12246-1-git-send-email-balbi@ti.com>
- <20131203095136.GF11828@lee--X1>
- <20131208190739.GA18977@saruman.home>
- <20131209093748.GA12675@lee--X1>
+	id S934021Ab3LIQRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 11:17:15 -0500
+Received: from mo6.mail-out.ovh.net ([178.32.228.6]:52101 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933816Ab3LIQRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 11:17:12 -0500
+Message-ID: <52A5ED03.2070306@overkiz.com>
+Date: Mon, 09 Dec 2013 17:17:07 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ghzN8eJ9Qlbqn3iT"
-Content-Disposition: inline
-In-Reply-To: <20131209093748.GA12675@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 3/6] ARM: at91/dt: define sama5d3 clocks
+References: <1385650171-8756-1-git-send-email-b.brezillon@overkiz.com> <201312090309.23723.arnd@arndb.de> <52A582AB.6010504@overkiz.com> <201312091648.13802.arnd@arndb.de>
+In-Reply-To: <201312091648.13802.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 17104671384995461124
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiledrkeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ghzN8eJ9Qlbqn3iT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Arnd,
 
-Hi,
+On 09/12/2013 16:48, Arnd Bergmann wrote:
+> On Monday 09 December 2013, boris brezillon wrote:
+>>> You are adding "clock-names" properties in a lot of cases. Are you sure you
+>>> are using the strings that are documented in the respective device bindings
+>>> for each name? In a lot of cases, drivers just want an anonymous clock
+>>> and we don't name them.
+>> I rechecked it, and almost all drivers call [devm_]clk_get with a
+>> specific clock
+>> name, and as a result we must specify the "clock-names" property.
+>> The only exceptions I found are the spi and PIT (Periodic Interval
+>> Timer) drivers,
+>> and "clock-names" property is not defined in these nodes.
+> Yes, I understood that the *drivers* use the names, but are they actually
+> documented in the device bindings? If not, it might be better to change the
+> drivers.
 
-On Mon, Dec 09, 2013 at 09:37:48AM +0000, Lee Jones wrote:
-> > > The code looks mostly fine, but the implementation of the commit logs
-> > > seems lazy. Please submit a v3 using coherent sentences with full
-> > > explanations and correct punctuation.
-> >=20
-> > example ?
->=20
-> All of your commit messages.
->=20
-> > that macro just helps removing some extra
->=20
->   ^- Sentences start with an uppercase character.
->=20
-> > line of code and hides ffs() calls.
-> >=20
-> > while at that, also fix a variable shadowing
->=20
->   ^- Sentences start with an uppercase character.
->=20
-> > bug where 'int irq' was being redeclared inside
-> > inner loop while it was also argument to interrupt
-> > handler.
->=20
->   < ---------------   50 chars   ----------------- >
->=20
-> Please use the full 72 char (or there abouts) width of the buffer.
+We have to keep both clk system working for at91 platform (new CCF based
+clk implementations and old clk implementations) for two reasons:
+1) the new clk implemetations are only compatible with DT enabled boards
+     and some at91 boards are not yet ported to DT.
+2) we decided to move to the new clk implementations in multiple steps 
+(one SoC
+     family after another) in order to ease PATCH review.
 
-I don't see any mention of punctuation problems, however. Also, you're
-not complaining about the content at all, which tells me those sentences
-aren't as incoherent as you claimed before. But fair enough, I'll fix
-those up and add Aaro's Tested-by
+If we change the drivers to avoid specific clock name request 
+([devm]_clk_get(dev, NULL)),
+we will have to change the old static clk lookup tables
+(i.e. 
+http://lxr.free-electrons.com/source/arch/arm/mach-at91/at91sam9g45.c#L226,
+http://lxr.free-electrons.com/source/arch/arm/mach-at91/at91sam9260.c#L202, 
+...).
 
---=20
-balbi
+Best Regards,
 
---ghzN8eJ9Qlbqn3iT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Boris
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+> 	Arnd
 
-iQIcBAEBAgAGBQJSpexeAAoJEIaOsuA1yqRE3/IP/2PkBF7vCs18wGZHDeFgfDOI
-nGF+ykmHeVeMXhpb/8BcD4Oob+X3sBsZ60+WZ6cUizAt40Dzq02548JtydFMjBnb
-arb7qVmiYYvGEAHXP9nhm88q/+lBlB0Fu0i3i0pDhIHuxy4FieQmSidR/quDd5xW
-1LwHeAtMFhk89TnPwuDZtEGUxN0Qb/f8ojbjl3yIC5JFVhJEdwRl+orRCa8vUBUI
-1cvSWl/kAyKoazEkZ2Z9r9Qq/ge8FDEEyND672ng4Sq/t3sl6ck3minMplQ5+bUk
-laEHFZ5+X3K600wwxu4cFKX5Rf2MdUp8hgFrcahgRxGR4uOP4ILoWmBiBn4DSv2x
-J+Y0Yy0HEJh+OSGhCTYXaTLZmcpjVJXcgiK1lE8SXiYkj3Hy57YR4lF9d6HuKOUw
-KoxDngPIDTe4GTf/oruTzGcJbx7BNngU76E7ttJaBYgIXiG+nzkHKtLhKnh6mapG
-vZEY8hA6pIO1VKsFhv1fFbFZjag0sQ9LdRxWUdARb7QC5GpgHU/L6sYFpSVjzb+7
-HoNC2Rv6HzQFYVuIvjqJimkOOZ0vQV9txxciuUjBTqeaIrrHUMY6Ut5Wmcba5gze
-YUzDZ97lBPf/MNDmn5C07+APELLFJQCz5dg5n3YqESKe8yQgZYYT2idwsvHXrCJR
-7yiPXEl70roKe+heWZtB
-=3+qF
------END PGP SIGNATURE-----
-
---ghzN8eJ9Qlbqn3iT--
