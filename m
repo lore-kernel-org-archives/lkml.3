@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab3LIVyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 16:54:50 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47313 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761754Ab3LIVwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 16:52:40 -0500
+	id S1761744Ab3LIVwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 16:52:39 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39099 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761717Ab3LIVwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 16:52:35 -0500
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <linux-arm-kernel@lists.infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
         Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v3 19/23] mm/memory_hotplug: Use memblock apis for early memory allocations
-Date: Mon, 9 Dec 2013 16:50:52 -0500
-Message-ID: <1386625856-12942-20-git-send-email-santosh.shilimkar@ti.com>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v3 16/23] mm/hugetlb: Use memblock apis for early memory allocations
+Date: Mon, 9 Dec 2013 16:50:49 -0500
+Message-ID: <1386625856-12942-17-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
@@ -26,8 +25,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct ensure_zone_is_initialized() function description according
-to the introduced memblock APIs for early memory allocations.
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+
+Switch to memblock interfaces for early memory allocator instead of
+bootmem allocator. No functional change in beahvior than what it is
+in current code from bootmem users points of view.
+
+Archs already converted to NO_BOOTMEM now directly use memblock
+interfaces instead of bootmem wrappers build on top of memblock. And the
+archs which still uses bootmem, these new apis just fallback to exiting
+bootmem APIs.
 
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Tejun Heo <tj@kernel.org>
@@ -35,22 +42,37 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- mm/memory_hotplug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/hugetlb.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index cf1736d..4f158ec 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -268,7 +268,7 @@ static void fix_zone_id(struct zone *zone, unsigned long start_pfn,
- }
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index dee6cf4..e16c56e 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1280,9 +1280,9 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+ 	for_each_node_mask_to_alloc(h, nr_nodes, node, &node_states[N_MEMORY]) {
+ 		void *addr;
  
- /* Can fail with -ENOMEM from allocating a wait table with vmalloc() or
-- * alloc_bootmem_node_nopanic() */
-+ * alloc_bootmem_node_nopanic()/memblock_virt_alloc_node_nopanic() */
- static int __ref ensure_zone_is_initialized(struct zone *zone,
- 			unsigned long start_pfn, unsigned long num_pages)
- {
+-		addr = __alloc_bootmem_node_nopanic(NODE_DATA(node),
+-				huge_page_size(h), huge_page_size(h), 0);
+-
++		addr = memblock_virt_alloc_try_nid_nopanic(
++				huge_page_size(h), huge_page_size(h),
++				0, BOOTMEM_ALLOC_ACCESSIBLE, node);
+ 		if (addr) {
+ 			/*
+ 			 * Use the beginning of the huge page to store the
+@@ -1322,8 +1322,8 @@ static void __init gather_bootmem_prealloc(void)
+ 
+ #ifdef CONFIG_HIGHMEM
+ 		page = pfn_to_page(m->phys >> PAGE_SHIFT);
+-		free_bootmem_late((unsigned long)m,
+-				  sizeof(struct huge_bootmem_page));
++		memblock_free_late(__pa(m),
++				   sizeof(struct huge_bootmem_page));
+ #else
+ 		page = virt_to_page(m);
+ #endif
 -- 
 1.7.9.5
 
