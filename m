@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab3LJOOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:14:37 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:37922 "EHLO
+	id S1753696Ab3LJOOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:14:36 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:37952 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753431Ab3LJOOG (ORCPT
+	by vger.kernel.org with ESMTP id S1753524Ab3LJOOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:14:06 -0500
+	Tue, 10 Dec 2013 09:14:15 -0500
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -25,9 +25,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 1/3] of: Fix early OF builtup on kobj-ification
-Date: Tue, 10 Dec 2013 16:13:51 +0200
-Message-Id: <1386684833-24112-2-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH 3/3] OF: kobj ops should only happen on attached nodes
+Date: Tue, 10 Dec 2013 16:13:53 +0200
+Message-Id: <1386684833-24112-4-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com>
 References: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com>
@@ -35,106 +35,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booting platforms that do very early OF initialization before
-core_initcalls are performed of_init is called too late.
+kobject operation should only take place on already attached (live)
+device nodes. The same restriction applies to the invocation of
+device tree notifiers.
 
-This results in a hard-hard without getting a chance to output anything.
-
-Fixed by adding a flag that marks when init has been done, and
-performing the per-node init at that time.
+Introduce a simple of_node_is_attached() test which tests whether
+the given node is attached via means of the allnodes member.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/of/base.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
+ drivers/of/base.c | 87 ++++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 64 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 734689b..a4f3dda 100644
+index db0de86..c6299bd 100644
 --- a/drivers/of/base.c
 +++ b/drivers/of/base.c
-@@ -98,7 +98,7 @@ int __weak of_node_to_nid(struct device_node *np)
+@@ -89,6 +89,13 @@ int __weak of_node_to_nid(struct device_node *np)
+ #endif
+ 
+ #if defined(CONFIG_OF_DYNAMIC)
++
++/* simple test for figuring out if node is attached */
++static inline int of_node_is_attached(struct device_node *np)
++{
++	return np && np->allnodes == &of_allnodes;
++}
++
+ /**
+  *	of_node_get - Increment refcount of a node
+  *	@node:	Node to inc refcount, NULL is supported to
+@@ -98,7 +105,7 @@ int __weak of_node_to_nid(struct device_node *np)
   */
  struct device_node *of_node_get(struct device_node *node)
  {
--	if (node)
-+	if (node && of_kset)
+-	if (node && of_kset)
++	if (node && of_kset && of_node_is_attached(node))
  		kobject_get(&node->kobj);
  	return node;
  }
-@@ -156,7 +156,7 @@ static void of_node_release(struct kobject *kobj)
+@@ -156,7 +163,7 @@ static void of_node_release(struct kobject *kobj)
   */
  void of_node_put(struct device_node *node)
  {
--	if (node)
-+	if (node && of_kset)
+-	if (node && of_kset)
++	if (node && of_kset && of_node_is_attached(node))
  		kobject_put(&node->kobj);
  }
  EXPORT_SYMBOL(of_node_put);
-@@ -202,9 +202,16 @@ static const char *safe_name(struct kobject *kobj, const char *orig_name)
- static int __of_add_property(struct device_node *np, struct property *pp)
- {
- 	int rc;
-+	bool secure;
-+
-+	/* note that we don't take a lock here */
-+
-+	/* fake the return while of_init is not yet called */
-+	if (!of_kset)
+@@ -210,6 +217,10 @@ static int __of_add_property(struct device_node *np, struct property *pp)
+ 	if (!of_kset)
+ 		return 0;
+ 
++	/* don't do anything with a detached node */
++	if (!of_node_is_attached(np))
 +		return 0;
- 
- 	/* Important: Don't leak passwords */
--	bool secure = strncmp(pp->name, "security-", 9) == 0;
-+	secure = strncmp(pp->name, "security-", 9) == 0;
- 
- 	pp->attr.attr.name = safe_name(&np->kobj, pp->name);
- 	pp->attr.attr.mode = secure ? S_IRUSR : S_IRUGO;
-@@ -222,6 +229,12 @@ static int __of_node_add(struct device_node *np)
- 	struct property *pp;
- 	int rc;
- 
-+	/* note that we don't take a lock here */
 +
-+	/* fake the return while of_init is not yet called */
-+	if (!of_kset)
+ 	/* Important: Don't leak passwords */
+ 	secure = strncmp(pp->name, "security-", 9) == 0;
+ 
+@@ -235,6 +246,9 @@ static int __of_node_add(struct device_node *np)
+ 	if (!of_kset)
+ 		return 0;
+ 
++	if (!of_node_is_attached(np))
 +		return 0;
 +
  	np->kobj.kset = of_kset;
  	if (!np->parent) {
  		/* Nodes without parents are new top level trees */
-@@ -245,11 +258,14 @@ static int __of_node_add(struct device_node *np)
- int of_node_add(struct device_node *np)
+@@ -259,6 +273,9 @@ int of_node_add(struct device_node *np)
  {
  	int rc = 0;
--	kobject_init(&np->kobj, &of_node_ktype);
+ 
++	if (!of_node_is_attached(np))
++		return 0;
 +
-+	/* fake the return while of_init is not yet called */
+ 	/* fake the return while of_init is not yet called */
  	mutex_lock(&of_aliases_mutex);
-+	kobject_init(&np->kobj, &of_node_ktype);
- 	if (of_kset)
- 		rc = __of_node_add(np);
- 	mutex_unlock(&of_aliases_mutex);
+ 	kobject_init(&np->kobj, &of_node_ktype);
+@@ -274,10 +291,16 @@ static void of_node_remove(struct device_node *np)
+ {
+ 	struct property *pp;
+ 
++	/* don't do anything with a detached node */
++	if (!of_node_is_attached(np))
++		return;
 +
- 	return rc;
+ 	for_each_property_of_node(np, pp)
+ 		sysfs_remove_bin_file(&np->kobj, &pp->attr);
+ 
+ 	kobject_del(&np->kobj);
++
++	of_node_put(np);
  }
+ #endif
  
-@@ -275,14 +291,16 @@ static int __init of_init(void)
+@@ -1626,9 +1649,11 @@ int of_add_property(struct device_node *np, struct property *prop)
+ 	unsigned long flags;
+ 	int rc;
  
- 	/* Make sure all nodes added before this time get added to sysfs */
- 	mutex_lock(&of_aliases_mutex);
-+
- 	for_each_of_allnodes(np)
- 		__of_node_add(np);
--	mutex_unlock(&of_aliases_mutex);
+-	rc = of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop);
+-	if (rc)
+-		return rc;
++	if (of_node_is_attached(np)) {
++		rc = of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop);
++		if (rc)
++			return rc;
++	}
  
- 	/* Symlink in /proc as required by userspace ABI */
- 	if (of_allnodes)
- 		proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
+ 	prop->next = NULL;
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+@@ -1664,9 +1689,11 @@ int of_remove_property(struct device_node *np, struct property *prop)
+ 	int found = 0;
+ 	int rc;
  
-+	mutex_unlock(&of_aliases_mutex);
-+
+-	rc = of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop);
+-	if (rc)
+-		return rc;
++	if (of_node_is_attached(np)) {
++		rc = of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop);
++		if (rc)
++			return rc;
++	}
+ 
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+ 	next = &np->properties;
+@@ -1686,7 +1713,8 @@ int of_remove_property(struct device_node *np, struct property *prop)
+ 	if (!found)
+ 		return -ENODEV;
+ 
+-	sysfs_remove_bin_file(&np->kobj, &prop->attr);
++	if (of_node_is_attached(np))
++		sysfs_remove_bin_file(&np->kobj, &prop->attr);
+ 
  	return 0;
  }
- core_initcall(of_init);
+@@ -1706,9 +1734,11 @@ int of_update_property(struct device_node *np, struct property *newprop)
+ 	unsigned long flags;
+ 	int rc, found = 0;
+ 
+-	rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
+-	if (rc)
+-		return rc;
++	if (of_node_is_attached(np)) {
++		rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
++		if (rc)
++			return rc;
++	}
+ 
+ 	if (!newprop->name)
+ 		return -EINVAL;
+@@ -1736,9 +1766,11 @@ int of_update_property(struct device_node *np, struct property *newprop)
+ 	if (!found)
+ 		return -ENODEV;
+ 
+-	/* Update the sysfs attribute */
+-	sysfs_remove_bin_file(&np->kobj, &oldprop->attr);
+-	__of_add_property(np, newprop);
++	if (of_node_is_attached(np)) {
++		/* Update the sysfs attribute */
++		sysfs_remove_bin_file(&np->kobj, &oldprop->attr);
++		__of_add_property(np, newprop);
++	}
+ 
+ 	return 0;
+ }
+@@ -1782,10 +1814,6 @@ int of_attach_node(struct device_node *np)
+ 	unsigned long flags;
+ 	int rc;
+ 
+-	rc = of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
+-	if (rc)
+-		return rc;
+-
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+ 	np->sibling = np->parent->child;
+ 	np->allnext = of_allnodes;
+@@ -1794,7 +1822,18 @@ int of_attach_node(struct device_node *np)
+ 	np->allnodes = &of_allnodes;
+ 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+ 
+-	of_node_add(np);
++	rc = of_node_add(np);
++	if (rc != 0)
++		goto err_detach;
++
++	rc = of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
++	if (rc)
++		goto err_detach;
++
++	return 0;
++
++err_detach:
++	of_node_remove(np);
+ 	return 0;
+ }
+ 
+@@ -1810,9 +1849,11 @@ int of_detach_node(struct device_node *np)
+ 	unsigned long flags;
+ 	int rc = 0;
+ 
+-	rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
+-	if (rc)
+-		return rc;
++	if (of_node_is_attached(np)) {
++		rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
++		if (rc)
++			return rc;
++	}
+ 
+ 	raw_spin_lock_irqsave(&devtree_lock, flags);
+ 
 -- 
 1.7.12
 
