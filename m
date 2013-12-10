@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab3LJIBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:01:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58865 "EHLO
+	id S1754901Ab3LJIRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:17:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58889 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab3LJIBh (ORCPT
+	with ESMTP id S1753605Ab3LJIBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:37 -0500
+	Tue, 10 Dec 2013 03:01:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 02/62] ALSA: hda - Another fixup for ASUS laptop with ALC660 codec
-Date: Tue, 10 Dec 2013 00:00:33 -0800
-Message-Id: <20131210080057.584088971@linuxfoundation.org>
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.12 09/62] crypto: scatterwalk - Set the chain pointer indication bit
+Date: Tue, 10 Dec 2013 00:00:40 -0800
+Message-Id: <20131210080058.105459090@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,30 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tom Lendacky <thomas.lendacky@amd.com>
 
-commit e7ca237bfcf6a288702cb95e94ab94f642ccad88 upstream.
+commit 41da8b5adba77e22584f8b45f9641504fa885308 upstream.
 
-ASUS Z35HL laptop also needs the very same fix as the previous one
-that was applied to ASUS W7J.
+The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
+function to chain two scatterlists, but the chain pointer indication
+bit is not set.  When the resulting scatterlist is used, for example,
+by sg_nents to count the number of scatterlist entries, a segfault occurs
+because sg_nents does not follow the chain pointer to the chained scatterlist.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66231
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Update scatterwalk_sg_chain to set the chain pointer indication bit as is
+done by the sg_chain function.
+
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
+ include/crypto/scatterwalk.h |    1 +
  1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4331,6 +4331,7 @@ static const struct hda_fixup alc861_fix
+--- a/include/crypto/scatterwalk.h
++++ b/include/crypto/scatterwalk.h
+@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(
+ {
+ 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
+ 	sg1[num - 1].page_link &= ~0x02;
++	sg1[num - 1].page_link |= 0x01;
+ }
  
- static const struct snd_pci_quirk alc861_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
-+	SND_PCI_QUIRK(0x1043, 0x1263, "ASUS Z35HL", ALC660_FIXUP_ASUS_W7J),
- 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
- 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
- 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
+ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
 
 
