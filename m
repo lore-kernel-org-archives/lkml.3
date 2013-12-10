@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3LJIj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:39:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58397 "EHLO
+	id S1755951Ab3LJIkB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:40:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58390 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab3LJH7Y (ORCPT
+	with ESMTP id S1752556Ab3LJH7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:24 -0500
+	Tue, 10 Dec 2013 02:59:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Seth Heasley <seth.heasley@intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: [PATCH 3.4 20/25] i2c: i801: SMBus patch for Intel Avoton DeviceIDs
-Date: Tue, 10 Dec 2013 00:00:28 -0800
-Message-Id: <20131210075932.238300592@linuxfoundation.org>
+        Jeff Garzik <jgarzik@redhat.com>,
+        Ong Boon Leong <boon.leong.ong@intel.com>
+Subject: [PATCH 3.4 19/25] ahci: AHCI-mode SATA patch for Intel Avoton DeviceIDs
+Date: Tue, 10 Dec 2013 00:00:27 -0800
+Message-Id: <20131210075932.171454617@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -31,67 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Seth Heasley <seth.heasley@intel.com>
 
-commit c2db409cbc8751ccc7e6d2cc2e41af0d12ea637f upstream.
+commit 29e674dd5c8e781589f09c3ee139c80f6da274e4 upstream.
 
-This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
+This patch adds the AHCI and RAID-mode SATA DeviceIDs for the Intel Avoton SOC.
 
 Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Cc: Ong Boon Leong <boon.leong.ong@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/i2c/busses/i2c-i801 |    1 +
- drivers/i2c/busses/Kconfig        |    1 +
- drivers/i2c/busses/i2c-i801.c     |    3 +++
- 3 files changed, 5 insertions(+)
+ drivers/ata/ahci.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -22,6 +22,7 @@ Supported adapters:
-   * Intel Panther Point (PCH)
-   * Intel Lynx Point (PCH)
-   * Intel Lynx Point-LP (PCH)
-+  * Intel Avoton (SOC)
-    Datasheets: Publicly available at the Intel website
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -276,6 +276,22 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f22), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f23), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f24), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f25), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f26), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f27), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f2e), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f2f), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f32), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f33), board_ahci }, /* Avoton AHCI */
++	{ PCI_VDEVICE(INTEL, 0x1f34), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f35), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f36), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f37), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f3e), board_ahci }, /* Avoton RAID */
++	{ PCI_VDEVICE(INTEL, 0x1f3f), board_ahci }, /* Avoton RAID */
  
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -105,6 +105,7 @@ config I2C_I801
- 	    Panther Point (PCH)
- 	    Lynx Point (PCH)
- 	    Lynx Point-LP (PCH)
-+	    Avoton (SOC)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -53,6 +53,7 @@
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
-   Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
-+  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -145,6 +146,7 @@
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
- #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
-+#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-@@ -639,6 +641,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
- 	{ 0, }
- };
- 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
