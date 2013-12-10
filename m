@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab3LJIVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:21:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58813 "EHLO
+	id S1753342Ab3LJIBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:01:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3LJIBP (ORCPT
+	with ESMTP id S1753227Ab3LJIBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:15 -0500
+	Tue, 10 Dec 2013 03:01:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 36/52] iwlwifi: dvm: dont override mac80211s queue setting
-Date: Tue, 10 Dec 2013 00:01:09 -0800
-Message-Id: <20131210075956.740938696@linuxfoundation.org>
+        Tom Gundersen <teg@jklm.no>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 42/52] Input: mousedev - allow disabling even without CONFIG_EXPERT
+Date: Tue, 10 Dec 2013 00:01:15 -0800
+Message-Id: <20131210075957.147932589@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,104 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Tom Gundersen <teg@jklm.no>
 
-commit f6b129527ca15bae29ffb9417ddaa1c9d99ffc5d upstream.
+commit dfaaed08ecc01bd513248ba7999daf50ce028352 upstream.
 
-Since we set IEEE80211_HW_QUEUE_CONTROL, we can let
-mac80211 do the queue assignement and don't need to
-override its decisions.
-While reassiging the same values is harmless of course,
-it triggered  a WARNING when iwlwifi and mac80211 came
-to different conclusions. This happened when mac80211 set
-IEEE80211_TX_CTL_SEND_AFTER_DTIM, but didn't route the
-packet to the cab_queue because no stations were asleep.
+Moust (if not all) modern software, including X, uses /dev/eventX rather than
+the legacy /dev/mouseX devices. It therefore makes sense for general-purpose
+(distro) kernels to use MOUSEDV=m (or even n), so let's drop the EXPERT=y
+requirement.
 
-iwlwifi should not override mac80211's decicions for
-offchannel packets and packets to  be sent after DTIM,
-but it should override mac80211's decision for AMPDUs
-since we have a special queue for them. So for AMPDU,
-we still override info->hw_queue by the AMPDU queue.
-
-This avoids:
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 2531 at drivers/net/wireless/iwlwifi/dvm/tx.c:456 iwlagn_tx_skb+0x6c5/0x883()
-Modules linked in:
-CPU: 0 PID: 2531 Comm: hostapd Not tainted 3.12.0-rc5+ #1
-Hardware name:                  /D53427RKE, BIOS RKPPT10H.86A.0017.2013.0425.1251 04/25/2013
- 0000000000000000 0000000000000009 ffffffff8189aa62 0000000000000000
- ffffffff8105a4f2 ffff880058339a48 ffffffff815f8a04 0000000000000000
- ffff8800560097b0 0000000000000208 0000000000000000 ffff8800561a9e5e
-Call Trace:
- [<ffffffff8189aa62>] ? dump_stack+0x41/0x51
- [<ffffffff8105a4f2>] ? warn_slowpath_common+0x78/0x90
- [<ffffffff815f8a04>] ? iwlagn_tx_skb+0x6c5/0x883
- [<ffffffff815f8a04>] ? iwlagn_tx_skb+0x6c5/0x883
- [<ffffffff818a0040>] ? put_cred+0x15/0x15
- [<ffffffff815f6db4>] ? iwlagn_mac_tx+0x19/0x2f
- [<ffffffff8186cc45>] ? __ieee80211_tx+0x226/0x29b
- [<ffffffff8186e6bd>] ? ieee80211_tx+0xa6/0xb5
- [<ffffffff8186e98b>] ? ieee80211_monitor_start_xmit+0x1e9/0x204
- [<ffffffff8171ce5f>] ? dev_hard_start_xmit+0x271/0x3ec
- [<ffffffff817351ac>] ? sch_direct_xmit+0x66/0x164
- [<ffffffff8171d1bf>] ? dev_queue_xmit+0x1e5/0x3c8
- [<ffffffff817fac5a>] ? packet_sendmsg+0xac5/0xb3d
- [<ffffffff81709a09>] ? sock_sendmsg+0x37/0x52
- [<ffffffff810f9e0c>] ? __do_fault+0x338/0x36b
- [<ffffffff81713820>] ? verify_iovec+0x44/0x94
- [<ffffffff81709e63>] ? ___sys_sendmsg+0x1f1/0x283
- [<ffffffff81140a73>] ? __inode_wait_for_writeback+0x67/0xae
- [<ffffffff8111735e>] ? __cache_free.isra.46+0x178/0x187
- [<ffffffff811173b1>] ? kmem_cache_free+0x44/0x84
- [<ffffffff81132c22>] ? dentry_kill+0x13d/0x149
- [<ffffffff81132f6f>] ? dput+0xe5/0xef
- [<ffffffff81136e04>] ? fget_light+0x2e/0x7c
- [<ffffffff8170ae62>] ? __sys_sendmsg+0x39/0x57
- [<ffffffff818a7e39>] ? system_call_fastpath+0x16/0x1b
----[ end trace 1b3eb79359c1d1e6 ]---
-
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Tom Gundersen <teg@jklm.no>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+ drivers/input/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
-@@ -445,27 +445,19 @@ int iwlagn_tx_skb(struct iwl_priv *priv,
- 	/* Copy MAC header from skb into command buffer */
- 	memcpy(tx_cmd->hdr, hdr, hdr_len);
+--- a/drivers/input/Kconfig
++++ b/drivers/input/Kconfig
+@@ -80,7 +80,7 @@ config INPUT_MATRIXKMAP
+ comment "Userland interfaces"
  
-+	txq_id = info->hw_queue;
-+
- 	if (is_agg)
- 		txq_id = priv->tid_data[sta_id][tid].agg.txq_id;
- 	else if (info->flags & IEEE80211_TX_CTL_SEND_AFTER_DTIM) {
- 		/*
--		 * Send this frame after DTIM -- there's a special queue
--		 * reserved for this for contexts that support AP mode.
--		 */
--		txq_id = ctx->mcast_queue;
--
--		/*
- 		 * The microcode will clear the more data
- 		 * bit in the last frame it transmits.
- 		 */
- 		hdr->frame_control |=
- 			cpu_to_le16(IEEE80211_FCTL_MOREDATA);
--	} else if (info->flags & IEEE80211_TX_CTL_TX_OFFCHAN)
--		txq_id = IWL_AUX_QUEUE;
--	else
--		txq_id = ctx->ac_to_queue[skb_get_queue_mapping(skb)];
-+	}
- 
--	WARN_ON_ONCE(!is_agg && txq_id != info->hw_queue);
- 	WARN_ON_ONCE(is_agg &&
- 		     priv->queue_to_mac80211[txq_id] != info->hw_queue);
- 
+ config INPUT_MOUSEDEV
+-	tristate "Mouse interface" if EXPERT
++	tristate "Mouse interface"
+ 	default y
+ 	help
+ 	  Say Y here if you want your mouse to be accessible as char devices
 
 
