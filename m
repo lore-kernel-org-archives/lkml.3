@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab3LJKs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:48:57 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:56330 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab3LJKs4 (ORCPT
+	id S1752533Ab3LJKtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:49:09 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:38711 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab3LJKtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:48:56 -0500
-Message-ID: <52A6F1BA.3030903@gmail.com>
-Date: Tue, 10 Dec 2013 11:49:30 +0100
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 05:49:04 -0500
+Message-ID: <52A6F19B.8090309@gmail.com>
+Date: Tue, 10 Dec 2013 11:48:59 +0100
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Wei WANG'" <wei_wang@realsil.com.cn>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com> <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de> <529D92D6.8050409@gmail.com> <20131209221721.GB8612@zurbaran>
-In-Reply-To: <20131209221721.GB8612@zurbaran>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Marek Vasut <marex@denx.de>, Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH] ARM: pxa: prevent PXA270 occasional reboot freezes
+References: <1386650355-2503-1-git-send-email-ynvich@gmail.com> <52A6D44C.1010504@gmail.com>
+In-Reply-To: <52A6D44C.1010504@gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 12/09/2013 11:17 PM, Samuel Ortiz wrote:
-> Hi Francis,
+On 12/10/2013 09:43 AM, Haojian Zhuang wrote:
+> On 12/10/2013 12:39 PM, Sergei Ianovich wrote:
+>> Erratum 71 of PXA270M Processor Family Specification Update
+>> (April 19, 2010) explains that watchdog reset time is just
+>> 8us insead of 10ms in EMTS.
+>>
+>> If SDRAM is not reset, it causes memory bus congestion and
+>> the device hangs. We put SDRAM in selfresh mode before watchdog
+>> reset, removing potential freezes.
+>>
+>> Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
+>> reboots. With this patch it has successfully rebooted 500 times.
+>>
+>> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+>> ---
+>>   arch/arm/mach-pxa/reset.c | 8 +++++++-
+>>   1 file changed, 7 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
+>> index 0d5dd64..263b152 100644
+>> --- a/arch/arm/mach-pxa/reset.c
+>> +++ b/arch/arm/mach-pxa/reset.c
+>> @@ -13,6 +13,7 @@
+>>
+>>   #include <mach/regs-ost.h>
+>>   #include <mach/reset.h>
+>> +#include <mach/smemc.h>
+>>
+>>   unsigned int reset_status;
+>>   EXPORT_SYMBOL(reset_status);
+>> @@ -81,6 +82,12 @@ static void do_hw_reset(void)
+>>   	writel_relaxed(OSSR_M3, OSSR);
+>>   	/* ... in 100 ms */
+>>   	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
+>> +	/*
+>> +	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
+>> +	 * we put SDRAM into self-refresh to prevent that
+>> +	 */
+>> +	while (1)
+>> +		writel_relaxed(MDREFR_SLFRSH, MDREFR);
+>>   }
+>>
+>>   void pxa_restart(enum reboot_mode mode, const char *cmd)
+>> @@ -104,4 +111,3 @@ void pxa_restart(enum reboot_mode mode, const char *cmd)
+>>   		break;
+>>   	}
+>>   }
+>> -
+>>
 > 
-> Adding Lee to the Cc list.
+> Hi Daniel/Marek/Igor,
 > 
-> On Tue, Dec 03, 2013 at 09:14:14AM +0100, Francis Moreau wrote:
->> Now that you did the hard work, I hope driver's maintainer/developper
->> will care about this issue.
-> I applied Thomas' patch to mfd-fixes.
-> Thanks a lot to you and Thomas for that.
+> Could you help to try this patch? I'm lack of PXA27x board.
 
-Please, don't forget to propagate the fix to the affected stable trees.
+I don't have any either right now ...
 
-Thanks.
+
+Daniel
 
