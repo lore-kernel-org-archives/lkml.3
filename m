@@ -1,140 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3LJTSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:18:30 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:54001 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab3LJTSE (ORCPT
+	id S1754627Ab3LJTSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:18:41 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50667 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab3LJTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:18:04 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: [PATCH v3 6/6] locks: add new "private" lock type that is owned by the filp
-Date: Tue, 10 Dec 2013 14:17:35 -0500
-Message-Id: <1386703055-22308-7-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	Tue, 10 Dec 2013 14:18:35 -0500
+Date: Tue, 10 Dec 2013 20:18:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+In-Reply-To: <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+References: <20131210154724.GA30020@redhat.com> <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to some unfortunate history, POSIX locks have very strange and
-unhelpful semantics. The thing that usually catches people by surprise
-is that they are dropped whenever the process closes any file descriptor
-associated with the inode.
+On Tue, 10 Dec 2013, Linus Torvalds wrote:
 
-This is extremely problematic for people developing file servers that
-need to implement byte-range locks. Developers often need a "lock
-management" facility to ensure that file descriptors are not closed
-until all of the locks associated with the inode are finished.
+> Hmm. Looks like the futex code is somehow stuck in a loop, calling
+> get_user_pages_fast().
+> 
+> The futex code itself is apparently so low-overhead that it doesn't
+> show up in your 'perf top' report (which is dominated by all the
+> expensive debug things that get_user_pages_fast() etc ends up doing),
+> but that's the only looping I can see. Perhaps the "goto again" case
+> for transparent huge pages in get_futex_key()? Or the
 
-Additionally, "classic" POSIX locks are owned by the process. Locks
-taken between threads within the same process won't conflict with one
-another, which renders classic POSIX locks useless for synchronization
-between threads.
+Cc'ng more folks on that.
 
-This patchset adds a new type of lock that attempts to address these
-issues. These locks work just like classic POSIX read/write locks, but
-have semantics that are more like BSD locks with respect to inheritance
-and behavior on close.
+> "retry[_private]" cases in futex_requeue()? Some error condition that
+> causes us to retry forever, rather than returning the error code?
 
-This is implemented primarily by changing how fl_owner field is set for
-these locks. Instead of having them owned by the files_struct of the
-process, they are instead owned by the filp on which they were acquired.
-Thus, they are inherited across fork() and are only released when the
-last reference to a filp is put.
+So this is pretty unlikely. The retry requires:
 
-These new semantics prevent them from being merged with classic POSIX
-locks, even if they are acquired by the same process. These locks will
-also conflict with classic POSIX locks even if they are acquired by
-the same process or on the same file descriptor.
+   get_futex_value_locked() == EFAULT;
+   
+Now we drop the hash bucket locks and do:
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c                       | 32 ++++++++++++++++++++++++++++++--
- include/uapi/asm-generic/fcntl.h | 16 ++++++++++++++++
- 2 files changed, 46 insertions(+), 2 deletions(-)
+   get_user();
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 5372ddd..98a503d 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -367,7 +367,34 @@ flock_to_posix_lock_common(struct file_lock *fl, struct file *filp, short type)
- 		break;
- 	}
- 
--	return assign_type(fl, type);
-+	/*
-+	 * FL_FILE_PVT locks are "owned" by the filp upon which they were
-+	 * acquired, regardless of what task is dealing with them. Set the
-+	 * fl_owner appropriately and flag them as private.
-+	 */
-+	switch(type) {
-+	case F_RDLCKP:
-+		fl->fl_owner = (fl_owner_t)fl->fl_file;
-+		fl->fl_type = F_RDLCK;
-+		fl->fl_flags |= FL_FILE_PVT;
-+		break;
-+	case F_WRLCKP:
-+		fl->fl_owner = (fl_owner_t)fl->fl_file;
-+		fl->fl_type = F_WRLCK;
-+		fl->fl_flags |= FL_FILE_PVT;
-+		break;
-+	case F_UNLCKP:
-+		fl->fl_owner = (fl_owner_t)fl->fl_file;
-+		fl->fl_type = F_UNLCK;
-+		fl->fl_flags |= FL_FILE_PVT;
-+		break;
-+	default:
-+		/* Any other POSIX lock is owned by the file_struct */
-+		fl->fl_owner = current->files;
-+		return assign_type(fl, type);
-+	}
-+
-+	return 0;
- }
- 
- /* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-@@ -2259,7 +2286,8 @@ void locks_remove_file(struct file *filp)
- 
- 	while ((fl = *before) != NULL) {
- 		if (fl->fl_file == filp) {
--			if (IS_FLOCK(fl)) {
-+			if (IS_FLOCK(fl) ||
-+			    (IS_POSIX(fl) && IS_FILE_PVT(fl))) {
- 				locks_delete_lock(before);
- 				continue;
- 			}
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 95e46c8..ed09fc5 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -151,6 +151,22 @@ struct f_owner_ex {
- #define F_UNLCK		2
- #endif
- 
-+/*
-+ * fd "private" POSIX locks.
-+ *
-+ * Usually POSIX locks held by a process are released on *any* close and are
-+ * not inherited across a fork().
-+ *
-+ * These lock types will conflict with normal POSIX locks, but are "owned"
-+ * by the opened file, not the process. This means that they are inherited
-+ * across fork() like BSD (flock) locks, and they are only released
-+ * automatically when the last reference to the the open file against which
-+ * they were acquired is put.
-+ */
-+#define F_RDLCKP	5
-+#define F_WRLCKP	6
-+#define F_UNLCKP	7
-+
- /* for old implementation of bsd flock () */
- #ifndef F_EXLCK
- #define F_EXLCK		4	/* or 3 */
--- 
-1.8.4.2
+And if that get_user() faults again, we bail out.
 
+If it succeeds we try again. So between the get_user() and the next
+get_futex_value_locked() the effect of get_user() must have been
+undone. I guess this can happen, but a gazillion times in a row?
+
+> 
+> Added a few more people to the cc.. Ideas?
+
+...
+
+> > Top reports a core is spinning in the kernel 100%, so I ran perf top -a
+> > and saw..
+> >
+> >   8.63%  [kernel]                [k] trace_hardirqs_off_caller
+> >   7.68%  [kernel]                [k] __lock_acquire
+> >   5.35%  [kernel]                [k] gup_huge_pmd
+> >   5.31%  [kernel]                [k] put_compound_page
+> >   4.93%  [kernel]                [k] gup_pud_range
+> >   4.76%  [kernel]                [k] trace_hardirqs_on_caller
+> >   4.58%  [kernel]                [k] get_user_pages_fast
+> >   4.00%  [kernel]                [k] debug_smp_processor_id
+> >   4.00%  [kernel]                [k] lock_is_held
+> >   3.73%  [kernel]                [k] lock_acquired
+> >   3.67%  [kernel]                [k] lock_release
+> >
+> >
+> > sysrq-t shows..
+> >
+> > trinity-child27 R  running task     5520 10818   1131 0x00080004
+> >  0000000000000000 ffff8801b0ef4170 000000000000032c ffff8801b609e108
+> >  0000000000000000 ffff880160d21c30 ffffffff810ad895 ffffffff817587a0
+> >  ffff8801b0ef4170 ffff8801b609e0a8 ffff8801b609e000 ffff880160d21d50
+> > Call Trace:
+> >  [<ffffffff817587a0>] ? retint_restore_args+0xe/0xe
+> >  [<ffffffff8132af0e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> >  [<ffffffff8100b184>] ? native_sched_clock+0x24/0x80
+> >  [<ffffffff8109624f>] ? local_clock+0xf/0x50
+> >  [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
+> >  [<ffffffff8103edd0>] ? gup_pud_range+0x170/0x190
+> >  [<ffffffff8103f0d5>] ? get_user_pages_fast+0x1a5/0x1c0
+> >  [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+> >  [<ffffffff810a8a2f>] ? up_read+0x1f/0x40
+> >  [<ffffffff8103f0d5>] ? get_user_pages_fast+0x1a5/0x1c0
+> >  [<ffffffff8115f76c>] ? put_page+0x3c/0x50
+> >  [<ffffffff810dd525>] ? get_futex_key+0xd5/0x2c0
+> >  [<ffffffff810df18a>] ? futex_requeue+0xfa/0x9c0
+> >  [<ffffffff810e019e>] ? do_futex+0xae/0xc80
+> >  [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
+> >  [<ffffffff810aa7de>] ? lock_release_holdtime.part.29+0xee/0x170
+> >  [<ffffffff8114f16e>] ? context_tracking_user_exit+0x4e/0x190
+> >  [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+> >  [<ffffffff810e0de1>] ? SyS_futex+0x71/0x150
+> >  [<ffffffff81010a45>] ? syscall_trace_enter+0x145/0x2a0
+> >  [<ffffffff81760be4>] ? tracesys+0xdd/0xe2
+> >
+> >
+> > any ideas ?
+> >
+> >         Dave
+> >
+> 
