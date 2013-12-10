@@ -1,116 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab3LJTSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:18:41 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50667 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445Ab3LJTSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:18:35 -0500
-Date: Tue, 10 Dec 2013 20:18:29 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
+	id S1754556Ab3LJTSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:18:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754446Ab3LJTSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:18:36 -0500
+Date: Tue, 10 Dec 2013 20:18:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-In-Reply-To: <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
-References: <20131210154724.GA30020@redhat.com> <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/1] uprobes: Kill __replace_page(), change
+	uprobe_write_opcode() to rely on gup(WRITE)
+Message-ID: <20131210191837.GA30680@redhat.com>
+References: <20131209211824.GA15006@redhat.com> <CA+55aFxkW2cFB3us0_A+Nq04UYOq4H_ta5rNYyuYyZd=YOuk2w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxkW2cFB3us0_A+Nq04UYOq4H_ta5rNYyuYyZd=YOuk2w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013, Linus Torvalds wrote:
-
-> Hmm. Looks like the futex code is somehow stuck in a loop, calling
-> get_user_pages_fast().
-> 
-> The futex code itself is apparently so low-overhead that it doesn't
-> show up in your 'perf top' report (which is dominated by all the
-> expensive debug things that get_user_pages_fast() etc ends up doing),
-> but that's the only looping I can see. Perhaps the "goto again" case
-> for transparent huge pages in get_futex_key()? Or the
-
-Cc'ng more folks on that.
-
-> "retry[_private]" cases in futex_requeue()? Some error condition that
-> causes us to retry forever, rather than returning the error code?
-
-So this is pretty unlikely. The retry requires:
-
-   get_futex_value_locked() == EFAULT;
-   
-Now we drop the hash bucket locks and do:
-
-   get_user();
-
-And if that get_user() faults again, we bail out.
-
-If it succeeds we try again. So between the get_user() and the next
-get_futex_value_locked() the effect of get_user() must have been
-undone. I guess this can happen, but a gazillion times in a row?
-
-> 
-> Added a few more people to the cc.. Ideas?
-
-...
-
-> > Top reports a core is spinning in the kernel 100%, so I ran perf top -a
-> > and saw..
+On 12/09, Linus Torvalds wrote:
+>
+> On Mon, Dec 9, 2013 at 1:18 PM, Oleg Nesterov <oleg@redhat.com> wrote:
 > >
-> >   8.63%  [kernel]                [k] trace_hardirqs_off_caller
-> >   7.68%  [kernel]                [k] __lock_acquire
-> >   5.35%  [kernel]                [k] gup_huge_pmd
-> >   5.31%  [kernel]                [k] put_compound_page
-> >   4.93%  [kernel]                [k] gup_pud_range
-> >   4.76%  [kernel]                [k] trace_hardirqs_on_caller
-> >   4.58%  [kernel]                [k] get_user_pages_fast
-> >   4.00%  [kernel]                [k] debug_smp_processor_id
-> >   4.00%  [kernel]                [k] lock_is_held
-> >   3.73%  [kernel]                [k] lock_acquired
-> >   3.67%  [kernel]                [k] lock_release
-> >
-> >
-> > sysrq-t shows..
-> >
-> > trinity-child27 R  running task     5520 10818   1131 0x00080004
-> >  0000000000000000 ffff8801b0ef4170 000000000000032c ffff8801b609e108
-> >  0000000000000000 ffff880160d21c30 ffffffff810ad895 ffffffff817587a0
-> >  ffff8801b0ef4170 ffff8801b609e0a8 ffff8801b609e000 ffff880160d21d50
-> > Call Trace:
-> >  [<ffffffff817587a0>] ? retint_restore_args+0xe/0xe
-> >  [<ffffffff8132af0e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >  [<ffffffff8100b184>] ? native_sched_clock+0x24/0x80
-> >  [<ffffffff8109624f>] ? local_clock+0xf/0x50
-> >  [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
-> >  [<ffffffff8103edd0>] ? gup_pud_range+0x170/0x190
-> >  [<ffffffff8103f0d5>] ? get_user_pages_fast+0x1a5/0x1c0
-> >  [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
-> >  [<ffffffff810a8a2f>] ? up_read+0x1f/0x40
-> >  [<ffffffff8103f0d5>] ? get_user_pages_fast+0x1a5/0x1c0
-> >  [<ffffffff8115f76c>] ? put_page+0x3c/0x50
-> >  [<ffffffff810dd525>] ? get_futex_key+0xd5/0x2c0
-> >  [<ffffffff810df18a>] ? futex_requeue+0xfa/0x9c0
-> >  [<ffffffff810e019e>] ? do_futex+0xae/0xc80
-> >  [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
-> >  [<ffffffff810aa7de>] ? lock_release_holdtime.part.29+0xee/0x170
-> >  [<ffffffff8114f16e>] ? context_tracking_user_exit+0x4e/0x190
-> >  [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
-> >  [<ffffffff810e0de1>] ? SyS_futex+0x71/0x150
-> >  [<ffffffff81010a45>] ? syscall_trace_enter+0x145/0x2a0
-> >  [<ffffffff81760be4>] ? tracesys+0xdd/0xe2
-> >
-> >
-> > any ideas ?
-> >
-> >         Dave
-> >
-> 
+> > It is not clear to me if Linus still dislikes this change or not.
+> > Let me send the patch "officially" so that it can be nacked if I
+> > misunderstood the result of discussion.
+>
+> So quite frankly, if the caller guarantees that it has looked up the
+> vma, and verified it, then I'm ok with it.
+>
+> But in that case, I think you should pass in the vma as an argument,
+> and verify it for now.  Because quite frankly, the reason I reacted to
+> this all is that it is NOT AT ALL obvious that the callers actually do
+> that.
+>
+> That uprobe_write_opcode() also only works if the instruction is
+> within a single page, another thing that it doesn't actually check.
+> And again, it is not at all obvious by looking at the callers that
+> that check has ever been done. The interface looks like you can just
+> rewrite an arbitrary byte range using that function.
+
+OK. I'll update the comment above uprobe_write_opcode() to make this
+all clear. It is wrong anyway, ->mmap_sem is held for writing.
+
+> In fact, callers can clearly call that
+> thing without ever even looking up the vma (which it must to do check
+> that it's not shared), and we look it up *again* by using that slow
+> nasty get_user_pages() thing.
+
+Well, if we use get_user_pages() we have vma for free. And this is the
+same vma which was verified by the caller who must check valid_vma(),
+the caller doesn't drop mmap_sem.
+
+I agree, this should be documented. And yes, we can pass vma instead
+of mm, but this needs a separate change. We need to change the signature
+of set_swbp() and set_orig_insn(). And the current code also relies on
+get_user_pages(&vma) in this sense.
+
+But I am not sure about "and verify it for now" above. Do you mean
+that uprobe_write_opcode() should do another valid_vma() ? I don't
+think this will look good, unless we put this check into WARN_ON().
+Or just verify that the argument matches the vma found by gup() ?
+
+And perhaps we can do this later? This change will conflict with
+the pending arm patches (arm reimplements set_swbp() because it
+uses another insn != UPROBE_SWBP_INSN depending on original insn).
+This doesn't look like a serious problem to me.
+
+> Also, quite frankly, I think the routine is still just horrible.
+
+I agree. I do think it becomes better (if the patch is correct),
+just because we do not play with vm internals, at least that much.
+
+> If I
+> read it right, even after that cleanup you do a page table walk
+> *THREE* times:
+>
+>  - 2x get_user_pages()
+
+Yes. The 1st get_user_pages() + verify_opcode() is only needed to
+avoid the unnecessary write (and cow). Without this check, say,
+uprobe_unregister() can create the anonymous cow'ed page even if
+this task was not probed.
+
+This makes sense, but perhaps we can optimize this somehow, not sure.
+But this was not added by the patch.
+
+>  - page_check_address()
+
+Yes. The patch adds another page table walk, this is unfortunate.
+
+> and that's without the whole "retry" thing. It all seems pretty damn
+> pointless. Wouldn't it be better to do it *once*, and then the retry
+> logic is for "oops, we need to cow the page we looked up, so we need
+> to drop the page table lock and allocate a new page".
+
+Hmm, OK. I guess we can rely on the same PageAnon() + page_mapcount()
+check, just we should not WARN() the first time. Plus we should probably
+also check page_swapcount(). But I need to recheck.
+
+Thanks. I'll try to make v2.
+
+Oleg.
+
