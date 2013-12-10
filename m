@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab3LJP1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:27:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753766Ab3LJP1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:27:03 -0500
-Date: Tue, 10 Dec 2013 16:27:01 +0100
-From: Jan Kara <jack@suse.cz>
-To: George Spelvin <linux@horizon.com>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, viro@ZenIV.linux.org.uk
-Subject: Re: 3.11.4: kernel BUG at fs/buffer.c:1268
-Message-ID: <20131210152701.GE1543@quack.suse.cz>
-References: <20131128153420.GA21176@quack.suse.cz>
- <20131210093528.23399.qmail@science.horizon.com>
+	id S1754243Ab3LJP2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:28:13 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:39300 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814Ab3LJP2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:28:09 -0500
+Message-ID: <52A73301.3030905@linaro.org>
+Date: Tue, 10 Dec 2013 23:28:01 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210093528.23399.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arjan van de Ven <arjan@linux.intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        rafael.j.wysocki@intel.com
+Subject: Re: questions of cpuidle
+References: <52A5C846.30308@linaro.org> <52A5E135.2020500@linux.vnet.ibm.com> <52A6AFD1.4010002@linaro.org> <52A72ADC.6000003@linux.intel.com>
+In-Reply-To: <52A72ADC.6000003@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 10-12-13 04:35:28, George Spelvin wrote:
-> One of those additional WARN_ON tests tripped, hooray!
-> And it turned out to be in the ext4 metadata checksumming.  To be
-> precise, ext4_block_bitmap_csum_set() returned with irqs disabled,
-> and kaboom.
-  Ha, great. Thanks for the persistence in testing.
+On 12/10/2013 10:53 PM, Arjan van de Ven wrote:
+> On 12/9/2013 10:08 PM, Alex Shi wrote:
+>> And for monitor/mwait idle method, seems deep c-state cpu need to keep a
+>> eye on memory bus. So seems the memory controller in cpu package is
+>> impossible to get into sleep, right?
+> not the memory bus
+> the cache coherency logic ;-)
+> 
 
-> Since I have this experimental feature turned on and most people don't,
-> this explains why I'm finding it and World+Dog aren't.
-> 
-> I appear to be the designated finder of ext4 metadata_csum bugs, so tytso
-> notified on general principles.  I dropped the generic linux-fsdevel
-> list from the Cc: list.
-> 
-> But looking at the code, it just calls into the linux-crypto layer and
-> Tim Chen's SSE CRC32C implementation which uses kernel_fpu_begin()
-> and kernel_fpu_end() if the block is large enough.
-  Yup, that code was also my last hope but I can't say I see any problem in
-there either.
+Thanks a lot, Arjan!
 
-> I was going to add and Herbert Xu and Tim Chen and all those mailing
-> lists, but looking at the code, it sure *looks* like they're Doing The
-> right Thing, so I'm holding off for a bit.
-> 
-> I'm not sure quite where to pass th buck on this one.
-> 
-> Relevant platform info:
-> - Intel i7-2700K processor, with SSE4.2 and thus the CRC32C instruction.
-> - CONFIG_PREEMPT_VOLUNTARY=y
-> - # CONFIG_PREEMPT_NONE is not set
-> - CONFIG_PREEMPT_VOLUNTARY=y
-> - # CONFIG_PREEMPT is not set
-> - CONFIG_PREEMPT_COUNT=y
-> - CONFIG_DEBUG_ATOMIC_SLEEP=y
-> - CONFIG_DEBUG_BUGVERBOSE=y
-> 
-...
-> 
-> === Discussion ===
-> desc.shash.tfm is filled in from sbi->s_chksum_driver, which is filled in at
-> ext4_fill_super() time by crypto_alloc_shash("crc32c", 0, 0).
-> 
-> Thus, shash->update should turn into a call to crypto/crc32c.c:chksum_update(),
-> which calls lib/crc32.c:__crc32c_le().
-> 
-> Now, I happen to be running an i7-2700k which has sse4_2, and thus calls
-> into the x86 specific code, and apparently for large blocks it uses PCLMULQDQ,
-> which requires kernel_fpu_begin/end.
-> 
-> At least that makes some degree of sense.  The low level code, though
-> uses the functions in a very simple way that I can't see how it could fail
-> to unlock at the end.
-  Hum, can you try disabling the HW support of CRC32C implementation
-(CRYPTO_CRC32C_INTEL)? If the problem disappears, we know there's some
-problem in the HW support code...
+But in Intel c7 state, l3 cache also flushed. Are there some other unit
+monitor this?
 
-								Honza
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks
+    Alex
