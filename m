@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab3LJIpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:45:08 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:33968 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3LJIpF (ORCPT
+	id S1753086Ab3LJIsi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:48:38 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:60518 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab3LJIsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:45:05 -0500
-Message-ID: <52A6D48A.4000507@linaro.org>
-Date: Tue, 10 Dec 2013 16:44:58 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 03:48:35 -0500
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        preeti@linux.vnet.ibm.com, "len.brown@intel.com" <len.brown@intel.com>
-Subject: Re: questions of cpuidle
-References: <52A5C846.30308@linaro.org> <52A5D0E0.7050201@linaro.org> <52A6B5BB.3060506@linaro.org> <52A6C24B.3030800@linaro.org>
-In-Reply-To: <52A6C24B.3030800@linaro.org>
+In-Reply-To: <1385396045-15852-1-git-send-email-msalter@redhat.com>
+References: <1385396045-15852-1-git-send-email-msalter@redhat.com>
+Date: Tue, 10 Dec 2013 09:48:34 +0100
+Message-ID: <CACM3HyGCPMbw3t+DFFSySEytvDMnGGQMS6pVFpGbhkAoDzjhXg@mail.gmail.com>
+Subject: Re: [PATCH v2 00/11] Consolidate asm/fixmap.h files
+From: Jonas Bonn <jonas.bonn@gmail.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>, microblaze-uclinux@itee.uq.edu.au,
+        linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 03:27 PM, Daniel Lezcano wrote:
-> 
->> And does the wake up pass via GIC to CPU? If so, does the GIC need
->> keep awake when all cpu idle? If not, how the firmware give the
->> interrupt to CPU? And I am wondering if the deep idle cpu voltage get
->> to near 0. How the cpu get the interrupt signal?
-> 
-> If a deep idle state powers down the GIC, it is up to the PMU to proxy
-> the interrupts. When an interrupt occurs, the PMU powers up the logic,
-> including the GIC. The notifier call chain with cpu_suspend / cpu_resume
-> will save and restore the GIC registers.
-> 
-> But this is hardware specific and will depend on how the PMU is
-> implemented and how far it goes in the power management.
-> 
-> You have a good example in the drivers/cpuidle/cpuidle-ux500.c to
-> understand with the comments how the interrupts are handled through the
-> power management unit.
-> 
-> In the Xillinx documentation available on the web [1], the chapter 24.4
-> gives the information about one kind of PMU.
-> 
-> I believe the mechanism is pretty similar on all the hardware but it is
-> obfuscated by a generic power instruction like mwait.
-> 
->   -- Daniel
-> 
-> [1]
-> http://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
-> 
+Hi Mark,
 
-Thanks a lot, Daniel. You are a expert of ARM cpu idle! :)
+Is there some reason you've excluded OpenRISC here?  Did you just miss
+it, or does the implementation diverage too much to be usable with
+your generic version?
+
+Regards,
+Jonas
+
+On 25 November 2013 17:13, Mark Salter <msalter@redhat.com> wrote:
+> Many architectures provide an asm/fixmap.h which defines support for
+> compile-time 'special' virtual mappings which need to be made before
+> paging_init() has run. This suport is also used for early ioremap
+> on x86. Much of this support is identical across the architectures.
+> This patch consolidates all of the common bits into asm-generic/fixmap.h
+> which is intended to be included from arch/*/include/asm/fixmap.h.
+>
+> This has been compiled on x86, arm, powerpc, and sh, but tested
+> on x86 only.
+>
+> This is version two of the patch series:
+>
+>    git://github.com/mosalter/linux.git#fixmap-v2
+>
+> Version 1 is here:
+>
+>    git://github.com/mosalter/linux.git#fixmap
+>
+> Changes from v1:
+>
+>   * Added acks from feedback.
+>   * Use BUILD_BUG_ON in fix_to_virt()
+>   * Fixed ARM patch to make FIXMAP_TOP inclusive of fixmap
+>     range as is the case in the other architectures.
+>
+> Mark Salter (11):
+>   Add generic fixmap.h
+>   x86: use generic fixmap.h
+>   arm: use generic fixmap.h
+>   hexagon: use generic fixmap.h
+>   metag: use generic fixmap.h
+>   microblaze: use generic fixmap.h
+>   mips: use generic fixmap.h
+>   powerpc: use generic fixmap.h
+>   sh: use generic fixmap.h
+>   tile: use generic fixmap.h
+>   um: use generic fixmap.h
+>
+>  arch/arm/include/asm/fixmap.h        | 29 +++--------
+>  arch/arm/mm/init.c                   |  2 +-
+>  arch/hexagon/include/asm/fixmap.h    | 40 +--------------
+>  arch/metag/include/asm/fixmap.h      | 32 +-----------
+>  arch/microblaze/include/asm/fixmap.h | 44 +---------------
+>  arch/mips/include/asm/fixmap.h       | 33 +-----------
+>  arch/powerpc/include/asm/fixmap.h    | 44 +---------------
+>  arch/sh/include/asm/fixmap.h         | 39 +--------------
+>  arch/tile/include/asm/fixmap.h       | 33 +-----------
+>  arch/um/include/asm/fixmap.h         | 40 +--------------
+>  arch/x86/include/asm/fixmap.h        | 59 +---------------------
+>  include/asm-generic/fixmap.h         | 97 ++++++++++++++++++++++++++++++++++++
+>  12 files changed, 118 insertions(+), 374 deletions(-)
+>  create mode 100644 include/asm-generic/fixmap.h
+>
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
-Thanks
-    Alex
+Jonas Bonn
+Stockholm, Sweden
