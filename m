@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab3LJQTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:19:54 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:61095 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863Ab3LJQTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:19:52 -0500
+	id S1754426Ab3LJQVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:21:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab3LJQVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 11:21:45 -0500
+Date: Tue, 10 Dec 2013 17:22:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
+        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
+        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
+Subject: Re: [PATCH 2/3] perf tools: allow user to specify hardware
+	breakpoint bp_len
+Message-ID: <20131210162229.GB23086@redhat.com>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com> <1380730268-25807-3-git-send-email-suravee.suthikulpanit@amd.com> <20131210152532.GF10633@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <16479184.50751386647682015.JavaMail.weblogic@epv6ml09>
-References: <16479184.50751386647682015.JavaMail.weblogic@epv6ml09>
-Date: Tue, 10 Dec 2013 21:49:51 +0530
-Message-ID: <CAPoNrttdDbwstOMa8s23oLmzOc2KcJztfgmVB0A8mCWWR0DZZQ@mail.gmail.com>
-Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack overflow
-From: Anurag Aggarwal <anurag19aggarwal@gmail.com>
-To: Anurag Aggarwal <a.anurag@samsung.com>
-Cc: Dave Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Kumar <naveen.sel@samsung.com>,
-        Narendra Meher <narendra.m1@samsung.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        Rajat Suri <rajat.suri@samsung.com>,
-        Poorva Srivastava <poorva.s@samsung.com>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210152532.GF10633@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>+               if (*vsp >= (unsigned long *)ctrl->sp_high)
->>+                       return -URC_FAILURE;
-
-I tested the same patch, by adding a printk statement in the above if condition.
-The print statement I added came a few times as a part of dmesg log.
-
-I think this proves that such corner cases are being handled by the above code
-
-Regards
-Anurag
-
-On Tue, Dec 10, 2013 at 9:24 AM, Anurag Aggarwal <a.anurag@samsung.com> wrote:
->>Reviewed-by: Dave Martin <Dave.Martin@arm.com>
->>
->>I can confirm that the kernel "doesn't crash" with this applied, and
->>that backtracing at least partially works.  But this is not really
->>sufficient to demontrate that the now code works better than the old
->>code in corner cases (which is the point of the patch).
->>
->>Can you give details of what additional testing you have, or plan to
->>do?
+On 12/10, Frederic Weisbecker wrote:
 >
-> We saw a data abort in unwinder for one of Samsung Project, during a
-> Samsung Automation test case.
-> After that I created the initial the patch, and the data abort has not been
-> seen till now.
+> On Wed, Oct 02, 2013 at 11:11:07AM -0500, suravee.suthikulpanit@amd.com wrote:
+> > @@ -525,14 +525,11 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+> >  	if (parse_breakpoint_type(type, &attr))
+> >  		return -EINVAL;
+> >
+> > -	/*
+> > -	 * We should find a nice way to override the access length
+> > -	 * Provide some defaults for now
+> > -	 */
+> > -	if (attr.bp_type == HW_BREAKPOINT_X)
+> > -		attr.bp_len = sizeof(long);
+> > -	else
+> > -		attr.bp_len = HW_BREAKPOINT_LEN_4;
+> > +	/* Provide some defaults if len is not specified */
+> > +	if (!len)
+> > +		len = attr.bp_type == HW_BREAKPOINT_X ? sizeof(long) :
+> > +							HW_BREAKPOINT_LEN_4;
 >
-> Is it possible for you to give an idea on what other kind of additional testing
-> do you have in mind.
->
-> Regads
-> Anurag
->
+> Why is LEN_4 affected in the type?
 
+Hmm, what do you mean?
 
+Oleg.
 
--- 
-Anurag Aggarwal
