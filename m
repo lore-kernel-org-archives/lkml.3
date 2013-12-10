@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751178Ab3LJWhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:37:19 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59891 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3LJWhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:37:16 -0500
-From: James Hogan <james@albanarts.com>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
-        James Hogan <james.hogan@imgtec.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Tim Kryger <tim.kryger@linaro.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Subject: [PATCH] serial: 8250_dw: Fix LCR workaround regression
-Date: Tue, 10 Dec 2013 22:28:04 +0000
-Message-Id: <1386714484-30251-1-git-send-email-james@albanarts.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751237Ab3LJWiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:38:06 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37114 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab3LJWiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 17:38:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,867,1378882800"; 
+   d="scan'208";a="450137154"
+Message-ID: <1386715081.3685.94.camel@dvhart-mobl4.amr.corp.intel.com>
+Subject: Re: process 'stuck' at exit.
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Date: Tue, 10 Dec 2013 14:38:01 -0800
+In-Reply-To: <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
+References: <20131210154724.GA30020@redhat.com>
+	 <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+	 <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+	 <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+	 <20131210203559.GA1209@redhat.com> <20131210204925.GB27373@redhat.com>
+	 <20131210213431.GA6342@redhat.com> <20131210214143.GG27373@redhat.com>
+	 <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+	 <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+	 <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
+On Tue, 2013-12-10 at 14:33 -0800, Linus Torvalds wrote:
+> On Tue, Dec 10, 2013 at 2:19 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Shouldn't we do something like the attached?
+> 
+> So I think that kernel/futex.c part of the patch might be a good idea,
+> but on x86-64 (which is what Dave is running), the
+> 
+>         if (end >> __VIRTUAL_MASK_SHIFT)
+> 
+> test in get_user_pages_fast() should have been equivalent. And even on
+> 32-bit, we do check the _PAGE_USER bits in the page tables, so I guess
+> it's all good on a get_user_pages_fast() side.
+> 
+> So never mind. It's not the address checking.
+> 
+> And I think I see what's up.
+> 
+> I think what happens is:
+>  - get_user_pages_fast(address, 1, 1, &page) fails (because it's read-only)
+>  - get_user_pages_fast(address, 1, 0, &page) succeeds and gets a large-page
+>  - __get_user_pages_fast(address, 1, 1, &page) fails (because it's read-only).
+> 
+> so what triggers this is likely that Dave now does large-pages, and
+> one of them is a read-only mapping.
+> 
+> So I would suggest replacing the second "1" in the
+> __get_user_pages_fast() call with a "!ro" instead. So how about this
+> second patch instead (the access_ok() move remains).
+> 
+> Comments?
+> 
 
-Commit c49436b657d0 (serial: 8250_dw: Improve unwritable LCR workaround)
-caused a regression. It added a check that the LCR was written properly
-to detect and workaround the busy quirk, but the behaviour of bit 5
-(UART_LCR_SPAR) differs between IP versions 3.00a and 3.14c per the
-docs. On older versions this caused the check to fail and it would
-repeatedly force idle and rewrite the LCR register, causing delays and
-preventing any input from serial being received.
+You're too fast for me, but I'm trying to keep up.
 
-This is fixed by masking out UART_LCR_SPAR before making the comparison.
+It was my understanding that access_ok() was an optimization for private
+futexes, but something more heavy weight was required for shared. I
+believe that was find_vma() in the past, but Peter Z changed that with
+fast gup. Trying to page that all in now and get the exact details....
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Tim Kryger <tim.kryger@linaro.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Matt Porter <matt.porter@linaro.org>
-Cc: Markus Mayer <markus.mayer@linaro.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Tested-by: Tim Kryger <tim.kryger@linaro.org>
-Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
----
- drivers/tty/serial/8250/8250_dw.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 4658e3e..5f096c7 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -96,7 +96,8 @@ static void dw8250_serial_out(struct uart_port *p, int offset, int value)
- 	if (offset == UART_LCR) {
- 		int tries = 1000;
- 		while (tries--) {
--			if (value == p->serial_in(p, UART_LCR))
-+			unsigned int lcr = p->serial_in(p, UART_LCR);
-+			if ((value & ~UART_LCR_SPAR) == (lcr & ~UART_LCR_SPAR))
- 				return;
- 			dw8250_force_idle(p);
- 			writeb(value, p->membase + (UART_LCR << p->regshift));
-@@ -132,7 +133,8 @@ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
- 	if (offset == UART_LCR) {
- 		int tries = 1000;
- 		while (tries--) {
--			if (value == p->serial_in(p, UART_LCR))
-+			unsigned int lcr = p->serial_in(p, UART_LCR);
-+			if ((value & ~UART_LCR_SPAR) == (lcr & ~UART_LCR_SPAR))
- 				return;
- 			dw8250_force_idle(p);
- 			writel(value, p->membase + (UART_LCR << p->regshift));
 -- 
-1.8.3.2
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
+
 
