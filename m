@@ -1,252 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab3LJOOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:14:36 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:37952 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753524Ab3LJOOP (ORCPT
+	id S1753573Ab3LJOUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:20:38 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44280 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab3LJOUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:14:15 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 3/3] OF: kobj ops should only happen on attached nodes
-Date: Tue, 10 Dec 2013 16:13:53 +0200
-Message-Id: <1386684833-24112-4-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com>
-References: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com>
+	Tue, 10 Dec 2013 09:20:37 -0500
+X-IronPort-AV: E=Sophos;i="4.93,865,1378857600"; 
+   d="scan'208";a="80447358"
+From: Stefano Panella <stefano.panella@citrix.com>
+To: <perex@perex.cz>, <tiwai@suse.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        <david.vrabel@citrix.com>,
+        Stefano Panella <stefano.panella@citrix.com>
+Subject: [PATCH] sound: memalloc.h - fix wrong truncation of dma_addr_t
+Date: Tue, 10 Dec 2013 14:20:28 +0000
+Message-ID: <1386685228-17192-1-git-send-email-stefano.panella@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kobject operation should only take place on already attached (live)
-device nodes. The same restriction applies to the invocation of
-device tree notifiers.
+When running a 32bit kernel the hda_intel driver is still reporting
+a 64bit dma_mask if the HW supports it.
 
-Introduce a simple of_node_is_attached() test which tests whether
-the given node is attached via means of the allnodes member.
+>From sound/pci/hda/hda_intel.c:
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+        /* allow 64bit DMA address if supported by H/W */
+        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
+                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
+        else {
+                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
+                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
+        }
+
+which means when there is a call to dma_alloc_coherent from
+snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
+This can be true in particular if running  the 32bit kernel as a pv dom0
+under the Xen Hypervisor or PAE on bare metal.
+
+The problem is that when calling setup_bdle to program the BLE the
+dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
+from snd_sgbuf_get_addr if running a 32bit kernel:
+
+static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
+                                           size_t offset)
+{
+        struct snd_sg_buf *sgbuf = dmab->private_data;
+        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
+        addr &= PAGE_MASK;
+        return addr + offset % PAGE_SIZE;
+}
+
+where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
+
+Without this patch the HW will fetch the 32bit truncated address,
+which is not the one obtained from dma_alloc_coherent and will result
+to a non working audio but can corrupt host memory at a random location.
+
+The current patch apply to v3.13-rc3-74-g6c843f5
+
+Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
+Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
 ---
- drivers/of/base.c | 87 ++++++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 64 insertions(+), 23 deletions(-)
+ include/sound/memalloc.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index db0de86..c6299bd 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -89,6 +89,13 @@ int __weak of_node_to_nid(struct device_node *np)
- #endif
- 
- #if defined(CONFIG_OF_DYNAMIC)
-+
-+/* simple test for figuring out if node is attached */
-+static inline int of_node_is_attached(struct device_node *np)
-+{
-+	return np && np->allnodes == &of_allnodes;
-+}
-+
- /**
-  *	of_node_get - Increment refcount of a node
-  *	@node:	Node to inc refcount, NULL is supported to
-@@ -98,7 +105,7 @@ int __weak of_node_to_nid(struct device_node *np)
-  */
- struct device_node *of_node_get(struct device_node *node)
+diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
+index af99839..5f73785 100644
+--- a/include/sound/memalloc.h
++++ b/include/sound/memalloc.h
+@@ -108,7 +108,7 @@ static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
  {
--	if (node && of_kset)
-+	if (node && of_kset && of_node_is_attached(node))
- 		kobject_get(&node->kobj);
- 	return node;
+ 	struct snd_sg_buf *sgbuf = dmab->private_data;
+ 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
+-	addr &= PAGE_MASK;
++	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
+ 	return addr + offset % PAGE_SIZE;
  }
-@@ -156,7 +163,7 @@ static void of_node_release(struct kobject *kobj)
-  */
- void of_node_put(struct device_node *node)
- {
--	if (node && of_kset)
-+	if (node && of_kset && of_node_is_attached(node))
- 		kobject_put(&node->kobj);
- }
- EXPORT_SYMBOL(of_node_put);
-@@ -210,6 +217,10 @@ static int __of_add_property(struct device_node *np, struct property *pp)
- 	if (!of_kset)
- 		return 0;
- 
-+	/* don't do anything with a detached node */
-+	if (!of_node_is_attached(np))
-+		return 0;
-+
- 	/* Important: Don't leak passwords */
- 	secure = strncmp(pp->name, "security-", 9) == 0;
- 
-@@ -235,6 +246,9 @@ static int __of_node_add(struct device_node *np)
- 	if (!of_kset)
- 		return 0;
- 
-+	if (!of_node_is_attached(np))
-+		return 0;
-+
- 	np->kobj.kset = of_kset;
- 	if (!np->parent) {
- 		/* Nodes without parents are new top level trees */
-@@ -259,6 +273,9 @@ int of_node_add(struct device_node *np)
- {
- 	int rc = 0;
- 
-+	if (!of_node_is_attached(np))
-+		return 0;
-+
- 	/* fake the return while of_init is not yet called */
- 	mutex_lock(&of_aliases_mutex);
- 	kobject_init(&np->kobj, &of_node_ktype);
-@@ -274,10 +291,16 @@ static void of_node_remove(struct device_node *np)
- {
- 	struct property *pp;
- 
-+	/* don't do anything with a detached node */
-+	if (!of_node_is_attached(np))
-+		return;
-+
- 	for_each_property_of_node(np, pp)
- 		sysfs_remove_bin_file(&np->kobj, &pp->attr);
- 
- 	kobject_del(&np->kobj);
-+
-+	of_node_put(np);
- }
- #endif
- 
-@@ -1626,9 +1649,11 @@ int of_add_property(struct device_node *np, struct property *prop)
- 	unsigned long flags;
- 	int rc;
- 
--	rc = of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop);
--	if (rc)
--		return rc;
-+	if (of_node_is_attached(np)) {
-+		rc = of_property_notify(OF_RECONFIG_ADD_PROPERTY, np, prop);
-+		if (rc)
-+			return rc;
-+	}
- 
- 	prop->next = NULL;
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
-@@ -1664,9 +1689,11 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 	int found = 0;
- 	int rc;
- 
--	rc = of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop);
--	if (rc)
--		return rc;
-+	if (of_node_is_attached(np)) {
-+		rc = of_property_notify(OF_RECONFIG_REMOVE_PROPERTY, np, prop);
-+		if (rc)
-+			return rc;
-+	}
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
- 	next = &np->properties;
-@@ -1686,7 +1713,8 @@ int of_remove_property(struct device_node *np, struct property *prop)
- 	if (!found)
- 		return -ENODEV;
- 
--	sysfs_remove_bin_file(&np->kobj, &prop->attr);
-+	if (of_node_is_attached(np))
-+		sysfs_remove_bin_file(&np->kobj, &prop->attr);
- 
- 	return 0;
- }
-@@ -1706,9 +1734,11 @@ int of_update_property(struct device_node *np, struct property *newprop)
- 	unsigned long flags;
- 	int rc, found = 0;
- 
--	rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
--	if (rc)
--		return rc;
-+	if (of_node_is_attached(np)) {
-+		rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
-+		if (rc)
-+			return rc;
-+	}
- 
- 	if (!newprop->name)
- 		return -EINVAL;
-@@ -1736,9 +1766,11 @@ int of_update_property(struct device_node *np, struct property *newprop)
- 	if (!found)
- 		return -ENODEV;
- 
--	/* Update the sysfs attribute */
--	sysfs_remove_bin_file(&np->kobj, &oldprop->attr);
--	__of_add_property(np, newprop);
-+	if (of_node_is_attached(np)) {
-+		/* Update the sysfs attribute */
-+		sysfs_remove_bin_file(&np->kobj, &oldprop->attr);
-+		__of_add_property(np, newprop);
-+	}
- 
- 	return 0;
- }
-@@ -1782,10 +1814,6 @@ int of_attach_node(struct device_node *np)
- 	unsigned long flags;
- 	int rc;
- 
--	rc = of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
--	if (rc)
--		return rc;
--
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
- 	np->sibling = np->parent->child;
- 	np->allnext = of_allnodes;
-@@ -1794,7 +1822,18 @@ int of_attach_node(struct device_node *np)
- 	np->allnodes = &of_allnodes;
- 	raw_spin_unlock_irqrestore(&devtree_lock, flags);
- 
--	of_node_add(np);
-+	rc = of_node_add(np);
-+	if (rc != 0)
-+		goto err_detach;
-+
-+	rc = of_reconfig_notify(OF_RECONFIG_ATTACH_NODE, np);
-+	if (rc)
-+		goto err_detach;
-+
-+	return 0;
-+
-+err_detach:
-+	of_node_remove(np);
- 	return 0;
- }
- 
-@@ -1810,9 +1849,11 @@ int of_detach_node(struct device_node *np)
- 	unsigned long flags;
- 	int rc = 0;
- 
--	rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
--	if (rc)
--		return rc;
-+	if (of_node_is_attached(np)) {
-+		rc = of_reconfig_notify(OF_RECONFIG_DETACH_NODE, np);
-+		if (rc)
-+			return rc;
-+	}
- 
- 	raw_spin_lock_irqsave(&devtree_lock, flags);
  
 -- 
-1.7.12
+1.7.9.5
 
