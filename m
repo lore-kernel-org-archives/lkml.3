@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3LJIUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:20:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58834 "EHLO
+	id S1755012Ab3LJIVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:21:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab3LJIBX (ORCPT
+	with ESMTP id S1753374Ab3LJIBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:23 -0500
+	Tue, 10 Dec 2013 03:01:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.12 14/62] ARM: footbridge: fix EBSA285 LEDs
-Date: Tue, 10 Dec 2013 00:00:45 -0800
-Message-Id: <20131210080058.441824263@linuxfoundation.org>
+Subject: [PATCH 3.12 13/62] ARM: footbridge: fix VGA initialisation
+Date: Tue, 10 Dec 2013 00:00:44 -0800
+Message-Id: <20131210080058.374836992@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -28,75 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
+commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
 
-- The LEDs register is write-only: it can't be read-modify-written.
-- The LEDs are write-1-for-off not 0.
-- The check for the platform was inverted.
+It's no good setting vga_base after the VGA console has been
+initialised, because if we do that we get this:
 
-Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
+Unable to handle kernel paging request at virtual address 000b8000
+pgd = c0004000
+[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
+0Internal error: Oops: 5017 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
+task: c03e2974 ti: c03d8000 task.ti: c03d8000
+PC is at vgacon_startup+0x258/0x39c
+LR is at request_resource+0x10/0x1c
+pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
+sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
+r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
+r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
+r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
+Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+
+which is an access to the 0xb8000 without the PCI offset required to
+make it work.
+
+Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-footbridge/ebsa285.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ arch/arm/mach-footbridge/common.c  |    3 +++
+ arch/arm/mach-footbridge/dc21285.c |    2 --
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-footbridge/ebsa285.c
-+++ b/arch/arm/mach-footbridge/ebsa285.c
-@@ -30,21 +30,24 @@ static const struct {
- 	const char *name;
- 	const char *trigger;
- } ebsa285_leds[] = {
--	{ "ebsa285:amber", "heartbeat", },
--	{ "ebsa285:green", "cpu0", },
-+	{ "ebsa285:amber", "cpu0", },
-+	{ "ebsa285:green", "heartbeat", },
- 	{ "ebsa285:red",},
- };
+--- a/arch/arm/mach-footbridge/common.c
++++ b/arch/arm/mach-footbridge/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
++#include <video/vga.h>
  
-+static unsigned char hw_led_state;
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+@@ -196,6 +197,8 @@ void __init footbridge_map_io(void)
+ 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
+ 		pci_map_io_early(__phys_to_pfn(DC21285_PCI_IO));
+ 	}
 +
- static void ebsa285_led_set(struct led_classdev *cdev,
- 		enum led_brightness b)
- {
- 	struct ebsa285_led *led = container_of(cdev,
- 			struct ebsa285_led, cdev);
- 
--	if (b != LED_OFF)
--		*XBUS_LEDS |= led->mask;
-+	if (b == LED_OFF)
-+		hw_led_state |= led->mask;
- 	else
--		*XBUS_LEDS &= ~led->mask;
-+		hw_led_state &= ~led->mask;
-+	*XBUS_LEDS = hw_led_state;
++	vga_base = PCIMEM_BASE;
  }
  
- static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
-@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_g
- 	struct ebsa285_led *led = container_of(cdev,
- 			struct ebsa285_led, cdev);
+ void footbridge_restart(enum reboot_mode mode, const char *cmd)
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -18,7 +18,6 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+-#include <video/vga.h>
  
--	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
-+	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
- }
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+@@ -291,7 +290,6 @@ void __init dc21285_preinit(void)
+ 	int cfn_mode;
  
- static int __init ebsa285_leds_init(void)
- {
- 	int i;
+ 	pcibios_min_mem = 0x81000000;
+-	vga_base = PCIMEM_BASE;
  
--	if (machine_is_ebsa285())
-+	if (!machine_is_ebsa285())
- 		return -ENODEV;
- 
--	/* 3 LEDS All ON */
--	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+	/* 3 LEDS all off */
-+	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+	*XBUS_LEDS = hw_led_state;
- 
- 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
- 		struct ebsa285_led *led;
+ 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
+ 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 
 
