@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab3LJPvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:51:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44445 "EHLO mx2.suse.de"
+	id S1755100Ab3LJPv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:51:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44459 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910Ab3LJPvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:51:46 -0500
+	id S1754949Ab3LJPvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:51:48 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 12/18] mm: numa: Defer TLB flush for THP migration as long as possible
-Date: Tue, 10 Dec 2013 15:51:30 +0000
-Message-Id: <1386690695-27380-13-git-send-email-mgorman@suse.de>
+Subject: [PATCH 15/18] mm: numa: Trace tasks that fail migration due to rate limiting
+Date: Tue, 10 Dec 2013 15:51:33 +0000
+Message-Id: <1386690695-27380-16-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386690695-27380-1-git-send-email-mgorman@suse.de>
 References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
@@ -21,48 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-THP migration can fail for a variety of reasons. Avoid flushing the TLB
-to deal with THP migration races until the copy is ready to start.
+A low local/remote numa hinting fault ratio is potentially explained by
+failed migrations. This patch adds a tracepoint that fires when migration
+fails due to migration rate limitation.
 
-Cc: stable@vger.kernel.org
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- mm/huge_memory.c | 7 -------
- mm/migrate.c     | 3 +++
- 2 files changed, 3 insertions(+), 7 deletions(-)
+ include/trace/events/migrate.h | 26 ++++++++++++++++++++++++++
+ mm/migrate.c                   |  5 ++++-
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e3a5ee2..e3b6a75 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1377,13 +1377,6 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	}
+diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
+index ec2a6cc..3075ffb 100644
+--- a/include/trace/events/migrate.h
++++ b/include/trace/events/migrate.h
+@@ -45,6 +45,32 @@ TRACE_EVENT(mm_migrate_pages,
+ 		__print_symbolic(__entry->reason, MIGRATE_REASON))
+ );
  
- 	/*
--	 * The page_table_lock above provides a memory barrier
--	 * with change_protection_range.
--	 */
--	if (tlb_flush_pending(mm))
--		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
--
--	/*
- 	 * Migrate the THP to the requested node, returns with page unlocked
- 	 * and pmd_numa cleared.
- 	 */
++TRACE_EVENT(mm_numa_migrate_ratelimit,
++
++	TP_PROTO(struct task_struct *p, int dst_nid, unsigned long nr_pages),
++
++	TP_ARGS(p, dst_nid, nr_pages),
++
++	TP_STRUCT__entry(
++		__array(	char,		comm,	TASK_COMM_LEN)
++		__field(	pid_t,		pid)
++		__field(	int,		dst_nid)
++		__field(	unsigned long,	nr_pages)
++	),
++
++	TP_fast_assign(
++		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
++		__entry->pid		= p->pid;
++		__entry->dst_nid	= dst_nid;
++		__entry->nr_pages	= nr_pages;
++	),
++
++	TP_printk("comm=%s pid=%d dst_nid=%d nr_pages=%lu",
++		__entry->comm,
++		__entry->pid,
++		__entry->dst_nid,
++		__entry->nr_pages)
++);
+ #endif /* _TRACE_MIGRATE_H */
+ 
+ /* This part must be outside protection */
 diff --git a/mm/migrate.c b/mm/migrate.c
-index cfb4190..0c4fbf6 100644
+index 564d5c9..8dc277d 100644
 --- a/mm/migrate.c
 +++ b/mm/migrate.c
-@@ -1759,6 +1759,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 		goto out_fail;
+@@ -1608,8 +1608,11 @@ static bool numamigrate_update_ratelimit(pg_data_t *pgdat,
+ 			msecs_to_jiffies(migrate_interval_millisecs);
+ 		spin_unlock(&pgdat->numabalancing_migrate_lock);
  	}
+-	if (pgdat->numabalancing_migrate_nr_pages > ratelimit_pages)
++	if (pgdat->numabalancing_migrate_nr_pages > ratelimit_pages) {
++		trace_mm_numa_migrate_ratelimit(current, pgdat->node_id,
++								nr_pages);
+ 		return true;
++	}
  
-+	if (tlb_flush_pending(mm))
-+		flush_tlb_range(vma, mmun_start, mmun_end);
-+
- 	/* Prepare a page as a migration target */
- 	__set_page_locked(new_page);
- 	SetPageSwapBacked(new_page);
+ 	/*
+ 	 * This is an unlocked non-atomic update so errors are possible.
 -- 
 1.8.4
 
