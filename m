@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3LJCSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 21:18:25 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9721 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3LJCSX (ORCPT
+	id S1751912Ab3LJCXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 21:23:05 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:49136 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750787Ab3LJCXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 21:18:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 09 Dec 2013 18:11:28 -0800
-Date: Mon, 9 Dec 2013 18:18:22 -0800
-From: Paul Walmsley <pwalmsley@nvidia.com>
-X-X-Sender: pwalmsley@tamien
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: <linux-omap@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: omap: clk_round_rate() can return a zero upon
- error
-Message-ID: <alpine.DEB.2.02.1312091812440.4127@tamien>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 9 Dec 2013 21:23:01 -0500
+Message-ID: <52A67A71.6020404@atmel.com>
+Date: Tue, 10 Dec 2013 10:20:33 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
+To: Thierry Reding <thierry.reding@gmail.com>, <plagnioj@jcrosoft.com>
+CC: <linux-pwm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <nicolas.ferre@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <galak@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
+References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com> <20131202105957.GD18060@ulmo.nvidia.com> <529D4B58.9020700@atmel.com>
+In-Reply-To: <529D4B58.9020700@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thierry,
 
-Treat both negative and zero return values from clk_round_rate() as 
-errors.  This is needed since subsequent patches will convert 
-clk_round_rate()'s return value to be an unsigned type, rather than a 
-signed type, since some clock sources can generate rates higher than 
-(2^31)-1 Hz.
+On 12/03/2013 11:09 AM, Bo Shen wrote:
+>>> +        atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
+>>> +        atmel_pwm->chip.of_pwm_n_cells = 3;
+>>> +        atmel_pwm->chip.base = -1;
+>>> +    } else {
+>>> +        atmel_pwm->chip.base = pdev->id;
+>>
+>> That's not correct. The chip cannot be tied to pdev->id, because that ID
+>> is the instance number of the device. So typically you would have
+>> devices name like this:
+>>
+>>     atmel-pwm.0
+>>     atmel-pwm.1
+>>     ...
+>>
+>> Now, if you have that, then you won't be able to register the second
+>> instance because the first instance will already have requested PWMs
+>> 0-3, and setting .base to 1 will cause PWMs 1-4 to be requested, which
+>> intersects with the range of the first instance.
+>>
+>> The same applies of course if you have other PWM controllers in the
+>> system which have similar instance names.
+>>
+>> So the right thing to do here is to provide that number via platform
+>> data so that platform code can define it, knowing in advance all ranges
+>> for all other PWM controllers and thereby make sure there's no
+>> intersection.
+>
+> OK, I will fix this.
 
-Eventually, when calling clk_round_rate(), only a return value of
-zero will be considered a error.  All other values will be
-considered valid rates.  The comparison against values less than
-0 is kept to preserve the correct behavior in the meantime.
+After read deeply of PWM framework, for non device tree, I think we'd 
+better let the PWM core to choose chip.base as device tree, while not 
+pass a number through platform data to it. Or else, it will confuse the 
+user to set the chip.base, must set it in correct value to avoid 
+intersection. And, actually we won't use chip.base in driver itself.
 
-This patch also removes a bogus usage of IS_ERR_VALUE(), which is intended 
-to be used only on combination pointer/error code return values; a 
-side-benefit.
+Hi J,
+   what's your opinion?
 
-Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
----
-Applies on v3.13-rc3.  See also:
+Best Regards,
+Bo Shen
 
-http://marc.info/?l=linux-arm-kernel&m=138542591313620&w=2
-
-  drivers/cpufreq/omap-cpufreq.c |    2 +-
-  1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
-index a0acd0bfba40..0f41eb2609f3 100644
---- a/drivers/cpufreq/omap-cpufreq.c
-+++ b/drivers/cpufreq/omap-cpufreq.c
-@@ -63,7 +63,7 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
-
-  	freq = new_freq * 1000;
-  	ret = clk_round_rate(mpu_clk, freq);
--	if (IS_ERR_VALUE(ret)) {
-+	if (ret <= 0) {
-  		dev_warn(mpu_dev,
-  			 "CPUfreq: Cannot find matching frequency for %lu\n",
-  			 freq);
