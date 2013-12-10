@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab3LJIAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:00:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58707 "EHLO
+	id S1753189Ab3LJIAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:00:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58738 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab3LJIAd (ORCPT
+	with ESMTP id S1753145Ab3LJIAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:33 -0500
+	Tue, 10 Dec 2013 03:00:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Shawn Landden <shawn@churchofgit.com>
-Subject: [PATCH 3.10 33/52] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
-Date: Tue, 10 Dec 2013 00:01:06 -0800
-Message-Id: <20131210075956.538564748@linuxfoundation.org>
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 07/52] crypto: scatterwalk - Set the chain pointer indication bit
+Date: Tue, 10 Dec 2013 00:00:40 -0800
+Message-Id: <20131210075954.727939549@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -29,71 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Landden <shawn@churchofgit.com>
+From: Tom Lendacky <thomas.lendacky@amd.com>
 
-commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
+commit 41da8b5adba77e22584f8b45f9641504fa885308 upstream.
 
-Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag MSG_SENDPAGE_NOTLAST, similar to
-MSG_MORE.
+The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
+function to chain two scatterlists, but the chain pointer indication
+bit is not set.  When the resulting scatterlist is used, for example,
+by sg_nents to count the number of scatterlist entries, a segfault occurs
+because sg_nents does not follow the chain pointer to the chained scatterlist.
 
-algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
-and need to see the new flag as identical to MSG_MORE.
+Update scatterwalk_sg_chain to set the chain pointer indication bit as is
+done by the sg_chain function.
 
-This fixes sendfile() on AF_ALG.
-
-v3: also fix udp
-
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-Original-patch: Richard Weinberger <richard@nod.at>
-Signed-off-by: Shawn Landden <shawn@churchofgit.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/algif_hash.c     |    3 +++
- crypto/algif_skcipher.c |    3 +++
- net/ipv4/udp.c          |    3 +++
- 3 files changed, 9 insertions(+)
+ include/crypto/scatterwalk.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -117,6 +117,9 @@ static ssize_t hash_sendpage(struct sock
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
+--- a/include/crypto/scatterwalk.h
++++ b/include/crypto/scatterwalk.h
+@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(
+ {
+ 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
+ 	sg1[num - 1].page_link &= ~0x02;
++	sg1[num - 1].page_link |= 0x01;
+ }
  
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -381,6 +381,9 @@ static ssize_t skcipher_sendpage(struct
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1073,6 +1073,9 @@ int udp_sendpage(struct sock *sk, struct
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	if (!up->pending) {
- 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
- 
+ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
 
 
