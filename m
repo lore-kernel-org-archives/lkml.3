@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab3LJRg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:36:59 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46330 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597Ab3LJRgy (ORCPT
+	id S1755541Ab3LJRhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:37:47 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42528 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab3LJRhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:36:54 -0500
-Date: Tue, 10 Dec 2013 09:36:47 -0800
+	Tue, 10 Dec 2013 12:37:46 -0500
+Date: Tue, 10 Dec 2013 09:37:38 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -20,114 +20,87 @@ Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Rusty Russell <rusty@rustcorp.com.au>
 Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
  Document ACCESS_ONCE()
-Message-ID: <20131210173647.GU4208@linux.vnet.ibm.com>
+Message-ID: <20131210173738.GV4208@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <20131204224628.GA30159@linux.vnet.ibm.com>
  <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
  <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131205093334.GA16749@gmail.com>
- <20131205180200.GT15492@linux.vnet.ibm.com>
- <20131210132448.GA31366@gmail.com>
+ <20131205095042.GB16749@gmail.com>
+ <20131205180547.GU15492@linux.vnet.ibm.com>
+ <20131205224710.GA21140@linux.vnet.ibm.com>
+ <20131210151050.GC873@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131210132448.GA31366@gmail.com>
+In-Reply-To: <20131210151050.GC873@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121017-0928-0000-0000-000004851718
+x-cbid: 13121017-0928-0000-0000-0000044AC85A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 02:24:48PM +0100, Ingo Molnar wrote:
+On Tue, Dec 10, 2013 at 04:10:50PM +0100, Ingo Molnar wrote:
 > 
 > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> > On Thu, Dec 05, 2013 at 10:33:34AM +0100, Ingo Molnar wrote:
+> > On Thu, Dec 05, 2013 at 10:05:47AM -0800, Paul E. McKenney wrote:
+> > > On Thu, Dec 05, 2013 at 10:50:42AM +0100, Ingo Molnar wrote:
+> > > > 
+> > > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > > > 
+> > > > > + (*) The compiler is within its rights to reload a variable, for example,
+> > > > > +     in cases where high register pressure prevents the compiler from
+> > > > > +     keeping all data of interest in registers.  The compiler might
+> > > > > +     therefore optimize the variable tmp out of our previous example:
+> > > > > +
+> > > > > +	while (tmp = a)
+> > > > > +		do_something_with(tmp);
+> > > > > +
+> > > > > +     This could result in the following code, which is perfectly safe in
+> > > > > +     single-threaded code, but can be fatal in concurrent code:
+> > > > > +
+> > > > > +	while (a)
+> > > > > +		do_something_with(a);
+> > > > > +
+> > > > > +     For example, the optimized version of this code could result in
+> > > > > +     passing a zero to do_something_with() in the case where the variable
+> > > > > +     a was modified by some other CPU between the "while" statement and
+> > > > > +     the call to do_something_with().
+> > > > 
+> > > > Nit: I guess references to variable names such as 'a' should be quoted 
+> > > > (same for 'tmp', 'b', etc):
+> > > > 
+> > > >         For example, the optimized version of this code could result in
+> > > >         passing a zero to do_something_with() in the case where the variable
+> > > >         'a' was modified by some other CPU between the "while" statement and
+> > > >         the call to do_something_with().
+> > > > 
+> > > > which makes reading it less ambiguous and more fluid IMO. This 
+> > > > observation applies to the whole document as 'a' is used in many 
+> > > > places.
 > > > 
-> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > + (*) The compiler is within its rights to reorder memory accesses unless
-> > > > +     you tell it not to.  For example, consider the following interaction
-> > > > +     between process-level code and an interrupt handler:
-> > > > +
-> > > > +	void process_level(void)
-> > > > +	{
-> > > > +		msg = get_message();
-> > > > +		flag = true;
-> > > > +	}
-> > > > +
-> > > > +	void interrupt_handler(void)
-> > > > +	{
-> > > > +		if (flag)
-> > > > +			process_message(msg);
-> > > > +	}
-> > > > +
-> > > > +     There is nothing to prevent the the compiler from transforming
-> > > > +     process_level() to the following, in fact, this might well be a
-> > > > +     win for single-threaded code:
-> > > > +
-> > > > +	void process_level(void)
-> > > > +	{
-> > > > +		flag = true;
-> > > > +		msg = get_message();
-> > > > +	}
-> > > > +
-> > > > +     If the interrupt occurs between these two statement, then
-> > > > +     interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
-> > > > +     to prevent this as follows:
-> > > > +
-> > > > +	void process_level(void)
-> > > > +	{
-> > > > +		ACCESS_ONCE(msg) = get_message();
-> > > > +		ACCESS_ONCE(flag) = true;
-> > > > +	}
-> > > > +
-> > > > +	void interrupt_handler(void)
-> > > > +	{
-> > > > +		if (ACCESS_ONCE(flag))
-> > > > +			process_message(ACCESS_ONCE(msg));
-> > > > +	}
-> > > 
-> > > Technically, if the interrupt handler is the innermost context, the 
-> > > ACCESS_ONCE() is not needed in the interrupt_handler() code.
-> > > 
-> > > Since for the vast majority of Linux code IRQ handlers are the most 
-> > > atomic contexts (very few drivers deal with NMIs) I suspect we should 
-> > > either remove that ACCESS_ONCE() from the example or add a comment 
-> > > explaining that in many cases those are superfluous?
+> > > Good point, fixed.
 > > 
-> > How about the following additional paragraph?
+> > Which reminds me -- the thing that makes me most nervous about 
+> > prohibiting speculative stores is the bit about having to anticipate 
+> > all compiler optimizations that might get rid of the needed 
+> > conditionals.
 > > 
-> >      Note that the ACCESS_ONCE() wrappers in interrupt_handler()
-> >      are needed if this interrupt handler can itself be interrupted
-> >      by something that also accesses 'flag' and 'msg', for example,
-> >      a nested interrupt or an NMI.  Otherwise, ACCESS_ONCE() is not
-> >      needed in interrupt_handler() other than for documentation purposes.
+> > Thoughts?
 > 
-> Sounds great to me!
-> 
-> Note that nested IRQs generally don't happen on modern Linux anymore, 
-> we run almost all hardirqs with irqs disabled and in fact have a 
-> warning to detect irq handlers that enable irqs:
-> 
->                 res = action->handler(irq, action->dev_id);
->                 trace_irq_handler_exit(irq, action, res);
-> 
->                 if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pF enabled interrupts\n",
->                               irq, action->handler))
->                         local_irq_disable();
+> As long as current compiler versions behave I don't the potential of 
+> future problems is a problem that can (or should) be solved via 
+> documentation - there will always be a colorful tension between 
+> specification and reality, both at the hardware, the code and the 
+> compiler level ;-)
 
-Good point!  I added the following at the end of the paragraph:
+There certainly has been in the past.  ;-)
 
-	(Note also that nested interrupts do not typically occur in
-	modern Linux kernels, in fact, if an interrupt handler returns
-	with interrupts enabled, you will get a WARN_ONCE() splat.)
+> It doesn't hurt to outline our expectations in any case, agreed?
 
-I guess an IRQ handler could momentarily enable interrupts as long as
-it disabled them again before returning, but I don't see any reason
-to encourage that practice in Documentation/memory-barriers.txt.  ;-)
+Fair enough, I will leave it as is.
 
 							Thanx, Paul
 
