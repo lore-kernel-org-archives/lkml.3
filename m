@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab3LJJ3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:29:07 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:38433 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab3LJJTy (ORCPT
+	id S1754920Ab3LJJcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:32:24 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:64493 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab3LJJcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:19:54 -0500
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v4 01/12] sched/numa: fix set cpupid on page migration twice against thp
-Date: Tue, 10 Dec 2013 17:19:24 +0800
-Message-Id: <1386667175-19952-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121009-8878-0000-0000-00000A02E9B5
+	Tue, 10 Dec 2013 04:32:18 -0500
+Date: Tue, 10 Dec 2013 09:32:13 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 03/15] mfd: menelaus: Convert to threaded irq
+Message-ID: <20131210093213.GV12675@lee--X1>
+References: <20131209161422.GC24047@saruman.home>
+ <1386606085-26838-1-git-send-email-balbi@ti.com>
+ <1386606085-26838-3-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386606085-26838-3-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 7851a45cd3 (mm: numa: Copy cpupid on page migration) copy over
-the cpupid at page migration time, there is unnecessary to set it again
-in function migrate_misplaced_transhuge_page, this patch fix it.
+On Mon, 09 Dec 2013, Felipe Balbi wrote:
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/migrate.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+> We don't need that extra workqueue when we have generic threaded irq
+> handlers support. This patch just moves over to threaded irqs and
+> deletes the unnecessary workqueue.
+> 
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/mfd/menelaus.c | 29 ++++-------------------------
+>  1 file changed, 4 insertions(+), 25 deletions(-)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index bb94004..fdb70f7 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1736,8 +1736,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	if (!new_page)
- 		goto out_fail;
- 
--	page_cpupid_xchg_last(new_page, page_cpupid_last(page));
--
- 	isolated = numamigrate_isolate_page(pgdat, page);
- 	if (!isolated) {
- 		put_page(new_page);
+<snip>
+
+> -		err = request_irq(client->irq, menelaus_irq, 0,
+> -				  DRIVER_NAME, menelaus);
+> +		err = request_threaded_irq(client->irq, NULL, menelaus_irq,
+> +				IRQF_ONESHOT, DRIVER_NAME, menelaus);
+
+devm_* managed resources please.
+
 -- 
-1.7.7.6
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
