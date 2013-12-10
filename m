@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab3LJIde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:33:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58574 "EHLO
+	id S1755581Ab3LJIda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:33:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3LJIAH (ORCPT
+	with ESMTP id S1752858Ab3LJIAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:07 -0500
+	Tue, 10 Dec 2013 03:00:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Glen <AGlen@bepmarine.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 19/52] can: c_can: dont call pm_runtime_get_sync() from interrupt context
-Date: Tue, 10 Dec 2013 00:00:52 -0800
-Message-Id: <20131210075955.553610457@linuxfoundation.org>
+        Vijaya Mohan Guvva <vmohan@brocade.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 20/52] SCSI: bfa: Fix crash when symb name set for offline vport
+Date: Tue, 10 Dec 2013 00:00:53 -0800
+Message-Id: <20131210075955.620671698@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,74 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Vijaya Mohan Guvva <vmohan@brocade.com>
 
-commit e35d46adc49b469fd92bdb64fea8af93640e6651 upstream.
+commit 22a08538dca5c0630226f1c0c58dccd12e463d22 upstream.
 
-The c_can driver contians a callpath (c_can_poll -> c_can_state_change ->
-c_can_get_berr_counter) which may call pm_runtime_get_sync() from the IRQ
-handler, which is not allowed and results in "BUG: scheduling while atomic".
+This patch fixes a crash when tried setting symbolic name for an offline
+vport through sysfs. Crash is due to uninitialized pointer lport->ns,
+which gets initialized only on linkup (port online).
 
-This problem is fixed by introducing __c_can_get_berr_counter, which will not
-call pm_runtime_get_sync().
-
-Reported-by: Andrew Glen <AGlen@bepmarine.com>
-Tested-by: Andrew Glen <AGlen@bepmarine.com>
-Signed-off-by: Andrew Glen <AGlen@bepmarine.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ drivers/scsi/bfa/bfa_fcs.h       |    1 +
+ drivers/scsi/bfa/bfa_fcs_lport.c |   14 +++++++++++---
+ drivers/scsi/bfa/bfad_attr.c     |    7 ++-----
+ 3 files changed, 14 insertions(+), 8 deletions(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -712,22 +712,31 @@ static int c_can_set_mode(struct net_dev
- 	return 0;
+--- a/drivers/scsi/bfa/bfa_fcs.h
++++ b/drivers/scsi/bfa/bfa_fcs.h
+@@ -299,6 +299,7 @@ wwn_t bfa_fcs_lport_get_rport(struct bfa
+ struct bfa_fcs_lport_s *bfa_fcs_lookup_port(struct bfa_fcs_s *fcs,
+ 					    u16 vf_id, wwn_t lpwwn);
+ 
++void bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port, char *symname);
+ void bfa_fcs_lport_get_info(struct bfa_fcs_lport_s *port,
+ 			    struct bfa_lport_info_s *port_info);
+ void bfa_fcs_lport_get_attr(struct bfa_fcs_lport_s *port,
+--- a/drivers/scsi/bfa/bfa_fcs_lport.c
++++ b/drivers/scsi/bfa/bfa_fcs_lport.c
+@@ -1097,6 +1097,17 @@ bfa_fcs_lport_init(struct bfa_fcs_lport_
+ 	bfa_sm_send_event(lport, BFA_FCS_PORT_SM_CREATE);
  }
  
--static int c_can_get_berr_counter(const struct net_device *dev,
--					struct can_berr_counter *bec)
-+static int __c_can_get_berr_counter(const struct net_device *dev,
-+				    struct can_berr_counter *bec)
- {
- 	unsigned int reg_err_counter;
- 	struct c_can_priv *priv = netdev_priv(dev);
- 
--	c_can_pm_runtime_get_sync(priv);
--
- 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
- 	bec->rxerr = (reg_err_counter & ERR_CNT_REC_MASK) >>
- 				ERR_CNT_REC_SHIFT;
- 	bec->txerr = reg_err_counter & ERR_CNT_TEC_MASK;
- 
-+	return 0;
++void
++bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port,
++				char *symname)
++{
++	strcpy(port->port_cfg.sym_name.symname, symname);
++
++	if (bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
++		bfa_fcs_lport_ns_util_send_rspn_id(
++			BFA_FCS_GET_NS_FROM_PORT(port), NULL);
 +}
 +
-+static int c_can_get_berr_counter(const struct net_device *dev,
-+				  struct can_berr_counter *bec)
-+{
-+	struct c_can_priv *priv = netdev_priv(dev);
-+	int err;
-+
-+	c_can_pm_runtime_get_sync(priv);
-+	err = __c_can_get_berr_counter(dev, bec);
- 	c_can_pm_runtime_put_sync(priv);
+ /*
+  *  fcs_lport_api
+  */
+@@ -4950,9 +4961,6 @@ bfa_fcs_lport_ns_util_send_rspn_id(void
+ 	u8 *psymbl = &symbl[0];
+ 	int len;
  
--	return 0;
-+	return err;
+-	if (!bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
+-		return;
+-
+ 	/* Avoid sending RSPN in the following states. */
+ 	if (bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_offline) ||
+ 	    bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_plogi_sending) ||
+--- a/drivers/scsi/bfa/bfad_attr.c
++++ b/drivers/scsi/bfa/bfad_attr.c
+@@ -610,11 +610,8 @@ bfad_im_vport_set_symbolic_name(struct f
+ 		return;
+ 
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+-	if (strlen(sym_name) > 0) {
+-		strcpy(fcs_vport->lport.port_cfg.sym_name.symname, sym_name);
+-		bfa_fcs_lport_ns_util_send_rspn_id(
+-			BFA_FCS_GET_NS_FROM_PORT((&fcs_vport->lport)), NULL);
+-	}
++	if (strlen(sym_name) > 0)
++		bfa_fcs_lport_set_symname(&fcs_vport->lport, sym_name);
+ 	spin_unlock_irqrestore(&bfad->bfad_lock, flags);
  }
  
- /*
-@@ -872,7 +881,7 @@ static int c_can_handle_state_change(str
- 	if (unlikely(!skb))
- 		return 0;
- 
--	c_can_get_berr_counter(dev, &bec);
-+	__c_can_get_berr_counter(dev, &bec);
- 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
- 	rx_err_passive = (reg_err_counter & ERR_CNT_RP_MASK) >>
- 				ERR_CNT_RP_SHIFT;
 
 
