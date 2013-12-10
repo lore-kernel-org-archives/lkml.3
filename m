@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab3LJWRE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:17:04 -0500
-Received: from smtp-out.abv.bg ([194.153.145.99]:52676 "EHLO smtp-out.abv.bg"
+	id S1751992Ab3LJWRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:17:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62347 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab3LJWRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:17:01 -0500
-DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
-	b=ij4KUGdshbcvEMkKhsxwosmMWOzjYe8/1/TFB2PVl4D09EPEO24kjeL1J1a+LoXTD
-	BD+5NxxyLh37bXVVHgwD5u68hKpFP4XNYILvLHfMRA9fhIyYzpKimGdJyN25viPPvZH
-	niSTYN97oIA+5vZMO3k2ehSYWoSLWa2Ad22YptA=
-Date: Wed, 11 Dec 2013 00:16:58 +0200 (EET)
-From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: kvalo@adurom.com, pavel@ucw.cz, luca@coelho.fi, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aaro.koskinen@iki.fi, sre@ring0.de,
-        joni.lapilainen@gmail.com, johannes@sipsolutions.net,
-        felipe.contreras@gmail.com, david.gnedt@davizone.at
-Message-ID: <1209321878.38095.1386713818964.JavaMail.apache@mail82.abv.bg>
-Subject: Re: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
+	id S1751779Ab3LJWRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 17:17:30 -0500
+Date: Tue, 10 Dec 2013 17:16:21 -0500
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131210221621.GD5050@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+References: <20131210154724.GA30020@redhat.com>
+ <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+ <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+ <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+ <20131210203559.GA1209@redhat.com>
+ <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <20131210220946.GA6962@home.goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-Mailer: AbvMail 1.0
-X-Originating-IP: 46.249.74.23
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210220946.GA6962@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  >-------- Оригинално писмо --------
- >От:  Pali Rohár 
- >Относно: Re: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
- >До: Kalle Valo ,
- Pavel Machek 
- >Изпратено на: Вторник, 2013, Декември 10 19:08:44 EET
- >
- >
- >On Tuesday 10 December 2013 16:41:04 Kalle Valo wrote:
- >> Pavel Machek  writes:
- >> > ssids can have &#92;0s in them... and what is worse, they may
- >> > not be 0 terminated AFAICT.
- >> > 
- >> > Potential solution is at
- >> > http://www.spinics.net/lists/linux-wireless/msg98640.html .
- >> 
- >> I just use print_hex_dump_bytes() to print SSIDs.
- >
- >Ok and has kernel printf modifier for size_t?
- >
- >-- 
- >Pali Rohár
- >pali.rohar@gmail.com
- >
+On Tue, Dec 10, 2013 at 05:09:46PM -0500, Steven Rostedt wrote:
+ 
+ > So you can do either:
+ > 
+ > trace-cmd record -p function -l get_user_pages_fast --func-stack sleep 5
+ > 
+ > Which will trace the get_user_pages_fast and spit out a full call trace.
+This gives me a 100M trace.dat, but trace show shows..
 
-If I read lib/vsprintf.c correctly, you can use 'z'
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 0/0   #P:4
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
 
-Regards,
-Ivo
+and that's it.
+ 
+ > Or if you don't want to use trace-cmd, you can do it by hand.
 
-PS: Please use my gmail address when cc-ing me, LKML really hates my abv dot bg account :)
+Given the state the system is in, I don't want to perturb it too much.
+
+	Dave
 
