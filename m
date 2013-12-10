@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab3LJAhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:37:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38862 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab3LJAhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:37:22 -0500
-Message-ID: <52A66235.3010405@zytor.com>
-Date: Mon, 09 Dec 2013 16:37:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751351Ab3LJAkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:40:19 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53061 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3LJAkN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 19:40:13 -0500
+Message-ID: <52A662D2.9010201@ti.com>
+Date: Mon, 9 Dec 2013 19:39:46 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>	<52A6389E.90404@zytor.com>	<CAMe9rOpuFzqA7tOGZ3Eh8Vb76+Y5T2xirAfB08NHbSS5R-OjuQ@mail.gmail.com>	<52A653C4.1050208@zytor.com> <CAMe9rOpuf1=LPBJzUHmgb2x6WDu=yUsKE+iZansaPDQfCPaejw@mail.gmail.com>
-In-Reply-To: <CAMe9rOpuf1=LPBJzUHmgb2x6WDu=yUsKE+iZansaPDQfCPaejw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
+References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com> <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131125155629.GA24344@htj.dyndns.org>
+In-Reply-To: <20131125155629.GA24344@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 03:53 PM, H.J. Lu wrote:
->>>
->>> x86-64 small model is limited to 4GB in size.  You can't build
->>> a dynamic executable in small model larger than 4GB.
->>>
->>> There are medium and large models.  But they are slower than
->>> small models as well as small models in PIE.  Also there are
->>> no glibc run-times for medium and large models.
->>>
->> Compiling for the small PIC model shouldn't automatically mean
->> generating a PIE (ET_DYN) executable, though (and if those are
->> inherently linked, that is a fundamental bug IMNSHO.)
-> 
-> PIE uses PIC. But GCC has -fPIE and -fPIC.  They aren't
-> the same.   You build PIE with
-> 
-> 1. Compile with -fPIE.
-> 2. Link with -pie.
-> 
+Andrew,
 
-I'm talking about the memory model ("small PIC model").  I don't see why
-it should be encapsulated in a PIE (ET_DYN) container if the user
-doesn't want it to be relocatable.
+On Monday 25 November 2013 10:56 AM, Tejun Heo wrote:
+> On Mon, Nov 25, 2013 at 08:57:54AM -0500, Santosh Shilimkar wrote:
+>> On Sunday 24 November 2013 10:14 AM, Sergei Shtylyov wrote:
+>>> Hello.
+>>>
+>>> On 24-11-2013 3:28, Santosh Shilimkar wrote:
+>>>
+>>>> Building ARM with NO_BOOTMEM generates below warning. Using min_t
+>>>
+>>>    Where is that below? :-)
+>>>
+>> Damn.. Posted a wrong version of the patch ;-(
+>> Here is the one with warning message included.
+>>
+>> From 571dfdf4cf8ac7dfd50bd9b7519717c42824f1c3 Mon Sep 17 00:00:00 2001
+>> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Date: Sat, 23 Nov 2013 18:16:50 -0500
+>> Subject: [PATCH] mm: nobootmem: avoid type warning about alignment value
+>>
+>> Building ARM with NO_BOOTMEM generates below warning.
+>>
+>> mm/nobootmem.c: In function ‘__free_pages_memory’:
+>> mm/nobootmem.c:88:11: warning: comparison of distinct pointer types lacks a cast
+>>
+>> Using min_t to find the correct alignment avoids the warning.
+>>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> 
+Can you please this warning fix as well in your mm tree ?
 
-	-hpa
-
+Regards,
+Santosh
