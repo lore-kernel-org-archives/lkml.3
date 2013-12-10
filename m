@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab3LJPxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:53:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44449 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923Ab3LJPvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:51:46 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 13/18] mm: numa: Make NUMA-migrate related functions static
-Date: Tue, 10 Dec 2013 15:51:31 +0000
-Message-Id: <1386690695-27380-14-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1386690695-27380-1-git-send-email-mgorman@suse.de>
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+	id S1755315Ab3LJPx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:53:56 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:49092 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab3LJPxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:53:53 -0500
+Date: Tue, 10 Dec 2013 16:53:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: dinguyen@altera.com
+Cc: dinh.linux@gmail.com, daniel.lezcano@linaro.org, tglx@linutronix.de,
+        jamie@jamieiles.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, heiko@sntech.de
+Subject: Re: [PATCHv4] clocksource: dw_apb_timer_of: Fix read_sched_clock
+Message-ID: <20131210155349.GC1995@gmail.com>
+References: <1386690395-27182-1-git-send-email-dinguyen@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386690395-27182-1-git-send-email-dinguyen@altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-numamigrate_update_ratelimit and numamigrate_isolate_page only have callers
-in mm/migrate.c. This patch makes them static.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- mm/migrate.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+* dinguyen@altera.com <dinguyen@altera.com> wrote:
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 0c4fbf6..b6eef65 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1593,7 +1593,8 @@ bool migrate_ratelimited(int node)
- }
- 
- /* Returns true if the node is migrate rate-limited after the update */
--bool numamigrate_update_ratelimit(pg_data_t *pgdat, unsigned long nr_pages)
-+static bool numamigrate_update_ratelimit(pg_data_t *pgdat,
-+					unsigned long nr_pages)
- {
- 	bool rate_limited = false;
- 
-@@ -1617,7 +1618,7 @@ bool numamigrate_update_ratelimit(pg_data_t *pgdat, unsigned long nr_pages)
- 	return rate_limited;
- }
- 
--int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
-+static int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
- {
- 	int page_lru;
- 
--- 
-1.8.4
+> From: Dinh Nguyen <dinguyen@altera.com>
+> 
+> The read_sched_clock should return the ~value because the clock is a
+> countdown implementation. read_sched_clock() should be the same as
+> __apbt_read_clocksource().
+> 
+> Maintain backwards compatibility for "dw-apb-timer-sp" and
+> "dw-apb-timer-osc".
 
+Are these two independent fixes? If yes then they should be in 
+separate patches. In general we want to apply minimized, obvious, 
+single-purpose fix patches.
+
+Thanks,
+
+	Ingo
