@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab3LJI3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:29:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58712 "EHLO
+	id S1753021Ab3LJIAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:00:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58675 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab3LJIAe (ORCPT
+	with ESMTP id S1752931Ab3LJIAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:34 -0500
+	Tue, 10 Dec 2013 03:00:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 3.10 34/52] x86-64, build: Always pass in -mno-sse
-Date: Tue, 10 Dec 2013 00:01:07 -0800
-Message-Id: <20131210075956.605691291@linuxfoundation.org>
+        Scott Wood <scottwood@freescale.com>,
+        Anatolij Gustschin <agust@denx.de>, Liu Gang <Gang.Liu@freescale.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 28/52] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
+Date: Tue, 10 Dec 2013 00:01:01 -0800
+Message-Id: <20131210075956.185859434@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,52 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Liu Gang <Gang.Liu@freescale.com>
 
-commit 5551a34e5aeab868f8d37f70d8754868921b4ee5 upstream.
+commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
 
-Always pass in the -mno-sse argument, regardless if
--preferred-stack-boundary is supported.  We never want to generate SSE
-instructions in the kernel unless we *really* know what we're doing.
+For MPC8572/MPC8536, the status of GPIOs defined as output
+cannot be determined by reading GPDAT register, so the code
+use shadow data register instead. But the code may give the
+wrong status of GPIOs defined as input under some scenarios:
 
-According to H. J. Lu, any version of gcc new enough that we support
-it at all should handle the -mno-sse option, so just add it
-unconditionally.
+1. If some pins were configured as inputs and were asserted
+high before booting the kernel, the shadow data has been
+initialized with those pin values.
+2. Some pins have been configured as output first and have
+been set to the high value, then reconfigured as input.
 
-Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
+The above cases will make the shadow data for those input
+pins to be set to high. Then reading the pin status will
+always return high even if the actual pin status is low.
+
+The code should eliminate the effects of the shadow data to
+the input pins, and the status of those pins should be
+read directly from GPDAT.
+
+Acked-by: Scott Wood <scottwood@freescale.com>
+Acked-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Makefile |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/gpio/gpio-mpc8xxx.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
+--- a/drivers/gpio/gpio-mpc8xxx.c
++++ b/drivers/gpio/gpio-mpc8xxx.c
+@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_
+ 	u32 val;
+ 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
+ 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
++	u32 out_mask, out_shadow;
  
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+-	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
++	out_mask = in_be32(mm->regs + GPIO_DIR);
  
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
+-	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
++	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
++	out_shadow = mpc8xxx_gc->data & out_mask;
 +
-         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-         # with nonstandard options
-         KBUILD_CFLAGS += -fno-pic
-@@ -57,8 +60,11 @@ else
-         KBUILD_AFLAGS += -m64
-         KBUILD_CFLAGS += -m64
++	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
+ }
  
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
-+
- 	# Use -mpreferred-stack-boundary=3 if supported.
--	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
-+	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
- 
-         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
-         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
+ static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
 
 
