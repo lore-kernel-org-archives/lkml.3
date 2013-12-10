@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab3LJXoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:44:14 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38993 "EHLO
+	id S1751928Ab3LJXov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:44:51 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38972 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3LJXnU (ORCPT
+	with ESMTP id S1751071Ab3LJXnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:43:20 -0500
+	Tue, 10 Dec 2013 18:43:19 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 5/7] genirq: Add devm_request_any_context_irq()
-Date: Tue, 10 Dec 2013 15:43:14 -0800
-Message-Id: <1386718996-3733-6-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: [PATCH 3/7] Input: pm8xxx-vibrator - Migrate to devm_* APIs
+Date: Tue, 10 Dec 2013 15:43:12 -0800
+Message-Id: <1386718996-3733-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.1.109.g3d252a9
 In-Reply-To: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
 References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
@@ -22,89 +21,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers use request_any_context_irq() but there isn't a
-devm_* function for it. Add one so that these drivers don't need
-to explicitly free the irq on driver detach.
+Simplify the error paths and reduce the lines of code in this
+driver by using the devm_* APIs.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- include/linux/interrupt.h |  5 +++++
- kernel/irq/devres.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+)
+ drivers/input/misc/pm8xxx-vibrator.c | 44 +++++++++++-------------------------
+ 1 file changed, 13 insertions(+), 31 deletions(-)
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index c9e831d..8334f9b 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -160,6 +160,11 @@ devm_request_irq(struct device *dev, unsigned int irq, irq_handler_t handler,
- 					 devname, dev_id);
- }
+diff --git a/drivers/input/misc/pm8xxx-vibrator.c b/drivers/input/misc/pm8xxx-vibrator.c
+index ec086f6..2a92ab0 100644
+--- a/drivers/input/misc/pm8xxx-vibrator.c
++++ b/drivers/input/misc/pm8xxx-vibrator.c
+@@ -186,13 +186,13 @@ static int pm8xxx_vib_probe(struct platform_device *pdev)
+ 	int error;
+ 	u8 val;
  
-+extern int __must_check
-+devm_request_any_context_irq(struct device *dev, unsigned int irq,
-+		 irq_handler_t handler, unsigned long irqflags,
-+		 const char *devname, void *dev_id);
-+
- extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
- 
- /*
-diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
-index bd8e788..f71e9ff 100644
---- a/kernel/irq/devres.c
-+++ b/kernel/irq/devres.c
-@@ -73,6 +73,51 @@ int devm_request_threaded_irq(struct device *dev, unsigned int irq,
- EXPORT_SYMBOL(devm_request_threaded_irq);
- 
- /**
-+ *	devm_request_any_context_irq - allocate an interrupt line for a managed device
-+ *	@dev: device to request interrupt for
-+ *	@irq: Interrupt line to allocate
-+ *	@handler: Function to be called when the IRQ occurs
-+ *	@thread_fn: function to be called in a threaded interrupt context. NULL
-+ *		    for devices which handle everything in @handler
-+ *	@irqflags: Interrupt type flags
-+ *	@devname: An ascii name for the claiming device
-+ *	@dev_id: A cookie passed back to the handler function
-+ *
-+ *	Except for the extra @dev argument, this function takes the
-+ *	same arguments and performs the same function as
-+ *	request_any_context_irq().  IRQs requested with this function will be
-+ *	automatically freed on driver detach.
-+ *
-+ *	If an IRQ allocated with this function needs to be freed
-+ *	separately, devm_free_irq() must be used.
-+ */
-+int devm_request_any_context_irq(struct device *dev, unsigned int irq,
-+			      irq_handler_t handler, unsigned long irqflags,
-+			      const char *devname, void *dev_id)
-+{
-+	struct irq_devres *dr;
-+	int rc;
-+
-+	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
-+			  GFP_KERNEL);
-+	if (!dr)
+-	vib = kzalloc(sizeof(*vib), GFP_KERNEL);
+-	input_dev = input_allocate_device();
+-	if (!vib || !input_dev) {
+-		dev_err(&pdev->dev, "couldn't allocate memory\n");
+-		error = -ENOMEM;
+-		goto err_free_mem;
+-	}
++	vib = devm_kzalloc(&pdev->dev, sizeof(*vib), GFP_KERNEL);
++	if (!vib)
 +		return -ENOMEM;
 +
-+	rc = request_any_context_irq(irq, handler, irqflags, devname, dev_id);
-+	if (rc) {
-+		devres_free(dr);
-+		return rc;
-+	}
++	input_dev = devm_input_allocate_device(&pdev->dev);
++	if (!input_dev)
++		return -ENOMEM;
+ 
+ 	INIT_WORK(&vib->work, pm8xxx_work_handler);
+ 	vib->dev = &pdev->dev;
+@@ -201,17 +201,17 @@ static int pm8xxx_vib_probe(struct platform_device *pdev)
+ 	/* operate in manual mode */
+ 	error = pm8xxx_vib_read_u8(vib, &val, VIB_DRV);
+ 	if (error < 0)
+-		goto err_free_mem;
++		return error;
 +
-+	dr->irq = irq;
-+	dr->dev_id = dev_id;
-+	devres_add(dev, dr);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(devm_request_any_context_irq);
-+
-+/**
-  *	devm_free_irq - free an interrupt
-  *	@dev: device to free interrupt for
-  *	@irq: Interrupt line to free
+ 	val &= ~VIB_DRV_EN_MANUAL_MASK;
+ 	error = pm8xxx_vib_write_u8(vib, val, VIB_DRV);
+ 	if (error < 0)
+-		goto err_free_mem;
++		return error;
+ 
+ 	vib->reg_vib_drv = val;
+ 
+ 	input_dev->name = "pm8xxx_vib_ffmemless";
+ 	input_dev->id.version = 1;
+-	input_dev->dev.parent = &pdev->dev;
+ 	input_dev->close = pm8xxx_vib_close;
+ 	input_set_drvdata(input_dev, vib);
+ 	input_set_capability(vib->vib_input_dev, EV_FF, FF_RUMBLE);
+@@ -221,35 +221,18 @@ static int pm8xxx_vib_probe(struct platform_device *pdev)
+ 	if (error) {
+ 		dev_err(&pdev->dev,
+ 			"couldn't register vibrator as FF device\n");
+-		goto err_free_mem;
++		return error;
+ 	}
+ 
+ 	error = input_register_device(input_dev);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "couldn't register input device\n");
+-		goto err_destroy_memless;
++		input_ff_destroy(input_dev);
++		return error;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, vib);
+ 	return 0;
+-
+-err_destroy_memless:
+-	input_ff_destroy(input_dev);
+-err_free_mem:
+-	input_free_device(input_dev);
+-	kfree(vib);
+-
+-	return error;
+-}
+-
+-static int pm8xxx_vib_remove(struct platform_device *pdev)
+-{
+-	struct pm8xxx_vib *vib = platform_get_drvdata(pdev);
+-
+-	input_unregister_device(vib->vib_input_dev);
+-	kfree(vib);
+-
+-	return 0;
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -268,7 +251,6 @@ static SIMPLE_DEV_PM_OPS(pm8xxx_vib_pm_ops, pm8xxx_vib_suspend, NULL);
+ 
+ static struct platform_driver pm8xxx_vib_driver = {
+ 	.probe		= pm8xxx_vib_probe,
+-	.remove		= pm8xxx_vib_remove,
+ 	.driver		= {
+ 		.name	= "pm8xxx-vib",
+ 		.owner	= THIS_MODULE,
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
