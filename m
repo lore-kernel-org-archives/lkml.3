@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab3LJIAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:00:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58683 "EHLO
+	id S1753133Ab3LJIAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:00:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab3LJIA1 (ORCPT
+	with ESMTP id S1753049Ab3LJIAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:27 -0500
+	Tue, 10 Dec 2013 03:00:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 02/52] ALSA: hda - Another fixup for ASUS laptop with ALC660 codec
-Date: Tue, 10 Dec 2013 00:00:35 -0800
-Message-Id: <20131210075954.394771570@linuxfoundation.org>
+        Tom Herbert <therbert@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Shawn Landden <shawn@churchofgit.com>
+Subject: [PATCH 3.10 33/52] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Tue, 10 Dec 2013 00:01:06 -0800
+Message-Id: <20131210075956.538564748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -26,30 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Shawn Landden <shawn@churchofgit.com>
 
-commit e7ca237bfcf6a288702cb95e94ab94f642ccad88 upstream.
+commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
 
-ASUS Z35HL laptop also needs the very same fix as the previous one
-that was applied to ASUS W7J.
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66231
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
+
+This fixes sendfile() on AF_ALG.
+
+v3: also fix udp
+
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ crypto/algif_hash.c     |    3 +++
+ crypto/algif_skcipher.c |    3 +++
+ net/ipv4/udp.c          |    3 +++
+ 3 files changed, 9 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3961,6 +3961,7 @@ static const struct hda_fixup alc861_fix
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -117,6 +117,9 @@ static ssize_t hash_sendpage(struct sock
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
- static const struct snd_pci_quirk alc861_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
-+	SND_PCI_QUIRK(0x1043, 0x1263, "ASUS Z35HL", ALC660_FIXUP_ASUS_W7J),
- 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
- 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
- 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -381,6 +381,9 @@ static ssize_t skcipher_sendpage(struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1073,6 +1073,9 @@ int udp_sendpage(struct sock *sk, struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
+ 
 
 
