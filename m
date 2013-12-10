@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab3LJRFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:05:24 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60514 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab3LJRFT (ORCPT
+	id S1754762Ab3LJRIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:08:51 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:49213 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab3LJRIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:05:19 -0500
-Message-ID: <52A749CC.2030402@wwwdotorg.org>
-Date: Tue, 10 Dec 2013 10:05:16 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 12:08:49 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Kalle Valo <kvalo@adurom.com>, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
+Date: Tue, 10 Dec 2013 18:08:44 +0100
+User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <20131210092114.GB22756@amd.pavel.ucw.cz> <8738m0r9wv.fsf@purkki.adurom.net>
+In-Reply-To: <8738m0r9wv.fsf@purkki.adurom.net>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH V4] dma: add dma_get_any_slave_channel(), for use in of_xlate()
-References: <1385494851-22640-1-git-send-email-swarren@wwwdotorg.org> <20131210122224.GK29580@intel.com>
-In-Reply-To: <20131210122224.GK29580@intel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart1950882.g5FqhQI21j";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201312101808.44713@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 05:22 AM, Vinod Koul wrote:
-> On Tue, Nov 26, 2013 at 12:40:51PM -0700, Stephen Warren wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> mmp_pdma.c implements a custom of_xlate() function that is 95% identical
->> to what Tegra will need. Create a function to implement the common part,
->> so everyone doesn't just cut/paste the implementation.
->
-> Applied, to topic/of
+--nextPart1950882.g5FqhQI21j
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I assume this one also won't be rebased, so I can merge this into the
-Tegra tree as well? Thanks.
+On Tuesday 10 December 2013 16:41:04 Kalle Valo wrote:
+> Pavel Machek <pavel@ucw.cz> writes:
+> > ssids can have \0s in them... and what is worse, they may
+> > not be 0 terminated AFAICT.
+> >=20
+> > Potential solution is at
+> > http://www.spinics.net/lists/linux-wireless/msg98640.html .
+>=20
+> I just use print_hex_dump_bytes() to print SSIDs.
+
+Ok and has kernel printf modifier for size_t?
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1950882.g5FqhQI21j
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKnSpwACgkQi/DJPQPkQ1L9pQCgjFc7/1zXxMNs6AWKB6PogyxB
+v9MAoIMHpQbRIy/N2p6/y3ViuvDYtIcf
+=/Nzb
+-----END PGP SIGNATURE-----
+
+--nextPart1950882.g5FqhQI21j--
