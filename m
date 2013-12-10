@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab3LJGzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:55:46 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:51555 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab3LJGzJ (ORCPT
+	id S1752274Ab3LJG4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:56:11 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:42510 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3LJGzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:55:09 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Guo Chao <yan@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 5/5] PCI: Sort pci root bus resources list
-Date: Mon,  9 Dec 2013 22:54:44 -0800
-Message-Id: <1386658484-15774-6-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1386658484-15774-1-git-send-email-yinghai@kernel.org>
-References: <1386658484-15774-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 10 Dec 2013 01:55:06 -0500
+X-AuditID: cbfec7f4-b7f966d0000003d9-aa-52a6bac8c284
+Message-id: <52A6BAC6.4090407@samsung.com>
+Date: Tue, 10 Dec 2013 07:55:02 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330
+ Thunderbird/17.0.5
+MIME-version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH] net: sk == 0xffffffff fix - not for commit
+References: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
+ <1386603119.30495.331.camel@edumazet-glaptop2.roam.corp.google.com>
+In-reply-to: <1386603119.30495.331.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsVy+t/xy7ondi0LMvj9nsXi4P16iznnW1gs
+	9r0/y2bRvHg9m8W69YuZLB5svshqcaHtFavF2aY37BaXd81hs1i0rJXZYu2Ru+wWC463sFoc
+	WyBm8XVvF4sDn8eWlTeZPHbOusvu0XZtFZPH/rlr2D3W/XnF5LHl93c2j57vyR59W1Yxehy/
+	sZ3JY+mkhUwenzfJBXBHcdmkpOZklqUW6dslcGXcWjSVreA8a8WyXZUNjLtZuhg5OSQETCSm
+	HHkGZYtJXLi3nq2LkYtDSGApo8SMPzNZIZzPjBJtyy6yg1TxCmhJ7Nt/lamLkYODRUBV4v2c
+	TJAwm4CxxN6DHYwgtqhAmMTUt3fYIMoFJX5MvscCUi4ioCmxvVEKZCSzwBdmiTnnrrCC1AgL
+	2EvM+n6EEWJXF6PE+ek3mUESnAIBEnverwGzmQXMJB61rIOy5SU2r3nLPIFRYBaSHbOQlM1C
+	UraAkXkVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkiEfdnBuPiY1SFGAQ5GJR7eAoZlQUKs
+	iWXFlbmHGCU4mJVEeD3rgEK8KYmVValF+fFFpTmpxYcYmTg4pRoYY+3npD6YyHzkZZ4q85YJ
+	mmcj1nHdOnDuWfQVn4W3Zd/bnY4KqrkvXJIV/fpI19vu+f5KcjLmq47tmpgn+2Ta5FNeXsZ2
+	L5V3q79d5Md6Xi9e3eV0qZv7jl2/J1YuS+YUuR+55Mw89rIywT2qWZvfmK1XvVvS/uOP+ZSl
+	sgsOHrI+d42xULy7XomlOCPRUIu5qDgRANKsC4yOAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some x86 systems expose above 4G 64bit mmio in _CRS as non-pref mmio range.
-[   49.415281] PCI host bridge to bus 0000:00
-[   49.419921] pci_bus 0000:00: root bus resource [bus 00-1e]
-[   49.426107] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
-[   49.433041] pci_bus 0000:00: root bus resource [io  0x1000-0x5fff]
-[   49.440010] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
-[   49.447768] pci_bus 0000:00: root bus resource [mem 0xfed8c000-0xfedfffff]
-[   49.455532] pci_bus 0000:00: root bus resource [mem 0x90000000-0x9fffbfff]
-[   49.463259] pci_bus 0000:00: root bus resource [mem 0x380000000000-0x381fffffffff]
+W dniu 09.12.2013 16:31, Eric Dumazet pisze:
+> On Mon, 2013-12-09 at 12:47 +0100, Andrzej Pietrasiewicz wrote:
+>> NOT FOR COMMITTING TO MAINLINE.
+>>
+>> With g_ether loaded the sk occasionally becomes 0xffffffff.
+>> It happens usually after transferring few hundreds of kilobytes to few
+>> tens of megabytes. If sk is 0xffffffff then dereferencing it causes
+>> kernel panic.
+>>
+>> This is a *workaround*. I don't know enough net code to understand the core
+>> of the problem. However, with this patch applied the problems are gone,
+>> or at least pushed farther away.
+>
+> Is it happening on SMP or UP ?
 
-During assign unassigned 64bit mmio resource, it will go through
-every non-pref mmio for root bus in pci_bus_alloc_resource().
-As the loop is with pci_bus_for_each_resource(), and could have chance
-to use under 4G mmio range instead of above 4G mmio range if the requested
-range is not big enough, even it could handle above 4G 64bit pref mmio.
+UP build, S5PC110
 
-For root bus, we can order list from high to low in pci_add_resource_offset(),
-during creating root bus, it will still keep the same order in final bus
-resource list.
-	pci_acpi_scan_root
-		==> add_resources
-			==> pci_add_resource_offset: # Add to temp resources
-		==> pci_create_root_bus
-			==> pci_bus_add_resource # add to final bus resources.
+>
+> Crash should happen earlier in __inet_lookup_established()
+>
+>
+>
 
-After that, we can make sure 64bit pref mmio for pci bridges will be allocated
-higest of mmio non-pref, and in this case it is above 4G instead of under 4G.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- drivers/pci/bus.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 45d8de5..7798cd3 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -21,7 +21,8 @@
- void pci_add_resource_offset(struct list_head *resources, struct resource *res,
- 			     resource_size_t offset)
- {
--	struct pci_host_bridge_window *window;
-+	struct pci_host_bridge_window *window, *tmp;
-+	struct list_head *n;
- 
- 	window = kzalloc(sizeof(struct pci_host_bridge_window), GFP_KERNEL);
- 	if (!window) {
-@@ -31,7 +32,17 @@ void pci_add_resource_offset(struct list_head *resources, struct resource *res,
- 
- 	window->res = res;
- 	window->offset = offset;
--	list_add_tail(&window->list, resources);
-+
-+	/* Keep list sorted according to res end */
-+	n = resources;
-+	list_for_each_entry(tmp, resources, list)
-+		if (window->res->end > tmp->res->end) {
-+			n = &tmp->list;
-+			break;
-+		}
-+
-+	/* Insert it just before n */
-+	list_add_tail(&window->list, n);
- }
- EXPORT_SYMBOL(pci_add_resource_offset);
- 
--- 
-1.8.4
-
+AP
