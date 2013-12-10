@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab3LJUJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:09:45 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:47263 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787Ab3LJUJn (ORCPT
+	id S1751632Ab3LJUKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:10:05 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:44369 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750960Ab3LJUKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:09:43 -0500
-Date: Tue, 10 Dec 2013 12:09:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
- Document ACCESS_ONCE()
-Message-ID: <20131210200936.GE4208@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
- <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131205132101.45c56f93@lwn.net>
- <20131205214406.GY15492@linux.vnet.ibm.com>
- <20131210152006.GD873@gmail.com>
- <20131210174400.GW4208@linux.vnet.ibm.com>
- <20131210182800.GA20770@gmail.com>
- <20131210190154.GB4208@linux.vnet.ibm.com>
- <20131210194628.GA21814@gmail.com>
+	Tue, 10 Dec 2013 15:10:03 -0500
+Date: Tue, 10 Dec 2013 21:05:29 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: Re: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing
+ hardware
+Message-ID: <20131210200529.GD3651@lukather>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-2-git-send-email-wens@csie.org>
+ <20131207103335.GL24519@lukather>
+ <CAGb2v65YOSq_BMWSzSHX8w_hbo+0vwquBT2pnLuwNVZkWRfLvA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qrgsu6vtpU/OV/zm"
 Content-Disposition: inline
-In-Reply-To: <20131210194628.GA21814@gmail.com>
+In-Reply-To: <CAGb2v65YOSq_BMWSzSHX8w_hbo+0vwquBT2pnLuwNVZkWRfLvA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121020-3532-0000-0000-000003BABAF0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 08:46:28PM +0100, Ingo Molnar wrote:
-> 
-> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > > So, what I don't see this statement cover (and I might be dense about 
-> > > it!) is whether two ACCESS_ONCE() macros referring to different 
-> > > variables are allowed to be reordered with each other.
-> > > 
-> > > If the compiler reorders:
-> > > 
-> > > 	ACCESS_ONCE(x);
-> > > 	ACCESS_ONCE(y);
-> > > 
-> > > to:
-> > > 
-> > > 	ACCESS_ONCE(y);
-> > > 	ACCESS_ONCE(x);
-> > > 
-> > > then AFAICS it still meets the "compiler need only forget the contents 
-> > > of the indicated memory located" requirement that you listed, right?
-> > 
-> > True, but if the compiler was willing to reorder ACCESS_ONCE()'s 
-> > volatile accesses, it would be really hard to write reliable device 
-> > drivers. [...]
-> 
-> But nowhere do we link ACCESS_ONCE() to 'volatile' semantics in the 
-> document, do we? (and I'm not sure we should.)
 
-Agreed, stating ACCESS_ONCE()'s semantics separately is better.
+--Qrgsu6vtpU/OV/zm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> [ In theory a future compiler could offer a smarter, more flexible 
->   'compiler barrier' implementation - at which point we might be 
->   tempted to use that new facility to implement ACCESS_ONCE(). At that 
->   point this ambiguity might arise. ]
+Hi,
 
-And they are trying to obsolete volatile, but haven't quite got there
-yet.  ;-)
+On Mon, Dec 09, 2013 at 10:43:29AM +0800, Chen-Yu Tsai wrote:
+> >> @@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct de=
+vice *device,
+> >>               }
+> >>       }
+> >>
+> >> +     clk_disable_unprepare(priv->stmmac_clk);
+> >> +
+> >
+> > Hu? Why do you disable the clock? don't you need it afterwards?
+>=20
+> The clock is enabled in *_open (when the network interface is used),
+> and disabled in *_close.
 
-> > [...]  The standard says the following:
-> > 
-> > 	Access to volatile objects are evaluated strictly according to
-> > 	the rules of the abstract machine.
-> > 
-> > That said, compiler writers and standards wonks will argue endlessly 
-> > about exactly what that does and does not mean.  :-/
-> > 
-> > I added a sentence reading:
-> > 
-> > 	Of course, the compiler must also respect the order in which
-> > 	the ACCESS_ONCE()s occur, though the CPU of course need not do so.
-> > 
-> > To the end of that paragraph.  Does that help?
-> 
-> Yeah, that looks perfect!
+Maybe it is the real issue then.
 
-Very good!
+Why don't you move the clk_disable to _remove then?
 
-							Thanx, Paul
+Maxime
 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Qrgsu6vtpU/OV/zm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSp3QJAAoJEBx+YmzsjxAgCBEQAKY/ZEZloHcDGaHYS0RqXDhM
+GKZTcV9duag9I2sSRxbzDXeldJYIOOZ3g5lraAhhu0Qk9JEAUt4+Tw8WjHJcxNIV
+shIxhRdGZW4hcoQDiYU3KIt88Bt5rvUrbz3vxWgaKKv9pjQ2b9Qz9AwnAJfosp8z
+ufhZ6dqnSHzIhXUx2yyIEuaO1Rb0LKhfGUP8zzFFfKRLmED13ctCUaqc3mUo56+s
+TlSQsiWwKZ19tHoGoq3T76TGGb0fiDrMvnlQM6OGmye9EufgEtQW2v6xUSMTmKWG
+myOfPxRjRfH7c5nK7L5s0e7e/cZZaepISBjDABa2kXAiY7nlzlrzk4bNMM+NuS65
+jugXp1UIPPXqkPUag551JsS0A6dJarplIjwLmOvq8GBK7wFpjDFuYgfivr3o7BSb
+UggC9cMwoFv7YsYF4pLwkLkUTAhOsxFht6v6Tfm6Y51AjtxqYWMZr3Llve9F41l7
+2hiLygT5y0JplrTmgrSvMcFpOBUDCXkk7+pw5c6/WhDUcLhaNOS+8ioOyzJmW7mX
+RAp7GSpkmc+wykNso5z0ACXTXftyG9EKq4sTHnsKJdqu7r1PPEyTOM+4LWMkf+QY
+BuElAYHcU2sQsra91+VuQO+Ug66sHmOgCI176p5VeAHClvdw7u2F89QVa+f54Eyr
+AmEl1ZSm8vUj9/XcrSK1
+=784y
+-----END PGP SIGNATURE-----
+
+--Qrgsu6vtpU/OV/zm--
