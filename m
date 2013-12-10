@@ -1,204 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab3LJJKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:10:00 -0500
-Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:35395
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765Ab3LJJJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:09:54 -0500
-From: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Scott Wood <scottwood@freescale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-Thread-Topic: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-Thread-Index: AQHO5OdyKeXB/EytyUeVGr+Ok97IOJoueBeAgAENqwCAAKUSgIAAARWAgAADyQCABUQ/0IAAu7eAgAMaEYCAAR6mUIAMACkAgAA/BTCAAPlVgIAACIkAgAVR/pCAABMKAIAAF2Dw
-Date: Tue, 10 Dec 2013 09:09:48 +0000
-Message-ID: <182cddd6c4cd4d01a216d468e784fe5d@BN1PR03MB266.namprd03.prod.outlook.com>
-References: <1384838233-24847-1-git-send-email-Bharat.Bhushan@freescale.com>
-	 <1384973243.2879.361.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0721D9AC@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1385066603.2879.414.camel@ul30vt.home>
-	 <1385066835.1403.489.camel@snotra.buserror.net>
-	 <1385067648.2879.421.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0722C180@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1385397493.2879.557.camel@ul30vt.home>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D0723624C@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1386289316.7375.107.camel@snotra.buserror.net>
-	 <6A3DF150A5B70D4F9B66A25E3F7C888D07251EE4@039-SN2MPN1-012.039d.mgd.msft.net>
-	 <1386356393.7375.118.camel@snotra.buserror.net>
-	 <1386358226.25738.506.camel@ul30vt.home>
-	 <326a93628a9141a9abce97b7bb4e04fd@BN1PR03MB266.namprd03.prod.outlook.com>
- <1386654800.22974.2.camel@ul30vt.home>
-In-Reply-To: <1386654800.22974.2.camel@ul30vt.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-forefront-prvs: 005671E15D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(13464003)(24454002)(199002)(189002)(377424004)(51704005)(377454003)(90146001)(74316001)(87266001)(2656002)(4396001)(69226001)(87936001)(80976001)(56776001)(65816001)(81816001)(66066001)(63696002)(56816005)(83072002)(85852003)(81686001)(80022001)(33646001)(49866001)(85306002)(47976001)(47446002)(76796001)(77096001)(74502001)(54356001)(74662001)(19580405001)(19580395003)(31966008)(74876001)(76786001)(83322001)(81542001)(53806001)(81342001)(76576001)(59766001)(54316002)(74706001)(77982001)(50986001)(79102001)(51856001)(47736001)(76482001)(46102001)(74366001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB347;H:BN1PR03MB266.namprd03.prod.outlook.com;CLIP:192.88.169.1;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1753474Ab3LJJKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:10:33 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:49282 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab3LJJKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 04:10:23 -0500
+X-AuditID: cbfec7f5-b7fd16d000007299-9c-52a6da7c8233
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCH 2/2] regulator: s5m8767: Fix driver probe fail on BUCK7/8
+ regulators
+Date: Tue, 10 Dec 2013 10:09:43 +0100
+Message-id: <1386666583-3280-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1386666583-3280-1-git-send-email-k.kozlowski@samsung.com>
+References: <1386666583-3280-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e/4Vd2aW8uCDN4c0baY+vAJm8XrF4YW
+	Z5vesFvc/3qU0eLblQ4mi02Pr7FaXN41h81i7ZG77Banu1ktLq74wmTxfv9lJgduj52z7rJ7
+	bFrVyeZx59oeNo95JwM9Ni+p9+jbsorR4/MmuQD2KC6blNSczLLUIn27BK6MTxOnsxW85q2Y
+	92YPUwPjee4uRg4OCQETiYZG6S5GTiBTTOLCvfVsXYxcHEICSxklms/dZgdJCAn0MUnMbC8E
+	sdkEjCU2L18CViQisIBJ4ti7i6wgDrNAL6PEg3e/GEGqhAXCJH4tbmQH2cAioCpx4okXSJhX
+	wE1i4qZ2ZojFChJzJtmAhDkF3CVebO9mhdjlJvHsaA/7BEbeBYwMqxhFU0uTC4qT0nON9IoT
+	c4tL89L1kvNzNzFCwvDrDsalx6wOMQpwMCrx8Er8WxokxJpYVlyZe4hRgoNZSYR39cllQUK8
+	KYmVValF+fFFpTmpxYcYmTg4pRoYVx63vyr0v+NBq3PIApYPxszNrMu/Sl96kTLRwJinf57w
+	i7fPZ9e/2CFnf7puknenu2/B2ujcuwW8vfo+XgUL81Z4bjD/aBzg8KqD/+sdvrUbm35qOG+d
+	r7XIZnbWa9uIPb4mCreniEimvGsQrVPc9Xz9IbatvRciDmROllj+SOnZF7sNT7wFlViKMxIN
+	tZiLihMBUuicbSECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBA9A8nm013704
 
+The BUCK7 and BUCK8 were not supported by s5m8767 driver. If they were
+configured in DTS then the driver probing would fail with EINVAL:
+[    0.288474] VCC_SUB_1.35V: failed to apply 1350000uV constraint
+[    0.288671] s5m8767-pmic s5m8767-pmic: regulator init failed for 35
+[    0.294931] s5m8767-pmic: probe of s5m8767-pmic failed with error -22
 
+This patch adds support for BUCK7 and BUCK8 regulators using standard
+regmap get/set voltage sel functions.
 
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Tuesday, December 10, 2013 11:23 AM
-> To: Bhushan Bharat-R65777
-> Cc: Wood Scott-B07421; linux-pci@vger.kernel.org; agraf@suse.de; Yoder Stuart-
-> B08248; iommu@lists.linux-foundation.org; bhelgaas@google.com; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale IOMMU (PAMU)
-> 
-> On Tue, 2013-12-10 at 05:37 +0000, Bharat.Bhushan@freescale.com wrote:
-> >
-> > > -----Original Message-----
-> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > Sent: Saturday, December 07, 2013 1:00 AM
-> > > To: Wood Scott-B07421
-> > > Cc: Bhushan Bharat-R65777; linux-pci@vger.kernel.org; agraf@suse.de;
-> > > Yoder Stuart-B08248; iommu@lists.linux-foundation.org;
-> > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
-> > > linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for Freescale
-> > > IOMMU (PAMU)
-> > >
-> > > On Fri, 2013-12-06 at 12:59 -0600, Scott Wood wrote:
-> > > > On Thu, 2013-12-05 at 22:11 -0600, Bharat Bhushan wrote:
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Wood Scott-B07421
-> > > > > > Sent: Friday, December 06, 2013 5:52 AM
-> > > > > > To: Bhushan Bharat-R65777
-> > > > > > Cc: Alex Williamson; linux-pci@vger.kernel.org; agraf@suse.de;
-> > > > > > Yoder Stuart- B08248; iommu@lists.linux-foundation.org;
-> > > > > > bhelgaas@google.com; linuxppc- dev@lists.ozlabs.org;
-> > > > > > linux-kernel@vger.kernel.org
-> > > > > > Subject: Re: [PATCH 0/9 v2] vfio-pci: add support for
-> > > > > > Freescale IOMMU (PAMU)
-> > > > > >
-> > > > > > On Thu, 2013-11-28 at 03:19 -0600, Bharat Bhushan wrote:
-> > > > > > >
-> > > > > > > > -----Original Message-----
-> > > > > > > > From: Bhushan Bharat-R65777
-> > > > > > > > Sent: Wednesday, November 27, 2013 9:39 PM
-> > > > > > > > To: 'Alex Williamson'
-> > > > > > > > Cc: Wood Scott-B07421; linux-pci@vger.kernel.org;
-> > > > > > > > agraf@suse.de; Yoder Stuart- B08248;
-> > > > > > > > iommu@lists.linux-foundation.org; bhelgaas@google.com;
-> > > > > > > > linuxppc- dev@lists.ozlabs.org;
-> > > > > > > > linux-kernel@vger.kernel.org
-> > > > > > > > Subject: RE: [PATCH 0/9 v2] vfio-pci: add support for
-> > > > > > > > Freescale IOMMU (PAMU)
-> > > > > > > >
-> > > > > > > > If we just provide the size of MSI bank to userspace then
-> > > > > > > > userspace cannot do anything wrong.
-> > > > > > >
-> > > > > > > So userspace does not know address, so it cannot mmap and
-> > > > > > > cause any
-> > > > > > interference by directly reading/writing.
-> > > > > >
-> > > > > > That's security through obscurity...  Couldn't the malicious
-> > > > > > user find out the address via other means, such as
-> > > > > > experimentation on another system over which they have full
-> > > > > > control?  What would happen if the user reads from their
-> > > > > > device's PCI config space?  Or gets the information via some
-> > > > > > back door in the PCI device they own?  Or pokes throughout the
-> > > > > > address space looking for something that
-> > > generates an interrupt to its own device?
-> > > > >
-> > > > > So how to solve this problem, Any suggestion ?
-> > > > >
-> > > > > We have to map one window in PAMU for MSIs and a malicious user
-> > > > > can ask its device to do DMA to MSI window region with any pair
-> > > > > of address and data, which can lead to unexpected MSIs in system?
-> > > >
-> > > > I don't think there are any solutions other than to limit each
-> > > > bank to one user, unless the admin turns some knob that says
-> > > > they're OK with the partial loss of isolation.
-> > >
-> > > Even if the admin does opt-in to an allow_unsafe_interrupts options,
-> > > it should still be reasonably difficult for one guest to interfere
-> > > with the other.  I don't think we want to rely on the blind luck of
-> > > making the full MSI bank accessible to multiple guests and hoping they don't
-> step on each other.
-> >
-> > Not sure how to solve in this case (sharing MSI page)
-> >
-> > >  That probably means that vfio needs to manage the space rather than the
-> guest.
-> >
-> > What you mean by " vfio needs to manage the space rather than the guest"?
-> 
-> I mean there needs to be some kernel component managing the contents of the MSI
-> page rather than just handing it out to the user and hoping for the best.  The
-> user API also needs to remain the same whether the user has the MSI page
-> exclusively or it's shared with others (kernel or users).  Thanks,
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ drivers/regulator/s5m8767.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-We have limited number of MSI banks, so we cannot provide explicit MSI bank to each VMs.
-Below is the summary of msi allocation/ownership model I am thinking of:
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 58eb7a6c45e6..397917611ecd 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -120,8 +120,8 @@ static const struct sec_voltage_desc *reg_voltage_map[] = {
+ 	[S5M8767_BUCK4] = &buck_voltage_val2,
+ 	[S5M8767_BUCK5] = &buck_voltage_val1,
+ 	[S5M8767_BUCK6] = &buck_voltage_val1,
+-	[S5M8767_BUCK7] = NULL,
+-	[S5M8767_BUCK8] = NULL,
++	[S5M8767_BUCK7] = &buck_voltage_val3,
++	[S5M8767_BUCK8] = &buck_voltage_val3,
+ 	[S5M8767_BUCK9] = &buck_voltage_val3,
+ };
+ 
+@@ -418,9 +418,12 @@ static struct regulator_ops s5m8767_ops = {
+ };
+ 
+ static struct regulator_ops s5m8767_buck78_ops = {
++	.list_voltage		= regulator_list_voltage_linear,
+ 	.is_enabled		= s5m8767_reg_is_enabled,
+ 	.enable			= s5m8767_reg_enable,
+ 	.disable		= s5m8767_reg_disable,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+ };
+ 
+ #define s5m8767_regulator_desc(_name) {		\
+-- 
+1.7.9.5
 
-Option-1: User-space aware of MSI banks
-========= 
-1 ) Userspace will make GET_MSI_REGION(request number of MSI banks)
-	- VFIO will allocate requested number of MSI bank;
-	- If allocation succeed then return number of banks
-	- If allocation fails then check opt-in flag set by administrator (allow_unsafe_interrupts);
-         allow_unsafe_interrupts  == 0; Not allowed to share; return FAIL (-ENODEV)
-         else share MSI bank of another VM.
-
-2) Userspace will adjust geometry size as per number of banks and calls SET_GEOMETRY
-
-3) Userspace will do DMA_MAP for its memory
-
-4) Userspace will do MSI_MAP for number of banks it have
-	- MSI_MAP(iova, bank number);
-	- Should iova be passed by userspace or not? I think we should pass iova as it does not know if userspace will call DMA_MAP for same iova later on.
-	  VFIO can somehow find a magic IOVA within geometry but will assume that userspace will not make DMA_MAP later on.
-	
-
-Option-2: Userspace transparent MSI banks
-========= 
-1) Userspace setup geometry of its memory (say call as "userspace-geometry") (SET_GEOMETRY)
-	- VFIO will allocate MSI bank/s; how many??.
-	- Error out if not available (shared and/or exclusive, same as in option-1 above)
-	- VFIO will adjust geometry accordingly (say called as "actual-geometry").
-
-2) Userspace will do DMA_MAP for its memory.
-	- VFIO allows only within "userspace-geometry".
-
-3) Userspace will do MSI_MAP after all DMA_MAP complete
-	- VFIO will find a magic IOVA after "userspace-geometry" but within "actual-geometry".
-	- Allocated MSI bank/s in step-1 are mapped in IOMMU
-
-=========
-
-Note: Irrespective of which option we use, a malicious userspace can interfere with another userspace by programming device DMA wrongly.
-
-Option-1 looks flexible and good to me but open for suggestions.
-
-Thanks
--Bharat
-
-
-> 
-> Alex
-> 
-> 
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
