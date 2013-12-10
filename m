@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3LJRTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:19:11 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:33138 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab3LJRTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:19:05 -0500
-Date: Tue, 10 Dec 2013 09:18:59 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v5 tip/core/locking 6/7] locking: Add an
- smp_mb__after_unlock_lock() for UNLOCK+LOCK barrier
-Message-ID: <20131210171859.GT4208@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20131210012738.GA24317@linux.vnet.ibm.com>
- <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1386638883-25379-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131210170404.GB23506@redhat.com>
+	id S1755493Ab3LJRTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:19:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47426 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754814Ab3LJRTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 12:19:40 -0500
+Date: Tue, 10 Dec 2013 17:19:36 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 11/18] mm: fix TLB flush race between migration, and
+ change_protection_range
+Message-ID: <20131210171936.GM11295@suse.de>
+References: <1386572952-1191-1-git-send-email-mgorman@suse.de>
+ <1386572952-1191-12-git-send-email-mgorman@suse.de>
+ <52A72463.9080108@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20131210170404.GB23506@redhat.com>
+In-Reply-To: <52A72463.9080108@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121017-8236-0000-0000-000004C12D5A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 06:04:04PM +0100, Oleg Nesterov wrote:
-> On 12/09, Paul E. McKenney wrote:
-> >
-> > This commit therefore adds a smp_mb__after_unlock_lock(), which may be
-> > placed after a LOCK primitive to restore the full-memory-barrier semantic.
-> > All definitions are currently no-ops, but will be upgraded for some
-> > architectures when queued locks arrive.
+On Tue, Dec 10, 2013 at 09:25:39AM -0500, Rik van Riel wrote:
+> On 12/09/2013 02:09 AM, Mel Gorman wrote:
 > 
-> I am wondering, perhaps smp_mb__after_unlock() makes more sense?
+> After reading the locking thread that Paul McKenney started,
+> I wonder if I got the barriers wrong in these functions...
 > 
-> Note that it already has the potential user:
+
+If Documentation/memory-barriers.txt could not be used to frighten small
+children before, it certainly can now.
+
+> > +#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+> > +/*
+> > + * Memory barriers to keep this state in sync are graciously provided by
+> > + * the page table locks, outside of which no page table modifications happen.
+> > + * The barriers below prevent the compiler from re-ordering the instructions
+> > + * around the memory barriers that are already present in the code.
+> > + */
+> > +static inline bool tlb_flush_pending(struct mm_struct *mm)
+> > +{
+> > +	barrier();
 > 
-> 	--- x/kernel/sched/wait.c
-> 	+++ x/kernel/sched/wait.c
-> 	@@ -176,8 +176,9 @@ prepare_to_wait(wait_queue_head_t *q, wa
-> 		spin_lock_irqsave(&q->lock, flags);
-> 		if (list_empty(&wait->task_list))
-> 			__add_wait_queue(q, wait);
-> 	-	set_current_state(state);
-> 	+	__set_current_state(state);
-> 		spin_unlock_irqrestore(&q->lock, flags);
-> 	+	smp_mb__after_unlock();
-> 	 }
-> 	 EXPORT_SYMBOL(prepare_to_wait);
-> 	 
-> 	@@ -190,8 +191,9 @@ prepare_to_wait_exclusive(wait_queue_hea
-> 		spin_lock_irqsave(&q->lock, flags);
-> 		if (list_empty(&wait->task_list))
-> 			__add_wait_queue_tail(q, wait);
-> 	-	set_current_state(state);
-> 	+	__set_current_state(state);
-> 		spin_unlock_irqrestore(&q->lock, flags);
-> 	+	smp_mb__after_unlock();
-> 	 }
-> 	 EXPORT_SYMBOL(prepare_to_wait_exclusive);
-> 	 
+> Should this be smp_mb__after_unlock_lock(); ?
 > 
-> Assuming it can also be used "later", after another LOCK, like in
-> your example in 5/7.
 
-I am fine either way.  But there was an objection to tying this to the
-unlock because it costs more on many architectures than tying this to
-the lock.
+I think this is still ok. Minimally, it's missing the unlock/lock pair that
+would cause smp_mb__after_unlock_lock() to be treated as a full barrier
+on architectures that care. The CPU executing this code as already seen
+the pmd_numa update if it's in the fault handler so it just needs to be
+sure to not reorder the check with respect to the page copy.
 
-But if you are saying "in addition to" rather than "instead of" that
-would be a different conversation.
+> > +	return mm->tlb_flush_pending;
+> > +}
+> > +static inline void set_tlb_flush_pending(struct mm_struct *mm)
+> > +{
+> > +	mm->tlb_flush_pending = true;
+> > +	barrier();
+> > +}
 
-							Thanx, Paul
+That now needs an smp_mb_before_spinlock to guarantee that the store
+mm->tlb_flush_pending does not leak into the section updating the page
+tables and get re-ordered. The result would pair with tlb_flush_pending
+to guarantee that a pagetable update that starts in parallel will be
+visible to flush the TLB before the cop
 
+> > +/* Clearing is done after a TLB flush, which also provides a barrier. */
+> > +static inline void clear_tlb_flush_pending(struct mm_struct *mm)
+> > +{
+> > +	barrier();
+> > +	mm->tlb_flush_pending = false;
+> > +}
+> 
+
+This should be ok. Stores updating page tables complete before the ptl
+unlock in addition to the TLB flush itself being a barrier that
+guarantees the this update takes place afterwards.
+
+Peter/Paul?
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index c122bb1..33e5519 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -482,7 +482,12 @@ static inline bool tlb_flush_pending(struct mm_struct *mm)
+ static inline void set_tlb_flush_pending(struct mm_struct *mm)
+ {
+ 	mm->tlb_flush_pending = true;
+-	barrier();
++
++	/*
++	 * Guarantee that the tlb_flush_pending store does not leak into the
++	 * critical section updating the page tables
++	 */
++	smp_mb_before_spinlock();
+ }
+ /* Clearing is done after a TLB flush, which also provides a barrier. */
+ static inline void clear_tlb_flush_pending(struct mm_struct *mm)
