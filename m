@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab3LJI2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:28:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58716 "EHLO
+	id S1755357Ab3LJI3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:29:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab3LJIAg (ORCPT
+	with ESMTP id S1752978Ab3LJIAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:36 -0500
+	Tue, 10 Dec 2013 03:00:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 35/52] SCSI: Disable WRITE SAME for RAID and virtual host adapter drivers
-Date: Tue, 10 Dec 2013 00:01:08 -0800
-Message-Id: <20131210075956.673077700@linuxfoundation.org>
+        "Kevin B. Smith" <kevin.b.smith@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. J. Lu" <hjl.tools@gmail.com>
+Subject: [PATCH 3.10 34/52] x86-64, build: Always pass in -mno-sse
+Date: Tue, 10 Dec 2013 00:01:07 -0800
+Message-Id: <20131210075956.605691291@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,262 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 54b2b50c20a61b51199bedb6e5d2f8ec2568fb43 upstream.
+commit 5551a34e5aeab868f8d37f70d8754868921b4ee5 upstream.
 
-Some host adapters do not pass commands through to the target disk
-directly. Instead they provide an emulated target which may or may not
-accurately report its capabilities. In some cases the physical device
-characteristics are reported even when the host adapter is processing
-commands on the device's behalf. This can lead to adapter firmware hangs
-or excessive I/O errors.
+Always pass in the -mno-sse argument, regardless if
+-preferred-stack-boundary is supported.  We never want to generate SSE
+instructions in the kernel unless we *really* know what we're doing.
 
-This patch disables WRITE SAME for devices connected to host adapters
-that provide an emulated target. Driver writers can disable WRITE SAME
-by setting the no_write_same flag in the host adapter template.
+According to H. J. Lu, any version of gcc new enough that we support
+it at all should handle the -mno-sse option, so just add it
+unconditionally.
 
-[jejb: fix up rejections due to eh_deadline patch]
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-scsi.c                 |    1 +
- drivers/firewire/sbp2.c                   |    1 +
- drivers/scsi/3w-9xxx.c                    |    3 ++-
- drivers/scsi/3w-sas.c                     |    3 ++-
- drivers/scsi/3w-xxxx.c                    |    3 ++-
- drivers/scsi/aacraid/linit.c              |    1 +
- drivers/scsi/arcmsr/arcmsr_hba.c          |    1 +
- drivers/scsi/gdth.c                       |    1 +
- drivers/scsi/hosts.c                      |    1 +
- drivers/scsi/hpsa.c                       |    1 +
- drivers/scsi/ipr.c                        |    3 ++-
- drivers/scsi/ips.c                        |    1 +
- drivers/scsi/megaraid.c                   |    1 +
- drivers/scsi/megaraid/megaraid_mbox.c     |    1 +
- drivers/scsi/megaraid/megaraid_sas_base.c |    1 +
- drivers/scsi/pmcraid.c                    |    1 +
- drivers/scsi/sd.c                         |    6 ++++++
- drivers/scsi/storvsc_drv.c                |    1 +
- include/scsi/scsi_host.h                  |    6 ++++++
- 19 files changed, 33 insertions(+), 4 deletions(-)
+ arch/x86/Makefile |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3614,6 +3614,7 @@ int ata_scsi_add_hosts(struct ata_host *
- 		shost->max_lun = 1;
- 		shost->max_channel = 1;
- 		shost->max_cmd_len = 16;
-+		shost->no_write_same = 1;
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
  
- 		/* Schedule policy is determined by ->qc_defer()
- 		 * callback and it needs to see every deferred qc.
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1626,6 +1626,7 @@ static struct scsi_host_template scsi_dr
- 	.cmd_per_lun		= 1,
- 	.can_queue		= 1,
- 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
-+	.no_write_same		= 1,
- };
+         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
  
- MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -2025,7 +2025,8 @@ static struct scsi_host_template driver_
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= twa_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
---- a/drivers/scsi/3w-sas.c
-+++ b/drivers/scsi/3w-sas.c
-@@ -1600,7 +1600,8 @@ static struct scsi_host_template driver_
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= twl_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
---- a/drivers/scsi/3w-xxxx.c
-+++ b/drivers/scsi/3w-xxxx.c
-@@ -2277,7 +2277,8 @@ static struct scsi_host_template driver_
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,	
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= tw_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
---- a/drivers/scsi/aacraid/linit.c
-+++ b/drivers/scsi/aacraid/linit.c
-@@ -1081,6 +1081,7 @@ static struct scsi_host_template aac_dri
- #endif
- 	.use_clustering			= ENABLE_CLUSTERING,
- 	.emulated			= 1,
-+	.no_write_same			= 1,
- };
- 
- static void __aac_shutdown(struct aac_dev * aac)
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -137,6 +137,7 @@ static struct scsi_host_template arcmsr_
- 	.cmd_per_lun		= ARCMSR_MAX_CMD_PERLUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= arcmsr_host_attrs,
-+	.no_write_same		= 1,
- };
- static struct pci_device_id arcmsr_device_id_table[] = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110)},
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4686,6 +4686,7 @@ static struct scsi_host_template gdth_te
-         .cmd_per_lun            = GDTH_MAXC_P_L,
-         .unchecked_isa_dma      = 1,
-         .use_clustering         = ENABLE_CLUSTERING,
-+	.no_write_same		= 1,
- };
- 
- #ifdef CONFIG_ISA
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -388,6 +388,7 @@ struct Scsi_Host *scsi_host_alloc(struct
- 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
- 	shost->use_clustering = sht->use_clustering;
- 	shost->ordered_tag = sht->ordered_tag;
-+	shost->no_write_same = sht->no_write_same;
- 
- 	if (sht->supported_mode == MODE_UNKNOWN)
- 		/* means we didn't set it ... default to INITIATOR */
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -538,6 +538,7 @@ static struct scsi_host_template hpsa_dr
- 	.sdev_attrs = hpsa_sdev_attrs,
- 	.shost_attrs = hpsa_shost_attrs,
- 	.max_sectors = 8192,
-+	.no_write_same = 1,
- };
- 
- 
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -6267,7 +6267,8 @@ static struct scsi_host_template driver_
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.shost_attrs = ipr_ioa_attrs,
- 	.sdev_attrs = ipr_dev_attrs,
--	.proc_name = IPR_NAME
-+	.proc_name = IPR_NAME,
-+	.no_write_same = 1,
- };
- 
- /**
---- a/drivers/scsi/ips.c
-+++ b/drivers/scsi/ips.c
-@@ -374,6 +374,7 @@ static struct scsi_host_template ips_dri
- 	.sg_tablesize		= IPS_MAX_SG,
- 	.cmd_per_lun		= 3,
- 	.use_clustering		= ENABLE_CLUSTERING,
-+	.no_write_same		= 1,
- };
- 
- 
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -4244,6 +4244,7 @@ static struct scsi_host_template megarai
- 	.eh_device_reset_handler	= megaraid_reset,
- 	.eh_bus_reset_handler		= megaraid_reset,
- 	.eh_host_reset_handler		= megaraid_reset,
-+	.no_write_same			= 1,
- };
- 
- static int
---- a/drivers/scsi/megaraid/megaraid_mbox.c
-+++ b/drivers/scsi/megaraid/megaraid_mbox.c
-@@ -367,6 +367,7 @@ static struct scsi_host_template megarai
- 	.eh_host_reset_handler		= megaraid_reset_handler,
- 	.change_queue_depth		= megaraid_change_queue_depth,
- 	.use_clustering			= ENABLE_CLUSTERING,
-+	.no_write_same			= 1,
- 	.sdev_attrs			= megaraid_sdev_attrs,
- 	.shost_attrs			= megaraid_shost_attrs,
- };
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -2099,6 +2099,7 @@ static struct scsi_host_template megasas
- 	.bios_param = megasas_bios_param,
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.change_queue_depth = megasas_change_queue_depth,
-+	.no_write_same = 1,
- };
- 
- /**
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -4314,6 +4314,7 @@ static struct scsi_host_template pmcraid
- 	.this_id = -1,
- 	.sg_tablesize = PMCRAID_MAX_IOADLS,
- 	.max_sectors = PMCRAID_IOA_MAX_SECTORS,
-+	.no_write_same = 1,
- 	.cmd_per_lun = PMCRAID_MAX_CMD_PER_LUN,
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.shost_attrs = pmcraid_host_attrs,
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2627,6 +2627,12 @@ static void sd_read_write_same(struct sc
- {
- 	struct scsi_device *sdev = sdkp->device;
- 
-+	if (sdev->host->no_write_same) {
-+		sdev->no_write_same = 1;
++        # Don't autogenerate SSE instructions
++	KBUILD_CFLAGS += -mno-sse
 +
-+		return;
-+	}
+         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+         # with nonstandard options
+         KBUILD_CFLAGS += -fno-pic
+@@ -57,8 +60,11 @@ else
+         KBUILD_AFLAGS += -m64
+         KBUILD_CFLAGS += -m64
+ 
++        # Don't autogenerate SSE instructions
++	KBUILD_CFLAGS += -mno-sse
 +
- 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
- 		sdev->no_report_opcodes = 1;
+ 	# Use -mpreferred-stack-boundary=3 if supported.
+-	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
++	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
  
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1454,6 +1454,7 @@ static struct scsi_host_template scsi_dr
- 	.use_clustering =	DISABLE_CLUSTERING,
- 	/* Make sure we dont get a sg segment crosses a page boundary */
- 	.dma_boundary =		PAGE_SIZE-1,
-+	.no_write_same =	1,
- };
- 
- enum {
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -475,6 +475,9 @@ struct scsi_host_template {
- 	 */
- 	unsigned ordered_tag:1;
- 
-+	/* True if the controller does not support WRITE SAME */
-+	unsigned no_write_same:1;
-+
- 	/*
- 	 * Countdown for host blocking with no commands outstanding.
- 	 */
-@@ -674,6 +677,9 @@ struct Scsi_Host {
- 	/* Don't resume host in EH */
- 	unsigned eh_noresume:1;
- 
-+	/* The controller does not support WRITE SAME */
-+	unsigned no_write_same:1;
-+
- 	/*
- 	 * Optional work queue to be utilized by the transport
- 	 */
+         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
+         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
 
 
