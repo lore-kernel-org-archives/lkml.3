@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470Ab3LJIIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:08:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59016 "EHLO
+	id S1753911Ab3LJICc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab3LJICe (ORCPT
+	with ESMTP id S1753872Ab3LJICW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:34 -0500
+	Tue, 10 Dec 2013 03:02:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 3.12 55/62] mei: add 9 series PCH mei device ids
-Date: Tue, 10 Dec 2013 00:01:26 -0800
-Message-Id: <20131210080101.271106251@linuxfoundation.org>
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.12 49/62] SCSI: Disable WRITE SAME for RAID and virtual host adapter drivers
+Date: Tue, 10 Dec 2013 00:01:20 -0800
+Message-Id: <20131210080100.857418575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,51 +27,262 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 76a9635979e543f04a5885198e68ff28e3311b67 upstream.
+commit 54b2b50c20a61b51199bedb6e5d2f8ec2568fb43 upstream.
 
-And Lynx Point H Refresh and Wildcat Point LP
-device ids.
+Some host adapters do not pass commands through to the target disk
+directly. Instead they provide an emulated target which may or may not
+accurately report its capabilities. In some cases the physical device
+characteristics are reported even when the host adapter is processing
+commands on the device's behalf. This can lead to adapter firmware hangs
+or excessive I/O errors.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+This patch disables WRITE SAME for devices connected to host adapters
+that provide an emulated target. Driver writers can disable WRITE SAME
+by setting the no_write_same flag in the host adapter template.
+
+[jejb: fix up rejections due to eh_deadline patch]
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hw-me-regs.h |    5 ++++-
- drivers/misc/mei/pci-me.c     |    4 +++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/ata/libata-scsi.c                 |    1 +
+ drivers/firewire/sbp2.c                   |    1 +
+ drivers/scsi/3w-9xxx.c                    |    3 ++-
+ drivers/scsi/3w-sas.c                     |    3 ++-
+ drivers/scsi/3w-xxxx.c                    |    3 ++-
+ drivers/scsi/aacraid/linit.c              |    1 +
+ drivers/scsi/arcmsr/arcmsr_hba.c          |    1 +
+ drivers/scsi/gdth.c                       |    1 +
+ drivers/scsi/hosts.c                      |    1 +
+ drivers/scsi/hpsa.c                       |    1 +
+ drivers/scsi/ipr.c                        |    3 ++-
+ drivers/scsi/ips.c                        |    1 +
+ drivers/scsi/megaraid.c                   |    1 +
+ drivers/scsi/megaraid/megaraid_mbox.c     |    1 +
+ drivers/scsi/megaraid/megaraid_sas_base.c |    1 +
+ drivers/scsi/pmcraid.c                    |    1 +
+ drivers/scsi/sd.c                         |    6 ++++++
+ drivers/scsi/storvsc_drv.c                |    1 +
+ include/scsi/scsi_host.h                  |    6 ++++++
+ 19 files changed, 33 insertions(+), 4 deletions(-)
 
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -109,9 +109,12 @@
- #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
- #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3625,6 +3625,7 @@ int ata_scsi_add_hosts(struct ata_host *
+ 		shost->max_lun = 1;
+ 		shost->max_channel = 1;
+ 		shost->max_cmd_len = 16;
++		shost->no_write_same = 1;
  
--#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
-+#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
- #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
- #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
-+#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
+ 		/* Schedule policy is determined by ->qc_defer()
+ 		 * callback and it needs to see every deferred qc.
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1623,6 +1623,7 @@ static struct scsi_host_template scsi_dr
+ 	.cmd_per_lun		= 1,
+ 	.can_queue		= 1,
+ 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
++	.no_write_same		= 1,
+ };
+ 
+ MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -2025,7 +2025,8 @@ static struct scsi_host_template driver_
+ 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= twa_host_attrs,
+-	.emulated		= 1
++	.emulated		= 1,
++	.no_write_same		= 1,
+ };
+ 
+ /* This function will probe and initialize a card */
+--- a/drivers/scsi/3w-sas.c
++++ b/drivers/scsi/3w-sas.c
+@@ -1600,7 +1600,8 @@ static struct scsi_host_template driver_
+ 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= twl_host_attrs,
+-	.emulated		= 1
++	.emulated		= 1,
++	.no_write_same		= 1,
+ };
+ 
+ /* This function will probe and initialize a card */
+--- a/drivers/scsi/3w-xxxx.c
++++ b/drivers/scsi/3w-xxxx.c
+@@ -2279,7 +2279,8 @@ static struct scsi_host_template driver_
+ 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,	
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= tw_host_attrs,
+-	.emulated		= 1
++	.emulated		= 1,
++	.no_write_same		= 1,
+ };
+ 
+ /* This function will probe and initialize a card */
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -1081,6 +1081,7 @@ static struct scsi_host_template aac_dri
+ #endif
+ 	.use_clustering			= ENABLE_CLUSTERING,
+ 	.emulated			= 1,
++	.no_write_same			= 1,
+ };
+ 
+ static void __aac_shutdown(struct aac_dev * aac)
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -137,6 +137,7 @@ static struct scsi_host_template arcmsr_
+ 	.cmd_per_lun		= ARCMSR_MAX_CMD_PERLUN,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= arcmsr_host_attrs,
++	.no_write_same		= 1,
+ };
+ static struct pci_device_id arcmsr_device_id_table[] = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110)},
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -4686,6 +4686,7 @@ static struct scsi_host_template gdth_te
+         .cmd_per_lun            = GDTH_MAXC_P_L,
+         .unchecked_isa_dma      = 1,
+         .use_clustering         = ENABLE_CLUSTERING,
++	.no_write_same		= 1,
+ };
+ 
+ #ifdef CONFIG_ISA
+--- a/drivers/scsi/hosts.c
++++ b/drivers/scsi/hosts.c
+@@ -388,6 +388,7 @@ struct Scsi_Host *scsi_host_alloc(struct
+ 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
+ 	shost->use_clustering = sht->use_clustering;
+ 	shost->ordered_tag = sht->ordered_tag;
++	shost->no_write_same = sht->no_write_same;
+ 
+ 	if (sht->supported_mode == MODE_UNKNOWN)
+ 		/* means we didn't set it ... default to INITIATOR */
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -562,6 +562,7 @@ static struct scsi_host_template hpsa_dr
+ 	.sdev_attrs = hpsa_sdev_attrs,
+ 	.shost_attrs = hpsa_shost_attrs,
+ 	.max_sectors = 8192,
++	.no_write_same = 1,
+ };
+ 
+ 
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -6305,7 +6305,8 @@ static struct scsi_host_template driver_
+ 	.use_clustering = ENABLE_CLUSTERING,
+ 	.shost_attrs = ipr_ioa_attrs,
+ 	.sdev_attrs = ipr_dev_attrs,
+-	.proc_name = IPR_NAME
++	.proc_name = IPR_NAME,
++	.no_write_same = 1,
+ };
+ 
+ /**
+--- a/drivers/scsi/ips.c
++++ b/drivers/scsi/ips.c
+@@ -374,6 +374,7 @@ static struct scsi_host_template ips_dri
+ 	.sg_tablesize		= IPS_MAX_SG,
+ 	.cmd_per_lun		= 3,
+ 	.use_clustering		= ENABLE_CLUSTERING,
++	.no_write_same		= 1,
+ };
+ 
+ 
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -4244,6 +4244,7 @@ static struct scsi_host_template megarai
+ 	.eh_device_reset_handler	= megaraid_reset,
+ 	.eh_bus_reset_handler		= megaraid_reset,
+ 	.eh_host_reset_handler		= megaraid_reset,
++	.no_write_same			= 1,
+ };
+ 
+ static int
+--- a/drivers/scsi/megaraid/megaraid_mbox.c
++++ b/drivers/scsi/megaraid/megaraid_mbox.c
+@@ -367,6 +367,7 @@ static struct scsi_host_template megarai
+ 	.eh_host_reset_handler		= megaraid_reset_handler,
+ 	.change_queue_depth		= megaraid_change_queue_depth,
+ 	.use_clustering			= ENABLE_CLUSTERING,
++	.no_write_same			= 1,
+ 	.sdev_attrs			= megaraid_sdev_attrs,
+ 	.shost_attrs			= megaraid_shost_attrs,
+ };
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -2148,6 +2148,7 @@ static struct scsi_host_template megasas
+ 	.bios_param = megasas_bios_param,
+ 	.use_clustering = ENABLE_CLUSTERING,
+ 	.change_queue_depth = megasas_change_queue_depth,
++	.no_write_same = 1,
+ };
+ 
+ /**
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -4314,6 +4314,7 @@ static struct scsi_host_template pmcraid
+ 	.this_id = -1,
+ 	.sg_tablesize = PMCRAID_MAX_IOADLS,
+ 	.max_sectors = PMCRAID_IOA_MAX_SECTORS,
++	.no_write_same = 1,
+ 	.cmd_per_lun = PMCRAID_MAX_CMD_PER_LUN,
+ 	.use_clustering = ENABLE_CLUSTERING,
+ 	.shost_attrs = pmcraid_host_attrs,
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2638,6 +2638,12 @@ static void sd_read_write_same(struct sc
+ {
+ 	struct scsi_device *sdev = sdkp->device;
+ 
++	if (sdev->host->no_write_same) {
++		sdev->no_write_same = 1;
 +
-+#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
- /*
-  * MEI HW Section
-  */
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -76,9 +76,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pc
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
--	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
++		return;
++	}
++
+ 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
+ 		sdev->no_report_opcodes = 1;
  
- 	/* required last entry */
- 	{0, }
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1697,6 +1697,7 @@ static struct scsi_host_template scsi_dr
+ 	.use_clustering =	DISABLE_CLUSTERING,
+ 	/* Make sure we dont get a sg segment crosses a page boundary */
+ 	.dma_boundary =		PAGE_SIZE-1,
++	.no_write_same =	1,
+ };
+ 
+ enum {
+--- a/include/scsi/scsi_host.h
++++ b/include/scsi/scsi_host.h
+@@ -475,6 +475,9 @@ struct scsi_host_template {
+ 	 */
+ 	unsigned ordered_tag:1;
+ 
++	/* True if the controller does not support WRITE SAME */
++	unsigned no_write_same:1;
++
+ 	/*
+ 	 * Countdown for host blocking with no commands outstanding.
+ 	 */
+@@ -674,6 +677,9 @@ struct Scsi_Host {
+ 	/* Don't resume host in EH */
+ 	unsigned eh_noresume:1;
+ 
++	/* The controller does not support WRITE SAME */
++	unsigned no_write_same:1;
++
+ 	/*
+ 	 * Optional work queue to be utilized by the transport
+ 	 */
 
 
