@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab3LJIBy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:01:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58878 "EHLO
+	id S1754779Ab3LJIQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:16:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58905 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab3LJIBn (ORCPT
+	with ESMTP id S1753663Ab3LJIBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:43 -0500
+	Tue, 10 Dec 2013 03:01:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 06/62] ALSA: hda - Fix silent output on MacBook Air 2,1
-Date: Tue, 10 Dec 2013 00:00:37 -0800
-Message-Id: <20131210080057.903386682@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.12 33/62] SCSI: enclosure: fix WARN_ON in dual path device removing
+Date: Tue, 10 Dec 2013 00:01:04 -0800
+Message-Id: <20131210080059.775406099@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,102 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 0756f09c4946fe2d9ce2ebcb6f2e3c58830d22a3 upstream.
+commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
 
-MacBook Air 2,1 has a fairly different pin assignment from its brother
-MBA 1,1, and yet another quirks are needed for pin 0x18 and 0x19,
-similarly like what iMac 9,1 requires, in order to make the sound
-working on it.
+Bug report from: wenxiong@linux.vnet.ibm.com
 
-Reported-and-tested-by: Bruno Prémont <bonbons@linux-vserver.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The issue is happened in dual controller configuration. We got the
+sysfs warnings when rmmod the ipr module.
+
+enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
+for each componment deivce, device_unregister() ->device_del()->kobject_del()
+->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
+
+For each componment device,
+enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
+in which checking kobj->sd again, it has been set as NULL when doing
+device_unregister. So we saw all these sysfs WARNING.
+
+Tested-by: wenxiong@linux.vnet.ibm.com
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   39 +++++++++++++++++++++++++++++++--------
- 1 file changed, 31 insertions(+), 8 deletions(-)
+ drivers/misc/enclosure.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1769,6 +1769,7 @@ enum {
- 	ALC889_FIXUP_DAC_ROUTE,
- 	ALC889_FIXUP_MBP_VREF,
- 	ALC889_FIXUP_IMAC91_VREF,
-+	ALC889_FIXUP_MBA21_VREF,
- 	ALC882_FIXUP_INV_DMIC,
- 	ALC882_FIXUP_NO_PRIMARY_HP,
- 	ALC887_FIXUP_ASUS_BASS,
-@@ -1872,17 +1873,13 @@ static void alc889_fixup_mbp_vref(struct
- 	}
- }
- 
--/* Set VREF on speaker pins on imac91 */
--static void alc889_fixup_imac91_vref(struct hda_codec *codec,
--				     const struct hda_fixup *fix, int action)
-+static void alc889_fixup_mac_pins(struct hda_codec *codec,
-+				  const hda_nid_t *nids, int num_nids)
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -198,6 +198,13 @@ static void enclosure_remove_links(struc
  {
- 	struct alc_spec *spec = codec->spec;
--	static hda_nid_t nids[2] = { 0x18, 0x1a };
- 	int i;
+ 	char name[ENCLOSURE_NAME_SIZE];
  
--	if (action != HDA_FIXUP_ACT_INIT)
--		return;
--	for (i = 0; i < ARRAY_SIZE(nids); i++) {
-+	for (i = 0; i < num_nids; i++) {
- 		unsigned int val;
- 		val = snd_hda_codec_get_pin_target(codec, nids[i]);
- 		val |= AC_PINCTL_VREF_50;
-@@ -1891,6 +1888,26 @@ static void alc889_fixup_imac91_vref(str
- 	spec->gen.keep_vref_in_automute = 1;
- }
- 
-+/* Set VREF on speaker pins on imac91 */
-+static void alc889_fixup_imac91_vref(struct hda_codec *codec,
-+				     const struct hda_fixup *fix, int action)
-+{
-+	static hda_nid_t nids[2] = { 0x18, 0x1a };
++	/*
++	 * In odd circumstances, like multipath devices, something else may
++	 * already have removed the links, so check for this condition first.
++	 */
++	if (!cdev->dev->kobj.sd)
++		return;
 +
-+	if (action == HDA_FIXUP_ACT_INIT)
-+		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
-+}
-+
-+/* Set VREF on speaker pins on mba21 */
-+static void alc889_fixup_mba21_vref(struct hda_codec *codec,
-+				    const struct hda_fixup *fix, int action)
-+{
-+	static hda_nid_t nids[2] = { 0x18, 0x19 };
-+
-+	if (action == HDA_FIXUP_ACT_INIT)
-+		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
-+}
-+
- /* Don't take HP output as primary
-  * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
-  * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
-@@ -2087,6 +2104,12 @@ static const struct hda_fixup alc882_fix
- 		.chained = true,
- 		.chain_id = ALC882_FIXUP_GPIO1,
- 	},
-+	[ALC889_FIXUP_MBA21_VREF] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = alc889_fixup_mba21_vref,
-+		.chained = true,
-+		.chain_id = ALC889_FIXUP_MBP_VREF,
-+	},
- 	[ALC882_FIXUP_INV_DMIC] = {
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc_fixup_inv_dmic_0x12,
-@@ -2151,7 +2174,7 @@ static const struct snd_pci_quirk alc882
- 	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3200, "iMac 7,1 Aluminum", ALC882_FIXUP_EAPD),
- 	SND_PCI_QUIRK(0x106b, 0x3400, "MacBookAir 1,1", ALC889_FIXUP_MBP_VREF),
--	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBP_VREF),
-+	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBA21_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC889_FIXUP_MBP_VREF),
- 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_FIXUP_MACPRO_GPIO),
+ 	enclosure_link_name(cdev, name);
+ 	sysfs_remove_link(&cdev->dev->kobj, name);
+ 	sysfs_remove_link(&cdev->cdev.kobj, "device");
 
 
