@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3LJIBm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:01:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58863 "EHLO
+	id S1753725Ab3LJICA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3LJIBf (ORCPT
+	with ESMTP id S1753595Ab3LJIBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:35 -0500
+	Tue, 10 Dec 2013 03:01:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnaud Ebalard <arno@natisbad.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.12 20/62] ARM: mvebu: fix second and third PCIe unit of Armada XP mv78260
-Date: Tue, 10 Dec 2013 00:00:51 -0800
-Message-Id: <20131210080058.847345640@linuxfoundation.org>
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.12 08/62] crypto: s390 - Fix aes-xts parameter corruption
+Date: Tue, 10 Dec 2013 00:00:39 -0800
+Message-Id: <20131210080058.038172939@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -28,184 +27,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnaud Ebalard <arno@natisbad.org>
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-commit 2163e61c92d9337e721a0d067d88ae62b52e0d3e upstream.
+commit 9dda2769af4f3f3093434648c409bb351120d9e8 upstream.
 
-mv78260 flavour of Marvell Armada XP SoC has 3 PCIe units. The
-two first units are both x4 and quad x1 capable. The third unit
-is only x4 capable. This patch fixes mv78260 .dtsi to reflect
-those capabilities.
+Some s390 crypto algorithms incorrectly use the crypto_tfm structure to
+store private data. As the tfm can be shared among multiple threads, this
+can result in data corruption.
 
-Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+This patch fixes aes-xts by moving the xts and pcc parameter blocks from
+the tfm onto the stack (48 + 96 bytes).
+
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-xp-mv78260.dtsi |  109 ++++++++++++++++++++++++-------
- 1 file changed, 85 insertions(+), 24 deletions(-)
+ arch/s390/crypto/aes_s390.c |   31 +++++++++++++++++--------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
 
---- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-+++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-@@ -48,7 +48,7 @@
- 		/*
- 		 * MV78260 has 3 PCIe units Gen2.0: Two units can be
- 		 * configured as x4 or quad x1 lanes. One unit is
--		 * x4/x1.
-+		 * x4 only.
- 		 */
- 		pcie-controller {
- 			compatible = "marvell,armada-xp-pcie";
-@@ -67,7 +67,9 @@
- 				0x82000000 0 0x48000 MBUS_ID(0xf0, 0x01) 0x48000 0 0x00002000   /* Port 0.2 registers */
- 				0x82000000 0 0x4c000 MBUS_ID(0xf0, 0x01) 0x4c000 0 0x00002000   /* Port 0.3 registers */
- 				0x82000000 0 0x80000 MBUS_ID(0xf0, 0x01) 0x80000 0 0x00002000   /* Port 1.0 registers */
--				0x82000000 0 0x82000 MBUS_ID(0xf0, 0x01) 0x82000 0 0x00002000   /* Port 3.0 registers */
-+				0x82000000 0 0x84000 MBUS_ID(0xf0, 0x01) 0x84000 0 0x00002000   /* Port 1.1 registers */
-+				0x82000000 0 0x88000 MBUS_ID(0xf0, 0x01) 0x88000 0 0x00002000   /* Port 1.2 registers */
-+				0x82000000 0 0x8c000 MBUS_ID(0xf0, 0x01) 0x8c000 0 0x00002000   /* Port 1.3 registers */
- 				0x82000000 0x1 0     MBUS_ID(0x04, 0xe8) 0 1 0 /* Port 0.0 MEM */
- 				0x81000000 0x1 0     MBUS_ID(0x04, 0xe0) 0 1 0 /* Port 0.0 IO  */
- 				0x82000000 0x2 0     MBUS_ID(0x04, 0xd8) 0 1 0 /* Port 0.1 MEM */
-@@ -76,10 +78,18 @@
- 				0x81000000 0x3 0     MBUS_ID(0x04, 0xb0) 0 1 0 /* Port 0.2 IO  */
- 				0x82000000 0x4 0     MBUS_ID(0x04, 0x78) 0 1 0 /* Port 0.3 MEM */
- 				0x81000000 0x4 0     MBUS_ID(0x04, 0x70) 0 1 0 /* Port 0.3 IO  */
--				0x82000000 0x9 0     MBUS_ID(0x08, 0xe8) 0 1 0 /* Port 1.0 MEM */
--				0x81000000 0x9 0     MBUS_ID(0x08, 0xe0) 0 1 0 /* Port 1.0 IO  */
--				0x82000000 0xa 0     MBUS_ID(0x08, 0xf8) 0 1 0 /* Port 3.0 MEM */
--				0x81000000 0xa 0     MBUS_ID(0x08, 0xf0) 0 1 0 /* Port 3.0 IO  */>;
-+
-+				0x82000000 0x5 0     MBUS_ID(0x08, 0xe8) 0 1 0 /* Port 1.0 MEM */
-+				0x81000000 0x5 0     MBUS_ID(0x08, 0xe0) 0 1 0 /* Port 1.0 IO  */
-+				0x82000000 0x6 0     MBUS_ID(0x08, 0xd8) 0 1 0 /* Port 1.1 MEM */
-+				0x81000000 0x6 0     MBUS_ID(0x08, 0xd0) 0 1 0 /* Port 1.1 IO  */
-+				0x82000000 0x7 0     MBUS_ID(0x08, 0xb8) 0 1 0 /* Port 1.2 MEM */
-+				0x81000000 0x7 0     MBUS_ID(0x08, 0xb0) 0 1 0 /* Port 1.2 IO  */
-+				0x82000000 0x8 0     MBUS_ID(0x08, 0x78) 0 1 0 /* Port 1.3 MEM */
-+				0x81000000 0x8 0     MBUS_ID(0x08, 0x70) 0 1 0 /* Port 1.3 IO  */
-+
-+				0x82000000 0x9 0     MBUS_ID(0x04, 0xf8) 0 1 0 /* Port 2.0 MEM */
-+				0x81000000 0x9 0     MBUS_ID(0x04, 0xf0) 0 1 0 /* Port 2.0 IO  */>;
+--- a/arch/s390/crypto/aes_s390.c
++++ b/arch/s390/crypto/aes_s390.c
+@@ -55,8 +55,7 @@ struct pcc_param {
  
- 			pcie@1,0 {
- 				device_type = "pci";
-@@ -105,8 +115,8 @@
- 				#address-cells = <3>;
- 				#size-cells = <2>;
- 				#interrupt-cells = <1>;
--                                ranges = <0x82000000 0 0 0x82000000 0x2 0 1 0
--                                          0x81000000 0 0 0x81000000 0x2 0 1 0>;
-+				ranges = <0x82000000 0 0 0x82000000 0x2 0 1 0
-+					  0x81000000 0 0 0x81000000 0x2 0 1 0>;
- 				interrupt-map-mask = <0 0 0 0>;
- 				interrupt-map = <0 0 0 0 &mpic 59>;
- 				marvell,pcie-port = <0>;
-@@ -149,37 +159,88 @@
- 				status = "disabled";
- 			};
+ struct s390_xts_ctx {
+ 	u8 key[32];
+-	u8 xts_param[16];
+-	struct pcc_param pcc;
++	u8 pcc_key[32];
+ 	long enc;
+ 	long dec;
+ 	int key_len;
+@@ -591,7 +590,7 @@ static int xts_aes_set_key(struct crypto
+ 		xts_ctx->enc = KM_XTS_128_ENCRYPT;
+ 		xts_ctx->dec = KM_XTS_128_DECRYPT;
+ 		memcpy(xts_ctx->key + 16, in_key, 16);
+-		memcpy(xts_ctx->pcc.key + 16, in_key + 16, 16);
++		memcpy(xts_ctx->pcc_key + 16, in_key + 16, 16);
+ 		break;
+ 	case 48:
+ 		xts_ctx->enc = 0;
+@@ -602,7 +601,7 @@ static int xts_aes_set_key(struct crypto
+ 		xts_ctx->enc = KM_XTS_256_ENCRYPT;
+ 		xts_ctx->dec = KM_XTS_256_DECRYPT;
+ 		memcpy(xts_ctx->key, in_key, 32);
+-		memcpy(xts_ctx->pcc.key, in_key + 32, 32);
++		memcpy(xts_ctx->pcc_key, in_key + 32, 32);
+ 		break;
+ 	default:
+ 		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
+@@ -621,29 +620,33 @@ static int xts_aes_crypt(struct blkciphe
+ 	unsigned int nbytes = walk->nbytes;
+ 	unsigned int n;
+ 	u8 *in, *out;
+-	void *param;
++	struct pcc_param pcc_param;
++	struct {
++		u8 key[32];
++		u8 init[16];
++	} xts_param;
  
--			pcie@9,0 {
-+			pcie@5,0 {
- 				device_type = "pci";
--				assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
--				reg = <0x4800 0 0 0 0>;
-+				assigned-addresses = <0x82000800 0 0x80000 0 0x2000>;
-+				reg = <0x2800 0 0 0 0>;
- 				#address-cells = <3>;
- 				#size-cells = <2>;
- 				#interrupt-cells = <1>;
--				ranges = <0x82000000 0 0 0x82000000 0x9 0 1 0
--					  0x81000000 0 0 0x81000000 0x9 0 1 0>;
-+				ranges = <0x82000000 0 0 0x82000000 0x5 0 1 0
-+					  0x81000000 0 0 0x81000000 0x5 0 1 0>;
- 				interrupt-map-mask = <0 0 0 0>;
--				interrupt-map = <0 0 0 0 &mpic 99>;
--				marvell,pcie-port = <2>;
-+				interrupt-map = <0 0 0 0 &mpic 62>;
-+				marvell,pcie-port = <1>;
- 				marvell,pcie-lane = <0>;
--				clocks = <&gateclk 26>;
-+				clocks = <&gateclk 9>;
- 				status = "disabled";
- 			};
+ 	if (!nbytes)
+ 		goto out;
  
--			pcie@10,0 {
-+			pcie@6,0 {
- 				device_type = "pci";
--				assigned-addresses = <0x82000800 0 0x82000 0 0x2000>;
--				reg = <0x5000 0 0 0 0>;
-+				assigned-addresses = <0x82000800 0 0x84000 0 0x2000>;
-+				reg = <0x3000 0 0 0 0>;
- 				#address-cells = <3>;
- 				#size-cells = <2>;
- 				#interrupt-cells = <1>;
--				ranges = <0x82000000 0 0 0x82000000 0xa 0 1 0
--					  0x81000000 0 0 0x81000000 0xa 0 1 0>;
-+				ranges = <0x82000000 0 0 0x82000000 0x6 0 1 0
-+					  0x81000000 0 0 0x81000000 0x6 0 1 0>;
- 				interrupt-map-mask = <0 0 0 0>;
--				interrupt-map = <0 0 0 0 &mpic 103>;
--				marvell,pcie-port = <3>;
-+				interrupt-map = <0 0 0 0 &mpic 63>;
-+				marvell,pcie-port = <1>;
-+				marvell,pcie-lane = <1>;
-+				clocks = <&gateclk 10>;
-+				status = "disabled";
-+			};
-+
-+			pcie@7,0 {
-+				device_type = "pci";
-+				assigned-addresses = <0x82000800 0 0x88000 0 0x2000>;
-+				reg = <0x3800 0 0 0 0>;
-+				#address-cells = <3>;
-+				#size-cells = <2>;
-+				#interrupt-cells = <1>;
-+				ranges = <0x82000000 0 0 0x82000000 0x7 0 1 0
-+					  0x81000000 0 0 0x81000000 0x7 0 1 0>;
-+				interrupt-map-mask = <0 0 0 0>;
-+				interrupt-map = <0 0 0 0 &mpic 64>;
-+				marvell,pcie-port = <1>;
-+				marvell,pcie-lane = <2>;
-+				clocks = <&gateclk 11>;
-+				status = "disabled";
-+			};
-+
-+			pcie@8,0 {
-+				device_type = "pci";
-+				assigned-addresses = <0x82000800 0 0x8c000 0 0x2000>;
-+				reg = <0x4000 0 0 0 0>;
-+				#address-cells = <3>;
-+				#size-cells = <2>;
-+				#interrupt-cells = <1>;
-+				ranges = <0x82000000 0 0 0x82000000 0x8 0 1 0
-+					  0x81000000 0 0 0x81000000 0x8 0 1 0>;
-+				interrupt-map-mask = <0 0 0 0>;
-+				interrupt-map = <0 0 0 0 &mpic 65>;
-+				marvell,pcie-port = <1>;
-+				marvell,pcie-lane = <3>;
-+				clocks = <&gateclk 12>;
-+				status = "disabled";
-+			};
-+
-+			pcie@9,0 {
-+				device_type = "pci";
-+				assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
-+				reg = <0x4800 0 0 0 0>;
-+				#address-cells = <3>;
-+				#size-cells = <2>;
-+				#interrupt-cells = <1>;
-+				ranges = <0x82000000 0 0 0x82000000 0x9 0 1 0
-+					  0x81000000 0 0 0x81000000 0x9 0 1 0>;
-+				interrupt-map-mask = <0 0 0 0>;
-+				interrupt-map = <0 0 0 0 &mpic 99>;
-+				marvell,pcie-port = <2>;
- 				marvell,pcie-lane = <0>;
--				clocks = <&gateclk 27>;
-+				clocks = <&gateclk 26>;
- 				status = "disabled";
- 			};
- 		};
+-	memset(xts_ctx->pcc.block, 0, sizeof(xts_ctx->pcc.block));
+-	memset(xts_ctx->pcc.bit, 0, sizeof(xts_ctx->pcc.bit));
+-	memset(xts_ctx->pcc.xts, 0, sizeof(xts_ctx->pcc.xts));
+-	memcpy(xts_ctx->pcc.tweak, walk->iv, sizeof(xts_ctx->pcc.tweak));
+-	param = xts_ctx->pcc.key + offset;
+-	ret = crypt_s390_pcc(func, param);
++	memset(pcc_param.block, 0, sizeof(pcc_param.block));
++	memset(pcc_param.bit, 0, sizeof(pcc_param.bit));
++	memset(pcc_param.xts, 0, sizeof(pcc_param.xts));
++	memcpy(pcc_param.tweak, walk->iv, sizeof(pcc_param.tweak));
++	memcpy(pcc_param.key, xts_ctx->pcc_key, 32);
++	ret = crypt_s390_pcc(func, &pcc_param.key[offset]);
+ 	if (ret < 0)
+ 		return -EIO;
+ 
+-	memcpy(xts_ctx->xts_param, xts_ctx->pcc.xts, 16);
+-	param = xts_ctx->key + offset;
++	memcpy(xts_param.key, xts_ctx->key, 32);
++	memcpy(xts_param.init, pcc_param.xts, 16);
+ 	do {
+ 		/* only use complete blocks */
+ 		n = nbytes & ~(AES_BLOCK_SIZE - 1);
+ 		out = walk->dst.virt.addr;
+ 		in = walk->src.virt.addr;
+ 
+-		ret = crypt_s390_km(func, param, out, in, n);
++		ret = crypt_s390_km(func, &xts_param.key[offset], out, in, n);
+ 		if (ret < 0 || ret != n)
+ 			return -EIO;
+ 
 
 
