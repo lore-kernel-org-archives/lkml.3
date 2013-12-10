@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3LJIeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:34:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58537 "EHLO
+	id S1752823Ab3LJIAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:00:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3LJIAF (ORCPT
+	with ESMTP id S1752141Ab3LJH74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:05 -0500
+	Tue, 10 Dec 2013 02:59:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 18/52] can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
-Date: Tue, 10 Dec 2013 00:00:51 -0800
-Message-Id: <20131210075955.485811266@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 12/52] ARM: footbridge: fix EBSA285 LEDs
+Date: Tue, 10 Dec 2013 00:00:45 -0800
+Message-Id: <20131210075955.068612802@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,74 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
+commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
 
-This patch fixes the issue that the sja1000_interrupt() function may have
-returned IRQ_NONE without processing the optional pre_irq() and post_irq()
-function before. Further the irq processing counter 'n' is moved to the end of
-the while statement to return correct IRQ_[NONE|HANDLED] values at error
-conditions.
+- The LEDs register is write-only: it can't be read-modify-written.
+- The LEDs are write-1-for-off not 0.
+- The check for the platform was inverted.
 
-Reported-by: Wolfgang Grandegger <wg@grandegger.com>
-Acked-by: Wolfgang Grandegger <wg@grandegger.com>
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/sja1000/sja1000.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ arch/arm/mach-footbridge/ebsa285.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
---- a/drivers/net/can/sja1000/sja1000.c
-+++ b/drivers/net/can/sja1000/sja1000.c
-@@ -494,20 +494,20 @@ irqreturn_t sja1000_interrupt(int irq, v
- 	uint8_t isrc, status;
- 	int n = 0;
+--- a/arch/arm/mach-footbridge/ebsa285.c
++++ b/arch/arm/mach-footbridge/ebsa285.c
+@@ -30,21 +30,24 @@ static const struct {
+ 	const char *name;
+ 	const char *trigger;
+ } ebsa285_leds[] = {
+-	{ "ebsa285:amber", "heartbeat", },
+-	{ "ebsa285:green", "cpu0", },
++	{ "ebsa285:amber", "cpu0", },
++	{ "ebsa285:green", "heartbeat", },
+ 	{ "ebsa285:red",},
+ };
  
--	/* Shared interrupts and IRQ off? */
--	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
--		return IRQ_NONE;
--
- 	if (priv->pre_irq)
- 		priv->pre_irq(priv);
- 
-+	/* Shared interrupts and IRQ off? */
-+	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
-+		goto out;
++static unsigned char hw_led_state;
 +
- 	while ((isrc = priv->read_reg(priv, SJA1000_IR)) &&
- 	       (n < SJA1000_MAX_IRQ)) {
--		n++;
-+
- 		status = priv->read_reg(priv, SJA1000_SR);
- 		/* check for absent controller due to hw unplug */
- 		if (status == 0xFF && sja1000_is_absent(priv))
--			return IRQ_NONE;
-+			goto out;
+ static void ebsa285_led_set(struct led_classdev *cdev,
+ 		enum led_brightness b)
+ {
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
  
- 		if (isrc & IRQ_WUI)
- 			netdev_warn(dev, "wakeup interrupt\n");
-@@ -535,7 +535,7 @@ irqreturn_t sja1000_interrupt(int irq, v
- 				status = priv->read_reg(priv, SJA1000_SR);
- 				/* check for absent controller */
- 				if (status == 0xFF && sja1000_is_absent(priv))
--					return IRQ_NONE;
-+					goto out;
- 			}
- 		}
- 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
-@@ -543,8 +543,9 @@ irqreturn_t sja1000_interrupt(int irq, v
- 			if (sja1000_err(dev, isrc, status))
- 				break;
- 		}
-+		n++;
- 	}
--
-+out:
- 	if (priv->post_irq)
- 		priv->post_irq(priv);
+-	if (b != LED_OFF)
+-		*XBUS_LEDS |= led->mask;
++	if (b == LED_OFF)
++		hw_led_state |= led->mask;
+ 	else
+-		*XBUS_LEDS &= ~led->mask;
++		hw_led_state &= ~led->mask;
++	*XBUS_LEDS = hw_led_state;
+ }
  
+ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
+@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_g
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
++	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
+ }
+ 
+ static int __init ebsa285_leds_init(void)
+ {
+ 	int i;
+ 
+-	if (machine_is_ebsa285())
++	if (!machine_is_ebsa285())
+ 		return -ENODEV;
+ 
+-	/* 3 LEDS All ON */
+-	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	/* 3 LEDS all off */
++	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	*XBUS_LEDS = hw_led_state;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
+ 		struct ebsa285_led *led;
 
 
