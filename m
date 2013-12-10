@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab3LJTRw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:17:52 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:56309 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144Ab3LJTQQ (ORCPT
+	id S1754310Ab3LJTSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:18:05 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:58232 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab3LJTRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:16:16 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: mingo@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/6] clocksource: armada-370-xp: Register sched_clock after the counter reset
-Date: Tue, 10 Dec 2013 20:16:08 +0100
-Message-Id: <1386702972-25565-2-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386702972-25565-1-git-send-email-daniel.lezcano@linaro.org>
-References: <52A767CB.3010501@linaro.org>
- <1386702972-25565-1-git-send-email-daniel.lezcano@linaro.org>
+	Tue, 10 Dec 2013 14:17:55 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: [PATCH v3 0/6] locks: implement "filp-private" (aka UNPOSIX) locks
+Date: Tue, 10 Dec 2013 14:17:29 -0500
+Message-Id: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+This patchset is the third posting of this set. Behavior between this
+set and the last should be more or less the same. Here is a summary of
+changes:
 
-This commit registers the sched_clock _after_ the counter reset
-(instead of before). This removes the timestamp 'jump' in kernel
-log messages.
+v3:
+- more consolidation of common code between flock_to_posix_lock and
+  flock_to_posix_lock64
+- better bisectability by reordering changes, such that partial
+  implementation won't be exposed
+- s/filp/file/ s/FILP/FILE/ in symbol names
 
-Before this change:
+v2:
+- inheritance semantics have been change to be more BSD-lock like
+- patchset size has been reduced by changing how lock ownership
+  is handled
+- new F_UNLCKP l_type value has been added
 
-[    0.000000] sched_clock: 32 bits at 25MHz, resolution 40ns, wraps every 171798691800ns
-[    0.000000] Initializing Coherency fabric
-[    0.000000] Aurora cache controller enabled
-[    0.000000] l2x0: 16 ways, CACHE_ID 0x00000100, AUX_CTRL 0x1a696b12, Cache size: 1024 kB
-[  163.507447] Calibrating delay loop... 1325.05 BogoMIPS (lpj=662528)
-[  163.521419] pid_max: default: 32768 minimum: 301
-[  163.526185] Mount-cache hash table entries: 512
-[  163.531095] CPU: Testing write buffer coherency: ok
+Note too that I've gone ahead and opened a request for the POSIX folks
+to consider adding this to the POSIX spec once we have something
+mergeable. They seem amenable to the idea but don't want to enshrine it
+into the standard until there's a real implementation of it:
 
-After this change:
+    http://austingroupbugs.net/view.php?id=768
 
-[    0.000000] sched_clock: 32 bits at 25MHz, resolution 40ns, wraps every 171798691800ns
-[    0.000000] Initializing Coherency fabric
-[    0.000000] Aurora cache controller enabled
-[    0.000000] l2x0: 16 ways, CACHE_ID 0x00000100, AUX_CTRL 0x1a696b12, Cache size: 1024 kB
-[    0.016849] Calibrating delay loop... 1325.05 BogoMIPS (lpj=662528)
-[    0.030820] pid_max: default: 32768 minimum: 301
-[    0.035588] Mount-cache hash table entries: 512
-[    0.040500] CPU: Testing write buffer coherency: ok
+I also owe them a better writeup of the semantics for these new locks,
+but have been holding off on doing that until they're a little more
+settled.
 
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
----
- drivers/clocksource/time-armada-370-xp.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+As a side note, I've also had a few other userland developers reach
+out to me as to the status of this work. There seems to be a lot of
+interest since classic POSIX locks are such a pain to work with in
+threaded programs. Hopefully some will chime in on this posting...
 
-diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-index d8e47e5..4e7f680 100644
---- a/drivers/clocksource/time-armada-370-xp.c
-+++ b/drivers/clocksource/time-armada-370-xp.c
-@@ -256,11 +256,6 @@ static void __init armada_370_xp_timer_common_init(struct device_node *np)
- 	ticks_per_jiffy = (timer_clk + HZ / 2) / HZ;
- 
- 	/*
--	 * Set scale and timer for sched_clock.
--	 */
--	sched_clock_register(armada_370_xp_read_sched_clock, 32, timer_clk);
--
--	/*
- 	 * Setup free-running clocksource timer (interrupts
- 	 * disabled).
- 	 */
-@@ -270,6 +265,11 @@ static void __init armada_370_xp_timer_common_init(struct device_node *np)
- 	timer_ctrl_clrset(0, TIMER0_EN | TIMER0_RELOAD_EN |
- 			     TIMER0_DIV(TIMER_DIVIDER_SHIFT));
- 
-+	/*
-+	 * Set scale and timer for sched_clock.
-+	 */
-+	sched_clock_register(armada_370_xp_read_sched_clock, 32, timer_clk);
-+
- 	clocksource_mmio_init(timer_base + TIMER0_VAL_OFF,
- 			      "armada_370_xp_clocksource",
- 			      timer_clk, 300, 32, clocksource_mmio_readl_down);
+Original cover letter from v1 posting follows. Comments and suggestions
+welcome.
+
+-------------------------------[snip]------------------------------
+
+At LSF this year, there was a discussion about the "wishlist" for
+userland file servers. One of the things brought up was the goofy and
+problematic behavior of POSIX locks when a file is closed. Boaz started
+a thread on it here:
+
+    http://permalink.gmane.org/gmane.linux.file-systems/73364
+
+Userland fileservers often need to maintain more than one open file
+descriptor on a file. The POSIX spec says:
+
+"All locks associated with a file for a given process shall be removed
+ when a file descriptor for that file is closed by that process or the
+ process holding that file descriptor terminates."
+
+This is problematic since you can't close any file descriptor without
+dropping all your POSIX locks. Most userland file servers therefore
+end up opening the file with more access than is really necessary, and
+keeping fd's open for longer than is necessary to work around this.
+
+This patchset is a first stab at an approach to address this problem by
+adding two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is short
+for "private" -- I'm open to changing that if you have a better
+mnemonic).
+
+For all intents and purposes these lock types act just like their
+"non-P" counterpart. The difference is that they are only implicitly
+released when the fd against which they were acquired is closed. As a
+side effect, these locks cannot be merged with "non-P" locks since they
+have different semantics on close.
+
+I've given this patchset some very basic smoke testing and it seems to
+do the right thing, but it is still pretty rough. If this looks
+reasonable I'll plan to do some documentation updates and will take a
+stab at trying to get these new lock types added to the POSIX spec (as
+HCH recommended).
+
+At this point, my main questions are:
+
+1) does this look useful, particularly for fileserver implementors?
+
+2) does this look OK API-wise? We could consider different "cmd" values
+   or even different syscalls, but I figured this makes it clearer that
+   "P" and "non-P" locks will still conflict with one another.
+
+Jeff Layton (6):
+  locks: consolidate common code in the flock_to_posix_lock routines
+  locks: consolidate checks for compatible filp->f_mode values in setlk
+    handlers
+  locks: rename locks_remove_flock to locks_remove_file
+  locks: show private lock types in /proc/locks
+  locks: report l_pid as -1 for FL_FILE_PVT locks
+  locks: add new "private" lock type that is owned by the filp
+
+ fs/file_table.c                  |   2 +-
+ fs/locks.c                       | 122 +++++++++++++++++++++------------------
+ include/linux/fs.h               |   5 +-
+ include/uapi/asm-generic/fcntl.h |  16 +++++
+ 4 files changed, 85 insertions(+), 60 deletions(-)
+
 -- 
-1.7.9.5
+1.8.4.2
 
