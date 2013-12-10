@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3LJKU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:20:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab3LJKUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:20:55 -0500
-Date: Tue, 10 Dec 2013 11:20:51 +0100
-From: Miroslav Lichvar <mlichvar@redhat.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
-Message-ID: <20131210102051.GO22878@localhost>
-References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
- <528A7C88.1030801@linaro.org>
- <20131120183900.GA25735@localhost>
- <529D2BA6.5020005@linaro.org>
- <529D5805.20903@linaro.org>
- <20131206142602.GH22878@localhost>
- <52A27D51.1040805@linaro.org>
+	id S1751545Ab3LJKcP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:32:15 -0500
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:48066
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750885Ab3LJKcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 05:32:12 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
+Date: Tue, 10 Dec 2013 18:25:24 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Nicolin Chen <b42378@freescale.com>, <lgirdwood@gmail.com>,
+        <alsa-devel@alsa-project.org>, <tiwai@suse.de>, <perex@perex.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] ASoC: fsl: imx-wm8962: Grant hw_params/free()
+ permission to control FLL
+Message-ID: <20131210102523.GB12042@MrMyself>
+References: <cover.1386344000.git.b42378@freescale.com>
+ <105d07ac1a77bf99872d75608c97b3342079bfb7.1386344000.git.b42378@freescale.com>
+ <20131209175640.GL29268@sirena.org.uk>
+ <20131210051740.GA10655@MrMyself>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <52A27D51.1040805@linaro.org>
+In-Reply-To: <20131210051740.GA10655@MrMyself>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 05:43:45PM -0800, John Stultz wrote:
-> Being that the bigadjust code, and specifically this lookahead bit, has
-> always been the most opaque logic to me, I figured I'd spend some time
-> looking at alternatives, and came up with one approach that tries to
-> mimic your patch, but tries to be more in line with the existing logic.
+On Tue, Dec 10, 2013 at 01:18:42PM +0800, Nicolin Chen wrote:
+> On Mon, Dec 09, 2013 at 05:56:40PM +0000, Mark Brown wrote:
+> > On Fri, Dec 06, 2013 at 11:38:29PM +0800, Nicolin Chen wrote:
+> > 
+> > > +static int imx_hifi_hw_free(struct snd_pcm_substream *substream)
+> > > +{
+> > > +	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+> > > +	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+> > > +
+> > > +	/* Don't diable FLL if still having multiple substreams running */
+> > > +	if (codec_dai->active != 1)
+> > > +		return 0;
+> > > +
+> > > +	return imx_wm8962_disable_fll(codec_dai);
+> > 
+> > This will still disable the FLL if there's an analogue bypass path
+> > active.  I'd suggest changing enable() and disable() to reference count.
 > 
-> It seems to do fairly well in the simulator:
-> n: 30, slope: 1.00 (1.00 GHz), dev: 3.2 ns, max: 3.6 ns, freq: -99.95677 ppm
+> I was expecting this would disable it for further reconfiguration. But it
+> seems I should also considerate the case using bypass path and normal PCM
+> playback simultaneously, which looks a bit complex.
 
-Hm, this shows a 0.043ppm error in the frequency. It doesn't seem to go
-away even when I use a long sampling interval or give it more time to
-settle down. Is that an expected side effect of the patch?
+Hmm...Sorry for asking a stupid question that how to test bypass path with
+WM8962? I've tried some amixer commands to enable the bypass-path switches.
+But we still need to power the Codec up like using arecord or aplay to call
+wm8962_resume() and DAPM-related, right?
 
-> Basically in the big-error case, we calculate the adjustment from the
-> current tick error (and the assumption is that is where the majority of
-> the large error is coming from), leaving the normal +1/-1 adjustments to
-> the cumulative error.
+Sir, could you please share a simple flow for user space so that I can test
+and make the patch more comprehensive?
 
-The normal +1/-1 adjustment doesn't seem to be active in the
-simulation, at least in the default settings with 100ppm offset. When
-I print the error variable in timekeeping_adjust() I can see its
-absolute value stays above interval*2, so timekeeping_bigadjust() is
-called on every update. The bigadjust correction seems too weak to
-bring the error down to activate the normal +1/-1 adjustment, the
-error keeps increasing and the frequency is slighly off.
+Thank you,
+Nicolin Chen
 
-What does the following line from your patch mean?
-
-        tick_error -= tk->xtime_interval;
-
--- 
-Miroslav Lichvar
