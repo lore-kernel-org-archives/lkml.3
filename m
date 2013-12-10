@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3LJRSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:18:15 -0500
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:50560 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab3LJRSN (ORCPT
+	id S1755447Ab3LJRTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:19:01 -0500
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:38506 "HELO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754597Ab3LJRS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:18:13 -0500
-Message-ID: <52A74CD1.808@gmail.com>
-Date: Tue, 10 Dec 2013 12:18:09 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 12:18:59 -0500
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, zwu.kernel@gmail.com
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wuzhy@linux.vnet.ibm.com
-Subject: Re: [PATCH 2/2] tun: remove useless codes in tun_chr_aio_read() and
- tun_recvmsg()
-References: <1386363300-19040-1-git-send-email-zwu.kernel@gmail.com>	<1386363300-19040-2-git-send-email-zwu.kernel@gmail.com> <20131209.203646.425478975392590777.davem@davemloft.net>
-In-Reply-To: <20131209.203646.425478975392590777.davem@davemloft.net>
+In-Reply-To: <1386181979-26547-1-git-send-email-fkan@apm.com>
+References: <1386181979-26547-1-git-send-email-fkan@apm.com>
+Date: Tue, 10 Dec 2013 09:18:58 -0800
+Message-ID: <CAL85gmC1xRdwN0kj2w-ScNNFqEy8KC800gmV0NH36TCYcLg33Q@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Add missing components for X-Gene reboot drivers.
+From: Feng Kan <fkan@apm.com>
+To: patches <patches@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 08:36 PM, David Miller wrote:
-> From: Zhi Yong Wu <zwu.kernel@gmail.com>
-> Date: Sat,  7 Dec 2013 04:55:00 +0800
-> 
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->> By checking related codes, it is impossible that ret > len or total_len,
->> so we should remove some useless codes in both above functions.
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
-> Applied.
+Any update on this? Thanks
 
-Wait a sec.  We want to be able to return a value bigger then len
-to trigger a MSG_TRUNC.  Jason has patches for to fix this.  If you
-apply this, we'll have to re-introduce this code back in.
-
-Same goes for patch 1/2.
-
--vlad
-
+On Wed, Dec 4, 2013 at 10:32 AM, Feng Kan <fkan@apm.com> wrote:
+> Add dts node for X-Gene reboot driver. Apply documentation dts binding.
+> Some minor compile warning fix and enable reboot driver by default.
+>
+> Feng Kan (4):
+>   Documentation: add dts binding for X-Gene reboot dts node.
+>   arm64: add missing dts entry for X-Gene platform.
+>   arm64: Enable system reset via arch Kconfig for X-Gene system.
+>   arm64: removed using of the mask attribute in the dts for reset bit.
+>
+>  .../devicetree/bindings/arm64/xgene/reboot.txt     |   11 +++++++++++
+>  arch/arm64/Kconfig                                 |    1 +
+>  arch/arm64/boot/dts/apm-storm.dtsi                 |    5 +++++
+>  drivers/power/reset/xgene-reboot.c                 |    5 ++---
+>  4 files changed, 19 insertions(+), 3 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm64/xgene/reboot.txt
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+> 1.7.6.1
+>
