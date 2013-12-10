@@ -1,99 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3LJKdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:33:40 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:8862
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750705Ab3LJKdi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:33:38 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI98dI9371I936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h1155h)
-Message-ID: <52A6EDE8.5060903@freescale.com>
-Date: Tue, 10 Dec 2013 18:33:12 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1751863Ab3LJKid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:38:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34991 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750705Ab3LJKia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 05:38:30 -0500
+Date: Tue, 10 Dec 2013 11:38:27 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131210103827.GB20242@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com>
+ <20131127163435.GA3556@cmpxchg.org>
+ <20131202200221.GC5524@dhcp22.suse.cz>
+ <20131202212500.GN22729@cmpxchg.org>
+ <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+ <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+ <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] DTS: DMA: Fix DMA3 interrupts
-References: <1385712446-28221-1-git-send-email-hongbo.zhang@freescale.com> <1386357684.7375.124.camel@snotra.buserror.net>
-In-Reply-To: <1386357684.7375.124.camel@snotra.buserror.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scott,
-This issue is due to the non-continuous MPIC register, I think there is 
-two ways to fix it.
+On Mon 09-12-13 13:46:16, David Rientjes wrote:
+> On Mon, 9 Dec 2013, Michal Hocko wrote:
+> 
+> > > Google depends on getting memory.oom_control notifications only when they 
+> > > are actionable, which is exactly how Documentation/cgroups/memory.txt 
+> > > describes how userspace should respond to such a notification.
+> > > 
+> > > "Actionable" here means that the kernel has exhausted its capabilities of 
+> > > allowing for future memory freeing, which is the entire premise of any oom 
+> > > killer.
+> > > 
+> > > Giving a dying process or a process that is going to subsequently die 
+> > > access to memory reserves is a capability the kernel users to ensure 
+> > > progress is made in oom conditions.  It is not an exhaustion of 
+> > > capabilities.
+> > > 
+> > > Yes, we all know that subsequent to the userspace notification that memory 
+> > > may be freed and the kill no longer becomes required.  There is nothing 
+> > > that can be done about that, and it has never been implied that a memcg is 
+> > > guaranteed to still be oom when the process wakes up.
+> > > 
+> > > I'm referring to a siutation that can manifest in a number of ways: 
+> > > coincidental process exit, coincidental process being killed, 
+> > > VMPRESSURE_CRITICAL notification that results in a process being killed, 
+> > > or memory threshold notification that results in a process being killed.  
+> > > Regardless, we're talking about a situation where something is already 
+> > > in the exit path or has been killed and is simply attempting to free its 
+> > > memory.
+> > 
+> > You have already mentioned that. Several times in fact. And I do
+> > understand what you are saying. You are just not backing your claims
+> > with anything that would convince us that what you are trying to solve
+> > is an issue in the real life. So show us it is real, please.
+> > 
+> 
+> What exactly would you like to see?
 
-The first one is as what we are discussing, in fact the Bman/Qman DT 
-author had introduced this way, and I had to follow it, it is a trick, 
-adding 208 is a bit ugly I think, and even difficult to explain it to 
-customers etc, but this way changes less codes.
+How often do you see PF_EXITING tasks which haven't been killed causing
+a pointless notification? Because fatal_signal_pending and TIF_MEMDIE
+cases are already handled because we bypass charges in those cases (except
+for user OOM killer killed tasks which don't get TIF_MEMDIE and that
+should be fixed).
 
-The second one is editing MPIC related codes without adding 208 to high 
-interrupts. The point of translate interrupt number to MPIC register 
-address is a so called 'isu' mechanism, we can do like the following 
-example codes, then the tricky adding 208 isn't needed any more.
+> It's obvious that the kernel has not 
+> exhausted its capabilities of allowing for future memory freeing if the 
+> notification happens before the check for current->flags & PF_EXITING or 
+> fatal_signal_pending(current).  Does that conditional get triggered?  ALL 
+> THE TIME.  We know it happens because I had to introduce it into both the 
+> system oom killer and the memcg oom killer to fix mm->mmap_sem issues for 
+> threads that were killed as part of the oom killer SIGKILL but weren't the 
+> thread lucky enough to get TIF_MEMDIE set and they were in the allocation 
+> path.
 
-Which one do you prefer?
-In fact I myself prefer the second, if the idea is acceptable, I will 
-send a patch instead of this one. (and also alone with the internal 
-patch decreasing 208 for the Bman/Qman)
+OOM killed task without TIF_MEMDIE is surely a problem. But the only
+place I see this might happen right now is when a task is killed by
+user space. And as I've said repeatedly this has to be fixed and it is
+tangential to the notification problem your patch tries to handle but
+not solve for other cases when we have notified but backout from killing
+later.
 
-void __init corenet_ds_pic_init(void)
-{
-     ......
+> Are you asking me to patch our kernel, get it rolled out, and plot a graph 
+> to show how often it gets triggered over time in our datacenters and that 
+> it causes us to get unnecessary oom kill notifications?
+> 
+> I'm trying to support you in any way I can by giving you the information 
+> you need, but in all honesty this seems pretty trivial and obvious to 
+> understand.  I'm really quite stunned at this thread.  What exactly are 
+> you arguing in the other direction for?  What does giving an oom 
+> notification before allowing exiting processes to free its memory so the 
+> memcg or system is no longer oom do?  Why can't you use memory thresholds 
+> or vmpressure for such a situation?
 
-     mpic = mpic_alloc(NULL, 0, flags, 0, 512, "OpenPIC");
-     BUG_ON(mpic == NULL);
+David, I've tried to support you because I also think that notification
+should be the last resort thing. But Johannes has a point that putting
+this checks all over the place doesn't help longterm. So I would really
+like to see a better justification than "it helps". 
 
-// Add this start
-     for (i = 0; i < 17; i++) {
-         if (i < 11)
-             addr_off = 0x10000 + 0x20 * 16 * i;
-         else
-             addr_off = 0x13000 + 0x20 * 16 * (i - 11);  /* scape the 
-address not for interrupts */
-         mpic_assign_isu(mpic, i, mpic->paddr + addr_off);
-     }
-// Add this end
+> > > Such a process simply needs access to memory reserves to make progress and 
+> > > free its memory as part of the exit path.  The process waiting on 
+> > > memory.oom_control does _not_ need to do any of the actions mentioned in 
+> > > Documentation/cgroups/memory.txt: reduce usage, enlarge the limit, kill a 
+> > > process, or move a process with charge migration.
+> > > 
+> > > It would be ridiculous to require anybody implementing such a process to 
+> > > check if the oom condition still exists after a period of time before 
+> > > taking such an action.
+> > 
+> > Why would you consider that ridiculous? If your memcg is oom already
+> > then waiting few seconds to let racing tasks finish doesn't sound that
+> > bad to me.
+> > 
+> 
+> A few seconds?  Is that just handwaving or are you making a guarantee that 
+> all processes that need access to memory reserves will wake up, try its 
+> allocation, get the memcg's oom lock, get access to memory reserves, 
+> allocate, return to handle its pending SIGKILL, proceed down the exit() 
+> path, and free its memory by then?
+> 
+> Meanwhile, the userspace oom handler is doing its little sleep(3) that you 
+> suggest, it checks the status of the memcg, finds it's still oom, but 
+> doesn't realize because it didn't do a second blocking read() that its a 
+> second oom condition for a different process attached to the memcg and 
+> that process simply needs memory reserves to exit.
 
-     mpic_init(mpic);
-}
-
-On 12/07/2013 03:21 AM, Scott Wood wrote:
-> On Fri, 2013-11-29 at 16:07 +0800, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>
->> MPIC registers for internal interrupts is non-continous in address, any
->> internal interrupt number greater than 159 should be added (16+208) to work.
->> 16 is due to external interrupts as usual, 208 is due to the non-continous MPIC
->> register space.
->> Tested on T4240 rev2 with SRIO2 disabled.
->>
->> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->> ---
->>   arch/powerpc/boot/dts/fsl/elo3-dma-2.dtsi |   16 ++++++++--------
->>   1 file changed, 8 insertions(+), 8 deletions(-)
-> The FSL MPIC binding should be updated to point out how this works.
->
-> Technically it's not a change to the binding itself, since it's defined
-> in terms of register offset, but the explanatory text says "So interrupt
-> 0 is at offset 0x0, interrupt 1 is at offset 0x20, and so on." which is
-> not accurate for these new high interrupt numbers.
->
-> -Scott
->
->
->
-
-
-
+-- 
+Michal Hocko
+SUSE Labs
