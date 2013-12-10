@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab3LJIE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:04:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59065 "EHLO
+	id S1754069Ab3LJICx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59034 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab3LJICz (ORCPT
+	with ESMTP id S1753904Ab3LJICo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:55 -0500
+	Tue, 10 Dec 2013 03:02:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Glen <AGlen@bepmarine.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.12 29/62] can: c_can: dont call pm_runtime_get_sync() from interrupt context
-Date: Tue, 10 Dec 2013 00:01:00 -0800
-Message-Id: <20131210080059.489550128@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 24/62] ASoC: dapm: Use SND_SOC_DAPM_INIT_REG_VAL in SND_SOC_DAPM_MUX
+Date: Tue, 10 Dec 2013 00:00:55 -0800
+Message-Id: <20131210080059.121279723@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,74 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit e35d46adc49b469fd92bdb64fea8af93640e6651 upstream.
+commit faf6615bf05bc5cecc6e22013b9cb21c77784fd1 upstream.
 
-The c_can driver contians a callpath (c_can_poll -> c_can_state_change ->
-c_can_get_berr_counter) which may call pm_runtime_get_sync() from the IRQ
-handler, which is not allowed and results in "BUG: scheduling while atomic".
+SND_SOC_DAPM_MUX() doesn't currently initialize the .mask field. This
+results in the mux never affecting HW, since no bits are ever set or
+cleared. Fix SND_SOC_DAPM_MUX() to use SND_SOC_DAPM_INIT_REG_VAL() to
+set up the reg, shift, on_val, and off_val fields like almost all other
+SND_SOC_xxx() macros. It looks like this was a "typo" in the fixed
+commit linked below.
 
-This problem is fixed by introducing __c_can_get_berr_counter, which will not
-call pm_runtime_get_sync().
+This makes the speakers on the Toshiba AC100 (PAZ00) laptop work again.
 
-Reported-by: Andrew Glen <AGlen@bepmarine.com>
-Tested-by: Andrew Glen <AGlen@bepmarine.com>
-Signed-off-by: Andrew Glen <AGlen@bepmarine.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Fixes: de9ba98b6d26 ("ASoC: dapm: Make widget power register settings more flexible")
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/c_can/c_can.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ include/sound/soc-dapm.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -712,22 +712,31 @@ static int c_can_set_mode(struct net_dev
- 	return 0;
- }
- 
--static int c_can_get_berr_counter(const struct net_device *dev,
--					struct can_berr_counter *bec)
-+static int __c_can_get_berr_counter(const struct net_device *dev,
-+				    struct can_berr_counter *bec)
- {
- 	unsigned int reg_err_counter;
- 	struct c_can_priv *priv = netdev_priv(dev);
- 
--	c_can_pm_runtime_get_sync(priv);
--
- 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
- 	bec->rxerr = (reg_err_counter & ERR_CNT_REC_MASK) >>
- 				ERR_CNT_REC_SHIFT;
- 	bec->txerr = reg_err_counter & ERR_CNT_TEC_MASK;
- 
-+	return 0;
-+}
-+
-+static int c_can_get_berr_counter(const struct net_device *dev,
-+				  struct can_berr_counter *bec)
-+{
-+	struct c_can_priv *priv = netdev_priv(dev);
-+	int err;
-+
-+	c_can_pm_runtime_get_sync(priv);
-+	err = __c_can_get_berr_counter(dev, bec);
- 	c_can_pm_runtime_put_sync(priv);
- 
--	return 0;
-+	return err;
- }
- 
- /*
-@@ -872,7 +881,7 @@ static int c_can_handle_state_change(str
- 	if (unlikely(!skb))
- 		return 0;
- 
--	c_can_get_berr_counter(dev, &bec);
-+	__c_can_get_berr_counter(dev, &bec);
- 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
- 	rx_err_passive = (reg_err_counter & ERR_CNT_RP_MASK) >>
- 				ERR_CNT_RP_SHIFT;
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -104,7 +104,8 @@ struct device;
+ 	SND_SOC_DAPM_INIT_REG_VAL(wreg, wshift, winvert), \
+ 	.kcontrol_news = wcontrols, .num_kcontrols = 1}
+ #define SND_SOC_DAPM_MUX(wname, wreg, wshift, winvert, wcontrols) \
+-{	.id = snd_soc_dapm_mux, .name = wname, .reg = wreg, \
++{	.id = snd_soc_dapm_mux, .name = wname, \
++	SND_SOC_DAPM_INIT_REG_VAL(wreg, wshift, winvert), \
+ 	.kcontrol_news = wcontrols, .num_kcontrols = 1}
+ #define SND_SOC_DAPM_VIRT_MUX(wname, wreg, wshift, winvert, wcontrols) \
+ {	.id = snd_soc_dapm_virt_mux, .name = wname, \
 
 
