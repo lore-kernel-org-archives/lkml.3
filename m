@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab3LJDxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 22:53:40 -0500
-Received: from ttcsn157-7.ttc.cz ([212.158.157.7]:37183 "EHLO ixit.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab3LJDxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 22:53:37 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Tue, 10 Dec 2013 04:51:41 +0100
-From: David Heidelberger <david.heidelberger@ixit.cz>
-To: John <da_audiophile@yahoo.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
-In-Reply-To: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>
-References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>
-Message-ID: <864985fbeb1d8148439e25ec01f47a67@ixit.cz>
-User-Agent: Roundcube Webmail/0.9.5
+	id S1752224Ab3LJDyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:54:49 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:11174 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab3LJDyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 22:54:47 -0500
+X-AuditID: cbfee6a3-b7f186d0000073e2-ca-52a6908420b2
+Date: Tue, 10 Dec 2013 03:54:44 +0000 (GMT)
+From: Anurag Aggarwal <a.anurag@samsung.com>
+Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack
+ overflow
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Naveen Kumar <naveen.sel@samsung.com>,
+        Narendra Meher <narendra.m1@samsung.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
+        "anurag19aggarwal@gmail.com" <anurag19aggarwal@gmail.com>,
+        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
+        Rajat Suri <rajat.suri@samsung.com>,
+        Poorva Srivastava <poorva.s@samsung.com>,
+        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
+Reply-to: a.anurag@samsung.com
+MIME-version: 1.0
+X-MTR: 20131210034807821@a.anurag
+Msgkey: 20131210034807821@a.anurag
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20131210034807821@a.anurag
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: Y
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <16479184.50751386647682015.JavaMail.weblogic@epv6ml09>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/tGbotE5YFGTSf17K4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZV//0MBY8Y684/WA1UwPjCfYuRk4OIQFlid6969lAbAkBE4lF
+	l3dA2WISF+6BxLmAauYzSkxoeMMIkmARUJXYNPErE4jNJqArMfHGFWYQW1ggUOLY/UNAQzk4
+	RATUJY7uswTpZRY4xSrxaf1DJohlchJ3120Hq+cVEJQ4OfMJC0i9hICixOZNXBBhJYnO+RNZ
+	IW6Qk1gy9TIThM0rMaP9KQtMfNrXNcwQtrTE+VkbGGFuXvz9MVScX+LY7R1MEON5JZ7cD4YZ
+	s3vzF6gXBSSmnjkI1aomcfrFd6g4n8SahW9ZYMbsOrWcGaa3YeNvcLAxA108pfshlG0gcWTR
+	HFZUX4HYzhLLfu1nmsAoNwtJahaS9llI2pHVLGBkWcUomlqQXFCclF5hrFecmFtcmpeul5yf
+	u4kRHOXPFu9g/H/e+hCjAAejEg9vAcOyICHWxLLiytxDjBIczEoivJ51QCHelMTKqtSi/Pii
+	0pzU4kOM0hwsSuK88beSgoQE0hNLUrNTUwtSi2CyTBycUg2MPHZXtZfNMXszOyB8ls26h59K
+	TNa/Wdr7iVdWK6tBTFuq3tG0cuWDX6lFm3uvehtt8fzFWRx2NnV/e+nbaZdmvkwo4qusma75
+	YWrJ1utKCyx/H0o3FpBm37XiauO0M1PtDoRE+v7Nm7ZV+06I351g02e6i9btM+lNe1Wx3Vv2
+	Jdeaz3tW7N/mp8RSnJFoqMVcVJwIAOcEQsPuAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBA3ssUb011039
 
-Hello,
+>Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+>
+>I can confirm that the kernel "doesn't crash" with this applied, and
+>that backtracing at least partially works.  But this is not really
+>sufficient to demontrate that the now code works better than the old
+>code in corner cases (which is the point of the patch).
+>
+>Can you give details of what additional testing you have, or plan to
+>do?
 
-this patch is used in Gentoo geek-sources and mptcp-sources (and 
-probably in lot other kernel sources sets). So, there was lot testing.
+We saw a data abort in unwinder for one of Samsung Project, during a
+Samsung Automation test case. 
+After that I created the initial the patch, and the data abort has not been
+seen till now.
 
-It's not _big_ performance difference, but -mtune=native is nice to 
-have.
-It could be great, if this kernel option could be fully utilized without 
-need of additional patching.
+Is it possible for you to give an idea on what other kind of additional testing 
+do you have in mind.
 
-Thank for your work guys.
+Regads
+Anurag
 
-Cheers,
-David
-
-Dne 2013-12-08 16:53, John napsal:
-> I have been maintaining the attached patch since kernel v3.9.[1] ¬†I
-> submit for review the most recent incarnation which works with the
-> v3.12 tree. ¬†As you can see by the ANOVA plots referenced in the
-> comments, these micro optimizations are value-added statistically
-> based on a compilation endpoint and are on-par with the included
-> "core2" option in the mainline kernel itself.
-> 
-> I maintain an unofficial Arch Linux kernel repo and have been
-> building/packaging kernels using this patch for many different CPUs
-> and Arches. ¬†I feel this code has been tested by the >2,500 users of
-> my repo on many different CPUs and under both x86 and x86_64
-> systems[2] and feel it is worth for inclusion into the mainline
-> kernel.
-> 
-> Please cc me on replies as I am NOT a regular subscriber to lkml. 
-> ¬†Thank you.
-> 
-> 1. https://github.com/graysky2/kernel_gcc_patch
-> 2, http://repo-ck.com/stats.pdf
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
