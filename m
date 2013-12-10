@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab3LJXrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:47:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:39885 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab3LJXrx (ORCPT
+	id S1751186Ab3LJXuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:50:10 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40605 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab3LJXuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:47:53 -0500
-Message-ID: <52A7A827.3030607@codeaurora.org>
-Date: Tue, 10 Dec 2013 15:47:51 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+	Tue, 10 Dec 2013 18:50:08 -0500
+Date: Tue, 10 Dec 2013 23:50:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] mmc: msm_sdcc: Limit driver to platforms that use
- it
-References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org> <1386185952-27259-2-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1386185952-27259-2-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20131210235000.GK11468@sirena.org.uk>
+References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
+ <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cEobB2knsyc5ebfU"
+Content-Disposition: inline
+In-Reply-To: <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
+X-Cookie: If your bread is stale, make toast.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/8] regmap: Add support for using regmap over ssbi
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/13 11:39, Stephen Boyd wrote:
-> The msm_sdcc driver uses mach specific dma APIs. This is not
-> compatible with the multi-platform ARM effort. Let's only compile
-> this driver on MSM devices that are prepared to support it,
-> allowing the DT based MSM devices to enter the multi-platform ARM
-> build.
->
-> Cc: Chris Ball <cjb@laptop.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
 
-Chris, can you please ack/review this change?
+--cEobB2knsyc5ebfU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  drivers/mmc/host/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index 7fc5099..4e8ca9d 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -324,7 +324,7 @@ config MMC_ATMELMCI
->  
->  config MMC_MSM
->  	tristate "Qualcomm SDCC Controller Support"
-> -	depends on MMC && ARCH_MSM
-> +	depends on MMC && (ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50)
->  	help
->  	  This provides support for the SD/MMC cell found in the
->  	  MSM and QSD SOCs from Qualcomm. The controller also has
+On Tue, Dec 10, 2013 at 03:35:18PM -0800, Stephen Boyd wrote:
 
+> +	while (val_size) {
+> +		ret =3D ssbi_read(context, *(u16 *)reg, val, 1);
+> +		if (ret)
+> +			return ret;
+> +		reg +=3D sizeof(u16);
+> +		val +=3D sizeof(u8);
+> +		val_size -=3D sizeof(u8);
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I'd expect this to generate out of bounds accesses and bad interactions
+on the bus if we go through the loop more than once since it appears to
+incrementing the address of reg for every register.  I'm also having a
+hard time understanding why this is doing a read per byte, ssbi_read()
+seems to map fairly directly onto the interface of the operation so
+there doesn't seem to be any reason for this loop to exist in the first
+place.
 
+Has this been tested? =20
+
+It'd be helpful to CC the entire series, or at least the patches this
+builds on...
+
+--cEobB2knsyc5ebfU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSp6ilAAoJELSic+t+oim9v00QAJsPEdpQOzJy4LqwJ2wtUHsY
+aN54nNgQK2RB5uml/8y7WJTFoibJ6Sz+rAMSV1ibwk/oeBpGc6X0sKZkCh63qe2i
+3QqsXh9BkM7JShFABDmwLyY35k16vtfm8WELljiansNeN0hupeHGDzD96TnOSIau
+SxvvdjO3z0I/s9LeYRwEXDSTJ26toz/DJTTp4xfU3nH1b3Nkez9uwaXsYL5+ySO1
+ku8oTwDOei5O6CZnYGVAe7sFgAOOf6n2U/p0ZOP+M9S7ghqB82N98pfaHo8fNdoz
+PmaUB/E6hqtPlRZzVkRM9/KoT+HxZLjdVoWt/xijRVOKNGtQDaHBb3flGChDb/Sl
+rZgFcxsYdfvjxmioxxShlpXIux2AMSQ0ygAVr1RS53oaDCiae1KHCP+WbLcde/OD
+1VxGAE4orgpeJ1XgsyChECohZmM0rKHGoXfHdg8kgQG3cjJHhBF/uhmJg/uVF+IK
+3mrkRFsDYwB1qmv5hsPDBrYJrsEXcvB59Bm9NFpkk3mWRqvstIBOk5aJ18NDaUjG
+23ZgCLIHpZ5FDjkCSQr5NgUvR7TiwyEeqc8ynWMyrLUoBTVWf+chDdloqi8KDOL6
+hy0ZEVnE631fA63+r70gxP0jTEpK6KGjmHl4eaqk9cnr0UooIaSjUx+ES0oxPB/G
+x3vLemmh3mkAYmAJcoca
+=iDRj
+-----END PGP SIGNATURE-----
+
+--cEobB2knsyc5ebfU--
