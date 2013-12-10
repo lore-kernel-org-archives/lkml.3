@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632Ab3LJUKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:10:05 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44369 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750960Ab3LJUKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:10:03 -0500
-Date: Tue, 10 Dec 2013 21:05:29 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing
- hardware
-Message-ID: <20131210200529.GD3651@lukather>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <1386350983-13281-2-git-send-email-wens@csie.org>
- <20131207103335.GL24519@lukather>
- <CAGb2v65YOSq_BMWSzSHX8w_hbo+0vwquBT2pnLuwNVZkWRfLvA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qrgsu6vtpU/OV/zm"
-Content-Disposition: inline
-In-Reply-To: <CAGb2v65YOSq_BMWSzSHX8w_hbo+0vwquBT2pnLuwNVZkWRfLvA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751672Ab3LJULg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:11:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12006 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706Ab3LJULf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:11:35 -0500
+Message-ID: <1386706291.23829.17.camel@flatline.rdu.redhat.com>
+Subject: Re: SELinux change in 3.13 causes sync hang
+From: Eric Paris <eparis@redhat.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Anand Avati <avati@redhat.com>, James Morris <jmorris@namei.org>,
+        Eric Sandeen <sandeen@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Dec 2013 15:11:31 -0500
+In-Reply-To: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>
+References: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-12-10 at 15:06 -0500, Josh Boyer wrote:
+> We've had a report[1] in Fedora of sync(1) hanging after logging into
+> GNOME and running the command in a terminal.  I was able to recreate
+> this on my local system and did a git bisect.  The bisect blames:
+> 
+> commit 102aefdda4d8275ce7d7100bc16c88c74272b260
+> Author: Anand Avati <avati@redhat.com>
+> Date:   Tue Apr 16 18:56:19 2013 -0400
+> 
+>     selinux: consider filesystem subtype in policies
+> 
 
---Qrgsu6vtpU/OV/zm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I think this should revert cleanly (and if so is what we should do).
+Josh is testing that right now...
 
-Hi,
+Anand, I know policy ships with:
+fs_use_xattr fuse.glusterfs gen_context(system_u:object_r:fs_t,s0);
+So we must have a bug where other fuse filesystems are tripping on this
+rule.  Since we are trying to use xattrs on a gvfs filesystem.
 
-On Mon, Dec 09, 2013 at 10:43:29AM +0800, Chen-Yu Tsai wrote:
-> >> @@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct de=
-vice *device,
-> >>               }
-> >>       }
-> >>
-> >> +     clk_disable_unprepare(priv->stmmac_clk);
-> >> +
-> >
-> > Hu? Why do you disable the clock? don't you need it afterwards?
->=20
-> The clock is enabled in *_open (when the network interface is used),
-> and disabled in *_close.
+/me still grows that fuse refuses to respond to xattr requests until
+mount(8) (that's right mount(8) not even mount(3) completes)
 
-Maybe it is the real issue then.
-
-Why don't you move the clk_disable to _remove then?
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---Qrgsu6vtpU/OV/zm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSp3QJAAoJEBx+YmzsjxAgCBEQAKY/ZEZloHcDGaHYS0RqXDhM
-GKZTcV9duag9I2sSRxbzDXeldJYIOOZ3g5lraAhhu0Qk9JEAUt4+Tw8WjHJcxNIV
-shIxhRdGZW4hcoQDiYU3KIt88Bt5rvUrbz3vxWgaKKv9pjQ2b9Qz9AwnAJfosp8z
-ufhZ6dqnSHzIhXUx2yyIEuaO1Rb0LKhfGUP8zzFFfKRLmED13ctCUaqc3mUo56+s
-TlSQsiWwKZ19tHoGoq3T76TGGb0fiDrMvnlQM6OGmye9EufgEtQW2v6xUSMTmKWG
-myOfPxRjRfH7c5nK7L5s0e7e/cZZaepISBjDABa2kXAiY7nlzlrzk4bNMM+NuS65
-jugXp1UIPPXqkPUag551JsS0A6dJarplIjwLmOvq8GBK7wFpjDFuYgfivr3o7BSb
-UggC9cMwoFv7YsYF4pLwkLkUTAhOsxFht6v6Tfm6Y51AjtxqYWMZr3Llve9F41l7
-2hiLygT5y0JplrTmgrSvMcFpOBUDCXkk7+pw5c6/WhDUcLhaNOS+8ioOyzJmW7mX
-RAp7GSpkmc+wykNso5z0ACXTXftyG9EKq4sTHnsKJdqu7r1PPEyTOM+4LWMkf+QY
-BuElAYHcU2sQsra91+VuQO+Ug66sHmOgCI176p5VeAHClvdw7u2F89QVa+f54Eyr
-AmEl1ZSm8vUj9/XcrSK1
-=784y
------END PGP SIGNATURE-----
-
---Qrgsu6vtpU/OV/zm--
