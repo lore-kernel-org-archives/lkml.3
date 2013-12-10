@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab3LJQRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:17:39 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:7867 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3LJQRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:17:37 -0500
-Message-ID: <1386692253.2731.5.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
-        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
-        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Date: Tue, 10 Dec 2013 08:17:33 -0800
-In-Reply-To: <20131210153629.GA1397@gmail.com>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
-	 <1386063927-6545-5-git-send-email-davidlohr@hp.com>
-	 <alpine.DEB.2.02.1312061924390.30673@ionos.tec.linutronix.de>
-	 <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
-	 <20131210153629.GA1397@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754205Ab3LJQTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:19:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33314 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab3LJQS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 11:18:58 -0500
+Date: Tue, 10 Dec 2013 17:19:45 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
+        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
+        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
+Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
+	HW_BREAKPOINT_LEN_8
+Message-ID: <20131210161945.GA23086@redhat.com>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com> <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com> <20131210152342.GE10633@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210152342.GE10633@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 16:36 +0100, Ingo Molnar wrote:
-> * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > On Fri, 2013-12-06 at 19:26 +0100, Thomas Gleixner wrote:
-> > > On Tue, 3 Dec 2013, Davidlohr Bueso wrote:
-> > > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > > 
-> > > Who is the author of this? According to the SOB chains its Waiman, who
-> > > handed it down to Jason and it finally got sumbitted by you. Is that
-> > > correct?
-> > 
-> > This was a group effort for the original patchset -- things did change
-> > quite a bit for this particular patch in v2. Waiman and Jason helped
-> > review and test the original atomic ops code.
-> 
-> Then please put that into the credits (in the changelog and/or in the 
-> source code), and/or into copyright notices, etc. - but keep the 
-> SOB-chain the true route of the patch, where the primary author is the 
-> first in the SOB and where the person sending the patch is the last 
-> SOB. (the two are identical normally.)
+On 12/10, Frederic Weisbecker wrote:
+>
+> On Wed, Oct 02, 2013 at 11:11:06AM -0500, suravee.suthikulpanit@amd.com wrote:
+> > @@ -279,7 +260,16 @@ static int arch_build_bp_info(struct perf_event *bp)
+> >  	}
+> >
+> >  	/* Len */
+> > +	info->mask = 0;
+> > +
+> >  	switch (bp->attr.bp_len) {
+> > +	default:
+> > +		if (!is_power_of_2(bp->attr.bp_len))
+> > +			return -EINVAL;
+> > +		if (!cpu_has_bpext)
+> > +			return -EOPNOTSUPP;
+> > +		info->mask = bp->attr.bp_len - 1;
+> > +		/* fall through */
+>
+> So, that's perhaps just personal preference but having the default on
+> top of the switch makes things very confusing. Can't we put the above
+> in the end of the switch instead?
 
-Ok, I wasn't aware of that primary author rule, sorry. The exact same
-thing would go for patch 2 then. Is this something you want me to
-correct for this particular series, or to keep in mind for the future?
+Then "fall through" won't work ;)
 
-Thanks,
-Davidlohr
+> > @@ -314,11 +303,11 @@ int arch_validate_hwbkpt_settings(struct perf_event *bp)
+> >  	if (ret)
+> >  		return ret;
+> >
+> > -	ret = -EINVAL;
+> > -
+> >  	switch (info->len) {
+> >  	case X86_BREAKPOINT_LEN_1:
+> >  		align = 0;
+> > +		if (info->mask)
+> > +			align = info->mask;
+>
+> Confused, I thought mask is set only when length is above 8?
+
+Yes. But we need the info->len for hw anyway. if mask != 0 then
+len == X86_BREAKPOINT_LEN_1 and it is still used by encode_dr7().
+Note that it is not the length in bytes, it is the magic x86 code.
+
+->bp_len is the length.
+
+Oleg.
 
