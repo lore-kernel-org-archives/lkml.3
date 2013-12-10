@@ -1,260 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab3LJB2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:28:55 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54365 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab3LJB2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 20:28:13 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v5 tip/core/locking 3/7] Documentation/memory-barriers.txt: Prohibit speculative writes
-Date: Mon,  9 Dec 2013 17:27:59 -0800
-Message-Id: <1386638883-25379-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131210012738.GA24317@linux.vnet.ibm.com>
- <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121001-9332-0000-0000-0000026E3B63
+	id S1751994Ab3LJBbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 20:31:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:35625 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992Ab3LJBbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 20:31:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,861,1378882800"; 
+   d="scan'208";a="441373288"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi @ vger . kernel . org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] SFI: fix compilation warnings
+Thread-Topic: [PATCH v2] SFI: fix compilation warnings
+Thread-Index: AQHO9L54/JL6fa5i6Eyqhkbdmc6PdJpMpBHQ
+Date: Tue, 10 Dec 2013 01:30:58 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024969FB@SHSMSX101.ccr.corp.intel.com>
+References: <1386580161-27718-1-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <1386580161-27718-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBA1VGgD010133
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Hi, Andy
 
-No SMP architecture currently supporting Linux allows speculative writes,
-so this commit updates Documentation/memory-barriers.txt to prohibit
-them in Linux core code.  It also records restrictions on their use.
+IMO:
+1. sfi_acpi.h should include both <linux/acpi.h> and <linux/sfi.h> and it should include <acpi/acpi.h> for !CONFIG_ACPI builds.
+2. then we should include sfi_acpi.h instead of <linux/acpi.h>, <linux/sfi.h> and <acpi/acpi.h> for all of its users.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- Documentation/memory-barriers.txt | 183 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 175 insertions(+), 8 deletions(-)
+I think the patch in the linux-pm/bleeding-edge queue can fix the issue you've reported:
+https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=c099eacbcaec4475936fbf73e499507728ce47e1
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 2d22da095a60..deafa36aeea1 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -571,11 +571,10 @@ dependency barrier to make it work correctly.  Consider the following bit of
- code:
- 
- 	q = ACCESS_ONCE(a);
--	if (p) {
--		<data dependency barrier>
--		q = ACCESS_ONCE(b);
-+	if (q) {
-+		<data dependency barrier>  /* BUG: No data dependency!!! */
-+		p = ACCESS_ONCE(b);
- 	}
--	x = *q;
- 
- This will not have the desired effect because there is no actual data
- dependency, but rather a control dependency that the CPU may short-circuit
-@@ -584,11 +583,176 @@ the load from b as having happened before the load from a.  In such a
- case what's actually required is:
- 
- 	q = ACCESS_ONCE(a);
--	if (p) {
-+	if (q) {
- 		<read barrier>
--		q = ACCESS_ONCE(b);
-+		p = ACCESS_ONCE(b);
- 	}
--	x = *q;
-+
-+However, stores are not speculated.  This means that ordering -is- provided
-+in the following example:
-+
-+	q = ACCESS_ONCE(a);
-+	if (ACCESS_ONCE(q)) {
-+		ACCESS_ONCE(b) = p;
-+	}
-+
-+Please note that ACCESS_ONCE() is not optional!  Without the ACCESS_ONCE(),
-+the compiler is within its rights to transform this example:
-+
-+	q = a;
-+	if (q) {
-+		b = p;  /* BUG: Compiler can reorder!!! */
-+		do_something();
-+	} else {
-+		b = p;  /* BUG: Compiler can reorder!!! */
-+		do_something_else();
-+	}
-+
-+into this, which of course defeats the ordering:
-+
-+	b = p;
-+	q = a;
-+	if (q)
-+		do_something();
-+	else
-+		do_something_else();
-+
-+Worse yet, if the compiler is able to prove (say) that the value of
-+variable 'a' is always non-zero, it would be well within its rights
-+to optimize the original example by eliminating the "if" statement
-+as follows:
-+
-+	q = a;
-+	b = p;  /* BUG: Compiler can reorder!!! */
-+	do_something();
-+
-+The solution is again ACCESS_ONCE(), which preserves the ordering between
-+the load from variable 'a' and the store to variable 'b':
-+
-+	q = ACCESS_ONCE(a);
-+	if (q) {
-+		ACCESS_ONCE(b) = p;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = p;
-+		do_something_else();
-+	}
-+
-+You could also use barrier() to prevent the compiler from moving
-+the stores to variable 'b', but barrier() would not prevent the
-+compiler from proving to itself that a==1 always, so ACCESS_ONCE()
-+is also needed.
-+
-+It is important to note that control dependencies absolutely require a
-+a conditional.  For example, the following "optimized" version of
-+the above example breaks ordering:
-+
-+	q = ACCESS_ONCE(a);
-+	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
-+	if (q) {
-+		/* ACCESS_ONCE(b) = p; -- moved up, BUG!!! */
-+		do_something();
-+	} else {
-+		/* ACCESS_ONCE(b) = p; -- moved up, BUG!!! */
-+		do_something_else();
-+	}
-+
-+It is of course legal for the prior load to be part of the conditional,
-+for example, as follows:
-+
-+	if (ACCESS_ONCE(a) > 0) {
-+		ACCESS_ONCE(b) = q / 2;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = q / 3;
-+		do_something_else();
-+	}
-+
-+This will again ensure that the load from variable 'a' is ordered before the
-+stores to variable 'b'.
-+
-+In addition, you need to be careful what you do with the local variable 'q',
-+otherwise the compiler might be able to guess the value and again remove
-+the needed conditional.  For example:
-+
-+	q = ACCESS_ONCE(a);
-+	if (q % MAX) {
-+		ACCESS_ONCE(b) = p;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = p;
-+		do_something_else();
-+	}
-+
-+If MAX is defined to be 1, then the compiler knows that (q % MAX) is
-+equal to zero, in which case the compiler is within its rights to
-+transform the above code into the following:
-+
-+	q = ACCESS_ONCE(a);
-+	ACCESS_ONCE(b) = p;
-+	do_something_else();
-+
-+This transformation loses the ordering between the load from variable 'a'
-+and the store to variable 'b'.  If you are relying on this ordering, you
-+should do something like the following:
-+
-+	q = ACCESS_ONCE(a);
-+	BUILD_BUG_ON(MAX <= 1); /* Order load from a with store to b. */
-+	if (q % MAX) {
-+		ACCESS_ONCE(b) = p;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = p;
-+		do_something_else();
-+	}
-+
-+Finally, control dependencies do -not- provide transitivity.  This is
-+demonstrated by two related examples:
-+
-+	CPU 0                     CPU 1
-+	=====================     =====================
-+	r1 = ACCESS_ONCE(x);      r2 = ACCESS_ONCE(y);
-+	if (r1 >= 0)              if (r2 >= 0)
-+	  ACCESS_ONCE(y) = 1;       ACCESS_ONCE(x) = 1;
-+
-+	assert(!(r1 == 1 && r2 == 1));
-+
-+The above two-CPU example will never trigger the assert().  However,
-+if control dependencies guaranteed transitivity (which they do not),
-+then adding the following two CPUs would guarantee a related assertion:
-+
-+	CPU 2                     CPU 3
-+	=====================     =====================
-+	ACCESS_ONCE(x) = 2;       ACCESS_ONCE(y) = 2;
-+
-+	assert(!(r1 == 2 && r2 == 2 && x == 1 && y == 1)); /* FAILS!!! */
-+
-+But because control dependencies do -not- provide transitivity, the
-+above assertion can fail after the combined four-CPU example completes.
-+If you need the four-CPU example to provide ordering, you will need
-+smp_mb() between the loads and stores in the CPU 0 and CPU 1 code fragments.
-+
-+In summary:
-+
-+  (*) Control dependencies can order prior loads against later stores.
-+      However, they do -not- guarantee any other sort of ordering:
-+      Not prior loads against later loads, nor prior stores against
-+      later anything.  If you need these other forms of ordering,
-+      use smb_rmb(), smp_wmb(), or, in the case of prior stores and
-+      later loads, smp_mb().
-+
-+  (*) Control dependencies require at least one run-time conditional
-+      between the prior load and the subsequent store.  If the compiler
-+      is able to optimize the conditional away, it will have also
-+      optimized away the ordering.  Careful use of ACCESS_ONCE() can
-+      help to preserve the needed conditional.
-+
-+  (*) Control dependencies require that the compiler avoid reordering the
-+      dependency into nonexistence.  Careful use of ACCESS_ONCE() or
-+      barrier() can help to preserve your control dependency.
-+
-+  (*) Control dependencies do -not- provide transitivity.  If you
-+      need transitivity, use smp_mb().
- 
- 
- SMP BARRIER PAIRING
-@@ -1083,7 +1247,10 @@ compiler from moving the memory accesses either side of it to the other side:
- 
- 	barrier();
- 
--This is a general barrier - lesser varieties of compiler barrier do not exist.
-+This is a general barrier -- there are no read-read or write-write variants
-+of barrier().  Howevever, ACCESS_ONCE() can be thought of as a weak form
-+for barrier() that affects only the specific accesses flagged by the
-+ACCESS_ONCE().
- 
- The compiler barrier has no direct effect on the CPU, which may then reorder
- things however it wishes.
--- 
-1.8.1.5
+I made it a part of my header cleanup series.
+The story can be found in this mailing list thread:
+http://www.spinics.net/lists/linux-acpi/msg47510.html
 
+Thanks and best regards
+-Lv
+
+
+> -----Original Message-----
+> From: Andy Shevchenko [mailto:andriy.shevchenko@linux.intel.com]
+> Sent: Monday, December 09, 2013 5:09 PM
+> To: Wysocki, Rafael J; linux-acpi @ vger . kernel . org; LKML; Zheng, Lv
+> Cc: Andy Shevchenko
+> Subject: [PATCH v2] SFI: fix compilation warnings
+> 
+> When build kernel with make W=1 we get the following compiler error.
+> 
+> In file included from drivers/sfi/sfi_acpi.c:66:0:
+> include/linux/sfi_acpi.h: In function ‚Äòacpi_sfi_table_parse‚Äô:
+> include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‚Äòacpi_table_parse‚Äô [-Werror=implicit-function-declaration]
+>   if (!acpi_table_parse(signature, handler))
+>   ^
+>   cc1: some warnings being treated as errors
+> 
+> The patch add linux/acpi.h to the top of file.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
+> Changes to v2:
+> - fix for build when ACPI=n, SFI=y
+>  drivers/sfi/sfi_acpi.c   | 2 +-
+>  include/linux/sfi_acpi.h | 4 +++-
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
+> index 5e753d7..5589ec5 100644
+> --- a/drivers/sfi/sfi_acpi.c
+> +++ b/drivers/sfi/sfi_acpi.c
+> @@ -60,7 +60,7 @@
+>  #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+> 
+>  #include <linux/kernel.h>
+> -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> +#include <linux/acpi.h>
+> 
+>  #include <linux/sfi.h>
+>  #include "sfi_core.h"
+> diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
+> index 2cfcb79..ecc2344 100644
+> --- a/include/linux/sfi_acpi.h
+> +++ b/include/linux/sfi_acpi.h
+> @@ -60,7 +60,9 @@
+>  #define _LINUX_SFI_ACPI_H
+> 
+>  #ifdef CONFIG_SFI
+> -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> +
+> +#include <acpi/acpi.h>
+> +#include <linux/acpi.h>
+> 
+>  extern int sfi_acpi_table_parse(char *signature, char *oem_id,
+>  				char *oem_table_id,
+> --
+> 1.8.4.4
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
