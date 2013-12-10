@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab3LJDBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 22:01:19 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:34877 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3LJDBR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 22:01:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
-	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
-	<20131204183554.GA16693@kroah.com>
-	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
-	<20131204214325.GA19565@kroah.com>
-	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
-	<20131204220247.GA22031@kroah.com>
-	<CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
-Date: Tue, 10 Dec 2013 05:01:16 +0200
-Message-ID: <CAMoF9u1W4-xUFjtMw+SuwR=wgnpfq4uMucKciqrqp81WK1aNmw@mail.gmail.com>
-Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
-From: Octavian Purdila <tavi.purdila@gmail.com>
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Rogers <irogers@google.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        David Butcher <Dave.Butcher@arm.com>, romlem@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752199Ab3LJDCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:02:31 -0500
+Received: from ozlabs.org ([203.10.76.45]:52979 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab3LJDC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 22:02:28 -0500
+Date: Tue, 10 Dec 2013 14:02:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the pinctrl tree
+Message-Id: <20131210140218.645eaf6983481bafe5833eef@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__10_Dec_2013_14_02_18_+1100_PhEk+3RnDkr7UcKm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 4:02 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> On Wed, Dec 4, 2013 at 2:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Wed, Dec 04, 2013 at 01:55:34PM -0800, Colin Cross wrote:
->>> On Wed, Dec 4, 2013 at 1:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> > On Wed, Dec 04, 2013 at 12:46:42PM -0800, Colin Cross wrote:
->>> >> On Wed, Dec 4, 2013 at 10:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> >> <snip>
->>> >>
->>> >> > And finally, is this all really needed?  Why not just fix the structures
->>> >> > to be "correct", and then fix userspace to use the correct structures as
->>> >> > well, thereby not needing a compat layer at all?
->>> >>
->>> >> Some of the binder ioctls take userspace pointers.  Are you suggesting
->>> >> storing those pointers in a __u64 to avoid having to have a
->>> >> compat_ioctl?
->>> >
->>> > Yes, that's the best way to solve the issue, right?
->>>
->>> It's the least code, but in exchange you lose all the type safety and
->>> warnings when copying in and out of the pointers, as well as sparse
->>> checking on the __user attribute.
->>
->> Not if you make the cast right at the beginning, when you first "touch"
->> the data, but yes, it does take some of the type saftey away, at the
->> expense of simpler code to mess up :)
->>
->>> That doesn't seem like a good tradeoff to me.  In addition it requires
->>> modifying the existing heavily used 32 bit api, which means a
->>> mostly-equivalent compat layer added in libbinder to support old
->>> kernels.
->>
->> Wait, I thought that libbinder would have to be changed anyway here, to
->> handle 64bit kernels (in both 32 and 64bit userspace).  Since you are
->> already changing it, why not just "do it correctly"?
->>
->
-> Yes libbinder will have to be changed to support calls between 32 bit
-> and 64 bit processes, so I don't see much value in a patchset that
-> only supports all 32 bit or all 64 bit processes. If user space is
-> fixed to use 64 bit pointers on a 64 bit system, then much of the code
-> added in this patchset becomes useless (and probably harmful as it
-> appears to prevent 32 bit processes from communicating with 64 bit
-> processes).
->
+--Signature=_Tue__10_Dec_2013_14_02_18_+1100_PhEk+3RnDkr7UcKm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi Linus,
 
-Coincidentally, I have been working on a compat layer myself lately.
-It is implemented in the binder driver with no changes in libbinder
-and it includes support for mixed mode.
+After merging the pinctrl tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Unless you think that the kernel compat layer is a dead end, I can
-post the patches here for review. IMO the kernel compat layer gives
-you greater flexibility because it keeps the 32bit ABI unchanged. Of
-course it comes with the price of increased complexity.
+sound/soc/fsl/eukrea-tlv320.c:28:28: fatal error: asm/mach-types.h: No such=
+ file or directory
+ #include <asm/mach-types.h>
+                            ^
 
-Thanks,
-Tavi
+Probably caused by commit 6bca8471566c ("pinctrl: select dependency on OF
+for MSM driver").  the build of eukrea-tlv320.c depends on CONFIG_OF
+which is not normally set for as x86_64 build, but the above commit
+caused it to be selected (I think).
+
+I have used the pinctrl tree from next-20131206 again.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__10_Dec_2013_14_02_18_+1100_PhEk+3RnDkr7UcKm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSpoQ+AAoJEMDTa8Ir7ZwV980QAJDdUNKcY9U/BplxM6mee8Ge
+iH+sZUW/DIX4ANyoGZ79QYwS9Ch8pN3sihZ3jHOlAceRduMQ8D9SPDCqM3UF735b
+PA0qeE0YpM0LJCYwGUIzJha5hCdgYCchsMGeoDuDMV9t61mTpZkWC3dVV/fDjPqZ
+ZuRFr3pQo5T9bXtgx6f/UyULoUgrmso2Hx7+m5hZBY++f7l0cxOMHtzQIy8knmHV
+wb2t3rqgsEuX+z14AHZcaMULU7uksMy4daq1MVLM5RvnyKOOgFrNGIbYMlFsPw2Q
+MCRTBub44s789pvSrJv3R+VibXospb/k5SmmK2wOqFOBcHOgd9SvtMrA/GndOBCW
+X7YnVEr/F/HkOC6j2zhsuKjafndZI7hgJKkhQNyEjgkc4Y6y8wdfKAujUN4BEPsS
+U83j10kEyIMLXBbhByiZLiuSDJEgPf+hGEFHDOgc8lbojLaW3mP8e4vS4NA0q26h
+5XvxmQ3pdxtTBDHkJrcrrnr2aK1HKm1WRYyyRYfBNUkqmxfKbl7dcZLSodufJupc
+ddgKZMvKCmcCfdWWKE2X/m9B83bEZnj6nozM0SZUDEm/TJhaZ1OYsXkiZyq/IMvg
+IMS5FnlpYHQgfyy+73978h0XRWMEPW55stWBeRPdyro80CZmgkCrJ7Co0mBPLn/b
+wXKq5OplicIMVHcLAPnp
+=gzsx
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__10_Dec_2013_14_02_18_+1100_PhEk+3RnDkr7UcKm--
