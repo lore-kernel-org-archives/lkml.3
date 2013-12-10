@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab3LJJep (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:34:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44081 "EHLO
+	id S1755022Ab3LJJfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:35:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44072 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab3LJJQ7 (ORCPT
+	with ESMTP id S1750887Ab3LJJQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:16:59 -0500
-Date: Tue, 10 Dec 2013 01:16:35 -0800
-From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-9c105fbc94a67ea5943d309d9a78ca669e0ddc61@git.kernel.org>
+	Tue, 10 Dec 2013 04:16:53 -0500
+Date: Tue, 10 Dec 2013 01:16:16 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-e6d7cee1ecac099786d3ba7a71b1e69cf0ae9a7b@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
-In-Reply-To: <b8c41f1fd2c4f0df71eb7b19aea74fb64d46cdda.1386197481.git.yangds.fnst@cn.fujitsu.com>
-References: <b8c41f1fd2c4f0df71eb7b19aea74fb64d46cdda.1386197481.git.yangds.fnst@cn.fujitsu.com>
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1386076182-14484-2-git-send-email-jolsa@redhat.com>
+References: <1386076182-14484-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf target:
-  Move the checking of which map function to call into function.
-Git-Commit-ID: 9c105fbc94a67ea5943d309d9a78ca669e0ddc61
+Subject: [tip:perf/core] perf tools: Remove stackprotector feature check
+Git-Commit-ID: e6d7cee1ecac099786d3ba7a71b1e69cf0ae9a7b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,77 +33,107 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:16:43 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:16:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9c105fbc94a67ea5943d309d9a78ca669e0ddc61
-Gitweb:     http://git.kernel.org/tip/9c105fbc94a67ea5943d309d9a78ca669e0ddc61
-Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Wed, 4 Dec 2013 17:56:40 -0500
+Commit-ID:  e6d7cee1ecac099786d3ba7a71b1e69cf0ae9a7b
+Gitweb:     http://git.kernel.org/tip/e6d7cee1ecac099786d3ba7a71b1e69cf0ae9a7b
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 3 Dec 2013 14:09:15 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 4 Dec 2013 13:46:37 -0300
+CommitDate: Wed, 4 Dec 2013 13:46:36 -0300
 
-perf target: Move the checking of which map function to call into function.
+perf tools: Remove stackprotector feature check
 
-Check for cpu_map__dummy_new() or cpu_map__new() to be called in
-perf_evlist__create_maps() is more complicated.
+We use -fstack-protector-all option to enable stack protecting for all
+available functions. There's no reason for enabling -Wstack-protector to
+get warning for unprotected functions.
 
-This patch moves the checking work into target.h, combining two
-conditions and making perf_evlist__create_maps() more readable.
+Removing stackprotector feature check which was used to enable the
+-Wstack-protector option.
 
-Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/b8c41f1fd2c4f0df71eb7b19aea74fb64d46cdda.1386197481.git.yangds.fnst@cn.fujitsu.com
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1386076182-14484-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c |  8 +-------
- tools/perf/util/target.h | 13 +++++++++++++
- 2 files changed, 14 insertions(+), 7 deletions(-)
+ tools/perf/config/Makefile                             | 5 -----
+ tools/perf/config/feature-checks/Makefile              | 6 +-----
+ tools/perf/config/feature-checks/test-stackprotector.c | 6 ------
+ 3 files changed, 1 insertion(+), 16 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 76fa764..7bb6ee1 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -819,13 +819,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
- 	if (evlist->threads == NULL)
- 		return -1;
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 36e66ac..0761d57 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -141,7 +141,6 @@ CORE_FEATURE_TESTS =			\
+ 	libslang			\
+ 	libunwind			\
+ 	on-exit				\
+-	stackprotector			\
+ 	stackprotector-all		\
+ 	timerfd
  
--	if (target->default_per_cpu)
--		evlist->cpus = target->per_thread ?
--					cpu_map__dummy_new() :
--					cpu_map__new(target->cpu_list);
--	else if (target__has_task(target))
--		evlist->cpus = cpu_map__dummy_new();
--	else if (!target__has_cpu(target) && !target->uses_mmap)
-+	if (target__uses_dummy_map(target))
- 		evlist->cpus = cpu_map__dummy_new();
- 	else
- 		evlist->cpus = cpu_map__new(target->cpu_list);
-diff --git a/tools/perf/util/target.h b/tools/perf/util/target.h
-index 31dd2e9..7381b1c 100644
---- a/tools/perf/util/target.h
-+++ b/tools/perf/util/target.h
-@@ -63,4 +63,17 @@ static inline bool target__none(struct target *target)
- 	return !target__has_task(target) && !target__has_cpu(target);
- }
+@@ -209,10 +208,6 @@ ifeq ($(feature-stackprotector-all), 1)
+   CFLAGS += -fstack-protector-all
+ endif
  
-+static inline bool target__uses_dummy_map(struct target *target)
-+{
-+	bool use_dummy = false;
-+
-+	if (target->default_per_cpu)
-+		use_dummy = target->per_thread ? true : false;
-+	else if (target__has_task(target) ||
-+	         (!target__has_cpu(target) && !target->uses_mmap))
-+		use_dummy = true;
-+
-+	return use_dummy;
-+}
-+
- #endif /* _PERF_TARGET_H */
+-ifeq ($(feature-stackprotector), 1)
+-  CFLAGS += -Wstack-protector
+-endif
+-
+ ifeq ($(DEBUG),0)
+   ifeq ($(feature-fortify-source), 1)
+     CFLAGS += -D_FORTIFY_SOURCE=2
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 87e7900..b8bb749 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -26,7 +26,6 @@ FILES=					\
+ 	test-libunwind-debug-frame	\
+ 	test-on-exit			\
+ 	test-stackprotector-all		\
+-	test-stackprotector		\
+ 	test-timerfd
+ 
+ CC := $(CC) -MD
+@@ -38,7 +37,7 @@ BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
+ ###############################
+ 
+ test-all:
+-	$(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+ 
+ test-hello:
+ 	$(BUILD)
+@@ -46,9 +45,6 @@ test-hello:
+ test-stackprotector-all:
+ 	$(BUILD) -Werror -fstack-protector-all
+ 
+-test-stackprotector:
+-	$(BUILD) -Werror -fstack-protector -Wstack-protector
+-
+ test-fortify-source:
+ 	$(BUILD) -O2 -Werror -D_FORTIFY_SOURCE=2
+ 
+diff --git a/tools/perf/config/feature-checks/test-stackprotector.c b/tools/perf/config/feature-checks/test-stackprotector.c
+deleted file mode 100644
+index c9f398d..0000000
+--- a/tools/perf/config/feature-checks/test-stackprotector.c
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#include <stdio.h>
+-
+-int main(void)
+-{
+-	return puts("hi");
+-}
