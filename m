@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab3LJOhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:37:08 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:41570 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab3LJOhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:37:06 -0500
-Date: Tue, 10 Dec 2013 15:37:03 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Will CPU 0 be forever prohibited from NO_HZ_FULL status?
-Message-ID: <20131210143702.GB10633@localhost.localdomain>
-References: <20131204193957.GA2847@linux.vnet.ibm.com>
- <20131205012053.GC6683@localhost.localdomain>
- <20131205025037.GM15492@linux.vnet.ibm.com>
+	id S1753866Ab3LJOjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:39:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753107Ab3LJOjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 09:39:21 -0500
+Date: Tue, 10 Dec 2013 09:38:28 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rob Landley <rob@landley.net>, Eric Biederman <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
+Message-ID: <20131210143828.GB13909@redhat.com>
+References: <20131210001620.GA7938@www.outflux.net>
+ <52A66190.9060907@zytor.com>
+ <CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com>
+ <20131210143540.GA13909@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131205025037.GM15492@linux.vnet.ibm.com>
+In-Reply-To: <20131210143540.GA13909@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 04, 2013 at 06:50:37PM -0800, Paul E. McKenney wrote:
-> On Thu, Dec 05, 2013 at 02:20:55AM +0100, Frederic Weisbecker wrote:
-> > On Wed, Dec 04, 2013 at 11:39:57AM -0800, Paul E. McKenney wrote:
-> > > Hello, Frederic,
-> > > 
-> > > Just realized that I could further decrease RT latency of one of my "shut
-> > > up RCU on NO_HZ_FULL CPUs" patches if I relied on CPU 0 always having
-> > > a scheduling-clock tick unless the entire system is idle.  The trick
-> > > is that I could then rely on CPU 0 to detect RCU CPU stall warnings,
-> > > and remove the checking from the other CPUs.
-> > > 
-> > > Thoughts?
+On Tue, Dec 10, 2013 at 09:35:40AM -0500, Vivek Goyal wrote:
+> On Mon, Dec 09, 2013 at 05:06:10PM -0800, Kees Cook wrote:
+> > On Mon, Dec 9, 2013 at 4:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > > On 12/09/2013 04:16 PM, Kees Cook wrote:
+> > >> For general-purpose (i.e. distro) kernel builds it makes sense to build with
+> > >> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+> > >> with kexec. However, in the face of trying to lock down a system with such
+> > >> a kernel, there needs to be a way to disable kexec (much like module loading
+> > >> can be disabled). Without this, it is too easy for the root user to modify
+> > >> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
+> > >>
+> > >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> > >> Acked-by: Rik van Riel <riel@redhat.com>
+> > >
+> > > So the logic is to load a crashkernel and then lock down the machine
+> > > before services, networking etc. are enabled?
 > > 
-> > You're right on time as I'm currently working on that :)
-> > So the plan is to allow timekeeping to be handled by a set of CPUs (cpu_housekeeping_mask
-> > which I guess should be ~nohz_full_mask & cpu_online_mask). I think it will be better
-> > for powersaving. I guess you could balance the RCU stall checks in this
-> > set of housekeeping CPUs?
-> > 
-> > It should be very easy to make the rcu sysidle stuff to support that housekeeping set,
-> > I just looked into it and all we need to do is to turn the several "cpu == tick_do_timer"
-> > checks into something like is_housekeeping_cpu(cpu). And may be a few easy details, like which
-> > CPU from the housekeeping set should get the kick IPI, well the first one available should be a good start,
-> > of course I expect some issues with cpu hotplug.
-> > But other than that, RCU sysidle detection is mostly ready to support tracking only a given subset
-> > of CPUs instead of all of them. That's in fact what it already does currently by excluding the
-> > fixed boot timekeeping CPU.
-> > 
-> > So I'm working on that and should have some patches ready soon.
+> > Right, or to just turn it off at boot time if kexec will not be used at all.
 > 
-> Thank you for the info!  Nice to know that RCU will continue to be able
-> to rely on there being at least one housekeeping CPU.  ;-)
+> kdump kernel is loaded with the help of kdump service. Different distro's
+> might have different dependencies for that serivce. But recently in fedora
+> we wait network to come up before starting that service. (So that nfs
+> targets can be mounted and checked for valid dump destinations).
 > 
-> At that point, tick_nohz_full_cpu() would still be a good way for RCU
-> to distinguish housekeeping CPUs from working CPUs, correct?
+> IOW, crash kernel is loaded quite late in the game (quite a few services
+> have run and possibly networking is up too). To me, practically one will
+> disable kdump also if you change state of this knob early.
 
-Correct!
+Of course it also removes the possibility of re-loading crash kernel
+after doing some changes to /etc/kdump.conf (like dump destination or
+kernel command line).
 
-> 
-> > In fact I just realized that all the sysidle detection infrastructure is there and working
-> > but we forgot to plug it in the tick engine, and thus we are still running
-> > with periodic CPU 0 even with CONFIG_NO_HZ_FULL_SYSIDLE=y. Anyway I have a few changes
-> > ready to enable that, lets hope testing will be ok :)
-> 
-> Indeed!  ;-)
-> 
-> The CONFIG_NO_HZ_FULL_SYSIDLE=y might complicate things a bit.  But I
-> guess the problem would be a corner case -- the system entered sysidle
-> mode with a grace period pending, which should eventually wake up the
-> corresponding grace-period kthread, which might be prevented from ever
-> running due to high load or something.  If that problem arises, I will
-> fix it.
+I am wondering if it is sufficient to disable kexec jump back
+functionality only while retaining kexec and kdump. That seems to be
+easiest way to change kernel's data structures.
 
-I see. Well we'll find out.
-In the meantime I successfully plugged sysidle detection with full dynticks and it
-surprisingly works like a charm. Which makes me think there must be some bug in my patches that make things
-working by accident :)
-
-I'll post soon.
-
-Thanks.
+Thanks
+Vivek
