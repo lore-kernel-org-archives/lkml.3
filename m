@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab3LJK4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:56:18 -0500
+	id S1752743Ab3LJK4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:56:31 -0500
 Received: from mailout2.samsung.com ([203.254.224.25]:64330 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab3LJK4I (ORCPT
+	with ESMTP id S1752597Ab3LJK4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:56:08 -0500
-X-AuditID: cbfee690-b7f676d00000310d-3f-52a6f3412729
+	Tue, 10 Dec 2013 05:56:17 -0500
+X-AuditID: cbfee691-b7fd26d000003f7b-6d-52a6f3457f91
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, balbi@ti.com,
         sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com, kishon@ti.com,
         jg1.han@samsung.com, jwerner@chromium.org
-Subject: [PATCH RFC 1/4] phy: Add provision for tuning phy.
-Date: Tue, 10 Dec 2013 16:25:23 +0530
-Message-id: <1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH RFC 3/4] xhci: Tune PHY for the DWC3-Exynos host controller
+Date: Tue, 10 Dec 2013 16:25:25 +0530
+Message-id: <1386672926-26885-4-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
 In-reply-to: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
 References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSrev4eVmQQeciE4uD9+stmhevZ7O4
-	vPASq0XHocdMFr0LrrJZXHjaAxTbNYfNYvaSfhaLGef3MVksWtbKbNF84hSzA7fH7IaLLB7z
-	TgZ67J+7ht2jb8sqRo/jN7YzeXzeJBfAFsVlk5Kak1mWWqRvl8CVsbNxEnPBBIGKN1/a2BsY
-	u3m7GDk5JARMJE4tn8gKYYtJXLi3nq2LkYtDSGApo8SXvQvZYYp2zt/PCGILCUxnlDjaLANR
-	NIVJ4vqrnywgCTYBXYmmt7vAikQEHCSWLL0DNolZ4BajRMvUDrAVwgLWEp9vPgKbyiKgKjHj
-	/AIgm4ODV8BD4u7KFIhlChJvbj9jBrE5BTwllncdYIVY7CHRdf8+M8hMCYFD7BLXpz1ihpgj
-	IPFt8iEWkDkSArISmw4wQ8yRlDi44gbLBEbhBYwMqxhFUwuSC4qT0otM9IoTc4tL89L1kvNz
-	NzECo+L0v2cTdjDeO2B9iDEZaNxEZinR5HxgVOWVxBsamxlZmJqYGhuZW5qRJqwkzqv2KClI
-	SCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUAyMb+82VbLNKj0c0lpuWhH0LW3OE6+VJSau+SI+E
-	SaYGjw9+TE7zf2D9jXGr8v9YjuuT97F+fP6Rp61XKW01k+aqDerdpfaVDh8zuebsbFTN1Wqp
-	VVQ0POY3x/hLy9fnG27cuxHj4v/S8/+0pY7r9fJ62c4FfFZbMFeDcYFb+MdNnmIXcjkCG5VY
-	ijMSDbWYi4oTAQZ3s4agAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jQV3Hz8uCDF7f17I4eL/eonnxejaL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42JZI2JSo+v6eVmQwdZ3ehYH79dbNC9ez2Zx
+	eeElVouOQ4+ZLHoXXGWzuPC0Byi2aw6bxewl/SwWM87vY7JYtKyV2aL5xClmB26P2Q0XWTzm
+	nQz02D93DbtH35ZVjB7Hb2xn8vi8SS6ALYrLJiU1J7MstUjfLoEr4+ec14wFd+Uqlmy+wNzA
+	eE+ii5GTQ0LARKJjxWYWCFtM4sK99WxdjFwcQgJLGSUaN3WzwhRtPryGESIxnVFixo0XUM4U
+	JonvH6cyglSxCehKNL3dBWaLCDhILFl6B2wUs8AtRomWqR1go4QFvCU+fJrCBGKzCKhK/G7Y
+	BLabV8BD4tOMq1DrFCTe3H7GDGJzCnhKLO86ABYXAqrpun+fGWSohMA+dom7e1+zQwwSkPg2
+	+RDQIA6ghKzEpgPMEHMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYzA
+	yDj979nEHYz3D1gfYkwGGjeRWUo0OR8YWXkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhP
+	LEnNTk0tSC2KLyrNSS0+xMjEwSnVwNibe/vJoY/u98vsblf0FpTb267QlzW2OHTjor7Fba3K
+	ZNuoU9ZXWxcu63jcJ3uh9ZxDw//+tZ62XvOZsjaqNjBW/vu4w4P7i9f7FxM8+Pr6Pnxfvatk
+	amxujuzGlxveLa9wmbQyWGTi5keh53cfXCmh21t7wGhi/ae44riX4e6SUgwz5xeY/VBiKc5I
+	NNRiLipOBACV3rEWogIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t9jQV3Xz8uCDM4sULU4eL/eonnxejaL
 	ywsvsVp0HHrMZNG74CqbxYWnPUCxXXPYLGYv6WexmHF+H5PFomWtzBbNJ04xO3B7zG64yOIx
 	72Sgx/65a9g9+rasYvQ4fmM7k8fnTXIBbFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYG
 	hrqGlhbmSgp5ibmptkouPgG6bpk5QOcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLr
-	MTJAAwlrGDN2Nk5iLpggUPHmSxt7A2M3bxcjJ4eEgInEzvn7GSFsMYkL99azgdhCAtMZJY42
-	y3QxcgHZU5gkrr/6yQKSYBPQlWh6uwusQUTAQWLJ0jtsIEXMArcYJVqmdrCCJIQFrCU+33zE
-	DmKzCKhKzDi/AMjm4OAV8JC4uzIFYpmCxJvbz5hBbE4BT4nlXQdYIRZ7SHTdv888gZF3ASPD
-	KkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgmHsmvYNxVYPFIUYBDkYlHl6Jf0uDhFgTy4or
-	cw8xSnAwK4nwbnuxLEiINyWxsiq1KD++qDQntfgQYzLQUROZpUST84HpIK8k3tDYxNzU2NTS
-	xMLEzJI0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGNdO/83xeFm/xwm50AliC7fJbrIU
-	Vp+i5P2Kv5QjbsN72z3s/gdPexwJt24snXfExC3uvi5Hft7ynZOWdgpWOS86yjt9TzXL6rht
-	y0MNLN89Tz3/NmhC1i8phZ8KWbOzcsXPPVxxr/fZkgk7Nu69NJ9R1zW/VeFqx5q4egnlg9z1
-	W0+8f+EtxK3EUpyRaKjFXFScCAA6ha2V/QIAAA==
+	MTJAAwlrGDN+znnNWHBXrmLJ5gvMDYz3JLoYOTkkBEwkNh9ewwhhi0lcuLeerYuRi0NIYDqj
+	xIwbLxghnClMEt8/TgWrYhPQlWh6uwvMFhFwkFiy9A5YB7PALUaJlqkdrCAJYQFviQ+fpjCB
+	2CwCqhK/GzaxgNi8Ah4Sn2ZcZYVYpyDx5vYzZhCbU8BTYnnXAbC4EFBN1/37zBMYeRcwMqxi
+	FE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI67Z9I7GFc1WBxiFOBgVOLhlfi3NEiINbGsuDL3
+	EKMEB7OSCO+2F8uChHhTEiurUovy44tKc1KLDzEmA101kVlKNDkfmBLySuINjU3MTY1NLU0s
+	TMwsSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoExbVOmu9PfxSZneO783H16q+O0ix+r
+	XzXPfctlckQn0Wtuwyf35NqZrbtlN+68c/n0E5uPjxlapuzXbTtw7VdDwp6ZcXMW8txafM9o
+	kreFXMeN5dlnvG9eqrlps3mud2Tvi1vuM5QkLm5J4Pf5/+aY04IzuVUMussb2ZqvXpmp9bDY
+	/wzjt+BTzUosxRmJhlrMRcWJADA/5UT/AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,79 +52,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some PHY controllers may need to tune PHY post-initialization,
-so that the PHY consumers can call phy-tuning at appropriate
-point of time.
+The DWC3-exynos eXtensible host controller on Exynos5420 SoC
+is quirky in a way that the PHY needs to be tuned to get it
+working at SuperSpeed.
+Add relevant calls for tuning the PHY for DWC3-Exynos's
+host controller, for that matter passing just USB3 PHY
+from DWC3 core, which is saved in secondary HCD of XHCI.
 
-Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/phy/phy-core.c  |   20 ++++++++++++++++++++
- include/linux/phy/phy.h |    7 +++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
+ drivers/usb/dwc3/host.c      |    7 ++++++
+ drivers/usb/host/xhci-plat.c |   43 ++++++++++++++++++++++++++++++++++++++++-
+ include/linux/usb/hcd.h      |    1 +
+ 3 files changed, 49 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 03cf8fb..68dbb90 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -239,6 +239,26 @@ out:
- }
- EXPORT_SYMBOL_GPL(phy_power_off);
+diff --git a/drivers/usb/dwc3/host.c b/drivers/usb/dwc3/host.c
+index 32db328..cc1f6ff 100644
+--- a/drivers/usb/dwc3/host.c
++++ b/drivers/usb/dwc3/host.c
+@@ -46,6 +46,13 @@ int dwc3_host_init(struct dwc3 *dwc)
+ 		goto err1;
+ 	}
  
-+int phy_tune(struct phy *phy)
-+{
-+	int ret = -ENOTSUPP;
-+
-+	mutex_lock(&phy->mutex);
-+	if (phy->ops->tune) {
-+		ret =  phy->ops->tune(phy);
-+		if (ret < 0) {
-+			dev_err(&phy->dev, "phy tuning failed --> %d\n", ret);
-+			goto out;
-+		}
++	ret = platform_device_add_data(xhci, &dwc->usb3_generic_phy,
++					sizeof(dwc->usb3_generic_phy));
++	if (ret) {
++		dev_err(dwc->dev, "failed to add platform data\n");
++		goto err1;
 +	}
 +
-+out:
-+	mutex_unlock(&phy->mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(phy_tune);
-+
- /**
-  * of_phy_get() - lookup and obtain a reference to a phy by phandle
-  * @dev: device that requests this phy
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 6d72269..d3b32b0 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -34,6 +34,7 @@ struct phy_ops {
- 	int	(*exit)(struct phy *phy);
- 	int	(*power_on)(struct phy *phy);
- 	int	(*power_off)(struct phy *phy);
-+	int	(*tune)(struct phy *phy);
- 	struct module *owner;
- };
+ 	ret = platform_device_add(xhci);
+ 	if (ret) {
+ 		dev_err(dwc->dev, "failed to register xHCI device\n");
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 395c9e9..a0f3cbc 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -16,6 +16,7 @@
+ #include <linux/slab.h>
+ #include <linux/of.h>
+ #include <linux/dma-mapping.h>
++#include <linux/phy/phy.h>
  
-@@ -127,6 +128,7 @@ int phy_init(struct phy *phy);
- int phy_exit(struct phy *phy);
- int phy_power_on(struct phy *phy);
- int phy_power_off(struct phy *phy);
-+int phy_tune(struct phy *phy);
- struct phy *phy_get(struct device *dev, const char *string);
- struct phy *devm_phy_get(struct device *dev, const char *string);
- void phy_put(struct phy *phy);
-@@ -199,6 +201,11 @@ static inline int phy_power_off(struct phy *phy)
- 	return -ENOSYS;
+ #include "xhci.h"
+ 
+@@ -51,7 +52,24 @@ static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+ /* called during probe() after chip reset completes */
+ static int xhci_plat_setup(struct usb_hcd *hcd)
+ {
+-	return xhci_gen_setup(hcd, xhci_plat_quirks);
++	struct xhci_hcd	*xhci;
++	int ret = 0;
++
++	ret = xhci_gen_setup(hcd, xhci_plat_quirks);
++	if (ret) {
++		dev_err(hcd->self.controller, "xhci setup failed\n");
++		goto err0;
++	}
++
++	/* Valid for secondary HCD only which gives SuperSpeed ports */
++	if (!usb_hcd_is_primary_hcd(hcd)) {
++		xhci = hcd_to_xhci(hcd);
++		if (xhci->quirks & XHCI_DWC3_EXYNOS)
++			phy_tune(hcd->phy_generic);
++	}
++
++err0:
++	return ret;
  }
  
-+static inline int phy_tune(struct phy *phy)
-+{
-+	return -ENOSYS;
-+}
+ static const struct hc_driver xhci_plat_xhci_driver = {
+@@ -111,6 +129,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	struct usb_hcd		*hcd;
+ 	int			ret;
+ 	int			irq;
++	struct phy		**phy_generic;
+ 
+ 	if (usb_disabled())
+ 		return -ENODEV;
+@@ -170,6 +189,15 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/*
++	 * The parent of the xhci-plat device may pass in a PHY via
++	 * platform data.  If it exists, store it in our struct usb_hcd
++	 * so that we can use it later.
++	 */
++	phy_generic = dev_get_platdata(&pdev->dev);
++	if (phy_generic)
++		xhci->shared_hcd->phy_generic = *phy_generic;
 +
- static inline struct phy *phy_get(struct device *dev, const char *string)
++	/*
+ 	 * Set the xHCI pointer before xhci_plat_setup() (aka hcd_driver.reset)
+ 	 * is called by usb_add_hcd().
+ 	 */
+@@ -229,8 +257,19 @@ static int xhci_plat_resume(struct device *dev)
  {
- 	return ERR_PTR(-ENOSYS);
+ 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
+ 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
++	int ret;
++
++	ret = xhci_resume(xhci, 0);
++	if (ret)
++		return ret;
+ 
+-	return xhci_resume(xhci, 0);
++	/* Valid for secondary HCD only which gives SuperSpeed ports */
++	if (!usb_hcd_is_primary_hcd(hcd)) {
++		if (xhci->quirks & XHCI_DWC3_EXYNOS)
++			phy_tune(hcd->phy_generic);
++	}
++
++	return 0;
+ }
+ 
+ static const struct dev_pm_ops xhci_plat_pm_ops = {
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index b8aba19..241ed2b 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -107,6 +107,7 @@ struct usb_hcd {
+ 	 * other external phys should be software-transparent
+ 	 */
+ 	struct usb_phy	*phy;
++	struct phy	*phy_generic;
+ 
+ 	/* Flags that need to be manipulated atomically because they can
+ 	 * change while the host controller is running.  Always use
 -- 
 1.7.6.5
 
