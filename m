@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab3LJXcB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:32:01 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35155 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3LJXb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:31:59 -0500
-Date: Tue, 10 Dec 2013 23:31:53 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131210233153.GQ10323@ZenIV.linux.org.uk>
-References: <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com>
- <20131210213431.GA6342@redhat.com>
- <20131210214143.GG27373@redhat.com>
- <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
- <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
- <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
- <alpine.DEB.2.02.1312102348120.28330@ionos.tec.linutronix.de>
- <CA+55aFymvumbFXw6azLH+-3y6RB7mT_cho-wJguMepezzG=YQA@mail.gmail.com>
+	id S1751439Ab3LJXcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:32:17 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41658 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750989Ab3LJXcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:32:15 -0500
+Date: Wed, 11 Dec 2013 00:32:07 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org,
+        toshi.kani@hp.com
+Subject: Re: [PATCH v5 00/14] kexec kernel efi runtime support
+Message-ID: <20131210233207.GI31437@pd.tnic>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <20131210152549.7975e3ac25d854e2ada63221@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFymvumbFXw6azLH+-3y6RB7mT_cho-wJguMepezzG=YQA@mail.gmail.com>
+In-Reply-To: <20131210152549.7975e3ac25d854e2ada63221@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:05:46PM -0800, Linus Torvalds wrote:
-
-> Nobody actually uses that argument any more (it goes back to the old
-> i386 "let's manually verify that we have write permissions, because
-> the CPU doesn't do it for us in the trap handling"), and it should
-> probably be removed.
-
-Ah...
-
-> But you're right that it's at least misleading. I'd love to remove it
-> entirely, because it's not even syntax-checked, and it's confusing.
-> But that would be a humongous patch.
+On Tue, Dec 10, 2013 at 03:25:49PM -0800, Andrew Morton wrote:
+> On Mon,  9 Dec 2013 17:42:13 +0800 Dave Young <dyoung@redhat.com> wrote:
 > 
-> So these days, "access_ok()" literally just checks that the address is
-> in the user address space range. And that would seem to always be
-> appropriate for futexes, so why not just do it in the generic code?
+> > Here is the V5 patchset for supporting kexec kernel efi runtime.
+> 
+> It's unclear (to me) who's supposed to merge this lot.  It's a "kexec"
+> patch which actually hits on efi and x86.
+> 
+> I grabbed them for some -next testing but won't be offended if someone
+> else merges them ;)
 
-So let's turn it into
-#define access_ok(type, addr, size) address_ok(addr, size)
+I was under the impression that this should go through Matt's efi tree.
+Oh, and we need to finish reviewing them so picking them up now would be
+too premature, IMHO.
 
-and then users can be converted at leisure.  Eventually we'll just remove
-the unused macros...
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
