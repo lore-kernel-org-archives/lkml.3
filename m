@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab3LJV5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 16:57:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab3LJV5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 16:57:46 -0500
-Date: Tue, 10 Dec 2013 16:56:18 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Darren Hart <dvhart@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
+	id S1751928Ab3LJV56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 16:57:58 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:50673 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab3LJV5u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 16:57:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131210214143.GG27373@redhat.com>
+References: <20131210154724.GA30020@redhat.com>
+	<CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+	<alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+	<CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+	<20131210203559.GA1209@redhat.com>
+	<20131210204925.GB27373@redhat.com>
+	<20131210213431.GA6342@redhat.com>
+	<20131210214143.GG27373@redhat.com>
+Date: Tue, 10 Dec 2013 13:57:49 -0800
+X-Google-Sender-Auth: 5gWOuwauOrtKwE1vlpdsPrJBUIA
+Message-ID: <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+Subject: Re: process 'stuck' at exit.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131210215618.GA5050@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Darren Hart <dvhart@linux.intel.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-References: <20131210154724.GA30020@redhat.com>
- <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
- <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
- <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com>
- <1386709583.3685.78.camel@dvhart-mobl4.amr.corp.intel.com>
- <CA+55aFx1Eech-MXWgJkERjJPSeg_9HVyLo_8nz=saNJyNmS7Kg@mail.gmail.com>
- <20131210213201.GF27373@redhat.com>
- <CA+55aFzkoqH5d3Ya9adqdmgZgZEsuZqTFfevor5k6M99HMF9=Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzkoqH5d3Ya9adqdmgZgZEsuZqTFfevor5k6M99HMF9=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:49:19PM -0800, Linus Torvalds wrote:
- > On Tue, Dec 10, 2013 at 1:32 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > http://www.codemonkey.org.uk/junk/perf.data.xz
- > 
- >  "Forbidden
- > 
- >   You don't have permission to access /junk/perf.data.xz on this server."
+On Tue, Dec 10, 2013 at 1:41 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> http://codemonkey.org.uk/junk/trace
 
-fixed.
+Hmm. Ok, so something is calling [__]get_user_pages_fast() and
+put_page() in a loop, but the trace doesn't show what that "something"
+is, because it is itself not ever called.
 
- > also, we'd need the vmlinux file to actually decode the data, I think.
+However, that pattern does seem to imply that the loop is in
+get_futex_key(), because all the other loops I see seem to be calling
+other things as well.
 
-Hmm, the only vmlinux I have still around is newer than the running kernel,
-so that's not going to be much help.
+And the __get_user_pages_fast() call implies that it's the THP case
+that triggers the "unlikely(PageTail(page))" case. And anyway,
+otherwise we'd see lock_page()/unlock_page() too.
 
-	Dave
+So it looks like __get_user_pages_fast() fails, and keeps failing.
+Andrea, this is your code, any ideas? Commit a5b338f2b0b1f ("thp:
+update futex compound knowledge") to be exact.
 
+                   Linus
