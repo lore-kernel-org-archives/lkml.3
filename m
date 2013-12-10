@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3LJIOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:14:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58923 "EHLO
+	id S1754717Ab3LJIOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:14:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab3LJICE (ORCPT
+	with ESMTP id S1753709Ab3LJIB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:04 -0500
+	Tue, 10 Dec 2013 03:01:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 38/62] PNP: fix restoring devices after hibernation
-Date: Tue, 10 Dec 2013 00:01:09 -0800
-Message-Id: <20131210080100.115086930@linuxfoundation.org>
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.12 36/62] SCSI: hpsa: return 0 from driver probe function on success, not 1
+Date: Tue, 10 Dec 2013 00:01:07 -0800
+Message-Id: <20131210080059.980092681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,51 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 8a37ea50e7acf8db6821ba094ca41384e7d8c70c upstream.
+commit 88bf6d62db4393fa03a58bada9d746312d5b496f upstream.
 
-On returning from hibernation 'restore' callback is called,
-not 'resume'.  Fix it.
+A return value of 1 is interpreted as an error.  See pci_driver.
+in local_pci_probe().  If you're wondering how this ever could
+have worked, it's because it used to be the case that only return
+values less than zero were interpreted as failure.  But even in
+the current kernel if the driver registers its various entry
+points with the kernel, and then returns a value which is
+interpreted as failure, those registrations aren't undone, so
+the driver still mostly works.  However, the driver's remove
+function wouldn't be called on rmmod, and pci power management
+functions wouldn't work.  In the case of Smart Array, since it
+has a battery backed cache (or else no cache) even if the driver
+is not shut down properly as long as there is no outstanding
+i/o, nothing too bad happens, which is why it took so long to
+notice.
 
-Fixes: eaf140b60ec9 (PNP: convert PNP driver bus legacy pm_ops to dev_pm_ops)
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Requesting backport to stable because the change to pci-driver.c
+which requires driver probe functions to return 0 occurred between
+2.6.35 and 2.6.36 (the pci power management breakage) and again
+between 3.7 and 3.8 (pci_dev->driver getting set to NULL in
+local_pci_probe() preventing driver remove function from being
+called on rmmod.)
+
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pnp/driver.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pnp/driver.c
-+++ b/drivers/pnp/driver.c
-@@ -197,6 +197,11 @@ static int pnp_bus_freeze(struct device
- 	return __pnp_bus_suspend(dev, PMSG_FREEZE);
- }
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -4926,7 +4926,7 @@ reinit_after_soft_reset:
+ 	hpsa_hba_inquiry(h);
+ 	hpsa_register_scsi(h);	/* hook ourselves into SCSI subsystem */
+ 	start_controller_lockup_detector(h);
+-	return 1;
++	return 0;
  
-+static int pnp_bus_poweroff(struct device *dev)
-+{
-+	return __pnp_bus_suspend(dev, PMSG_HIBERNATE);
-+}
-+
- static int pnp_bus_resume(struct device *dev)
- {
- 	struct pnp_dev *pnp_dev = to_pnp_dev(dev);
-@@ -234,9 +239,14 @@ static int pnp_bus_resume(struct device
- }
- 
- static const struct dev_pm_ops pnp_bus_dev_pm_ops = {
-+	/* Suspend callbacks */
- 	.suspend = pnp_bus_suspend,
--	.freeze = pnp_bus_freeze,
- 	.resume = pnp_bus_resume,
-+	/* Hibernate callbacks */
-+	.freeze = pnp_bus_freeze,
-+	.thaw = pnp_bus_resume,
-+	.poweroff = pnp_bus_poweroff,
-+	.restore = pnp_bus_resume,
- };
- 
- struct bus_type pnp_bus_type = {
+ clean4:
+ 	hpsa_free_sg_chain_blocks(h);
 
 
