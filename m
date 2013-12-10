@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab3LJQh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:37:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:35038 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab3LJQhy (ORCPT
+	id S1753953Ab3LJQig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:38:36 -0500
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:51044
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754194Ab3LJQid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:37:54 -0500
-Date: Tue, 10 Dec 2013 10:36:33 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, <sameo@linux.intel.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 01/15] mfd: menelaus: Drop __exit section annotation
-Message-ID: <20131210163633.GI22750@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1386042188-12246-1-git-send-email-balbi@ti.com>
- <20131203095136.GF11828@lee--X1>
- <20131208190739.GA18977@saruman.home>
- <20131209093748.GA12675@lee--X1>
- <20131209161422.GC24047@saruman.home>
- <20131210085007.GO12675@lee--X1>
+	Tue, 10 Dec 2013 11:38:33 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336h1155h)
+X-WSS-ID: 0MXLNF0-08-H2M-02
+X-M-MSG: 
+Subject: [PATCH 0/3] crypto: ccp - code fixes/cleanup
+To: <davem@davemloft.net>, <linux-crypto@vger.kernel.org>,
+        <herbert@gondor.apana.org.au>
+From: Tom Lendacky <thomas.lendacky@amd.com>
+CC: <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Dec 2013 10:38:27 -0600
+Message-ID: <20131210163827.24304.36256.stgit@tlendack-t1.amdoffice.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cf0hFtnykp6aONGL"
-Content-Disposition: inline
-In-Reply-To: <20131210085007.GO12675@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---cf0hFtnykp6aONGL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following series implements fixes and cleanup for some reported
+errors and suggestions (sparse errors, randconfig build errors and
+pr_err usage).
 
-Hi,
+This patch series is based on the cryptodev-2.6 kernel tree.
 
-On Tue, Dec 10, 2013 at 08:50:07AM +0000, Lee Jones wrote:
-> > > > > The code looks mostly fine, but the implementation of the commit =
-logs
-> > > > > seems lazy. Please submit a v3 using coherent sentences with full
-> > > > > explanations and correct punctuation.
-> > > >=20
-> > > > example ?
-> > >=20
-> > > All of your commit messages.
-> > >=20
-> > > > that macro just helps removing some extra
-> > >=20
-> > >   ^- Sentences start with an uppercase character.
-> > >=20
-> > > > line of code and hides ffs() calls.
-> > > >=20
-> > > > while at that, also fix a variable shadowing
-> > >=20
-> > >   ^- Sentences start with an uppercase character.
-> > >=20
-> > > > bug where 'int irq' was being redeclared inside
-> > > > inner loop while it was also argument to interrupt
-> > > > handler.
-> > >=20
-> > >   < ---------------   50 chars   ----------------- >
-> > >=20
-> > > Please use the full 72 char (or there abouts) width of the buffer.
-> >=20
-> > I don't see any mention of punctuation problems, however. Also, you're
-> > not complaining about the content at all, which tells me those sentences
-> > aren't as incoherent as you claimed before.
->=20
-> I didn't read them in any detail. I traversed through the patches and
+---
 
-so you gave review comments without actually reviewing ? how rude...
+Tom Lendacky (3):
+      crypto: ccp - Fix sparse warnings in ccp-crypto-sha.c
+      crypto: ccp - CCP Kconfig fixes
+      crypto: ccp - Remove user triggerable pr_err calls
 
-> saw that the formatting looked obscure on all of them. As I have come
-> to expect more of your submissions, I provided a generic reply
-> detailing how I expected the commit logs to be. I wasn't insinuated
-> that you failed to meet all of the criteria, but they definitely fell
-> short of the mark.
 
-in what way ?
+ drivers/crypto/Kconfig                   |    2 +-
+ drivers/crypto/ccp/Kconfig               |    1 +
+ drivers/crypto/ccp/ccp-crypto-aes-cmac.c |    4 +---
+ drivers/crypto/ccp/ccp-crypto-aes-xts.c  |   12 +++---------
+ drivers/crypto/ccp/ccp-crypto-aes.c      |   12 +++---------
+ drivers/crypto/ccp/ccp-crypto-sha.c      |    8 ++++----
+ drivers/crypto/ccp/ccp-crypto.h          |    2 +-
+ 7 files changed, 14 insertions(+), 27 deletions(-)
 
---=20
-balbi
+-- 
+Tom Lendacky
 
---cf0hFtnykp6aONGL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSp0MRAAoJEIaOsuA1yqREBUwQAI5/PNtINleIwqB6nbB+l92g
-vPE8IhmAxWYCawv+NE1jVQ8cSitP2GKtob4uWVBN3yFJOzMHIUC99ZCqsGJdvpid
-dvJyytiwW75/7P6ze/NKmIB3YnLqakerNqMnlzxl81zcx6TbcqK77f6YFKJvcfDB
-WoleQ4ECFb7iT1Xvj0Stq+Up76dYSGWYcpNBpK5w83iGxTCb7koGj8WEGSzYPQjv
-BF9ETU0FrPB/6qbWcFu1LozTTGbLFJzx/sNq+O++J9zSmST7Vbg5HjlzLshs4Kqg
-/wH8S5vayWU6/HiTS8nlYsG/t1lv8TxnI1WNtoKx5lVRGazfk0wSd3UY6WMik/DC
-trtUbSiLUAwioa4QNy8KlXTdmC6CzDUJJSjC5HbIadniWyrHQFNPC6jMtke93UJG
-f+VxafODbPQn0WeS0qJzWAiRyFtpaS2sFsoGsLtIMBF6D+62yT1kMaFfIjf0TWyL
-V3hxxVvVTSJ4o/PlALFX+gJBUI4kZDXj9ikEUEtIuEHWP0Bo5CC5KowJSHievfF2
-wQAtw20barI3BxPKIrqi6Tn3vdRMT94aChyXg8xKFQe4nS7K+xGUOzF0fzP4os5D
-7LPIBw7WMF7DkO30hIS6vNKTf2E9aYMMCt+OLzT/AW3S5YJY0sWtCgp4NWuexiuP
-bd9ba/29q6Sa+DNt7rO8
-=8bkE
------END PGP SIGNATURE-----
-
---cf0hFtnykp6aONGL--
