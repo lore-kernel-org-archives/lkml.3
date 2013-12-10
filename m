@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab3LJCOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 21:14:23 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:49731 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3LJCOS (ORCPT
+	id S1751873Ab3LJCSZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 21:18:25 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9721 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3LJCSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 21:14:18 -0500
-Message-ID: <52A67973.20904@gmail.com>
-Date: Tue, 10 Dec 2013 10:16:19 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 9 Dec 2013 21:18:23 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 09 Dec 2013 18:11:28 -0800
+Date: Mon, 9 Dec 2013 18:18:22 -0800
+From: Paul Walmsley <pwalmsley@nvidia.com>
+X-X-Sender: pwalmsley@tamien
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: <linux-omap@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq: omap: clk_round_rate() can return a zero upon
+ error
+Message-ID: <alpine.DEB.2.02.1312091812440.4127@tamien>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Seth Jennings <sjennings@variantweb.net>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH] mm/zswap.c: add BUG() for default case in zswap_writeback_entry()
-References: <52A53024.9090701@gmail.com> <20131209153626.GA3752@cerebellum.variantweb.net>
-In-Reply-To: <20131209153626.GA3752@cerebellum.variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 11:36 PM, Seth Jennings wrote:
-> On Mon, Dec 09, 2013 at 10:51:16AM +0800, Chen Gang wrote:
->> Recommend to add default case to avoid compiler's warning, although at
->> present, the original implementation is still correct.
->>
->> The related warning (with allmodconfig for metag):
->>
->>     CC      mm/zswap.o
->>   mm/zswap.c: In function 'zswap_writeback_entry':
->>   mm/zswap.c:537: warning: 'ret' may be used uninitialized in this function
->>
->>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>  mm/zswap.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index 5a63f78..bfd1807 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -585,6 +585,8 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
->>  
->>  		/* page is up to date */
->>  		SetPageUptodate(page);
->> +	default:
->> +		BUG();
-> 
-> Typically, the way you want to address this is initialize ret to 0
-> at declaration time if not every control path will set that value.
-> 
 
-At least, your suggestion sounds reasonable.
+Treat both negative and zero return values from clk_round_rate() as 
+errors.  This is needed since subsequent patches will convert 
+clk_round_rate()'s return value to be an unsigned type, rather than a 
+signed type, since some clock sources can generate rates higher than 
+(2^31)-1 Hz.
 
-But I am also aware that normally need content 'default' for 'switch',
-so I choose this fix way.
+Eventually, when calling clk_round_rate(), only a return value of
+zero will be considered a error.  All other values will be
+considered valid rates.  The comparison against values less than
+0 is kept to preserve the correct behavior in the meantime.
 
-And sorry, current patch is incorrect (need 'break' before 'default'),
-so if no additional suggestions or discussions or completions, I
-will/should send patch v2 for it.
+This patch also removes a bogus usage of IS_ERR_VALUE(), which is intended 
+to be used only on combination pointer/error code return values; a 
+side-benefit.
 
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Applies on v3.13-rc3.  See also:
 
-Thanks.
--- 
-Chen Gang
+http://marc.info/?l=linux-arm-kernel&m=138542591313620&w=2
 
-Open, share, and attitude like air, water and life which God blessed
+  drivers/cpufreq/omap-cpufreq.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
+index a0acd0bfba40..0f41eb2609f3 100644
+--- a/drivers/cpufreq/omap-cpufreq.c
++++ b/drivers/cpufreq/omap-cpufreq.c
+@@ -63,7 +63,7 @@ static int omap_target(struct cpufreq_policy *policy, unsigned int index)
+
+  	freq = new_freq * 1000;
+  	ret = clk_round_rate(mpu_clk, freq);
+-	if (IS_ERR_VALUE(ret)) {
++	if (ret <= 0) {
+  		dev_warn(mpu_dev,
+  			 "CPUfreq: Cannot find matching frequency for %lu\n",
+  			 freq);
