@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751130Ab3LJW2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:28:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab3LJW2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:28:52 -0500
-Date: Tue, 10 Dec 2013 17:27:51 -0500
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131210222750.GE5050@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Darren Hart <dvhart@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-References: <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
- <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
- <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com>
- <20131210213431.GA6342@redhat.com>
- <20131210214143.GG27373@redhat.com>
- <20131210220946.GA6962@home.goodmis.org>
- <20131210221621.GD5050@redhat.com>
- <20131210222150.GB6962@home.goodmis.org>
+	id S1751222Ab3LJWaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:30:17 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:54644 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab3LJWaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 17:30:15 -0500
+Message-ID: <52A795F3.9040107@linaro.org>
+Date: Tue, 10 Dec 2013 14:30:11 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210222150.GB6962@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Beulich <JBeulich@suse.com>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        xen-devel@lists.xen.org, Prarit Bhargava <prarit@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: [Xen-devel] [RFC][PATCH 3/3] timekeeping: Fix potential lost
+ pv notification of time change
+References: <1386652197-7035-1-git-send-email-john.stultz@linaro.org> <1386652197-7035-4-git-send-email-john.stultz@linaro.org> <52A6DB24020000780010BAC6@nat28.tlf.novell.com>
+In-Reply-To: <52A6DB24020000780010BAC6@nat28.tlf.novell.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 05:21:50PM -0500, Steven Rostedt wrote:
- 
- > The trace-cmd show, shows you what's in the trace file, which was for the
- > "manual" version.
- > 
- > Sorry for the confusion.
+On 12/10/2013 12:13 AM, Jan Beulich wrote:
+>>>> On 10.12.13 at 06:09, John Stultz <john.stultz@linaro.org> wrote:
+>>  static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+>> -						u32 shift)
+>> +						u32 shift, int *action)
+> With plain int used here, ...
+>
+>> @@ -1369,7 +1369,7 @@ static void update_wall_time(void)
+>>  	struct timekeeper *tk = &shadow_timekeeper;
+>>  	cycle_t offset;
+>>  	int shift = 0, maxshift;
+>> -	unsigned int action;
+>> +	unsigned int action = 0;
+> ... and unsigned int used here, ...
+>
+>> @@ -1404,7 +1404,7 @@ static void update_wall_time(void)
+>>  	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
+>>  	shift = min(shift, maxshift);
+>>  	while (offset >= tk->cycle_interval) {
+>> -		offset = logarithmic_accumulation(tk, offset, shift);
+>> +		offset = logarithmic_accumulation(tk, offset, shift, &action);
+> ... does this compile without warning for you?
 
- ah, thanks.
+It does compile without a warning, but I'll fix it none the less!
 
-That shows..
-
-version = 6
-CPU 0 is empty
-CPU 2 is empty
-CPU 3 is empty
-cpus=4
- trinity-child27-10818 [001] 89790.703544: kernel_stack:         <stack trace>
-=> futex_requeue (ffffffff810df18a)
-=> do_futex (ffffffff810e019e)
-=> SyS_futex (ffffffff810e0de1)
-=> tracesys (ffffffff81760be4)
- trinity-child27-10818 [001] 89790.703545: function:             get_user_pages_fast
- trinity-child27-10818 [001] 89790.703547: kernel_stack:         <stack trace>
-=> futex_requeue (ffffffff810df18a)
-=> do_futex (ffffffff810e019e)
-=> SyS_futex (ffffffff810e0de1)
-=> tracesys (ffffffff81760be4)
- trinity-child27-10818 [001] 89790.703547: function:             get_user_pages_fast
- trinity-child27-10818 [001] 89790.703549: kernel_stack:         <stack trace>
-=> futex_requeue (ffffffff810df18a)
-=> do_futex (ffffffff810e019e)
-=> SyS_futex (ffffffff810e0de1)
-=> tracesys (ffffffff81760be4)
- trinity-child27-10818 [001] 89790.703550: function:             get_user_pages_fast
- trinity-child27-10818 [001] 89790.703552: kernel_stack:         <stack trace>
-=> futex_requeue (ffffffff810df18a)
-=> do_futex (ffffffff810e019e)
-=> SyS_futex (ffffffff810e0de1)
-=> tracesys (ffffffff81760be4)
-
-
-over and over and..
-
-	Dave
+Thanks for pointing this out!
+-john
 
