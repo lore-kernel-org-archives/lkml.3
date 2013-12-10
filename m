@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab3LJJGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:06:32 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:41711 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab3LJJGZ (ORCPT
+	id S1752649Ab3LJJHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:07:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59438 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab3LJJHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:06:25 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: [PATCH] pinctrl: make the MSM SoC driver depend on OF
-Date: Tue, 10 Dec 2013 10:06:10 +0100
-Message-Id: <1386666370-6394-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 10 Dec 2013 04:07:10 -0500
+Date: Tue, 10 Dec 2013 01:08:47 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Heiko Stuebner <heiko@sntech.de>, ian.campbell@citrix.com,
+        rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in
+ irq_resume
+Message-ID: <20131210090847.GA4600@kroah.com>
+References: <20131210080057.415644748@linuxfoundation.org>
+ <20131210080100.654204750@linuxfoundation.org>
+ <20131210090113.GA22756@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210090113.GA22756@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a compilation failure on x86_64 due to missing OF support
-as this was an implicit dependency. Add an explicit dependency
-on OF and OF_IRQ on the SoC driver.
+On Tue, Dec 10, 2013 at 10:01:13AM +0100, Pavel Machek wrote:
+> Hi!
+> 
+> > 3.12-stable review patch.  If anyone has any objections, please let
+> >  me know.
+> 
+> Objections... well... I'm not sure if it meets stable criteria. In
+> particular, I don't think it was ever demonstrated as having bad
+> effect on the users.
 
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v2->v3:
-- Total failure with older approaches: what we need to do is
-  have the *SoC subdriver* depend on OF and OF_IRQ. This is
-  because the placeholder bool PINCTRL_MSM cannot cascade its
-  dependencies when a subdriver selects it, Kconfig is smart
-  but not that smart.
-ChangeLog v1->v2:
-- OK so "depends on OF" did not work here let's try to simply
-  select OF and OF_IRQ for this then? It's one of those
-  "warning: (PINCTRL_MSM8X74) selects PINCTRL_MSM which has
-  unmet direct dependencies (PINCTRL && OF)" that I simply
-  cannot find my way out of :-/
----
- drivers/pinctrl/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 06e057bb3376..30fcb897eb99 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -211,6 +211,7 @@ config PINCTRL_MSM
- 
- config PINCTRL_MSM8X74
- 	bool "Qualcomm 8x74 pin controller driver"
-+	depends on OF && OF_IRQ
- 	select PINCTRL_MSM
- 
- config PINCTRL_NOMADIK
--- 
-1.8.3.1
-
+Well, I'm guessing someone on the cc: here wanted it in stable@, so I'll
+let them speak up as to why...
