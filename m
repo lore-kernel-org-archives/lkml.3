@@ -1,128 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab3LJE5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 23:57:07 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58740 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3LJE5D (ORCPT
+	id S1750836Ab3LJFAV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 00:00:21 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:64016 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750705Ab3LJFAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 23:57:03 -0500
+	Tue, 10 Dec 2013 00:00:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgEIAOeeplJ5LHyk/2dsb2JhbABZgwe0ToVQgSIXdIIlAQEEAScTHCMFCwgDDgoJJQ8FDRgDIROHcAMJBblhDYZnFxaMZ4ITB4MggRMDlDGBeIFqikyCD4U5gz0o
+Date: Tue, 10 Dec 2013 16:00:05 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: dchinner@redhat.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org, devel@openvz.org,
+        glommer@openvz.org, glommer@gmail.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v13 11/16] mm: list_lru: add per-memcg lists
+Message-ID: <20131210050005.GC31386@dastard>
+References: <cover.1386571280.git.vdavydov@parallels.com>
+ <0ca62dbfbf545edb22b86bd11c50e9017a3dc4db.1386571280.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1739891.MYO4PRtJOt@amdc1227>
-References: <1385100851-32254-1-git-send-email-ch.naveen@samsung.com> <1739891.MYO4PRtJOt@amdc1227>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Tue, 10 Dec 2013 10:26:40 +0530
-Message-ID: <CAHfPSqCQZiMuH3S1eK2gqKShVjc+-BFZ8kkigTRDQyyETiPkQA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c: exynos5: configure fifo_depth based on HSI2C
- module version
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        hs@denx.de, khali@linux-fr.org, Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0ca62dbfbf545edb22b86bd11c50e9017a3dc4db.1386571280.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomasz,
+On Mon, Dec 09, 2013 at 12:05:52PM +0400, Vladimir Davydov wrote:
+> There are several FS shrinkers, including super_block::s_shrink, that
+> keep reclaimable objects in the list_lru structure. That said, to turn
+> them to memcg-aware shrinkers, it is enough to make list_lru per-memcg.
+> 
+> This patch does the trick. It adds an array of LRU lists to the list_lru
+> structure, one for each kmem-active memcg, and dispatches every item
+> addition or removal operation to the list corresponding to the memcg the
+> item is accounted to.
+> 
+> Since we already pass a shrink_control object to count and walk list_lru
+> functions to specify the NUMA node to scan, and the target memcg is held
+> in this structure, there is no need in changing the list_lru interface.
+> 
+> The idea lying behind the patch as well as the initial implementation
+> belong to Glauber Costa.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Glauber Costa <glommer@openvz.org>
+> Cc: Dave Chinner <dchinner@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/list_lru.h   |   44 +++++++-
+>  include/linux/memcontrol.h |   13 +++
+>  mm/list_lru.c              |  242 ++++++++++++++++++++++++++++++++++++++------
+>  mm/memcontrol.c            |  158 ++++++++++++++++++++++++++++-
+>  4 files changed, 416 insertions(+), 41 deletions(-)
+> 
+> diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+> index 34e57af..e8add3d 100644
+> --- a/include/linux/list_lru.h
+> +++ b/include/linux/list_lru.h
+> @@ -28,11 +28,47 @@ struct list_lru_node {
+>  	long			nr_items;
+>  } ____cacheline_aligned_in_smp;
+>  
+> +struct list_lru_one {
+> +	struct list_lru_node *node;
+> +	nodemask_t active_nodes;
+> +};
+> +
+>  struct list_lru {
+> -	struct list_lru_node	*node;
+> -	nodemask_t		active_nodes;
+> +	struct list_lru_one	global;
+> +#ifdef CONFIG_MEMCG_KMEM
+> +	/*
+> +	 * In order to provide ability of scanning objects from different
+> +	 * memory cgroups independently, we keep a separate LRU list for each
+> +	 * kmem-active memcg in this array. The array is RCU-protected and
+> +	 * indexed by memcg_cache_id().
+> +	 */
+> +	struct list_lru_one	**memcg;
+
+OK, as far as I can tell, this is introducing a per-node, per-memcg
+LRU lists. Is that correct?
+
+If so, then that is not what Glauber and I originally intended for
+memcg LRUs. per-node LRUs are expensive in terms of memory and cross
+multiplying them by the number of memcgs in a system was not a good
+use of memory.
+
+According to Glauber, most memcgs are small and typically confined
+to a single node or two by external means and therefore don't need the
+scalability numa aware LRUs provide. Hence the idea was that the
+memcg LRUs would just be a single LRU list, just like a non-numa
+aware list_lru instantiation. IOWs, this is the structure that we
+had decided on as the best compromise between memory usage,
+complexity and memcg awareness:
+
+	global list --- node 0 lru
+			node 1 lru
+			.....
+			node nr_nodes lru
+	memcg lists	memcg 0 lru
+			memcg 1 lru
+			.....
+			memcg nr_memcgs lru
+
+and the LRU code internally would select either a node or memcg LRU
+to iterated based on the scan information coming in from the
+shrinker. i.e.:
 
 
-On 9 December 2013 22:01, Tomasz Figa <t.figa@samsung.com> wrote:
->
-> Hi Naveen,
->
-> On Friday 22 of November 2013 11:44:11 Naveen Krishna Chatradhi wrote:
-> > fifo_depth of the HSI2C is not constant
-> > Exynos5420 and Exynos5250 supports fifo_depth of 64bytes
-> > Exynos5260 supports fifo_depth of 16bytes
-> >
-> > This patch configures the fifo_depth based on HSI2C modules version.
-> > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> > ---
-> >  drivers/i2c/busses/i2c-exynos5.c |   29 ++++++++++++++++++-----------
-> >  1 file changed, 18 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
-> > index cbb49e2..19277d8 100644
-> > --- a/drivers/i2c/busses/i2c-exynos5.c
-> > +++ b/drivers/i2c/busses/i2c-exynos5.c
-> > @@ -77,12 +77,6 @@
-> >  #define HSI2C_RXFIFO_TRIGGER_LEVEL(x)                ((x) << 4)
-> >  #define HSI2C_TXFIFO_TRIGGER_LEVEL(x)                ((x) << 16)
-> >
-> > -/* As per user manual FIFO max depth is 64bytes */
-> > -#define HSI2C_FIFO_MAX                               0x40
-> > -/* default trigger levels for Tx and Rx FIFOs */
-> > -#define HSI2C_DEF_TXFIFO_LVL                 (HSI2C_FIFO_MAX - 0x30)
-> > -#define HSI2C_DEF_RXFIFO_LVL                 (HSI2C_FIFO_MAX - 0x10)
-> > -
-> >  /* I2C_TRAILING_CTL Register bits */
-> >  #define HSI2C_TRAILING_COUNT                 (0xf)
-> >
-> > @@ -187,6 +181,9 @@ struct exynos5_i2c {
-> >
-> >       /* Version of HS-I2C Hardware */
-> >       unsigned int            version;
-> > +
-> > +     /* FIFO depth */
-> > +     unsigned int            fifo_depth;
-> >  };
-> >
-> >  enum hsi2c_version {
-> > @@ -437,7 +434,7 @@ static irqreturn_t exynos5_i2c_irq(int irqno, void *dev_id)
-> >               fifo_status = readl(i2c->regs + HSI2C_FIFO_STATUS);
-> >               fifo_level = HSI2C_TX_FIFO_LVL(fifo_status);
-> >
-> > -             len = HSI2C_FIFO_MAX - fifo_level;
-> > +             len = i2c->fifo_depth - fifo_level;
-> >               if (len > (i2c->msg->len - i2c->msg_ptr))
-> >                       len = i2c->msg->len - i2c->msg_ptr;
-> >
-> > @@ -505,6 +502,7 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
-> >       u32 i2c_auto_conf = 0;
-> >       u32 fifo_ctl;
-> >       unsigned long flags;
-> > +     unsigned short trig_lvl;
-> >
-> >       i2c_ctl = readl(i2c->regs + HSI2C_CTL);
-> >       i2c_ctl &= ~(HSI2C_TXCHON | HSI2C_RXCHON);
-> > @@ -515,13 +513,19 @@ static void exynos5_i2c_message_start(struct exynos5_i2c *i2c, int stop)
-> >
-> >               i2c_auto_conf = HSI2C_READ_WRITE;
-> >
-> > -             fifo_ctl |= HSI2C_RXFIFO_TRIGGER_LEVEL(HSI2C_DEF_TXFIFO_LVL);
-> > +             trig_lvl = (i2c->msg->len > i2c->fifo_depth) ?
-> > +                     (i2c->fifo_depth * 3/4) : i2c->msg->len;
->
-> This patch changes the fifo trigger level calculation (it's dependent now
-> on message length), not just maximum fifo size, as the description says.
-Actually, message->length need not be involved in this calculation.
-Involving msg->len
-will raise another interrupt for every small transactions. It better be avoided.
-> It should be split into two separate patches, explaining why both changes
-> are necessary.
-I will split the fifo_depth configuration code along with comments addressed on
-https://lkml.org/lkml/2013/11/22/31
-
-I can think of 3 ways to address the h/w version changes
-1. Compatible string as i implemented
-2. Varient struct
-3. Passing the information via device tree
-How about passing fifo_depth from device tree information.
-
-Currently, HSI2C Module on Exynso5260 is not another H/W version.
-It only defer in fifo_depth and init sequence needs a reset.
-
->
->
-> Best regards,
-> Tomasz
->
+struct list_lru {
+	struct list_lru_node	*node;
+	nodemask_t		active_nodes;
+#ifdef MEMCG
+	struct list_lru_node	**memcg;
+	....
 
 
+>  bool list_lru_add(struct list_lru *lru, struct list_head *item)
+>  {
+> -	int nid = page_to_nid(virt_to_page(item));
+> -	struct list_lru_node *nlru = &lru->node[nid];
+> +	struct page *page = virt_to_page(item);
+> +	int nid = page_to_nid(page);
+> +	struct list_lru_one *olru = lru_of_page(lru, page);
+> +	struct list_lru_node *nlru = &olru->node[nid];
 
+Yeah, that's per-memcg, per-node dereferencing. And, FWIW, olru/nlru
+are bad names - that's the convention typically used for "old <foo>"
+and "new <foo>" pointers....
+
+As it is, it shouldn't be necessary - lru_of_page() should just
+return a struct list_lru_node....
+
+> +int list_lru_init(struct list_lru *lru)
+> +{
+> +	int err;
+> +
+> +	err = list_lru_init_one(&lru->global);
+> +	if (err)
+> +		goto fail;
+> +
+> +	err = memcg_list_lru_init(lru);
+> +	if (err)
+> +		goto fail;
+> +
+> +	return 0;
+> +fail:
+> +	list_lru_destroy_one(&lru->global);
+> +	lru->global.node = NULL; /* see list_lru_destroy() */
+> +	return err;
+> +}
+
+I suspect we have users of list_lru that don't want memcg bits added
+to them. Hence I think we want to leave list_lru_init() alone and
+add a list_lru_init_memcg() variant that makes the LRU memcg aware.
+i.e. if the shrinker is not going to be memcg aware, then we don't
+want the LRU to be memcg aware, either....
+
+>  EXPORT_SYMBOL_GPL(list_lru_init);
+>  
+>  void list_lru_destroy(struct list_lru *lru)
+>  {
+> -	kfree(lru->node);
+> +	/*
+> +	 * It is common throughout the kernel source tree to call the
+> +	 * destructor on a zeroed out object that has not been initialized or
+> +	 * whose initialization failed, because it greatly simplifies fail
+> +	 * paths. Once the list_lru structure was implemented, its destructor
+> +	 * consisted of the only call to kfree() and thus conformed to the
+> +	 * rule, but as it growed, it became more complex so that calling
+> +	 * destructor on an uninitialized object would be a bug. To preserve
+> +	 * backward compatibility, we explicitly exit the destructor if the
+> +	 * object seems to be uninitialized.
+> +	 */
+
+We don't need an essay here. somethign a simple as:
+
+	/*
+	 * We might be called after partial initialisation (e.g. due to
+	 * ENOMEM error) so handle that appropriately.
+	 */
+> +	if (!lru->global.node)
+> +		return;
+> +
+> +	list_lru_destroy_one(&lru->global);
+> +	memcg_list_lru_destroy(lru);
+>  }
+>  EXPORT_SYMBOL_GPL(list_lru_destroy);
+> +
+> +#ifdef CONFIG_MEMCG_KMEM
+> +int list_lru_memcg_alloc(struct list_lru *lru, int memcg_id)
+> +{
+> +	int err;
+> +	struct list_lru_one *olru;
+> +
+> +	olru = kmalloc(sizeof(*olru), GFP_KERNEL);
+> +	if (!olru)
+> +		return -ENOMEM;
+> +
+> +	err = list_lru_init_one(olru);
+> +	if (err) {
+> +		kfree(olru);
+> +		return err;
+> +	}
+> +
+> +	VM_BUG_ON(lru->memcg[memcg_id]);
+> +	lru->memcg[memcg_id] = olru;
+> +	return 0;
+> +}
+> +
+> +void list_lru_memcg_free(struct list_lru *lru, int memcg_id)
+> +{
+> +	struct list_lru_one *olru;
+> +
+> +	olru = lru->memcg[memcg_id];
+> +	if (olru) {
+> +		list_lru_destroy_one(olru);
+> +		kfree(olru);
+> +		lru->memcg[memcg_id] = NULL;
+> +	}
+> +}
+> +
+> +int list_lru_grow_memcg(struct list_lru *lru, size_t new_array_size)
+> +{
+> +	int i;
+> +	struct list_lru_one **memcg_lrus;
+> +
+> +	memcg_lrus = kcalloc(new_array_size, sizeof(*memcg_lrus), GFP_KERNEL);
+> +	if (!memcg_lrus)
+> +		return -ENOMEM;
+> +
+> +	if (lru->memcg) {
+> +		for_each_memcg_cache_index(i) {
+> +			if (lru->memcg[i])
+> +				memcg_lrus[i] = lru->memcg[i];
+> +		}
+> +	}
+
+Um, krealloc()?
+
+
+> +/*
+> + * This function allocates LRUs for a memcg in all list_lru structures. It is
+> + * called under memcg_create_mutex when a new kmem-active memcg is added.
+> + */
+> +static int memcg_init_all_lrus(int new_memcg_id)
+> +{
+> +	int err = 0;
+> +	int num_memcgs = new_memcg_id + 1;
+> +	int grow = (num_memcgs > memcg_limited_groups_array_size);
+> +	size_t new_array_size = memcg_caches_array_size(num_memcgs);
+> +	struct list_lru *lru;
+> +
+> +	if (grow) {
+> +		list_for_each_entry(lru, &all_memcg_lrus, list) {
+> +			err = list_lru_grow_memcg(lru, new_array_size);
+> +			if (err)
+> +				goto out;
+> +		}
+> +	}
+> +
+> +	list_for_each_entry(lru, &all_memcg_lrus, list) {
+> +		err = list_lru_memcg_alloc(lru, new_memcg_id);
+> +		if (err) {
+> +			__memcg_destroy_all_lrus(new_memcg_id);
+> +			break;
+> +		}
+> +	}
+> +out:
+> +	if (grow) {
+> +		synchronize_rcu();
+> +		list_for_each_entry(lru, &all_memcg_lrus, list) {
+> +			kfree(lru->memcg_old);
+> +			lru->memcg_old = NULL;
+> +		}
+> +	}
+> +	return err;
+> +}
+
+Urk. That won't scale very well.
+
+> +
+> +int memcg_list_lru_init(struct list_lru *lru)
+> +{
+> +	int err = 0;
+> +	int i;
+> +	struct mem_cgroup *memcg;
+> +
+> +	lru->memcg = NULL;
+> +	lru->memcg_old = NULL;
+> +
+> +	mutex_lock(&memcg_create_mutex);
+> +	if (!memcg_kmem_enabled())
+> +		goto out_list_add;
+> +
+> +	lru->memcg = kcalloc(memcg_limited_groups_array_size,
+> +			     sizeof(*lru->memcg), GFP_KERNEL);
+> +	if (!lru->memcg) {
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	for_each_mem_cgroup(memcg) {
+> +		int memcg_id;
+> +
+> +		memcg_id = memcg_cache_id(memcg);
+> +		if (memcg_id < 0)
+> +			continue;
+> +
+> +		err = list_lru_memcg_alloc(lru, memcg_id);
+> +		if (err) {
+> +			mem_cgroup_iter_break(NULL, memcg);
+> +			goto out_free_lru_memcg;
+> +		}
+> +	}
+> +out_list_add:
+> +	list_add(&lru->list, &all_memcg_lrus);
+> +out:
+> +	mutex_unlock(&memcg_create_mutex);
+> +	return err;
+> +
+> +out_free_lru_memcg:
+> +	for (i = 0; i < memcg_limited_groups_array_size; i++)
+> +		list_lru_memcg_free(lru, i);
+> +	kfree(lru->memcg);
+> +	goto out;
+> +}
+
+That will probably scale even worse. Think about what happens when we
+try to mount a bunch of filesystems in parallel - they will now
+serialise completely on this memcg_create_mutex instantiating memcg
+lists inside list_lru_init().
+
+Cheers,
+
+Dave.
 -- 
-Shine bright,
-(: Nav :)
+Dave Chinner
+david@fromorbit.com
