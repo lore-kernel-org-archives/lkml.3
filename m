@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab3LJD7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 22:59:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:51809 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932Ab3LJD7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 22:59:23 -0500
-Date: Tue, 10 Dec 2013 14:59:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: linux-next: build warning after merge of the usb tree
-Message-Id: <20131210145915.1cd7eb979bf40a30bfcfe694@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1752363Ab3LJD7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:59:45 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54720 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab3LJD7l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 22:59:41 -0500
+Message-ID: <1386647973.32037.57.camel@pasglop>
+Subject: Re: [PATCH 1/9] PCI: Use dev_is_pci() to check whether it is pci
+ device
+From: Benjamin Herrenschmidt <benh@au1.ibm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yijing Wang <wangyijing@huawei.com>, linux-ia64@vger.kernel.org,
+        linux-parisc@vger.kernel.org, linux-pci@vger.kernel.org,
+        Hanjun Guo <guohanjun@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-alpha@vger.kernel.org, sparclinux@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Date: Tue, 10 Dec 2013 14:59:33 +1100
+In-Reply-To: <20131210000154.GE4699@google.com>
+References: <1386244373-35796-1-git-send-email-wangyijing@huawei.com>
+	 <20131210000154.GE4699@google.com>
+Organization: IBM Australia
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Dec_2013_14_59_15_+1100_VJCFU6=md4tuzTJ0"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121003-7014-0000-0000-0000040B2F08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Dec_2013_14_59_15_+1100_VJCFU6=md4tuzTJ0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2013-12-09 at 17:01 -0700, Bjorn Helgaas wrote:
+> [+cc arch lists]
+> 
+> On Thu, Dec 05, 2013 at 07:52:53PM +0800, Yijing Wang wrote:
+> > Use dev_is_pci() instead of directly compare
+> > pci_bus_type to check whether it is pci device.
+> > 
+> > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> 
+> I applied all these to my pci/yijing-dev_is_pci branch for v3.14, thanks!
+> 
+> Browse them here: http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/yijing-dev_is_pci
 
-Hi Greg,
+Ah ok. I also have the powerpc one in powerpc -next, no biggie though
 
-After merging the usb tree, today's linux-next build (sparc64 defconfig)
-produced this warning:
-
-drivers/usb/storage/protocol.c: In function 'usb_stor_access_xfer_buf':
-drivers/usb/storage/protocol.c:155:22: warning: comparison of distinct poin=
-ter types lacks a cast [enabled by default]
-
-Introduced by commit e5fc70d5ccc3 ("USB: storage: use sg_miter_* APIs to
-access scsi buffer").
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben.
 
---Signature=_Tue__10_Dec_2013_14_59_15_+1100_VJCFU6=md4tuzTJ0
-Content-Type: application/pgp-signature
+> This should be no functional change.
+> 
+>  arch/alpha/kernel/pci_iommu.c        |    2 +-
+>  arch/arm/common/it8152.c             |    4 ++--
+>  arch/arm/mach-ixp4xx/common-pci.c    |    6 +++---
+>  arch/ia64/hp/common/sba_iommu.c      |    2 +-
+>  arch/ia64/sn/pci/pci_dma.c           |   24 ++++++++++++------------
+>  arch/parisc/kernel/drivers.c         |   22 +++++-----------------
+>  arch/powerpc/sysdev/fsl_pci.c        |    2 +-
+>  arch/sparc/include/asm/dma-mapping.h |   10 ++++------
+>  arch/sparc/kernel/iommu.c            |    2 +-
+>  arch/sparc/kernel/ioport.c           |    4 +---
+>  arch/x86/kernel/acpi/boot.c          |    4 +---
+>  drivers/pci/pci-acpi.c               |    2 +-
+>  12 files changed, 33 insertions(+), 51 deletions(-)
+> 
+> Bjorn
+> 
+> > ---
+> >  drivers/pci/pci-acpi.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+> > index 577074e..e0431f1 100644
+> > --- a/drivers/pci/pci-acpi.c
+> > +++ b/drivers/pci/pci-acpi.c
+> > @@ -358,7 +358,7 @@ static void pci_acpi_cleanup(struct device *dev)
+> >  
+> >  static bool pci_acpi_bus_match(struct device *dev)
+> >  {
+> > -	return dev->bus == &pci_bus_type;
+> > +	return dev_is_pci(dev);
+> >  }
+> >  
+> >  static struct acpi_bus_type acpi_pci_bus = {
+> > -- 
+> > 1.7.1
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSppGXAAoJEMDTa8Ir7ZwV/gAP/AuHfH3KoqdddWZ0S6Vp/Cli
-ajhagi7GtdTLh2miiGTNudQdcNXjPGdeNlNl+iAvDxB7lujZZsnf8b2q0HXC3SGc
-6oQZbgteoZhC47B2UmBKz7HyBzvzXTRXairpxhqMM0sTAqPv/308buwH1kqwHWjf
-C6AnsnmV1p+35XnghGQtaT9WJil55RXsEQ2SdYTOSYGlnffxVUnflwNvOVWWZ59H
-9jbCrHk2FkbsnzHtTc+DG3uTsk8S+jVZLmfJfVyG7VCgxl0Qj9ailjCXA0vGWoDQ
-WpOTyE1rc8BexlLqa02P36i25MKMeS8tEh+yCiijii1oDkeOO9OVd6t7i8229Ijp
-bEkhZXl49GvPnMDK3bTyltNyJgH92LGtAKkX3uNDboYkHdxGwdYfNveUyoItlydu
-rGATgrXKTPfdnvbnEqCXdnoLjpZTuS1t45R7Cj02Lxr74zO4YoJDDV/+mtU84QVS
-ma/OSZ0LBIfYHAdacV7yEUxexhfNMXf1LeEXtd/UssE5jC3JUbGEBPqtqxVzL4RX
-9bbpkfgXG60BTaaO2nsoGgEzTFG2TQFDlFD0dSnfhUxC3G9xUhlqfTOI3rCFOJfI
-w2Z9blV1yE9eo+1B1RnrmBkcrW3/WWmJHLjS7/xoUyvMo6HL6vil3k59n1He/eyq
-cOEIT2PR8O0squFqOoI5
-=iNRB
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Dec_2013_14_59_15_+1100_VJCFU6=md4tuzTJ0--
