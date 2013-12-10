@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab3LJIGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:06:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59043 "EHLO
+	id S1754357Ab3LJIGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:06:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59038 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab3LJICr (ORCPT
+	with ESMTP id S1754025Ab3LJICp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:47 -0500
+	Tue, 10 Dec 2013 03:02:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Leho Kraav <leho@kraav.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.12 62/62] drivers/char/i8k.c: add Dell XPLS L421X
-Date: Tue, 10 Dec 2013 00:01:33 -0800
-Message-Id: <20131210080101.746168287@linuxfoundation.org>
+        David Cluytens <david.cluytens@gmail.com>
+Subject: [PATCH 3.12 61/62] USB: cdc-acm: Added support for the Lenovo RD02-D400 USB Modem
+Date: Tue, 10 Dec 2013 00:01:32 -0800
+Message-Id: <20131210080101.678483061@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,36 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: David Cluytens <david.cluytens@gmail.com>
 
-commit 9aa5b0181bdf335f0b731d8502e128a862884bcd upstream.
+commit 3b59d16c513da258ec8f6a0b4db85f257a0380d6 upstream.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=60772
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Reported-by: Leho Kraav <leho@kraav.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: David Cluytens <david.cluytens@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/i8k.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/class/cdc-acm.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/char/i8k.c
-+++ b/drivers/char/i8k.c
-@@ -664,6 +664,13 @@ static struct dmi_system_id __initdata i
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
- 		},
- 	},
-+	{
-+		.ident = "Dell XPS421",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS L421X"),
-+		},
-+	},
-         { }
- };
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1515,6 +1515,8 @@ static int acm_reset_resume(struct usb_i
  
+ static const struct usb_device_id acm_ids[] = {
+ 	/* quirky and broken devices */
++	{ USB_DEVICE(0x17ef, 0x7000), /* Lenovo USB modem */
++	.driver_info = NO_UNION_NORMAL, },/* has no union descriptor */
+ 	{ USB_DEVICE(0x0870, 0x0001), /* Metricom GS Modem */
+ 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
+ 	},
 
 
