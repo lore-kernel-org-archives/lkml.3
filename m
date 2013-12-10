@@ -1,152 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab3LJFXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 00:23:55 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:52343 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3LJFXx (ORCPT
+	id S1751475Ab3LJFYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 00:24:04 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13044 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3LJFX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 00:23:53 -0500
+	Tue, 10 Dec 2013 00:23:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 09 Dec 2013 21:17:03 -0800
+Message-ID: <52A6A56F.4040005@nvidia.com>
+Date: Tue, 10 Dec 2013 10:53:59 +0530
+From: Vishal Annapurve <vannapurve@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20131209182410.GA5220@xanatos>
-References: <1386592158-12086-1-git-send-email-vikas.sajjan@linaro.org>
-	<Pine.LNX.4.44L0.1312091019400.1439-100000@iolanthe.rowland.org>
-	<20131209182410.GA5220@xanatos>
-Date: Tue, 10 Dec 2013 10:53:51 +0530
-Message-ID: <CAGm_ybhgM1XLrc+inQ6qjK=fHNshdr1QAshqE=+UD9caDAPDNQ@mail.gmail.com>
-Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming SuperSpeed HUBs
-From: Vikas Sajjan <sajjan.linux@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Vikas Sajjan <vikas.sajjan@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, vpalatin@chromium.org, jwerner@chromium.org,
-        tianyu.lan@intel.com, burzalodowa@gmail.com,
-        gregkh@linuxfoundation.org, gautam.vivek@samsung.com,
-        Douglas Anderson <dianders@chromium.org>, balbi@ti.com,
-        sunil joshi <joshi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <greg@kroah.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <tom.leiming@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] usb-storage: scsiglue: Changing the command result
+References: <113ACA888B71994BB56E5CF3704953486D664FCD42@BGMAIL02.nvidia.com> <20131209015905.GA5965@kroah.com> <52A590E7.9010603@nvidia.com> <20131209112315.GE6562@kroah.com>
+In-Reply-To: <20131209112315.GE6562@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
+Hi Greg,
 
-On Mon, Dec 9, 2013 at 11:54 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Mon, Dec 09, 2013 at 10:24:52AM -0500, Alan Stern wrote:
->> On Mon, 9 Dec 2013, Vikas Sajjan wrote:
+Does this look fine? I will send over other patches
+once you confirm.
+
+Patch set 1:
+---------
+[PATCH 1/3] usb: storage: Proper cmd result assignment
+
+This change replaces DID_ABORT with DID_TIMEOUT as a command result
+whenever US_FLIDX_TIMED_OUT bit is set.
+
+This change is made to bring USB storage inline with a recent change:
+
+commit    18a4d0a22ed6c54b67af7718c305cd010f09ddf8
+
+[SCSI] Handle disk devices which can not process medium access commands
+We have experienced several devices which fail in a fashion we do not
+currently handle gracefully in SCSI. After a failure these devices will
+respond to the SCSI primary command set (INQUIRY, TEST UNIT READY, etc.)
+but any command accessing the storage medium will time out.
+
+As the USB storage was setting command result as aborted rather than
+timed out, SCSI layer was not recognizing the above mentioned failure
+pattern.
+
+Signed-off-by: Vishal Annapurve <vannapurve@nvidia.com>
+---
+  drivers/usb/storage/cypress_atacb.c |  1 +
+  drivers/usb/storage/isd200.c        |  2 +-
+  drivers/usb/storage/transport.c     |  8 ++++----
+  drivers/usb/storage/usb.c           | 10 ++++++----
+  4 files changed, 12 insertions(+), 9 deletions(-)
+---
+diff --git a/drivers/usb/storage/cypress_atacb.c 
+b/drivers/usb/storage/cypress_atacb.c
+index 8514a2d..3477ca19 100644
+--- a/drivers/usb/storage/cypress_atacb.c
++++ b/drivers/usb/storage/cypress_atacb.c
+@@ -168,6 +168,7 @@ static void cypress_atacb_passthrough(struct 
+scsi_cmnd *srb, struct us_data *us)
+       */
+      if ((srb->result != (DID_ERROR << 16) &&
+                  srb->result != (DID_ABORT << 16)) &&
++                srb->result != (DID_TIME_OUT << 16) &&
+              save_cmnd[2] & 0x20) {
+          struct scsi_eh_save ses;
+          unsigned char regs[8];
+diff --git a/drivers/usb/storage/isd200.c b/drivers/usb/storage/isd200.c
+index 599d8bf..ffd5d58 100644
+--- a/drivers/usb/storage/isd200.c
++++ b/drivers/usb/storage/isd200.c
+@@ -703,7 +703,7 @@ static void isd200_invoke_transport( struct us_data *us,
+      /* abort processing: the bulk-only transport requires a reset
+       * following an abort */
+      Handle_Abort:
+-    srb->result = DID_ABORT << 16;
++    srb->result = DID_TIME_OUT << 16;
+
+      /* permit the reset transfer to take place */
+      clear_bit(US_FLIDX_ABORTING, &us->dflags);
+diff --git a/drivers/usb/storage/transport.c 
+b/drivers/usb/storage/transport.c
+index 22c7d43..6a90161 100644
+--- a/drivers/usb/storage/transport.c
++++ b/drivers/usb/storage/transport.c
+@@ -607,8 +607,8 @@ void usb_stor_invoke_transport(struct scsi_cmnd 
+*srb, struct us_data *us)
+       * short-circuit all other processing
+       */
+      if (test_bit(US_FLIDX_TIMED_OUT, &us->dflags)) {
+-        usb_stor_dbg(us, "-- command was aborted\n");
+-        srb->result = DID_ABORT << 16;
++        usb_stor_dbg("-- command was aborted because of timeout\n");
++        srb->result = DID_TIME_OUT << 16;
+          goto Handle_Errors;
+      }
+
+@@ -717,8 +717,8 @@ Retry_Sense:
+          scsi_eh_restore_cmnd(srb, &ses);
+
+          if (test_bit(US_FLIDX_TIMED_OUT, &us->dflags)) {
+-            usb_stor_dbg(us, "-- auto-sense aborted\n");
+-            srb->result = DID_ABORT << 16;
++            usb_stor_dbg("-- auto-sense aborted due to timeout\n");
++            srb->result = DID_TIME_OUT << 16;
+
+              /* If SANE_SENSE caused this problem, disable it */
+              if (sense_size != US_SENSE_SIZE) {
+diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+index 5c4fe07..04a68eb 100644
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -325,7 +325,7 @@ static int usb_stor_control_thread(void * __us)
+
+          /* has the command timed out *already* ? */
+          if (test_bit(US_FLIDX_TIMED_OUT, &us->dflags)) {
+-            us->srb->result = DID_ABORT << 16;
++            us->srb->result = DID_TIME_OUT << 16;
+              goto SkipForAbort;
+          }
+
+@@ -379,7 +379,8 @@ static int usb_stor_control_thread(void * __us)
+          scsi_lock(host);
+
+          /* indicate that the command is done */
+-        if (us->srb->result != DID_ABORT << 16) {
++        if ((us->srb->result != DID_ABORT << 16) &&
++            (us->srb->result != DID_TIME_OUT << 16)) {
+              usb_stor_dbg(us, "scsi cmd done, result=0x%x\n",
+                       us->srb->result);
+              us->srb->scsi_done(us->srb);
+@@ -390,8 +391,9 @@ SkipForAbort:
+
+          /* If an abort request was received we need to signal that
+           * the abort has finished.  The proper test for this is
+-         * the TIMED_OUT flag, not srb->result == DID_ABORT, because
+-         * the timeout might have occurred after the command had
++         * the TIMED_OUT flag, not srb->result == DID_ABORT or
++         * srb->result == DID_TIMEOUT , because the timeout might
++         * have occurred after the command had
+           * already completed with a different result code. */
+          if (test_bit(US_FLIDX_TIMED_OUT, &us->dflags)) {
+              complete(&(us->notify));
+---
+
+Regards,
+Vishal
+
+On Monday 09 December 2013 04:53 PM, Greg KH wrote:
+> On Mon, Dec 09, 2013 at 03:14:07PM +0530, Vishal Annapurve wrote:
+>> Hi Greg,
 >>
->> > Does warm reset while activating SuperSpeed HUBs if the hub activate type
->> > is HUB_RESET_RESUME.
->> >
->> > When we do Suspend-to-RAM with (any one of the 16, 32, 64 Jetflash) transcend
->> > USB 3.0 device connected on 3.0 port, during resume I noticed that the
->> > XHCI controller has moved to sometimes RECOVERY, POLLING or INACTIVE STATE.
->> > This behaviour is inconsistent and the connection with connected USB 3.0 device
->> > on 3.0 port was LOST.
+>> Attached are the patches.
+> As Oliver said, I can't take these, please read
+> Documentation/SubmittingPatches for how to do this properly.
 >
-> Does the device eventually re-connect on the USB port?  Or is warm reset
-> necessary to make the device connect?
-
-Yes, warm reset was necesssary, without which the device was NOT reconnecting.
-
+> thanks,
 >
-> Does the xHCI register restore complete after resume from S3, or is
-> power lost?  I'm trying to figure out whether xhci_reset is called
-> before your issue is triggered.
+> greg k-h
 
-
-The reason why I came up with this solution is during xhci_resume(),
-it enters below condition and marks the reset_resume flag for the
-ROOT_HUB as 1
-
-/* If restore operation fails, re-initialize the HC during resume */
-        if ((temp & STS_SRE) || hibernated) {
-                /* Let the USB core know _both_ roothubs lost power. */
-                 usb_root_hub_lost_power(xhci->main_hcd->self.root_hub);
-                 usb_root_hub_lost_power(xhci->shared_hcd->self.root_hub);
-
-
->
->> > Doing warm reset while activating SuperSpeed HUBs if the hub
->> > activate type is HUB_RESET_RESUME, gets the connected device to the stable state.
->> >
->> > Reviewed at https://chromium-review.googlesource.com/#/c/177132/
->> >
->> > Tested on exynos5420 and exynos5250 with Transcend Jetflash USB 3.0 device (8564:1000)
->
-> Is this issue specific to the particular USB device manufacturer
-> (Transcend)?  Does the same device lose connection on resume from S3
-> with other host controller vendors?  Have you seen this issue when the
-> USB 3.0 device is behind a USB 3.0 hub?
-
-
-This issue was specific to this paritcular make of Transcend.
-
-we saw this on our chromebook. I did try Suspend-to-RAM with the same
-device on Intel machine running Ubuntu.
-It had worked fine without any issue.
-
-Interestingly, if I connect with analyser, Suspend-to-RAM works fine
-and USB re-enumerates successfully.
-so connecting Suspend-to-RAM for debugging was not helping, as it works fine.
-I did put prints in multiple places to get port status, and i see that
-port is in sometimes RECOVERY, POLLING or In active STATE.
-The behaviour was inconsistent.
-
-
->
-> I ask because this sounds like a low-level link training issue that's
-> specific to the exynos host or USB device.  I would rather track down
-> which hardware is to blame than generically add a warm reset for all USB
-> 3.0 devices.
->
->> > rebased on Greg Kroah-Hartman's usb-next
->> > git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
->> >
->> > Signed-off-by: Vikas Sajjan <vikas.sajjan@samsung.com>
->> > ---
->> >  drivers/usb/core/hub.c |   41 +++++++++++++++++++++++++----------------
->> >  1 file changed, 25 insertions(+), 16 deletions(-)
->> >
->> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
->> > index a7c04e2..d8432b0 100644
->> > --- a/drivers/usb/core/hub.c
->> > +++ b/drivers/usb/core/hub.c
->>
->> > @@ -1093,6 +1108,16 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
->> >             u16 portstatus, portchange;
->> >
->> >             portstatus = portchange = 0;
->> > +
->> > +           /* Some connected devices might be still in unknown state even
->> > +            * after reset-resume, a WARM_RESET gets the connected device
->> > +            * to the normal state.
->> > +            */
->> > +           if (udev && hub_is_superspeed(hub->hdev) &&
->> > +                                           type == HUB_RESET_RESUME)
->> > +                   hub_port_reset(hub, port1, NULL,
->> > +                                           HUB_BH_RESET_TIME, true);
->>
->> Please don't do this all the time to every attached port.  Do it only
->> when it is really needed.
->
-> Agreed.  Can we at least limit the warm reset to devices directly
-> attached to roothubs?  You can also change this code to get the port
-> status and only do the warm reset if the port link state is
-> USB_SS_PORT_LS_POLLING, USB_SS_PORT_LS_RX_DETECT, or
-> USB_SS_PORT_LS_SS_INACTIVE.
->
->> Shouldn't you pass udev as the third argument?  If not, please explain
->> why not.
->>
->> Finally, I don't see why you put this in hub_activate().  Isn't it more
->> closely connected with the reset-resume procedure for the child device?
->
-> Sarah Sharp
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
