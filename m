@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3LJRe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:34:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56709 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab3LJRe1 (ORCPT
+	id S1755396Ab3LJReo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:34:44 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50761 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343Ab3LJRel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:34:27 -0500
-Date: Tue, 10 Dec 2013 18:34:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20131210173411.GR12849@twins.programming.kicks-ass.net>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
- <1386063927-6545-5-git-send-email-davidlohr@hp.com>
- <20131210165736.GN12849@twins.programming.kicks-ass.net>
- <1386696128.2731.11.camel@buesod1.americas.hpqcorp.net>
+	Tue, 10 Dec 2013 12:34:41 -0500
+Message-ID: <52A750AE.6000903@wwwdotorg.org>
+Date: Tue, 10 Dec 2013 10:34:38 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386696128.2731.11.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <dan.j.williams@intel.com>, andriy.shevchenko@intel.com,
+        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH V4] dma: add channel request API that supports deferred
+ probe
+References: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org> <20131210122159.GJ29580@intel.com>
+In-Reply-To: <20131210122159.GJ29580@intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 09:22:08AM -0800, Davidlohr Bueso wrote:
-> On Tue, 2013-12-10 at 17:57 +0100, Peter Zijlstra wrote:
-> > > @@ -106,24 +108,40 @@
-> > >   * This would cause the waiter on CPU 0 to wait forever because it
-> > >   * missed the transition of the user space value from val to newval
-> > >   * and the waker did not find the waiter in the hash bucket queue.
-> > > + * The correct serialization ensures that a waiter either observes
-> > > + * the changed user space value before blocking or is woken by a
-> > > + * concurrent waker:
-> > >   *
-> > >   * CPU 0                               CPU 1
-> > >   * val = *futex;
-> > >   * sys_futex(WAIT, futex, val);
-> > >   *   futex_wait(futex, val);
-> > > + *
-> > > + *   mb(); <-- paired with ------
-> > > + *                              |
-> > > + *   lock(hash_bucket(futex));  |
-> > > + *                              |
-> > > + *   uval = *futex;             |
-> > > + *                              |        *futex = newval;
-> > > + *                              |        sys_futex(WAKE, futex);
-> > > + *                              |          futex_wake(futex);
-> > > + *                              |
-> > > + *                              -------->   mb();
-> > >   *   if (uval == val)
-> > > + *     queue();
-> > >   *     unlock(hash_bucket(futex));
-> > > + *     schedule();                         if (!queue_empty())
-> > > + *                                           lock(hash_bucket(futex));
-> > > + *                                           wake_waiters(futex);
-> > > + *                                           unlock(hash_bucket(futex));
-> > > + *
-> > > + * The length of the list is tracked with atomic ops (hb->waiters),
-> > > + * providing the necessary memory barriers for the waiters. For the
-> > > + * waker side, however, we rely on get_futex_key_refs(), using either
-> > > + * ihold() or the atomic_inc(), for shared futexes. The former provides
-> > > + * a full mb on all architectures. For architectures that do not have an
-> > > + * implicit barrier in atomic_inc/dec, we explicitly add it - please
-> > > + * refer to futex_get_mm() and hb_waiters_inc/dec().
-> > >   */
+On 12/10/2013 05:21 AM, Vinod Koul wrote:
+> On Tue, Nov 26, 2013 at 10:04:22AM -0700, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> dma_request_slave_channel() simply returns NULL whenever DMA channel
+>> lookup fails. Lookup could fail for two distinct reasons:
+>>
+>> a) No DMA specification exists for the channel name.
+>>    This includes situations where no DMA specifications exist at all, or
+>>    other general lookup problems.
+>>
+>> b) A DMA specification does exist, yet the driver for that channel is not
+>>    yet registered.
+>>
+>> Case (b) should trigger deferred probe in client drivers. However, since
+>> they have no way to differentiate the two situations, it cannot.
+>>
+>> Implement new function dma_request_slave_channel_reason(), which performs
+>> identically to dma_request_slave_channel(), except that it returns an
+>> error-pointer rather than NULL, which allows callers to detect when
+>> deferred probe should occur.
+>>
+>> Eventually, all drivers should be converted to this new API, the old API
+>> removed, and the new API renamed to the more desirable name. This patch
+>> doesn't convert the existing API and all drivers in one go, since some
+>> drivers call dma_request_slave_channel() then dma_request_channel() if
+>> that fails. That would require either modifying dma_request_channel() in
+>> the same way, or adding extra error-handling code to all affected
+>> drivers, and there are close to 100 drivers using the other API, rather
+>> than just the 15-20 or so that use dma_request_slave_channel(), which
+>> might be tenable in a single patch.
+>>
+>> acpi_dma_request_slave_chan_by_name() doesn't currently implement
+>> deferred probe. It should, but this will be addressed later.
+>>
+>> Acked-by: Dan Williams <dan.j.williams@intel.com>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>
+> Applied, to topic/defer_probe, this wont be rebased so feel free to merge
 
-> > It isn't at all explained what purpose the memory barriers serve.
-> 
-> Why doesn't this explain it?
+Could you also create a signed tag for Mark and myself to pull from? If
+we just pull in random commits from your tree, it's not obvious to
+anyone looking at the git history that we legitimately co-ordinated this.
 
-Because you failed to explain what is ordered against what and what
-the resulting order guarantees.
+The same comment goes for the topic/of branch.
 
-> "The correct serialization ensures that a waiter either observes
-> the changed user space value before blocking or is woken by a
-> concurrent waker."
-
-Or both. For the given case:
-
-X = Y = 0
-
-w[X]=1  w[Y]=1
-MB	MB
-r[Y]=y	r[X]=x
-
-x==1 && y==1 is a valid result. The only invalid result is both 0.
-
-But then we're still short of how we end up at that guarantee.
-
-> Perhaps adding an example?
->  plist_add()    |    uaddr = newval
->  smp_mb()       |    smp_mb()
->  verify uaddr   |    plist_head_empty()
-
-Except of course you don't actually use plist_add() and
-plist_head_empty() for anything much at all, only creating more
-confusion.
-
-Just add the waiters variable and explicitly mention what you're doing.
+Thanks!
