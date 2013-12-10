@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab3LJAZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:25:42 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:54318 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3LJAZh (ORCPT
+	id S1751468Ab3LJA0C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:26:02 -0500
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:41900 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123Ab3LJAZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:25:37 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH 5/9] ARM: dts: provide DMA config to pxamci
-Date: Tue, 10 Dec 2013 01:25:18 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        DOCUMENTATION <linux-doc@vger.kernel.org>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com> <52A59991.1060305@gmail.com> <1386590958.7152.135.camel@host5.omatika.ru>
-In-Reply-To: <1386590958.7152.135.camel@host5.omatika.ru>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Mon, 9 Dec 2013 19:25:58 -0500
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 19:25:58 EST
+Message-ID: <1386634788.24817.46.camel@rhapsody>
+Subject: Re: [PATCH] kexec: add sysctl to disable kexec
+From: Khalid Aziz <khalid@gonehiking.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Mel Gorman <mgorman@suse.de>
+Date: Mon, 09 Dec 2013 17:19:48 -0700
+In-Reply-To: <20131209233829.GA3501@www.outflux.net>
+References: <20131209233829.GA3501@www.outflux.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312100125.18754.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZQVgJIV77IHBxgac5aAjxBeUVlmsaOPuWpL8/BMMuA7
- mEqyd1DRLA/R5CpNhz7SgsCTfSv/OKcQ+EW16PWQ+70lO2YWDY
- Q6rZvlnFM5fTqH5TKZi14zSr8u+tYFFEwDwW3yNX24JgTR13Rn
- tCv/fPO9HJWvJ1r7R5iRqwFgMjtm9ohv0uyiTQomyvOBw3BxFb
- /Ik6uua1pt5uEjfByBcWsj/nkYhOT/ViVkqj2oPpOrDVg1HNks
- /wsPt19ciZZAWBO65QSxONqqz+1DvyhFjruvxSyPuSxCveQQnq
- csvYB0bwgnLmjE9BPUqPHhDtMvdNrYaD0K0P2Nytz5NpHZlGJI
- 3se0fl0QqnOfh5mpYs6A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 December 2013, Sergei Ianovich wrote:
-> On Mon, 2013-12-09 at 11:21 +0100, Daniel Mack wrote:
-> > On 12/09/2013 10:34 AM, Sergei Ianovich wrote:
-> > > Nice to have Daniel in this conversation. Your patch series is a big and
-> > > important work. However, I am not sure I will ever land as is exactly
-> > > for this reason.
-> > 
-> > Well, I wouldn't be so certain about that statement. As I wrote in the
-> > cover letter, most of the work is actually done, and I successfully
-> > tested the new DMA support with a some of the drivers I ported. Others
-> > were ported blindly, and in case of no reaction, I'd dare to merge them
-> > and wait for people to report back in case of trouble.
+On Mon, 2013-12-09 at 15:38 -0800, Kees Cook wrote:
+> For general-purpose (i.e. distro) kernel builds it makes sense to build with
+> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+> with kexec. However, in the face of trying to lock down a system with such
+> a kernel, there needs to be a way to disable kexec (much like module loading
+> can be disabled). Without this, it is too easy for the root user to modify
+> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
 > 
-> If breaking things is an option, I am definitely wrong. I assumed the
-> opposite.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-We never intentionally break things that people are using, but there are
-cases where doing blind changes is the best way forward. We should
-always try to find people to test patches on real hardware if possible,
-which is only possible if there are people around that have the hardware
-and that are going to run new kernels on them.
+Giving Sys admins more control to secure their system is a good idea.
+This addition looks good to me.
 
-In case of PXA dmaengine support, I think the benefits of applying the
-series far outweigh the breakage potential. A lot of the drivers are
-shared with MMP, which is going to be DT-only eventually and will require
-the new dmaengine code. Some PXA drivers may be shared with SA1100,
-which has also converted to dmaengine although there are no plans to
-ever support DT on sa1100.
+--
+Khalid
 
-> > > My proposal in to actually add new drivers for each platform device with
-> > > DMA and mark new ones EXPERIMENTAL.
-> > 
-> > That would cause tree-wide cross-dependencies between drivers, because
-> > the two DMA controllers can't be used at the same time, and the PXA
-> > specific API will be unavailable when the mmp-dma driver is selected. My
-> > patch series (and the DMA controller framework for that matter) aims for
-> > the opposite - the unification of APIs and drivers.
-> 
-> Not sure I got this point. My proposal is to keep the existing DMA
-> intact until we are ready to remove it. I understand this approach
-> requires considerably more work inside DMA to allow both driver to
-> coexist than wholesale replacement. I still think big change is risky.
-
-We certainly need to be extra careful if we want to move things over
-at once and cannot test all the drivers. I'd be happier if it could
-be done gradually by having some drivers use the new interface and
-other drivers use the old one, but I don't see how that can be done
-here.
-
-	Arnd
