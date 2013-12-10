@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab3LJQcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:32:42 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58224 "EHLO bear.ext.ti.com"
+	id S1754541Ab3LJQde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:33:34 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58274 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752676Ab3LJQcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:32:39 -0500
-Date: Tue, 10 Dec 2013 10:31:24 -0600
+	id S1750789Ab3LJQdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 11:33:33 -0500
+Date: Tue, 10 Dec 2013 10:32:20 -0600
 From: Felipe Balbi <balbi@ti.com>
 To: Lee Jones <lee.jones@linaro.org>
 CC: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
@@ -15,78 +15,67 @@ CC: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
         Linux ARM Kernel Mailing List 
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 03/15] mfd: menelaus: Convert to threaded irq
-Message-ID: <20131210163124.GD22750@saruman.home>
+Subject: Re: [PATCH v3 07/15] mfd: menelaus: Limit the usage of the_menelaus
+Message-ID: <20131210163220.GE22750@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <20131209161422.GC24047@saruman.home>
  <1386606085-26838-1-git-send-email-balbi@ti.com>
- <1386606085-26838-3-git-send-email-balbi@ti.com>
- <20131210093213.GV12675@lee--X1>
+ <1386606085-26838-7-git-send-email-balbi@ti.com>
+ <20131210085701.GP12675@lee--X1>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9dgjiU4MmWPVapMU"
+	protocol="application/pgp-signature"; boundary="so9zsI5B81VjUb/o"
 Content-Disposition: inline
-In-Reply-To: <20131210093213.GV12675@lee--X1>
+In-Reply-To: <20131210085701.GP12675@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9dgjiU4MmWPVapMU
+--so9zsI5B81VjUb/o
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Tue, Dec 10, 2013 at 09:32:13AM +0000, Lee Jones wrote:
-> On Mon, 09 Dec 2013, Felipe Balbi wrote:
->=20
-> > We don't need that extra workqueue when we have generic threaded irq
-> > handlers support. This patch just moves over to threaded irqs and
-> > deletes the unnecessary workqueue.
+On Tue, Dec 10, 2013 at 08:57:01AM +0000, Lee Jones wrote:
+> > Pass a menelaus_chip pointer as argument to most functions so we can
+> > minimize the usage of the global the_menelaus pointer.
 > >=20
 > > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 > > Signed-off-by: Felipe Balbi <balbi@ti.com>
 > > ---
-> >  drivers/mfd/menelaus.c | 29 ++++-------------------------
-> >  1 file changed, 4 insertions(+), 25 deletions(-)
+> >  drivers/mfd/menelaus.c | 265 ++++++++++++++++++++++++++---------------=
+--------
+> >  1 file changed, 142 insertions(+), 123 deletions(-)
 >=20
-> <snip>
->=20
-> > -		err =3D request_irq(client->irq, menelaus_irq, 0,
-> > -				  DRIVER_NAME, menelaus);
-> > +		err =3D request_threaded_irq(client->irq, NULL, menelaus_irq,
-> > +				IRQF_ONESHOT, DRIVER_NAME, menelaus);
->=20
-> devm_* managed resources please.
+> How is this different from patch 6?
 
-that would be subject to another patch. One that converts to devm_* on
-the entire driver.
+have you read the patch ? patch 6 converts *only* enable/disable irq
+functions.
 
 --=20
 balbi
 
---9dgjiU4MmWPVapMU
+--so9zsI5B81VjUb/o
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSp0HcAAoJEIaOsuA1yqREVtIP/A6dvkfZjLgRH0nFlRectd3C
-zIus1jKv6TPfbtM6HRRO5B7adTgrXULFLEQAWdB6JHhdrFBRh4xQC6897Hr7/vIt
-3r/4YqXlI0MYVVsgIpumHngkZcbCsxUHBj8xatfjp62AcVhtduxofMilP9DDh+qf
-AJ/PHif4q0bLjbc66UB1RCUtFP1gT20nfCafsbWZHJR2OmcpHurpSQT1r9YV3lwP
-CTpeEyvct7yJsCN+PdPl6y7J53+GjhihixCtU9h4Ylzd9qy8twCotSoK1Vg/PMHB
-92HPoqWB2wYrbZTFd122Ae3JhMJAsYjoxeaXQaCuHsHR3DYqTeDb8SnS+TxrGzVS
-nsWWLRQ9gWPGAeceL6Vz/wm726oUeenFPEwROcqnqIC+xq2AYp9UQLKDmoHbhGE5
-itsk3aqZnojkbGIp1CMx5YLU+bIUiomvU51iVP7w7GZw0IOB8uu9JKghVnL6sGl/
-0xDrDGZDX8bZK4Q/PF7ezgaq+1qzlbahYRBP/bWDaJ2tv/lf/wh51YhaMQmxUDX0
-oHlLQjJvPRFbDUSzFoEpM0IkR2g9ZMwhscq3knUrutvYe4CcVadOS8xoeJ81NWJA
-8KCMTyjPc2sbBCE1xWqwLjxpLb/do+5iRMy11YxWESH8WwiOKRF3uKAsz7jN0Vzd
-SkT8a5tW3ybdBQnW1Snk
-=iLfe
+iQIcBAEBAgAGBQJSp0IUAAoJEIaOsuA1yqREBVUQALEjL+bOWw6bMYQlId0ek8NI
+8MrIeyeO9kr6lfv+Shxxu/E6lAF34dUNeU4sxRyy/Oi1lwsS3xZ3O9mEodbHb3V+
+WUfjdB1aXpx9+gEqmzbjFL6pNq3ZMcSRdx9gfIuqMm+CAwkzJmWQIOKrZr6cjy0x
+0iKJhyylv2RG/s28eosoa93JqXmbIh/zc6N+CbIHkD0x6dnn1fVoU6AHzg2hSdSP
+bn9+fp4T6SwJsS3xQxzC33dQwaHUzHo1ysbnIKs7DDnzaEYhKnmDj2YltYOQqVMF
+zOOZYUc15xqYYOW33H5scn5buWmfDD6fPw2saJ0dsXZHw7H2dnyZFFaX4bVScAgs
+UK097PvOEXL/hH4rNgOdhGj3a4fjAwPGBK71eT/7b7VJf77Y3ZeGGYlFxM2UCt9p
+xQYVcHAkYYlEcxs+iJ/dExM7sllyyHuNDbKBDqWaXQUdk0dUQ1VSZ8x27+ZIKycS
+WnKoIc6QZuV+AqzbbESxe3bYUfnEHpMmcluSpzJzYVjTgfM9jBLCcps28zQ9i1Or
+3jN8p71AKGbk3tbZJGGOxq5VnrX3eonfFyu+JAw9VVTvZsYFwJMDpTMNQBoAEIRk
++junAhbHjhMQDcIe+Xs8YvYeIFRmrhi5lVkyv4aCdToCKZl48grOWXy1Ba8Q7T6M
+ipcbvrvtx1mK/FGlPic9
+=WU/1
 -----END PGP SIGNATURE-----
 
---9dgjiU4MmWPVapMU--
+--so9zsI5B81VjUb/o--
