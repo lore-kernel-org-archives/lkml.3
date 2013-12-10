@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab3LJLal (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:30:41 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:34891 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3LJLai (ORCPT
+	id S1752722Ab3LJLeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:34:21 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:50042 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab3LJLeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:30:38 -0500
-Message-ID: <52A6FB5C.7010706@linaro.org>
-Date: Tue, 10 Dec 2013 12:30:36 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 06:34:20 -0500
+Date: Tue, 10 Dec 2013 12:34:16 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL v2] posix cpu timers cleanups for 3.14
+Message-ID: <20131210113416.GC26659@gmail.com>
+References: <1386613447-5042-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Alex Shi <alex.shi@linaro.org>
-Subject: [question] sched: idle_avg and migration latency
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386613447-5042-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi All,
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-I am trying to understand how is computed the idle_avg and how it is 
-used regarding the migration latency.
+> Ingo, Thomas,
+> 
+> Please pull the timers/posix-timers-for-tip-v2 branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	timers/posix-timers-for-tip-v2
+> 
+> HEAD: 531f64fd6f46a3f2a3edb1b97ecc827c775932c5
+> 
+> This is the second version of the pull request that I sent you a few weeks ago:
+> http://lkml.kernel.org/r/1385221040-24731-1-git-send-email-fweisbec@gmail.com
+> 
+> Changes in this v2:
+> 
+> * rebase against latest tip:timers/core (there was a conflict with some dynticks
+>   patches)
+> 
+> * add a cleanup suggested by Kosaki in patch 02/10: remove a useless group
+>   timer sample snapshot and rearm on timer rescheduling.
+> 
+> Also the previous pull request lacked a high level overall description, so I'm
+> adding one here.
+> 
+> ---
+> 
+> Posix cpu timers changes for 3.14:
+> 
+> * Remove dying thread/process timers caching that were complicating the code
+>   for no significant win.
+> 
+> * Remove early task reference release on dying timer sample read. Again it was
+>   not worth the code complication. The other timer's resources aren't released until
+>   timer_delete() is called anyway (or when the whole process dies).
+> 
+> * Remove leftover arguments in reaped target cleanup
+> 
+> * Consolidate some timer sampling code
+> 
+> * Remove use of tasklist lock
+> 
+> * Robustify sighand locking against exec and exit by using the safer
+>   lock_task_sighand() API instead of sighand raw locking.
+> 
+> * Convert some unnecessary BUG_ON() to WARN_ON()
+> 
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (10):
+>       posix-timers: Remove dead thread posix cpu timers caching
+>       posix-timers: Remove dead process posix cpu timers caching
+>       posix-timers: Cleanup reaped target handling
+>       posix-timers: Remove dead task special case
+>       posix-timers: Remove useless clock sample on timers cleanup
+>       posix-timers: Consolidate posix_cpu_clock_get()
+>       posix-timers: Use sighand lock instead of tasklist_lock for task clock sample
+>       posix-timers: Use sighand lock instead of tasklist_lock on timer deletion
+>       posix-timers: Remove remaining uses of tasklist_lock
+>       posix-timers: Convert abuses of BUG_ON to WARN_ON
+> 
+> 
+>  kernel/posix-cpu-timers.c | 312 +++++++++++++++++++---------------------------
+>  1 file changed, 129 insertions(+), 183 deletions(-)
 
-1. What is the sysctl_sched_migration_cost value ? It is initialized to 
-500000UL. Is it an arbitrarily chosen value ? Could it change depending 
-on the hardware performances ?
+Pulled, thanks a lot Frederic!
 
-
-2. The idle_balance function checks:
-
-         if (this_rq->avg_idle < sysctl_sched_migration_cost)
-                 return 0;
-
-IIUC, it is not worth to migrate a task to this cpu as we expect to run 
-another task before we can pull a task to the current cpu, right ?
-
-Then if there is no task to balance we will enter idle, thus we 
-initialize the idle_stamp to the current clock.
-
-When another task is woken up with the ttwu_do_wakeup, the duration of 
-the idle time is computed in there:
-
-	if (rq->idle_stamp) {
-		u64 delta = rq_clock(rq) - rq->idle_stamp;
-		u64 max = 2*sysctl_sched_migration_cost;
-
-		if (delta > max)
-			rq->avg_idle = max;
-		else
-			update_avg(&rq->avg_idle, delta);
-		rq->idle_stamp = 0;
-	}
-
-Why is the 'delta' leveraged by 'max' ?
-
-
-3. And finally the function update_avg does:
-
-	s64 diff = sample - *avg;
-	*avg += diff >> 3;
-
-Why is diff >> 3 used instead of the number of values ?
-
-Thanks in advance for any answers
-
-   -- Daniel
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+	Ingo
