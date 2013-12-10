@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3LJLTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:19:07 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:34010
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752086Ab3LJLTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:19:05 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1155h)
-Date: Tue, 10 Dec 2013 19:08:44 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Nicolin Chen <b42378@freescale.com>, <lgirdwood@gmail.com>,
-        <alsa-devel@alsa-project.org>, <tiwai@suse.de>, <perex@perex.cz>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] ASoC: fsl: imx-wm8962: Grant hw_params/free()
- permission to control FLL
-Message-ID: <20131210110842.GD12042@MrMyself>
-References: <cover.1386344000.git.b42378@freescale.com>
- <105d07ac1a77bf99872d75608c97b3342079bfb7.1386344000.git.b42378@freescale.com>
- <20131209175640.GL29268@sirena.org.uk>
- <20131210051740.GA10655@MrMyself>
- <20131210102523.GB12042@MrMyself>
- <20131210104745.GC29268@sirena.org.uk>
- <20131210105135.GC12042@MrMyself>
- <20131210111505.GE29268@sirena.org.uk>
+	id S1752256Ab3LJL0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:26:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20816 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab3LJL0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 06:26:08 -0500
+Date: Tue, 10 Dec 2013 12:26:04 +0100
+From: Miroslav Lichvar <mlichvar@redhat.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH RFC] timekeeping: Fix clock stability with nohz
+Message-ID: <20131210112604.GQ22878@localhost>
+References: <1384440640-9482-1-git-send-email-mlichvar@redhat.com>
+ <528A7C88.1030801@linaro.org>
+ <20131120183900.GA25735@localhost>
+ <529D2BA6.5020005@linaro.org>
+ <529D5805.20903@linaro.org>
+ <20131206142602.GH22878@localhost>
+ <52A27D51.1040805@linaro.org>
+ <20131210102051.GO22878@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131210111505.GE29268@sirena.org.uk>
+In-Reply-To: <20131210102051.GO22878@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 11:15:05AM +0000, Mark Brown wrote:
-> On Tue, Dec 10, 2013 at 06:51:36PM +0800, Nicolin Chen wrote:
-> > On Tue, Dec 10, 2013 at 10:47:45AM +0000, Mark Brown wrote:
+On Tue, Dec 10, 2013 at 11:20:51AM +0100, Miroslav Lichvar wrote:
+> What does the following line from your patch mean?
 > 
-> > > For this sort of question you should follow the DAPM graph...  the
-> > > headphone and speaker mixers have IN4 and MIXIN as inputs for analogue
-> > > bypass and the STL and STR paths provide digital sidetones through the
-> > > ADC and DAC.
-> 
-> > So I could test it merely by using 'amixer cset' to enable those switches
-> > without doing anything to power WM8962 up as long as my operation follows
-> > the DAPM graph so that the DPAM would automatically turn on the regulator
-> > for me?
-> 
-> Yes, as soon as you have a complete path from an active input to an
-> active output the path should get powered up.
+>         tick_error -= tk->xtime_interval;
 
-I'll try again tomorrow. Thank you sir.
+Ok, I think I understand how it should work. There are two loops, the
+bigadjust one is correcting only for ntp tick length and the other for
+the cumulative error. I think it might work better if they were both
+active at the same time instead of switching between them according to
+the current ntp error.
 
-
+-- 
+Miroslav Lichvar
