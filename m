@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab3LJG62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:58:28 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53175 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3LJG6X (ORCPT
+	id S1752477Ab3LJG6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:58:50 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:31093 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab3LJG6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:58:23 -0500
-Message-ID: <52A6BB84.30706@gmail.com>
-Date: Tue, 10 Dec 2013 14:58:12 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 01:58:48 -0500
+X-IronPort-AV: E=Sophos;i="4.93,864,1378882800"; 
+   d="scan'208";a="1426460"
+Subject: Re: [PATCH] net-tg3: Initialize REG_BASE_ADDR at PCI config offset
+ 120 to 0
+From: Michael Chan <mchan@broadcom.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Natarajan Gurumoorthy <natg@google.com>, <nsujir@broadcom.com>,
+        <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1386623253.1752.6.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+References: <1386614601-9453-1-git-send-email-natg@google.com>
+	 <1386615608.1752.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <CAGmqidkxoi9EEe0uC18QQUXwjFP1e_1MXL7VPk+NtU-Ta6FGUg@mail.gmail.com>
+	 <52A633B4.9000307@cogentembedded.com>
+	 <1386623253.1752.6.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+Content-Type: text/plain; charset="cp1252"
+Date: Mon, 9 Dec 2013 22:58:44 -0800
+Message-ID: <1386658724.1752.19.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
-        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Eric Dumazet <dada1@cosmosbay.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
-References: <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <5292EE2F.5090305@linux.vnet.ibm.com> <20131125181254.GB21858@amt.cnet> <529413C1.60302@linux.vnet.ibm.com> <20131126193148.GA18071@amt.cnet> <5297049E.3020800@linux.vnet.ibm.com> <529D83F8.7050605@linux.vnet.ibm.com> <20131205135021.GA12996@amt.cnet> <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com> <20131206002244.GA29960@amt.cnet>
-In-Reply-To: <20131206002244.GA29960@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2013 08:22 AM, Marcelo Tosatti wrote:
-> On Thu, Dec 05, 2013 at 11:30:27PM +0800, Xiao Guangrong wrote:
->> In some cases, the lockless walker will do endless-walking on desc and
->> without rewalk, consider this case:
->>
->> there are two descs: desc1 and desc2 who is pointed by desc1->next：
->> desc1->next = desc2.
->>
->> CPU 0                                                                            CPU 1
->>
->> lockless walk on desc1
->>                                                                  deleting desc1 from the rmap
->> lockless walk on desc2 (desc1->next)
->>                                                                 delete desc2 from the rmap
->>                                                                 add desc1
->>                                                                 add desc2, then desc2->next = desc1
->>
->> lockless walk on desc1
->>                                                                delete desc2
->>                                                                delete desc1
->>                                                                add desc2
->>                                                                add desc1; the desc1->next = desc2
->> lockless walk on desc2
->>
->> ……
->>
->> Then, the walker is endlessly walking on desc1 and desc2 without any rewalk.
+On Mon, 2013-12-09 at 13:07 -0800, Michael Chan wrote: 
+> On Tue, 2013-12-10 at 00:18 +0300, Sergei Shtylyov wrote: 
+> > >        We had crashes when the PCI config space got scanned via
+> > > /sys/devices/pcixxxx/....../config.
+> > 
+> > > I agree that this fix will not help if the scan happens before the tg3
+> > > driver gets loaded.
+> > 
+> >     Then perhaps a better place for such fixup would be a PCI quirk?
+> > 
+> Yes, I agree.  Thanks.
 > 
-> The counter can be local to the walker. If its more than maximum rmap
-> size, break.
-> 
-> (but still, please consider carefully whether lockless list walking is
-> really necessary or can be avoided).
 
-Yep, Marcelo, you're right.
+On second thought, I think your original patch should be sufficient and
+we don't need to add the PCI quirk to cover so many devices.  The reason
+is that indirect access needs to be explicitly enabled in the
+MISC_HOST_CTRL (0x68) register.  The default value for register 0x68
+should have indirect access disabled.
 
-After thinking more, i do not have any idea to simplify this. Your approach
-(lockless on the first level) seems a better solution. Will do it based on that
-ways.
-
-Thanks!
-
+Nat, does this match what you're seeing?  Did you ever see any system
+crash before tg3 loads?
 
