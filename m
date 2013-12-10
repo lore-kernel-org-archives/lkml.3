@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab3LJIFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:05:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59051 "EHLO
+	id S1754044Ab3LJICt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab3LJICv (ORCPT
+	with ESMTP id S1753945Ab3LJICl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:51 -0500
+	Tue, 10 Dec 2013 03:02:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Kirby <sim@hostway.ca>, Ian Applegate <ia@cloudflare.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.12 26/62] vfs: fix subtle use-after-free of pipe_inode_info
-Date: Tue, 10 Dec 2013 00:00:57 -0800
-Message-Id: <20131210080059.268629796@linuxfoundation.org>
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.12 59/62] USB: mos7840: correct handling of CS5 setting
+Date: Tue, 10 Dec 2013 00:01:30 -0800
+Message-Id: <20131210080101.537882425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -28,133 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit b0d8d2292160bb63de1972361ebed100c64b5b37 upstream.
+commit 78692cc3382e0603a47e1f2aaeffe0d99891994d upstream.
 
-The pipe code was trying (and failing) to be very careful about freeing
-the pipe info only after the last access, with a pattern like:
+This patch removes an erroneous check of CSIZE, which made it impossible to set
+CS5.
 
-        spin_lock(&inode->i_lock);
-        if (!--pipe->files) {
-                inode->i_pipe = NULL;
-                kill = 1;
-        }
-        spin_unlock(&inode->i_lock);
-        __pipe_unlock(pipe);
-        if (kill)
-                free_pipe_info(pipe);
+Compiles clean, but couldn't test against hardware.
 
-where the final freeing is done last.
-
-HOWEVER.  The above is actually broken, because while the freeing is
-done at the end, if we have two racing processes releasing the pipe
-inode info, the one that *doesn't* free it will decrement the ->files
-count, and unlock the inode i_lock, but then still use the
-"pipe_inode_info" afterwards when it does the "__pipe_unlock(pipe)".
-
-This is *very* hard to trigger in practice, since the race window is
-very small, and adding debug options seems to just hide it by slowing
-things down.
-
-Simon originally reported this way back in July as an Oops in
-kmem_cache_allocate due to a single bit corruption (due to the final
-"spin_unlock(pipe->mutex.wait_lock)" incrementing a field in a different
-allocation that had re-used the free'd pipe-info), it's taken this long
-to figure out.
-
-Since the 'pipe->files' accesses aren't even protected by the pipe lock
-(we very much use the inode lock for that), the simple solution is to
-just drop the pipe lock early.  And since there were two users of this
-pattern, create a helper function for it.
-
-Introduced commit ba5bb147330a ("pipe: take allocation and freeing of
-pipe_inode_info out of ->i_mutex").
-
-Reported-by: Simon Kirby <sim@hostway.ca>
-Reported-by: Ian Applegate <ia@cloudflare.com>
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pipe.c |   39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+ drivers/usb/serial/mos7840.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -726,11 +726,25 @@ pipe_poll(struct file *filp, poll_table
- 	return mask;
- }
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1813,25 +1813,25 @@ static void mos7840_change_port_settings
+ 	iflag = tty->termios.c_iflag;
  
-+static void put_pipe_info(struct inode *inode, struct pipe_inode_info *pipe)
-+{
-+	int kill = 0;
-+
-+	spin_lock(&inode->i_lock);
-+	if (!--pipe->files) {
-+		inode->i_pipe = NULL;
-+		kill = 1;
-+	}
-+	spin_unlock(&inode->i_lock);
-+
-+	if (kill)
-+		free_pipe_info(pipe);
-+}
-+
- static int
- pipe_release(struct inode *inode, struct file *file)
- {
--	struct pipe_inode_info *pipe = inode->i_pipe;
--	int kill = 0;
-+	struct pipe_inode_info *pipe = file->private_data;
+ 	/* Change the number of bits */
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS5:
+-			lData = LCR_BITS_5;
+-			break;
++	switch (cflag & CSIZE) {
++	case CS5:
++		lData = LCR_BITS_5;
++		break;
  
- 	__pipe_lock(pipe);
- 	if (file->f_mode & FMODE_READ)
-@@ -743,17 +757,9 @@ pipe_release(struct inode *inode, struct
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
+-		case CS6:
+-			lData = LCR_BITS_6;
+-			break;
++	case CS6:
++		lData = LCR_BITS_6;
++		break;
+ 
+-		case CS7:
+-			lData = LCR_BITS_7;
+-			break;
+-		default:
+-		case CS8:
+-			lData = LCR_BITS_8;
+-			break;
+-		}
++	case CS7:
++		lData = LCR_BITS_7;
++		break;
++
++	default:
++	case CS8:
++		lData = LCR_BITS_8;
++		break;
  	}
--	spin_lock(&inode->i_lock);
--	if (!--pipe->files) {
--		inode->i_pipe = NULL;
--		kill = 1;
--	}
--	spin_unlock(&inode->i_lock);
- 	__pipe_unlock(pipe);
- 
--	if (kill)
--		free_pipe_info(pipe);
--
-+	put_pipe_info(inode, pipe);
- 	return 0;
- }
- 
-@@ -1014,7 +1020,6 @@ static int fifo_open(struct inode *inode
- {
- 	struct pipe_inode_info *pipe;
- 	bool is_pipe = inode->i_sb->s_magic == PIPEFS_MAGIC;
--	int kill = 0;
- 	int ret;
- 
- 	filp->f_version = 0;
-@@ -1130,15 +1135,9 @@ err_wr:
- 	goto err;
- 
- err:
--	spin_lock(&inode->i_lock);
--	if (!--pipe->files) {
--		inode->i_pipe = NULL;
--		kill = 1;
--	}
--	spin_unlock(&inode->i_lock);
- 	__pipe_unlock(pipe);
--	if (kill)
--		free_pipe_info(pipe);
 +
-+	put_pipe_info(inode, pipe);
- 	return ret;
- }
- 
+ 	/* Change the Parity bit */
+ 	if (cflag & PARENB) {
+ 		if (cflag & PARODD) {
 
 
