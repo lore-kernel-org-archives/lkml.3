@@ -1,146 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3LJNYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:24:40 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:43149 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab3LJNYg convert rfc822-to-8bit (ORCPT
+	id S1753418Ab3LJNYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:24:48 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39870 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab3LJNYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:24:36 -0500
-Message-ID: <52A71605.5090509@arm.com>
-Date: Tue, 10 Dec 2013 13:24:21 +0000
-From: Chris Redpath <chris.redpath@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 08:24:42 -0500
+Date: Tue, 10 Dec 2013 14:24:31 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Axel Lin <axel.lin@ingics.com>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] clocksource: time-efm32: Select CLKSRC_MMIO
+Message-ID: <20131210132431.GB18888@pengutronix.de>
+References: <1384913711.13115.2.camel@phoenix>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "pjt@google.com" <pjt@google.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bsegall@google.com
-Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
-References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com> <1386593950-26475-3-git-send-email-chris.redpath@arm.com> <20131210114825.GF12849@twins.programming.kicks-ass.net>
-In-Reply-To: <20131210114825.GF12849@twins.programming.kicks-ass.net>
-X-OriginalArrivalTime: 10 Dec 2013 13:24:31.0308 (UTC) FILETIME=[28CD50C0:01CEF5AB]
-X-MC-Unique: 113121013243301301
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1384913711.13115.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/13 11:48, Peter Zijlstra wrote:
-> On Mon, Dec 09, 2013 at 12:59:10PM +0000, Chris Redpath wrote:
->> If we migrate a sleeping task away from a CPU which has the
->> tick stopped, then both the clock_task and decay_counter will
->> be out of date for that CPU and we will not decay load correctly
->> regardless of how often we update the blocked load.
->>
->> This is only an issue for tasks which are not on a runqueue
->> (because otherwise that CPU would be awake) and simultaneously
->> the CPU the task previously ran on has had the tick stopped.
->
-> OK, so the idiot in a hurry (me) isn't quite getting the issue.
->
+On Wed, Nov 20, 2013 at 10:15:11AM +0800, Axel Lin wrote:
+> The time-efm32 driver uses the clocksource MMIO functions.
+> Thus it needs to select CLKSRC_MMIO in Kconfig.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> This fixes build error when COMPILE_TEST=y.
+> drivers/built-in.o: In function `efm32_clocksource_init':
+> drivers/clocksource/time-efm32.c:162: undefined reference to `clocksource_mmio_init'
+> drivers/built-in.o: In function `efm32_timer_init':
+> drivers/clocksource/time-efm32.c:274: undefined reference to `clocksource_mmio_readl_up'
+> make: *** [vmlinux] Error 1
+> 
+>  drivers/clocksource/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index bdb953e..99763eb 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -75,6 +75,7 @@ config CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+>  config CLKSRC_EFM32
+>  	bool "Clocksource for Energy Micro's EFM32 SoCs" if !ARCH_EFM32
+>  	depends on OF && ARM && (ARCH_EFM32 || COMPILE_TEST)
+> +	select CLKSRC_MMIO
+>  	default ARCH_EFM32
+I'd like to send support for arch/arm/mach-efm32 for 3.14. Formerly I
+had ARCH_EFM32 select CLKSRC_MMIO, but having it here is obviously the
+correct thing to do. So my possibilities are:
 
-Sorry Peter, I will expand a little. We are using runnable_avg_sum to 
-drive task placement in a much more aggressive way than usual in our 
-big.LITTLE MP scheduler patches. I spend a lot of time looking at 
-individual task load signals.
+ a) I take this patch and apply mach-efm32 on top of it; or
+ b) you take it early enough for me into 3.13-rc to base mach-efm32 on
+    it; or
+ c) I send mach-efm32 with ARCH_EFM32 selecting CLKSRC_MMIO and drop
+    this select later; or
+ d) we life with the build failure (i.e.
+    drivers/clocksource/time-efm32.c:274: undefined reference to
+    `clocksource_mmio_readl_up' and the same for clocksource_mmio_init
+    in a different line) until this patch and mine come together.
 
-What happens is that if you have a task which sleeps for a while and 
-wakes on a different CPU and the previous CPU hasn't had a tick for a 
-while, then that sleep time is lost. If the sleep time is short relative 
-to the runtime the impact is small but we have tasks on Android where 
-the runtime is small relative to the sleep. These tasks look much bigger 
-than they really are. Everything works, but we can use more energy than 
-we need to to meet the compute requirements. I guess load balancing 
-could also be mislead for a while.
+I don't like d), but don't have a clear favorite between a), b) and c).
+What do you think? Probably a) is the easiest for all if there are no
+merge conflicts (I don't expect any). In this case I'd need Daniel's or
+Thomas' ack.
 
-I fully appreciate that it isn't so visible the way that load averages 
-are used in the mainline scheduler, but its definitely there.
+Thanks
+Uwe
 
-> Normally we update the blocked averages from the tick; clearly when no
-> tick, no update. So far so good.
->
-> Now, we also update blocked load from idle balance -- which would
-> include the CPUs without tick through nohz_idle_balance() -- however
-> this only appears to be done for CONFIG_FAIR_GROUP_SCHED.
->
-> Are you running without cgroup muck? If so should we make this
-> unconditional?
->
-> If you have cgroup muck enabled; what's the problem? Don't we run
-> nohz_idle_balance() frequently enough to be effective for updating the
-> blocked load?
->
-
-I have to check this out a bit more, but yes I do have the muck enabled 
-:/ I will investigate how often we idle balance on this platform however 
-to be correct wouldn't we need an idle balance event to happen during 
-sleep every time an entity was dequeued? And then we'd still lose the 
-sleep time if we happen to wake between idle balance events?
-
-> You also seem to have overlooked NO_HZ_FULL, that can stop a tick even
-> when there's a running task and makes the situation even more fun.
-
-You are right, I haven't considered NO_HZ_FULL at all but I guess its 
-also going to have an impact. I'll look closer at it.
-
->
->> @@ -4343,6 +4344,25 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
->>   	 * be negative here since on-rq tasks have decay-count == 0.
->>   	 */
->>   	if (se->avg.decay_count) {
->> +		/*
->> +		 * If we migrate a sleeping task away from a CPU
->> +		 * which has the tick stopped, then both the clock_task
->> +		 * and decay_counter will be out of date for that CPU
->> +		 * and we will not decay load correctly.
->> +		 */
->> +		if (!se->on_rq && nohz_test_cpu(task_cpu(p))) {
->> +			struct rq *rq = cpu_rq(task_cpu(p));
->> +			unsigned long flags;
->> +			/*
->> +			 * Current CPU cannot be holding rq->lock in this
->> +			 * circumstance, but another might be. We must hold
->> +			 * rq->lock before we go poking around in its clocks
->> +			 */
->> +			raw_spin_lock_irqsave(&rq->lock, flags);
->> +			update_rq_clock(rq);
->> +			update_cfs_rq_blocked_load(cfs_rq, 0);
->> +			raw_spin_unlock_irqrestore(&rq->lock, flags);
->> +		}
->>   		se->avg.decay_count = -__synchronize_entity_decay(se);
->>   		atomic_long_add(se->avg.load_avg_contrib,
->>   						&cfs_rq->removed_load);
->
-> Right, as Ben already said; taking a rq->lock there is unfortunate at
-> best.
->
-
-You're both being very polite. I hate it too :) The only reason for 
-taking the lock is to be sure the decay_counter is updated, normal sleep 
-accounting doesn't need all this and is always correct.
-
-This stuff only exists in the first place so that the blocked load 
-doesn't get out of whack when we are moving entities. Maybe I can 
-separate entity load decay due to sleep from blocked load accounting. It 
-will leave blocked load subject to rq clock updates but that might be 
-OK. It's only a half-formed idea at the moment, I will ponder a bit longer.
-
-> So normally we 'throttle' the expense of decaying the blocked load to
-> ticks. But the above does it on every (suitable) task migration which
-> might be far more often.
->
-> So ideally we'd get it all sorted through the nohz_idle_balance() path;
-> what exactly are the problems with that?
->
-
-What I want is for se.avg.runnable_avg_sum to correctly incorporate the 
-sleep time. I care much less about runqueue blocked averages being 
-instantaneously correct so long as they don't get out of sync when 
-entities move around. If it's possible to do it in the idle balance path 
-that is great - if you have any suggestions I'd be glad to have a look.
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
