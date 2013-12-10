@@ -1,168 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab3LJMF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:05:27 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4400 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab3LJMFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:05:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
-   d="scan'208";a="447624855"
-Message-ID: <52A70558.90808@intel.com>
-Date: Tue, 10 Dec 2013 14:13:12 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752544Ab3LJMFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:05:40 -0500
+Received: from relay.parallels.com ([195.214.232.42]:54998 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab3LJMFh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 07:05:37 -0500
+Message-ID: <52A70387.40501@parallels.com>
+Date: Tue, 10 Dec 2013 16:05:27 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-References: <1386617830-18926-1-git-send-email-acme@infradead.org> <20131210111229.GB26659@gmail.com> <20131210114421.GI8098@ghostprotocols.net>
-In-Reply-To: <20131210114421.GI8098@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: Glauber Costa <glommer@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] memcg: remove KMEM_ACCOUNTED_ACTIVATED
+References: <CAA6-i6rWsZNQmFY5L-=yc6TaTGyg4hP4qn9gMZVsu8wWJ=1ywg@mail.gmail.com> <529CDDB3.3090301@parallels.com> <CAA6-i6q+WooWMSbJwLS=ByVu=fgAQuep99iP7tAXiuLABu2gVA@mail.gmail.com> <529D9100.4070207@parallels.com> <CAA6-i6q2viRkbjYOHcoiCHgvdfbfo-4j0k9gj9AA4SH1YToqVg@mail.gmail.com> <529EDB41.8030505@parallels.com> <CAA6-i6o+ZuM_fq+PdQJZ40S0d7K35cBvbTELg49+SgLKP5F0xA@mail.gmail.com> <529F1883.3030907@parallels.com> <20131209152256.GD3597@dhcp22.suse.cz> <52A60FA3.20106@parallels.com> <20131210091312.GA20242@dhcp22.suse.cz>
+In-Reply-To: <20131210091312.GA20242@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/13 13:44, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Dec 10, 2013 at 12:12:29PM +0100, Ingo Molnar escreveu:
+On 12/10/2013 01:13 PM, Michal Hocko wrote:
+> On Mon 09-12-13 22:44:51, Vladimir Davydov wrote:
+>> On 12/09/2013 07:22 PM, Michal Hocko wrote:
+>>> On Wed 04-12-13 15:56:51, Vladimir Davydov wrote:
+>>>> On 12/04/2013 02:08 PM, Glauber Costa wrote:
+>>>>>>> Could you do something clever with just one flag? Probably yes. But I
+>>>>>>> doubt it would
+>>>>>>> be that much cleaner, this is just the way that patching sites work.
+>>>>>> Thank you for spending your time to listen to me.
+>>>>>>
+>>>>> Don't worry! I thank you for carrying this forward.
+>>>>>
+>>>>>> Let me try to explain what is bothering me.
+>>>>>>
+>>>>>> We have two state bits for each memcg, 'active' and 'activated'. There
+>>>>>> are two scenarios where the bits can be modified:
+>>>>>>
+>>>>>> 1) The kmem limit is set on a memcg for the first time -
+>>>>>> memcg_update_kmem_limit(). Here we call memcg_update_cache_sizes(),
+>>>>>> which sets the 'activated' bit on success, then update static branching,
+>>>>>> then set the 'active' bit. All three actions are done atomically in
+>>>>>> respect to other tasks setting the limit due to the set_limit_mutex.
+>>>>>> After both bits are set, they never get cleared for the memcg.
+>>>>>>
+>>>>> So far so good. But again, note how you yourself describe it:
+>>>>> the cations are done atomically  *in respect to other tasks setting the limit*
+>>>>>
+>>>>> But there are also tasks that are running its courses naturally and
+>>>>> just allocating
+>>>>> memory. For those, some call sites will be on, some will be off. We need to make
+>>>>> sure that *none* of them uses the patched site until *all* of them are patched.
+>>>>> This has nothing to do with updates, this is all about the readers.
+>>>>>
+>>>>>> 2) When a subgroup of a kmem-active cgroup is created -
+>>>>>> memcg_propagate_kmem(). Here we copy kmem_account_flags from the parent,
+>>>>>> then increase static branching refcounter, then call
+>>>>>> memcg_update_cache_sizes() for the new memcg, which may clear the
+>>>>>> 'activated' bit on failure. After successful execution, the state bits
+>>>>>> never get cleared for the new memcg.
+>>>>>>
+>>>>>> In scenario 2 there is no need bothering about the flags setting order,
+>>>>>> because we don't have any tasks in the cgroup yet - the tasks can be
+>>>>>> moved in only after css_online finishes when we have both of the bits
+>>>>>> set and the static branching enabled. Actually, we already do not bother
+>>>>>> about it, because we have both bits set before the cgroup is fully
+>>>>>> initialized (memcg_update_cache_sizes() is called).
+>>>>>>
+>>>>> Yes, after the first cgroup is set none of that matters. But it is just easier
+>>>>> and less error prone just to follow the same path every time. As I have said,
+>>>>> if you can come up with a more clever way to deal with the problem above
+>>>>> that doesn't involve the double flag - and you can prove it works - I
+>>>>> am definitely
+>>>>> fine with it. But this is subtle code, and in the past - Michal can
+>>>>> attest this - we've
+>>>>> changed this being sure it would work just to see it explode in our faces.
+>>>>>
+>>>>> So although I am willing to review every patch for correctness on that
+>>>>> front (I never
+>>>>> said I liked the 2-flags scheme...), unless you have a bug or real
+>>>>> problem on it,
+>>>>> I would advise against changing it if its just to make it more readable.
+>>>>>
+>>>>> But again, don't take me too seriously on this. If you and Michal think you can
+>>>>> come up with something better, I'm all for it.
+>>>> All right, I finally get you :-)
+>>>>
+>>>> Although I still don't think we need the second flag, I now understand
+>>>> that it's better not to change the code that works fine especially the
+>>>> change does not make it neither more readable nor more effective. Since
+>>>> I can be mistaken about the flags usage (it's by far not unlikely), it's
+>>>> better to leave it as is rather than being at risk of catching spurious
+>>>> hangs that might be caused by this modification.
+>>>>
+>>>> Thanks for the detailed explanation!
+>>> It would be really great if we could push some of that into the
+>>> comments, please?
+>>>
+>>> Anyway, reading this thread again, I guess I finally got what you meant
+>>> Vladimir.
+>>> You are basically saying that the two stage enabling can be done
+>>> by static_key_slow_inc in the first step and memcg_kmem_set_active
+>>> in the second step without an additional flag.
+>>> Assuming that the writers cannot race (they cannot currently because
+>>> they are linearized by set_limit_mutex and memcg_create_mutex) and
+>>> readers (charging paths) are _always_ checking the static key before
+>>> checking active flags?
+>> Right. There is no point in checking the static key after checking
+>> active flags, because the benefit of using static branching would
+>> disappear then. So IMHO the only thing we should bother is that the
+>> static key refcounter is incremented *before* the active bit is set.
+>> That assures all static branches have been patched if a charge path
+>> succeeds, because a charge path cannot succeed if the active bit is not
+>> set. That said we won't skip a commit or uncharge after a charge due to
+>> an unpatched static branch. That's why I think the 'active' bit is enough.
 >>
->> Hm, I've unpulled it because 'perf top' crashes on exit, in 
->> dso__delete():
-> 
-> 495		if (dso->sname_alloc)
-> 496			free((char *)dso->short_name)
-> 
-> Yeah, must be that basename() patch from Stephane, I'll work on a fix
-> and resubmit this batch, thanks for the report.
+>> Currently we have two flags 'activated' and 'active', and their usage
+>> looks strange to me. Throughout the code we only have the following checks:
+>>     test_bit('active', state_mask)
+>>     test_bit('active', state_mask)&&test_bit('activated', state_mask)
+>> Since 'active' bit is always set after 'activated' and none of them gets
+>> cleared, the latter check is equivalent to the former.
+>> Since we never issue a check like this:
+>>     test_bit('activated', state_mask)
+>> we never actually check the 'activated' bit and do not need it - ???
+> That is my current understanding. Care to send a patch with the whole
+> reasoning?
 
-The problem is sname_alloc is not maintained.  Perhaps it should be
-set in dso__set_short_name() e.g.
+I'll try.
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 9fae484..54ed980 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -379,7 +379,7 @@ struct dso *dso__kernel_findnew(struct machine *machine,
-const char *name,
- 	 * processing we had no idea this was the kernel dso.
- 	 */
- 	if (dso != NULL) {
--		dso__set_short_name(dso, short_name);
-+		dso__set_short_name(dso, short_name, false);
- 		dso->kernel = dso_type;
- 	}
-
-@@ -394,10 +394,13 @@ void dso__set_long_name(struct dso *dso, char *name)
- 	dso->long_name_len = strlen(name);
- }
-
--void dso__set_short_name(struct dso *dso, const char *name)
-+void dso__set_short_name(struct dso *dso, const char *name, bool sname_alloc)
- {
- 	if (name == NULL)
- 		return;
-+	if (dso->sname_alloc)
-+		free((char *)dso->short_name);
-+	dso->sname_alloc = sname_alloc;
- 	dso->short_name = name;
- 	dso->short_name_len = strlen(name);
- }
-@@ -426,12 +429,7 @@ static void dso__set_basename(struct dso *dso)
- 	if (!base)
- 		return;
-
--	if (dso->sname_alloc)
--		free((char *)dso->short_name);
--	else
--		dso->sname_alloc = 1;
--
--	dso__set_short_name(dso, base);
-+	dso__set_short_name(dso, base, true);
- }
-
- int dso__name_len(const struct dso *dso)
-@@ -467,7 +465,7 @@ struct dso *dso__new(const char *name)
- 		int i;
- 		strcpy(dso->name, name);
- 		dso__set_long_name(dso, dso->name);
--		dso__set_short_name(dso, dso->name);
-+		dso__set_short_name(dso, dso->name, false);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->cache = RB_ROOT;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 384f2d9..166463e 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -110,7 +110,7 @@ static inline void dso__set_loaded(struct dso *dso, enum
-map_type type)
- struct dso *dso__new(const char *name);
- void dso__delete(struct dso *dso);
-
--void dso__set_short_name(struct dso *dso, const char *name);
-+void dso__set_short_name(struct dso *dso, const char *name, bool sname_alloc);
- void dso__set_long_name(struct dso *dso, char *name);
-
- int dso__name_len(const struct dso *dso);
-
-
-> 
-> - Arnaldo
->  
->> [Thread 0x7ffff70df700 (LWP 29561) exited]
->> *** Error in `/fast/mingo/tip/tools/perf/perf': munmap_chunk(): invalid pointer: 0x0000000000587371 ***
->> ======= Backtrace: =========
->> /lib64/libc.so.6[0x3e5907bbe7]
->> /fast/mingo/tip/tools/perf/perf(dso__delete+0xd9)[0x46da89]
->> /fast/mingo/tip/tools/perf/perf(machines__exit+0xad)[0x482e7d]
->> /fast/mingo/tip/tools/perf/perf(perf_session__delete+0xb6)[0x488c66]
->> /fast/mingo/tip/tools/perf/perf(cmd_top+0xf44)[0x4345f4]
->> /fast/mingo/tip/tools/perf/perf[0x419f95]
->> /fast/mingo/tip/tools/perf/perf(main+0x600)[0x419830]
->> /lib64/libc.so.6(__libc_start_main+0xf5)[0x3e59021b45]
->> /fast/mingo/tip/tools/perf/perf[0x4198fd]
->> ======= Memory map: ========
->>
->> Program received signal SIGABRT, Aborted.
->> 0x0000003e590359e9 in raise () from /lib64/libc.so.6
->> Missing separate debuginfos, use: debuginfo-install audit-libs-2.3.2-1.fc19.x86_64 bzip2-libs-1.0.6-8.fc19.x86_64 elfutils-libelf-0.156-5.fc19.x86_64 elfutils-libs-0.156-5.fc19.x86_64 glibc-2.17-19.fc19.x86_64 libgcc-4.8.2-1.fc19.x86_64 libunwind-1.1-2.fc19.x86_64 nss-softokn-freebl-3.15.2-2.fc19.x86_64 numactl-libs-2.0.8-4.fc19.x86_64 perl-libs-5.16.3-266.fc19.x86_64 python-libs-2.7.5-9.fc19.x86_64 slang-2.2.4-8.fc19.x86_64 xz-libs-5.1.2-4alpha.fc19.x86_64 zlib-1.2.7-10.fc19.x86_64
->> (gdb) 
->> (gdb) bt
->> #0  0x0000003e590359e9 in raise () from /lib64/libc.so.6
->> #1  0x0000003e590370f8 in abort () from /lib64/libc.so.6
->> #2  0x0000003e59075d17 in __libc_message () from /lib64/libc.so.6
->> #3  0x0000003e5907bbe7 in malloc_printerr () from /lib64/libc.so.6
->> #4  0x000000000046da89 in dso__delete (dso=0x8e46f0) at util/dso.c:496
->> #5  0x0000000000482e7d in dsos__delete (dsos=0x8e4490) at util/machine.c:72
->> #6  machine__exit (machine=<optimized out>) at util/machine.c:103
->> #7  machines__exit (machines=machines@entry=0x8e4438) at util/machine.c:123
->> #8  0x0000000000488c66 in perf_session__delete (session=0x8e4360) at util/session.c:155
->> #9  0x00000000004345f4 in __cmd_top (top=0x7fffffffb140) at builtin-top.c:985
->> #10 cmd_top (argc=<optimized out>, argv=<optimized out>, prefix=<optimized out>) at builtin-top.c:1210
->> #11 0x0000000000419f95 in run_builtin (p=p@entry=0x7ece88 <commands+264>, argc=argc@entry=2, argv=argv@entry=0x7fffffffe420) at perf.c:319
->> #12 0x0000000000419830 in handle_internal_command (argv=0x7fffffffe420, argc=2) at perf.c:376
->> #13 run_argv (argv=0x7fffffffe220, argcp=0x7fffffffe22c) at perf.c:420
->> #14 main (argc=2, argv=0x7fffffffe420) at perf.c:529
->> (gdb) 
->>
->> Running it on an up-to-date installation of Fedora 19.
->>
->> Thanks,
->>
->> 	Ingo
-> 
-> 
-
+Thanks.
