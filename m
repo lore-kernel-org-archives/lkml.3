@@ -1,99 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab3LJIVc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:21:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58820 "EHLO
+	id S1754579Ab3LJIVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:21:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58813 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356Ab3LJIBQ (ORCPT
+	with ESMTP id S1753227Ab3LJIBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:16 -0500
+	Tue, 10 Dec 2013 03:01:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.12 10/62] crypto: ccm - Fix handling of zero plaintext when computing mac
-Date: Tue, 10 Dec 2013 00:00:41 -0800
-Message-Id: <20131210080058.172789356@linuxfoundation.org>
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 36/52] iwlwifi: dvm: dont override mac80211s queue setting
+Date: Tue, 10 Dec 2013 00:01:09 -0800
+Message-Id: <20131210075956.740938696@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
-References: <20131210080057.415644748@linuxfoundation.org>
+In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
+References: <20131210075954.196229872@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Horia Geanta <horia.geanta@freescale.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 5638cabf3e4883f38dfb246c30980cebf694fbda upstream.
+commit f6b129527ca15bae29ffb9417ddaa1c9d99ffc5d upstream.
 
-There are cases when cryptlen can be zero in crypto_ccm_auth():
--encryptiom: input scatterlist length is zero (no plaintext)
--decryption: input scatterlist contains only the mac
-plus the condition of having different source and destination buffers
-(or else scatterlist length = max(plaintext_len, ciphertext_len)).
+Since we set IEEE80211_HW_QUEUE_CONTROL, we can let
+mac80211 do the queue assignement and don't need to
+override its decisions.
+While reassiging the same values is harmless of course,
+it triggered  a WARNING when iwlwifi and mac80211 came
+to different conclusions. This happened when mac80211 set
+IEEE80211_TX_CTL_SEND_AFTER_DTIM, but didn't route the
+packet to the cab_queue because no stations were asleep.
 
-These are not handled correctly, leading to crashes like:
+iwlwifi should not override mac80211's decicions for
+offchannel packets and packets to  be sent after DTIM,
+but it should override mac80211's decision for AMPDUs
+since we have a special queue for them. So for AMPDU,
+we still override info->hw_queue by the AMPDU queue.
 
-root@p4080ds:~/crypto# insmod tcrypt.ko mode=45
+This avoids:
 ------------[ cut here ]------------
-kernel BUG at crypto/scatterwalk.c:37!
-Oops: Exception in kernel mode, sig: 5 [#1]
-SMP NR_CPUS=8 P4080 DS
-Modules linked in: tcrypt(+) crc32c xts xcbc vmac pcbc ecb gcm ghash_generic gf128mul ccm ctr seqiv
-CPU: 3 PID: 1082 Comm: cryptomgr_test Not tainted 3.11.0 #14
-task: ee12c5b0 ti: eecd0000 task.ti: eecd0000
-NIP: c0204d98 LR: f9225848 CTR: c0204d80
-REGS: eecd1b70 TRAP: 0700   Not tainted  (3.11.0)
-MSR: 00029002 <CE,EE,ME>  CR: 22044022  XER: 20000000
-
-GPR00: f9225c94 eecd1c20 ee12c5b0 eecd1c28 ee879400 ee879400 00000000 ee607464
-GPR08: 00000001 00000001 00000000 006b0000 c0204d80 00000000 00000002 c0698e20
-GPR16: ee987000 ee895000 fffffff4 ee879500 00000100 eecd1d58 00000001 00000000
-GPR24: ee879400 00000020 00000000 00000000 ee5b2800 ee607430 00000004 ee607460
-NIP [c0204d98] scatterwalk_start+0x18/0x30
-LR [f9225848] get_data_to_compute+0x28/0x2f0 [ccm]
+WARNING: CPU: 0 PID: 2531 at drivers/net/wireless/iwlwifi/dvm/tx.c:456 iwlagn_tx_skb+0x6c5/0x883()
+Modules linked in:
+CPU: 0 PID: 2531 Comm: hostapd Not tainted 3.12.0-rc5+ #1
+Hardware name:                  /D53427RKE, BIOS RKPPT10H.86A.0017.2013.0425.1251 04/25/2013
+ 0000000000000000 0000000000000009 ffffffff8189aa62 0000000000000000
+ ffffffff8105a4f2 ffff880058339a48 ffffffff815f8a04 0000000000000000
+ ffff8800560097b0 0000000000000208 0000000000000000 ffff8800561a9e5e
 Call Trace:
-[eecd1c20] [f9225974] get_data_to_compute+0x154/0x2f0 [ccm] (unreliable)
-[eecd1c70] [f9225c94] crypto_ccm_auth+0x184/0x1d0 [ccm]
-[eecd1cb0] [f9225d40] crypto_ccm_encrypt+0x60/0x2d0 [ccm]
-[eecd1cf0] [c020d77c] __test_aead+0x3ec/0xe20
-[eecd1e20] [c020f35c] test_aead+0x6c/0xe0
-[eecd1e40] [c020f420] alg_test_aead+0x50/0xd0
-[eecd1e60] [c020e5e4] alg_test+0x114/0x2e0
-[eecd1ee0] [c020bd1c] cryptomgr_test+0x4c/0x60
-[eecd1ef0] [c0047058] kthread+0xa8/0xb0
-[eecd1f40] [c000eb0c] ret_from_kernel_thread+0x5c/0x64
-Instruction dump:
-0f080000 81290024 552807fe 0f080000 5529003a 4bffffb4 90830000 39400000
-39000001 8124000c 2f890000 7d28579e <0f090000> 81240008 91230004 4e800020
----[ end trace 6d652dfcd1be37bd ]---
+ [<ffffffff8189aa62>] ? dump_stack+0x41/0x51
+ [<ffffffff8105a4f2>] ? warn_slowpath_common+0x78/0x90
+ [<ffffffff815f8a04>] ? iwlagn_tx_skb+0x6c5/0x883
+ [<ffffffff815f8a04>] ? iwlagn_tx_skb+0x6c5/0x883
+ [<ffffffff818a0040>] ? put_cred+0x15/0x15
+ [<ffffffff815f6db4>] ? iwlagn_mac_tx+0x19/0x2f
+ [<ffffffff8186cc45>] ? __ieee80211_tx+0x226/0x29b
+ [<ffffffff8186e6bd>] ? ieee80211_tx+0xa6/0xb5
+ [<ffffffff8186e98b>] ? ieee80211_monitor_start_xmit+0x1e9/0x204
+ [<ffffffff8171ce5f>] ? dev_hard_start_xmit+0x271/0x3ec
+ [<ffffffff817351ac>] ? sch_direct_xmit+0x66/0x164
+ [<ffffffff8171d1bf>] ? dev_queue_xmit+0x1e5/0x3c8
+ [<ffffffff817fac5a>] ? packet_sendmsg+0xac5/0xb3d
+ [<ffffffff81709a09>] ? sock_sendmsg+0x37/0x52
+ [<ffffffff810f9e0c>] ? __do_fault+0x338/0x36b
+ [<ffffffff81713820>] ? verify_iovec+0x44/0x94
+ [<ffffffff81709e63>] ? ___sys_sendmsg+0x1f1/0x283
+ [<ffffffff81140a73>] ? __inode_wait_for_writeback+0x67/0xae
+ [<ffffffff8111735e>] ? __cache_free.isra.46+0x178/0x187
+ [<ffffffff811173b1>] ? kmem_cache_free+0x44/0x84
+ [<ffffffff81132c22>] ? dentry_kill+0x13d/0x149
+ [<ffffffff81132f6f>] ? dput+0xe5/0xef
+ [<ffffffff81136e04>] ? fget_light+0x2e/0x7c
+ [<ffffffff8170ae62>] ? __sys_sendmsg+0x39/0x57
+ [<ffffffff818a7e39>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 1b3eb79359c1d1e6 ]---
 
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/ccm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
---- a/crypto/ccm.c
-+++ b/crypto/ccm.c
-@@ -271,7 +271,8 @@ static int crypto_ccm_auth(struct aead_r
- 	}
+--- a/drivers/net/wireless/iwlwifi/dvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
+@@ -445,27 +445,19 @@ int iwlagn_tx_skb(struct iwl_priv *priv,
+ 	/* Copy MAC header from skb into command buffer */
+ 	memcpy(tx_cmd->hdr, hdr, hdr_len);
  
- 	/* compute plaintext into mac */
--	get_data_to_compute(cipher, pctx, plain, cryptlen);
-+	if (cryptlen)
-+		get_data_to_compute(cipher, pctx, plain, cryptlen);
++	txq_id = info->hw_queue;
++
+ 	if (is_agg)
+ 		txq_id = priv->tid_data[sta_id][tid].agg.txq_id;
+ 	else if (info->flags & IEEE80211_TX_CTL_SEND_AFTER_DTIM) {
+ 		/*
+-		 * Send this frame after DTIM -- there's a special queue
+-		 * reserved for this for contexts that support AP mode.
+-		 */
+-		txq_id = ctx->mcast_queue;
+-
+-		/*
+ 		 * The microcode will clear the more data
+ 		 * bit in the last frame it transmits.
+ 		 */
+ 		hdr->frame_control |=
+ 			cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+-	} else if (info->flags & IEEE80211_TX_CTL_TX_OFFCHAN)
+-		txq_id = IWL_AUX_QUEUE;
+-	else
+-		txq_id = ctx->ac_to_queue[skb_get_queue_mapping(skb)];
++	}
  
- out:
- 	return err;
+-	WARN_ON_ONCE(!is_agg && txq_id != info->hw_queue);
+ 	WARN_ON_ONCE(is_agg &&
+ 		     priv->queue_to_mac80211[txq_id] != info->hw_queue);
+ 
 
 
