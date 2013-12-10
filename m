@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab3LJMQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:16:42 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62190 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab3LJMQj (ORCPT
+	id S1752795Ab3LJMSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:18:17 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:58013 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab3LJMSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:16:39 -0500
+	Tue, 10 Dec 2013 07:18:06 -0500
+Date: Tue, 10 Dec 2013 13:18:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Ben Cheng <bccheng@google.com>, David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20131210121801.GC30001@gmail.com>
+References: <1386617830-18926-1-git-send-email-acme@infradead.org>
+ <20131210111229.GB26659@gmail.com>
+ <20131210114421.GI8098@ghostprotocols.net>
+ <52A70558.90808@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1386235415-27670-1-git-send-email-rogerq@ti.com>
-References: <1386156871-7639-2-git-send-email-rogerq@ti.com>
-	<1386235415-27670-1-git-send-email-rogerq@ti.com>
-Date: Tue, 10 Dec 2013 13:16:38 +0100
-Message-ID: <CACRpkdb3viraX6yQhUHokSVfN2qXxcc5cd1YpjPGfeDMy64p+A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] gpio: twl4030: Fix regression for twl gpio LED output
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: ext Tony Lindgren <tony@atomide.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, Nishanth Menon <nm@ti.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A70558.90808@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 10:23 AM, Roger Quadros <rogerq@ti.com> wrote:
 
-> Commit 0b2aa8be introduced a regression that causes failure
-> in setting LED GPO direction to OUT.
->
-> This causes USB host probe failures for Beagleboard C4.
->
-> [    2.075469] platform usb_phy_gen_xceiv.2: Driver usb_phy_gen_xceiv requests probe deferral
-> [    2.090454] hsusb2_vcc: Failed to request enable GPIO510: -22
-> [    2.100982] reg-fixed-voltage reg-fixed-voltage.0.auto: Failed to register regulator: -22
-> [    2.109954] reg-fixed-voltage: probe of reg-fixed-voltage.0.auto failed with error -22
->
-> direction_out/direction_in must return 0 if the operation succeeded.
->
-> Also, don't update direction flag and output data if twl4030_set_gpio_direction()
-> failed inside twl_direction_out();
->
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+* Adrian Hunter <adrian.hunter@intel.com> wrote:
 
-Patch applied for fixes with Tony's ACK.
+> -void dso__set_short_name(struct dso *dso, const char *name)
+> +void dso__set_short_name(struct dso *dso, const char *name, bool sname_alloc)
+>  {
+>  	if (name == NULL)
+>  		return;
+> +	if (dso->sname_alloc)
+> +		free((char *)dso->short_name);
+> +	dso->sname_alloc = sname_alloc;
 
-Thanks!
-Linus Walleij
+Calling the function option the same as the field name is asking for 
+trouble - I'd suggest 'new_sname_alloc' for the parameter, or so.
+
+And I'd also remove the 'const' from struct dso::short_name, it 
+probably does not help code generation, because 'dso' is passed in as 
+const in all the non-lifetime methods anyway.
+
+That way the cast can be dropped from the free().
+
+Similar problems exist with the usage of 'short_name' - it overloads 
+the field name which makes it somewhat confusing, and it's also 
+sometimes inconsistently named, such as 'name' in 
+dso__set_short_name().
+
+Ditto for 'long_name' handling.
+
+Also, the 'sname_alloc' name sucks, it does not make it obvious that 
+it's related to 'short_name', hiding its true significance (and hiding 
+the broken life time handling of the flag/pointer combo). I'd rename 
+it to something more descriptive, like ->short_name_allocated - or I'd 
+rename everything to 'sname'/'lname' naming for short/long names.
+
+Every time one runs into a crash like this it's a canary signal that 
+cleanliness principles need hardening.
+
+Thanks,
+
+	Ingo
