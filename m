@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab3LJACF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:02:05 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:53445 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3LJAB7 (ORCPT
+	id S1751358Ab3LJAF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:05:27 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49132 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3LJAFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:01:59 -0500
-Date: Mon, 9 Dec 2013 17:01:54 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hanjun Guo <guohanjun@huawei.com>, linux-alpha@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH 1/9] PCI: Use dev_is_pci() to check whether it is pci
- device
-Message-ID: <20131210000154.GE4699@google.com>
-References: <1386244373-35796-1-git-send-email-wangyijing@huawei.com>
+	Mon, 9 Dec 2013 19:05:25 -0500
+Date: Mon, 9 Dec 2013 16:05:21 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: rcu: Avoid irq disable in rcu_cpu_kthread
+Message-ID: <20131210000521.GH4208@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <00000142c495b75b-c1878909-baf9-42a8-9ba7-62d216d806a7-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386244373-35796-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <00000142c495b75b-c1878909-baf9-42a8-9ba7-62d216d806a7-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121000-6688-0000-0000-000004575C51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc arch lists]
+On Thu, Dec 05, 2013 at 09:06:55PM +0000, Christoph Lameter wrote:
+> Once we have the per cpu patchset merged we could do the following [it
+> even works without that patchset but the __this_cpu ops will not do
+> preemption checks]. Would this work?
 
-On Thu, Dec 05, 2013 at 07:52:53PM +0800, Yijing Wang wrote:
-> Use dev_is_pci() instead of directly compare
-> pci_bus_type to check whether it is pci device.
+Looks plausible at first glance.  But are you really seeing performance
+issues with this code?  It is only compiled into the kernel when you build
+with CONFIG_RCU_BOOST=y -- are you actually using that for your workloads?
+
+							Thanx, Paul
+
+> Subject: rcu: Avoid irq disable in rcu_cpu_kthread
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-
-I applied all these to my pci/yijing-dev_is_pci branch for v3.14, thanks!
-
-Browse them here: http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/yijing-dev_is_pci
-
-This should be no functional change.
-
- arch/alpha/kernel/pci_iommu.c        |    2 +-
- arch/arm/common/it8152.c             |    4 ++--
- arch/arm/mach-ixp4xx/common-pci.c    |    6 +++---
- arch/ia64/hp/common/sba_iommu.c      |    2 +-
- arch/ia64/sn/pci/pci_dma.c           |   24 ++++++++++++------------
- arch/parisc/kernel/drivers.c         |   22 +++++-----------------
- arch/powerpc/sysdev/fsl_pci.c        |    2 +-
- arch/sparc/include/asm/dma-mapping.h |   10 ++++------
- arch/sparc/kernel/iommu.c            |    2 +-
- arch/sparc/kernel/ioport.c           |    4 +---
- arch/x86/kernel/acpi/boot.c          |    4 +---
- drivers/pci/pci-acpi.c               |    2 +-
- 12 files changed, 33 insertions(+), 51 deletions(-)
-
-Bjorn
-
-> ---
->  drivers/pci/pci-acpi.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> The use of this_cpu ops avoids numerous address calculations
+> and allows to avoid the irq enable/disable sequence through a
+> low latency non locking this_cpu_xchg.
 > 
-> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-> index 577074e..e0431f1 100644
-> --- a/drivers/pci/pci-acpi.c
-> +++ b/drivers/pci/pci-acpi.c
-> @@ -358,7 +358,7 @@ static void pci_acpi_cleanup(struct device *dev)
->  
->  static bool pci_acpi_bus_match(struct device *dev)
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/kernel/rcu/tree_plugin.h
+> ===================================================================
+> --- linux.orig/kernel/rcu/tree_plugin.h	2013-12-03 11:32:23.322999660 -0600
+> +++ linux/kernel/rcu/tree_plugin.h	2013-12-03 11:32:23.312999941 -0600
+> @@ -1417,33 +1417,29 @@ static int rcu_cpu_kthread_should_run(un
+>   */
+>  static void rcu_cpu_kthread(unsigned int cpu)
 >  {
-> -	return dev->bus == &pci_bus_type;
-> +	return dev_is_pci(dev);
+> -	unsigned int *statusp = this_cpu_ptr(&rcu_cpu_kthread_status);
+> -	char work, *workp = this_cpu_ptr(&rcu_cpu_has_work);
+> +	char work;
+>  	int spincnt;
+> 
+>  	for (spincnt = 0; spincnt < 10; spincnt++) {
+>  		trace_rcu_utilization(TPS("Start CPU kthread@rcu_wait"));
+>  		local_bh_disable();
+> -		*statusp = RCU_KTHREAD_RUNNING;
+> -		this_cpu_inc(rcu_cpu_kthread_loops);
+> -		local_irq_disable();
+> -		work = *workp;
+> -		*workp = 0;
+> -		local_irq_enable();
+> +		__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_RUNNING);
+> +		__this_cpu_inc(rcu_cpu_kthread_loops);
+> +		work = this_cpu_xchg(rcu_cpu_has_work, 0);
+>  		if (work)
+>  			rcu_kthread_do_work();
+>  		local_bh_enable();
+> -		if (*workp == 0) {
+> +		if (__this_cpu_read(rcu_cpu_has_work) == 0) {
+>  			trace_rcu_utilization(TPS("End CPU kthread@rcu_wait"));
+> -			*statusp = RCU_KTHREAD_WAITING;
+> +			__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_WAITING);
+>  			return;
+>  		}
+>  	}
+> -	*statusp = RCU_KTHREAD_YIELDING;
+> +	__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_YIELDING);
+>  	trace_rcu_utilization(TPS("Start CPU kthread@rcu_yield"));
+>  	schedule_timeout_interruptible(2);
+>  	trace_rcu_utilization(TPS("End CPU kthread@rcu_yield"));
+> -	*statusp = RCU_KTHREAD_WAITING;
+> +	__this_cpu_write(rcu_cpu_kthread_status, RCU_KTHREAD_WAITING);
 >  }
->  
->  static struct acpi_bus_type acpi_pci_bus = {
-> -- 
-> 1.7.1
 > 
+>  /*
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
