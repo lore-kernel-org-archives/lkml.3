@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab3LJG5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:57:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:62002 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab3LJG5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:57:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,864,1378882800"; 
-   d="scan'208";a="422123870"
-Message-ID: <52A6BD34.60006@intel.com>
-Date: Tue, 10 Dec 2013 09:05:24 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752428Ab3LJG62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:58:28 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:53175 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab3LJG6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 01:58:23 -0500
+Message-ID: <52A6BB84.30706@gmail.com>
+Date: Tue, 10 Dec 2013 14:58:12 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH V2 3/3] perf script: Improve srcline display for BTS
-References: <1386315778-11633-1-git-send-email-adrian.hunter@intel.com> <1386315778-11633-4-git-send-email-adrian.hunter@intel.com> <20131209180441.GA8098@ghostprotocols.net> <52A6BCE0.9010805@intel.com>
-In-Reply-To: <52A6BCE0.9010805@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, avi.kivity@gmail.com,
+        "pbonzini@redhat.com Bonzini" <pbonzini@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce nulls desc
+References: <20131122191429.GA13308@amt.cnet> <65EE805B-B5DB-4BD0-A057-E5FF78D96D67@linux.vnet.ibm.com> <5292EE2F.5090305@linux.vnet.ibm.com> <20131125181254.GB21858@amt.cnet> <529413C1.60302@linux.vnet.ibm.com> <20131126193148.GA18071@amt.cnet> <5297049E.3020800@linux.vnet.ibm.com> <529D83F8.7050605@linux.vnet.ibm.com> <20131205135021.GA12996@amt.cnet> <F8A4D0B5-9900-48F3-9CA3-23A5A8CC0B4B@linux.vnet.ibm.com> <20131206002244.GA29960@amt.cnet>
+In-Reply-To: <20131206002244.GA29960@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/13 09:04, Adrian Hunter wrote:
-> On 09/12/13 20:04, Arnaldo Carvalho de Melo wrote:
->> Em Fri, Dec 06, 2013 at 09:42:58AM +0200, Adrian Hunter escreveu:
->>> Change the order of the output to put the srcline last.
->>> e.g. old format:
+On 12/06/2013 08:22 AM, Marcelo Tosatti wrote:
+> On Thu, Dec 05, 2013 at 11:30:27PM +0800, Xiao Guangrong wrote:
+>> In some cases, the lockless walker will do endless-walking on desc and
+>> without rewalk, consider this case:
 >>
->> Can you please always provide the command line used, so that people can
->> quickly reproduce your results, before and after your changes?
+>> there are two descs: desc1 and desc2 who is pointed by desc1->next：
+>> desc1->next = desc2.
+>>
+>> CPU 0                                                                            CPU 1
+>>
+>> lockless walk on desc1
+>>                                                                  deleting desc1 from the rmap
+>> lockless walk on desc2 (desc1->next)
+>>                                                                 delete desc2 from the rmap
+>>                                                                 add desc1
+>>                                                                 add desc2, then desc2->next = desc1
+>>
+>> lockless walk on desc1
+>>                                                                delete desc2
+>>                                                                delete desc1
+>>                                                                add desc2
+>>                                                                add desc1; the desc1->next = desc2
+>> lockless walk on desc2
+>>
+>> ……
+>>
+>> Then, the walker is endlessly walking on desc1 and desc2 without any rewalk.
 > 
-> OK
+> The counter can be local to the walker. If its more than maximum rmap
+> size, break.
 > 
-> perf record -e branches:u -c 1 -d ls
-> 
-> perf script -fip,sym,symoff,addr,srcline
+> (but still, please consider carefully whether lockless list walking is
+> really necessary or can be avoided).
 
-Oops missed dso.  That should be:
+Yep, Marcelo, you're right.
 
-	perf script -fip,sym,symoff,dso,addr,srcline
+After thinking more, i do not have any idea to simplify this. Your approach
+(lockless on the first level) seems a better solution. Will do it based on that
+ways.
 
-> 
->>
->> - Arnaldo
->>  
->>>           4028fc main+0x2c (/bin/ls)
->>>   /build/buildd/coreutils-8.20/src/ls.c:1269 =>           40d8a0 set_program_name+0x0 (/bin/ls)
->>>
->>> new format:
->>>
->>>           4028fc main+0x2c (/bin/ls) =>           40d8a0 set_program_name+0x0 (/bin/ls)
->>>   /build/buildd/coreutils-8.20/src/ls.c:1269
->>>
->>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->>> ---
->>>  tools/perf/builtin-script.c | 20 +++++++++++++++-----
->>>  1 file changed, 15 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
->>> index 7a571fb..8997b69 100644
->>> --- a/tools/perf/builtin-script.c
->>> +++ b/tools/perf/builtin-script.c
->>> @@ -428,15 +428,22 @@ static void print_sample_bts(union perf_event *event,
->>>  			     struct addr_location *al)
->>>  {
->>>  	struct perf_event_attr *attr = &evsel->attr;
->>> +	bool print_srcline_last = false;
->>>  
->>>  	/* print branch_from information */
->>>  	if (PRINT_FIELD(IP)) {
->>> -		if (!symbol_conf.use_callchain)
->>> -			printf(" ");
->>> -		else
->>> +		unsigned int print_opts = output[attr->type].print_ip_opts;
->>> +
->>> +		if (symbol_conf.use_callchain && sample->callchain) {
->>>  			printf("\n");
->>> -		perf_evsel__print_ip(evsel, sample, machine, al,
->>> -				     output[attr->type].print_ip_opts,
->>> +		} else {
->>> +			printf(" ");
->>> +			if (print_opts & PRINT_IP_OPT_SRCLINE) {
->>> +				print_srcline_last = true;
->>> +				print_opts &= ~PRINT_IP_OPT_SRCLINE;
->>> +			}
->>> +		}
->>> +		perf_evsel__print_ip(evsel, sample, machine, al, print_opts,
->>>  				     PERF_MAX_STACK_DEPTH);
->>>  	}
->>>  
->>> @@ -448,6 +455,9 @@ static void print_sample_bts(union perf_event *event,
->>>  	     !output[attr->type].user_set))
->>>  		print_sample_addr(event, sample, machine, thread, attr);
->>>  
->>> +	if (print_srcline_last)
->>> +		map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
->>> +
->>>  	printf("\n");
->>>  }
->>>  
->>> -- 
->>> 1.7.11.7
->>
->>
-> 
-> 
-> 
+Thanks!
+
 
