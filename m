@@ -1,88 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab3LJI2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:28:20 -0500
-Received: from collab.rosalab.ru ([195.19.76.181]:47392 "EHLO
-	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab3LJI2R (ORCPT
+	id S1755347Ab3LJI2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:28:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58716 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3LJIAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:28:17 -0500
-Message-ID: <52A6D08B.1040802@rosalab.ru>
-Date: Tue, 10 Dec 2013 12:27:55 +0400
-From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Organization: ROSA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: intel-gfx@lists.freedesktop.org
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: i915: NULL pointer dereference in i915_update_dri1_breadcrumb() during
- shutdown
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Dec 2013 03:00:36 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 35/52] SCSI: Disable WRITE SAME for RAID and virtual host adapter drivers
+Date: Tue, 10 Dec 2013 00:01:08 -0800
+Message-Id: <20131210075956.673077700@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
+References: <20131210075954.196229872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I have recently observed a NULL pointer dereference in i915 driver on my 
-Eee PC running ROSA Linux with kernel 3.10.21.
+------------------
 
-The crash occurs during shutdown but quite rarely, not each time.
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-The system log is lost but here is what I extracted from the info 
-displayed on the screen.
+commit 54b2b50c20a61b51199bedb6e5d2f8ec2568fb43 upstream.
 
-NULL pointer dereference at 0x4
-EIP is at i915_update_dri1_breadcrumb+0x25/0x70
-comm: systemd-journal
+Some host adapters do not pass commands through to the target disk
+directly. Instead they provide an emulated target which may or may not
+accurately report its capabilities. In some cases the physical device
+characteristics are reported even when the host adapter is processing
+commands on the device's behalf. This can lead to adapter firmware hangs
+or excessive I/O errors.
 
-i915_update_dri1_breadcrumb+0x25:
-	mov    0x4(%eax),%ebx // %eax contains 0, the list of register values 
-confirms that.
+This patch disables WRITE SAME for devices connected to host adapters
+that provide an emulated target. Driver writers can disable WRITE SAME
+by setting the no_write_same flag in the host adapter template.
 
-That is the reading of 'master_priv->sarea_priv':
+[jejb: fix up rejections due to eh_deadline patch]
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-void i915_update_dri1_breadcrumb(struct drm_device *dev)
-{
-	drm_i915_private_t *dev_priv = dev->dev_private;
-	struct drm_i915_master_private *master_priv;
+---
+ drivers/ata/libata-scsi.c                 |    1 +
+ drivers/firewire/sbp2.c                   |    1 +
+ drivers/scsi/3w-9xxx.c                    |    3 ++-
+ drivers/scsi/3w-sas.c                     |    3 ++-
+ drivers/scsi/3w-xxxx.c                    |    3 ++-
+ drivers/scsi/aacraid/linit.c              |    1 +
+ drivers/scsi/arcmsr/arcmsr_hba.c          |    1 +
+ drivers/scsi/gdth.c                       |    1 +
+ drivers/scsi/hosts.c                      |    1 +
+ drivers/scsi/hpsa.c                       |    1 +
+ drivers/scsi/ipr.c                        |    3 ++-
+ drivers/scsi/ips.c                        |    1 +
+ drivers/scsi/megaraid.c                   |    1 +
+ drivers/scsi/megaraid/megaraid_mbox.c     |    1 +
+ drivers/scsi/megaraid/megaraid_sas_base.c |    1 +
+ drivers/scsi/pmcraid.c                    |    1 +
+ drivers/scsi/sd.c                         |    6 ++++++
+ drivers/scsi/storvsc_drv.c                |    1 +
+ include/scsi/scsi_host.h                  |    6 ++++++
+ 19 files changed, 33 insertions(+), 4 deletions(-)
 
-	if (dev->primary->master) {
-		master_priv = dev->primary->master->driver_priv;
-		if (master_priv->sarea_priv) // <<< crashes here
-			master_priv->sarea_priv->last_dispatch =
-				READ_BREADCRUMB(dev_priv);
-	}
-}
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3614,6 +3614,7 @@ int ata_scsi_add_hosts(struct ata_host *
+ 		shost->max_lun = 1;
+ 		shost->max_channel = 1;
+ 		shost->max_cmd_len = 16;
++		shost->no_write_same = 1;
+ 
+ 		/* Schedule policy is determined by ->qc_defer()
+ 		 * callback and it needs to see every deferred qc.
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1626,6 +1626,7 @@ static struct scsi_host_template scsi_dr
+ 	.cmd_per_lun		= 1,
+ 	.can_queue		= 1,
+ 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
++	.no_write_same		= 1,
+ };
+ 
+ MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -2025,7 +2025,8 @@ static struct scsi_host_template driver_
+ 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= twa_host_attrs,
+-	.emulated		= 1
++	.emulated		= 1,
++	.no_write_same		= 1,
+ };
+ 
+ /* This function will probe and initialize a card */
+--- a/drivers/scsi/3w-sas.c
++++ b/drivers/scsi/3w-sas.c
+@@ -1600,7 +1600,8 @@ static struct scsi_host_template driver_
+ 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= twl_host_attrs,
+-	.emulated		= 1
++	.emulated		= 1,
++	.no_write_same		= 1,
+ };
+ 
+ /* This function will probe and initialize a card */
+--- a/drivers/scsi/3w-xxxx.c
++++ b/drivers/scsi/3w-xxxx.c
+@@ -2277,7 +2277,8 @@ static struct scsi_host_template driver_
+ 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,	
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= tw_host_attrs,
+-	.emulated		= 1
++	.emulated		= 1,
++	.no_write_same		= 1,
+ };
+ 
+ /* This function will probe and initialize a card */
+--- a/drivers/scsi/aacraid/linit.c
++++ b/drivers/scsi/aacraid/linit.c
+@@ -1081,6 +1081,7 @@ static struct scsi_host_template aac_dri
+ #endif
+ 	.use_clustering			= ENABLE_CLUSTERING,
+ 	.emulated			= 1,
++	.no_write_same			= 1,
+ };
+ 
+ static void __aac_shutdown(struct aac_dev * aac)
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -137,6 +137,7 @@ static struct scsi_host_template arcmsr_
+ 	.cmd_per_lun		= ARCMSR_MAX_CMD_PERLUN,
+ 	.use_clustering		= ENABLE_CLUSTERING,
+ 	.shost_attrs		= arcmsr_host_attrs,
++	.no_write_same		= 1,
+ };
+ static struct pci_device_id arcmsr_device_id_table[] = {
+ 	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110)},
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -4686,6 +4686,7 @@ static struct scsi_host_template gdth_te
+         .cmd_per_lun            = GDTH_MAXC_P_L,
+         .unchecked_isa_dma      = 1,
+         .use_clustering         = ENABLE_CLUSTERING,
++	.no_write_same		= 1,
+ };
+ 
+ #ifdef CONFIG_ISA
+--- a/drivers/scsi/hosts.c
++++ b/drivers/scsi/hosts.c
+@@ -388,6 +388,7 @@ struct Scsi_Host *scsi_host_alloc(struct
+ 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
+ 	shost->use_clustering = sht->use_clustering;
+ 	shost->ordered_tag = sht->ordered_tag;
++	shost->no_write_same = sht->no_write_same;
+ 
+ 	if (sht->supported_mode == MODE_UNKNOWN)
+ 		/* means we didn't set it ... default to INITIATOR */
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -538,6 +538,7 @@ static struct scsi_host_template hpsa_dr
+ 	.sdev_attrs = hpsa_sdev_attrs,
+ 	.shost_attrs = hpsa_shost_attrs,
+ 	.max_sectors = 8192,
++	.no_write_same = 1,
+ };
+ 
+ 
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -6267,7 +6267,8 @@ static struct scsi_host_template driver_
+ 	.use_clustering = ENABLE_CLUSTERING,
+ 	.shost_attrs = ipr_ioa_attrs,
+ 	.sdev_attrs = ipr_dev_attrs,
+-	.proc_name = IPR_NAME
++	.proc_name = IPR_NAME,
++	.no_write_same = 1,
+ };
+ 
+ /**
+--- a/drivers/scsi/ips.c
++++ b/drivers/scsi/ips.c
+@@ -374,6 +374,7 @@ static struct scsi_host_template ips_dri
+ 	.sg_tablesize		= IPS_MAX_SG,
+ 	.cmd_per_lun		= 3,
+ 	.use_clustering		= ENABLE_CLUSTERING,
++	.no_write_same		= 1,
+ };
+ 
+ 
+--- a/drivers/scsi/megaraid.c
++++ b/drivers/scsi/megaraid.c
+@@ -4244,6 +4244,7 @@ static struct scsi_host_template megarai
+ 	.eh_device_reset_handler	= megaraid_reset,
+ 	.eh_bus_reset_handler		= megaraid_reset,
+ 	.eh_host_reset_handler		= megaraid_reset,
++	.no_write_same			= 1,
+ };
+ 
+ static int
+--- a/drivers/scsi/megaraid/megaraid_mbox.c
++++ b/drivers/scsi/megaraid/megaraid_mbox.c
+@@ -367,6 +367,7 @@ static struct scsi_host_template megarai
+ 	.eh_host_reset_handler		= megaraid_reset_handler,
+ 	.change_queue_depth		= megaraid_change_queue_depth,
+ 	.use_clustering			= ENABLE_CLUSTERING,
++	.no_write_same			= 1,
+ 	.sdev_attrs			= megaraid_sdev_attrs,
+ 	.shost_attrs			= megaraid_shost_attrs,
+ };
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -2099,6 +2099,7 @@ static struct scsi_host_template megasas
+ 	.bios_param = megasas_bios_param,
+ 	.use_clustering = ENABLE_CLUSTERING,
+ 	.change_queue_depth = megasas_change_queue_depth,
++	.no_write_same = 1,
+ };
+ 
+ /**
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -4314,6 +4314,7 @@ static struct scsi_host_template pmcraid
+ 	.this_id = -1,
+ 	.sg_tablesize = PMCRAID_MAX_IOADLS,
+ 	.max_sectors = PMCRAID_IOA_MAX_SECTORS,
++	.no_write_same = 1,
+ 	.cmd_per_lun = PMCRAID_MAX_CMD_PER_LUN,
+ 	.use_clustering = ENABLE_CLUSTERING,
+ 	.shost_attrs = pmcraid_host_attrs,
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2627,6 +2627,12 @@ static void sd_read_write_same(struct sc
+ {
+ 	struct scsi_device *sdev = sdkp->device;
+ 
++	if (sdev->host->no_write_same) {
++		sdev->no_write_same = 1;
++
++		return;
++	}
++
+ 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
+ 		sdev->no_report_opcodes = 1;
+ 
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1454,6 +1454,7 @@ static struct scsi_host_template scsi_dr
+ 	.use_clustering =	DISABLE_CLUSTERING,
+ 	/* Make sure we dont get a sg segment crosses a page boundary */
+ 	.dma_boundary =		PAGE_SIZE-1,
++	.no_write_same =	1,
+ };
+ 
+ enum {
+--- a/include/scsi/scsi_host.h
++++ b/include/scsi/scsi_host.h
+@@ -475,6 +475,9 @@ struct scsi_host_template {
+ 	 */
+ 	unsigned ordered_tag:1;
+ 
++	/* True if the controller does not support WRITE SAME */
++	unsigned no_write_same:1;
++
+ 	/*
+ 	 * Countdown for host blocking with no commands outstanding.
+ 	 */
+@@ -674,6 +677,9 @@ struct Scsi_Host {
+ 	/* Don't resume host in EH */
+ 	unsigned eh_noresume:1;
+ 
++	/* The controller does not support WRITE SAME */
++	unsigned no_write_same:1;
++
+ 	/*
+ 	 * Optional work queue to be utilized by the transport
+ 	 */
 
-addr2line points to the same line too.
 
-So, i915_update_dri1_breadcrumb() was called somehow when 
-dev->primary->master->driver_priv was NULL already. A race with 
-i915_master_destroy() or something else?
-
-Hardware info, from the output of lspci -vnn:
-------------------------------
-00:02.0 VGA compatible controller [0300]: Intel Corporation Atom 
-Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller [8086:a011] 
-(prog-if 00 [VGA controller])
-	Subsystem: ASUSTeK Computer Inc. Device [1043:83ac]
-	Flags: bus master, fast devsel, latency 0, IRQ 44
-	Memory at f7e00000 (32-bit, non-prefetchable) [size=512K]
-	I/O ports at dc00 [size=8]
-	Memory at d0000000 (32-bit, prefetchable) [size=256M]
-	Memory at f7d00000 (32-bit, non-prefetchable) [size=1M]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-	Capabilities: [d0] Power Management version 2
-	Kernel driver in use: i915
-------------------------------
-
-Regards,
-Eugene
-
--- 
-Eugene Shatokhin, ROSA Laboratory.
-www.rosalab.com
