@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab3LJNlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:41:40 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:39136 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3LJNli (ORCPT
+	id S1753480Ab3LJNoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:44:25 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:34465 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab3LJNoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:41:38 -0500
-Date: Tue, 10 Dec 2013 14:41:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL RESEND] clocksource/clockevents fixes for 3.13
-Message-ID: <20131210134133.GC31366@gmail.com>
-References: <52A716E0.4080103@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A716E0.4080103@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Dec 2013 08:44:22 -0500
+Date: Tue, 10 Dec 2013 14:44:16 +0100
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Amir Vadai <amirv@mellanox.com>
+Subject: mlx4_core: DMA-API: device driver tries to sync DMA memory it has
+ not allocated
+Message-ID: <20131210144416.31b7002c@thinkpad>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121013-6892-0000-0000-000007295237
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+During network stress test with CONFIG_DMA_API_DEBUG=y we get the following
+message on the server side:
 
-> 
-> Hi Thomas, Ingo,
-> 
-> here are the fixes for 3.13 based on timers/urgent
-> 
->  * Axel Lin added a missing dependency on CLKSRC_MMIO in the Kconfig
-> for the time-efm32.
-> 
->  * Dinh Nguyen fixed read_sched_clock to return the right value for
-> the dw_apb_timer.
-> 
->  * Ezequiel Garcia registered the sched clock after the counter,
-> thus preventing time jump in the traces for the armada-370-xp.
-> 
->  * Marc Zyngier stopped the timer before enabling the irq in order
-> to prevent it to be fired before the clockevent is registered for
-> the sunxi.
-> 
->  * Thierry Reding removed a of_node_put in clksrc-of because the
-> reference is not held.
+[57523.955982] mlx4_core 0000:00:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x0000000143d2c202] [size=1526 bytes]
+[57523.956018] ------------[ cut here ]------------
+[57523.956021] WARNING: at /home/dailybuild/builder/packages/BUILD/linux-3.12.3-20131209/lib/dma-debug.c:986
+[57523.956022] Modules linked in: mlx4_en dm_multipath scsi_dh mlx4_core eadm_sch dm_mod lcs autofs4
+[57523.956034] CPU: 3 PID: 20 Comm: ksoftirqd/3 Not tainted 3.12.3-65.x.20131209-s390xdefault #1
+[57523.956037] task: 000000026f47cb60 ti: 000000026f484000 task.ti: 000000026f484000
+[57523.956044] Krnl PSW : 0404e00180000000 00000000004a0422 (check_sync+0xf2/0x52c)
+[57523.956047]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:2 PM:0 EA:3
+[57523.956047] Krnl GPRS: 0000000000000111 000000008b767e9c 0000000000000092 0000000000000000
+[57523.956051]            00000000004a041e 0000000000000000 00000000000005f6 0000000143d2c202
+[57523.956053]            000000026f487a98 0000000000000001 0000000000a71144 000000026f10dd60
+[57523.956055]            0000000000000000 000000000075bb18 00000000004a041e 000000026f487980
+[57523.956064] Krnl Code: 00000000004a0412: c020002143d7        larl    %r2,8c8bc0
+[57523.956064]            00000000004a0418: c0e50012717a        brasl   %r14,6ee70c
+[57523.956064]           #00000000004a041e: a7f40001            brc     15,4a0420
+[57523.956064]           >00000000004a0422: e330a0000012        lt      %r3,0(%r10)
+[57523.956064]            00000000004a0428: a7740201            brc     7,4a082a
+[57523.956064]            00000000004a042c: a7f401f3            brc     15,4a0812
+[57523.956064]            00000000004a0430: d5078030c030        clc     48(8,%r8),48(%r12)
+[57523.956064]            00000000004a0436: a7c40070            brc     12,4a0516
+[57523.956081] Call Trace:
+[57523.956084] ([<00000000004a041e>] check_sync+0xee/0x52c)
+[57523.956087]  [<00000000004a0a26>] debug_dma_sync_single_for_cpu+0x66/0x74
+[57523.956094]  [<000003ff801fcae0>] mlx4_en_complete_rx_desc+0x15c/0x240 [mlx4_en]
+[57523.956098]  [<000003ff801fe1fa>] mlx4_en_process_rx_cq+0x56a/0xb58 [mlx4_en]
+[57523.956101]  [<000003ff801fe8ea>] mlx4_en_poll_rx_cq+0x92/0xf8 [mlx4_en]
+[57523.956105]  [<00000000005d558c>] net_rx_action+0xa0/0x2f0
+[57523.956109]  [<000000000013cd10>] __do_softirq+0x1e8/0x480
+[57523.956111]  [<000000000013cfe4>] run_ksoftirqd+0x3c/0x80
+[57523.956114]  [<000000000016f496>] smpboot_thread_fn+0x2c6/0x2e8
+[57523.956118]  [<0000000000163834>] kthread+0xd0/0xe4
+[57523.956123]  [<00000000006ff19e>] kernel_thread_starter+0x6/0xc
+[57523.956125]  [<00000000006ff198>] kernel_thread_starter+0x0/0xc
+[57523.956127] 1 lock held by ksoftirqd/3/20:
+[57523.956129]  #0:  (&(&dma_entry_hash[i].lock)->rlock){-.-...}, at: [<000000000049f1d6>] get_hash_bucket+0x4a/0x64
+[57523.956135] Last Breaking-Event-Address:
+[57523.956137]  [<00000000004a041e>] check_sync+0xee/0x52c
+[57523.956139] ---[ end trace ec82af84e1d16c5f ]---
 
-(For future reference, please post all patches not just a combo 
-patch.)
-
-> Dinh Nguyen (2):
->       clocksource: dw_apb_timer: Move timer defines to header file.
->       clocksource: dw_apb_timer_of: Fix read_sched_clock
-
-Nit: we generally don't use periods at the end of titles, it looks 
-inconsistent in shortlogs.
-
-> diff --git a/drivers/clocksource/dw_apb_timer.c
-> b/drivers/clocksource/dw_apb_timer.c
-> index e54ca10..c3a8f52 100644
-> --- a/drivers/clocksource/dw_apb_timer.c
-> +++ b/drivers/clocksource/dw_apb_timer.c
-> @@ -18,25 +18,6 @@
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> 
-> -#define APBT_MIN_PERIOD			4
-> -#define APBT_MIN_DELTA_USEC		200
-> -
-> -#define APBTMR_N_LOAD_COUNT		0x00
-> -#define APBTMR_N_CURRENT_VALUE		0x04
-> -#define APBTMR_N_CONTROL		0x08
-> -#define APBTMR_N_EOI			0x0c
-> -#define APBTMR_N_INT_STATUS		0x10
-> -
-> -#define APBTMRS_INT_STATUS		0xa0
-> -#define APBTMRS_EOI			0xa4
-> -#define APBTMRS_RAW_INT_STATUS		0xa8
-> -#define APBTMRS_COMP_VERSION		0xac
-> -
-> -#define APBTMR_CONTROL_ENABLE		(1 << 0)
-> -/* 1: periodic, 0:free running. */
-> -#define APBTMR_CONTROL_MODE_PERIODIC	(1 << 1)
-> -#define APBTMR_CONTROL_INT		(1 << 2)
-> -
->  static inline struct dw_apb_clock_event_device *
->  ced_to_dw_apb_ced(struct clock_event_device *evt)
->  {
-> diff --git a/drivers/clocksource/dw_apb_timer_of.c
-> b/drivers/clocksource/dw_apb_timer_of.c
-> index 45ba8ae..c3fe17e 100644
-> --- a/drivers/clocksource/dw_apb_timer_of.c
-> +++ b/drivers/clocksource/dw_apb_timer_of.c
-> @@ -102,18 +102,17 @@ static void __init add_clocksource(struct
-> device_node *source_timer)
->  	 * timer is found. sched_io_base then points to the current_value
->  	 * register of the clocksource timer.
->  	 */
-> -	sched_io_base = iobase + 0x04;
-> +	sched_io_base = iobase;
->  	sched_rate = rate;
->  }
-> 
->  static u64 read_sched_clock(void)
->  {
-> -	return __raw_readl(sched_io_base);
-> +	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
-
-AFAICS the minimal fix here for v3.13 would be to just do:
-
-> -	return __raw_readl(sched_io_base);
-> +	return ~__raw_readl(sched_io_base);
-
-Right? That way the fix is just a oneliner and we could delay the 
-header file and magic-constants use cleanups to v3.14.
-
-Thanks,
-
-	Ingo
