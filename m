@@ -1,136 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab3LJObq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:31:46 -0500
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:46203 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab3LJObo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:31:44 -0500
-Message-ID: <52A725CE.5090502@linaro.org>
-Date: Tue, 10 Dec 2013 15:31:42 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754149Ab3LJOcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:32:06 -0500
+Received: from sandeen.net ([63.231.237.45]:59558 "EHLO sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752376Ab3LJOcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 09:32:03 -0500
+Message-ID: <52A725BB.8080602@sandeen.net>
+Date: Tue, 10 Dec 2013 08:31:23 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Dinh Nguyen <dinguyen@altera.com>, Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL RESEND] clocksource/clockevents fixes for 3.13
-References: <52A716E0.4080103@linaro.org> <20131210134133.GC31366@gmail.com> <1386685286.6211.1.camel@linux-builds1>
-In-Reply-To: <1386685286.6211.1.camel@linux-builds1>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Josh Boyer <jwboyer@fedoraproject.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Luis Henriques <luis.henriques@canonical.com>,
+        Brian Foster <bfoster@redhat.com>, Dave Chinner <dchinner@redhat.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>, xfs@oss.sgi.com,
+        Ben Myers <bpm@sgi.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Kees Cook <keescook@google.com>
+Subject: Re: XFS security fix never sent to -stable?
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>	<20131209121534.GE4278@hercules>	<CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>	<20131209235523.GW31386@dastard> <20131210075621.GA30135@kroah.com> <CA+5PVA7L0u9cq0Zvnw3J7Yun3+TfMH3fPC3M8=mvxT3EGKX=fQ@mail.gmail.com>
+In-Reply-To: <CA+5PVA7L0u9cq0Zvnw3J7Yun3+TfMH3fPC3M8=mvxT3EGKX=fQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 03:21 PM, Dinh Nguyen wrote:
-> On Tue, 2013-12-10 at 14:41 +0100, Ingo Molnar wrote:
->> * Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+On 12/10/13, 7:15 AM, Josh Boyer wrote:
+> On Tue, Dec 10, 2013 at 2:56 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Tue, Dec 10, 2013 at 10:55:23AM +1100, Dave Chinner wrote:
+>>> [cc xfs list, cc stable@vger.kernel.org]
+>>>
+>>> On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
+>>>> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
+>>>> <luis.henriques@canonical.com> wrote:
+>>>>> On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
+>>>>>> capability check to free eofblocks ioctl") is a security fix that was
+>>>>>> never sent to -stable? From what I can see, it was introduced in 3.8
+>>>>>> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+>>>>>> XFS_IOC_FREE_EOFBLOCKS ioctl").
+>>>>>>
+>>>>>> I don't see this in the 3.8.y tree. Should it be added there and newer?
+>>>>>
+>>>>> Thanks Kees, I'm queuing it for the 3.11 kernel.
+>>>>
+>>>> There's also this one:
+>>>>
+>>>> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
+>>>>
+>>>> It fixes CVE-2013-6382
+>>>
+>>> First I've heard about it there being a CVE for that bug. Since when
+>>> has it been considered best practice to publish CVEs without first
+>>> (or ever) directly contacting the relevant upstream developers?
+>>>
+>>> But, regardless of how broken I think the CVE process is, commit
+>>> 071c529 ("xfs: underflow bug in xfs_attrlist_by_handle()") should be
+>>> picked up by the stable kernels.
 >>
->>>
->>> Hi Thomas, Ingo,
->>>
->>> here are the fixes for 3.13 based on timers/urgent
->>>
->>>   * Axel Lin added a missing dependency on CLKSRC_MMIO in the Kconfig
->>> for the time-efm32.
->>>
->>>   * Dinh Nguyen fixed read_sched_clock to return the right value for
->>> the dw_apb_timer.
->>>
->>>   * Ezequiel Garcia registered the sched clock after the counter,
->>> thus preventing time jump in the traces for the armada-370-xp.
->>>
->>>   * Marc Zyngier stopped the timer before enabling the irq in order
->>> to prevent it to be fired before the clockevent is registered for
->>> the sunxi.
->>>
->>>   * Thierry Reding removed a of_node_put in clksrc-of because the
->>> reference is not held.
->>
->> (For future reference, please post all patches not just a combo
->> patch.)
->>
->>> Dinh Nguyen (2):
->>>        clocksource: dw_apb_timer: Move timer defines to header file.
->>>        clocksource: dw_apb_timer_of: Fix read_sched_clock
->>
->> Nit: we generally don't use periods at the end of titles, it looks
->> inconsistent in shortlogs.
->>
->>> diff --git a/drivers/clocksource/dw_apb_timer.c
->>> b/drivers/clocksource/dw_apb_timer.c
->>> index e54ca10..c3a8f52 100644
->>> --- a/drivers/clocksource/dw_apb_timer.c
->>> +++ b/drivers/clocksource/dw_apb_timer.c
->>> @@ -18,25 +18,6 @@
->>>   #include <linux/io.h>
->>>   #include <linux/slab.h>
->>>
->>> -#define APBT_MIN_PERIOD			4
->>> -#define APBT_MIN_DELTA_USEC		200
->>> -
->>> -#define APBTMR_N_LOAD_COUNT		0x00
->>> -#define APBTMR_N_CURRENT_VALUE		0x04
->>> -#define APBTMR_N_CONTROL		0x08
->>> -#define APBTMR_N_EOI			0x0c
->>> -#define APBTMR_N_INT_STATUS		0x10
->>> -
->>> -#define APBTMRS_INT_STATUS		0xa0
->>> -#define APBTMRS_EOI			0xa4
->>> -#define APBTMRS_RAW_INT_STATUS		0xa8
->>> -#define APBTMRS_COMP_VERSION		0xac
->>> -
->>> -#define APBTMR_CONTROL_ENABLE		(1 << 0)
->>> -/* 1: periodic, 0:free running. */
->>> -#define APBTMR_CONTROL_MODE_PERIODIC	(1 << 1)
->>> -#define APBTMR_CONTROL_INT		(1 << 2)
->>> -
->>>   static inline struct dw_apb_clock_event_device *
->>>   ced_to_dw_apb_ced(struct clock_event_device *evt)
->>>   {
->>> diff --git a/drivers/clocksource/dw_apb_timer_of.c
->>> b/drivers/clocksource/dw_apb_timer_of.c
->>> index 45ba8ae..c3fe17e 100644
->>> --- a/drivers/clocksource/dw_apb_timer_of.c
->>> +++ b/drivers/clocksource/dw_apb_timer_of.c
->>> @@ -102,18 +102,17 @@ static void __init add_clocksource(struct
->>> device_node *source_timer)
->>>   	 * timer is found. sched_io_base then points to the current_value
->>>   	 * register of the clocksource timer.
->>>   	 */
->>> -	sched_io_base = iobase + 0x04;
->>> +	sched_io_base = iobase;
->>>   	sched_rate = rate;
->>>   }
->>>
->>>   static u64 read_sched_clock(void)
->>>   {
->>> -	return __raw_readl(sched_io_base);
->>> +	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
->>
->> AFAICS the minimal fix here for v3.13 would be to just do:
->>
->>> -	return __raw_readl(sched_io_base);
->>> +	return ~__raw_readl(sched_io_base);
->>
->> Right? That way the fix is just a oneliner and we could delay the
->> header file and magic-constants use cleanups to v3.14.
->
-> Yes. That will be fine. Do you need me to send a new patch that does
-> just that?
+>> I don't see that commit in Linus's tree, is it not there yet?
+> 
+> Not yet.  Ben said it's applied but I'm not sure where that is.
 
-Yes, please.
+xfs git tree:
 
+http://oss.sgi.com/cgi-bin/gitweb.cgi?p=xfs/xfs.git;a=commitdiff;h=071c529eb672648ee8ca3f90944bcbcc730b4c06
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+-Eric
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> josh
 
