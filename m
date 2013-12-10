@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3LJMY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:24:28 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:51614 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3LJMYW (ORCPT
+	id S1753388Ab3LJMY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:24:56 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59754 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab3LJMYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:24:22 -0500
-From: Jean Pihet <jean.pihet@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo <acme@ghostprotocols.net>
-Cc: patches@linaro.org, Will Deacon <will.deacon@arm.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 1/2] perf: add per-feature check flags
-Date: Tue, 10 Dec 2013 13:24:03 +0100
-Message-Id: <1386678244-13535-2-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386678244-13535-1-git-send-email-jean.pihet@linaro.org>
-References: <1386678244-13535-1-git-send-email-jean.pihet@linaro.org>
+	Tue, 10 Dec 2013 07:24:52 -0500
+Date: Tue, 10 Dec 2013 13:24:49 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20131210122449.GA30891@gmail.com>
+References: <1386617830-18926-1-git-send-email-acme@infradead.org>
+ <20131210111229.GB26659@gmail.com>
+ <20131210114421.GI8098@ghostprotocols.net>
+ <52A70558.90808@intel.com>
+ <20131210121042.GK8098@ghostprotocols.net>
+ <52A707A2.5020802@intel.com>
+ <20131210122213.GL8098@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210122213.GL8098@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CFLAGS and LDFLAGS for each feature to be checked. This allows
-to pass flags and parameters to the feature checks compilation.
-Also simplifies the feature check makefile, to come in a subsequent patch.
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
----
- tools/perf/config/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index bae1072..2afb132 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -102,7 +102,7 @@ endif
- 
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
--- 
-1.7.11.7
+> Em Tue, Dec 10, 2013 at 02:22:58PM +0200, Adrian Hunter escreveu:
+> > On 10/12/13 14:10, Arnaldo Carvalho de Melo wrote:
+> > > Em Tue, Dec 10, 2013 at 02:13:12PM +0200, Adrian Hunter escreveu:
+> > >> On 10/12/13 13:44, Arnaldo Carvalho de Melo wrote:
+> > >>> Em Tue, Dec 10, 2013 at 12:12:29PM +0100, Ingo Molnar escreveu:
+> > >>>>
+> > >>>> Hm, I've unpulled it because 'perf top' crashes on exit, in 
+> > >>>> dso__delete():
+> > >>>
+> > >>> 495		if (dso->sname_alloc)
+> > >>> 496			free((char *)dso->short_name)
+> > >>>
+> > >>> Yeah, must be that basename() patch from Stephane, I'll work on a fix
+> > >>> and resubmit this batch, thanks for the report.
+> > >>
+> > >> The problem is sname_alloc is not maintained.  Perhaps it should be
+> > >> set in dso__set_short_name() e.g.
+> > > 
+> > > Yeah, sounds better than having all callers manage that thing, quickie,
+> > > was this with Stephane's patch applied?
+> > 
+> > Yes it was at
+> > 	e993d10caeb6dca690dbaf86e1981ba240d1414a
+> > 	perf symbols: fix bug in usage of the basename() function
+> 
+> Yes, this is the buggy patch, my question was if Ingo did the 
+> changes that streamlined the dso->sname_alloc management with 
+> e993d10caeb6 applied to his working tree.
 
+My current perf/core head is:
+
+  789790791ad2 tools/perf/build: Fix install dependency
+
+which does not have e993d10c.
+
+[ Btw., a small nit: the capitalization of the commit title looks 
+  inconsistent. ]
+
+Thanks,
+
+	Ingo
