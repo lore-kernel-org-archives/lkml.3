@@ -1,60 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab3LJLAL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:00:11 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38398 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3LJLAI (ORCPT
+	id S1752739Ab3LJLAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:00:31 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51476 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3LJLA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:00:08 -0500
+	Tue, 10 Dec 2013 06:00:29 -0500
+Message-ID: <52A6F455.4070807@hitachi.com>
+Date: Tue, 10 Dec 2013 20:00:37 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1312091427370.17848@chino.kir.corp.google.com>
-References: <10123265.xdzIJ6I9nc@hex>
-	<alpine.DEB.2.02.1312091427370.17848@chino.kir.corp.google.com>
-Date: Tue, 10 Dec 2013 22:00:07 +1100
-X-Google-Sender-Auth: UFkpLQXhHbGrFgcxfOidMmI5on8
-Message-ID: <CABqErrFyb++8g6PcFOhoOw22+mTCOrnGPuSMPdfBdP=nNnzW8A@mail.gmail.com>
-Subject: Re: [ANNOUNCE] BFS CPU scheduler v0.444 for linux-3.12
-From: Con Kolivas <kernel@kolivas.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 12/17] tracing/probes: Implement 'memory' fetch method
+ for uprobes
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-13-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1386570005-3368-13-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 December 2013 09:30, David Rientjes <rientjes@google.com> wrote:
-> Any reason that BFS hardcodes CONFIG_SLUB as the only slab allocator
-> allowed?  I've cc'd Pekka and Christoph and I'm sure they'd be interested
-> in any reasons that CONFIG_SLAB doesn't work correctly with a different
-> drop-in scheduler, or is it just that interactivity has tested better with
-> slub?
+(2013/12/09 15:20), Namhyung Kim wrote:
 
-Hi David.
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index b4f28bc39959..d0b4a42dafcf 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -103,83 +103,6 @@ DEFINE_BASIC_FETCH_FUNCS(retval)
+>  #define fetch_retval_string		NULL
+>  #define fetch_retval_string_size	NULL
+>  
+> -#define DEFINE_FETCH_memory(type)					\
+> -__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
+> -					  void *addr, void *dest)	\
+> -{									\
+> -	type retval;							\
+> -	if (probe_kernel_address(addr, retval))				\
+> -		*(type *)dest = 0;					\
+> -	else								\
+> -		*(type *)dest = retval;					\
+> -}
+> -DEFINE_BASIC_FETCH_FUNCS(memory)
+> -/*
+> - * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
+> - * length and relative data location.
+> - */
+> -__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+> -						      void *addr, void *dest)
+> -{
+> -	long ret;
+> -	int maxlen = get_rloc_len(*(u32 *)dest);
+> -	u8 *dst = get_rloc_data(dest);
+> -	u8 *src = addr;
+> -	mm_segment_t old_fs = get_fs();
+> -
+> -	if (!maxlen)
+> -		return;
+> -
+> -	/*
+> -	 * Try to get string again, since the string can be changed while
+> -	 * probing.
+> -	 */
+> -	set_fs(KERNEL_DS);
+> -	pagefault_disable();
+> -
+> -	do
+> -		ret = __copy_from_user_inatomic(dst++, src++, 1);
+> -	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
+> -
+> -	dst[-1] = '\0';
+> -	pagefault_enable();
+> -	set_fs(old_fs);
+> -
+> -	if (ret < 0) {	/* Failed to fetch string */
+> -		((u8 *)get_rloc_data(dest))[0] = '\0';
+> -		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
+> -	} else {
+> -		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
+> -					      get_rloc_offs(*(u32 *)dest));
+> -	}
+> -}
+> -
+> -/* Return the length of string -- including null terminal byte */
+> -__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+> -							void *addr, void *dest)
+> -{
+> -	mm_segment_t old_fs;
+> -	int ret, len = 0;
+> -	u8 c;
+> -
+> -	old_fs = get_fs();
+> -	set_fs(KERNEL_DS);
+> -	pagefault_disable();
+> -
+> -	do {
+> -		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
+> -		len++;
+> -	} while (c && ret == 0 && len < MAX_STRING_SIZE);
+> -
+> -	pagefault_enable();
+> -	set_fs(old_fs);
+> -
+> -	if (ret < 0)	/* Failed to check the length */
+> -		*(u32 *)dest = 0;
+> -	else
+> -		*(u32 *)dest = len;
+> -}
+> -
+>  /* Dereference memory access function */
+>  struct deref_fetch_param {
+>  	struct fetch_param	orig;
+> @@ -493,7 +416,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>  			dprm->offset = offset;
+>  			dprm->fetch = t->fetch[FETCH_MTD_memory];
+>  			dprm->fetch_size = get_fetch_size_function(t,
+> -							dprm->fetch, ttbl);
+> +							dprm->fetch, ftbl);
 
-Thanks, and an interesting question you have there.
+What is this change? I guess it should be included in 11/17...
+The rest of this patch is good for me.
 
-To be honest it's been probably over 2 years since I hard coded SLUB
-into the BFS patch and all I can recall is that it caused a crash that
-was purely due to enabling SLAB that went away with SLUB when used
-with BFS. Despite the possibility that BFS exposes an issue in the
-kernel that may be possible with the mainline scheduler (due to BFS
-being extremely good at exposing race conditions), if the problem is
-never reported with mainline, it's probably of no significance to
-mainline. Changes in scheduler initialisation sequence alone may be
-the real reason. The same goes with the offline CPU code which had to
-be drastically reworked to work properly with suspend/hibernate on
-BFS.
+Thank you,
 
-There certainly have been cases that BFS has exposed races that have
-only become apparent in mainline a long time later. Here's one I
-recall reporting as a potential issue a long time ago here:
-http://marc.info/?l=linux-kernel&m=130613435113919&w=2
-It was instantly discounted as not a problem, yet about 6 months later
-a real issue in this code showed up.
 
-I have no idea if the CONFIG_SLAB problem falls into this category.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Regards,
-Con
+
