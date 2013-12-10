@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab3LJGy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:54:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:34121 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab3LJGyz (ORCPT
+	id S1751959Ab3LJGzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:55:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51490 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3LJGy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:54:55 -0500
+	Tue, 10 Dec 2013 01:54:59 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Guo Chao <yan@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 2/5] PCI: Don't use 4G bus address directly in resource allocation
-Date: Mon,  9 Dec 2013 22:54:41 -0800
-Message-Id: <1386658484-15774-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 3/5] PCI: Try to allocate mem64 above 4G at first
+Date: Mon,  9 Dec 2013 22:54:42 -0800
+Message-Id: <1386658484-15774-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386658484-15774-1-git-send-email-yinghai@kernel.org>
 References: <1386658484-15774-1-git-send-email-yinghai@kernel.org>
@@ -22,122 +22,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current we are using PCIBIOS_MAX_MEM_32 (4G limit) directly in the
-pci_bus_alloc_resource to make sure that don't allocate too high
-pref 64bit above 4G in the system that does not support that.
+On system with more pcie cards, we do not have enough range under 4G
+to allocate those pci devices.
 
-That is not right, as allocate_resource() should take resource limit.
+On 64bit system, we could try to allocate mem64 above 4G at first,
+and fall back to below 4g if it can not find any above 4g.
 
-Add pci_clip_resource() and use it check the pci bus address limit.
+x86 32bit without X86_PAE support will have bottom set to 0, because
+resource_size_t is 32bit.
+For 32bit kernel that resource_size_t is 64bit when pae is support.
+we are safe because iomem_resource is limited to 32bit according to
+x86_phys_bits.
 
-At last remove PCIBIOS_MAX_MEM_32.
+-v2: update bottom assigning to make it clear for non-pae support machine.
+-v3: Bjorn's change:
+        use MAX_RESOURCE instead of -1
+        use start/end instead of bottom/max
+        for all arch instead of just x86_64
+-v4: updated after PCI_MAX_RESOURCE_32 change.
+-v5: restore io handling to use PCI_MAX_RESOURCE_32 as limit.
+-v6: checking pcibios_resource_to_bus return for every bus res, to decide it
+	if we need to try high at first.
+     It supports all arches instead of just x86_64.
+-v7: split 4G limit change out to another patch according to Bjorn.
+     also use pci_clip_resource instead.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/pci.h |  1 -
- drivers/pci/bus.c          | 41 ++++++++++++++++++++++++++++++++++-------
- include/linux/pci.h        |  4 ----
- 3 files changed, 34 insertions(+), 12 deletions(-)
+ drivers/pci/bus.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 947b5c4..122c299 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -125,7 +125,6 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
- 
- /* generic pci stuff */
- #include <asm-generic/pci.h>
--#define PCIBIOS_MAX_MEM_32 0xffffffff
- 
- #ifdef CONFIG_NUMA
- /* Returns the node based on pci bus */
 diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index fc1b740..3ad4fd9 100644
+index 3ad4fd9..45d8de5 100644
 --- a/drivers/pci/bus.c
 +++ b/drivers/pci/bus.c
-@@ -98,6 +98,25 @@ void pci_bus_remove_resources(struct pci_bus *bus)
- 	}
+@@ -99,6 +99,8 @@ void pci_bus_remove_resources(struct pci_bus *bus)
  }
  
-+static struct pci_bus_region pci_mem_32 = {0, 0xffffffff};
-+
-+static void pci_clip_resource(struct resource *res, struct pci_bus *bus,
-+			      struct pci_bus_region *region)
-+{
-+	struct pci_bus_region r;
-+
-+	pcibios_resource_to_bus(bus, &r, res);
-+	if (r.start < region->start)
-+		r.start = region->start;
-+	if (r.end > region->end)
-+		r.end = region->end;
-+
-+	if (r.end < r.start)
-+		res->end = res->start - 1;
-+	else
-+		pcibios_bus_to_resource(bus, res, &r);
-+}
-+
- /**
-  * pci_bus_alloc_resource - allocate a resource from a parent bus
-  * @bus: PCI bus
-@@ -125,15 +144,12 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- {
- 	int i, ret = -ENOMEM;
- 	struct resource *r;
--	resource_size_t max = -1;
+ static struct pci_bus_region pci_mem_32 = {0, 0xffffffff};
++static struct pci_bus_region pci_mem_64 = {(resource_size_t)(1ULL<<32),
++					   (resource_size_t)(-1ULL)};
  
- 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
+ static void pci_clip_resource(struct resource *res, struct pci_bus *bus,
+ 			      struct pci_bus_region *region)
+@@ -149,6 +151,7 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
  
--	/* don't allocate too high if the pref mem doesn't support 64bit*/
--	if (!(res->flags & IORESOURCE_MEM_64))
--		max = PCIBIOS_MAX_MEM_32;
--
  	pci_bus_for_each_resource(bus, r, i) {
-+		struct resource avail;
-+
+ 		struct resource avail;
++		int try_again = 0;
+ 
  		if (!r)
  			continue;
+@@ -165,15 +168,23 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
  
-@@ -147,10 +163,21 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
- 		    !(res->flags & IORESOURCE_PREFETCH))
- 			continue;
- 
-+		/*
-+		 * don't allocate too high if the pref mem doesn't
-+		 * support 64bit.
-+		 */
-+		avail = *r;
-+		if (!(res->flags & IORESOURCE_MEM_64)) {
-+			pci_clip_resource(&avail, bus, &pci_mem_32);
+ 		/*
+ 		 * don't allocate too high if the pref mem doesn't
+-		 * support 64bit.
++		 * support 64bit, also if this is a 64-bit mem
++		 * resource, try above 4GB first
+ 		 */
+ 		avail = *r;
+-		if (!(res->flags & IORESOURCE_MEM_64)) {
++		if (res->flags & IORESOURCE_MEM_64) {
++			pci_clip_resource(&avail, bus, &pci_mem_64);
 +			if (!resource_size(&avail))
-+				continue;
-+		}
-+
++				avail = *r;
++			else
++				try_again = 1;
++		} else {
+ 			pci_clip_resource(&avail, bus, &pci_mem_32);
+ 			if (!resource_size(&avail))
+ 				continue;
+ 		}
+ 
++again:
  		/* Ok, try it out.. */
  		ret = allocate_resource(r, res, size,
--					r->start ? : min,
--					max, align,
-+					max(avail.start, r->start ? : min),
-+					avail.end, align,
+ 					max(avail.start, r->start ? : min),
+@@ -181,6 +192,12 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
  					alignf, alignf_data);
  		if (ret == 0)
  			break;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index da069fa..99e9040 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1485,10 +1485,6 @@ static inline struct pci_dev *pci_dev_get(struct pci_dev *dev)
- 
- #include <asm/pci.h>
- 
--#ifndef PCIBIOS_MAX_MEM_32
--#define PCIBIOS_MAX_MEM_32 (-1)
--#endif
--
- /* these helpers provide future and backwards compatibility
-  * for accessing popular PCI BAR info */
- #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
++
++		if (try_again) {
++			avail = *r;
++			try_again = 0;
++			goto again;
++		}
+ 	}
+ 	return ret;
+ }
 -- 
 1.8.4
 
