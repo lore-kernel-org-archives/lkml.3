@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab3LJQeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:34:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48960 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675Ab3LJQeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:34:13 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20131210143540.GA13909@redhat.com>
-References: <20131210001620.GA7938@www.outflux.net> <52A66190.9060907@zytor.com> <CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com> <20131210143540.GA13909@redhat.com>
+	id S1754770Ab3LJQfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:35:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:34911 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab3LJQfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 11:35:45 -0500
+Date: Tue, 10 Dec 2013 10:34:30 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 11/15] mfd: menelaus: Start to use irqdomain
+Message-ID: <20131210163430.GG22750@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20131209161422.GC24047@saruman.home>
+ <1386606085-26838-1-git-send-email-balbi@ti.com>
+ <1386606085-26838-11-git-send-email-balbi@ti.com>
+ <20131210092050.GT12675@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 10 Dec 2013 08:32:38 -0800
-To: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Rob Landley <rob@landley.net>, Eric Biederman <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        kexec@lists.infradead.org
-Message-ID: <f4fbae55-7d7b-400d-b50f-258002371368@email.android.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vJguvTgX93MxBIIe"
+Content-Disposition: inline
+In-Reply-To: <20131210092050.GT12675@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Of course it isn't.
+--vJguvTgX93MxBIIe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Vivek Goyal <vgoyal@redhat.com> wrote:
->On Mon, Dec 09, 2013 at 05:06:10PM -0800, Kees Cook wrote:
->> On Mon, Dec 9, 2013 at 4:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> > On 12/09/2013 04:16 PM, Kees Cook wrote:
->> >> For general-purpose (i.e. distro) kernel builds it makes sense to
->build with
->> >> CONFIG_KEXEC to allow end users to choose what kind of things they
->want to do
->> >> with kexec. However, in the face of trying to lock down a system
->with such
->> >> a kernel, there needs to be a way to disable kexec (much like
->module loading
->> >> can be disabled). Without this, it is too easy for the root user
->to modify
->> >> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled
->are set.
->> >>
->> >> Signed-off-by: Kees Cook <keescook@chromium.org>
->> >> Acked-by: Rik van Riel <riel@redhat.com>
->> >
->> > So the logic is to load a crashkernel and then lock down the
->machine
->> > before services, networking etc. are enabled?
->> 
->> Right, or to just turn it off at boot time if kexec will not be used
->at all.
->
->kdump kernel is loaded with the help of kdump service. Different
->distro's
->might have different dependencies for that serivce. But recently in
->fedora
->we wait network to come up before starting that service. (So that nfs
->targets can be mounted and checked for valid dump destinations).
->
->IOW, crash kernel is loaded quite late in the game (quite a few
->services
->have run and possibly networking is up too). To me, practically one
->will
->disable kdump also if you change state of this knob early.
->
->Thanks
->Vivek
+On Tue, Dec 10, 2013 at 09:20:50AM +0000, Lee Jones wrote:
+> > Introduce an irq_chip and irq_domain for menelaus driver. Following
+> > patches will convert uses to traditional request_threaded_irq().
+> >=20
+> > While at that, some better error handling had to be added, so we could
+> > free irq descs we allocated.
+> >=20
+> > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
+> >  drivers/mfd/menelaus.c | 127 +++++++++++++++++++++++++++++++++++++++++=
++++++---
+>=20
+> <snip>
+>=20
+> > +	irq_domain_add_legacy(node, MENELAUS_NR_IRQS, irq_base, 0,
+> > +			&irq_domain_simple_ops, m);
+>=20
+> When will this driver become DT compliant?
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+when OMAP2 becomes DT-compliant. It still boots with legacy board-file +
+platform_data.
+
+> > +	m->irq_base =3D irq_base;
+> > +
+> > +	for (i =3D irq_base; i < irq_base + MENELAUS_NR_IRQS; i++) {
+> > +		irq_set_chip_data(i, m);
+> > +		irq_set_chip_and_handler(i, &menelaus_irq_chip,
+> > +				handle_simple_irq);
+> > +		irq_set_nested_thread(i, 1);
+> > +		set_irq_flags(i, IRQF_VALID);
+>=20
+> This assumes that this h/w only exists on ARM platforms. Is that true?
+
+it was made *only* for Nokia to use on their ARM-only internet tablets.
+
+--=20
+balbi
+
+--vJguvTgX93MxBIIe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSp0KWAAoJEIaOsuA1yqRELeMP/3vnmiN4TrDab5alk8KN5CfW
+d6WcI6vFBahkeePlZssHfu5687RqBy3U0ucwCJxFOCOY+ooWivZO6paGr/m8zh1t
+oxj3aM0TvbIZKN875UiVinDl8RrvqhWvycdpbBZNVUIm310HsFY7pYav5pUN57Ve
+GqD6yNw+++kuHonl3DAy/d4oRREzm6zkEKPxXm/1IbmNTkg/vuuudsWIrO6mjIG/
+hdcmFdzAh9w02A1RzHyMrdqAEWGNGCy9hxnXAzUmyMm4crxKIncEeUHA41Jl0RWl
+T20TFZOHj96ffLikEAXXej73BgH+DDk5Qgq0u1aWEoDdtsQ/TwK7P3wtWjddnEO2
+gzZeiw7Fu2DdUvyzDhbQy8mbiqoCdsBxFIaTxj3bBtX4XEE3ZD79G5oj2yFLc6Yu
+uHprF8H5hdGptRuE5a29V2B+lbPikMU4O4T27kCN4ZxbJ+3du81qasdvmcIRuSIQ
++tShmQ2PUtyU5WaZHxdZhFrhjy07rspjuHIeHqtd0/8UWLFRQuHSkYNOJjXqnSqC
+857mfDCrGjx9zS7RzhwvkVx8aR3KqKDqjCrWii3S+vgMUAnsxaYBJ+d/F7tXhCvK
+uGB4AkDyFVqd6mh62k7fhmavVFdX50O5OtcMR4oArXn/DdX6OwKGNluMkWBs+eey
+Y2cs0MW/Dz951jsQkm9l
+=vtgS
+-----END PGP SIGNATURE-----
+
+--vJguvTgX93MxBIIe--
