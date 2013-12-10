@@ -1,132 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab3LJU1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:27:48 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:45719 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3LJU1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:27:46 -0500
-From: David Ahern <dsahern@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] perf: POSIX CLOCK_PERF to report current time value
-Date: Tue, 10 Dec 2013 13:27:39 -0700
-Message-Id: <1386707259-21725-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	id S1751982Ab3LJU2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:28:11 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:40223 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574Ab3LJU2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:28:09 -0500
+Date: Tue, 10 Dec 2013 12:27:45 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: [PATCH -next] x86, kaslr: clarify RANDOMIZE_BASE_MAX_OFFSET
+Message-ID: <20131210202745.GA2961@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pawel Moll <pawel.moll@arm.com>
+The help text for RANDOMIZE_BASE_MAX_OFFSET was confusing. This has been
+clarified, and updated to be an export-only tunable.
 
-To co-relate user space events with the perf events stream
-a current (as in: "what time(stamp) is it now?") time value
-must be made available.
-
-This patch adds a POSIX clock returning the perf_clock()
-value and accesible from userspace:
-
-    #include <time.h>
-
-    struct timespec ts;
-
-    clock_gettime(CLOCK_PERF, &ts);
-
-Updated to 3.13
-
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- include/uapi/linux/time.h |  1 +
- kernel/events/core.c      | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
+ arch/x86/Kconfig |   29 ++++++++++++++++++-----------
+ 1 file changed, 18 insertions(+), 11 deletions(-)
 
-diff --git a/include/uapi/linux/time.h b/include/uapi/linux/time.h
-index e75e1b6ff27f..b07f07914a13 100644
---- a/include/uapi/linux/time.h
-+++ b/include/uapi/linux/time.h
-@@ -56,6 +56,7 @@ struct itimerval {
- #define CLOCK_BOOTTIME_ALARM		9
- #define CLOCK_SGI_CYCLE			10	/* Hardware specific */
- #define CLOCK_TAI			11
-+#define CLOCK_PERF            12
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a5c83b9dad45..e5fd1e67fd73 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1752,26 +1752,33 @@ config RANDOMIZE_BASE
+ 	   possible. At best, due to page table layouts, 64-bit can use
+ 	   9 bits of entropy and 32-bit uses 8 bits.
  
- #define MAX_CLOCKS			16
- #define CLOCKS_MASK			(CLOCK_REALTIME | CLOCK_MONOTONIC)
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 72348dc192c1..87aa36ac68f7 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -39,6 +39,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/mm_types.h>
- #include <linux/cgroup.h>
-+#include <linux/posix-timers.h>
- 
- #include "internal.h"
- 
-@@ -295,6 +296,19 @@ static inline u64 perf_clock(void)
- 	return local_clock();
- }
- 
-+static int perf_posix_clock_getres(const clockid_t which_clock,
-+		struct timespec *tp)
-+{
-+	*tp = ns_to_timespec(TICK_NSEC);
-+	return 0;
-+}
++	   If unsure, say N.
 +
-+static int perf_posix_clock_get(clockid_t which_clock, struct timespec *tp)
-+{
-+	*tp = ns_to_timespec(perf_clock());
-+	return 0;
-+}
+ config RANDOMIZE_BASE_MAX_OFFSET
+-	hex "Maximum ASLR offset allowed"
++	hex "Maximum kASLR offset allowed" if EXPERT
+ 	depends on RANDOMIZE_BASE
+ 	range 0x0 0x20000000 if X86_32
+ 	default "0x20000000" if X86_32
+ 	range 0x0 0x40000000 if X86_64
+ 	default "0x40000000" if X86_64
+ 	---help---
+-	 Determines the maximal offset in bytes that will be applied to the
+-	 kernel when Address Space Layout Randomization (ASLR) is active.
+-	 Must be less than or equal to the actual physical memory on the
+-	 system. This must be a multiple of CONFIG_PHYSICAL_ALIGN.
++	  The lesser of RANDOMIZE_BASE_MAX_OFFSET and available physical
++	  memory is used to determine the maximal offset in bytes that will
++	  be applied to the kernel when kernel Address Space Layout
++	  Randomization (kASLR) is active. This must be a multiple of
++	  PHYSICAL_ALIGN.
 +
- static inline struct perf_cpu_context *
- __get_cpu_context(struct perf_event_context *ctx)
- {
-@@ -7904,6 +7918,10 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
++	  On 32-bit this is limited to 512MiB by page table layouts. The
++	  default is 512MiB.
  
- void __init perf_event_init(void)
- {
-+	struct k_clock perf_posix_clock = {
-+		.clock_getres = perf_posix_clock_getres,
-+		.clock_get = perf_posix_clock_get,
-+	};
- 	int ret;
+-	 On 32-bit this is limited to 512MiB.
++	  On 64-bit this is limited by how the kernel fixmap page table is
++	  positioned, so this cannot be larger than 1GiB currently. Without
++	  RANDOMIZE_BASE, there is a 512MiB to 1.5GiB split between kernel
++	  and modules. When RANDOMIZE_BASE_MAX_OFFSET is above 512MiB, the
++	  modules area will shrink to compensate, up to the current maximum
++	  1GiB to 1GiB split. The default is 1GiB.
  
- 	idr_init(&pmu_idr);
-@@ -7920,6 +7938,8 @@ void __init perf_event_init(void)
- 	ret = init_hw_breakpoint();
- 	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
+-	 On 64-bit this is limited by how the kernel fixmap page table is
+-	 positioned, so this cannot be larger that 1GiB currently. Normally
+-	 there is a 512MiB to 1.5GiB split between kernel and modules. When
+-	 this is raised above the 512MiB default, the modules area will
+-	 shrink to compensate, up to the current maximum 1GiB to 1GiB split.
++	  If unsure, leave at the default value.
  
-+	posix_timers_register_clock(CLOCK_PERF, &perf_posix_clock);
-+
- 	/* do not patch jump label more than once per second */
- 	jump_label_rate_limit(&perf_sched_events, HZ);
- 
+ # Relocation on x86 needs some additional build support
+ config X86_NEED_RELOCS
 -- 
-1.8.3.4 (Apple Git-47)
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
