@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab3LJIRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:17:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58889 "EHLO
+	id S1754883Ab3LJIRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:17:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3LJIBs (ORCPT
+	with ESMTP id S1753933Ab3LJIRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:48 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.12 09/62] crypto: scatterwalk - Set the chain pointer indication bit
-Date: Tue, 10 Dec 2013 00:00:40 -0800
-Message-Id: <20131210080058.105459090@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
-References: <20131210080057.415644748@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 10 Dec 2013 03:17:45 -0500
+Date: Tue, 10 Dec 2013 00:19:22 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ethan Zhao <ethan.kernel@gmail.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        raghavendra.kt@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
+Message-ID: <20131210081922.GA2475@kroah.com>
+References: <20131208140100.GA22793@kroah.com>
+ <CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
+ <20131209082527.GA26950@kroah.com>
+ <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
+ <20131209085526.GB4125@kroah.com>
+ <CABawtvPhE9enmt2NdSemVsDRp6ca38xyQSTO2mEujx0kikWtoA@mail.gmail.com>
+ <20131209111747.GA6562@kroah.com>
+ <CABawtvNUBwTVzFfR4UotCexARN4+As5wKEPyGmRzN7-xZ6J00w@mail.gmail.com>
+ <20131209184050.GC28986@kroah.com>
+ <CABawtvMbMUf-tj77m9t=t45R3-1e8gE--8QZ7neU-HuSjGcveA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABawtvMbMUf-tj77m9t=t45R3-1e8gE--8QZ7neU-HuSjGcveA@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Dec 10, 2013 at 04:03:41PM +0800, Ethan Zhao wrote:
+> On Tue, Dec 10, 2013 at 2:40 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Dec 09, 2013 at 09:42:23PM +0800, Ethan Zhao wrote:
+> >> Greg,
+> >>     I am the man who built a Xen dom0, but couldn't see debugfs
+> >> directory and files as expected. there is no warning or tip for me to
+> >> enable the CONFIG_DEBUG_FS=y in .config , it cost me minutes to figure
+> >> out what's
+> >> the matter. and I know should check defugfs config and initialization as
+> >> zswap_debugfs, tracer_debugfs ,rproc_debugfs did. Is it useless ? if
+> >> it could save me just 1 minute next time ?
+> >
+> > So you would want a "warning" showing up for every single part of the
+> > kernel that uses debugfs for when it isn't enabled?  That doesn't make
+> > too much sense now, does it?
+> 
+> No, It is nice and like sun light when someone is struggling with the
+> bugs in darkness,
+> if some tips or warning output to them.
+> 
+> You have forgotten the initial stage you met :)
 
-------------------
+So, you really want to see 20+ KERNEL WARNINGS in your system when you
+boot without CONFIG_DEBUGFS enabled?  No, that's not ok at all, sorry,
+that is not going to happen.
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+Running a kernel without debugfs is a valid state, you are treating it
+as an error, which isn't ok.
 
-commit 41da8b5adba77e22584f8b45f9641504fa885308 upstream.
-
-The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
-function to chain two scatterlists, but the chain pointer indication
-bit is not set.  When the resulting scatterlist is used, for example,
-by sg_nents to count the number of scatterlist entries, a segfault occurs
-because sg_nents does not follow the chain pointer to the chained scatterlist.
-
-Update scatterwalk_sg_chain to set the chain pointer indication bit as is
-done by the sg_chain function.
-
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/crypto/scatterwalk.h |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(
- {
- 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
- 	sg1[num - 1].page_link &= ~0x02;
-+	sg1[num - 1].page_link |= 0x01;
- }
- 
- static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
-
-
+greg k-h
