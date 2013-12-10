@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407Ab3LJUuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:50:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64209 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3LJUuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:50:21 -0500
-Date: Tue, 10 Dec 2013 15:49:25 -0500
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131210204925.GB27373@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Darren Hart <dvhart@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-References: <20131210154724.GA30020@redhat.com>
- <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
- <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
- <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210203559.GA1209@redhat.com>
+	id S1751621Ab3LJUv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:51:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39749 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab3LJUvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:51:25 -0500
+Date: Tue, 10 Dec 2013 11:27:02 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in
+ irq_resume
+Message-ID: <20131210192702.GC8075@kroah.com>
+References: <20131210080057.415644748@linuxfoundation.org>
+ <20131210090113.GA22756@amd.pavel.ucw.cz>
+ <20131210090847.GA4600@kroah.com>
+ <201312101352.53714.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131210203559.GA1209@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201312101352.53714.heiko@sntech.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 09:35:59PM +0100, Oleg Nesterov wrote:
- > Dave, I must have missed something, help.
- > 
- > I am looking at the first message and I can't understand who stuck
- > "at exit".
- > 
- > The trace shows that the task with pid=10818 called sys_futex() ?
- >
- > Perhaps "exit" means the userspace paths?
+On Tue, Dec 10, 2013 at 01:52:53PM +0100, Heiko Stübner wrote:
+> Am Dienstag, 10. Dezember 2013, 10:08:47 schrieb Greg Kroah-Hartman:
+> > On Tue, Dec 10, 2013 at 10:01:13AM +0100, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > 3.12-stable review patch.  If anyone has any objections, please let
+> > > > 
+> > > >  me know.
+> > > 
+> > > Objections... well... I'm not sure if it meets stable criteria. In
+> > > particular, I don't think it was ever demonstrated as having bad
+> > > effect on the users.
+> > 
+> > Well, I'm guessing someone on the cc: here wanted it in stable@, so I'll
+> > let them speak up as to why...
+> 
+> As for bad effects on users ... any suspend_noirq callback returning an error 
+> and thus aborting the suspend will cause the error fixed by this, as the 
+> early-irqs won't get reenabled in the suspend-rollback [due to the syscore_ops 
+> doing their resume never being run].
+> 
+> You could for example lose keys connected thru the gpio-keys driver until the 
+> next reboot.
+> 
+> And it seems at least Laxman and myself were affected by it.
 
-pid 1131 is wait()'ing for 10818 to exit
+So, to be clear, this patch fixes a problem on your machines, right?
 
-pid 1130 is periodically sending SIGKILL to 10818 because it's gotten
-tired of waiting. 10818 is ignoring these because it's stuck in a loop
-somewhere in the kernel.
+thanks,
 
-I tried attaching to 10818 with gdb, and it just hangs.
-(possibly because its weird stack situation [see 1st post])
-
-by inspecting the shared mapping that all processes have (by gdb'ing 1130)
-I can see that 10818 did all its full run without incident, and the
-"exit child" flag in the fuzzer had been in set.
-
-The last 'random syscall' the fuzzer did was to sys_accept4, so the futex call
-must come from somewhere in libc maybe ?
-
-	Dave
-
+greg k-h
