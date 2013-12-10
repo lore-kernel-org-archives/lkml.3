@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab3LJPtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:49:36 -0500
-Received: from purkki.adurom.net ([80.68.90.206]:36324 "EHLO purkki.adurom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab3LJPtd convert rfc822-to-8bit (ORCPT
+	id S1754796Ab3LJPt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:49:58 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:45728 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab3LJPt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:49:33 -0500
-From: Kalle Valo <kvalo@adurom.com>
-To: Pali =?utf-8?Q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent mac address
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	<1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
-	<1386494714-21070-16-git-send-email-pali.rohar@gmail.com>
-Date: Tue, 10 Dec 2013 17:49:23 +0200
-In-Reply-To: <1386494714-21070-16-git-send-email-pali.rohar@gmail.com>
- ("Pali
-	=?utf-8?Q?Roh=C3=A1r=22's?= message of "Sun, 8 Dec 2013 10:25:13 +0100")
-Message-ID: <87txegpuyk.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 10 Dec 2013 10:49:57 -0500
+Date: Tue, 10 Dec 2013 10:49:51 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, akpm@linuxfoundation.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
+Message-ID: <20131210154951.GF4610@htj.dyndns.org>
+References: <20131203233232.928771708@linux.com>
+ <20131203233251.745099192@linux.com>
+ <20131210153445.GE4610@htj.dyndns.org>
+ <20131210154506.GA1884@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210154506.GA1884@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pali Rohár <pali.rohar@gmail.com> writes:
+On Tue, Dec 10, 2013 at 04:45:06PM +0100, Ingo Molnar wrote:
+> 
+> * Tejun Heo <tj@kernel.org> wrote:
+> 
+> > On Tue, Dec 03, 2013 at 05:32:45PM -0600, Christoph Lameter wrote:
+> > > The patches following this one will add preemption checks to __this_cpu
+> > > ops so we need to have an alternative way to use this_cpu operations
+> > > without preemption checks.
+> > > 
+> > > raw_cpu_ops will be the basis for all other ops since these will be the
+> > > operations that do not implement any checks. 
+> > > 
+> > > Primitive operations are renamed by this patch from __this_cpu_xxx to
+> > > raw_cpu_xxxx.
+> > > 
+> > > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > 
+> > Applied to percpu/for-3.14.
+> 
+> Please also pick up the related debugging bits:
+> 
+>    [PATCH 18/41] percpu: Add preemption checks to __this_cpu ops
+> 
+> as we don't want to expand percpu ops without doing proper debugging.
 
-> Driver wl1251 generating mac address randomly at startup and there is no way to
-> set permanent mac address via SET_IEEE80211_PERM_ADDR. This patch export sysfs
-> file which can set permanent mac address by userspace helper program. Patch is
-> needed for devices which do not store mac address in internal wl1251 eeprom.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Yeah, trying to figure out which should go through which tree.
+Christoph, should I also pickup 14?  Or can that go through x86?
 
-We have ioctl() command for setting the mac address.
+Thanks.
 
 -- 
-Kalle Valo
+tejun
