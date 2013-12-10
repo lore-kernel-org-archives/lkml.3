@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab3LJUv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:51:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39749 "EHLO
+	id S1751481Ab3LJUyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:54:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39776 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab3LJUvZ (ORCPT
+	with ESMTP id S1750712Ab3LJUyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:51:25 -0500
-Date: Tue, 10 Dec 2013 11:27:02 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in
- irq_resume
-Message-ID: <20131210192702.GC8075@kroah.com>
-References: <20131210080057.415644748@linuxfoundation.org>
- <20131210090113.GA22756@amd.pavel.ucw.cz>
- <20131210090847.GA4600@kroah.com>
- <201312101352.53714.heiko@sntech.de>
+	Tue, 10 Dec 2013 15:54:00 -0500
+Date: Tue, 10 Dec 2013 12:55:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] PHY: Fixes for 3.13-rc
+Message-ID: <20131210205539.GA10402@kroah.com>
+References: <1386332480-31671-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201312101352.53714.heiko@sntech.de>
+In-Reply-To: <1386332480-31671-1-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:52:53PM +0100, Heiko Stübner wrote:
-> Am Dienstag, 10. Dezember 2013, 10:08:47 schrieb Greg Kroah-Hartman:
-> > On Tue, Dec 10, 2013 at 10:01:13AM +0100, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > 3.12-stable review patch.  If anyone has any objections, please let
-> > > > 
-> > > >  me know.
-> > > 
-> > > Objections... well... I'm not sure if it meets stable criteria. In
-> > > particular, I don't think it was ever demonstrated as having bad
-> > > effect on the users.
-> > 
-> > Well, I'm guessing someone on the cc: here wanted it in stable@, so I'll
-> > let them speak up as to why...
+On Fri, Dec 06, 2013 at 05:51:17PM +0530, Kishon Vijay Abraham I wrote:
+> Hi Greg,
+> We have three patches to be merged in PHY subsystem for this rc cycle and
+> all of them are critical.
 > 
-> As for bad effects on users ... any suspend_noirq callback returning an error 
-> and thus aborting the suspend will cause the error fixed by this, as the 
-> early-irqs won't get reenabled in the suspend-rollback [due to the syscore_ops 
-> doing their resume never being run].
+> One fixes a memory leak, the other solves a NULL dereference while calling
+> dev_WARN and the last one fixes a randconfig error.
 > 
-> You could for example lose keys connected thru the gpio-keys driver until the 
-> next reboot.
+> Let me know if I have to change anything.
 > 
-> And it seems at least Laxman and myself were affected by it.
+> I've also queued these fixes in
+> https://git.kernel.org/cgit/linux/kernel/git/kishon/linux-phy.git/ fixes
+> (contains patches to be merged in other trees too).
 
-So, to be clear, this patch fixes a problem on your machines, right?
+Ick, I can't take that, as it wouldn't work properly.  If you want to
+send me pull requests, please use the proper format and a signed tag.
 
-thanks,
+> Dan Carpenter (1):
+>   drivers: phy: tweaks to phy_create()
+> 
+> Kishon Vijay Abraham I (1):
+>   phy: kconfig: add depends on "USB_PHY" to OMAP_USB2 and TWL4030_USB
+> 
+> Sachin Kamat (1):
+>   drivers: phy: Fix memory leak
+
+I've now taken these, sorry for the delay.
 
 greg k-h
