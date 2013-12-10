@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab3LJXWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:22:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53905 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab3LJXWS (ORCPT
+	id S1751467Ab3LJXY5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:24:57 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35120 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab3LJXYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:22:18 -0500
-Date: Tue, 10 Dec 2013 15:22:01 -0800
-From: tip-bot for Matthew Garrett <tipbot@zytor.com>
-Message-ID: <tip-04bf9ba720fcc4fa313fa122b799ae0989b6cd50@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        matthew.garrett@nebula.com, stable@vger.kernel.org,
-        matt.fleming@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        matthew.garrett@nebula.com, stable@vger.kernel.org,
-        matt.fleming@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1385754283-2464-1-git-send-email-matthew.garrett@nebula.com>
-References: <1385754283-2464-1-git-send-email-matthew.garrett@nebula.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, efi: Don't use (U)
- EFI time services on 32 bit
-Git-Commit-ID: 04bf9ba720fcc4fa313fa122b799ae0989b6cd50
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 10 Dec 2013 18:24:55 -0500
+Date: Tue, 10 Dec 2013 23:24:49 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131210232449.GP10323@ZenIV.linux.org.uk>
+References: <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+ <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+ <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+ <20131210203559.GA1209@redhat.com>
+ <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 15:22:07 -0800 (PST)
+In-Reply-To: <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  04bf9ba720fcc4fa313fa122b799ae0989b6cd50
-Gitweb:     http://git.kernel.org/tip/04bf9ba720fcc4fa313fa122b799ae0989b6cd50
-Author:     Matthew Garrett <matthew.garrett@nebula.com>
-AuthorDate: Fri, 29 Nov 2013 14:44:43 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 10 Dec 2013 15:02:34 -0800
+On Tue, Dec 10, 2013 at 11:42:15PM +0100, Thomas Gleixner wrote:
+>         /*
+>          * If write access is not required (eg. FUTEX_WAIT), try
+>          * and get read-only access.
+>          */
+>         if (err == -EFAULT && rw == VERIFY_READ) {
+>                 err = get_user_pages_fast(address, 1, 0, &page);
+> 
+> That's a legitimate use case. And futex_requeue only requests
+> VERIFY_READ for the !requeue_pi case.
+> 
+> Now, if that map is RO, i.e. we took the fallback path then the THP
+> one will fail as it has write=1 unconditionally.
 
-x86, efi: Don't use (U)EFI time services on 32 bit
+access_ok() has nothing whatsoever to do with RO vs. RW mappings.
+It checks whether the address is OK for userland on architectures
+with userland and kernel sharing the same address space (e.g. x86).
+On something like e.g. sparc64 or s390 it's constant 1.
 
-UEFI time services are often broken once we're in virtual mode. We were
-already refusing to use them on 64-bit systems, but it turns out that
-they're also broken on some 32-bit firmware, including the Dell Venue.
-Disable them for now, we can revisit once we have the 1:1 mappings code
-incorporated.
+Note that there's nothing to stop another thread from remapping an RW
+area RO just as you've returned from access_ok(), so checking for
+writability in access_ok() would've been racy as hell.  Ditto for
+address being mapped at all...
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
-Cc: <stable@vger.kernel.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/efi/efi.c | 7 -------
- 1 file changed, 7 deletions(-)
+Moreover, there are exactly two architectures that do not ignore the
+first argument of access_ok() - microblaze and um.  The former uses
+it in debugging printk in failure case.  The latter... AFAICS, it's
+pointless - it's a special dispensation for read access to host
+vsyscall page from guest process.  The thing is, writes there are
+going to fail anyway - host kernel won't let the guest kernel to
+modify that page, period.  IOW, it looks like um might as well drop
+the (type == VERIFY_READ) part in __access_ok_vsyscall().
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 92c0234..cceb813 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -690,13 +690,6 @@ void __init efi_init(void)
- 
- 	set_bit(EFI_MEMMAP, &x86_efi_facility);
- 
--#ifdef CONFIG_X86_32
--	if (efi_is_native()) {
--		x86_platform.get_wallclock = efi_get_time;
--		x86_platform.set_wallclock = efi_set_rtc_mmss;
--	}
--#endif
--
- #if EFI_DEBUG
- 	print_efi_memmap();
- #endif
+Why do we have the 'type' argument of access_ok(), anyway?
