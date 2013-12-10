@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab3LJUbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:31:40 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34309 "EHLO
+	id S1752155Ab3LJUcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:32:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34323 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab3LJUbh (ORCPT
+	with ESMTP id S1752017Ab3LJUbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:31:37 -0500
+	Tue, 10 Dec 2013 15:31:39 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 30/34] perf symbols: Constify some DSO methods parameters
-Date: Tue, 10 Dec 2013 17:31:12 -0300
-Message-Id: <1386707476-12370-11-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 21/34 v2] perf report: Add --header/--header-only options
+Date: Tue, 10 Dec 2013 17:31:03 -0300
+Message-Id: <1386707476-12370-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386707476-12370-1-git-send-email-acme@infradead.org>
 References: <1386707476-12370-1-git-send-email-acme@infradead.org>
@@ -29,116 +29,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Those methods are not supposed to change the data structures they
-manipulate, so make that clearer by using the const qualifier in the
-function signature and in some variables.
+Currently the perf.data header is always displayed for stdio output,
+which is no always useful.
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Disabling header information by default and adding following options to
+control header output:
+
+  --header      - display header information (old default)
+  --header-only - display header information only w/o further
+                  processing, forces stdio output
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-j7oyakex7zy3r82h33rdw25x@git.kernel.org
+Link: http://lkml.kernel.org/r/1386583370-1699-2-git-send-email-jolsa@redhat.com
+[ Added single line explaining talking about the new --header* options,
+  to address David Ahern comment; better man page entry for the new options,
+  from Namhyung Kim ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/build-id.c |  2 +-
- tools/perf/util/build-id.h |  2 +-
- tools/perf/util/dso.c      | 11 +++++------
- tools/perf/util/dso.h      |  4 ++--
- 4 files changed, 9 insertions(+), 10 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  9 +++++++++
+ tools/perf/builtin-report.c              | 22 +++++++++++++++++++---
+ 2 files changed, 28 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index a92770c98cc7..6baabe63182b 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -89,7 +89,7 @@ int build_id__sprintf(const u8 *build_id, int len, char *bf)
- 	return raw - build_id;
- }
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 10a279871251..8eab8a4bdeb8 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -237,6 +237,15 @@ OPTIONS
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
  
--char *dso__build_id_filename(struct dso *dso, char *bf, size_t size)
-+char *dso__build_id_filename(const struct dso *dso, char *bf, size_t size)
- {
- 	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
- 
-diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
-index 929f28a7c14d..845ef865eced 100644
---- a/tools/perf/util/build-id.h
-+++ b/tools/perf/util/build-id.h
-@@ -10,7 +10,7 @@ extern struct perf_tool build_id__mark_dso_hit_ops;
- struct dso;
- 
- int build_id__sprintf(const u8 *build_id, int len, char *bf);
--char *dso__build_id_filename(struct dso *dso, char *bf, size_t size);
-+char *dso__build_id_filename(const struct dso *dso, char *bf, size_t size);
- 
- int build_id__mark_dso_hit(struct perf_tool *tool, union perf_event *event,
- 			   struct perf_sample *sample, struct perf_evsel *evsel,
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 19babb0d365d..fbc66fde6b30 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -28,7 +28,7 @@ char dso__symtab_origin(const struct dso *dso)
- 	return origin[dso->symtab_type];
- }
- 
--int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+int dso__binary_type_file(const struct dso *dso, enum dso_binary_type type,
- 			  char *root_dir, char *file, size_t size)
- {
- 	char build_id_hex[BUILD_ID_SIZE * 2 + 1];
-@@ -200,11 +200,10 @@ dso_cache__free(struct rb_root *root)
++--header::
++	Show header information in the perf.data file.  This includes
++	various information like hostname, OS and perf version, cpu/mem
++	info, perf command line, event list and so on.  Currently only
++	--stdio output supports this feature.
++
++--header-only::
++	Show only perf.data header (forces --stdio).
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-annotate[1]
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8cf8e66ba594..3a14dbed387c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -49,6 +49,8 @@ struct perf_report {
+ 	bool			show_threads;
+ 	bool			inverted_callchain;
+ 	bool			mem_mode;
++	bool			header;
++	bool			header_only;
+ 	int			max_stack;
+ 	struct perf_read_values	show_threads_values;
+ 	const char		*pretty_printing_style;
+@@ -514,9 +516,6 @@ static int __cmd_report(struct perf_report *rep)
+ 			return ret;
  	}
- }
  
--static struct dso_cache*
--dso_cache__find(struct rb_root *root, u64 offset)
-+static struct dso_cache *dso_cache__find(const struct rb_root *root, u64 offset)
- {
--	struct rb_node **p = &root->rb_node;
--	struct rb_node *parent = NULL;
-+	struct rb_node * const *p = &root->rb_node;
-+	const struct rb_node *parent = NULL;
- 	struct dso_cache *cache;
+-	if (use_browser <= 0)
+-		perf_session__fprintf_info(session, stdout, rep->show_full_info);
+-
+ 	if (rep->show_threads)
+ 		perf_read_values_init(&rep->show_threads_values);
  
- 	while (*p != NULL) {
-@@ -566,7 +565,7 @@ void dsos__add(struct list_head *head, struct dso *dso)
- 	list_add_tail(&dso->node, head);
- }
+@@ -820,6 +819,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "gtk", &report.use_gtk, "Use the GTK2 interface"),
+ 	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
+ 		    "Use the stdio interface"),
++	OPT_BOOLEAN(0, "header", &report.header, "Show data header."),
++	OPT_BOOLEAN(0, "header-only", &report.header_only,
++		    "Show only data header."),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+ 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+@@ -963,6 +965,10 @@ repeat:
+ 			goto error;
+ 	}
  
--struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short)
-+struct dso *dsos__find(const struct list_head *head, const char *name, bool cmp_short)
- {
- 	struct dso *pos;
++	/* Force tty output for header output. */
++	if (report.header || report.header_only)
++		use_browser = 0;
++
+ 	if (strcmp(input_name, "-") != 0)
+ 		setup_browser(true);
+ 	else {
+@@ -970,6 +976,16 @@ repeat:
+ 		perf_hpp__init();
+ 	}
  
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index a2d71292f746..99f3c647d683 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -128,7 +128,7 @@ void dso__read_running_kernel_build_id(struct dso *dso,
- int dso__kernel_module_get_build_id(struct dso *dso, const char *root_dir);
- 
- char dso__symtab_origin(const struct dso *dso);
--int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
-+int dso__binary_type_file(const struct dso *dso, enum dso_binary_type type,
- 			  char *root_dir, char *file, size_t size);
- 
- int dso__data_fd(struct dso *dso, struct machine *machine);
-@@ -143,7 +143,7 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
- 				const char *short_name, int dso_type);
- 
- void dsos__add(struct list_head *head, struct dso *dso);
--struct dso *dsos__find(struct list_head *head, const char *name,
-+struct dso *dsos__find(const struct list_head *head, const char *name,
- 		       bool cmp_short);
- struct dso *__dsos__findnew(struct list_head *head, const char *name);
- bool __dsos__read_build_ids(struct list_head *head, bool with_hits);
++	if (report.header || report.header_only) {
++		perf_session__fprintf_info(session, stdout,
++					   report.show_full_info);
++		if (report.header_only)
++			return 0;
++	} else if (use_browser == 0) {
++		fputs("# To display the perf.data header info, please use --header/--header-only options.\n#\n",
++		      stdout);
++	}
++
+ 	/*
+ 	 * Only in the TUI browser we are doing integrated annotation,
+ 	 * so don't allocate extra space that won't be used in the stdio
 -- 
 1.8.1.4
 
