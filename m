@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab3LJWnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:43:06 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39316 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab3LJWnD (ORCPT
+	id S1751061Ab3LJWrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:47:10 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:58876 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab3LJWrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:43:03 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
-To: Roy Franz <roy.franz@linaro.org>
-Cc: Matt Sealey <neko@bakuhatsu.net>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Mark Salter <msalter@redhat.com>, Patch Tracking <patches@linaro.org>,
-        linaro-uefi <linaro-uefi@lists.linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-In-Reply-To: <CAFECyb93r5QGWRYDQxzWJ-xtptWBAEiQtAx=woLC5x+3WhbNqQ@mail.gmail.com>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org> < CAHCPf3s_SXYXLRwvn7tzqTCQ-gB=emRMK_dXkEmw_HWigiD7Mw@mail.gmail.com> < 20131210123035.D1586C40A27@trevor.secretlab.ca> < CAFECyb93r5QGWRYDQxzWJ-xtptWBAEiQtAx=woLC5x+3WhbNqQ@mail.gmail.com>
-Date: Tue, 10 Dec 2013 22:42:57 +0000
-Message-Id: <20131210224257.62196C40CE1@trevor.secretlab.ca>
+	Tue, 10 Dec 2013 17:47:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131210223615.GA10239@bubble.grove.modra.org>
+References: <CAMe9rOob2T+VWkZyHpaoBy6fUeTyAocpw4-cBpdrar2rtdAeew@mail.gmail.com>
+	<20131210223615.GA10239@bubble.grove.modra.org>
+Date: Tue, 10 Dec 2013 14:47:06 -0800
+Message-ID: <CAMe9rOr9L7OmdxGyzgiWuTTBXy4A+qUVa+3Mar+J_hE8H=rRZg@mail.gmail.com>
+Subject: Re: RFC: binutils PATCH: Set e_type to ET_EXEC for -pie -Ttext-segment=
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Binutils <binutils@sourceware.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 10:29:34 -0800, Roy Franz <roy.franz@linaro.org> wrote:
-> On Tue, Dec 10, 2013 at 4:30 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> > On Fri, 6 Dec 2013 11:20:45 -0600, Matt Sealey <neko@bakuhatsu.net> wrote:
-> >> On Wed, Dec 4, 2013 at 4:44 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> >> > On Wed, Dec 04, 2013 at 03:06:47PM -0600, Matt Sealey wrote:
-> >> Grant suggested I should propose some patches; sure, if I'm not otherwise busy.
-> >>
-> >> Maybe the Linaro guys can recommend a platform (real or emulated) that
-> >> would be best to test it on with the available UEFI?
-> >
-> > Roy Franz (cc'd) has got UEFI running under QEMU. A few modifications
-> > were required to both stock UEFI and QEMU. I'm not sure what the status
-> > of mainlining those patches is. I think there are still a few things
-> > that Roy has to fix, but you should be able to get the current patches
-> > from him to get going.
-> >
-> > g.
-> >
-> 
-> Hi Grant and Matt,
-> 
-> I have put together a quick wiki page describing the current status,
-> with git trees for
-> UEFI and QEMU, and instructions for running the model.  I just whipped
-> this up now, so it
-> is pretty basic, but should have all the required information.
-> 
-> https://wiki.linaro.org/LEG/Engineering/Kernel/UEFI/VersatileExpress/QEMU
-> 
-> Please let me know if you have any questions.
+On Tue, Dec 10, 2013 at 2:36 PM, Alan Modra <amodra@gmail.com> wrote:
+> On Mon, Dec 09, 2013 at 07:10:23PM -0800, H.J. Lu wrote:
+>> Linker sets e_type in ELF header to ET_DYN for -pie -Ttext-segment=0xXXX.
+>> When I added -Ttext-segment=0xXXX, one goal was to load
+>> small model executable above 4GB on Linux/x86-64, which
+>> was done with -pie -Ttext-segment=0xXXX.  But -pie sets
+>> e_type in ELF header to ET_DYN and kernel may ignore
+>> p_vaddr in ELF header to load ET_DYN binary at a random
+>> address.  This patch changes ld to set e_type in ELF header
+>> to ET_EXEC if the first PT_LOAD segment has non-zero
+>> p_vaddr.  If this is unacceptable as generic ELF change,
+>> I can make it specific to x86.
+>
+> Well, I suppose it's a hack to use ET_DYN for executables in the first
+> place, so one more hack in the linker hardly matters.  Why not just
+> patch the kernel though?  The kernel can look at the first PT_LOAD
+> header just as easily as the linker, and it's the kernel that is doing
+> the loading after all.
+>
 
-Thanks Roy.
+Kernel should have some freedom on where to load ET_DYN object.
+But when -Ttext-segment= is used, programmer expects the
+executable will be loaded at the specified address.  Setting
+ET_EXEC will guarantee that it will be loaded at that address.
 
-g.
 
+-- 
+H.J.
