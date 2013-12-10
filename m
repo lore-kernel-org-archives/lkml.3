@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab3LJUZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:25:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab3LJUZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:25:27 -0500
-Message-ID: <1386707123.23829.23.camel@flatline.rdu.redhat.com>
-Subject: Re: SELinux change in 3.13 causes sync hang
-From: Eric Paris <eparis@redhat.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Anand Avati <avati@redhat.com>, James Morris <jmorris@namei.org>,
-        Eric Sandeen <sandeen@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Date: Tue, 10 Dec 2013 15:25:23 -0500
-In-Reply-To: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>
-References: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751706Ab3LJU0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:26:49 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:32957 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab3LJU0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:26:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAEPRUYrw_owwBYEmmXO3=OG9pXrKPrJTwF+jPVm4+-Vvf0Xorw@mail.gmail.com>
+References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
+	<1386271244-3927-2-git-send-email-tim.kryger@linaro.org>
+	<CAEPRUYrw_owwBYEmmXO3=OG9pXrKPrJTwF+jPVm4+-Vvf0Xorw@mail.gmail.com>
+Date: Tue, 10 Dec 2013 12:26:45 -0800
+Message-ID: <CAAYSxhp3MsnaX80tF7iCzUfjfjyQnOoZbTrtBKs_nAk4SUYReQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/8] ARM: dts: Declare clocks as fixed on bcm11351
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Christian Daudt <bcm@fixthebug.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        Axel Lin <axel.lin@ingics.com>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I still believe (assuming Josh says it tests ok) that a revert is a
-reasonable fix until next window.  But I might know the actual problem:
+On Mon, Dec 9, 2013 at 11:18 PM, Christian Daudt <bcm@fixthebug.org> wrote:
+> Applied to armsoc/for-3.14/dt
 
-Lets assume policy says:
-   fuse.gluster == use_xattr
+Could you wait till other maintainers provide their acks and then take
+the entire series into a branch that feeds into the arm-soc
+drivers-for-linus branch?
 
-Lets assume this function is called with
-sb->s_type->name == fuse
-sb->s_subtype == NULL
-
-int security_fs_use(struct super_block *sb)
-{
-        int rc = 0;
-        struct ocontext *c;
-        struct superblock_security_struct *sbsec = sb->s_security;
-        const char *fstype = sb->s_type->name;
-        const char *subtype = (sb->s_subtype && sb->s_subtype[0]) ? sb->s_subtype : NULL;
-        struct ocontext *base = NULL;
-
-        read_lock(&policy_rwlock);
-
-        for (c = policydb.ocontexts[OCON_FSUSE]; c; c = c->next) {
-                char *sub;
-                int baselen;
-
-                baselen = strlen(fstype);
-
-		**********  assume c == the above rule   name = fuse.gluster
-
-                /* if base does not match, this is not the one */
-                if (strncmp(fstype, c->u.name, baselen))    <----------- this will match
-                        continue;
-
-                /* if there is no subtype, this is the one! */
-                if (!subtype)   <--------------------------------------- we will break here!
-                        break;
-[snip]
-        }
-[snip]
-        if (c) {
-                sbsec->behavior = c->v.behavior;
-
-So we just matched on the fuse.gluster rule even though the mount in
-question was fstype=fuse subtype=NULL     So we will try to use xattrs
-on a fuse FS that can/will deadlock.
-
-I'll try to write a patch to fix that logic...
-
--Eric
-
+Thanks,
+Tim Kryger
