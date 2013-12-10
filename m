@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab3LJEZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 23:25:31 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:38685 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab3LJEZ1 (ORCPT
+	id S1750912Ab3LJEjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 23:39:32 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:63944 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab3LJEja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 23:25:27 -0500
-Message-ID: <1386649521.7152.196.camel@host5.omatika.ru>
-Subject: Re: [PATCH 5/9] ARM: dts: provide DMA config to pxamci
+	Mon, 9 Dec 2013 23:39:30 -0500
 From: Sergei Ianovich <ynvich@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        DOCUMENTATION <linux-doc@vger.kernel.org>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Date: Tue, 10 Dec 2013 08:25:21 +0400
-In-Reply-To: <201312100125.18754.arnd@arndb.de>
-References: <1386348542-9584-1-git-send-email-ynvich@gmail.com>
-	 <52A59991.1060305@gmail.com> <1386590958.7152.135.camel@host5.omatika.ru>
-	 <201312100125.18754.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Sergei Ianovich <ynvich@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [PATCH] ARM: pxa: prevent PXA270 occasional reboot freezes
+Date: Tue, 10 Dec 2013 08:39:15 +0400
+Message-Id: <1386650355-2503-1-git-send-email-ynvich@gmail.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 01:25 +0100, Arnd Bergmann wrote:
-> We never intentionally break things that people are using, but there are
-> cases where doing blind changes is the best way forward. We should
-> always try to find people to test patches on real hardware if possible,
-> which is only possible if there are people around that have the hardware
-> and that are going to run new kernels on them.
-> 
-> In case of PXA dmaengine support, I think the benefits of applying the
-> series far outweigh the breakage potential. A lot of the drivers are
-> shared with MMP, which is going to be DT-only eventually and will require
-> the new dmaengine code. Some PXA drivers may be shared with SA1100,
-> which has also converted to dmaengine although there are no plans to
-> ever support DT on sa1100.
-> 
-> We certainly need to be extra careful if we want to move things over
-> at once and cannot test all the drivers. I'd be happier if it could
-> be done gradually by having some drivers use the new interface and
-> other drivers use the old one, but I don't see how that can be done
-> here.
+Erratum 71 of PXA270M Processor Family Specification Update
+(April 19, 2010) explains that watchdog reset time is just
+8us insead of 10ms in EMTS.
 
-Thanks for detailed explanation. I see there is strong support for the
-big change. Lets hope it'll be smooth. I'll strest test Daniel's changes
-and report the results.
+If SDRAM is not reset, it causes memory bus congestion and
+the device hangs. We put SDRAM in selfresh mode before watchdog
+reset, removing potential freezes.
 
+Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
+reboots. With this patch it has successfully rebooted 500 times.
+
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+---
+ arch/arm/mach-pxa/reset.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
+index 0d5dd64..263b152 100644
+--- a/arch/arm/mach-pxa/reset.c
++++ b/arch/arm/mach-pxa/reset.c
+@@ -13,6 +13,7 @@
+ 
+ #include <mach/regs-ost.h>
+ #include <mach/reset.h>
++#include <mach/smemc.h>
+ 
+ unsigned int reset_status;
+ EXPORT_SYMBOL(reset_status);
+@@ -81,6 +82,12 @@ static void do_hw_reset(void)
+ 	writel_relaxed(OSSR_M3, OSSR);
+ 	/* ... in 100 ms */
+ 	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
++	/*
++	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
++	 * we put SDRAM into self-refresh to prevent that
++	 */
++	while (1)
++		writel_relaxed(MDREFR_SLFRSH, MDREFR);
+ }
+ 
+ void pxa_restart(enum reboot_mode mode, const char *cmd)
+@@ -104,4 +111,3 @@ void pxa_restart(enum reboot_mode mode, const char *cmd)
+ 		break;
+ 	}
+ }
+-
+-- 
+1.8.4.2
 
