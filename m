@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab3LJDPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 22:15:43 -0500
-Received: from mailout.micron.com ([137.201.242.129]:41637 "EHLO
+	id S1752238Ab3LJDQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:16:34 -0500
+Received: from mailout.micron.com ([137.201.242.129]:41714 "EHLO
 	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3LJDPl (ORCPT
+	with ESMTP id S1751742Ab3LJDQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 22:15:41 -0500
+	Mon, 9 Dec 2013 22:16:32 -0500
 From: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
 To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
 CC: Adrian Hunter <adrian.hunter@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
-Subject: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash after
- erasure interrupted
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
 Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
  after erasure interrupted
-Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETwNhLovgAa9rO+AAZiFEEAAABJ+gAPpBsUA=
-Date: Tue, 10 Dec 2013 03:15:07 +0000
-Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETwNhLovgAa9rO+AAZiFEEAAABJ+gAPpBsUAAAAdJ8A==
+Date: Tue, 10 Dec 2013 03:16:05 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B79D9@NTXXIAMBX02.xacn.micron.com>
 References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
  <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
- <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com> 
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>  
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -39,7 +38,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBA3FnnM010677
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBA3Gdt2010686
 
 Hi Artem:
 As we talked in mail before, please check my patch as below:
