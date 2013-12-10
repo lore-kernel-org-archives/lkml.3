@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3LJAP0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:15:26 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:40535 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab3LJAPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:15:25 -0500
+	id S1751276Ab3LJAQV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:16:21 -0500
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:39764 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750743Ab3LJAQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 19:16:17 -0500
+Message-ID: <52A65D44.7070007@cs.wisc.edu>
+Date: Mon, 09 Dec 2013 18:16:04 -0600
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
 MIME-Version: 1.0
-In-Reply-To: <52A657EC.6080304@redhat.com>
-References: <20131209233829.GA3501@www.outflux.net>
-	<52A657EC.6080304@redhat.com>
-Date: Mon, 9 Dec 2013 16:15:24 -0800
-X-Google-Sender-Auth: 7hU0Q7VqlQxxXIK8Mb0kB2Iz4EU
-Message-ID: <CAGXu5jKi=QeiN=Sipumwi1AR25=ciPC+KAe3XUUQkm31EDexsA@mail.gmail.com>
-Subject: Re: [PATCH] kexec: add sysctl to disable kexec
-From: Kees Cook <keescook@chromium.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Biederman <ebiederm@xmission.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        kexec@lists.infradead.org
+To: Ethan Zhao <ethan.kernel@gmail.com>
+CC: konrad.wilk@oracle.com, pjones@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [SCSI] iscsi_boot_sysfs: Fix a memory leak in iscsi_boot_destroy_kset()
+References: <1386581831-312-1-git-send-email-ethan.kernel@gmail.com>
+In-Reply-To: <1386581831-312-1-git-send-email-ethan.kernel@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 3:53 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 12/09/2013 06:38 PM, Kees Cook wrote:
->> For general-purpose (i.e. distro) kernel builds it makes sense to build with
->> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
->> with kexec. However, in the face of trying to lock down a system with such
->> a kernel, there needs to be a way to disable kexec (much like module loading
->> can be disabled). Without this, it is too easy for the root user to modify
->> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
->
-> Not everybody will be running with selinux, or another LSM security
-> policy, so having this simple knob probably makes sense.
->
-> OTOH, are the people who run without a fancy security people the
-> same people who are interested in locking down the system?
->
-> I guess I'll ack the patch, since I see no real downside to having
-> the knob...
+On 12/09/2013 03:37 AM, Ethan Zhao wrote:
+> From: "Ethan Zhao" <ethan.kernel@gmail.com>
+> 
+> Load and unload iscsi_ibft module will cause kernel memory leak, fix it
+> in scsi/iscsi_boot_sysfs.c iscsi_boot_destroy_kset().
+> 
+> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+> ---
+>  drivers/scsi/iscsi_boot_sysfs.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/scsi/iscsi_boot_sysfs.c b/drivers/scsi/iscsi_boot_sysfs.c
+> index 14c1c8f..680bf6f 100644
+> --- a/drivers/scsi/iscsi_boot_sysfs.c
+> +++ b/drivers/scsi/iscsi_boot_sysfs.c
+> @@ -490,5 +490,6 @@ void iscsi_boot_destroy_kset(struct iscsi_boot_kset *boot_kset)
+>  		iscsi_boot_remove_kobj(boot_kobj);
+>  
+>  	kset_unregister(boot_kset->kset);
+> +	kfree(boot_kset);
+>  }
+>  EXPORT_SYMBOL_GPL(iscsi_boot_destroy_kset);
 
-Thanks! Yeah, there are cases of machines that are trying to be as
-locked down as possible while still not having secure boot, etc. This
-helps raise the bar for them.
+Thanks. Patch looks ok.
 
->
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->
-> Acked-by: Rik van Riel <riel@redhat.com>
+It is probably best to just kill the iscsi_boot_kset use and use the
+kset directly. To do that, we would need to make kset's list a klist and
+add some iterators then modify iscsi_boot_sysfs.c and iscsi_ibft.c to
+use them instead of using the iscsi_boot_kset->kobj_list. I will work on
+a patch to do this. But for now your patch is ok.
 
-Thanks! I'm sending a v2 since I spaced out on updating the sysctl docs.
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
