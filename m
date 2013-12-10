@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3LJCON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 21:14:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64592 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750858Ab3LJCOM (ORCPT
+	id S1752140Ab3LJCOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 21:14:23 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:49731 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab3LJCOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 21:14:12 -0500
-Date: Mon, 9 Dec 2013 21:14:10 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 01/14] tools lib traceevent: Get rid of malloc_or_die()
- in show_error()
-Message-ID: <20131209211410.01fcaebf@gandalf.local.home>
-In-Reply-To: <87mwk9jwcf.fsf@sejong.aot.lge.com>
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-	<1386567251-22751-2-git-send-email-namhyung@kernel.org>
-	<20131209183009.GC8098@ghostprotocols.net>
-	<20131209140342.5f72298f@gandalf.local.home>
-	<20131209191439.GG8098@ghostprotocols.net>
-	<20131209142350.5d23108c@gandalf.local.home>
-	<87mwk9jwcf.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 9 Dec 2013 21:14:18 -0500
+Message-ID: <52A67973.20904@gmail.com>
+Date: Tue, 10 Dec 2013 10:16:19 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Seth Jennings <sjennings@variantweb.net>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: Re: [PATCH] mm/zswap.c: add BUG() for default case in zswap_writeback_entry()
+References: <52A53024.9090701@gmail.com> <20131209153626.GA3752@cerebellum.variantweb.net>
+In-Reply-To: <20131209153626.GA3752@cerebellum.variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 11:03:44 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
-
-
-> What about returning error code rather than string?  This way we won't
-> worry about the allocation of the error string itself.
+On 12/09/2013 11:36 PM, Seth Jennings wrote:
+> On Mon, Dec 09, 2013 at 10:51:16AM +0800, Chen Gang wrote:
+>> Recommend to add default case to avoid compiler's warning, although at
+>> present, the original implementation is still correct.
+>>
+>> The related warning (with allmodconfig for metag):
+>>
+>>     CC      mm/zswap.o
+>>   mm/zswap.c: In function 'zswap_writeback_entry':
+>>   mm/zswap.c:537: warning: 'ret' may be used uninitialized in this function
+>>
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  mm/zswap.c |    2 ++
+>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/mm/zswap.c b/mm/zswap.c
+>> index 5a63f78..bfd1807 100644
+>> --- a/mm/zswap.c
+>> +++ b/mm/zswap.c
+>> @@ -585,6 +585,8 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+>>  
+>>  		/* page is up to date */
+>>  		SetPageUptodate(page);
+>> +	default:
+>> +		BUG();
 > 
-> But the downside of it is loosing a positional info of the error.
-> Hmm.. what about using a static buffer in pevent for it then?
+> Typically, the way you want to address this is initialize ret to 0
+> at declaration time if not every control path will set that value.
+> 
 
-A static buffer may be the solution. Never need to worry about
-allocating it on error, as it will already be allocated. And we can add
-APIs to print it nicely.
+At least, your suggestion sounds reasonable.
 
-Perhaps call it
+But I am also aware that normally need content 'default' for 'switch',
+so I choose this fix way.
 
-	pevent->filter_error_buffer
+And sorry, current patch is incorrect (need 'break' before 'default'),
+so if no additional suggestions or discussions or completions, I
+will/should send patch v2 for it.
 
-?
 
--- Steve
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water and life which God blessed
