@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab3LJHHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:07:34 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:55843 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab3LJHHc (ORCPT
+	id S1751839Ab3LJHIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:08:13 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:56633 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab3LJHIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:07:32 -0500
+	Tue, 10 Dec 2013 02:08:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <1386373528-13045-3-git-send-email-tim.kryger@linaro.org>
-References: <1386373528-13045-1-git-send-email-tim.kryger@linaro.org>
-	<1386373528-13045-3-git-send-email-tim.kryger@linaro.org>
-Date: Mon, 9 Dec 2013 23:07:30 -0800
-Message-ID: <CAEPRUYquqJ+y7+ZV12_uKnRq+XkoYZ7M7JNbsZBCPzVRGgGJ8w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: dts: bcm28155-ap: Enable all the i2c busses
-From: Christian Daudt <bcm@fixthebug.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches List <patches@linaro.org>
+In-Reply-To: <00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com>
+References: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com>
+	<00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com>
+Date: Tue, 10 Dec 2013 15:08:11 +0800
+Message-ID: <CABawtvPdQ2smcawTywp605KceKAQF+CsvpBqG1zEaKfP-PLB6A@mail.gmail.com>
+Subject: Re: [PATCH] mm/slab.c: check pointer slabp before using it in alloc_slabmgmt()
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: alokk@calsoftinc.com, shobhit@calsoftinc.com, shai@scalex86.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied to armsoc/for-3.14/dt
- thanks,
-   csd
+Christoph,
+    Found in the latest stable release V3.12.3,  yes, changed in
+3.12.4. not needed for later release anymore.
+
+Thanks,
+Ethan
 
 
-On Fri, Dec 6, 2013 at 3:45 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> Enable all available i2c busses.
+On Tue, Dec 10, 2013 at 12:11 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Sun, 8 Dec 2013, ethan.zhao wrote:
 >
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Christian Daudt <csd@broadcom.com>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-> ---
->  arch/arm/boot/dts/bcm28155-ap.dts | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
+>> Move the NULL check of slabp to the right place before refer its memeber in
+>> function alloc_slabmgmt().
 >
-> diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
-> index 08e47c2..bab302d 100644
-> --- a/arch/arm/boot/dts/bcm28155-ap.dts
-> +++ b/arch/arm/boot/dts/bcm28155-ap.dts
-> @@ -27,6 +27,26 @@
->                 status = "okay";
->         };
->
-> +       i2c@3e016000 {
-> +               status="okay";
-> +               clock-frequency = <400000>;
-> +       };
-> +
-> +       i2c@3e017000 {
-> +               status="okay";
-> +               clock-frequency = <400000>;
-> +       };
-> +
-> +       i2c@3e018000 {
-> +               status="okay";
-> +               clock-frequency = <400000>;
-> +       };
-> +
-> +       i2c@3500d000 {
-> +               status="okay";
-> +               clock-frequency = <400000>;
-> +       };
-> +
->         sdio1: sdio@3f180000 {
->                 max-frequency = <48000000>;
->                 status = "okay";
-> --
-> 1.8.0.1
+> I am having trouble to find the code you are modifying. Which kernel
+> release is this? The code you are referring to has been rewritten in the
+> meantime or this is some other code basis.
 >
