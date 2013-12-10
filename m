@@ -1,89 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3LJEIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 23:08:36 -0500
-Received: from [72.2.119.174] ([72.2.119.174]:51692 "EHLO sv.456.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750858Ab3LJEIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 23:08:32 -0500
-X-Greylist: delayed 18072 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Dec 2013 23:08:32 EST
-Message-ID: <20131209230604.85864jnvaqx7ft98@72.2.119.174>
-Date: Mon, 09 Dec 2013 23:06:04 +0000
-From: Fernando Gonzalez <gonzalezfernan918@gmail.com>
-Reply-to: gfernando814@gmail.com
-To: gonzalezfernan918@gmail.com
-Subject: Ref: TM/ASSO/P01/6834/03/013
+	id S1752255Ab3LJELZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 23:11:25 -0500
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:45235 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3LJELV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 23:11:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - sv.456.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - gmail.com
-X-Get-Message-Sender-Via: sv.456.com: authenticated_id: info@komner.com
+In-Reply-To: <CAGVrzcaVJtoVhEfV+ZiMOkm3F8NBCf2YRcZSrZPMRfQfEr1u=g@mail.gmail.com>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-8-git-send-email-wens@csie.org> <CAGVrzcb_r9_p4urz4XkE2A-G85KAHJa4PJ=Gt9a4RPYQNJ6j0g@mail.gmail.com>
+ <CAGb2v64yFhkTXvdq=1VpemULhXew-5fvmSoTBzEb6iFDiSqy1Q@mail.gmail.com>
+ <CAGVrzcaxV88dU3vEVGUiEQihUHLxq+QvQVQ6VvmOFVRsqbbX7w@mail.gmail.com>
+ <CAGb2v675Cg6S512zfM1z4b+wqE_PesDGWdgcmpzWmPzyzXqbeA@mail.gmail.com> <CAGVrzcaVJtoVhEfV+ZiMOkm3F8NBCf2YRcZSrZPMRfQfEr1u=g@mail.gmail.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Tue, 10 Dec 2013 12:11:00 +0800
+X-Google-Sender-Auth: dxvjk8aZsC_8_kS3gjF07OeIEjc
+Message-ID: <CAGb2v665xtY4m4uCTb_iMojG+ox0HvyCgz6p0P7oxJVvZ0SW9w@mail.gmail.com>
+Subject: Re: [PATCH 07/10] ARM: dts: sun7i: cubietruck: Enable the GMAC
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ref: TM/ASSO/P01/6834/03/013
+On Tue, Dec 10, 2013 at 1:48 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2013/12/8 Chen-Yu Tsai <wens@csie.org>:
+>> Florian, Giuseppe:
+>>
+>> On Sat, Dec 7, 2013 at 9:57 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>> 2013/12/6 Chen-Yu Tsai <wens@csie.org>:
+>>>> On Sat, Dec 7, 2013 at 5:09 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>>>> 2013/12/6 Chen-Yu Tsai <wens@csie.org>:
+>>>>>> The CubieTruck uses the GMAC with an RGMII phy.
+>>>>>>
+>>>>>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>>>>>> ---
+>>>>>>  arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 8 ++++++++
+>>>>>>  1 file changed, 8 insertions(+)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>>>> index 8a1009d..af212a2 100644
+>>>>>> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>>>> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>>>> @@ -33,6 +33,14 @@
+>>>>>>                         pinctrl-0 = <&uart0_pins_a>;
+>>>>>>                         status = "okay";
+>>>>>>                 };
+>>>>>> +
+>>>>>> +               gmac: ethernet@01c50000 {
+>>>>>> +                       pinctrl-names = "default";
+>>>>>> +                       pinctrl-0 = <&gmac_pins_rgmii>;
+>>>>>> +                       snps,phy-addr = <1>;
+>>>>>
+>>>>> What is this snps,phy-addr property? Why is not a standard device tree
+>>>>> node for an Ethernet PHY node used?
+>>>>
+>>>> This property is implemented by stmmac and documented in the DT
+>>>> bindings. stmmac has not been updated to use Ethernet PHY nodes.
+>>>
+>>> This driver property should be removed and deprecated since there is
+>>> an ePAPR standardized Ethernet PHY node. What I am worried here is the
+>>> loss of information, the standard Ethernet DT node allows to specify
+>>> much more information (clause, maximum speed, compatible string
+>>> etc...).
+>>
+>> Giuseppe, any thoughts on this?
+>>
+>>>> Removing this property will not affect the function of the driver.
+>>>> The driver probes its MDIO bus and selects the lowest available
+>>>> address if not specified.
+>>>
+>>> So if this is just giving the driver a hint on where to  probe for a
+>>> PHY on the MDIO bus, then let's drop it and use the standard DT node
+>>> no?
+>>
+>> Sure. I will remove it from the DT.
+>>
+>> The stmmac driver does not have a seperate MDIO bus driver, nor
+>> does it support Ethernet PHY node bindings. So I will not add
+>> a phy node at this moment.
+>
+> This will create needless churn in the DT if you do not do it now,
+> worse actually, we switch from a DT which specifically described
+> Ethernet PHY nodes properly to a version where it does, to ultimately
+> a newer version which does.
+>
+> Considering that the absence of a "snps,phy-addr" property will still
+> result in the MDIO bus to be probed, keeping the existing Ethernet PHY
+> nodes, referencing them correclty with a "phy-handle" property, but
+> having no explicit support for these in the driver will not result in
+> a functional change, and will reduce the DT churn. Also, you could
+> still sneak a patch in this patchset which parses the standard
+> EThernet PHY node binding.
 
-Guten Tag,
+I see. Adding the PHY node should be no trouble at all.
+Is there a requirement for a seperate mdio bus in the DT?
+I do not see it in the ePAPR. The stmmac mdio is not a seperate
+driver, as is for most network controllers I presume.
+Would attaching the PHY nodes directly under the ethernet controller
+suffice?
 
-Date: 09-12-2013
+We can then introduce PHY node support to the driver and
+remove the "snps,phy-addr" property at the same time.
 
-Als erstes, möchte ich um Ihr Vertrauen in diese Transaktion bitten;  
-dies ist streng vertraulich. Ich weiß dass, Transaktionen dieser art,  
-jeden ängstlich und beunruhigt machen können, aber ich versichere  
-Ihnen, dass am Ende alles gut laufen wird. Es wird Sie sicherlich  
-überraschen dieses Schreiben  zu erhalten, da wir uns vorher nie  
-begegneten. Mein Name ist Mr. Fernando Gonzalez, Finanz Beamter von  
-dem verstorbenen Mr. Alexander Holzammer.
+ChenYu
 
-Meine Absicht Sie zu kontaktieren, besteht darin, Ihre Mitwirkung das  
-eingezahlte Geld des Verstorbenen Kunden von zu sichern, um zu  
-verhindern dass es beschlagnahmt oder verzollt wird vom Staat. Wobei  
-dieses Geld im Wert von 32.600.000, 00 Euros plus zinsen von dem  
-verstorbenen eingezahlt wurde, bevor er starb. Er starb mit seiner  
-einzige tochter in Automobil unfall. Da er nicht wusste dass ihn  
-dieser unglueck passieren wuerde, konnte er so sein gut verdientes  
-geld nicht weiter vererben.
-
-Die Bank hat mich den entgultige Notiz gegeben um einen Nachfolger aus  
-der Verwandtschaft zu kontaktieren, bevor das Geld zum Eigentum des  
-Staates wird. Trotz aller  Mühe jemanden zu finden der mit dem  
-Verstorbenen in Verwandtschaft steht, war die Suche erfolglos. Aus  
-diesem Grund habe ich sie kontaktiert. Eigentlich bitte ich Sie um  
-Ihre Einwilligung, Sie der Bank zu repräsentieren als Nachfolger  
-Verwandter des Geldes meiner verstorbenen Kunden, da Sie den gleichen  
-Nachnamen haben und somit der Betrag an Sie ausgezahlt werden kann.
-
-Alle legalen Dokumente, die Sie benötigen, um Anspruch auf das Geld  
-als Verwandte Person des Verstorbenen zu erlangen, werde ich ihnen auf  
-legale Art und Weise verschaffen. Alles was ich brauche ist eine  
-sichere Kooporation, um diese Transaktion zu ermöglichen. Ich möchte  
-vorschlagen, dass 5% von dem Geld an Hilfsorganisationen verschenkt  
-werden, andere 5% für umkosten während die übrigen 90 % gleichmäßig an  
-uns beide verteilt werden. Ich möchte ihnen vergewissern, dass dieser  
-Auftrag völlig Risikofrei ist. Ich werde meine Position als seiner  
-Finanz Beamter des Verstobenen nutzen, um diese Transaktion  
-erfolgreich durchzuführen.
-
-Kontaktieren sie mich bitte unter meiner Telefonnumer: 0034910822760  
-oder fax: 0034 911311734 oder schicken Sie mir einfach eine E-mail an  
-gonzalezfernan918@gmail.com  Die geplante Transaktion wird unter  
-autorisierter Anordnung durchgeführt, was zu ihrem Schutz beiträgt.  
-Wenn dieses Angebot nicht Ihrer Moral entspricht, dann bitte ich Sie  
-um Entschuldigung und darum dieses Schreiben zu vergessen. Falls sie  
-Jedoch wünschen mit mir dieses Ziel zu erreichen, dann bitte ich Sie  
-mich zu kontaktieren, für weitere Details.
-
-Mit Freundlichen Grüßen,
-Mr. Fernando Gonzalez.
-
-
+>>
+>>>>>> +                       phy-mode = "rgmii";
+>>>>>
+>>>>> Especially since you use the relatively standard "phy-mode" property here?
+>>>>
+>>>> Used as specified in stmmac DT bindings.
+>>>
+>>> That one is kind of okay because of_get_phy_mode() knows about it,
+>>> even though ePAPR states this should be "phy-connection-type", so I am
+>>> okay with keeping that one because current practice and helpers are
+>>> here.
+>>
+>> It seems all ARM DTs currently use "phy-mode".
+>
+> Which is why I said "is kind of okay", but this is not what the
+> standard came up with, ARM is not exactly the best DT-citizen out
+> there as people are prone to making up new properties when the
+> standard already defines some, anyway....
+> --
+> Florian
