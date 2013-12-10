@@ -1,119 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab3LJF4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 00:56:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4881 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab3LJF4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 00:56:50 -0500
-X-IronPort-AV: E=Sophos;i="4.93,863,1378828800"; 
-   d="scan'208";a="9227838"
-Message-ID: <52A7637E.8080007@cn.fujitsu.com>
-Date: Tue, 10 Dec 2013 13:54:54 -0500
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1751091Ab3LJF7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 00:59:11 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48168 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab3LJF7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 00:59:07 -0500
+Message-ID: <52A6AD61.4050408@linux.vnet.ibm.com>
+Date: Tue, 10 Dec 2013 11:27:53 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
-References: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131206115627.GA2279@ghostprotocols.net> <52A4AED8.3000506@gmail.com> <20131209180705.GB8098@ghostprotocols.net> <52A60705.5030303@gmail.com> <20131209184901.GE8098@ghostprotocols.net> <52A61D43.6020007@gmail.com>
-In-Reply-To: <52A61D43.6020007@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/10 13:56:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/10 13:56:32,
-	Serialize complete at 2013/12/10 13:56:32
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org,
+        ak@linux.intel.com, eranian@google.com, acme@ghostprotocols.net,
+        sukadev@linux.vnet.ibm.com, mingo@kernel.org
+Subject: Re: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch
+ stack sampling framework
+References: <20131209062146.EABBE2C00C1@ozlabs.org>
+In-Reply-To: <20131209062146.EABBE2C00C1@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121005-2674-0000-0000-00000BD4DD3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/09/2013 11:51 AM, Michael Ellerman wrote:
+> This code was already in need of some unindentation, and now it's just
+> ridiculous.
+> 
+> To start with at the beginning of this routine we have:
+> 
+> while (..) {
+> 	if (!val)
+> 		break;
+> 	else {
+> 		// Bulk of the logic
+> 		...
+> 	}
+> }
+> 
+> That should almost always become:
+> 
+> while (..) {
+> 	if (!val)
+> 		break;
+> 
+> 	// Bulk of the logic
+> 	...
+> }
+> 
+> 
+> But in this case that's not enough. Please send a precursor patch which moves
+> this logic out into a helper function.
 
-> NACK. Not needed and breaks the very intent of those 2 options.
->
-> David
-> -- 
+Hey Michael,
 
-Okey, David, I saw your commit 207b57926 (perf kvm: Fix regression with 
-guest machine creation) here. It is applied to fix a bug of SEGFAULT. I 
-have to say that it changed the behavior of report and lead to current bug.
+I believe this patch should be able to take care of this.
 
-commit 207b5792696206663a38e525b9793644895bad3b
-Author: David Ahern <dsahern@gmail.com>
-Date:   Sun Jul 1 16:11:37 2012 -0600
+commit d66d729715cabe0cfd8e34861a6afa8ad639ddf3
+Author: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Date:   Tue Dec 10 11:10:06 2013 +0530
 
-     perf kvm: Fix regression with guest machine creation
+    power, perf: Clean up BHRB processing
+    
+    This patch cleans up some indentation problem and re-organizes the
+    BHRB processing code with an additional helper function.
+    
+    Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index c3e399b..56142d0 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -926,7 +926,7 @@ static struct machine *
-                 else
-                         pid = event->ip.pid;
-
--               return perf_session__find_machine(session, pid);
-+               return perf_session__findnew_machine(session, pid);
-         }
-
-         return perf_session__find_host_machine(session);
-
-In original, it uses perf_session__find_machine(), it means we deliver 
-symbol to machine which has the same pid, if no machine found, deliver 
-it to *default* guest. But if we use perf_session__findnew_machine() 
-here, if no machine was found, new machine with pid will be built and 
-added. Then the default guest which with pid == 0 will never get a 
-symbol, right?
-
-And because the new machine initialized here has no kernel map created, 
-the symbol delivered to it will be marked as "unknown".
-
-So, my patch here is to revert commit 207b57926 and fix the SEGFAULT bug 
-in another way.
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8a7da6f..1770f2f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -851,6 +851,7 @@ static struct machine *
-                                                struct perf_sample *sample)
-  {
-         const u8 cpumode = event->header.misc & 
-PERF_RECORD_MISC_CPUMODE_MASK;
-+       struct machine *machine;
-
-         if (perf_guest &&
-             ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -863,7 +864,11 @@ static struct machine *
-                 else
-                         pid = sample->pid;
-
--               return perf_session__findnew_machine(session, pid);
-+               machine = perf_session__find_machine(session, pid);
-+               if (!machine)
-+                       machine = perf_session__findnew_machine(session,
-+ DEFAULT_GUEST_KERNEL_ID);
-+               return machine;
-         }
-
-         return &session->machines.host;
-
-If there is a machine for this event or sample, return this machine. If 
-no, return *default* guest.
-
-About the SEGFAULT bug you mentioned, it is solved by if (!machine).
-
-Please correct me if I am wrong, thanx !!
-
-- Yang
-
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index 29b89e8..9ae96c5 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -400,11 +400,20 @@ static __u64 power_pmu_bhrb_to(u64 addr)
+ 	return target - (unsigned long)&instr + addr;
+ }
+ 
++void update_branch_entry(struct cpu_hw_events *cpuhw, int u_index, u64 from, u64 to, int pred)
++{
++	cpuhw->bhrb_entries[u_index].from = from;
++	cpuhw->bhrb_entries[u_index].to = to;
++	cpuhw->bhrb_entries[u_index].mispred = pred;
++	cpuhw->bhrb_entries[u_index].predicted = ~pred;
++	return;
++}
++
+ /* Processing BHRB entries */
+ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
+ {
+ 	u64 val;
+-	u64 addr;
++	u64 addr, tmp;
+ 	int r_index, u_index, pred;
+ 
+ 	r_index = 0;
+@@ -415,62 +424,54 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
+ 		if (!val)
+ 			/* Terminal marker: End of valid BHRB entries */
+ 			break;
+-		else {
+-			addr = val & BHRB_EA;
+-			pred = val & BHRB_PREDICTION;
+ 
+-			if (!addr)
+-				/* invalid entry */
+-				continue;
++		addr = val & BHRB_EA;
++		pred = val & BHRB_PREDICTION;
+ 
+-			/* Branches are read most recent first (ie. mfbhrb 0 is
+-			 * the most recent branch).
+-			 * There are two types of valid entries:
+-			 * 1) a target entry which is the to address of a
+-			 *    computed goto like a blr,bctr,btar.  The next
+-			 *    entry read from the bhrb will be branch
+-			 *    corresponding to this target (ie. the actual
+-			 *    blr/bctr/btar instruction).
+-			 * 2) a from address which is an actual branch.  If a
+-			 *    target entry proceeds this, then this is the
+-			 *    matching branch for that target.  If this is not
+-			 *    following a target entry, then this is a branch
+-			 *    where the target is given as an immediate field
+-			 *    in the instruction (ie. an i or b form branch).
+-			 *    In this case we need to read the instruction from
+-			 *    memory to determine the target/to address.
++		if (!addr)
++			/* invalid entry */
++			continue;
++
++		/* Branches are read most recent first (ie. mfbhrb 0 is
++		 * the most recent branch).
++		 * There are two types of valid entries:
++		 * 1) a target entry which is the to address of a
++		 *    computed goto like a blr,bctr,btar.  The next
++		 *    entry read from the bhrb will be branch
++		 *    corresponding to this target (ie. the actual
++		 *    blr/bctr/btar instruction).
++		 * 2) a from address which is an actual branch.  If a
++		 *    target entry proceeds this, then this is the
++		 *    matching branch for that target.  If this is not
++		 *    following a target entry, then this is a branch
++		 *    where the target is given as an immediate field
++		 *    in the instruction (ie. an i or b form branch).
++		 *    In this case we need to read the instruction from
++		 *    memory to determine the target/to address.
++		 */
++		if (val & BHRB_TARGET) {
++			/* Target branches use two entries
++			 * (ie. computed gotos/XL form)
+ 			 */
++			tmp = addr;
+ 
++			/* Get from address in next entry */
++			val = read_bhrb(r_index++);
++			addr = val & BHRB_EA;
+ 			if (val & BHRB_TARGET) {
+-				/* Target branches use two entries
+-				 * (ie. computed gotos/XL form)
+-				 */
+-				cpuhw->bhrb_entries[u_index].to = addr;
+-				cpuhw->bhrb_entries[u_index].mispred = pred;
+-				cpuhw->bhrb_entries[u_index].predicted = ~pred;
+-
+-				/* Get from address in next entry */
+-				val = read_bhrb(r_index++);
+-				addr = val & BHRB_EA;
+-				if (val & BHRB_TARGET) {
+-					/* Shouldn't have two targets in a
+-					   row.. Reset index and try again */
+-					r_index--;
+-					addr = 0;
+-				}
+-				cpuhw->bhrb_entries[u_index].from = addr;
+-			} else {
+-				/* Branches to immediate field 
+-				   (ie I or B form) */
+-				cpuhw->bhrb_entries[u_index].from = addr;
+-				cpuhw->bhrb_entries[u_index].to =
+-					power_pmu_bhrb_to(addr);
+-				cpuhw->bhrb_entries[u_index].mispred = pred;
+-				cpuhw->bhrb_entries[u_index].predicted = ~pred;
++				/* Shouldn't have two targets in a
++				   row.. Reset index and try again */
++				r_index--;
++				addr = 0;
+ 			}
+-			u_index++;
+-
++			update_branch_entry(cpuhw, u_index, addr, tmp, pred);
++		} else {
++			/* Branches to immediate field 
++			   (ie I or B form) */
++			tmp = power_pmu_bhrb_to(addr);
++			update_branch_entry(cpuhw, u_index, addr, tmp, pred);
+ 		}
++		u_index++;
+ 	}
+ 	cpuhw->bhrb_stack.nr = u_index;
+ 	return;
 
