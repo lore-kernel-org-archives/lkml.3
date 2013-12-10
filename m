@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3LJIjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:39:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58404 "EHLO
+	id S1755932Ab3LJIj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:39:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58397 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab3LJH70 (ORCPT
+	with ESMTP id S1752547Ab3LJH7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:26 -0500
+	Tue, 10 Dec 2013 02:59:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Leitner <colin.leitner@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 22/25] USB: mos7840: correct handling of CS5 setting
-Date: Tue, 10 Dec 2013 00:00:30 -0800
-Message-Id: <20131210075932.371320145@linuxfoundation.org>
+        Seth Heasley <seth.heasley@intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: [PATCH 3.4 20/25] i2c: i801: SMBus patch for Intel Avoton DeviceIDs
+Date: Tue, 10 Dec 2013 00:00:28 -0800
+Message-Id: <20131210075932.238300592@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -27,66 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 78692cc3382e0603a47e1f2aaeffe0d99891994d upstream.
+commit c2db409cbc8751ccc7e6d2cc2e41af0d12ea637f upstream.
 
-This patch removes an erroneous check of CSIZE, which made it impossible to set
-CS5.
+This patch adds the PCU SMBus DeviceID for the Intel Avoton SOC.
 
-Compiles clean, but couldn't test against hardware.
-
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: "Ong, Boon Leong" <boon.leong.ong@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ Documentation/i2c/busses/i2c-i801 |    1 +
+ drivers/i2c/busses/Kconfig        |    1 +
+ drivers/i2c/busses/i2c-i801.c     |    3 +++
+ 3 files changed, 5 insertions(+)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1962,25 +1962,25 @@ static void mos7840_change_port_settings
- 	iflag = tty->termios->c_iflag;
+--- a/Documentation/i2c/busses/i2c-i801
++++ b/Documentation/i2c/busses/i2c-i801
+@@ -22,6 +22,7 @@ Supported adapters:
+   * Intel Panther Point (PCH)
+   * Intel Lynx Point (PCH)
+   * Intel Lynx Point-LP (PCH)
++  * Intel Avoton (SOC)
+    Datasheets: Publicly available at the Intel website
  
- 	/* Change the number of bits */
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			lData = LCR_BITS_5;
--			break;
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		lData = LCR_BITS_5;
-+		break;
+ On Intel Patsburg and later chipsets, both the normal host SMBus controller
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -105,6 +105,7 @@ config I2C_I801
+ 	    Panther Point (PCH)
+ 	    Lynx Point (PCH)
+ 	    Lynx Point-LP (PCH)
++	    Avoton (SOC)
  
--		case CS6:
--			lData = LCR_BITS_6;
--			break;
-+	case CS6:
-+		lData = LCR_BITS_6;
-+		break;
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -53,6 +53,7 @@
+   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
+   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
+   Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
++  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
  
--		case CS7:
--			lData = LCR_BITS_7;
--			break;
--		default:
--		case CS8:
--			lData = LCR_BITS_8;
--			break;
--		}
-+	case CS7:
-+		lData = LCR_BITS_7;
-+		break;
-+
-+	default:
-+	case CS8:
-+		lData = LCR_BITS_8;
-+		break;
- 	}
-+
- 	/* Change the Parity bit */
- 	if (cflag & PARENB) {
- 		if (cflag & PARODD) {
+   Features supported by this driver:
+   Software PEC                     no
+@@ -145,6 +146,7 @@
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
+ #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
++#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
+ #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+ #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+ #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
+@@ -639,6 +641,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
+ 	{ 0, }
+ };
+ 
 
 
