@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3LJRfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:35:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab3LJRft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:35:49 -0500
-Date: Tue, 10 Dec 2013 18:35:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Waiman Long <waiman.long@hp.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v5 tip/core/locking 5/7]
-	Documentation/memory-barriers.txt: Downgrade UNLOCK+LOCK
-Message-ID: <20131210173524.GB25934@redhat.com>
-References: <20131210012738.GA24317@linux.vnet.ibm.com> <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com> <1386638883-25379-5-git-send-email-paulmck@linux.vnet.ibm.com> <20131210164436.GA23506@redhat.com> <20131210171522.GR4208@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210171522.GR4208@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755455Ab3LJRgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:36:42 -0500
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:2952 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab3LJRgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 12:36:40 -0500
+Message-ID: <1386696996.2731.18.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
+        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
+Date: Tue, 10 Dec 2013 09:36:36 -0800
+In-Reply-To: <20131210171530.GO12849@twins.programming.kicks-ass.net>
+References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
+	 <1386063927-6545-5-git-send-email-davidlohr@hp.com>
+	 <20131210171530.GO12849@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10, Paul E. McKenney wrote:
->
-> On Tue, Dec 10, 2013 at 05:44:37PM +0100, Oleg Nesterov wrote:
-> >
-> > Well, but smp_mb__before_spinlock + LOCK is not wmb... But it is not
-> > the full barrier. It should guarantee that, say,
-> >
-> > 	CONDITION = true;		// 1
-> >
-> > 	// try_to_wake_up
-> > 	smp_mb__before_spinlock();
-> > 	spin_lock(&task->pi_lock);
-> >
-> > 	if (!(p->state & state))	// 2
-> > 		return;
-> >
-> > can't race with with set_current_state() + check(CONDITION), this means
-> > that 1 and 2 above must not be reordered.
-> >
-> > But a LOAD before before spin_lock() can leak into the critical section.
-> >
-> > Perhaps this should be clarified somehow, or perhaps it should actually
-> > imply mb (if combined with LOCK).
->
-> If we leave the implementation the same, does the following capture the
-> constraints?
->
-> 	Memory operations issued before the LOCK may be completed after
-> 	the LOCK operation has completed.  An smp_mb__before_spinlock(),
-> 	combined with a following LOCK, orders prior loads against
-> 	subsequent stores
+On Tue, 2013-12-10 at 18:15 +0100, Peter Zijlstra wrote:
+> ---
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -82,12 +82,13 @@
+>   * The waker side modifies the user space value of the futex and calls
+>   * futex_wake(). It computes the hash bucket and acquires the hash
+>   * bucket lock. Then it looks for waiters on that futex in the hash
+> - * bucket and wakes them. In scenarios where wakeups are called and no
+> - * tasks are blocked on a futex, taking the hb spinlock can be avoided
+> - * and simply return. In order for this optimization to work, ordering
+> - * guarantees must exist so that the waiter being added to the list is
+> - * acknowledged when the list is concurrently being checked by the waker,
+> - * avoiding scenarios like the following:
+> + * bucket and wakes them.
+> + *
+> + * In scenarios where wakeups are called and no tasks are blocked on a futex,
+> + * taking the hb spinlock can be avoided and simply return. In order for this
+> + * optimization to work, ordering guarantees must exist so that the waiter
+> + * being added to the list is acknowledged when the list is concurrently being
+> + * checked by the waker, avoiding scenarios like the following:
+>   *
+>   * CPU 0                               CPU 1
+>   * val = *futex;
+> @@ -108,6 +109,7 @@
+>   * This would cause the waiter on CPU 0 to wait forever because it
+>   * missed the transition of the user space value from val to newval
+>   * and the waker did not find the waiter in the hash bucket queue.
+> + *
+>   * The correct serialization ensures that a waiter either observes
+>   * the changed user space value before blocking or is woken by a
+>   * concurrent waker:
+> @@ -117,7 +119,8 @@
+>   * sys_futex(WAIT, futex, val);
+>   *   futex_wait(futex, val);
+>   *
+> - *   mb(); <-- paired with ------
+> + *   waiters++;
+> + *   mb(); (A) <-- paired with -.
+>   *                              |
+>   *   lock(hash_bucket(futex));  |
+>   *                              |
+> @@ -126,22 +129,29 @@
+>   *                              |        sys_futex(WAKE, futex);
+>   *                              |          futex_wake(futex);
+>   *                              |
+> - *                              -------->   mb();
+> + *                              `------->   mb(); (B)
+>   *   if (uval == val)
+>   *     queue();
+>   *     unlock(hash_bucket(futex));
+> - *     schedule();                         if (!queue_empty())
+> + *     schedule();                         if (waiters)
+>   *                                           lock(hash_bucket(futex));
+>   *                                           wake_waiters(futex);
+>   *                                           unlock(hash_bucket(futex));
+>   *
+> - * The length of the list is tracked with atomic ops (hb->waiters),
+> - * providing the necessary memory barriers for the waiters. For the
+> - * waker side, however, we rely on get_futex_key_refs(), using either
+> - * ihold() or the atomic_inc(), for shared futexes. The former provides
+> - * a full mb on all architectures. For architectures that do not have an
+> - * implicit barrier in atomic_inc/dec, we explicitly add it - please
+> - * refer to futex_get_mm() and hb_waiters_inc/dec().
 
-prior stores against subsequent loads ;)
+IMHO this text gives a nice summary instead of documenting each function
+with this things like '... implies MB (B)'. Anyway, I'll resend this
+patch with your corrections.
 
-Otherwise - thanks!
-
-Oleg.
+Thanks,
+Davidlohr
 
