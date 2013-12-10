@@ -1,220 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab3LJKGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:06:01 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:61965 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3LJKFe (ORCPT
+	id S1753194Ab3LJKGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:06:13 -0500
+Received: from relay.parallels.com ([195.214.232.42]:59725 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab3LJKGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:05:34 -0500
-From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
-To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: grant.likely@linaro.org, rob.herring@calxeda.com, swarren@wwwdotorg.org,
-        mark.rutland@arm.com, sachin.kamat@linaro.org,
-        b.zolnierkie@samsung.com, jg1.han@samsung.com, t.figa@samsung.com,
-        christoffer.dall@linaro.org, joshi@samsung.com,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Subject: [PATCH V3 2/2] ARM: dts: Enable ahci sata and sata phy
-Date: Tue, 10 Dec 2013 15:35:10 +0530
-Message-Id: <1386669911-17319-3-git-send-email-yuvaraj.cd@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com>
-References: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com>
+	Tue, 10 Dec 2013 05:06:04 -0500
+Message-ID: <52A6E77B.3090106@parallels.com>
+Date: Tue, 10 Dec 2013 14:05:47 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <glommer@openvz.org>, <glommer@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v13 11/16] mm: list_lru: add per-memcg lists
+References: <cover.1386571280.git.vdavydov@parallels.com> <0ca62dbfbf545edb22b86bd11c50e9017a3dc4db.1386571280.git.vdavydov@parallels.com> <20131210050005.GC31386@dastard>
+In-Reply-To: <20131210050005.GC31386@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds dt entry for ahci sata controller and its
-corresponding phy controller.phy node has been added w.r.t
-new generic phy framework.
+Hi, David
 
-Changes since V2:
-	1.Used syscon interface to PMU handling.
-	2.Changed "sata-phy-i2c" to "exynos-sataphy-i2c".
+First of all, let me thank you for such a thorough review. It is really
+helpful. As usual, I can't help agreeing with most of your comments, but
+there are a couple of things I'd like to clarify. Please, see comments
+inline.
 
-Changes since V1:
-	1.Minor changes to node name convention.
-	2.Updated binding document.
+On 12/10/2013 09:00 AM, Dave Chinner wrote:
+> On Mon, Dec 09, 2013 at 12:05:52PM +0400, Vladimir Davydov wrote:
+>> diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+>> index 34e57af..e8add3d 100644
+>> --- a/include/linux/list_lru.h
+>> +++ b/include/linux/list_lru.h
+>> @@ -28,11 +28,47 @@ struct list_lru_node {
+>>  	long			nr_items;
+>>  } ____cacheline_aligned_in_smp;
+>>  
+>> +struct list_lru_one {
+>> +	struct list_lru_node *node;
+>> +	nodemask_t active_nodes;
+>> +};
+>> +
+>>  struct list_lru {
+>> -	struct list_lru_node	*node;
+>> -	nodemask_t		active_nodes;
+>> +	struct list_lru_one	global;
+>> +#ifdef CONFIG_MEMCG_KMEM
+>> +	/*
+>> +	 * In order to provide ability of scanning objects from different
+>> +	 * memory cgroups independently, we keep a separate LRU list for each
+>> +	 * kmem-active memcg in this array. The array is RCU-protected and
+>> +	 * indexed by memcg_cache_id().
+>> +	 */
+>> +	struct list_lru_one	**memcg;
+> OK, as far as I can tell, this is introducing a per-node, per-memcg
+> LRU lists. Is that correct?
 
-Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
----
- .../devicetree/bindings/ata/exynos-sata-phy.txt    |   19 ++++++++++++++-----
- .../devicetree/bindings/ata/exynos-sata.txt        |   17 ++++++++++++-----
- .../devicetree/bindings/ata/exynos_sataphy_i2c.txt |   12 ++++++++++++
- arch/arm/boot/dts/exynos5250-arndale.dts           |    9 ++++++++-
- arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 ++------
- arch/arm/boot/dts/exynos5250.dtsi                  |   16 ++++++++++++----
- 6 files changed, 60 insertions(+), 21 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
+Yes, it is.
 
-diff --git a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-index 37824fa..a679e17 100644
---- a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-+++ b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
-@@ -4,11 +4,20 @@ SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
- Each SATA PHY controller should have its own node.
- 
- Required properties:
--- compatible        : compatible list, contains "samsung,exynos5-sata-phy"
-+- compatible        : compatible list, contains "samsung,exynos5250-sata-phy"
- - reg               : <registers mapping>
- 
- Example:
--        sata@ffe07000 {
--                compatible = "samsung,exynos5-sata-phy";
--                reg = <0xffe07000 0x1000>;
--        };
-+	sata_phy: sata-phy@12170000 {
-+		compatible = "samsung,exynos5250-sata-phy";
-+		reg = <0x12170000 0x1ff>;
-+		clocks = <&clock 287>;
-+		clock-names = "sata_phyctrl";
-+		#phy-cells = <0>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		sataphy-pmu {
-+			reg = <0x10040724 0x4>;
-+			};
-+	};
-diff --git a/Documentation/devicetree/bindings/ata/exynos-sata.txt b/Documentation/devicetree/bindings/ata/exynos-sata.txt
-index 0849f10..918bff8 100644
---- a/Documentation/devicetree/bindings/ata/exynos-sata.txt
-+++ b/Documentation/devicetree/bindings/ata/exynos-sata.txt
-@@ -8,10 +8,17 @@ Required properties:
- - interrupts        : <interrupt mapping for SATA IRQ>
- - reg               : <registers mapping>
- - samsung,sata-freq : <frequency in MHz>
-+- phys              : as mentioned in phy-bindings.txt
-+- phy-names         : as mentioned in phy-bindings.txt
- 
- Example:
--        sata@ffe08000 {
--                compatible = "samsung,exynos5-sata";
--                reg = <0xffe08000 0x1000>;
--                interrupts = <115>;
--        };
-+	sata@122f0000 {
-+		compatible = "snps,dwc-ahci";
-+		samsung,sata-freq = <66>;
-+		reg = <0x122f0000 0x1ff>;
-+		interrupts = <0 115 0>;
-+		clocks = <&clock 277>, <&clock 143>;
-+		clock-names = "sata", "sclk_sata";
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
-+	};
-diff --git a/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt b/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
-new file mode 100644
-index 0000000..deabba9
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
-@@ -0,0 +1,12 @@
-+Device-Tree bindings for sataphy i2c client driver
-+
-+Required properties:
-+compatible: Should be "samsung,exynos-sataphy-i2c"
-+- reg: I2C address of the sataphy i2c device.
-+
-+Example:
-+
-+	sata-phy@38 {
-+		compatible = "samsung,exynos-sataphy-i2c";
-+		reg = <0x38>;
-+	};
-diff --git a/arch/arm/boot/dts/exynos5250-arndale.dts b/arch/arm/boot/dts/exynos5250-arndale.dts
-index b77a37e..dca74bb 100644
---- a/arch/arm/boot/dts/exynos5250-arndale.dts
-+++ b/arch/arm/boot/dts/exynos5250-arndale.dts
-@@ -381,7 +381,14 @@
- 	};
- 
- 	i2c@121D0000 {
--		status = "disabled";
-+		samsung,i2c-sda-delay = <100>;
-+		samsung,i2c-max-bus-freq = <40000>;
-+		samsung,i2c-slave-addr = <0x38>;
-+
-+		sata-phy@38 {
-+			compatible = "samsung,exynos-sataphy-i2c";
-+			reg = <0x38>;
-+		};
- 	};
- 
- 	mmc_0: mmc@12200000 {
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index 13746df..b3c359a4 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -90,16 +90,12 @@
- 		samsung,i2c-max-bus-freq = <40000>;
- 		samsung,i2c-slave-addr = <0x38>;
- 
--		sata-phy {
--			compatible = "samsung,sata-phy";
-+		sata-phy@38 {
-+			compatible = "samsung,exynos-sataphy-i2c";
- 			reg = <0x38>;
- 		};
- 	};
- 
--	sata@122F0000 {
--		samsung,sata-freq = <66>;
--	};
--
- 	i2c@12C80000 {
- 		samsung,i2c-sda-delay = <100>;
- 		samsung,i2c-max-bus-freq = <66000>;
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 5d5d3d0..5d4c8fa 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -46,6 +46,7 @@
- 		i2c6 = &i2c_6;
- 		i2c7 = &i2c_7;
- 		i2c8 = &i2c_8;
-+		i2c9 = &i2c_9;
- 		pinctrl0 = &pinctrl_0;
- 		pinctrl1 = &pinctrl_1;
- 		pinctrl2 = &pinctrl_2;
-@@ -229,16 +230,23 @@
- 	};
- 
- 	sata@122F0000 {
--		compatible = "samsung,exynos5-sata-ahci";
-+		compatible = "snps,dwc-ahci";
-+		samsung,sata-freq = <66>;
- 		reg = <0x122F0000 0x1ff>;
- 		interrupts = <0 115 0>;
- 		clocks = <&clock 277>, <&clock 143>;
- 		clock-names = "sata", "sclk_sata";
-+		phys = <&sata_phy>;
-+		phy-names = "sata-phy";
- 	};
- 
--	sata-phy@12170000 {
--		compatible = "samsung,exynos5-sata-phy";
-+	sata_phy: sata-phy@12170000 {
-+		compatible = "samsung,exynos5250-sata-phy";
- 		reg = <0x12170000 0x1ff>;
-+		clocks = <&clock 287>;
-+		clock-names = "sata_phyctrl";
-+		#phy-cells = <0>;
-+		samsung,syscon-phandle = <&pmu_syscon>;
- 	};
- 
- 	i2c_0: i2c@12C60000 {
-@@ -347,7 +355,7 @@
- 		clock-names = "i2c";
- 	};
- 
--	i2c@121D0000 {
-+	i2c_9: i2c@121D0000 {
-                 compatible = "samsung,exynos5-sata-phy-i2c";
-                 reg = <0x121D0000 0x100>;
-                 #address-cells = <1>;
--- 
-1.7.9.5
+> If so, then that is not what Glauber and I originally intended for
+> memcg LRUs. per-node LRUs are expensive in terms of memory and cross
+> multiplying them by the number of memcgs in a system was not a good
+> use of memory.
 
+Unfortunately, I did not spoke to Glauber about this. I only saw the
+last version he tried to submit and the code from his tree. There
+list_lru is implemented as per-memcg per-node matrix.
+
+> According to Glauber, most memcgs are small and typically confined
+> to a single node or two by external means and therefore don't need the
+> scalability numa aware LRUs provide. Hence the idea was that the
+> memcg LRUs would just be a single LRU list, just like a non-numa
+> aware list_lru instantiation. IOWs, this is the structure that we
+> had decided on as the best compromise between memory usage,
+> complexity and memcg awareness:
+>
+> 	global list --- node 0 lru
+> 			node 1 lru
+> 			.....
+> 			node nr_nodes lru
+> 	memcg lists	memcg 0 lru
+> 			memcg 1 lru
+> 			.....
+> 			memcg nr_memcgs lru
+>
+> and the LRU code internally would select either a node or memcg LRU
+> to iterated based on the scan information coming in from the
+> shrinker. i.e.:
+>
+>
+> struct list_lru {
+> 	struct list_lru_node	*node;
+> 	nodemask_t		active_nodes;
+> #ifdef MEMCG
+> 	struct list_lru_node	**memcg;
+> 	....
+
+I agree that such a setup would not only reduce memory consumption, but
+also make the code look much clearer removing these ugly "list_lru_one"
+and "olru" I had to introduce. However, it would also make us scan memcg
+LRUs more aggressively than usual NUMA-aware LRUs on global pressure (I
+mean kswapd's would scan them on each node). I don't think it's much of
+concern though, because this is what we had for all shrinkers before
+NUMA-awareness was introduced. Besides, prioritizing memcg LRUs reclaim
+over global LRUs sounds sane. That said I like this idea. Thanks.
+
+>>  bool list_lru_add(struct list_lru *lru, struct list_head *item)
+>>  {
+>> -	int nid = page_to_nid(virt_to_page(item));
+>> -	struct list_lru_node *nlru = &lru->node[nid];
+>> +	struct page *page = virt_to_page(item);
+>> +	int nid = page_to_nid(page);
+>> +	struct list_lru_one *olru = lru_of_page(lru, page);
+>> +	struct list_lru_node *nlru = &olru->node[nid];
+> Yeah, that's per-memcg, per-node dereferencing. And, FWIW, olru/nlru
+> are bad names - that's the convention typically used for "old <foo>"
+> and "new <foo>" pointers....
+>
+> As it is, it shouldn't be necessary - lru_of_page() should just
+> return a struct list_lru_node....
+>
+>> +int list_lru_init(struct list_lru *lru)
+>> +{
+>> +	int err;
+>> +
+>> +	err = list_lru_init_one(&lru->global);
+>> +	if (err)
+>> +		goto fail;
+>> +
+>> +	err = memcg_list_lru_init(lru);
+>> +	if (err)
+>> +		goto fail;
+>> +
+>> +	return 0;
+>> +fail:
+>> +	list_lru_destroy_one(&lru->global);
+>> +	lru->global.node = NULL; /* see list_lru_destroy() */
+>> +	return err;
+>> +}
+> I suspect we have users of list_lru that don't want memcg bits added
+> to them. Hence I think we want to leave list_lru_init() alone and
+> add a list_lru_init_memcg() variant that makes the LRU memcg aware.
+> i.e. if the shrinker is not going to be memcg aware, then we don't
+> want the LRU to be memcg aware, either....
+
+I though that we want to make all LRUs per-memcg automatically, just
+like it was with NUMA awareness. After your explanation about some
+FS-specific caches (gfs2/xfs dquot), I admit I was wrong, and not all
+caches require per-memcg shrinking. I'll add a flag to list_lru_init()
+specifying if we want memcg awareness.
+
+>> +int list_lru_grow_memcg(struct list_lru *lru, size_t new_array_size)
+>> +{
+>> +	int i;
+>> +	struct list_lru_one **memcg_lrus;
+>> +
+>> +	memcg_lrus = kcalloc(new_array_size, sizeof(*memcg_lrus), GFP_KERNEL);
+>> +	if (!memcg_lrus)
+>> +		return -ENOMEM;
+>> +
+>> +	if (lru->memcg) {
+>> +		for_each_memcg_cache_index(i) {
+>> +			if (lru->memcg[i])
+>> +				memcg_lrus[i] = lru->memcg[i];
+>> +		}
+>> +	}
+> Um, krealloc()?
+
+Not exactly. We have to keep the old version until we call sync_rcu.
+
+>> +/*
+>> + * This function allocates LRUs for a memcg in all list_lru structures. It is
+>> + * called under memcg_create_mutex when a new kmem-active memcg is added.
+>> + */
+>> +static int memcg_init_all_lrus(int new_memcg_id)
+>> +{
+>> +	int err = 0;
+>> +	int num_memcgs = new_memcg_id + 1;
+>> +	int grow = (num_memcgs > memcg_limited_groups_array_size);
+>> +	size_t new_array_size = memcg_caches_array_size(num_memcgs);
+>> +	struct list_lru *lru;
+>> +
+>> +	if (grow) {
+>> +		list_for_each_entry(lru, &all_memcg_lrus, list) {
+>> +			err = list_lru_grow_memcg(lru, new_array_size);
+>> +			if (err)
+>> +				goto out;
+>> +		}
+>> +	}
+>> +
+>> +	list_for_each_entry(lru, &all_memcg_lrus, list) {
+>> +		err = list_lru_memcg_alloc(lru, new_memcg_id);
+>> +		if (err) {
+>> +			__memcg_destroy_all_lrus(new_memcg_id);
+>> +			break;
+>> +		}
+>> +	}
+>> +out:
+>> +	if (grow) {
+>> +		synchronize_rcu();
+>> +		list_for_each_entry(lru, &all_memcg_lrus, list) {
+>> +			kfree(lru->memcg_old);
+>> +			lru->memcg_old = NULL;
+>> +		}
+>> +	}
+>> +	return err;
+>> +}
+> Urk. That won't scale very well.
+>
+>> +
+>> +int memcg_list_lru_init(struct list_lru *lru)
+>> +{
+>> +	int err = 0;
+>> +	int i;
+>> +	struct mem_cgroup *memcg;
+>> +
+>> +	lru->memcg = NULL;
+>> +	lru->memcg_old = NULL;
+>> +
+>> +	mutex_lock(&memcg_create_mutex);
+>> +	if (!memcg_kmem_enabled())
+>> +		goto out_list_add;
+>> +
+>> +	lru->memcg = kcalloc(memcg_limited_groups_array_size,
+>> +			     sizeof(*lru->memcg), GFP_KERNEL);
+>> +	if (!lru->memcg) {
+>> +		err = -ENOMEM;
+>> +		goto out;
+>> +	}
+>> +
+>> +	for_each_mem_cgroup(memcg) {
+>> +		int memcg_id;
+>> +
+>> +		memcg_id = memcg_cache_id(memcg);
+>> +		if (memcg_id < 0)
+>> +			continue;
+>> +
+>> +		err = list_lru_memcg_alloc(lru, memcg_id);
+>> +		if (err) {
+>> +			mem_cgroup_iter_break(NULL, memcg);
+>> +			goto out_free_lru_memcg;
+>> +		}
+>> +	}
+>> +out_list_add:
+>> +	list_add(&lru->list, &all_memcg_lrus);
+>> +out:
+>> +	mutex_unlock(&memcg_create_mutex);
+>> +	return err;
+>> +
+>> +out_free_lru_memcg:
+>> +	for (i = 0; i < memcg_limited_groups_array_size; i++)
+>> +		list_lru_memcg_free(lru, i);
+>> +	kfree(lru->memcg);
+>> +	goto out;
+>> +}
+> That will probably scale even worse. Think about what happens when we
+> try to mount a bunch of filesystems in parallel - they will now
+> serialise completely on this memcg_create_mutex instantiating memcg
+> lists inside list_lru_init().
+
+Yes, the scalability seems to be the main problem here. I have a couple
+of thoughts on how it could be improved. Here they go:
+
+1) We can turn memcg_create_mutex to rw-semaphore (or introduce an
+rw-semaphore, which we would take for modifying list_lru's) and take it
+for reading in memcg_list_lru_init() and for writing when we create a
+new memcg (memcg_init_all_lrus()).
+This would remove the bottleneck from the mount path, but every memcg
+creation would still iterate over all LRUs under a memcg mutex. So I
+guess it is not an option, isn't it?
+
+2) We could use cmpxchg() instead of a mutex in list_lru_init_memcg()
+and memcg_init_all_lrus() to assure a memcg LRU is initialized only
+once. But again, this would not remove iteration over all LRUs from
+memcg_init_all_lrus().
+
+3) We can try to initialize per-memcg LRUs lazily only when we actually
+need them, similar to how we now handle per-memcg kmem caches creation.
+If list_lru_add() cannot find appropriate LRU, it will schedule a
+background worker for its initialization.
+The benefits of this approach are clear: we do not introduce any
+bottlenecks, and we lower memory consumption in case different memcgs
+use different mounts exclusively.
+However, there is one thing that bothers me. Some objects accounted to a
+memcg will go into the global LRU, which will postpone actual memcg
+destruction until global reclaim.
+
+Thanks.
