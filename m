@@ -1,183 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab3LIX6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 18:58:05 -0500
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:40329 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3LIX6C (ORCPT
+	id S1751154Ab3LJABn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:01:43 -0500
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37244 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750699Ab3LJABm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 18:58:02 -0500
-From: Nat Gurumoorthy <natg@google.com>
-To: nsujir@broadcom.com, mchan@broadcom.com, bhelgaas@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Nat Gurumoorthy <natg@google.com>
-Subject: [PATCH] PCI: Add quirk to initialize REG_BASE_ADDR to 0 for Broadcom TIGON3 chips.
-Date: Mon,  9 Dec 2013 15:57:22 -0800
-Message-Id: <1386633442-12509-1-git-send-email-natg@google.com>
-X-Mailer: git-send-email 1.8.5.1
+	Mon, 9 Dec 2013 19:01:42 -0500
+Message-ID: <52A659DD.2030904@hurleysoftware.com>
+Date: Mon, 09 Dec 2013 19:01:33 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Karl Dahlke <eklhad@comcast.net>
+Subject: Re: [PATCH 3.12] Broken terminal due to echo bufferring
+References: <alpine.LRH.2.02.1312082127020.19329@file01.intranet.prod.int.rdu2.redhat.com> <52A5E531.9010909@hurleysoftware.com> <alpine.LRH.2.02.1312091645400.9569@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1312091645400.9569@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
-uninitialized. From power on reset this register may have garbage in it. The
-Register Base Address register defines the device local address of a
-register. The data pointed to by this location is read or written using
-the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
-garbage any read or write of Register Data Register (PCI 128) will cause the
-PCI bus to lock up. The TCO watchdog will fire and bring down the system.
+On 12/09/2013 05:18 PM, Mikulas Patocka wrote:
+>
+>
+> On Mon, 9 Dec 2013, Peter Hurley wrote:
+>
+>> On 12/08/2013 09:55 PM, Mikulas Patocka wrote:
+>>> Hi
+>>>
+>>> I discovered that kernel 3.12 has broken terminal handling.
+>>>
+>>> I created this program to show the problem:
+>>> #include <stdio.h>
+>>> #include <unistd.h>
+>>>
+>>> int main(void)
+>>> {
+>>>           int c;
+>>>           while ((c = getchar()) != EOF) {
+>>>                   if (c == '\n') write(1, "prompt>", 7);
+>>>           }
+>>>           return 0;
+>>> }
+>>>
+>>> Each time the user presses enter, the program prints "prompt>". Normally,
+>>> when you press enter, you should see:
+>>>
+>>> prompt>
+>>> prompt>
+>>> prompt>
+>>> prompt>_
+>>>
+>>> However, with kernel 3.12.4, you occasionally see
+>>>
+>>> prompt>
+>>> prompt>
+>>> prompt>prompt>
+>>> _
+>>>
+>>> This bug happens randomly, it is timing-dependent. I am using single-core
+>>> 600MHz processor with preemptible kernel, the bug may or may not happen on
+>>> other computers.
+>>>
+>>> This bug is caused by Peter Hurley's echo buffering patches
+>>> (cbfd0340ae1993378fd47179db949e050e16e697). The patches change n_tty.c so
+>>> that it accumulates echoed characters and sends them out in a batch.
+>>> Something like this happens:
+>>>
+>>> * The user presses enter
+>>> * n_tty.c adds '\n' to the echo buffer using echo_char_raw
+>>> * n_tty.c adds '\n' to the input queue using put_tty_queue
+>>> * A process is switched
+>>> * Userspace reads '\n' from the terminal input queue
+>>> * Userspace writes the string "prompt>" to the terminal
+>>> * A process is switched back
+>>> * The echo buffer is flushed
+>>> * '\n' from the echo buffer is printed.
+>>>
+>>>
+>>> Echo bufferring is fundamentally wrong idea - you must make sure that you
+>>> flush the echo buffer BEFORE you add a character to input queue and BEFORE
+>>> you send any signal on behalf of that character. If you delay echo, you
+>>> are breaking behavior of various programs because the program output will
+>>> be interleaved with the echoed characters.
+>>
+>> There is nothing fundamentally broken with buffering echoes; it's just that
+>> there is a bug wrt when to process the echoes (ie, when to force the output).
+>>
+>> In the example you provided, the write() should cause the echoes to flush
+>> but doesn't because the commit marker hasn't been advanced.
+>>
+>> The commit marker wasn't advanced _yet_ because there is a race window between
+>> the reader being woken as a result of the newline and the flush_echoes()
+>> which happens with every received input.
+>>
+>> Either closing the race window or advancing the commit marker prior to
+>> write() output will fix the problem; right now, I'm looking at which is least
+>> painful.
+>>
+>> Regards,
+>> Peter Hurley
+>
+> I still think you should drop this.
+>
+>
+> The user types on the keyboard so slowly, that lock contention doesn't
+> matter. Specialized programs that use terminal to transmit bulk data don't
+> use cooked mode and echo. So I don't really see any use case where
+> something depends on performance of echoed characters.
+>
+>
+> Those patches just complicate the code for no benefit.
+>
+>
+> When you read a variable that may be asynchronously modified, you need
+> ACCESS_ONCE - for example you need this in process_echoes when accessing
+> the variables outside the lock:
+> if (ACCESS_ONCE(ldata->echo_commit) == ACCESS_ONCE(ldata->echo_tail))
 
-Signed-off-by: <natg@google.com>
----
- drivers/pci/quirks.c | 138 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 138 insertions(+)
+Not necessarily. Stale values in an SMP environment may not be a problem;
+in this case, a possibly stale echo_tail simply means that the output_lock
+will be obtained unnecessarily (which is cheaper every-so-often than contending
+over the echo_tail cache line every write, especially on x86 where there is
+no problem).
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 3a02717..b9a289b 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3461,3 +3461,141 @@ int pci_dev_specific_acs_enabled(struct pci_dev *dev, u16 acs_flags)
- 
- 	return -ENOTTY;
- }
-+
-+/*
-+ * This is a quirk is to initialize REG_BASE_ADDR at PCI config offset 120
-+ * to 0 for all Broadcom devices controlled by the TIGON3 driver.
-+ */
-+static void tg3_init_reg_base_addr(struct pci_dev *dev)
-+{
-+	pci_write_config_dword(dev, 120, 0);
-+}
-+
-+
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5700,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5701,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5703,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5704,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702FE,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705_2,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705M_2,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702X,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5703X,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5704S,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5702A3,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5703A3,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5782,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5788,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5789,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5901,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5901_2,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5704S_2,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5705F,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5721,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5722,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5751,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5751M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5751F,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5752,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5752M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5753,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5753M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5753F,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5754,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5754M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5755,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5755M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5756,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5786,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5787,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5787M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5787F,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5714,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5714S,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5715,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5715S,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5780,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5780S,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5781,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5906,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5906M,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5784,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5764,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5723,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5761,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_BROADCOM, PCI_DEVICE_ID_TIGON3_5761E,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_SYSKONNECT,
-+			PCI_DEVICE_ID_SYSKONNECT_9DXX,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_SYSKONNECT,
-+			PCI_DEVICE_ID_SYSKONNECT_9MXX,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1000,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1001,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC1003,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ALTIMA, PCI_DEVICE_ID_ALTIMA_AC9100,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_APPLE, PCI_DEVICE_ID_APPLE_TIGON3,
-+			tg3_init_reg_base_addr);
-+DECLARE_PCI_FIXUP_EARLY(0x10cf, 0x11a2, tg3_init_reg_base_addr);
--- 
-1.8.5.1
+Similarly, so many fences had to be passed to get to the echo_commit load
+from userspace that performing a load-acquire here and store-release in
+commit_echoes would be ridiculously superfluous.
+
+> Anyway accessing variables that may change without locks or barriers is
+> generally bad idea and it is hard to verify it. Terminal layer is not
+> performance-sensitive part of the kernel, so it isn't justified to use
+> such dirty tricks.
+>
+>
+> Another problem: what about this in process_echoes and flush_echoes?
+> if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
+> 	return;
+> - so if the user turns off echo, echoes are not performed. But the buffer
+> is not flushed. So when the user turns on echo again, previously buffered
+> characters will be echoed. That is wrong.
+
+The check for !L_ECHO pre-dates my patches; it might be wrong but userspace
+may have come to rely on this behavior. That said, feel free to submit a fix
+for that, if you think it's broken.
+
+Regards,
+Peter Hurley
 
