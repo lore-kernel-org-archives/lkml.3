@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab3LJIfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:35:38 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56738 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab3LJIfd (ORCPT
+	id S1755740Ab3LJIgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:36:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58471 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab3LJH77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:35:33 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-4b-52a6d253e62b
-Date: Tue, 10 Dec 2013 17:38:25 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v2 2/7] mm/migrate: correct failure handling if
- !hugepage_migration_support()
-Message-ID: <20131210083825.GB24992@lge.com>
-References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1386580248-22431-3-git-send-email-iamjoonsoo.kim@lge.com>
- <00000142d8263858-5c29199b-77e5-47a5-9db6-2ea6ea7c7fc8-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000142d8263858-5c29199b-77e5-47a5-9db6-2ea6ea7c7fc8-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 10 Dec 2013 02:59:59 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 14/52] ARM: mvebu: use the virtual CPU registers to access coherency registers
+Date: Tue, 10 Dec 2013 00:00:47 -0800
+Message-Id: <20131210075955.213861130@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
+References: <20131210075954.196229872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 04:17:32PM +0000, Christoph Lameter wrote:
-> On Mon, 9 Dec 2013, Joonsoo Kim wrote:
-> 
-> > We should remove the page from the list if we fail without ENOSYS,
-> > since migrate_pages() consider error cases except -ENOMEM and -EAGAIN
-> > as permanent failure and it assumes that the page would be removed from
-> > the list. Without this patch, we could overcount number of failure.
-> 
-> Ok what does the patch do about this? I dont see any modifications. Remove
-> this part of the description?
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Description is slightly wrong.
-Following is correct one.
+------------------
 
-"We should remove the page from the list if we fail *with* ENOSYS,"
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-And this patch do this by adding putback_active_hugepage(hpage)
-on ENOSYS case.
+commit b6dda00cddcc71d2030668bc0cc0fed758c411c2 upstream.
 
-> 
-> > In addition, we should put back the new hugepage if
-> > !hugepage_migration_support(). If not, we would leak hugepage memory.
-> 
-> Ok looks like that is fixed by this patch.
-> 
-> Acked-by: Christoph Lameter <cl@linux.com>
+The Armada XP provides a mechanism called "virtual CPU registers" or
+"per-CPU register banking", to access the per-CPU registers of the
+current CPU, without having to worry about finding on which CPU we're
+running. CPU0 has its registers at 0x21800, CPU1 at 0x21900, CPU2 at
+0x21A00 and CPU3 at 0x21B00. The virtual registers accessing the
+current CPU registers are at 0x21000.
 
-Thanks.
+However, in the Device Tree node that provides the register addresses
+for the coherency unit (which is responsible for ensuring coherency
+between processors, and I/O coherency between processors and the
+DMA-capable devices), a mistake was made: the CPU0-specific registers
+were specified instead of the virtual CPU registers. This means that
+the coherency barrier needed for I/O coherency was not behaving
+properly when executed from a CPU different from CPU0. This patch
+fixes that by using the virtual CPU registers.
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: e60304f8cb7bb5 "arm: mvebu: Add hardware I/O Coherency support"
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/boot/dts/armada-370-xp.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -51,7 +51,7 @@
+ 
+ 			coherency-fabric@20200 {
+ 				compatible = "marvell,coherency-fabric";
+-				reg = <0x20200 0xb0>, <0x21810 0x1c>;
++				reg = <0x20200 0xb0>, <0x21010 0x1c>;
+ 			};
+ 
+ 			serial@12000 {
+
+
