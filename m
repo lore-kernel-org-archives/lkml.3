@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab3LJTvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:51:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22892 "EHLO mx1.redhat.com"
+	id S1751127Ab3LJTxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:53:20 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:52123 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751116Ab3LJTvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:51:11 -0500
-Message-ID: <1386705056.23829.13.camel@flatline.rdu.redhat.com>
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-From: Eric Paris <eparis@redhat.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Gao feng <gaofeng@cn.fujitsu.com>, Richard Guy Briggs <rgb@redhat.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, ebiederm@xmission.com, sgrubb@redhat.com
-Date: Tue, 10 Dec 2013 14:50:56 -0500
-In-Reply-To: <20131210165152.GA6028@sergelap>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
-	 <529EE877.7030701@cn.fujitsu.com> <20131206221241.GD22445@mail.hallyn.com>
-	 <52A52599.3070502@cn.fujitsu.com> <20131209182619.GD6849@sergelap>
-	 <52A6CDE1.8090404@cn.fujitsu.com> <20131210165152.GA6028@sergelap>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750706Ab3LJTxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:53:19 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS bugfixes for 3.13-rc4
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20131210195315.3F9504266DC@whiskey.americas.sgi.com>
+Date: Tue, 10 Dec 2013 13:53:15 -0600 (CST)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 10:51 -0600, Serge Hallyn wrote:
-> Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> > On 12/10/2013 02:26 AM, Serge Hallyn wrote:
-> > > Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> > >> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
-> > >>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> > >>>> Hi
-> > >>>>
-> > >>>> On 10/24/2013 03:31 PM, Gao feng wrote:
-> > >>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
-> > >>>>>
-> > >>>>> The main target of this patchset is allowing user in audit
-> > >>>>> namespace to generate the USER_MSG type of audit message,
-> > >>>>> some userspace tools need to generate audit message, or
-> > >>>>> these tools will broken.
-> > >>>>>
-> > >>>>
-> > >>>> I really need this feature, right now,some process such as
-> > >>>> logind are broken in container becase we leak of this feature.
-> > >>>
-> > >>> Your set doesn't address loginuid though right?  How exactly do you
-> > >>> expect to do that?  If user violates MAC policy and audit msg is
-> > >>> sent to init user ns by mac subsys, you need the loginuid from
-> > >>> init_audit_ns.  where will that be stored if you allow updates
-> > >>> of loginuid in auditns?
-> > >>>
-> > >> This patchset doesn't include the loginuid part.
-> > >>
-> > >> the loginuid is stored in task as before.
-> > >> In my opinion, when task creates a new audit namespace, this task's
-> > >> loginuid will be reset to zero, so the children tasks can set their
-> > >> loginuid. Does this change break the MAC?
-> > > 
-> > > I think so, yes.  In an LSPP selinux environment, if the task
-> > > manages to trigger an selinux deny rule which is audited, then
-> > > the loginuid must make sense on the host.  Now presumably it
-> > > will get translated to the mapped host uid, and we can figure
-> > > out the host uid owning it through /etc/subuid.  But that adds
-> > > /etc/subuid as a new part of the TCB without any warning <shrug>
-> > > So in that sense, for LSPP, it breaks it.
-> > > 
-> > 
-> > Looks like my opinion is incorrect.
-> > 
-> > In the audit-next tree, Eric added a new audit feature to allow privileged
-> > user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
-> > is disabled, the privileged user can reset/set the loginuid of task. I
-> > think this way is safe since only privileged user can do the change.
-> > 
-> > So I will not change the loginuid part.
-> > 
-> > Thanks for your information Serge :)
-> 
-> Unfortunately this makes the patchset much less compelling :)  The
-> problem I was looking into is that a container running in a user
-> namespace cannot (bc he has ns_capable(CAP_AUDIT_*) but not
-> capable(CAP_AUDIT_*)) set loginuids at all.
-> 
-> Which from an LSPP pov is correct;  which is why I was hoping you were
-> going to have the audit namespaces be hierarchical, with a task in a
-> level 2 audit ns having two loginuids - one in his own auditns, and
-> one in the initial one.
+Hi Linus,
 
-Right now user namespace + audit is just total crud.  We all know
-this...  (I'm not sure pid is must better, but I digress)   All thoughts
-around loginuid in the kernel right this very moment only make sense in
-the initial user namespace and all permission checks are in the initial
-user namespace as well.
+   Please pull these bugfixes for xfs.  There is a security fix for memory
+   corruption in xfs_attrlist_by_handle, a fix for trim, and a fix for buffer
+   overrun in the agfl when growing filesystems with a v4 superblock.
 
-I think I'm a proponent of the hierarchical approach to audit
-namespaces.  An audit namespace would hold a reference to the
-pid/user/whatever namespace it was created in/with.  Each audit
-namespace should have it's own set of filter rules, etc.  Instead of
-just storing 'loginuid' we store 'loginuid+user namespace'.   When the
-kernel creates a record it should translate the loginuid to the
-namespace of the audit namespace and send the record.
+Thanks,
+	Ben
 
-It's a pretty major rewrite, but at least it makes sense.  Things like
-AVC's might show up in multiple audit logs, but in every log they would
-make sense to the admin of that namespace...
+The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
 
-But what the hell do I know...  Namespaces scare me...
+  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
 
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.13-rc4
+
+for you to fetch changes up to f94c44573e7c22860e2c3dfe349c45f72ba35ad3:
+
+  xfs: growfs overruns AGFL buffer on V4 filesystems (2013-12-10 10:04:27 -0600)
+
+----------------------------------------------------------------
+xfs: bugfixes for 3.13-rc4
+
+- fix for buffer overrun in agfl with growfs on v4 superblock
+- return EINVAL if requested discard length is less than a block
+- fix possible memory corruption in xfs_attrlist_by_handle()
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      xfs: underflow bug in xfs_attrlist_by_handle()
+
+Dave Chinner (1):
+      xfs: growfs overruns AGFL buffer on V4 filesystems
+
+Jie Liu (1):
+      xfs: don't perform discard if the given range length is less than block size
+
+ fs/xfs/xfs_discard.c | 5 +++--
+ fs/xfs/xfs_fsops.c   | 6 +++++-
+ fs/xfs/xfs_ioctl.c   | 3 ++-
+ fs/xfs/xfs_ioctl32.c | 3 ++-
+ 4 files changed, 12 insertions(+), 5 deletions(-)
