@@ -1,83 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab3LJXUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:20:23 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:42100 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856Ab3LJXUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:20:21 -0500
-Date: Tue, 10 Dec 2013 15:20:17 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, page_alloc: make __GFP_NOFAIL really not fail
-In-Reply-To: <20131209152202.df3d4051d7dc61ada7c420a9@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1312101504120.22701@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1312091355360.11026@chino.kir.corp.google.com> <20131209152202.df3d4051d7dc61ada7c420a9@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751417Ab3LJXWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:22:13 -0500
+Received: from fieldses.org ([174.143.236.118]:50549 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab3LJXWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:22:11 -0500
+Date: Tue, 10 Dec 2013 18:22:04 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
+ flock_to_posix_lock routines
+Message-ID: <20131210232204.GD20831@fieldses.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+ <1386703055-22308-2-git-send-email-jlayton@redhat.com>
+ <20131210212253.GC20831@fieldses.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210212253.GC20831@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013, Andrew Morton wrote:
-
-> > __GFP_NOFAIL specifies that the page allocator cannot fail to return
-> > memory.  Allocators that call it may not even check for NULL upon
-> > returning.
+On Tue, Dec 10, 2013 at 04:22:53PM -0500, bfields wrote:
+> On Tue, Dec 10, 2013 at 02:17:30PM -0500, Jeff Layton wrote:
+> > Currently, there's a lot of copy and paste between the two.  Add some
+> > functions to do the initialization of the file_lock from values
+> > passed in, and turn the flock/flock64 variants of those functions into
+> > wrappers around them.
 > > 
-> > It turns out GFP_NOWAIT | __GFP_NOFAIL or GFP_ATOMIC | __GFP_NOFAIL can
-> > actually return NULL.  More interestingly, processes that are doing
-> > direct reclaim and have PF_MEMALLOC set may also return NULL for any
-> > __GFP_NOFAIL allocation.
+> > Unfortunately it's harder to consolidate the fl_start/fl_end
+> > calculations due to the differently sized types involved so I've left
+> > them separate for now.
 > 
-> __GFP_NOFAIL is a nasty thing and making it pretend to work even better
-> is heading in the wrong direction, surely?  It would be saner to just
-> disallow these even-sillier combinations.  Can we fix up the current
-> callers then stick a WARN_ON() in there?
+> I'd think you could assign everything to the flock64 type and do the
+> common work there or something.
 > 
+> But I'm confused about what the current code is actually trying to do:
+> if I'm chasing down the definitions right, these quantities are all
+> signed, and when start is defined as an off_t it can overflow in the
+> SEEK_CUR and SEEK_END cases.  And
+> 
+> 	if (fl->fl_end < fl->fl_start)
+> 		return -EOVERFLOW
+> 
+> is counting on overlow wrapping around, which I thought wasn't
+> guaranteed in the case of signed arithmetic?
 
-Heh, it's difficult to remove __GFP_NOFAIL when new users get added: 
-84235de394d9 ("fs: buffer: move allocation failure loop into the 
-allocator") added a new user and a bypass of memcg limits in oom 
-conditions so __GFP_NOFAIL just essentially became 
-__GFP_BYPASS_MEMCG_LIMIT_ON_OOM.
+E.g. the following (untested) removes the duplication and should return
+-EOVERFLOW in the cases we currently do a random conversion from 64- to
+32-bit and back.  Susv3 says:
 
-We can probably ignore the PF_MEMALLOC behavior since it allows full 
-access to memory reserves and the only time we would see a __GFP_NOFAIL 
-allocation fail in such a context is if every zone's free memory was 0.  
-We have bigger problems if memory reserves are completely depleted like 
-that, so it's probably sufficient not to address it.
+	[EOVERFLOW]
+	The cmd argument is F_GETLK, F_SETLK, or F_SETLKW and the
+	smallest or, if l_len is non-zero, the largest offset of any
+	byte in the requested segment cannot be represented correctly in
+	an object of type off_t.
 
-I'd be concerned about new users of __GFP_NOFAIL that are added for 
-GFP_NOWAIT or GFP_ATOMIC and never actually trigger such a warning because 
-in testing they never trigger the slowpath, but the conditional is 
-probably better placed outside of the fastpath:
+so that's what I tried to do.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2536,8 +2536,15 @@ rebalance:
+--b.
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 92a0f0a..47832f5 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -344,48 +344,41 @@ static int assign_type(struct file_lock *fl, long type)
+ 	return 0;
+ }
+ 
+-/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+- * style lock.
+- */
+-static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+-			       struct flock *l)
++static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
++					struct flock64 *l, loff_t offset_max)
+ {
+-	off_t start, end;
++	loff_t start;
+ 
+ 	switch (l->l_whence) {
+ 	case SEEK_SET:
+-		start = 0;
+-		break;
++		fl->fl_start = 0;
+ 	case SEEK_CUR:
+-		start = filp->f_pos;
+-		break;
++		fl->fl_start = filp->f_pos;
+ 	case SEEK_END:
+-		start = i_size_read(file_inode(filp));
+-		break;
++		fl->fl_start = i_size_read(file_inode(filp));
+ 	default:
+ 		return -EINVAL;
  	}
++	if (l->l_start < 0)
++		return -EINVAL;
++	if (l->l_start > offset_max - fl->fl_start)
++		return -EOVERFLOW;
++	fl->fl_start += l->l_start;
++	if (l->l_len > offset_max - fl->fl_start)
++		return -EOVERFLOW;
++	if (fl->fl_start + l->l_len < 0)
++		return -EINVAL;
  
- 	/* Atomic allocations - we can't balance anything */
--	if (!wait)
-+	if (!wait) {
-+		/*
-+		 * All existing users of the deprecated __GFP_NOFAIL are
-+		 * blockable, so warn of any new users that actually allow this
-+		 * type of allocation to fail.
-+		 */
-+		WARN_ON_ONCE(gfp_mask & __GFP_NOFAIL);
- 		goto nopage;
-+	}
+ 	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
+ 	   POSIX-2001 defines it. */
+-	start += l->l_start;
+-	if (start < 0)
+-		return -EINVAL;
+-	fl->fl_end = OFFSET_MAX;
+-	if (l->l_len > 0) {
+-		end = start + l->l_len - 1;
+-		fl->fl_end = end;
+-	} else if (l->l_len < 0) {
+-		end = start - 1;
+-		fl->fl_end = end;
+-		start += l->l_len;
+-		if (start < 0)
+-			return -EINVAL;
+-	}
+-	fl->fl_start = start;	/* we record the absolute position */
+-	if (fl->fl_end < fl->fl_start)
+-		return -EOVERFLOW;
+-	
++	if (l->l_len > 0)
++		fl->fl_end = fl->fl_start + l->l_len - 1;
++	else if (l->l_len < 0) {
++		fl->fl_end = start - 1;
++		fl->fl_start += l->l_len;
++	} else
++		fl->fl_end = OFFSET_MAX;
++
+ 	fl->fl_owner = current->files;
+ 	fl->fl_pid = current->tgid;
+ 	fl->fl_file = filp;
+@@ -396,50 +389,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+ 	return assign_type(fl, l->l_type);
+ }
  
- 	/* Avoid recursion of direct reclaim */
- 	if (current->flags & PF_MEMALLOC)
-
-But perhaps the best way to do this in a preventative way is to add a 
-warning to checkpatch.pl that actually warns about adding new users.
++/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
++ * style lock.
++ */
++static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
++			       struct flock *l)
++{
++	struct flock64 ll = {
++		.l_type = l->l_type,
++		.l_whence = l->l_whence,
++		.l_start = l->l_start,
++		.l_len = l->l_len,
++	};
++	
++	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
++}
++
+ #if BITS_PER_LONG == 32
+ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
+ 				 struct flock64 *l)
+ {
+-	loff_t start;
+-
+-	switch (l->l_whence) {
+-	case SEEK_SET:
+-		start = 0;
+-		break;
+-	case SEEK_CUR:
+-		start = filp->f_pos;
+-		break;
+-	case SEEK_END:
+-		start = i_size_read(file_inode(filp));
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-
+-	start += l->l_start;
+-	if (start < 0)
+-		return -EINVAL;
+-	fl->fl_end = OFFSET_MAX;
+-	if (l->l_len > 0) {
+-		fl->fl_end = start + l->l_len - 1;
+-	} else if (l->l_len < 0) {
+-		fl->fl_end = start - 1;
+-		start += l->l_len;
+-		if (start < 0)
+-			return -EINVAL;
+-	}
+-	fl->fl_start = start;	/* we record the absolute position */
+-	if (fl->fl_end < fl->fl_start)
+-		return -EOVERFLOW;
+-	
+-	fl->fl_owner = current->files;
+-	fl->fl_pid = current->tgid;
+-	fl->fl_file = filp;
+-	fl->fl_flags = FL_POSIX;
+-	fl->fl_ops = NULL;
+-	fl->fl_lmops = NULL;
+-
+-	return assign_type(fl, l->l_type);
++	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
+ }
+ #endif
+ 
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index 95e46c8..36025f7 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
+@@ -186,8 +186,6 @@ struct flock {
+ };
+ #endif
+ 
+-#ifndef CONFIG_64BIT
+-
+ #ifndef HAVE_ARCH_STRUCT_FLOCK64
+ #ifndef __ARCH_FLOCK64_PAD
+ #define __ARCH_FLOCK64_PAD
+@@ -202,6 +200,5 @@ struct flock64 {
+ 	__ARCH_FLOCK64_PAD
+ };
+ #endif
+-#endif /* !CONFIG_64BIT */
+ 
+ #endif /* _ASM_GENERIC_FCNTL_H */
