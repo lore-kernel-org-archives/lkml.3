@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab3LJIYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:24:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58780 "EHLO
+	id S1755222Ab3LJIZA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:25:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145Ab3LJIBA (ORCPT
+	with ESMTP id S1753212Ab3LJIA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:00 -0500
+	Tue, 10 Dec 2013 03:00:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, Ivan Vecera <ivecera@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 37/52] tg3: avoid double-freeing of rx data memory
-Date: Tue, 10 Dec 2013 00:01:10 -0800
-Message-Id: <20131210075956.808179072@linuxfoundation.org>
+        Arnaud Ebalard <arno@natisbad.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 51/52] ARM: mvebu: fix second and third PCIe unit of Armada XP mv78260
+Date: Tue, 10 Dec 2013 00:01:24 -0800
+Message-Id: <20131210075957.754004422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,54 +28,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Vecera <ivecera@redhat.com>
+From: Arnaud Ebalard <arno@natisbad.org>
 
-commit 85aec73d595b8847f9c4ea571deb127913f0d508 upstream.
+commit 2163e61c92d9337e721a0d067d88ae62b52e0d3e upstream.
 
-If build_skb fails the memory associated with the ring buffer is freed but
-the ri->data member is not zeroed in this case. This causes a double-free
-of this memory in tg3_free_rings->... path. The patch moves this block after
-setting ri->data to NULL.
-It would be nice to fix this bug also in stable >= v3.4 trees.
+mv78260 flavour of Marvell Armada XP SoC has 3 PCIe units. The
+two first units are both x4 and quad x1 capable. The third unit
+is only x4 capable. This patch fixes mv78260 .dtsi to reflect
+those capabilities.
 
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>
-Cc: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Ivan Vecera <ivecera@redhat.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi |   78 +++++++++++++++++++++++++------
+ 1 file changed, 64 insertions(+), 14 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6722,12 +6722,6 @@ static int tg3_rx(struct tg3_napi *tnapi
- 			pci_unmap_single(tp->pdev, dma_addr, skb_size,
- 					 PCI_DMA_FROMDEVICE);
- 
--			skb = build_skb(data, frag_size);
--			if (!skb) {
--				tg3_frag_free(frag_size != 0, data);
--				goto drop_it_no_recycle;
--			}
--			skb_reserve(skb, TG3_RX_OFFSET(tp));
- 			/* Ensure that the update to the data happens
- 			 * after the usage of the old DMA mapping.
+--- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+@@ -101,7 +101,7 @@
+ 			/*
+ 			 * MV78260 has 3 PCIe units Gen2.0: Two units can be
+ 			 * configured as x4 or quad x1 lanes. One unit is
+-			 * x4/x1.
++			 * x4 only.
  			 */
-@@ -6735,6 +6729,12 @@ static int tg3_rx(struct tg3_napi *tnapi
+ 			pcie-controller {
+ 				compatible = "marvell,armada-xp-pcie";
+@@ -119,7 +119,9 @@
+ 					0x82000000 0 0x48000 0x48000 0 0x00002000   /* Port 0.2 registers */
+ 					0x82000000 0 0x4c000 0x4c000 0 0x00002000   /* Port 0.3 registers */
+ 					0x82000000 0 0x80000 0x80000 0 0x00002000   /* Port 1.0 registers */
+-					0x82000000 0 0x82000 0x82000 0 0x00002000   /* Port 3.0 registers */
++					0x82000000 0 0x84000 0x84000 0 0x00002000   /* Port 1.1 registers */
++					0x82000000 0 0x88000 0x88000 0 0x00002000   /* Port 1.2 registers */
++					0x82000000 0 0x8c000 0x8c000 0 0x00002000   /* Port 1.3 registers */
+ 					0x82000000 0 0xe0000000 0xe0000000 0 0x08000000   /* non-prefetchable memory */
+ 					0x81000000 0 0	  0xe8000000 0 0x00100000>; /* downstream I/O */
  
- 			ri->data = NULL;
+@@ -187,35 +189,83 @@
+ 					status = "disabled";
+ 				};
  
-+			skb = build_skb(data, frag_size);
-+			if (!skb) {
-+				tg3_frag_free(frag_size != 0, data);
-+				goto drop_it_no_recycle;
-+			}
-+			skb_reserve(skb, TG3_RX_OFFSET(tp));
- 		} else {
- 			tg3_recycle_rx(tnapi, tpr, opaque_key,
- 				       desc_idx, *post_ptr);
+-				pcie@9,0 {
++				pcie@5,0 {
+ 					device_type = "pci";
+-					assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
+-					reg = <0x4800 0 0 0 0>;
++					assigned-addresses = <0x82000800 0 0x80000 0 0x2000>;
++					reg = <0x2800 0 0 0 0>;
+ 					#address-cells = <3>;
+ 					#size-cells = <2>;
+ 					#interrupt-cells = <1>;
+ 					ranges;
+ 					interrupt-map-mask = <0 0 0 0>;
+-					interrupt-map = <0 0 0 0 &mpic 99>;
+-					marvell,pcie-port = <2>;
++					interrupt-map = <0 0 0 0 &mpic 62>;
++					marvell,pcie-port = <1>;
+ 					marvell,pcie-lane = <0>;
+-					clocks = <&gateclk 26>;
++					clocks = <&gateclk 9>;
++					status = "disabled";
++				};
++
++				pcie@6,0 {
++					device_type = "pci";
++					assigned-addresses = <0x82000800 0 0x84000 0 0x2000>;
++					reg = <0x3000 0 0 0 0>;
++					#address-cells = <3>;
++					#size-cells = <2>;
++					#interrupt-cells = <1>;
++					ranges;
++					interrupt-map-mask = <0 0 0 0>;
++					interrupt-map = <0 0 0 0 &mpic 63>;
++					marvell,pcie-port = <1>;
++					marvell,pcie-lane = <1>;
++					clocks = <&gateclk 10>;
++					status = "disabled";
++				};
++
++				pcie@7,0 {
++					device_type = "pci";
++					assigned-addresses = <0x82000800 0 0x88000 0 0x2000>;
++					reg = <0x3800 0 0 0 0>;
++					#address-cells = <3>;
++					#size-cells = <2>;
++					#interrupt-cells = <1>;
++					ranges;
++					interrupt-map-mask = <0 0 0 0>;
++					interrupt-map = <0 0 0 0 &mpic 64>;
++					marvell,pcie-port = <1>;
++					marvell,pcie-lane = <2>;
++					clocks = <&gateclk 11>;
+ 					status = "disabled";
+ 				};
+ 
+-				pcie@10,0 {
++				pcie@8,0 {
+ 					device_type = "pci";
+-					assigned-addresses = <0x82000800 0 0x82000 0 0x2000>;
+-					reg = <0x5000 0 0 0 0>;
++					assigned-addresses = <0x82000800 0 0x8c000 0 0x2000>;
++					reg = <0x4000 0 0 0 0>;
+ 					#address-cells = <3>;
+ 					#size-cells = <2>;
+ 					#interrupt-cells = <1>;
+ 					ranges;
+ 					interrupt-map-mask = <0 0 0 0>;
+-					interrupt-map = <0 0 0 0 &mpic 103>;
+-					marvell,pcie-port = <3>;
++					interrupt-map = <0 0 0 0 &mpic 65>;
++					marvell,pcie-port = <1>;
++					marvell,pcie-lane = <3>;
++					clocks = <&gateclk 12>;
++					status = "disabled";
++				};
++
++				pcie@9,0 {
++					device_type = "pci";
++					assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
++					reg = <0x4800 0 0 0 0>;
++					#address-cells = <3>;
++					#size-cells = <2>;
++					#interrupt-cells = <1>;
++					ranges;
++					interrupt-map-mask = <0 0 0 0>;
++					interrupt-map = <0 0 0 0 &mpic 99>;
++					marvell,pcie-port = <2>;
+ 					marvell,pcie-lane = <0>;
+-					clocks = <&gateclk 27>;
++					clocks = <&gateclk 26>;
+ 					status = "disabled";
+ 				};
+ 			};
 
 
