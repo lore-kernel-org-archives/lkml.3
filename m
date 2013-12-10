@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab3LJIZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:25:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58770 "EHLO
+	id S1753209Ab3LJIA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:00:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab3LJIA5 (ORCPT
+	with ESMTP id S1753185Ab3LJIAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:57 -0500
+	Tue, 10 Dec 2013 03:00:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnaud Ebalard <arno@natisbad.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 51/52] ARM: mvebu: fix second and third PCIe unit of Armada XP mv78260
-Date: Tue, 10 Dec 2013 00:01:24 -0800
-Message-Id: <20131210075957.754004422@linuxfoundation.org>
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 47/52] USB: mos7840: correct handling of CS5 setting
+Date: Tue, 10 Dec 2013 00:01:20 -0800
+Message-Id: <20131210075957.483931624@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,141 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnaud Ebalard <arno@natisbad.org>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit 2163e61c92d9337e721a0d067d88ae62b52e0d3e upstream.
+commit 78692cc3382e0603a47e1f2aaeffe0d99891994d upstream.
 
-mv78260 flavour of Marvell Armada XP SoC has 3 PCIe units. The
-two first units are both x4 and quad x1 capable. The third unit
-is only x4 capable. This patch fixes mv78260 .dtsi to reflect
-those capabilities.
+This patch removes an erroneous check of CSIZE, which made it impossible to set
+CS5.
 
-Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
-Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Compiles clean, but couldn't test against hardware.
+
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-xp-mv78260.dtsi |   78 +++++++++++++++++++++++++------
- 1 file changed, 64 insertions(+), 14 deletions(-)
+ drivers/usb/serial/mos7840.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-+++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
-@@ -101,7 +101,7 @@
- 			/*
- 			 * MV78260 has 3 PCIe units Gen2.0: Two units can be
- 			 * configured as x4 or quad x1 lanes. One unit is
--			 * x4/x1.
-+			 * x4 only.
- 			 */
- 			pcie-controller {
- 				compatible = "marvell,armada-xp-pcie";
-@@ -119,7 +119,9 @@
- 					0x82000000 0 0x48000 0x48000 0 0x00002000   /* Port 0.2 registers */
- 					0x82000000 0 0x4c000 0x4c000 0 0x00002000   /* Port 0.3 registers */
- 					0x82000000 0 0x80000 0x80000 0 0x00002000   /* Port 1.0 registers */
--					0x82000000 0 0x82000 0x82000 0 0x00002000   /* Port 3.0 registers */
-+					0x82000000 0 0x84000 0x84000 0 0x00002000   /* Port 1.1 registers */
-+					0x82000000 0 0x88000 0x88000 0 0x00002000   /* Port 1.2 registers */
-+					0x82000000 0 0x8c000 0x8c000 0 0x00002000   /* Port 1.3 registers */
- 					0x82000000 0 0xe0000000 0xe0000000 0 0x08000000   /* non-prefetchable memory */
- 					0x81000000 0 0	  0xe8000000 0 0x00100000>; /* downstream I/O */
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1875,25 +1875,25 @@ static void mos7840_change_port_settings
+ 	iflag = tty->termios.c_iflag;
  
-@@ -187,35 +189,83 @@
- 					status = "disabled";
- 				};
+ 	/* Change the number of bits */
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS5:
+-			lData = LCR_BITS_5;
+-			break;
++	switch (cflag & CSIZE) {
++	case CS5:
++		lData = LCR_BITS_5;
++		break;
  
--				pcie@9,0 {
-+				pcie@5,0 {
- 					device_type = "pci";
--					assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
--					reg = <0x4800 0 0 0 0>;
-+					assigned-addresses = <0x82000800 0 0x80000 0 0x2000>;
-+					reg = <0x2800 0 0 0 0>;
- 					#address-cells = <3>;
- 					#size-cells = <2>;
- 					#interrupt-cells = <1>;
- 					ranges;
- 					interrupt-map-mask = <0 0 0 0>;
--					interrupt-map = <0 0 0 0 &mpic 99>;
--					marvell,pcie-port = <2>;
-+					interrupt-map = <0 0 0 0 &mpic 62>;
-+					marvell,pcie-port = <1>;
- 					marvell,pcie-lane = <0>;
--					clocks = <&gateclk 26>;
-+					clocks = <&gateclk 9>;
-+					status = "disabled";
-+				};
-+
-+				pcie@6,0 {
-+					device_type = "pci";
-+					assigned-addresses = <0x82000800 0 0x84000 0 0x2000>;
-+					reg = <0x3000 0 0 0 0>;
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+					#interrupt-cells = <1>;
-+					ranges;
-+					interrupt-map-mask = <0 0 0 0>;
-+					interrupt-map = <0 0 0 0 &mpic 63>;
-+					marvell,pcie-port = <1>;
-+					marvell,pcie-lane = <1>;
-+					clocks = <&gateclk 10>;
-+					status = "disabled";
-+				};
-+
-+				pcie@7,0 {
-+					device_type = "pci";
-+					assigned-addresses = <0x82000800 0 0x88000 0 0x2000>;
-+					reg = <0x3800 0 0 0 0>;
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+					#interrupt-cells = <1>;
-+					ranges;
-+					interrupt-map-mask = <0 0 0 0>;
-+					interrupt-map = <0 0 0 0 &mpic 64>;
-+					marvell,pcie-port = <1>;
-+					marvell,pcie-lane = <2>;
-+					clocks = <&gateclk 11>;
- 					status = "disabled";
- 				};
+-		case CS6:
+-			lData = LCR_BITS_6;
+-			break;
++	case CS6:
++		lData = LCR_BITS_6;
++		break;
  
--				pcie@10,0 {
-+				pcie@8,0 {
- 					device_type = "pci";
--					assigned-addresses = <0x82000800 0 0x82000 0 0x2000>;
--					reg = <0x5000 0 0 0 0>;
-+					assigned-addresses = <0x82000800 0 0x8c000 0 0x2000>;
-+					reg = <0x4000 0 0 0 0>;
- 					#address-cells = <3>;
- 					#size-cells = <2>;
- 					#interrupt-cells = <1>;
- 					ranges;
- 					interrupt-map-mask = <0 0 0 0>;
--					interrupt-map = <0 0 0 0 &mpic 103>;
--					marvell,pcie-port = <3>;
-+					interrupt-map = <0 0 0 0 &mpic 65>;
-+					marvell,pcie-port = <1>;
-+					marvell,pcie-lane = <3>;
-+					clocks = <&gateclk 12>;
-+					status = "disabled";
-+				};
+-		case CS7:
+-			lData = LCR_BITS_7;
+-			break;
+-		default:
+-		case CS8:
+-			lData = LCR_BITS_8;
+-			break;
+-		}
++	case CS7:
++		lData = LCR_BITS_7;
++		break;
 +
-+				pcie@9,0 {
-+					device_type = "pci";
-+					assigned-addresses = <0x82000800 0 0x42000 0 0x2000>;
-+					reg = <0x4800 0 0 0 0>;
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+					#interrupt-cells = <1>;
-+					ranges;
-+					interrupt-map-mask = <0 0 0 0>;
-+					interrupt-map = <0 0 0 0 &mpic 99>;
-+					marvell,pcie-port = <2>;
- 					marvell,pcie-lane = <0>;
--					clocks = <&gateclk 27>;
-+					clocks = <&gateclk 26>;
- 					status = "disabled";
- 				};
- 			};
++	default:
++	case CS8:
++		lData = LCR_BITS_8;
++		break;
+ 	}
++
+ 	/* Change the Parity bit */
+ 	if (cflag & PARENB) {
+ 		if (cflag & PARODD) {
 
 
