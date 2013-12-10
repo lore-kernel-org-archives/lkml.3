@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab3LJGDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:03:55 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:36965 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3LJGDw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:03:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131209213057.GA11314@phenom.dumpdata.com>
-References: <1386581831-312-1-git-send-email-ethan.kernel@gmail.com>
-	<20131209213057.GA11314@phenom.dumpdata.com>
-Date: Tue, 10 Dec 2013 14:03:51 +0800
-Message-ID: <CABawtvMGOJg5DPRwdWAOSTkxgurv5bx8n=3yJFOq=aagxzseZQ@mail.gmail.com>
-Subject: Re: [PATCH] [SCSI] iscsi_boot_sysfs: Fix a memory leak in iscsi_boot_destroy_kset()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: michaelc@cs.wisc.edu, pjones@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751543Ab3LJGFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:05:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43388 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab3LJGFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 01:05:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,863,1378882800"; 
+   d="scan'208";a="441481915"
+From: Chew Chiau Ee <chiau.ee.chew@intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] dma: dw: Add suspend and resume handling for PCI mode DW_DMAC.
+Date: Tue, 10 Dec 2013 22:06:13 +0800
+Message-Id: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad,
+From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 
- boot_kset was allocated when module loaded by
-ibft_init()
-  iscsi_boot_create_kset()
-     kzalloc()
+This is to disable/enable DW_DMAC hw during suspend/resume.
 
-but wasn't freed when module unloaded by
-ibft_exit()
-   ibft_cleanup()
-     iscsi_boot_destroy_kset()
+Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw/pci.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-Thanks,
-Ethan
+diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
+index e89fc24..97bc3a2 100644
+--- a/drivers/dma/dw/pci.c
++++ b/drivers/dma/dw/pci.c
+@@ -75,6 +75,36 @@ static void dw_pci_remove(struct pci_dev *pdev)
+ 		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++
++static int dw_pci_suspend_noirq(struct device *dev)
++{
++	struct pci_dev *pci = to_pci_dev(dev);
++	struct dw_dma_chip *chip = pci_get_drvdata(pci);
++
++	return dw_dma_suspend(chip);
++};
++
++static int dw_pci_resume_noirq(struct device *dev)
++{
++	struct pci_dev *pci = to_pci_dev(dev);
++	struct dw_dma_chip *chip = pci_get_drvdata(pci);
++
++	return dw_dma_resume(chip);
++};
++
++#else /* !CONFIG_PM_SLEEP */
++
++#define dw_pci_suspend_noirq	NULL
++#define dw_pci_resume_noirq	NULL
++
++#endif /* !CONFIG_PM_SLEEP */
++
++static const struct dev_pm_ops dw_pci_dev_pm_ops = {
++	.suspend_noirq = dw_pci_suspend_noirq,
++	.resume_noirq = dw_pci_resume_noirq,
++};
++
+ static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
+ 	/* Medfield */
+ 	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata },
+@@ -92,6 +122,9 @@ static struct pci_driver dw_pci_driver = {
+ 	.id_table	= dw_pci_id_table,
+ 	.probe		= dw_pci_probe,
+ 	.remove		= dw_pci_remove,
++	.driver	= {
++		.pm	= &dw_pci_dev_pm_ops,
++	},
+ };
+ 
+ module_pci_driver(dw_pci_driver);
+-- 
+1.7.4.4
 
-On Tue, Dec 10, 2013 at 5:30 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Mon, Dec 09, 2013 at 05:37:11PM +0800, Ethan Zhao wrote:
->> From: "Ethan Zhao" <ethan.kernel@gmail.com>
->>
->> Load and unload iscsi_ibft module will cause kernel memory leak, fix it
->> in scsi/iscsi_boot_sysfs.c iscsi_boot_destroy_kset().
->>
->
-> Is there a stack trace?
->> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
->> ---
->>  drivers/scsi/iscsi_boot_sysfs.c | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/scsi/iscsi_boot_sysfs.c b/drivers/scsi/iscsi_boot_sysfs.c
->> index 14c1c8f..680bf6f 100644
->> --- a/drivers/scsi/iscsi_boot_sysfs.c
->> +++ b/drivers/scsi/iscsi_boot_sysfs.c
->> @@ -490,5 +490,6 @@ void iscsi_boot_destroy_kset(struct iscsi_boot_kset *boot_kset)
->>               iscsi_boot_remove_kobj(boot_kobj);
->>
->>       kset_unregister(boot_kset->kset);
->> +     kfree(boot_kset);
->>  }
->>  EXPORT_SYMBOL_GPL(iscsi_boot_destroy_kset);
->> --
->> 1.8.3.4 (Apple Git-47)
->>
