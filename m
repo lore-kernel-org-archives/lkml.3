@@ -1,74 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3LJUe3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:34:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51261 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab3LJUe0 (ORCPT
+	id S1752448Ab3LJUes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:34:48 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34302 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824Ab3LJUbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:34:26 -0500
-Date: Tue, 10 Dec 2013 21:34:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: process 'stuck' at exit.
-In-Reply-To: <20131210202752.GA27373@redhat.com>
-Message-ID: <alpine.DEB.2.02.1312102133400.28330@ionos.tec.linutronix.de>
-References: <20131210154724.GA30020@redhat.com> <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com> <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de> <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210202752.GA27373@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 10 Dec 2013 15:31:36 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 23/34] perf symbols: Rename [sl]name_alloc to match the members they refer to
+Date: Tue, 10 Dec 2013 17:31:05 -0300
+Message-Id: <1386707476-12370-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386707476-12370-1-git-send-email-acme@infradead.org>
+References: <1386707476-12370-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013, Dave Jones wrote:
-> On Tue, Dec 10, 2013 at 11:55:06AM -0800, Linus Torvalds wrote:
->  > On Tue, Dec 10, 2013 at 11:18 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->  > >
->  > > So this is pretty unlikely. The retry requires:
->  > >
->  > >    get_futex_value_locked() == EFAULT;
->  > >
->  > > Now we drop the hash bucket locks and do:
->  > >
->  > >    get_user();
->  > >
->  > > And if that get_user() faults again, we bail out.
->  > 
->  > I think you need to look closer.
->  > 
->  > We have at least also that "futex_proxy_trylock_atomic() returns
->  > -EAGAIN" case. Which triggers at some exit condition. Another thread
->  > in the same group, perhaps never completing the exit because it's
->  > waiting for this one? I dunno, I didn't look any closer (but this does
->  > make me think "Hey, we should add Oleg to the Cc too", since
->  > PF_EXITING is involved).. So maybe there is some situation where that
->  > EAGAIN will keep happening, forever..
->  > 
->  > Now, I'm *not* saying that that is it. It's quite possible/likely some
->  > other loop, but I do have to say that it sure isn't _obvious_. And
->  > that whole EAGAIN return case is quite deep and special, so ...
->  > 
->  >                  Linus
->  > 
->  > PS: Oleg - the whole thread is on lkml. Ping me if you need more context.
-> 
-> btw, I've left the machine in that state, and will for as long as necesary
-> in case someone has any ideas for further tracing experiments.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Can you gather a trace with the function tracer? That will tell us
-what the thing is actually doing.
+So we now have:
 
-Thanks,
+   dso->short_name
+   dso->short_name_len
+   dso->short_name_allocated
 
-	tglx
+Ditto for the 'long  variants. To more quickly grasp what they refer to.
+
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-nu228f8vlp9w0lr7c0q77dqi@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/dso.c     | 4 ++--
+ tools/perf/util/dso.h     | 4 ++--
+ tools/perf/util/machine.c | 4 ++--
+ tools/perf/util/symbol.c  | 6 +++---
+ 4 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index a0c7c591f4b2..55c983586b05 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -465,9 +465,9 @@ void dso__delete(struct dso *dso)
+ 	int i;
+ 	for (i = 0; i < MAP__NR_TYPES; ++i)
+ 		symbols__delete(&dso->symbols[i]);
+-	if (dso->sname_alloc)
++	if (dso->short_name_allocated)
+ 		free((char *)dso->short_name);
+-	if (dso->lname_alloc)
++	if (dso->long_name_allocated)
+ 		free(dso->long_name);
+ 	dso_cache__free(&dso->cache);
+ 	dso__free_a2l(dso);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 384f2d97e38e..00a232d89607 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -89,8 +89,8 @@ struct dso {
+ 	u8		 has_srcline:1;
+ 	u8		 hit:1;
+ 	u8		 annotate_warned:1;
+-	u8		 sname_alloc:1;
+-	u8		 lname_alloc:1;
++	u8		 short_name_allocated:1;
++	u8		 long_name_allocated:1;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
+ 	u8		 rel;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index bac817ab2068..f66f309a091a 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -764,7 +764,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
+ 				goto out;
+ 			}
+ 			dso__set_long_name(map->dso, long_name);
+-			map->dso->lname_alloc = 1;
++			map->dso->long_name_allocated = 1;
+ 			dso__kernel_module_get_build_id(map->dso, "");
+ 		}
+ 	}
+@@ -936,7 +936,7 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 			goto out_problem;
+ 
+ 		map->dso->short_name = name;
+-		map->dso->sname_alloc = 1;
++		map->dso->short_name_allocated = 1;
+ 		map->end = map->start + event->mmap.len;
+ 	} else if (is_kernel_mmap) {
+ 		const char *symbol_name = (event->mmap.filename +
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index de87dbac50a0..265a149bc43f 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1458,7 +1458,7 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 	if (filename != NULL) {
+ 		err = dso__load_vmlinux(dso, map, filename, filter);
+ 		if (err > 0) {
+-			dso->lname_alloc = 1;
++			dso->long_name_allocated = 1;
+ 			goto out;
+ 		}
+ 		free(filename);
+@@ -1468,7 +1468,7 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], filter);
+ 		if (err > 0) {
+ 			dso__set_long_name(dso, strdup(vmlinux_path[i]));
+-			dso->lname_alloc = 1;
++			dso->long_name_allocated = 1;
+ 			break;
+ 		}
+ 	}
+@@ -1612,7 +1612,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		if (err > 0) {
+ 			dso__set_long_name(dso,
+ 					   strdup(symbol_conf.vmlinux_name));
+-			dso->lname_alloc = 1;
++			dso->long_name_allocated = 1;
+ 			return err;
+ 		}
+ 		return err;
+-- 
+1.8.1.4
+
