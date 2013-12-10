@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab3LJV6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 16:58:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62872 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab3LJV6I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 16:58:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sergei Ianovich <ynvich@gmail.com>
-Subject: Re: [PATCH 02/11] arm: pxa27x: support ICP DAS LP-8x4x
-Date: Tue, 10 Dec 2013 22:57:33 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Daniel Mack <zonque@gmail.com>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com> <CACRpkdYF-O6Qgjue6x+R6fVuSXSyO4YHw1meusuyQhtSA9PnvQ@mail.gmail.com> <1386706817.7152.254.camel@host5.omatika.ru>
-In-Reply-To: <1386706817.7152.254.camel@host5.omatika.ru>
+	id S1752040Ab3LJV67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 16:58:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab3LJV65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 16:58:57 -0500
+Message-ID: <52A78E9E.8080706@redhat.com>
+Date: Tue, 10 Dec 2013 13:58:54 -0800
+From: Anand Avati <avati@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Eric Paris <eparis@redhat.com>, Josh Boyer <jwboyer@fedoraproject.org>
+CC: James Morris <jmorris@namei.org>, Eric Sandeen <sandeen@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: SELinux change in 3.13 causes sync hang
+References: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>	 <1386707123.23829.23.camel@flatline.rdu.redhat.com> <1386707744.23829.25.camel@flatline.rdu.redhat.com>
+In-Reply-To: <1386707744.23829.25.camel@flatline.rdu.redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312102257.33942.arnd@arndb.de>
-X-Provags-ID: V02:K0:/KGLozxvWNN4ZAXls3JuCqpvld5UpMRhcm4Pv8lmHh8
- Pc4CTISlW5ZfI/QdksQG5SRi6nscjU1nwx7QjGOIFrrGaMGa3R
- S72K4QKqIIav4YE3NqKIDZTOr1Mlh5SXAXWuFWzr6g5mylDA4k
- VOrisaTlCkvmun+AMvoMOBqjNRSh+y1kyNP0YUmCqtcz5zDo/V
- sSlQTbccumEAWGbsY98KR4+9lVXkaGg4qd4L+1TafMpnP+e+s1
- HBpDI50fpAUPDR4XW1iCPdKIaxFjQEYwr/i/jHMFOQ1o7Z2mdj
- lSVATwzGXk7/lUWs+mF+TpA7JSO2XuHJIuZlCdgl939J5F9WxR
- jy9Kt11d0SSADBYqQ0ps=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 December 2013, Sergei Ianovich wrote:
-> On Tue, 2013-12-10 at 13:33 +0100, Linus Walleij wrote:
-> > On Fri, Dec 6, 2013 at 6:14 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > > On Friday 06 December 2013, Sergei Ianovich wrote:
-> > >> On Fri, 2013-12-06 at 01:40 +0100, Arnd Bergmann wrote:
-> > >>
-> > >> > > +
-> > >> > > +static struct irq_chip lp8x4x_irq_chip = {
-> > >> > > +     .name                   = "FPGA",
-> > >> > > +     .irq_ack                = lp8x4x_ack_irq,
-> > >> > > +     .irq_mask               = lp8x4x_mask_irq,
-> > >> > > +     .irq_unmask             = lp8x4x_unmask_irq,
-> > >> > > +};
-> > >> >
-> > >> > Please try to move the irqchip code to drivers/irqchip/.
-> > >>
-> > >> CONFIG_IRQCHIP depends on CONFIG_OF_IRQ which in turn depends on Open
-> > >> Firmware.
-> > >
-> > > Hmm, I wonder if we should try to change Kconfig then. Let's leave it
-> > > alone for now, maybe Linus Walleij has some comments since he has
-> > > been looking into moving drivers out in the past.
-> > 
-> > I don't get this, if the subarch has deps in place for IRQCHIP and
-> > OF_IRQ just move the implementation to drivers/irqchip/foo.c
-> > edit drivers/irqchip/Makefile to compile the file for ARCH_FOO.
-> > What would the problem be? It's not like having the irqchip in the
-> > object is optional...
-> 
-> This chip is used only of one machine and only required for
-> machine-special devices. If those devices are not selected, the chip
-> will just waist memory.
+On 12/10/13, 12:35 PM, Eric Paris wrote:
+> On Tue, 2013-12-10 at 15:25 -0500, Eric Paris wrote:
+>
+>> I'll try to write a patch to fix that logic...
+>
+> Anand,
+>
+> How about something like (untested but it compiles):
 
-It should be possible to make it a loadable module, with deferred
-probing etc. You wouldn't use IRQCHIP_DECLARE() for this though,
-but instead have a platform driver that sets up the irq domain.
 
-It probably makes sense to have a single driver file for the
-FPGA device that does this, and only split out the other devices
-from it that consume the irqs.
+Sorry, it took me a while to compare the committed patch and my original 
+submission. The original patch did not have the subtype matching issue 
+(but had a different issue) and it looks like this bug has come in the 
+reworked/committed patch. I think the fix you have pasted below works.
 
-> > Another way is to create a separate Kconfig entry for it in
-> > drivers/irqchip/Kconfig if you want the set-up to be more
-> > distributed, but that is usually just done when the irqchip is
-> > used on more than one platform.
-> 
-> Please consult, how to approach this driver using device tree. If I
-> assign an "interrupts" property in the node, and the property will point
-> to pxa-gpio interrupt controller using a phandle, is there a guaranty
-> that my device will be probed later than pxa-gpio interrupt controller?
+Reviewed-by: Anand Avati <avati@redhat.com>
 
-Yes, the interrupt controllers get probed in the right order based
-on their "interrupt-parent" properties, starting with the root
-controller.
+Thanks,
+Avati
 
-If you have a platform driver rather than IRQCHIP_DECLARE(), that gets
-initialized after all IRQCHIP_DECLARE() calls, so it's not a problem.
+>
+> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
+> index ee470a0..2b437fc8 100644
+> --- a/security/selinux/ss/services.c
+> +++ b/security/selinux/ss/services.c
+> @@ -2349,9 +2359,17 @@ int security_fs_use(struct super_block *sb)
+>   		if (strncmp(fstype, c->u.name, baselen))
+>   			continue;
+>
+> -		/* if there is no subtype, this is the one! */
+> -		if (!subtype)
+> -			break;
+> +		/* current mount has no subtype */
+> +		if (!subtype) {
+> +			/*
+> +			 * if there is no subtype in policy this is our match
+> +			 * if there is a subtype in policy keep looking,
+> +			 */
+> +			if (baselen == strlen(c->u.name))
+> +				break;
+> +			else
+> +				continue;
+> +		}
+>
+>   		/* skip past the base in this entry */
+>   		sub = c->u.name + baselen;
+>
+>
 
-If both the gpio chip and the fpga are loadable modules, it's still
-fine, but the probe() function for the fpga needs to call
-irq_of_parse_and_map() to get the parent IRQ and bail out of
--EPROBE_DEFER if it gets this error while trying to map the
-gpio IRQ.
-
-	Arnd
