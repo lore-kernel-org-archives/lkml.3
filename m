@@ -1,273 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab3LJOlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:41:03 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43876 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab3LJOlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:41:00 -0500
-Message-ID: <52A727C3.5020608@ti.com>
-Date: Tue, 10 Dec 2013 20:10:03 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753754Ab3LJOnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:43:40 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:43516 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab3LJOnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 09:43:39 -0500
+Date: Tue, 10 Dec 2013 15:43:34 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        jacob.w.shin@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Sherry Hurwitz <sherry.hurwitz@amd.com>
+Subject: Re: [PATCH 1/3] perf/x86/amd: AMD support for bp_len >
+ HW_BREAKPOINT_LEN_8
+Message-ID: <20131210144333.GC10633@localhost.localdomain>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1380730268-25807-2-git-send-email-suravee.suthikulpanit@amd.com>
+ <20131108194122.GA14606@localhost.localdomain>
+ <20131109151156.GA14249@redhat.com>
+ <20131109153236.GE26079@localhost.localdomain>
+ <20131109155428.GA15649@redhat.com>
+ <20131111154417.GD26853@localhost.localdomain>
+ <20131111175131.GA14906@redhat.com>
+ <CAFTL4hwS9FHNvK8A-wqSNzzjSW2OsicxrRh=XT7nRo0=Kw1s=g@mail.gmail.com>
+ <20131204135743.GB7251@redhat.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <bcousson@baylibre.com>, <balbi@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
-        <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <s.nawrocki@samsung.com>, <galak@codeaurora.org>
-Subject: Re: [PATCH v3 07/10] drivers: phy: usb3/pipe3: Adapt pipe3 driver
- to Generic PHY Framework
-References: <1385373690-12170-1-git-send-email-kishon@ti.com> <1385373690-12170-8-git-send-email-kishon@ti.com> <52A1E0A7.80901@ti.com>
-In-Reply-To: <52A1E0A7.80901@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131204135743.GB7251@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Dec 04, 2013 at 02:57:43PM +0100, Oleg Nesterov wrote:
+> On 12/03, Frederic Weisbecker wrote:
+> >
+> > 2013/11/11 Oleg Nesterov <oleg@redhat.com>:
+> > > On 11/11, Frederic Weisbecker wrote:
+> > >>
+> > >> On Sat, Nov 09, 2013 at 04:54:28PM +0100, Oleg Nesterov wrote:
+> > >> >
+> > >> > Up to you and Suravee, but can't we cleanup this later?
+> > >> >
+> > >> > This series was updated many times to address a lot of (sometimes
+> > >> > contradictory) complaints.
+> > >>
+> > >> Sure. But I'm confident that we can solve the conflicting mask / len issue easily beside.
+> > >> I mean, I don't feel confident with merging things as is, otoh it should be easy to fix up.
+> > >
+> > > I do not really understand where do you see the conflict...
+> > >
+> > > I can be easily wrong, but afaics currently mask / len issue is simply
+> > > the implementation detail.
+> >
+> > I think it's like we have an object that has a length, and to create
+> > this object we pass both kilometers and miles. Ok it's a bit different
+> > here because a mask can apply on top of a len. But here it's used to
+> > define essentially the same thing (ie: a range of address)
+> 
+> Yes. perf/etc uses length, the current imlementation uses ->mask to
+> actually set the range.
+> 
+> > > Actually, mask is more powerfull. And initial versions of this patches
+> > > (iirc) tried to use mask as an argument which comes from the userspace
+> > > (tools/perf, perf_event_attr, etc). But one of reviewers nacked this
+> > > interfacer, so we still use len.
+> >
+> > Well, we can still reconsider it if needed but to me it seems that
+> > mask is only interesting if we may deal with non contiguous range of
+> > addresses.
+> 
+> And this is what this mask can actually do. Just there is no way (currently)
+> to pass the mask from userpace.
 
-On Friday 06 December 2013 08:05 PM, Roger Quadros wrote:
-> Hi Kishon,
-> 
-> On 11/25/2013 12:01 PM, Kishon Vijay Abraham I wrote:
->> Adapted omap-usb3 PHY driver to Generic PHY Framework and moved phy-omap-usb3
->> driver in drivers/usb/phy to drivers/phy and also renamed the file to
->> phy-ti-pipe3 since this same driver will be used for SATA PHY and
->> PCIE PHY.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  drivers/phy/Kconfig                                |   11 +
->>  drivers/phy/Makefile                               |    1 +
->>  .../phy/phy-omap-usb3.c => phy/phy-ti-pipe3.c}     |  232 ++++++++++++--------
->>  drivers/usb/phy/Kconfig                            |   11 -
->>  drivers/usb/phy/Makefile                           |    1 -
->>  5 files changed, 149 insertions(+), 107 deletions(-)
->>  rename drivers/{usb/phy/phy-omap-usb3.c => phy/phy-ti-pipe3.c} (55%)
->>
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index a344f3d..1abbfcc 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -33,6 +33,17 @@ config OMAP_USB2
->>  	  The USB OTG controller communicates with the comparator using this
->>  	  driver.
->>  
->> +config TI_PIPE3
->> +	tristate "TI PIPE3 PHY Driver"
->> +	depends on ARCH_OMAP2PLUS || COMPILE_TEST
->> +	select GENERIC_PHY
->> +	select OMAP_CONTROL_USB
->> +	help
->> +	  Enable this to support the PIPE3 PHY that is part of TI SOCs. This
->> +	  driver takes care of all the PHY functionality apart from comparator.
->> +	  This driver interacts with the "OMAP Control PHY Driver" to power
->> +	  on/off the PHY.
->> +
->>  config TWL4030_USB
->>  	tristate "TWL4030 USB Transceiver Driver"
->>  	depends on TWL4030_CORE && REGULATOR_TWL4030 && USB_MUSB_OMAP2PLUS
->> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->> index d0caae9..94a1a79 100644
->> --- a/drivers/phy/Makefile
->> +++ b/drivers/phy/Makefile
->> @@ -6,4 +6,5 @@ obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
->>  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
->>  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
->>  obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
->> +obj-$(CONFIG_TI_PIPE3)			+= phy-ti-pipe3.o
->>  obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
->> diff --git a/drivers/usb/phy/phy-omap-usb3.c b/drivers/phy/phy-ti-pipe3.c
->> similarity index 55%
->> rename from drivers/usb/phy/phy-omap-usb3.c
->> rename to drivers/phy/phy-ti-pipe3.c
->> index 0c6ba29..410b286 100644
->> --- a/drivers/usb/phy/phy-omap-usb3.c
->> +++ b/drivers/phy/phy-ti-pipe3.c
->> @@ -1,5 +1,5 @@
->>  /*
->> - * omap-usb3 - USB PHY, talking to dwc3 controller in OMAP.
->> + * phy-ti-pipe3 - PIPE3 PHY driver.
->>   *
->>   * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com
->>   * This program is free software; you can redistribute it and/or modify
->> @@ -19,10 +19,11 @@
->>  #include <linux/module.h>
->>  #include <linux/platform_device.h>
->>  #include <linux/slab.h>
->> -#include <linux/usb/omap_usb.h>
->> +#include <linux/phy/phy.h>
->>  #include <linux/of.h>
->>  #include <linux/clk.h>
->>  #include <linux/err.h>
->> +#include <linux/io.h>
->>  #include <linux/pm_runtime.h>
->>  #include <linux/delay.h>
->>  #include <linux/usb/omap_control_usb.h>
->> @@ -52,17 +53,34 @@
->>  
->>  /*
->>   * This is an Empirical value that works, need to confirm the actual
->> - * value required for the USB3PHY_PLL_CONFIGURATION2.PLL_IDLE status
->> - * to be correctly reflected in the USB3PHY_PLL_STATUS register.
->> + * value required for the PIPE3PHY_PLL_CONFIGURATION2.PLL_IDLE status
->> + * to be correctly reflected in the PIPE3PHY_PLL_STATUS register.
->>   */
->>  # define PLL_IDLE_TIME  100;
->>  
->> -struct usb_dpll_map {
->> +struct pipe3_dpll_params {
->> +	u16	m;
->> +	u8	n;
->> +	u8	freq:3;
->> +	u8	sd;
->> +	u32	mf;
->> +};
->> +
->> +struct ti_pipe3 {
->> +	void __iomem		*pll_ctrl_base;
->> +	struct device		*dev;
->> +	struct device		*control_dev;
->> +	struct clk		*wkupclk;
->> +	struct clk		*sys_clk;
->> +	struct clk		*optclk;
->> +};
->> +
->> +struct pipe3_dpll_map {
->>  	unsigned long rate;
->> -	struct usb_dpll_params params;
->> +	struct pipe3_dpll_params params;
->>  };
->>  
->> -static struct usb_dpll_map dpll_map[] = {
->> +static struct pipe3_dpll_map dpll_map[] = {
->>  	{12000000, {1250, 5, 4, 20, 0} },	/* 12 MHz */
->>  	{16800000, {3125, 20, 4, 20, 0} },	/* 16.8 MHz */
->>  	{19200000, {1172, 8, 4, 20, 65537} },	/* 19.2 MHz */
->> @@ -71,7 +89,18 @@ static struct usb_dpll_map dpll_map[] = {
->>  	{38400000, {3125, 47, 4, 20, 92843} },	/* 38.4 MHz */
->>  };
->>  
->> -static struct usb_dpll_params *omap_usb3_get_dpll_params(unsigned long rate)
->> +static inline u32 ti_pipe3_readl(void __iomem *addr, unsigned offset)
->> +{
->> +	return __raw_readl(addr + offset);
->> +}
->> +
->> +static inline void ti_pipe3_writel(void __iomem *addr, unsigned offset,
->> +	u32 data)
->> +{
->> +	__raw_writel(data, addr + offset);
->> +}
->> +
->> +static struct pipe3_dpll_params *ti_pipe3_get_dpll_params(unsigned long rate)
->>  {
->>  	int i;
->>  
->> @@ -83,110 +112,113 @@ static struct usb_dpll_params *omap_usb3_get_dpll_params(unsigned long rate)
->>  	return NULL;
->>  }
->>  
->> -static int omap_usb3_suspend(struct usb_phy *x, int suspend)
->> +static int ti_pipe3_power_off(struct phy *x)
->>  {
->> -	struct omap_usb *phy = phy_to_omapusb(x);
->> -	int	val;
->> +	struct ti_pipe3 *phy = phy_get_drvdata(x);
->> +	int val;
->>  	int timeout = PLL_IDLE_TIME;
->>  
->> -	if (suspend && !phy->is_suspended) {
->> -		val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
->> -		val |= PLL_IDLE;
->> -		omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
->> -
->> -		do {
->> -			val = omap_usb_readl(phy->pll_ctrl_base, PLL_STATUS);
->> -			if (val & PLL_TICOPWDN)
->> -				break;
->> -			udelay(1);
->> -		} while (--timeout);
->> -
->> -		omap_control_usb_phy_power(phy->control_dev, 0);
->> -
->> -		phy->is_suspended	= 1;
->> -	} else if (!suspend && phy->is_suspended) {
->> -		phy->is_suspended	= 0;
->> -
->> -		val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
->> -		val &= ~PLL_IDLE;
->> -		omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
->> -
->> -		do {
->> -			val = omap_usb_readl(phy->pll_ctrl_base, PLL_STATUS);
->> -			if (!(val & PLL_TICOPWDN))
->> -				break;
->> -			udelay(1);
->> -		} while (--timeout);
->> -	}
->> +	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
->> +	val |= PLL_IDLE;
->> +	ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
->> +
->> +	do {
->> +		val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
->> +		if (val & PLL_TICOPWDN)
->> +			break;
->> +		usleep_range(1, 5);
-> 
-> I had suggested to use sleep instead of udelay here but usleep for < 10 us might not be not optimal.
-> see Documentation/timers/timers-howto.txt
+Ok but are we interested in non contiguous range?
 
-ok.
 > 
-> Why can't we just use msleep(1)?
+> > >> Right but what if we want breakpoints having a size below 8? Like break on instructions
+> > >> from 0x1000 to 0x1008 ?
+> > >>
+> > >> Or should we ignore range instruction breakpoints when len < 8?
+> > >
+> > > In this case the new code has no effect (iirc), we simply use
+> > > X86_BREAKPOINT_LEN_* and "tell the hardware about extended range/mask"
+> > > code is never called. IIRC, currently we simply check bp_mask != 0
+> > > to distinguish.
+> >
+> > I'm not sure I understand correctly. Do you mean that range below 8
+> > don't rely on extended breakpoint range?
+> 
+> IIRC - yes.
+> 
+> > Ideally it would be nice if we drop bp_mask and use extended ranges
+> > only when len > 8. How does that sound?
+> 
+> Again, iirc, this is what the code does. except (in essence) it checks
+> mask != 0 instead of len > 8.
 
-isn't it too long?
-> 
-> Do we know approximately how much time it takes for the block to power down?
+Ok.
 
-I have to check that. But long time back for OMAP5 it used to vary from board
-to board.
 > 
->> +	} while (--timeout);
->> +
-> 
-> what if there was a timeout? you need to exit with return code and preferably print an error message.
+> And yes, we can probably drop bp_mask (unless we are going to support
+> the contiguous ranges), just I think we can do this later.
 
-hmm.. yeah.
-> 
->> +	omap_control_usb_phy_power(phy->control_dev, 0);
->> +
->> +	return 0;
->> +}
->> +
->> +static int ti_pipe3_power_on(struct phy *x)
->> +{
->> +	struct ti_pipe3 *phy = phy_get_drvdata(x);
->> +	int val;
->> +	int timeout = PLL_IDLE_TIME;
->> +
->> +	val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
->> +	val &= ~PLL_IDLE;
->> +	ti_pipe3_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
->> +
->> +	do {
->> +		val = ti_pipe3_readl(phy->pll_ctrl_base, PLL_STATUS);
->> +		if (!(val & PLL_TICOPWDN))
->> +			break;
->> +		usleep_range(1, 5);
->> +	} while (--timeout);
-> 
-> here as well.
+The problem is that once we push the bp_mask interface, we won't be able
+to remove it later. It's a user ABI.
 
-ok.
+So I really want to be careful with that and extend bp_len for range breakpoints
+then if we find out limitations, only then we can introduce bp_mask.
 
-Thanks
-Kishon
+Suravee, any thought about this?
