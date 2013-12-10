@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3LJQTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:19:12 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53519 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751791Ab3LJQTI (ORCPT
+	id S1754585Ab3LJQTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:19:54 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:61095 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab3LJQTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:19:08 -0500
-Message-ID: <52A73EF9.4050105@hurleysoftware.com>
-Date: Tue, 10 Dec 2013 11:19:05 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 11:19:52 -0500
 MIME-Version: 1.0
-To: Meelis Roos <mroos@linux.ee>
-CC: Christoph Lameter <cl@linux.com>, Ethan Zhao <ethan.kernel@gmail.com>,
-        alokk@calsoftinc.com, shobhit@calsoftinc.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/slab.c: check pointer slabp before using it in alloc_slabmgmt()
-References: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com> <00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com> <CABawtvPdQ2smcawTywp605KceKAQF+CsvpBqG1zEaKfP-PLB6A@mail.gmail.com> <CABawtvM6MpwHH7kFjnqSr69QWboFXsEiu6Fv0MMJkhQbaXCLxw@mail.gmail.com> <00000142dd262a23-776dfc34-c3e4-4229-8684-d99131a2f758-000000@email.amazonses.com>
-In-Reply-To: <00000142dd262a23-776dfc34-c3e4-4229-8684-d99131a2f758-000000@email.amazonses.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+In-Reply-To: <16479184.50751386647682015.JavaMail.weblogic@epv6ml09>
+References: <16479184.50751386647682015.JavaMail.weblogic@epv6ml09>
+Date: Tue, 10 Dec 2013 21:49:51 +0530
+Message-ID: <CAPoNrttdDbwstOMa8s23oLmzOc2KcJztfgmVB0A8mCWWR0DZZQ@mail.gmail.com>
+Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack overflow
+From: Anurag Aggarwal <anurag19aggarwal@gmail.com>
+To: Anurag Aggarwal <a.anurag@samsung.com>
+Cc: Dave Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Naveen Kumar <naveen.sel@samsung.com>,
+        Narendra Meher <narendra.m1@samsung.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
+        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
+        Rajat Suri <rajat.suri@samsung.com>,
+        Poorva Srivastava <poorva.s@samsung.com>,
+        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 10:35 AM, Christoph Lameter wrote:
-> On Tue, 10 Dec 2013, Ethan Zhao wrote:
->
->>       No, stable 3.12.4 and 3.12.3 need this patch.  3.13RC doesn't
->> need it anymore.
->
-> Hmmm.. Then this commit may have fixed it:
+>>+               if (*vsp >= (unsigned long *)ctrl->sp_high)
+>>+                       return -URC_FAILURE;
 
-Cross-threaded from [Re: Slab BUG with DEBUG_* options ]
+I tested the same patch, by adding a printk statement in the above if condition.
+The print statement I added came a few times as a part of dmesg log.
 
-On 12/08/2013 10:00 AM, Meelis Roos wrote:
- > ldata alloc change + your second slab patch + slab debug: hang on boot
- > after
- > console [tty0] enabled, bootconsole disabled
- > (after that, I should see all the dmesg again on serial but I do not).
+I think this proves that such corner cases are being handled by the above code
 
-Meelis,
+Regards
+Anurag
 
-Please grab this patch below and see if it fixes your 'hang on boot'
-with Christoph's other slab patch + slab debug.
-
-Regards,
-Peter Hurley
-
-> commit 0172f779e4314639a8ed440082cfe9e3450954e8
-> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Date:   Wed Oct 30 19:04:00 2013 +0900
+On Tue, Dec 10, 2013 at 9:24 AM, Anurag Aggarwal <a.anurag@samsung.com> wrote:
+>>Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+>>
+>>I can confirm that the kernel "doesn't crash" with this applied, and
+>>that backtracing at least partially works.  But this is not really
+>>sufficient to demontrate that the now code works better than the old
+>>code in corner cases (which is the point of the patch).
+>>
+>>Can you give details of what additional testing you have, or plan to
+>>do?
 >
->      slab: fix to calm down kmemleak warning
+> We saw a data abort in unwinder for one of Samsung Project, during a
+> Samsung Automation test case.
+> After that I created the initial the patch, and the data abort has not been
+> seen till now.
 >
->      After using struct page as slab management, we should not call
->      kmemleak_scan_area(), since struct page isn't the tracking object of
->      kmemleak. Without this patch and if CONFIG_DEBUG_KMEMLEAK is enabled,
->      so many kmemleak warnings are printed.
+> Is it possible for you to give an idea on what other kind of additional testing
+> do you have in mind.
 >
->      Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->      Signed-off-by: Pekka Enberg <penberg@iki.fi>
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index af2db76..a8a9349 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2531,14 +2531,6 @@ static struct freelist *alloc_slabmgmt(struct
-> kmem_cache *cachep,
->                  /* Slab management obj is off-slab. */
->                  freelist = kmem_cache_alloc_node(cachep->freelist_cache,
->                                                local_flags, nodeid);
-> -               /*
-> -                * If the first object in the slab is leaked (it's allocated
-> -                * but no one has a reference to it), we want to make sure
-> -                * kmemleak does not treat the ->s_mem pointer as a reference
-> -                * to the object. Otherwise we will not report the leak.
-> -                */
-> -               kmemleak_scan_area(&page->lru, sizeof(struct list_head),
-> -                                  local_flags);
->                  if (!freelist)
->                          return NULL;
->          } else {
+> Regads
+> Anurag
 >
 
+
+
+-- 
+Anurag Aggarwal
