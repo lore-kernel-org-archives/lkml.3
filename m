@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980Ab3LJIlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:41:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58370 "EHLO
+	id S1751370Ab3LJH7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:59:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58347 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab3LJH7N (ORCPT
+	with ESMTP id S1751513Ab3LJH7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:13 -0500
+	Tue, 10 Dec 2013 02:59:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.4 15/25] Input: allow deselecting serio drivers even without CONFIG_EXPERT
-Date: Tue, 10 Dec 2013 00:00:23 -0800
-Message-Id: <20131210075931.904919202@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.4 11/25] NFSv4: Update list of irrecoverable errors on DELEGRETURN
+Date: Tue, 10 Dec 2013 00:00:19 -0800
+Message-Id: <20131210075931.627844494@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -27,79 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit bcd2623073e98f69f84720308db0b142c4da0bd6 upstream.
+commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
 
-There is plenty of consumer hardware (e.g., mac books) that does not use AT
-keyboards or PS/2 mice. It therefore makes sense for distro kernels to
-build the related drivers as modules to avoid loading them on hardware that
-does not need them. As such, these options should no longer be protected by
-EXPERT.
+If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
+then there is no recovery possible. Just quit without returning an error.
 
-Moreover, building these drivers as modules gets rid of the following ugly
-error during boot:
+Also, note that the client must not assume that the NFSv4 lease has been
+renewed when it sees an error on DELEGRETURN.
 
-[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
-[    3.439537] i8042: No controller found
-
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/keyboard/Kconfig |    4 ++--
- drivers/input/serio/Kconfig    |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4proc.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- menuconfig INPUT_KEYBOARD
--	bool "Keyboards" if EXPERT || !X86
-+	bool "Keyboards"
- 	default y
- 	help
- 	  Say Y here, and a list of supported keyboards will be displayed.
-@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4041,11 +4041,17 @@ static void nfs4_delegreturn_done(struct
+ 		return;
  
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EXPERT || !X86
-+	tristate "AT keyboard"
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- config SERIO
--	tristate "Serial I/O support" if EXPERT || !X86
-+	tristate "Serial I/O support"
- 	default y
- 	help
- 	  Say Yes here if you have any input device that uses serial I/O to
-@@ -19,7 +19,7 @@ config SERIO
- if SERIO
- 
- config SERIO_I8042
--	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
-+	tristate "i8042 PC Keyboard controller"
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
-@@ -168,7 +168,7 @@ config SERIO_MACEPS2
- 	  module will be called maceps2.
- 
- config SERIO_LIBPS2
--	tristate "PS/2 driver library" if EXPERT
-+	tristate "PS/2 driver library"
- 	depends on SERIO_I8042 || SERIO_I8042=n
- 	help
- 	  Say Y here if you are using a driver for device connected
+ 	switch (task->tk_status) {
+-	case -NFS4ERR_STALE_STATEID:
+-	case -NFS4ERR_EXPIRED:
+ 	case 0:
+ 		renew_lease(data->res.server, data->timestamp);
+ 		break;
++	case -NFS4ERR_ADMIN_REVOKED:
++	case -NFS4ERR_DELEG_REVOKED:
++	case -NFS4ERR_BAD_STATEID:
++	case -NFS4ERR_OLD_STATEID:
++	case -NFS4ERR_STALE_STATEID:
++	case -NFS4ERR_EXPIRED:
++		task->tk_status = 0;
++		break;
+ 	default:
+ 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
+ 				-EAGAIN) {
 
 
