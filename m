@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3LJTNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:13:19 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:57544 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab3LJTNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:13:18 -0500
-Message-ID: <52A767CB.3010501@linaro.org>
-Date: Tue, 10 Dec 2013 20:13:15 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753011Ab3LJTPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:15:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629Ab3LJTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:15:03 -0500
+Date: Tue, 10 Dec 2013 14:14:09 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rob Landley <rob@landley.net>, Eric Biederman <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
+Message-ID: <20131210191409.GE13909@redhat.com>
+References: <20131210001620.GA7938@www.outflux.net>
+ <52A66190.9060907@zytor.com>
+ <CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com>
+ <20131210143540.GA13909@redhat.com>
+ <f4fbae55-7d7b-400d-b50f-258002371368@email.android.com>
+ <20131210183352.GD13909@redhat.com>
+ <52A76348.5080803@zytor.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-CC: Axel Lin <axel.lin@ingics.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL RESEND2] clocksource/clockevents fixes for 3.13
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A76348.5080803@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 10, 2013 at 10:54:00AM -0800, H. Peter Anvin wrote:
+> On 12/10/2013 10:33 AM, Vivek Goyal wrote:
+> > On Tue, Dec 10, 2013 at 08:32:38AM -0800, H. Peter Anvin wrote:
+> >> Of course it isn't.
+> > 
+> > I am not sure what are you trying to say. This is too brief.
+> > 
+> > Thanks
+> > Vivek
+> > 
+> 
+> Of course it is not sufficient.  Once you can get arbitrary code into
+> kernel space (CPL 0) you can do anything, and "disabling jump back" is
+> just a speed bump.
 
-Hi Thomas, Ingo,
+Agreed that disabling jump back is only a speed bump.
 
-here are the fixes for 3.13 based on timers/urgent
+Kees, so how would be use this knob?
 
-  * Axel Lin added a missing dependency on CLKSRC_MMIO in the Kconfig 
-for the time-efm32
+- If I put it in some init script, then root will permission to modify
+  and remove it.
 
-  * Dinh Nguyen fixed read_sched_clock to return the right value and 
-added the clksrc-of missing definition for the dw_apb_timer
-
-  * Ezequiel Garcia registered the sched clock after the counter, thus 
-preventing time jump in the traces for the armada-370-xp
-
-  * Marc Zyngier stopped the timer before enabling the irq in order to 
-prevent it to be fired before the clockevent is registered for the sunxi
-
-  * Thierry Reding removed a of_node_put in clksrc-of because the 
-reference is not held
+- Can one specify sysctl parameters on command line? If yes, then one
+  can disable this using kernel command line and in that case kdump will
+  be disabled too.
 
 Thanks
-   -- Daniel
-
-----------------------------------------------------------------
-
-The following changes since commit 0e576acbc1d9600cf2d9b4a141a2554639959d50:
-
-   nohz: Fix another inconsistency between CONFIG_NO_HZ=n and nohz=off 
-(2013-11-29 12:23:03 +0100)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git clockevents/fixes
-
-for you to fetch changes up to 9ab4727c1d41e50b67aecde4bf11879560a3ca78:
-
-   clocksource: dw_apb_timer_of: Fix support for dts binding 
-"snps,dw-apb-timer" (2013-12-10 19:49:18 +0100)
-
-----------------------------------------------------------------
-Axel Lin (1):
-       clocksource: time-efm32: Select CLKSRC_MMIO
-
-Dinh Nguyen (2):
-       clocksource: dw_apb_timer_of: Fix read_sched_clock
-       clocksource: dw_apb_timer_of: Fix support for dts binding 
-"snps,dw-apb-timer"
-
-Ezequiel Garcia (1):
-       clocksource: armada-370-xp: Register sched_clock after the 
-counter reset
-
-Marc Zyngier (1):
-       clocksource: sunxi: Stop timer from ticking before enabling 
-interrupts
-
-Thierry Reding (1):
-       clocksource: clksrc-of: Do not drop unheld reference on device node
-
-  drivers/clocksource/Kconfig              |    1 +
-  drivers/clocksource/clksrc-of.c          |    1 -
-  drivers/clocksource/dw_apb_timer_of.c    |    7 ++++---
-  drivers/clocksource/sun4i_timer.c        |    3 +++
-  drivers/clocksource/time-armada-370-xp.c |   10 +++++-----
-  5 files changed, 13 insertions(+), 9 deletions(-)
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Vivek
