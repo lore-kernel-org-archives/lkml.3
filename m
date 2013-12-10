@@ -1,110 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055Ab3LJBVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:21:50 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:45183 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3LJBVt (ORCPT
+	id S1751252Ab3LJB1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 20:27:46 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33790 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3LJB1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 20:21:49 -0500
-X-AuditID: 9c93017d-b7b46ae000000e86-1a-52a66cac9797
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 04/14] tools lib traceevent: Get rid of malloc_or_die() allocate_arg()
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-	<1386567251-22751-5-git-send-email-namhyung@kernel.org>
-	<20131209110519.7e9fd95c@gandalf.local.home>
-Date: Tue, 10 Dec 2013 10:21:48 +0900
-In-Reply-To: <20131209110519.7e9fd95c@gandalf.local.home> (Steven Rostedt's
-	message of "Mon, 9 Dec 2013 11:05:19 -0500")
-Message-ID: <874n6hlcur.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 9 Dec 2013 20:27:45 -0500
+Date: Mon, 9 Dec 2013 17:27:38 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH v5 tip/core/locking] Memory-barrier documentation updates +
+ smp_mb__after_unlock_lock()
+Message-ID: <20131210012738.GA24317@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121001-1542-0000-0000-00000412FFD3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013 11:05:19 -0500, Steven Rostedt wrote:
-> On Mon,  9 Dec 2013 14:34:01 +0900
-> Namhyung Kim <namhyung@kernel.org> wrote:
->
->> @@ -409,8 +408,10 @@ create_arg_op(enum filter_op_type btype)
->>  	struct filter_arg *arg;
->>  
->>  	arg = allocate_arg();
->> -	arg->type = FILTER_ARG_OP;
->> -	arg->op.type = btype;
->> +	if (arg) {
->> +		arg->type = FILTER_ARG_OP;
->> +		arg->op.type = btype;
->> +	}
->>  
->>  	return arg;
->>  }
->> @@ -421,8 +422,10 @@ create_arg_exp(enum filter_exp_type etype)
->>  	struct filter_arg *arg;
->>  
->>  	arg = allocate_arg();
->> -	arg->type = FILTER_ARG_EXP;
->> -	arg->op.type = etype;
->> +	if (arg) {
->> +		arg->type = FILTER_ARG_EXP;
->> +		arg->op.type = etype;
->> +	}
->>  
->>  	return arg;
->>  }
->> @@ -433,9 +436,11 @@ create_arg_cmp(enum filter_exp_type etype)
->>  	struct filter_arg *arg;
->>  
->>  	arg = allocate_arg();
->> -	/* Use NUM and change if necessary */
->> -	arg->type = FILTER_ARG_NUM;
->> -	arg->op.type = etype;
->> +	if (arg) {
->> +		/* Use NUM and change if necessary */
->> +		arg->type = FILTER_ARG_NUM;
->> +		arg->op.type = etype;
->> +	}
->>  
->>  	return arg;
->>  }
->> @@ -896,8 +901,10 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
->>  	case FILTER_VAL_FALSE:
->>  		free_arg(arg);
->>  		arg = allocate_arg();
->> -		arg->type = FILTER_ARG_BOOLEAN;
->> -		arg->boolean.value = ret == FILTER_VAL_TRUE;
->> +		if (arg) {
->> +			arg->type = FILTER_ARG_BOOLEAN;
->> +			arg->boolean.value = ret == FILTER_VAL_TRUE;
->> +		}
->
-> Just a nit, but I wonder if all these would look nicer if we just did:
->
-> 	arg = allocate_arg();
-> 	if (!arg)
-> 		return NULL;
-> 	[...]
->
-> Instead of doing the work within an if statement.
+Hello!
 
-Sure, no problem.
+This series applies some long-needed updates to memory-barriers.txt and
+adds an smp_mb__after_unlock_lock():
 
->
-> Also, I prefer if (!arg) over if (arg == NULL), but I'm not going to
-> fight over that ;-)
+1.	Add ACCESS_ONCE() calls where needed to ensure their inclusion
+	in code copy-and-pasted from this file.
 
-Yeah, it's about preference.  I can do it your way from now on if you
-want while as you can see it's more error-prone - but no, I didn't do it
-intentionally because of that. ;-)
+2.	Add long atomic examples alongside the existing atomics.
 
-Thanks,
-Namhyung
+3.	Prohibit architectures supporting the Linux kernel from
+	speculating stores.
+
+4.	Document what ACCESS_ONCE() does along with a number of situations
+	requiring its use.
+
+5.	Downgrade UNLOCK+LOCK to no longer imply a full barrier, at least
+	in the absence of smp_mb__after_unlock_lock().  See the LKML thread
+	that includes http://www.spinics.net/lists/linux-mm/msg65653.html
+	for more information.
+
+6.	Added smp_mb__after_unlock_lock() for all architectures.  Because
+	all architectures are presumably providing full-barrier semantics
+	for UNLOCK+LOCK, these are all no-ops.  Some will change if
+	low-latency-handoff queued locks are accepted.
+
+7.	Applied smp_mb__after_unlock_lock() as needed in RCU.
+
+Changes from v4:
+
+o	Added Josh Triplett's Reviewed-by for 1-4.
+
+o	Applied feedback from Ingo Molnar and Jonathan Corbet.
+
+o	Trimmed Cc lists as suggested by David Miller.
+
+o	Added smp_mb__after_unlock_lock() changes.
+
+Changes from v3:
+
+o	Fix typos noted by Peter Zijlstra.
+
+o	Added the documentation about ACCESS_ONCE(), which expands on
+	http://thread.gmane.org/gmane.linux.kernel.mm/82891/focus=14696,
+	ably summarized by Jon Corbet at http://lwn.net/Articles/508991/.
+
+Changes from v2:
+
+o	Update examples so that that load against which the subsequent
+	store is to be ordered is part of the "if" condition.
+
+o	Add an example showing how the compiler can remove "if"
+	conditions and how to prevent it from doing so.
+
+o	Add ACCESS_ONCE() to the compiler-barrier section.
+
+o	Add a sentence noting that transitivity requires smp_mb().
+
+Changes from v1:
+
+o	Combined with Peter Zijlstra's speculative-store-prohibition patch.
+
+o	Added more pitfalls to avoid when prohibiting speculative
+	stores, along with how to avoid them.
+
+o	Applied Josh Triplett's review comments.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/memory-barriers.txt   |  760 +++++++++++++++++++++++++++-------
+ b/arch/arm/include/asm/barrier.h      |    2 
+ b/arch/arm64/include/asm/barrier.h    |    2 
+ b/arch/ia64/include/asm/barrier.h     |    2 
+ b/arch/metag/include/asm/barrier.h    |    2 
+ b/arch/mips/include/asm/barrier.h     |    2 
+ b/arch/powerpc/include/asm/barrier.h  |    2 
+ b/arch/s390/include/asm/barrier.h     |    2 
+ b/arch/sparc/include/asm/barrier_64.h |    2 
+ b/arch/x86/include/asm/barrier.h      |    2 
+ b/include/asm-generic/barrier.h       |    2 
+ b/kernel/rcu/tree.c                   |   18 
+ b/kernel/rcu/tree_plugin.h            |   13 
+ 13 files changed, 670 insertions(+), 141 deletions(-)
+
