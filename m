@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab3LJIS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:18:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58868 "EHLO
+	id S1753484Ab3LJIBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:01:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58835 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab3LJIBi (ORCPT
+	with ESMTP id S1752299Ab3LJIBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:38 -0500
+	Tue, 10 Dec 2013 03:01:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.12 03/62] ALSA: hda - Use always amps for auto-mute on AD1986A codec
-Date: Tue, 10 Dec 2013 00:00:34 -0800
-Message-Id: <20131210080057.650515237@linuxfoundation.org>
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 3.12 15/62] ARM: multi_v7_defconfig: enable SDHCI_BCM_KONA and MMC_BLOCK_MINORS=16
+Date: Tue, 10 Dec 2013 00:00:46 -0800
+Message-Id: <20131210080058.508990895@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,33 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Olof Johansson <olof@lixom.net>
 
-commit b3bd4fc3822a6b5883eaa556822487d87752d443 upstream.
+commit f39918eec72c841037f16475867dac1a2b0bfc01 upstream.
 
-It seems that AD1986A cannot manage the dynamic pin on/off for
-auto-muting, but rather gets confused.  Since each output has own amp,
-let's use it instead.
+Enable MMC/SD on the Broadcom mobile platforms, and increase the block
+minors from the default 8 to 16 (since the Broadcom board by default
+has root on the 8th partition).
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64971
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_analog.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/configs/multi_v7_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -345,6 +345,9 @@ static int patch_ad1986a(struct hda_code
- 	 */
- 	spec->gen.multiout.no_share_stream = 1;
- 
-+	/* AD1986A can't manage the dynamic pin on/off smoothly */
-+	spec->gen.auto_mute_via_amp = 1;
-+
- 	snd_hda_pick_fixup(codec, ad1986a_fixup_models, ad1986a_fixup_tbl,
- 			   ad1986a_fixups);
- 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -132,12 +132,14 @@ CONFIG_USB_GPIO_VBUS=y
+ CONFIG_USB_ISP1301=y
+ CONFIG_USB_MXS_PHY=y
+ CONFIG_MMC=y
++CONFIG_MMC_BLOCK_MINORS=16
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
+ CONFIG_MMC_SDHCI_ESDHC_IMX=y
+ CONFIG_MMC_SDHCI_TEGRA=y
+ CONFIG_MMC_SDHCI_SPEAR=y
++CONFIG_MMC_SDHCI_BCM_KONA=y
+ CONFIG_MMC_OMAP=y
+ CONFIG_MMC_OMAP_HS=y
+ CONFIG_EDAC=y
 
 
