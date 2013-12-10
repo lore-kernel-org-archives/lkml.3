@@ -1,153 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344Ab3LJXIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:08:54 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:52810 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3LJXIv (ORCPT
+	id S1751268Ab3LJXNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:13:50 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:54717 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3LJXNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:08:51 -0500
-Date: Tue, 10 Dec 2013 16:08:47 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 10/11] PCI/MSI: Convert pci_msix_table_size() to a
- public interface
-Message-ID: <20131210230847.GG4699@google.com>
-References: <cover.1385399393.git.agordeev@redhat.com>
- <4c879b0928ded8b4c9d2fab3fc413b98d34d8c7c.1385399393.git.agordeev@redhat.com>
+	Tue, 10 Dec 2013 18:13:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4c879b0928ded8b4c9d2fab3fc413b98d34d8c7c.1385399393.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52A71E43.9040200@parallels.com>
+References: <52A71E43.9040200@parallels.com>
+Date: Wed, 11 Dec 2013 03:13:48 +0400
+Message-ID: <CAA6-i6oyraHQ7_1GBKxgupS12_QFx708Niu93nyNFLrbQBXE5A@mail.gmail.com>
+Subject: Re: Race in memcg kmem?
+From: Glauber Costa <glommer@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
+        devel@openvz.org, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 26, 2013 at 10:09:59AM +0100, Alexander Gordeev wrote:
-> Make pci_msix_table_size() function to return a negative errno
-> if device does not support MSI-X interrupts. After this update
-> pci_msix_table_size() can fail and callers must always check
-> the returned value.
-> 
-> This update is needed to create a consistent MSI-X counterpart
-> for pci_get_msi_cap() MSI interface. Device drivers can use this
-> function to obtain maximum number of MSI-X interrupts the device
-> supports and i.e. use that number in a following call to
-> pci_enable_msix() interface.
+On Tue, Dec 10, 2013 at 5:59 PM, Vladimir Davydov
+<vdavydov@parallels.com> wrote:
+> Hi,
+>
+> Looking through the per-memcg kmem_cache initialization code, I have a
+> bad feeling that it is prone to a race. Before getting to fixing it, I'd
+> like to ensure this race is not only in my imagination. Here it goes.
+>
+> We keep per-memcg kmem caches in the memcg_params field of each root
+> cache. The memcg_params array is grown dynamically by
+> memcg_update_cache_size(). I guess that if this function is executed
+> concurrently with memcg_create_kmem_cache() we can get a race resulting
+> in a memory leak.
+>
+Ok, let's see.
 
-If pci_msix_table_size() is a counterpart to pci_get_msi_cap(), can we make
-the names similar?
+> -- memcg_create_kmem_cache(memcg, cachep) --
+> creates a new kmem_cache corresponding to a memcg and assigns it to the
+> root cache; called in the background - it is OK to have several such
+> functions trying to create a cache for the same memcg concurrently, but
+> only one of them should succeed.
 
-> The only user of pci_msix_table_size() function is PCI-Express
-> port driver, which is also updated by this change.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-> ---
->  Documentation/PCI/MSI-HOWTO.txt |   13 +++++++++++++
->  drivers/pci/msi.c               |   12 ++++++++++--
->  drivers/pci/pcie/portdrv_core.c |    5 +++--
->  include/linux/pci.h             |    2 +-
->  4 files changed, 27 insertions(+), 5 deletions(-)
-> 
-> diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
-> index 1fe4900..5955389 100644
-> --- a/Documentation/PCI/MSI-HOWTO.txt
-> +++ b/Documentation/PCI/MSI-HOWTO.txt
-> @@ -243,6 +243,19 @@ MSI-X Table.  This address is mapped by the PCI subsystem, and should not
->  be accessed directly by the device driver.  If the driver wishes to
->  mask or unmask an interrupt, it should call disable_irq() / enable_irq().
->  
-> +4.3.4 pci_msix_table_size
-> +
-> +int pci_msix_table_size(struct pci_dev *dev)
-> +
-> +This function could be used to retrieve number of entries in the device
-> +MSI-X table.
-> +
-> +If this function returns a negative number, it indicates the device is
-> +not capable of sending MSI-Xs.
-> +
-> +If this function returns a positive number, it indicates the maximum
-> +number of MSI-X interrupt vectors that could be allocated.
-> +
->  4.4 Handling devices implementing both MSI and MSI-X capabilities
->  
->  If a device implements both MSI and MSI-X capabilities, it can
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index e4b02ac..6fe0add 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -932,17 +932,23 @@ EXPORT_SYMBOL(pci_disable_msi);
->  /**
->   * pci_msix_table_size - return the number of device's MSI-X table entries
->   * @dev: pointer to the pci_dev data structure of MSI-X device function
-> - */
-> +
-> + * This function returns the number of device's MSI-X table entries and
-> + * therefore the number of MSI-X vectors device is capable to send.
-> + * It returns a negative errno if the device is not capable sending MSI-X
-> + * interrupts.
-> + **/
->  int pci_msix_table_size(struct pci_dev *dev)
->  {
->  	u16 control;
->  
->  	if (!dev->msix_cap)
-> -		return 0;
-> +		return -EINVAL;
->  
->  	pci_read_config_word(dev, dev->msix_cap + PCI_MSIX_FLAGS, &control);
->  	return msix_table_size(control);
->  }
-> +EXPORT_SYMBOL(pci_msix_table_size);
->  
->  /**
->   * pci_enable_msix - configure device's MSI-X capability structure
-> @@ -972,6 +978,8 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
->  		return status;
->  
->  	nr_entries = pci_msix_table_size(dev);
-> +	if (nr_entries < 0)
-> +		return nr_entries;
->  	if (nvec > nr_entries)
->  		return nr_entries;
->  
-> diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
-> index 08d131f..5bebeec 100644
-> --- a/drivers/pci/pcie/portdrv_core.c
-> +++ b/drivers/pci/pcie/portdrv_core.c
-> @@ -80,8 +80,9 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
->  	u32 reg32;
->  
->  	nr_entries = pci_msix_table_size(dev);
-> -	if (!nr_entries)
-> -		return -EINVAL;
-> +	if (nr_entries < 0)
-> +		return nr_entries;
-> +	BUG_ON(!nr_entries);
->  	if (nr_entries > PCIE_PORT_MAX_MSIX_ENTRIES)
->  		nr_entries = PCIE_PORT_MAX_MSIX_ENTRIES;
->  
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 9ab1692..8af1217 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1172,7 +1172,7 @@ static inline void pci_disable_msi(struct pci_dev *dev)
->  
->  static inline int pci_msix_table_size(struct pci_dev *dev)
->  {
-> -	return 0;
-> +	return -ENOSYS;
->  }
->  static inline int pci_enable_msix(struct pci_dev *dev,
->  				  struct msix_entry *entries, int nvec)
-> -- 
-> 1.7.7.6
-> 
+Yes.
+
+> @cachep is the root cache
+> @memcg is the memcg we want to create a cache for.
+>
+> The function:
+>
+> A1) assures there is no cache corresponding to the memcg (if it is we
+> have nothing to do):
+>     idx = memcg_cache_id(memcg);
+>     if (cachep->memcg_params[idx])
+>         goto out;
+>
+> A2) creates and assigns a new cache:
+>     new_cachep = kmem_cache_dup(memcg, cachep);
+Please note this cannot proceed in parallel with memcg_update_cache_size(),
+because they both take the slab mutex.
+
+>     // init new_cachep
+>     cachep->memcg_params->memcg_caches[idx] = new_cachep;
+>
+>
+> -- memcg_update_cache_size(s, num_groups) --
+> grows s->memcg_params to accomodate data for num_groups memcg's
+> @s is the root cache whose memcg_params we want to grow
+> @num_groups is the new number of kmem-active cgroups (defines the new
+> size of memcg_params array).
+>
+> The function:
+>
+> B1) allocates and assigns a new cache:
+>     cur_params = s->memcg_params;
+>     s->memcg_params = kzalloc(size, GFP_KERNEL);
+>
+> B2) copies per-memcg cache ptrs from the old memcg_params array to the
+> new one:
+>     for (i = 0; i < memcg_limited_groups_array_size; i++) {
+>         if (!cur_params->memcg_caches[i])
+>             continue;
+>         s->memcg_params->memcg_caches[i] =
+>                     cur_params->memcg_caches[i];
+>     }
+>
+> B3) frees the old array:
+>     kfree(cur_params);
+>
+>
+> Since these two functions do not share any mutexes, we can get the
+
+They do share a mutex, the slab mutex.
+
+> following race:
+>
+> Assume, by the time Cpu0 gets to memcg_create_kmem_cache(), the memcg
+> cache has already been created by another thread, so this function
+> should do nothing.
+>
+> Cpu0    Cpu1
+> ----    ----
+>         B1
+> A1              we haven't initialized memcg_params yet so Cpu0 will
+>                 proceed to A2 to alloc and assign a new cache
+> A2
+>         B2      Cpu1 rewrites the memcg cache ptr set by Cpu0 at A2
+>                 - a memory leak?
+>         B3
+>
+> I'd like to add that even if I'm right about the race, this is rather
+> not critical, because memcg_update_cache_sizes() is called very rarely.
+>
+Every race is critical.
+
+So, I am a bit lost by your description. Get back to me if I got anything wrong,
+but I am think that the point that you're missing is that all heavy
+slab operations
+take the slab_mutex underneath, and that includes cache creation and update.
+
+
+>
+> BTW, it seems to me that the way we update memcg_params in
+> memcg_update_cache_size() make cache_from_memcg_idx() prone to
+> use-after-free:
+>
+>> static inline struct kmem_cache *
+>> cache_from_memcg_idx(struct kmem_cache *s, int idx)
+>> {
+>>     if (!s->memcg_params)
+>>         return NULL;
+>>     return s->memcg_params->memcg_caches[idx];
+>> }
+>
+> This is equivalent to
+>
+> 1) struct memcg_cache_params *params = s->memcg_params;
+> 2) return params->memcg_caches[idx];
+>
+> If memcg_update_cache_size() is executed between steps 1 and 2 on
+> another CPU, at step 2 we will dereference memcg_params that has already
+> been freed. This is very unlikely, but still possible. Perhaps, we
+> should free old memcg params only after a sync_rcu()?
+>
+
+You seem to be right in this one. Indeed, if my mind does not betray
+me, That is how I freed
+the LRUs. (with synchronize_rcus).
