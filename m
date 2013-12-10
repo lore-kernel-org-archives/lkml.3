@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab3LJJdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:33:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44194 "EHLO
+	id S1752682Ab3LJJRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:17:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44115 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab3LJJST (ORCPT
+	with ESMTP id S1752718Ab3LJJR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:18:19 -0500
-Date: Tue, 10 Dec 2013 01:17:37 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-c877bbd8eceb14c5eac6779cc804fa8b34044736@git.kernel.org>
+	Tue, 10 Dec 2013 04:17:26 -0500
+Date: Tue, 10 Dec 2013 01:16:55 -0800
+From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
+Message-ID: <tip-316bd98a9aa47693215e0d3a5bcc83f51691ba93@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1386076182-14484-3-git-send-email-jolsa@redhat.com>
-References: <1386076182-14484-3-git-send-email-jolsa@redhat.com>
+        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com
+In-Reply-To: <6124d9eb10a3f1f6b399d1db660110bc7a60fd6b.1386197481.git.yangds.fnst@cn.fujitsu.com>
+References: <6124d9eb10a3f1f6b399d1db660110bc7a60fd6b.1386197481.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent: Add plugin support
-Git-Commit-ID: c877bbd8eceb14c5eac6779cc804fa8b34044736
+Subject: [tip:perf/core] perf kvm: Fix spurious '=' use in man page
+Git-Commit-ID: 316bd98a9aa47693215e0d3a5bcc83f51691ba93
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,333 +31,61 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:17:44 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:17:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c877bbd8eceb14c5eac6779cc804fa8b34044736
-Gitweb:     http://git.kernel.org/tip/c877bbd8eceb14c5eac6779cc804fa8b34044736
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 3 Dec 2013 14:09:16 +0100
+Commit-ID:  316bd98a9aa47693215e0d3a5bcc83f51691ba93
+Gitweb:     http://git.kernel.org/tip/316bd98a9aa47693215e0d3a5bcc83f51691ba93
+Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+AuthorDate: Wed, 4 Dec 2013 17:56:43 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 4 Dec 2013 15:16:44 -0300
+CommitDate: Wed, 4 Dec 2013 15:04:44 -0300
 
-tools lib traceevent: Add plugin support
+perf kvm: Fix spurious '=' use in man page
 
-Backporting plugin support for traceevent lib.
+As option --host and --guest request no input for it, there should not
+be a '=' after them in the man page sources.
 
-Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+And --output expects a filename as the input, so there should be a '='
+after it.
 
-It's now possible to use following interface to load plugins
-(shared objects) to enhance pevent object functionality.
+This patch removes the needless '=' after --guest and --host, and adds a
+'=' after --output in perf-kvm.txt.
 
-The plugin interface/hooks are as follows:
-(taken from event-parse.h comments)
-
-- 'pevent_plugin_loader' (required)
-    The function name to initialized the plugin.
-
-    int pevent_plugin_loader(struct pevent *pevent)
-
-- 'pevent_plugin_unloader' (optional)
-    The function called just before unloading
-
-    int pevent_plugin_unloader(void)
-
-- 'pevent_plugin_options'  (optional)
-    Plugin options that can be set before loading
-
-    struct plugin_option pevent_plugin_options[] = {
-       {
-               .name = "option-name",
-               .plugin_alias = "overide-file-name", (optional)
-               .description = "description of option to show users",
-       },
-       {
-               .name = NULL,
-       },
-    };
-
-    Array must end with .name = NULL;
-
-    The plugin_alias (below) can be used to give a shorter
-    name to access the variable. Useful if a plugin handles
-    more than one event.
-
-    NOTE options support is not backported yet.
-
-- 'pevent_plugin_alias' (optional)
-    The name to use for finding options (uses filename if not defined)
-
-New traceevent functions are added to search and load
-available plugins:
-
-  struct plugin_list*
-  traceevent_load_plugins(struct pevent *pevent)
-    - loads plusing for 'struct pevent' object and returns
-      loaded plugins list
-
-  void traceevent_unload_plugins(struct plugin_list *plugin_list);
-    - unload plugin list
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386076182-14484-3-git-send-email-jolsa@redhat.com
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/6124d9eb10a3f1f6b399d1db660110bc7a60fd6b.1386197481.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile       |   6 +-
- tools/lib/traceevent/event-parse.h  |   5 +
- tools/lib/traceevent/event-plugin.c | 202 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 212 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/perf-kvm.txt | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index fc15020..2ccb5bc 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -180,7 +180,11 @@ $(obj)/%.o: $(src)/%.c
- %.o: $(src)/%.c
- 	$(Q)$(call do_compile)
- 
--PEVENT_LIB_OBJS = event-parse.o trace-seq.o parse-filter.o parse-utils.o
-+PEVENT_LIB_OBJS  = event-parse.o
-+PEVENT_LIB_OBJS += event-plugin.o
-+PEVENT_LIB_OBJS += trace-seq.o
-+PEVENT_LIB_OBJS += parse-filter.o
-+PEVENT_LIB_OBJS += parse-utils.o
- PEVENT_LIB_OBJS += kbuffer-parse.o
- 
- ALL_OBJS = $(PEVENT_LIB_OBJS)
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 8d73d25..a288860 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -377,6 +377,11 @@ enum pevent_errno {
- };
- #undef _PE
- 
-+struct plugin_list;
-+
-+struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
-+void traceevent_unload_plugins(struct plugin_list *plugin_list);
-+
- struct cmdline;
- struct cmdline_list;
- struct func_map;
-diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-new file mode 100644
-index 0000000..d272d87
---- /dev/null
-+++ b/tools/lib/traceevent/event-plugin.c
-@@ -0,0 +1,202 @@
-+/*
-+ * Copyright (C) 2009, 2010 Red Hat Inc, Steven Rostedt <srostedt@redhat.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Lesser General Public
-+ * License as published by the Free Software Foundation;
-+ * version 2.1 of the License (not later!)
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU Lesser General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General Public
-+ * License along with this program; if not,  see <http://www.gnu.org/licenses>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+
-+#include <string.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <dirent.h>
-+#include "event-parse.h"
-+#include "event-utils.h"
-+
-+#define LOCAL_PLUGIN_DIR ".traceevent/plugins"
-+
-+struct plugin_list {
-+	struct plugin_list	*next;
-+	char			*name;
-+	void			*handle;
-+};
-+
-+static void
-+load_plugin(struct pevent *pevent, const char *path,
-+	    const char *file, void *data)
-+{
-+	struct plugin_list **plugin_list = data;
-+	pevent_plugin_load_func func;
-+	struct plugin_list *list;
-+	const char *alias;
-+	char *plugin;
-+	void *handle;
-+
-+	plugin = malloc_or_die(strlen(path) + strlen(file) + 2);
-+
-+	strcpy(plugin, path);
-+	strcat(plugin, "/");
-+	strcat(plugin, file);
-+
-+	handle = dlopen(plugin, RTLD_NOW | RTLD_GLOBAL);
-+	if (!handle) {
-+		warning("could not load plugin '%s'\n%s\n",
-+			plugin, dlerror());
-+		goto out_free;
-+	}
-+
-+	alias = dlsym(handle, PEVENT_PLUGIN_ALIAS_NAME);
-+	if (!alias)
-+		alias = file;
-+
-+	func = dlsym(handle, PEVENT_PLUGIN_LOADER_NAME);
-+	if (!func) {
-+		warning("could not find func '%s' in plugin '%s'\n%s\n",
-+			PEVENT_PLUGIN_LOADER_NAME, plugin, dlerror());
-+		goto out_free;
-+	}
-+
-+	list = malloc_or_die(sizeof(*list));
-+	list->next = *plugin_list;
-+	list->handle = handle;
-+	list->name = plugin;
-+	*plugin_list = list;
-+
-+	pr_stat("registering plugin: %s", plugin);
-+	func(pevent);
-+	return;
-+
-+ out_free:
-+	free(plugin);
-+}
-+
-+static void
-+load_plugins_dir(struct pevent *pevent, const char *suffix,
-+		 const char *path,
-+		 void (*load_plugin)(struct pevent *pevent,
-+				     const char *path,
-+				     const char *name,
-+				     void *data),
-+		 void *data)
-+{
-+	struct dirent *dent;
-+	struct stat st;
-+	DIR *dir;
-+	int ret;
-+
-+	ret = stat(path, &st);
-+	if (ret < 0)
-+		return;
-+
-+	if (!S_ISDIR(st.st_mode))
-+		return;
-+
-+	dir = opendir(path);
-+	if (!dir)
-+		return;
-+
-+	while ((dent = readdir(dir))) {
-+		const char *name = dent->d_name;
-+
-+		if (strcmp(name, ".") == 0 ||
-+		    strcmp(name, "..") == 0)
-+			continue;
-+
-+		/* Only load plugins that end in suffix */
-+		if (strcmp(name + (strlen(name) - strlen(suffix)), suffix) != 0)
-+			continue;
-+
-+		load_plugin(pevent, path, name, data);
-+	}
-+
-+	closedir(dir);
-+}
-+
-+static void
-+load_plugins(struct pevent *pevent, const char *suffix,
-+	     void (*load_plugin)(struct pevent *pevent,
-+				 const char *path,
-+				 const char *name,
-+				 void *data),
-+	     void *data)
-+{
-+	char *home;
-+	char *path;
-+	char *envdir;
-+
-+	/*
-+	 * If a system plugin directory was defined,
-+	 * check that first.
-+	 */
-+#ifdef PLUGIN_DIR
-+	load_plugins_dir(pevent, suffix, PLUGIN_DIR, load_plugin, data);
-+#endif
-+
-+	/*
-+	 * Next let the environment-set plugin directory
-+	 * override the system defaults.
-+	 */
-+	envdir = getenv("TRACEEVENT_PLUGIN_DIR");
-+	if (envdir)
-+		load_plugins_dir(pevent, suffix, envdir, load_plugin, data);
-+
-+	/*
-+	 * Now let the home directory override the environment
-+	 * or system defaults.
-+	 */
-+	home = getenv("HOME");
-+	if (!home)
-+		return;
-+
-+	path = malloc_or_die(strlen(home) + strlen(LOCAL_PLUGIN_DIR) + 2);
-+
-+	strcpy(path, home);
-+	strcat(path, "/");
-+	strcat(path, LOCAL_PLUGIN_DIR);
-+
-+	load_plugins_dir(pevent, suffix, path, load_plugin, data);
-+
-+	free(path);
-+}
-+
-+struct plugin_list*
-+traceevent_load_plugins(struct pevent *pevent)
-+{
-+	struct plugin_list *list = NULL;
-+
-+	load_plugins(pevent, ".so", load_plugin, &list);
-+	return list;
-+}
-+
-+void
-+traceevent_unload_plugins(struct plugin_list *plugin_list)
-+{
-+	pevent_plugin_unload_func func;
-+	struct plugin_list *list;
-+
-+	while (plugin_list) {
-+		list = plugin_list;
-+		plugin_list = list->next;
-+		func = dlsym(list->handle, PEVENT_PLUGIN_UNLOADER_NAME);
-+		if (func)
-+			func();
-+		dlclose(list->handle);
-+		free(list->name);
-+		free(list);
-+	}
-+}
+diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
+index f52f94d..7953227 100644
+--- a/tools/perf/Documentation/perf-kvm.txt
++++ b/tools/perf/Documentation/perf-kvm.txt
+@@ -60,14 +60,14 @@ There are a couple of variants of perf kvm:
+ OPTIONS
+ -------
+ -i::
+---input=::
++--input=<path>::
+         Input file name.
+ -o::
+---output::
++--output=<path>::
+         Output file name.
+---host=::
++--host::
+         Collect host side performance profile.
+---guest=::
++--guest::
+         Collect guest side performance profile.
+ --guestmount=<path>::
+ 	Guest os root file system mount directory. Users mounts guest os
