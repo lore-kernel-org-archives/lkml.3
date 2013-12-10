@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3LJICO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:02:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58932 "EHLO
+	id S1754622Ab3LJIMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:12:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab3LJICF (ORCPT
+	with ESMTP id S1753766Ab3LJICI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:05 -0500
+	Tue, 10 Dec 2013 03:02:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.12 39/62] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
-Date: Tue, 10 Dec 2013 00:01:10 -0800
-Message-Id: <20131210080100.182961820@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.12 22/62] ARM: mvebu: re-enable PCIe on Armada 370 DB
+Date: Tue, 10 Dec 2013 00:00:53 -0800
+Message-Id: <20131210080058.982534466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -33,64 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
+commit 96039f735e290281d0c8a08fc467de2cd610543d upstream.
 
-Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
-into xtime_sec - merged in v3.6), there has been an problem
-with the error accounting in the timekeeping code, such that
-when truncating to nanoseconds, we round up to the next nsec,
-but the balancing adjustment to the ntp_error value was dropped.
+Commit 14fd8ed0a7fd19913 ("ARM: mvebu: Relocate Armada 370/XP PCIe
+device tree nodes") relocated the PCIe controller DT nodes one level
+up in the Device Tree, to reflect a more correct representation of the
+hardware introduced by the mvebu-mbus Device Tree binding.
 
-This causes 1ns per tick drift forward of the clock.
+However, while most of the boards were properly adjusted accordingly,
+the Armada 370 DB board was left unchanged, and therefore, PCIe is
+seen as not enabled on this board. This patch fixes that by moving the
+PCIe controller node one level-up in armada-370-db.dts.
 
-In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
-architectures (s390, ia64, powerpc).
-
-The fix is simply to balance the accounting and to subtract the
-added nanosecond from ntp_error. This allows the internal long-term
-clock steering to keep the clock accurate.
-
-While this fix removes the regression added in 1e75fa8be9f, the
-ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
-and use the new VSYSCALL method, which avoids entirely the
-nanosecond granular rounding, and the resulting short-term clock
-adjustment oscillation needed to keep long term accurate time.
-
-[ jstultz: Many thanks to Martin for his efforts identifying this
-  	   subtle bug, and providing the fix. ]
-
-Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul Turner <pjt@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: 14fd8ed0a7fd19913 "ARM: mvebu: Relocate Armada 370/XP PCIe device tree nodes"
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/armada-370-db.dts |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1347,7 +1347,7 @@ static inline void old_vsyscall_fixup(st
- 	tk->xtime_nsec -= remainder;
- 	tk->xtime_nsec += 1ULL << tk->shift;
- 	tk->ntp_error += remainder << tk->ntp_error_shift;
--
-+	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
- }
- #else
- #define old_vsyscall_fixup(tk)
+--- a/arch/arm/boot/dts/armada-370-db.dts
++++ b/arch/arm/boot/dts/armada-370-db.dts
+@@ -99,22 +99,22 @@
+ 					spi-max-frequency = <50000000>;
+ 				};
+ 			};
++		};
+ 
+-			pcie-controller {
++		pcie-controller {
++			status = "okay";
++			/*
++			 * The two PCIe units are accessible through
++			 * both standard PCIe slots and mini-PCIe
++			 * slots on the board.
++			 */
++			pcie@1,0 {
++				/* Port 0, Lane 0 */
++				status = "okay";
++			};
++			pcie@2,0 {
++				/* Port 1, Lane 0 */
+ 				status = "okay";
+-				/*
+-				 * The two PCIe units are accessible through
+-				 * both standard PCIe slots and mini-PCIe
+-				 * slots on the board.
+-				 */
+-				pcie@1,0 {
+-					/* Port 0, Lane 0 */
+-					status = "okay";
+-				};
+-				pcie@2,0 {
+-					/* Port 1, Lane 0 */
+-					status = "okay";
+-				};
+ 			};
+ 		};
+ 	};
 
 
