@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab3LJTQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:16:57 -0500
-Received: from mga03.intel.com ([143.182.124.21]:35865 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab3LJTQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:16:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,866,1378882800"; 
-   d="asc'?scan'208";a="326976593"
-Message-ID: <52A769BE.4040803@linux.intel.com>
-Date: Tue, 10 Dec 2013 11:21:34 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
+	id S1753887Ab3LJTRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:17:34 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:51028 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab3LJTQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:16:17 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: mingo@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3/6] clocksource: clksrc-of: Do not drop unheld reference on device node
+Date: Tue, 10 Dec 2013 20:16:09 +0100
+Message-Id: <1386702972-25565-3-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386702972-25565-1-git-send-email-daniel.lezcano@linaro.org>
+References: <52A767CB.3010501@linaro.org>
+ <1386702972-25565-1-git-send-email-daniel.lezcano@linaro.org>
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu
-Subject: Re: [PATCH v7 2/5] usb: gadget: add quirk_ep_out_aligned_size field
- to struct usb_gadget
-References: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com> <1386633338-10919-3-git-send-email-david.a.cohen@linux.intel.com> <xa1t7gbdfn8c.fsf@mina86.com> <52A68BF7.2080901@linux.intel.com> <xa1ta9g8iwbq.fsf@mina86.com>
-In-Reply-To: <xa1ta9g8iwbq.fsf@mina86.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="hOadKu63tsDr72mJaEBPce2JRo4mlWLRA"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---hOadKu63tsDr72mJaEBPce2JRo4mlWLRA
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+From: Thierry Reding <thierry.reding@gmail.com>
 
-On 12/10/2013 07:01 AM, Michal Nazarewicz wrote:
-> On Tue, Dec 10 2013, David Cohen wrote:
->> I've got no idea how returns became reguens :)
->=20
-> The keys are like right next to each other <http://bash.org/?5300>. ;)
+When booting a recent kernel on ARM with OF_DYNAMIC enabled, the kernel
+warns about the following:
 
-I'll remember this excuse if I need some day :)
+	[    0.000000] ERROR: Bad of_node_put() on /timer@50004600
+	[    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0-rc5-next-20131017-00077-gedfd827-dirty #406
+	[    0.000000] [<c0015b68>] (unwind_backtrace+0x0/0xf4) from [<c00117e4>] (show_stack+0x10/0x14)
+	[    0.000000] [<c00117e4>] (show_stack+0x10/0x14) from [<c055f734>] (dump_stack+0x9c/0xc8)
+	[    0.000000] [<c055f734>] (dump_stack+0x9c/0xc8) from [<c03b47d4>] (of_node_release+0x90/0x9c)
+	[    0.000000] [<c03b47d4>] (of_node_release+0x90/0x9c) from [<c03b5084>] (of_find_matching_node_and_match+0x78/0xb4)
+	[    0.000000] [<c03b5084>] (of_find_matching_node_and_match+0x78/0xb4) from [<c07887c8>] (clocksource_of_init+0x60/0x70)
+	[    0.000000] [<c07887c8>] (clocksource_of_init+0x60/0x70) from [<c076e99c>] (start_kernel+0x1f4/0x33c)
+	[    0.000000] [<c076e99c>] (start_kernel+0x1f4/0x33c) from [<80008074>] (0x80008074)
 
->=20
->> But maybe Felipe can fix it when applying?
->=20
->=20
->=20
+This is caused by clocksource_of_init() dropping a reference on the
+device node that it never took. The reference taken by the loop is
+implicitly dropped on subsequent iterations. See the implementation of
+and the comment on top of the of_find_matching_node_and_match()
+function for reference (no pun intended).
 
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/clocksource/clksrc-of.c |    1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/drivers/clocksource/clksrc-of.c b/drivers/clocksource/clksrc-of.c
+index 35639cf4..b9ddd9e 100644
+--- a/drivers/clocksource/clksrc-of.c
++++ b/drivers/clocksource/clksrc-of.c
+@@ -35,6 +35,5 @@ void __init clocksource_of_init(void)
+ 
+ 		init_func = match->data;
+ 		init_func(np);
+-		of_node_put(np);
+ 	}
+ }
+-- 
+1.7.9.5
 
---hOadKu63tsDr72mJaEBPce2JRo4mlWLRA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSp2nBAAoJEGU5KLu7JjjxyroP/RTGNlH9CRnYuWdipez559T4
-XyNKXWVtQAf+e3m+FQPhHrEi8WAZUFFgs8k8dX761oDfAO/TdwY5RjVXW6OUbIpw
-ADG+HN4hKVwqAXnx8mbJ8kYMwlVUSKCmbEkcwe5kMiSrZNzqm+BPBSSpwCb/uDw2
-1/xviPrgavJEm4ddcE575DCJvzRSPtltKMUlsOioFKzuwQhSoS1nlbSfSIrSJxSJ
-eEGJaJH5Q0gGMZ8ZBofgOIW+NyX7llq09hqE/voOoJCubC4ZKeG4KzgSUDk0oQRu
-RzMHS79HBrkLTmIlE36PRjj2QK8IdraUnm1H3gDabTR8cexaAZInYfE7VNAk8VJv
-Q3fkdtUxNpq50WyT1LSWMwQDWt3W7t60fRo05s9fUvEJDuHwDMMLDs91vN5qsAtN
-A+xXo72SQjLqGMf/gLecAJs2c/clfGDybiHT42A7WdjftMSKktTclHMxlojDnU4d
-BXdvCKHPx9aonhDSgpbc2WLWvWoIAtT+fJrcMqrrRLQjJoSP/noPMY9TggumvtVu
-35LqM4ELIc+CEddnY22HWMRebwgu2u6CV38yopWtcp6NuEf6ac6QetQV2ckgrY+f
-c2/zzh78CtUl1jv9I93hx4D1FW5eQEX96W0Kvg9kvkg+9nyzq96m0V1NV8ykTk4H
-KlAOd/WkGWLJp6NrOVri
-=ivYG
------END PGP SIGNATURE-----
-
---hOadKu63tsDr72mJaEBPce2JRo4mlWLRA--
