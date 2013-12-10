@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab3LJIhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:37:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58449 "EHLO
+	id S1755865Ab3LJIhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:37:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58440 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab3LJH7p (ORCPT
+	with ESMTP id S1752727Ab3LJH7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:45 -0500
+	Tue, 10 Dec 2013 02:59:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Praveen Murali <pmurali@logicube.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.4 09/25] SCSI: hpsa: return 0 from driver probe function on success, not 1
-Date: Tue, 10 Dec 2013 00:00:17 -0800
-Message-Id: <20131210075931.475571839@linuxfoundation.org>
+Subject: [PATCH 3.4 07/25] SCSI: libsas: fix usage of ata_tf_to_fis
+Date: Tue, 10 Dec 2013 00:00:15 -0800
+Message-Id: <20131210075931.340708726@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -27,50 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 88bf6d62db4393fa03a58bada9d746312d5b496f upstream.
+commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
 
-A return value of 1 is interpreted as an error.  See pci_driver.
-in local_pci_probe().  If you're wondering how this ever could
-have worked, it's because it used to be the case that only return
-values less than zero were interpreted as failure.  But even in
-the current kernel if the driver registers its various entry
-points with the kernel, and then returns a value which is
-interpreted as failure, those registrations aren't undone, so
-the driver still mostly works.  However, the driver's remove
-function wouldn't be called on rmmod, and pci power management
-functions wouldn't work.  In the case of Smart Array, since it
-has a battery backed cache (or else no cache) even if the driver
-is not shut down properly as long as there is no outstanding
-i/o, nothing too bad happens, which is why it took so long to
-notice.
+Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
+update the libata documentation" we have been passing pmp=1 and is_cmd=0
+to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
+discover correctly.  His investigation found that the BIOS was passing
+pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
+Update libsas to follow the libata example of pulling the pmp setting
+from the ata_link and correct is_cmd to be 1 since all tf's submitted
+through ->qc_issue are commands.  Presumably libsas lldds do not care
+about is_cmd as they have sideband mechanisms to perform link
+management.
 
-Requesting backport to stable because the change to pci-driver.c
-which requires driver probe functions to return 0 occurred between
-2.6.35 and 2.6.36 (the pci power management breakage) and again
-between 3.7 and 3.8 (pci_dev->driver getting set to NULL in
-local_pci_probe() preventing driver remove function from being
-called on rmmod.)
+http://marc.info/?l=linux-scsi&m=138179681726990
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+[jejb: checkpatch fix]
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reported-by: Praveen Murali <pmurali@logicube.com>
+Tested-by: Praveen Murali <pmurali@logicube.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/hpsa.c |    2 +-
+ drivers/scsi/libsas/sas_ata.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -4466,7 +4466,7 @@ reinit_after_soft_reset:
- 	hpsa_hba_inquiry(h);
- 	hpsa_register_scsi(h);	/* hook ourselves into SCSI subsystem */
- 	start_controller_lockup_detector(h);
--	return 1;
-+	return 0;
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(str
+ 		qc->tf.nsect = 0;
+ 	}
  
- clean4:
- 	hpsa_free_sg_chain_blocks(h);
+-	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
++	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
+ 	task->uldd_task = qc;
+ 	if (ata_is_atapi(qc->tf.protocol)) {
+ 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
 
 
