@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab3LJILr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:11:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58971 "EHLO
+	id S1754347Ab3LJIMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:12:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58966 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab3LJICR (ORCPT
+	with ESMTP id S1753746Ab3LJICQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:17 -0500
+	Tue, 10 Dec 2013 03:02:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Heiko Stuebner <heiko@sntech.de>, Pavel Machek <pavel@ucw.cz>,
-        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in irq_resume
-Date: Tue, 10 Dec 2013 00:01:17 -0800
-Message-Id: <20131210080100.654204750@linuxfoundation.org>
+        Hong Zhiguo <zhiguohong@tencent.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 3.12 45/62] Update of blkg_stat and blkg_rwstat may happen in bh context. While u64_stats_fetch_retry is only preempt_disable on 32bit UP system. This is not enough to avoid preemption by bh and may read strange 64 bit value.
+Date: Tue, 10 Dec 2013 00:01:16 -0800
+Message-Id: <20131210080100.587055520@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -29,58 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+From: Hong Zhiguo <zhiguohong@tencent.com>
 
-commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
+commit 2c575026fae6e63771bd2a4c1d407214a8096a89 upstream.
 
-When the system enters suspend, it disables all interrupts in
-suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
-
-On the resume side things are different. The EARLY_RESUME interrupts
-are reenabled in sys_core_ops->resume and the non EARLY_RESUME
-interrupts are reenabled in the normal system resume path.
-
-When suspend_noirq() failed or suspend is aborted for any other
-reason, we might omit the resume side call to sys_core_ops->resume()
-and therefor the interrupts marked EARLY_RESUME are not reenabled and
-stay disabled forever.
-
-To solve this, enable all irqs unconditionally in irq_resume()
-regardless whether interrupts marked EARLY_RESUMEhave been already
-enabled or not.
-
-This might try to reenable already enabled interrupts in the non
-failure case, but the only affected platform is XEN and it has been
-confirmed that it does not cause any side effects.
-
-[ tglx: Massaged changelog. ]
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
-Cc: <ian.campbell@citrix.com>
-Cc: <rjw@rjwysocki.net>
-Cc: <len.brown@intel.com>
-Cc: <gregkh@linuxfoundation.org>
-Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/pm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/blk-cgroup.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -430,9 +430,9 @@ static inline uint64_t blkg_stat_read(st
+ 	uint64_t v;
  
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
+ 	do {
+-		start = u64_stats_fetch_begin(&stat->syncp);
++		start = u64_stats_fetch_begin_bh(&stat->syncp);
+ 		v = stat->cnt;
+-	} while (u64_stats_fetch_retry(&stat->syncp, start));
++	} while (u64_stats_fetch_retry_bh(&stat->syncp, start));
  
- 		raw_spin_lock_irqsave(&desc->lock, flags);
+ 	return v;
+ }
+@@ -498,9 +498,9 @@ static inline struct blkg_rwstat blkg_rw
+ 	struct blkg_rwstat tmp;
+ 
+ 	do {
+-		start = u64_stats_fetch_begin(&rwstat->syncp);
++		start = u64_stats_fetch_begin_bh(&rwstat->syncp);
+ 		tmp = *rwstat;
+-	} while (u64_stats_fetch_retry(&rwstat->syncp, start));
++	} while (u64_stats_fetch_retry_bh(&rwstat->syncp, start));
+ 
+ 	return tmp;
+ }
 
 
