@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab3LJIAb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:00:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58675 "EHLO
+	id S1755386Ab3LJI3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:29:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab3LJIAX (ORCPT
+	with ESMTP id S1753019Ab3LJIAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:23 -0500
+	Tue, 10 Dec 2013 03:00:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>,
-        Anatolij Gustschin <agust@denx.de>, Liu Gang <Gang.Liu@freescale.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 28/52] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
-Date: Tue, 10 Dec 2013 00:01:01 -0800
-Message-Id: <20131210075956.185859434@linuxfoundation.org>
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Heiko Stuebner <heiko@sntech.de>, Pavel Machek <pavel@ucw.cz>,
+        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 32/52] irq: Enable all irqs unconditionally in irq_resume
+Date: Tue, 10 Dec 2013 00:01:05 -0800
+Message-Id: <20131210075956.471483738@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,57 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Gang <Gang.Liu@freescale.com>
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
+commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
 
-For MPC8572/MPC8536, the status of GPIOs defined as output
-cannot be determined by reading GPDAT register, so the code
-use shadow data register instead. But the code may give the
-wrong status of GPIOs defined as input under some scenarios:
+When the system enters suspend, it disables all interrupts in
+suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
 
-1. If some pins were configured as inputs and were asserted
-high before booting the kernel, the shadow data has been
-initialized with those pin values.
-2. Some pins have been configured as output first and have
-been set to the high value, then reconfigured as input.
+On the resume side things are different. The EARLY_RESUME interrupts
+are reenabled in sys_core_ops->resume and the non EARLY_RESUME
+interrupts are reenabled in the normal system resume path.
 
-The above cases will make the shadow data for those input
-pins to be set to high. Then reading the pin status will
-always return high even if the actual pin status is low.
+When suspend_noirq() failed or suspend is aborted for any other
+reason, we might omit the resume side call to sys_core_ops->resume()
+and therefor the interrupts marked EARLY_RESUME are not reenabled and
+stay disabled forever.
 
-The code should eliminate the effects of the shadow data to
-the input pins, and the status of those pins should be
-read directly from GPDAT.
+To solve this, enable all irqs unconditionally in irq_resume()
+regardless whether interrupts marked EARLY_RESUMEhave been already
+enabled or not.
 
-Acked-by: Scott Wood <scottwood@freescale.com>
-Acked-by: Anatolij Gustschin <agust@denx.de>
-Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This might try to reenable already enabled interrupts in the non
+failure case, but the only affected platform is XEN and it has been
+confirmed that it does not cause any side effects.
+
+[ tglx: Massaged changelog. ]
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Cc: <ian.campbell@citrix.com>
+Cc: <rjw@rjwysocki.net>
+Cc: <len.brown@intel.com>
+Cc: <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-mpc8xxx.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/irq/pm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_
- 	u32 val;
- 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
- 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
-+	u32 out_mask, out_shadow;
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
  
--	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
-+	out_mask = in_be32(mm->regs + GPIO_DIR);
+-		if (is_early != want_early)
++		if (!is_early && want_early)
+ 			continue;
  
--	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
-+	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
-+	out_shadow = mpc8xxx_gc->data & out_mask;
-+
-+	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
- }
- 
- static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
 
 
