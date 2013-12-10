@@ -1,68 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab3LJHvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:51:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55978 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726Ab3LJHvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:51:04 -0500
-Date: Tue, 10 Dec 2013 07:50:59 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, page_alloc: allow __GFP_NOFAIL to allocate below
- watermarks after reclaim
-Message-ID: <20131210075059.GA11295@suse.de>
-References: <alpine.DEB.2.02.1312091402580.11026@chino.kir.corp.google.com>
+	id S1752163Ab3LJHvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:51:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61482 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752027Ab3LJHvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 02:51:20 -0500
+X-IronPort-AV: E=Sophos;i="4.93,864,1378828800"; 
+   d="scan'208";a="9228834"
+Message-ID: <52A6C792.3010500@cn.fujitsu.com>
+Date: Tue, 10 Dec 2013 15:49:38 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312091402580.11026@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: mqueue perf data
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/10 15:51:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/10 15:51:00,
+	Serialize complete at 2013/12/10 15:51:00
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 02:03:45PM -0800, David Rientjes wrote:
-> If direct reclaim has failed to free memory, __GFP_NOFAIL allocations
-> can potentially loop forever in the page allocator.  In this case, it's
-> better to give them the ability to access below watermarks so that they
-> may allocate similar to the same privilege given to GFP_ATOMIC
-> allocations.
-> 
-> We're careful to ensure this is only done after direct reclaim has had
-> the chance to free memory, however.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Hi Fengguang,
 
-The main problem with doing something like this is that it just smacks
-into the adjusted watermark if there are a number of __GFP_NOFAIL. Who
-was the user of __GFP_NOFAIL that was fixed by this patch?
 
-It appears there are more __GFP_NOFAIL users than I expected and some of
-them are silly. md uses it after mempool_alloc fails GFP_ATOMIC and then
-immediately calls with __GFP_NOFAIL in a context that can sleep. It could
-just have used GFP_NOIO for the mempool alloc which would "never" fail.
+Do we need to stat out the perf data of mqueue test in kernel_selftests?
+It's like following.
 
-btrfs is using __GFP_NOFAIL to call the slab allocator for the extent
-cache but also a kmalloc cache which is just dangerous. After this
-patch, that thing can push the system below watermarks and then
-effectively "leak" them to other !__GFP_NOFAIL users.
+Thanks,
+Wanlong Gao
 
-Buffer cache uses __GFP_NOFAIL to grow buffers where it expects the page
-allocator can loop endlessly but again, allowing it to go below reserves
-is just going to hit the same wall a short time later
 
-gfs is using the flag with kmalloc slabs, same as btrfs this can "leak"
-the reserves. jbd is the same although jbd2 avoids using the flag in a
-manner of speaking.
 
-There are enough bad users of __GFP_NOFAIL that I really question how
-good an idea it is to allow emergency reserves to be used when they are
-potentially leaked to other !__GFP_NOFAIL users via the slab allocator
-shortly afterwards.
+# make run_tests -C mqueue
+make: Entering directory `/git/linux/tools/testing/selftests/mqueue'
 
--- 
-Mel Gorman
-SUSE Labs
+Initial system state:
+	Using queue path:		/test1
+	RLIMIT_MSGQUEUE(soft):		819200
+	RLIMIT_MSGQUEUE(hard):		819200
+	Maximum Message Size:		8192
+	Maximum Queue Size:		10
+	Default Message Size:		8192
+	Default Queue Size:		10
+
+Adjusted system state for testing:
+	RLIMIT_MSGQUEUE(soft):		819200
+	RLIMIT_MSGQUEUE(hard):		819200
+	Maximum Message Size:		8192
+	Maximum Queue Size:		10
+	Default Message Size:		8192
+	Default Queue Size:		10
+
+
+Test series 1, behavior when no attr struct passed to mq_open:
+Kernel supports setting defaults separately from maximums:		PASS
+Given sane values, mq_open without an attr struct succeeds:		PASS
+Kernel properly honors default setting knobs:				PASS
+Kernel properly limits default values to lesser of default/max:		PASS
+Kernel properly fails to create queue when defaults would
+exceed rlimit:								PASS
+
+
+Test series 2, behavior when attr struct is passed to mq_open:
+Queue open in excess of rlimit max when euid = 0 failed:		PASS
+Queue open with mq_maxmsg > limit when euid = 0 succeeded:		PASS
+Queue open with mq_msgsize > limit when euid = 0 succeeded:		PASS
+Queue open with total size > 2GB when euid = 0 failed:			PASS
+Queue open in excess of rlimit max when euid = 99 failed:		PASS
+Queue open with mq_maxmsg > limit when euid = 99 failed:		PASS
+Queue open with mq_msgsize > limit when euid = 99 failed:		PASS
+Queue open with total size > 2GB when euid = 99 failed:			PASS
+
+Initial system state:
+	Using queue path:			/mq_perf_tests
+	RLIMIT_MSGQUEUE(soft):			819200
+	RLIMIT_MSGQUEUE(hard):			819200
+	Maximum Message Size:			8192
+	Maximum Queue Size:			10
+	Nice value:				0
+
+Adjusted system state for testing:
+	RLIMIT_MSGQUEUE(soft):			(unlimited)
+	RLIMIT_MSGQUEUE(hard):			(unlimited)
+	Maximum Message Size:			16777216
+	Maximum Queue Size:			65530
+	Nice value:				-20
+	Continuous mode:			(disabled)
+	CPUs to pin:				3
+
+	Queue /mq_perf_tests created:
+		mq_flags:			O_NONBLOCK
+		mq_maxmsg:			65530
+		mq_msgsize:			16
+		mq_curmsgs:			0
+
+	Started mqueue performance test thread on CPU 3
+		Max priorities:			32768
+		Clock resolution:		1 nsec
+
+	Test #1: Time send/recv message, queue empty
+		(10000000 iterations)
+		Send msg:			4.50690280s total time
+						405 nsec/msg
+		Recv msg:			4.123621560s total time
+						412 nsec/msg
+
+	Test #2a: Time send/recv message, queue full, constant prio
+		(100000 iterations)
+		Filling queue...done.		0.14554407s
+		Testing...done.
+		Send msg:			0.40292962s total time
+						402 nsec/msg
+		Recv msg:			0.40605786s total time
+						406 nsec/msg
+		Draining queue...done.		0.15010003s
+
+	Test #2b: Time send/recv message, queue full, increasing prio
+		(100000 iterations)
+		Filling queue...done.		0.25628197s
+		Testing...done.
+		Send msg:			0.53792862s total time
+						537 nsec/msg
+		Recv msg:			0.52323416s total time
+						523 nsec/msg
+		Draining queue...done.		0.17617835s
+
+	Test #2c: Time send/recv message, queue full, decreasing prio
+		(100000 iterations)
+		Filling queue...done.		0.26939894s
+		Testing...done.
+		Send msg:			0.55733128s total time
+						557 nsec/msg
+		Recv msg:			0.51363749s total time
+						513 nsec/msg
+		Draining queue...done.		0.19254167s
+
+	Test #2d: Time send/recv message, queue full, random prio
+		(100000 iterations)
+		Filling queue...done.		0.28530211s
+		Testing...done.
+		Send msg:			0.59583951s total time
+						595 nsec/msg
+		Recv msg:			0.55122718s total time
+						551 nsec/msg
+		Draining queue...done.		0.19537439s
+make: Leaving directory `/git/linux/tools/testing/selftests/mqueue'
