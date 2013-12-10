@@ -1,55 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab3LJTAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:00:43 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51279 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab3LJTAk (ORCPT
+	id S1752456Ab3LJTBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:01:10 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:46034 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab3LJTBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:00:40 -0500
-Date: Tue, 10 Dec 2013 14:00:36 -0500 (EST)
-Message-Id: <20131210.140036.1328560146971385473.davem@davemloft.net>
-To: vyasevich@gmail.com
-Cc: zwu.kernel@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wuzhy@linux.vnet.ibm.com
-Subject: Re: [PATCH 2/2] tun: remove useless codes in tun_chr_aio_read()
- and tun_recvmsg()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <52A74CD1.808@gmail.com>
-References: <1386363300-19040-2-git-send-email-zwu.kernel@gmail.com>
-	<20131209.203646.425478975392590777.davem@davemloft.net>
-	<52A74CD1.808@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 10 Dec 2013 11:00:39 -0800 (PST)
+	Tue, 10 Dec 2013 14:01:05 -0500
+Date: Tue, 10 Dec 2013 11:01:00 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, angus.clark@st.com, linus.walleij@linaro.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v3 03/36] mtd: st_spi_fsm: Initialise and configure the
+ FSM for normal working conditions
+Message-ID: <20131210190100.GA27149@ld-irv-0074.broadcom.com>
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
+ <1385727565-25794-4-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385727565-25794-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Yasevich <vyasevich@gmail.com>
-Date: Tue, 10 Dec 2013 12:18:09 -0500
+Hi Lee,
 
-> On 12/09/2013 08:36 PM, David Miller wrote:
->> From: Zhi Yong Wu <zwu.kernel@gmail.com>
->> Date: Sat,  7 Dec 2013 04:55:00 +0800
->> 
->>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>>
->>> By checking related codes, it is impossible that ret > len or total_len,
->>> so we should remove some useless codes in both above functions.
->>>
->>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> 
->> Applied.
-> 
-> Wait a sec.  We want to be able to return a value bigger then len
-> to trigger a MSG_TRUNC.  Jason has patches for to fix this.  If you
-> apply this, we'll have to re-introduce this code back in.
-> 
-> Same goes for patch 1/2.
+On Fri, Nov 29, 2013 at 12:18:52PM +0000, Lee Jones wrote:
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+> @@ -25,11 +25,121 @@
+>  
+>  #include "st_spi_fsm.h"
+>  
+> +static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
+> +{
+> +	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
+> +}
+> +
+> +static void stfsm_clear_fifo(struct stfsm *fsm)
+> +{
+> +	uint32_t avail;
+> +
+> +	for (;;) {
+> +		avail = stfsm_fifo_available(fsm);
+> +		if (!avail)
+> +			break;
+> +
+> +		while (avail) {
+> +			readl(fsm->base + SPI_FAST_SEQ_DATA_REG);
+> +			avail--;
+> +		}
+> +	}
+> +}
+> +
+> +static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
+> +{
+> +	int ret, timeout = 10;
+> +
+> +	/* Wait for controller to accept mode change */
+> +	while(--timeout) {
 
-That's fine, right now the code makes no sense as the condition can
-never be triggered so there is no harm removing the illogical code
-meanwhile.
+s/while(/while (/
+
+You should run your series through scripts/checkpatch.pl. There are a
+number of small things to fixup in a few of your patches.
+
+> +		ret = readl(fsm->base + SPI_STA_MODE_CHANGE);
+> +		if (ret & 0x1)
+> +			break;
+> +		udelay(1);
+> +	}
+> +
+> +	if (!timeout)
+> +		return -EBUSY;
+> +
+> +	writel(mode, fsm->base + SPI_MODESELECT);
+> +
+> +	return 0;
+> +}
+> +
+> +static void stfsm_set_freq(struct stfsm *fsm, uint32_t spi_freq)
+> +{
+> +	uint32_t emi_freq;
+> +	uint32_t clk_div;
+> +
+> +	/* TODO: Make this dynamic */
+> +	emi_freq = STFSM_DEFAULT_EMI_FREQ;
+> +
+> +	/*
+> +	 * Calculate clk_div - values between 2 and 128
+> +	 * Multiple of 2, rounded up
+> +	 */
+> +	clk_div = 2*((emi_freq + (2*spi_freq - 1))/(2*spi_freq));
+
+I think this can use the <linux/kerne.h> round_up() macro. Also, you're
+missing some spacing. Possibly:
+
+	clk_div = 2 * round_up(emi_freq, 2 * spi_freq);
+
+> +	if (clk_div < 2)
+> +		clk_div = 2;
+> +	else if (clk_div > 128)
+> +		clk_div = 128;
+> +
+> +	/*
+> +	 * Determine a suitable delay for the IP to complete a change of
+> +	 * direction of the FIFO. The required delay is related to the clock
+> +	 * divider used. The following heuristics are based on empirical tests,
+> +	 * using a 100MHz EMI clock.
+> +	 */
+> +	if (clk_div <= 4)
+> +		fsm->fifo_dir_delay = 0;
+> +	else if (clk_div <= 10)
+> +		fsm->fifo_dir_delay = 1;
+> +	else
+> +		fsm->fifo_dir_delay = (clk_div + 9) / 10;
+
+round_down()?
+
+> +
+> +	dev_dbg(fsm->dev, "emi_clk = %uHZ, spi_freq = %uHZ, clk_div = %u\n",
+> +		emi_freq, spi_freq, clk_div);
+> +
+> +	writel(clk_div, fsm->base + SPI_CLOCKDIV);
+> +}
+
+Brian
