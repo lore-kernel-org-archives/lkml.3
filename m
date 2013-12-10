@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab3LJNoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:44:25 -0500
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:34465 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab3LJNoW (ORCPT
+	id S1753315Ab3LJNta (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:49:30 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:55420 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab3LJNt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:44:22 -0500
-Date: Tue, 10 Dec 2013 14:44:16 +0100
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: Amir Vadai <amirv@mellanox.com>
-Subject: mlx4_core: DMA-API: device driver tries to sync DMA memory it has
- not allocated
-Message-ID: <20131210144416.31b7002c@thinkpad>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121013-6892-0000-0000-000007295237
+	Tue, 10 Dec 2013 08:49:28 -0500
+Date: Tue, 10 Dec 2013 10:49:20 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20131210134920.GO8098@ghostprotocols.net>
+References: <1386617830-18926-1-git-send-email-acme@infradead.org>
+ <20131210111229.GB26659@gmail.com>
+ <20131210114421.GI8098@ghostprotocols.net>
+ <52A70558.90808@intel.com>
+ <20131210121801.GC30001@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210121801.GC30001@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em Tue, Dec 10, 2013 at 01:18:01PM +0100, Ingo Molnar escreveu:
+> 
+> * Adrian Hunter <adrian.hunter@intel.com> wrote:
+> 
+> > -void dso__set_short_name(struct dso *dso, const char *name)
+> > +void dso__set_short_name(struct dso *dso, const char *name, bool sname_alloc)
+> >  {
+> >  	if (name == NULL)
+> >  		return;
+> > +	if (dso->sname_alloc)
+> > +		free((char *)dso->short_name);
+> > +	dso->sname_alloc = sname_alloc;
+> 
+> Calling the function option the same as the field name is asking for 
+> trouble - I'd suggest 'new_sname_alloc' for the parameter, or so.
+> 
+> And I'd also remove the 'const' from struct dso::short_name, it 
+> probably does not help code generation, because 'dso' is passed in as 
+> const in all the non-lifetime methods anyway.
+ 
+> That way the cast can be dropped from the free().
 
-During network stress test with CONFIG_DMA_API_DEBUG=y we get the following
-message on the server side:
+Not that simple, there are multiple places that pass a constant
+short_name, for instance:
 
-[57523.955982] mlx4_core 0000:00:00.0: DMA-API: device driver tries to sync DMA memory it has not allocated [device address=0x0000000143d2c202] [size=1526 bytes]
-[57523.956018] ------------[ cut here ]------------
-[57523.956021] WARNING: at /home/dailybuild/builder/packages/BUILD/linux-3.12.3-20131209/lib/dma-debug.c:986
-[57523.956022] Modules linked in: mlx4_en dm_multipath scsi_dh mlx4_core eadm_sch dm_mod lcs autofs4
-[57523.956034] CPU: 3 PID: 20 Comm: ksoftirqd/3 Not tainted 3.12.3-65.x.20131209-s390xdefault #1
-[57523.956037] task: 000000026f47cb60 ti: 000000026f484000 task.ti: 000000026f484000
-[57523.956044] Krnl PSW : 0404e00180000000 00000000004a0422 (check_sync+0xf2/0x52c)
-[57523.956047]            R:0 T:1 IO:0 EX:0 Key:0 M:1 W:0 P:0 AS:3 CC:2 PM:0 EA:3
-[57523.956047] Krnl GPRS: 0000000000000111 000000008b767e9c 0000000000000092 0000000000000000
-[57523.956051]            00000000004a041e 0000000000000000 00000000000005f6 0000000143d2c202
-[57523.956053]            000000026f487a98 0000000000000001 0000000000a71144 000000026f10dd60
-[57523.956055]            0000000000000000 000000000075bb18 00000000004a041e 000000026f487980
-[57523.956064] Krnl Code: 00000000004a0412: c020002143d7        larl    %r2,8c8bc0
-[57523.956064]            00000000004a0418: c0e50012717a        brasl   %r14,6ee70c
-[57523.956064]           #00000000004a041e: a7f40001            brc     15,4a0420
-[57523.956064]           >00000000004a0422: e330a0000012        lt      %r3,0(%r10)
-[57523.956064]            00000000004a0428: a7740201            brc     7,4a082a
-[57523.956064]            00000000004a042c: a7f401f3            brc     15,4a0812
-[57523.956064]            00000000004a0430: d5078030c030        clc     48(8,%r8),48(%r12)
-[57523.956064]            00000000004a0436: a7c40070            brc     12,4a0516
-[57523.956081] Call Trace:
-[57523.956084] ([<00000000004a041e>] check_sync+0xee/0x52c)
-[57523.956087]  [<00000000004a0a26>] debug_dma_sync_single_for_cpu+0x66/0x74
-[57523.956094]  [<000003ff801fcae0>] mlx4_en_complete_rx_desc+0x15c/0x240 [mlx4_en]
-[57523.956098]  [<000003ff801fe1fa>] mlx4_en_process_rx_cq+0x56a/0xb58 [mlx4_en]
-[57523.956101]  [<000003ff801fe8ea>] mlx4_en_poll_rx_cq+0x92/0xf8 [mlx4_en]
-[57523.956105]  [<00000000005d558c>] net_rx_action+0xa0/0x2f0
-[57523.956109]  [<000000000013cd10>] __do_softirq+0x1e8/0x480
-[57523.956111]  [<000000000013cfe4>] run_ksoftirqd+0x3c/0x80
-[57523.956114]  [<000000000016f496>] smpboot_thread_fn+0x2c6/0x2e8
-[57523.956118]  [<0000000000163834>] kthread+0xd0/0xe4
-[57523.956123]  [<00000000006ff19e>] kernel_thread_starter+0x6/0xc
-[57523.956125]  [<00000000006ff198>] kernel_thread_starter+0x0/0xc
-[57523.956127] 1 lock held by ksoftirqd/3/20:
-[57523.956129]  #0:  (&(&dma_entry_hash[i].lock)->rlock){-.-...}, at: [<000000000049f1d6>] get_hash_bucket+0x4a/0x64
-[57523.956135] Last Breaking-Event-Address:
-[57523.956137]  [<00000000004a041e>] check_sync+0xee/0x52c
-[57523.956139] ---[ end trace ec82af84e1d16c5f ]---
+	machine__get_kernel()
+                kernel = dso__kernel_findnew(machine, vmlinux_name,
+					     "[kernel]", DSO_TYPE_KERNEL);
+			dso__set_short_name(dso, short_name);
 
+So dso->short_name will point to "[kernel]", which is a const char *.
+
+> Similar problems exist with the usage of 'short_name' - it overloads 
+> the field name which makes it somewhat confusing, and it's also 
+> sometimes inconsistently named, such as 'name' in 
+> dso__set_short_name().
+> 
+> Ditto for 'long_name' handling.
+> 
+> Also, the 'sname_alloc' name sucks, it does not make it obvious that 
+
+> it's related to 'short_name', hiding its true significance (and hiding 
+> the broken life time handling of the flag/pointer combo). I'd rename 
+> it to something more descriptive, like ->short_name_allocated - or I'd 
+> rename everything to 'sname'/'lname' naming for short/long names.
+
+Ok, we can use rename it to short_name_alloc, like we have
+short_name_len.
+ 
+> Every time one runs into a crash like this it's a canary signal that 
+> cleanliness principles need hardening.
+
+Hardening we go then!
+ 
+> Thanks,
+> 
+> 	Ingo
