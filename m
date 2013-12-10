@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab3LJH7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:59:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58347 "EHLO
+	id S1755994Ab3LJIl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:41:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58365 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab3LJH7G (ORCPT
+	with ESMTP id S1751985Ab3LJH7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:06 -0500
+	Tue, 10 Dec 2013 02:59:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.4 11/25] NFSv4: Update list of irrecoverable errors on DELEGRETURN
-Date: Tue, 10 Dec 2013 00:00:19 -0800
-Message-Id: <20131210075931.627844494@linuxfoundation.org>
+        Tom Herbert <therbert@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Shawn Landden <shawn@churchofgit.com>
+Subject: [PATCH 3.4 14/25] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Tue, 10 Dec 2013 00:00:22 -0800
+Message-Id: <20131210075931.838036216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -26,44 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Shawn Landden <shawn@churchofgit.com>
 
-commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
+commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
 
-If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
-then there is no recovery possible. Just quit without returning an error.
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
 
-Also, note that the client must not assume that the NFSv4 lease has been
-renewed when it sees an error on DELEGRETURN.
+algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This fixes sendfile() on AF_ALG.
+
+v3: also fix udp
+
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ crypto/algif_hash.c     |    3 +++
+ crypto/algif_skcipher.c |    3 +++
+ net/ipv4/udp.c          |    3 +++
+ 3 files changed, 9 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4041,11 +4041,17 @@ static void nfs4_delegreturn_done(struct
- 		return;
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -117,6 +117,9 @@ static ssize_t hash_sendpage(struct sock
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
- 	switch (task->tk_status) {
--	case -NFS4ERR_STALE_STATEID:
--	case -NFS4ERR_EXPIRED:
- 	case 0:
- 		renew_lease(data->res.server, data->timestamp);
- 		break;
-+	case -NFS4ERR_ADMIN_REVOKED:
-+	case -NFS4ERR_DELEG_REVOKED:
-+	case -NFS4ERR_BAD_STATEID:
-+	case -NFS4ERR_OLD_STATEID:
-+	case -NFS4ERR_STALE_STATEID:
-+	case -NFS4ERR_EXPIRED:
-+		task->tk_status = 0;
-+		break;
- 	default:
- 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
- 				-EAGAIN) {
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -381,6 +381,9 @@ static ssize_t skcipher_sendpage(struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1042,6 +1042,9 @@ int udp_sendpage(struct sock *sk, struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
++
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
+ 
 
 
