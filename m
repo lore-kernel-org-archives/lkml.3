@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3LJPfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:35:38 -0500
-Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:36052 "EHLO
-	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996Ab3LJPfg (ORCPT
+	id S1754277Ab3LJPgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:36:36 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:49505 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816Ab3LJPgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:35:36 -0500
-Date: Tue, 10 Dec 2013 15:35:35 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ethan Zhao <ethan.kernel@gmail.com>
-cc: alokk@calsoftinc.com, shobhit@calsoftinc.com, shai@scalex86.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/slab.c: check pointer slabp before using it in
- alloc_slabmgmt()
-In-Reply-To: <CABawtvM6MpwHH7kFjnqSr69QWboFXsEiu6Fv0MMJkhQbaXCLxw@mail.gmail.com>
-Message-ID: <00000142dd262a23-776dfc34-c3e4-4229-8684-d99131a2f758-000000@email.amazonses.com>
-References: <1386495533-413-1-git-send-email-ethan.kernel@gmail.com> <00000142d82085d4-edeac9e1-d603-458f-9ceb-904e2b706679-000000@email.amazonses.com> <CABawtvPdQ2smcawTywp605KceKAQF+CsvpBqG1zEaKfP-PLB6A@mail.gmail.com>
- <CABawtvM6MpwHH7kFjnqSr69QWboFXsEiu6Fv0MMJkhQbaXCLxw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 10 Dec 2013 10:36:33 -0500
+Date: Tue, 10 Dec 2013 16:36:29 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        dvhart@linux.intel.com, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
+        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
+        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
+Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
+Message-ID: <20131210153629.GA1397@gmail.com>
+References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
+ <1386063927-6545-5-git-send-email-davidlohr@hp.com>
+ <alpine.DEB.2.02.1312061924390.30673@ionos.tec.linutronix.de>
+ <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.10-54.240.10.51
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013, Ethan Zhao wrote:
 
->      No, stable 3.12.4 and 3.12.3 need this patch.  3.13RC doesn't
-> need it anymore.
+* Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-Hmmm.. Then this commit may have fixed it:
+> On Fri, 2013-12-06 at 19:26 +0100, Thomas Gleixner wrote:
+> > On Tue, 3 Dec 2013, Davidlohr Bueso wrote:
+> > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> > > Signed-off-by: Jason Low <jason.low2@hp.com>
+> > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > 
+> > Who is the author of this? According to the SOB chains its Waiman, who
+> > handed it down to Jason and it finally got sumbitted by you. Is that
+> > correct?
+> 
+> This was a group effort for the original patchset -- things did change
+> quite a bit for this particular patch in v2. Waiman and Jason helped
+> review and test the original atomic ops code.
 
-commit 0172f779e4314639a8ed440082cfe9e3450954e8
-Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date:   Wed Oct 30 19:04:00 2013 +0900
+Then please put that into the credits (in the changelog and/or in the 
+source code), and/or into copyright notices, etc. - but keep the 
+SOB-chain the true route of the patch, where the primary author is the 
+first in the SOB and where the person sending the patch is the last 
+SOB. (the two are identical normally.)
 
-    slab: fix to calm down kmemleak warning
+Thanks,
 
-    After using struct page as slab management, we should not call
-    kmemleak_scan_area(), since struct page isn't the tracking object of
-    kmemleak. Without this patch and if CONFIG_DEBUG_KMEMLEAK is enabled,
-    so many kmemleak warnings are printed.
-
-    Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-    Signed-off-by: Pekka Enberg <penberg@iki.fi>
-
-diff --git a/mm/slab.c b/mm/slab.c
-index af2db76..a8a9349 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2531,14 +2531,6 @@ static struct freelist *alloc_slabmgmt(struct
-kmem_cache *cachep,
-                /* Slab management obj is off-slab. */
-                freelist = kmem_cache_alloc_node(cachep->freelist_cache,
-                                              local_flags, nodeid);
--               /*
--                * If the first object in the slab is leaked (it's allocated
--                * but no one has a reference to it), we want to make sure
--                * kmemleak does not treat the ->s_mem pointer as a reference
--                * to the object. Otherwise we will not report the leak.
--                */
--               kmemleak_scan_area(&page->lru, sizeof(struct list_head),
--                                  local_flags);
-                if (!freelist)
-                        return NULL;
-        } else {
-
-
+	Ingo
