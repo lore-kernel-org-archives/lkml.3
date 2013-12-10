@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab3LJLac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:30:32 -0500
-Received: from oker.escape.de ([194.120.234.254]:54140 "EHLO oker.escape.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805Ab3LJLaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:30:14 -0500
-Date: Tue, 10 Dec 2013 12:22:57 +0100
-From: Jochen Striepe <jochen@tolot.escape.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
-Message-ID: <20131210112257.GJ2208@pompeji.miese-zwerge.org>
-References: <20130813103202.GB2338@pompeji.miese-zwerge.org>
- <20130818180232.GL29406@linux.vnet.ibm.com>
- <20130818184848.GA2398@pompeji.miese-zwerge.org>
- <20130909215836.GD17483@pompeji.miese-zwerge.org>
- <20130909222751.GL3966@linux.vnet.ibm.com>
- <20130914112834.GM1509@pompeji.miese-zwerge.org>
- <20130923164931.GC2322@pompeji.miese-zwerge.org>
- <20131206002614.GD15492@linux.vnet.ibm.com>
- <20131206135804.GI2208@pompeji.miese-zwerge.org>
- <20131206145441.GA24148@linux.vnet.ibm.com>
+	id S1752861Ab3LJLal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:30:41 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:34891 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab3LJLai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 06:30:38 -0500
+Message-ID: <52A6FB5C.7010706@linaro.org>
+Date: Tue, 10 Dec 2013 12:30:36 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131206145441.GA24148@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Alex Shi <alex.shi@linaro.org>
+Subject: [question] sched: idle_avg and migration latency
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi again,
 
-On Fri, Dec 06, 2013 at 06:54:41AM -0800, Paul E. McKenney wrote:
-> On Fri, Dec 06, 2013 at 02:58:04PM +0100, Jochen Striepe wrote:
-> > On Thu, Dec 05, 2013 at 04:26:14PM -0800, Paul E. McKenney wrote:
-> > > Hmmm...  Does the following patch help?
-> > [...]
-> > > rcu: Kick CPU halfway to RCU CPU stall warning
-> > 
-> > The stall didn't appear at all since my last email, running 3.12.x
-> > kernels since release. But I will test your patch later today. I assume
-> > applying on top of 3.12.3 is correct?
-> 
-> 3.12.3 should take that patch just fine.
+Hi All,
 
-Sorry for the delay. On my copy of 3.12.3, the patch does not apply.
-kernel/rcu/ does not exist, and the patch did not apply cleanly on
-kernel/rcutree.c: record_gp_stall_check_time() is a little different
-from what your patch expects, and I'm not that much into rcu work as
-to understand the implications. :)
+I am trying to understand how is computed the idle_avg and how it is 
+used regarding the migration latency.
 
-If you want me to go back to 3.12.0 I can do so, but as the issue
-does not reproduce very well I doubt that would help very much.
-Ideas? Is there a version of the patch for -stable, or does the
-patch conflict with the work done there?
+1. What is the sysctl_sched_migration_cost value ? It is initialized to 
+500000UL. Is it an arbitrarily chosen value ? Could it change depending 
+on the hardware performances ?
 
-Best greetings,
-Jochen.
+
+2. The idle_balance function checks:
+
+         if (this_rq->avg_idle < sysctl_sched_migration_cost)
+                 return 0;
+
+IIUC, it is not worth to migrate a task to this cpu as we expect to run 
+another task before we can pull a task to the current cpu, right ?
+
+Then if there is no task to balance we will enter idle, thus we 
+initialize the idle_stamp to the current clock.
+
+When another task is woken up with the ttwu_do_wakeup, the duration of 
+the idle time is computed in there:
+
+	if (rq->idle_stamp) {
+		u64 delta = rq_clock(rq) - rq->idle_stamp;
+		u64 max = 2*sysctl_sched_migration_cost;
+
+		if (delta > max)
+			rq->avg_idle = max;
+		else
+			update_avg(&rq->avg_idle, delta);
+		rq->idle_stamp = 0;
+	}
+
+Why is the 'delta' leveraged by 'max' ?
+
+
+3. And finally the function update_avg does:
+
+	s64 diff = sample - *avg;
+	*avg += diff >> 3;
+
+Why is diff >> 3 used instead of the number of values ?
+
+Thanks in advance for any answers
+
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
