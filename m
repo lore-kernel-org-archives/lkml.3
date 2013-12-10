@@ -1,389 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab3LJIDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:03:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59069 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3LJIC5 (ORCPT
+	id S1754207Ab3LJIDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:03:47 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:33704 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab3LJIDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:57 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Madper Xie <cxie@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3.12 30/62] efivars, efi-pstore: Hold off deletion of sysfs entry until the scan is completed
-Date: Tue, 10 Dec 2013 00:01:01 -0800
-Message-Id: <20131210080059.560895664@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
-References: <20131210080057.415644748@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 10 Dec 2013 03:03:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131209184050.GC28986@kroah.com>
+References: <1386502262-1163-1-git-send-email-ethan.kernel@gmail.com>
+	<20131208140100.GA22793@kroah.com>
+	<CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
+	<20131209082527.GA26950@kroah.com>
+	<CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
+	<20131209085526.GB4125@kroah.com>
+	<CABawtvPhE9enmt2NdSemVsDRp6ca38xyQSTO2mEujx0kikWtoA@mail.gmail.com>
+	<20131209111747.GA6562@kroah.com>
+	<CABawtvNUBwTVzFfR4UotCexARN4+As5wKEPyGmRzN7-xZ6J00w@mail.gmail.com>
+	<20131209184050.GC28986@kroah.com>
+Date: Tue, 10 Dec 2013 16:03:41 +0800
+Message-ID: <CABawtvMbMUf-tj77m9t=t45R3-1e8gE--8QZ7neU-HuSjGcveA@mail.gmail.com>
+Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        raghavendra.kt@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Dec 10, 2013 at 2:40 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Dec 09, 2013 at 09:42:23PM +0800, Ethan Zhao wrote:
+>> Greg,
+>>     I am the man who built a Xen dom0, but couldn't see debugfs
+>> directory and files as expected. there is no warning or tip for me to
+>> enable the CONFIG_DEBUG_FS=y in .config , it cost me minutes to figure
+>> out what's
+>> the matter. and I know should check defugfs config and initialization as
+>> zswap_debugfs, tracer_debugfs ,rproc_debugfs did. Is it useless ? if
+>> it could save me just 1 minute next time ?
+>
+> So you would want a "warning" showing up for every single part of the
+> kernel that uses debugfs for when it isn't enabled?  That doesn't make
+> too much sense now, does it?
 
-------------------
+No, It is nice and like sun light when someone is struggling with the
+bugs in darkness,
+if some tips or warning output to them.
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+You have forgotten the initial stage you met :)
 
-commit e0d59733f6b1796b8d6692642c87d7dd862c3e3a upstream.
+>
+> If you need/want debugfs then enable it in the kernel build, it's not
+> that hard, right?
 
-Currently, when mounting pstore file system, a read callback of
-efi_pstore driver runs mutiple times as below.
+of coz, not hard. and It not so hard to merge it too.
 
-- In the first read callback, scan efivar_sysfs_list from head and pass
-  a kmsg buffer of a entry to an upper pstore layer.
-- In the second read callback, rescan efivar_sysfs_list from the entry
-  and pass another kmsg buffer to it.
-- Repeat the scan and pass until the end of efivar_sysfs_list.
-
-In this process, an entry is read across the multiple read function
-calls. To avoid race between the read and erasion, the whole process
-above is protected by a spinlock, holding in open() and releasing in
-close().
-
-At the same time, kmemdup() is called to pass the buffer to pstore
-filesystem during it. And then, it causes a following lockdep warning.
-
-To make the dynamic memory allocation runnable without taking spinlock,
-holding off a deletion of sysfs entry if it happens while scanning it
-via efi_pstore, and deleting it after the scan is completed.
-
-To implement it, this patch introduces two flags, scanning and deleting,
-to efivar_entry.
-
-On the code basis, it seems that all the scanning and deleting logic is
-not needed because __efivars->lock are not dropped when reading from the
-EFI variable store.
-
-But, the scanning and deleting logic is still needed because an
-efi-pstore and a pstore filesystem works as follows.
-
-In case an entry(A) is found, the pointer is saved to psi->data.  And
-efi_pstore_read() passes the entry(A) to a pstore filesystem by
-releasing  __efivars->lock.
-
-And then, the pstore filesystem calls efi_pstore_read() again and the
-same entry(A), which is saved to psi->data, is used for resuming to scan
-a sysfs-list.
-
-So, to protect the entry(A), the logic is needed.
-
-[    1.143710] ------------[ cut here ]------------
-[    1.144058] WARNING: CPU: 1 PID: 1 at kernel/lockdep.c:2740 lockdep_trace_alloc+0x104/0x110()
-[    1.144058] DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
-[    1.144058] Modules linked in:
-[    1.144058] CPU: 1 PID: 1 Comm: systemd Not tainted 3.11.0-rc5 #2
-[    1.144058]  0000000000000009 ffff8800797e9ae0 ffffffff816614a5 ffff8800797e9b28
-[    1.144058]  ffff8800797e9b18 ffffffff8105510d 0000000000000080 0000000000000046
-[    1.144058]  00000000000000d0 00000000000003af ffffffff81ccd0c0 ffff8800797e9b78
-[    1.144058] Call Trace:
-[    1.144058]  [<ffffffff816614a5>] dump_stack+0x54/0x74
-[    1.144058]  [<ffffffff8105510d>] warn_slowpath_common+0x7d/0xa0
-[    1.144058]  [<ffffffff8105517c>] warn_slowpath_fmt+0x4c/0x50
-[    1.144058]  [<ffffffff8131290f>] ? vsscanf+0x57f/0x7b0
-[    1.144058]  [<ffffffff810bbd74>] lockdep_trace_alloc+0x104/0x110
-[    1.144058]  [<ffffffff81192da0>] __kmalloc_track_caller+0x50/0x280
-[    1.144058]  [<ffffffff815147bb>] ? efi_pstore_read_func.part.1+0x12b/0x170
-[    1.144058]  [<ffffffff8115b260>] kmemdup+0x20/0x50
-[    1.144058]  [<ffffffff815147bb>] efi_pstore_read_func.part.1+0x12b/0x170
-[    1.144058]  [<ffffffff81514800>] ? efi_pstore_read_func.part.1+0x170/0x170
-[    1.144058]  [<ffffffff815148b4>] efi_pstore_read_func+0xb4/0xe0
-[    1.144058]  [<ffffffff81512b7b>] __efivar_entry_iter+0xfb/0x120
-[    1.144058]  [<ffffffff8151428f>] efi_pstore_read+0x3f/0x50
-[    1.144058]  [<ffffffff8128d7ba>] pstore_get_records+0x9a/0x150
-[    1.158207]  [<ffffffff812af25c>] ? selinux_d_instantiate+0x1c/0x20
-[    1.158207]  [<ffffffff8128ce30>] ? parse_options+0x80/0x80
-[    1.158207]  [<ffffffff8128ced5>] pstore_fill_super+0xa5/0xc0
-[    1.158207]  [<ffffffff811ae7d2>] mount_single+0xa2/0xd0
-[    1.158207]  [<ffffffff8128ccf8>] pstore_mount+0x18/0x20
-[    1.158207]  [<ffffffff811ae8b9>] mount_fs+0x39/0x1b0
-[    1.158207]  [<ffffffff81160550>] ? __alloc_percpu+0x10/0x20
-[    1.158207]  [<ffffffff811c9493>] vfs_kern_mount+0x63/0xf0
-[    1.158207]  [<ffffffff811cbb0e>] do_mount+0x23e/0xa20
-[    1.158207]  [<ffffffff8115b51b>] ? strndup_user+0x4b/0xf0
-[    1.158207]  [<ffffffff811cc373>] SyS_mount+0x83/0xc0
-[    1.158207]  [<ffffffff81673cc2>] system_call_fastpath+0x16/0x1b
-[    1.158207] ---[ end trace 61981bc62de9f6f4 ]---
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Tested-by: Madper Xie <cxie@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/firmware/efi/efi-pstore.c |  143 +++++++++++++++++++++++++++++++++++---
- drivers/firmware/efi/efivars.c    |   12 ++-
- drivers/firmware/efi/vars.c       |   12 ++-
- include/linux/efi.h               |    4 +
- 4 files changed, 155 insertions(+), 16 deletions(-)
-
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -18,14 +18,12 @@ module_param_named(pstore_disable, efiva
- 
- static int efi_pstore_open(struct pstore_info *psi)
- {
--	efivar_entry_iter_begin();
- 	psi->data = NULL;
- 	return 0;
- }
- 
- static int efi_pstore_close(struct pstore_info *psi)
- {
--	efivar_entry_iter_end();
- 	psi->data = NULL;
- 	return 0;
- }
-@@ -91,19 +89,125 @@ static int efi_pstore_read_func(struct e
- 	__efivar_entry_get(entry, &entry->var.Attributes,
- 			   &entry->var.DataSize, entry->var.Data);
- 	size = entry->var.DataSize;
-+	memcpy(*cb_data->buf, entry->var.Data,
-+	       (size_t)min_t(unsigned long, EFIVARS_DATA_SIZE_MAX, size));
- 
--	*cb_data->buf = kmemdup(entry->var.Data, size, GFP_KERNEL);
--	if (*cb_data->buf == NULL)
--		return -ENOMEM;
- 	return size;
- }
- 
-+/**
-+ * efi_pstore_scan_sysfs_enter
-+ * @entry: scanning entry
-+ * @next: next entry
-+ * @head: list head
-+ */
-+static void efi_pstore_scan_sysfs_enter(struct efivar_entry *pos,
-+					struct efivar_entry *next,
-+					struct list_head *head)
-+{
-+	pos->scanning = true;
-+	if (&next->list != head)
-+		next->scanning = true;
-+}
-+
-+/**
-+ * __efi_pstore_scan_sysfs_exit
-+ * @entry: deleting entry
-+ * @turn_off_scanning: Check if a scanning flag should be turned off
-+ */
-+static inline void __efi_pstore_scan_sysfs_exit(struct efivar_entry *entry,
-+						bool turn_off_scanning)
-+{
-+	if (entry->deleting) {
-+		list_del(&entry->list);
-+		efivar_entry_iter_end();
-+		efivar_unregister(entry);
-+		efivar_entry_iter_begin();
-+	} else if (turn_off_scanning)
-+		entry->scanning = false;
-+}
-+
-+/**
-+ * efi_pstore_scan_sysfs_exit
-+ * @pos: scanning entry
-+ * @next: next entry
-+ * @head: list head
-+ * @stop: a flag checking if scanning will stop
-+ */
-+static void efi_pstore_scan_sysfs_exit(struct efivar_entry *pos,
-+				       struct efivar_entry *next,
-+				       struct list_head *head, bool stop)
-+{
-+	__efi_pstore_scan_sysfs_exit(pos, true);
-+	if (stop)
-+		__efi_pstore_scan_sysfs_exit(next, &next->list != head);
-+}
-+
-+/**
-+ * efi_pstore_sysfs_entry_iter
-+ *
-+ * @data: function-specific data to pass to callback
-+ * @pos: entry to begin iterating from
-+ *
-+ * You MUST call efivar_enter_iter_begin() before this function, and
-+ * efivar_entry_iter_end() afterwards.
-+ *
-+ * It is possible to begin iteration from an arbitrary entry within
-+ * the list by passing @pos. @pos is updated on return to point to
-+ * the next entry of the last one passed to efi_pstore_read_func().
-+ * To begin iterating from the beginning of the list @pos must be %NULL.
-+ */
-+static int efi_pstore_sysfs_entry_iter(void *data, struct efivar_entry **pos)
-+{
-+	struct efivar_entry *entry, *n;
-+	struct list_head *head = &efivar_sysfs_list;
-+	int size = 0;
-+
-+	if (!*pos) {
-+		list_for_each_entry_safe(entry, n, head, list) {
-+			efi_pstore_scan_sysfs_enter(entry, n, head);
-+
-+			size = efi_pstore_read_func(entry, data);
-+			efi_pstore_scan_sysfs_exit(entry, n, head, size < 0);
-+			if (size)
-+				break;
-+		}
-+		*pos = n;
-+		return size;
-+	}
-+
-+	list_for_each_entry_safe_from((*pos), n, head, list) {
-+		efi_pstore_scan_sysfs_enter((*pos), n, head);
-+
-+		size = efi_pstore_read_func((*pos), data);
-+		efi_pstore_scan_sysfs_exit((*pos), n, head, size < 0);
-+		if (size)
-+			break;
-+	}
-+	*pos = n;
-+	return size;
-+}
-+
-+/**
-+ * efi_pstore_read
-+ *
-+ * This function returns a size of NVRAM entry logged via efi_pstore_write().
-+ * The meaning and behavior of efi_pstore/pstore are as below.
-+ *
-+ * size > 0: Got data of an entry logged via efi_pstore_write() successfully,
-+ *           and pstore filesystem will continue reading subsequent entries.
-+ * size == 0: Entry was not logged via efi_pstore_write(),
-+ *            and efi_pstore driver will continue reading subsequent entries.
-+ * size < 0: Failed to get data of entry logging via efi_pstore_write(),
-+ *           and pstore will stop reading entry.
-+ */
- static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 			       int *count, struct timespec *timespec,
- 			       char **buf, bool *compressed,
- 			       struct pstore_info *psi)
- {
- 	struct pstore_read_data data;
-+	ssize_t size;
- 
- 	data.id = id;
- 	data.type = type;
-@@ -112,8 +216,17 @@ static ssize_t efi_pstore_read(u64 *id,
- 	data.compressed = compressed;
- 	data.buf = buf;
- 
--	return __efivar_entry_iter(efi_pstore_read_func, &efivar_sysfs_list, &data,
--				   (struct efivar_entry **)&psi->data);
-+	*data.buf = kzalloc(EFIVARS_DATA_SIZE_MAX, GFP_KERNEL);
-+	if (!*data.buf)
-+		return -ENOMEM;
-+
-+	efivar_entry_iter_begin();
-+	size = efi_pstore_sysfs_entry_iter(&data,
-+					   (struct efivar_entry **)&psi->data);
-+	efivar_entry_iter_end();
-+	if (size <= 0)
-+		kfree(*data.buf);
-+	return size;
- }
- 
- static int efi_pstore_write(enum pstore_type_id type,
-@@ -184,9 +297,17 @@ static int efi_pstore_erase_func(struct
- 			return 0;
- 	}
- 
-+	if (entry->scanning) {
-+		/*
-+		 * Skip deletion because this entry will be deleted
-+		 * after scanning is completed.
-+		 */
-+		entry->deleting = true;
-+	} else
-+		list_del(&entry->list);
-+
- 	/* found */
- 	__efivar_entry_delete(entry);
--	list_del(&entry->list);
- 
- 	return 1;
- }
-@@ -214,10 +335,12 @@ static int efi_pstore_erase(enum pstore_
- 
- 	efivar_entry_iter_begin();
- 	found = __efivar_entry_iter(efi_pstore_erase_func, &efivar_sysfs_list, &edata, &entry);
--	efivar_entry_iter_end();
- 
--	if (found)
-+	if (found && !entry->scanning) {
-+		efivar_entry_iter_end();
- 		efivar_unregister(entry);
-+	} else
-+		efivar_entry_iter_end();
- 
- 	return 0;
- }
---- a/drivers/firmware/efi/efivars.c
-+++ b/drivers/firmware/efi/efivars.c
-@@ -383,12 +383,16 @@ static ssize_t efivar_delete(struct file
- 	else if (__efivar_entry_delete(entry))
- 		err = -EIO;
- 
--	efivar_entry_iter_end();
--
--	if (err)
-+	if (err) {
-+		efivar_entry_iter_end();
- 		return err;
-+	}
- 
--	efivar_unregister(entry);
-+	if (!entry->scanning) {
-+		efivar_entry_iter_end();
-+		efivar_unregister(entry);
-+	} else
-+		efivar_entry_iter_end();
- 
- 	/* It's dead Jim.... */
- 	return count;
---- a/drivers/firmware/efi/vars.c
-+++ b/drivers/firmware/efi/vars.c
-@@ -683,8 +683,16 @@ struct efivar_entry *efivar_entry_find(e
- 	if (!found)
- 		return NULL;
- 
--	if (remove)
--		list_del(&entry->list);
-+	if (remove) {
-+		if (entry->scanning) {
-+			/*
-+			 * The entry will be deleted
-+			 * after scanning is completed.
-+			 */
-+			entry->deleting = true;
-+		} else
-+			list_del(&entry->list);
-+	}
- 
- 	return entry;
- }
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -782,6 +782,8 @@ struct efivar_entry {
- 	struct efi_variable var;
- 	struct list_head list;
- 	struct kobject kobj;
-+	bool scanning;
-+	bool deleting;
- };
- 
- extern struct list_head efivar_sysfs_list;
-@@ -840,6 +842,8 @@ void efivar_run_worker(void);
- #if defined(CONFIG_EFI_VARS) || defined(CONFIG_EFI_VARS_MODULE)
- int efivars_sysfs_init(void);
- 
-+#define EFIVARS_DATA_SIZE_MAX 1024
-+
- #endif /* CONFIG_EFI_VARS */
- 
- #endif /* _LINUX_EFI_H */
-
-
+Thanks,
+Ethan
+>
+> greg k-h
