@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3LJIOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:14:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58917 "EHLO
+	id S1754748Ab3LJIPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:15:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58913 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab3LJIB7 (ORCPT
+	with ESMTP id S1752270Ab3LJIB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:59 -0500
+	Tue, 10 Dec 2013 03:01:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.12 36/62] SCSI: hpsa: return 0 from driver probe function on success, not 1
-Date: Tue, 10 Dec 2013 00:01:07 -0800
-Message-Id: <20131210080059.980092681@linuxfoundation.org>
+Subject: [PATCH 3.12 35/62] SCSI: hpsa: do not discard scsi status on aborted commands
+Date: Tue, 10 Dec 2013 00:01:06 -0800
+Message-Id: <20131210080059.912560985@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -29,29 +29,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 88bf6d62db4393fa03a58bada9d746312d5b496f upstream.
+commit 2e311fbabdc23b7eaec77313dc3b9a151a5407b5 upstream.
 
-A return value of 1 is interpreted as an error.  See pci_driver.
-in local_pci_probe().  If you're wondering how this ever could
-have worked, it's because it used to be the case that only return
-values less than zero were interpreted as failure.  But even in
-the current kernel if the driver registers its various entry
-points with the kernel, and then returns a value which is
-interpreted as failure, those registrations aren't undone, so
-the driver still mostly works.  However, the driver's remove
-function wouldn't be called on rmmod, and pci power management
-functions wouldn't work.  In the case of Smart Array, since it
-has a battery backed cache (or else no cache) even if the driver
-is not shut down properly as long as there is no outstanding
-i/o, nothing too bad happens, which is why it took so long to
-notice.
-
-Requesting backport to stable because the change to pci-driver.c
-which requires driver probe functions to return 0 occurred between
-2.6.35 and 2.6.36 (the pci power management breakage) and again
-between 3.7 and 3.8 (pci_dev->driver getting set to NULL in
-local_pci_probe() preventing driver remove function from being
-called on rmmod.)
+We inadvertantly discarded the scsi status for aborted commands.
+For some commands (e.g. reads from tape drives) these can't be retried,
+and if we discarded the scsi status, the scsi mid layer couldn't notice
+anything was wrong and the error was not reported.
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
@@ -63,14 +46,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -4926,7 +4926,7 @@ reinit_after_soft_reset:
- 	hpsa_hba_inquiry(h);
- 	hpsa_register_scsi(h);	/* hook ourselves into SCSI subsystem */
- 	start_controller_lockup_detector(h);
--	return 1;
-+	return 0;
- 
- clean4:
- 	hpsa_free_sg_chain_blocks(h);
+@@ -1289,7 +1289,7 @@ static void complete_scsi_command(struct
+ 					"has check condition: aborted command: "
+ 					"ASC: 0x%x, ASCQ: 0x%x\n",
+ 					cp, asc, ascq);
+-				cmd->result = DID_SOFT_ERROR << 16;
++				cmd->result |= DID_SOFT_ERROR << 16;
+ 				break;
+ 			}
+ 			/* Must be some other type of check condition */
 
 
