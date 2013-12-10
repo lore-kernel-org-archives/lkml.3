@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab3LJB6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:58:43 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:45023 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787Ab3LJB6j (ORCPT
+	id S1752046Ab3LJCAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 21:00:23 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6672 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427Ab3LJCAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 20:58:39 -0500
-Date: Mon, 09 Dec 2013 20:58:38 -0500 (EST)
-Message-Id: <20131209.205838.1809285255471420654.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] etherdevice: Optimize a few is_<foo>_ether_addr
- functions
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386373461.31845.50.camel@joe-AO722>
-References: <20131206.163806.1555069105347405484.davem@davemloft.net>
-	<1386368461.31845.38.camel@joe-AO722>
-	<1386373461.31845.50.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 09 Dec 2013 17:58:39 -0800 (PST)
+	Mon, 9 Dec 2013 21:00:20 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 09 Dec 2013 17:53:25 -0800
+Date: Mon, 9 Dec 2013 18:00:12 -0800
+From: Paul Walmsley <pwalmsley@nvidia.com>
+X-X-Sender: pwalmsley@tamien
+To: Mikko Perttunen <mperttunen@nvidia.com>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        =?ISO-8859-15?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>
+Subject: [PATCH] gpu: host1x: clk_round_rate() can return a zero upon error
+Message-ID: <alpine.DEB.2.02.1312091746400.4127@tamien>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="8323329-669180444-1386640819=:4127"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri, 06 Dec 2013 15:44:21 -0800
+--8323329-669180444-1386640819=:4127
+Content-Type: text/plain; format=flowed; charset="ISO-8859-15"
+Content-Transfer-Encoding: 8BIT
 
-> If CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is set,
-> several is_<foo>_ether_addr functions can be slightly
-> improved by using u32 dereferences.
-> 
-> I believe all current uses of is_zero_ether_addr and
-> is_broadcast_ether_addr are u16 aligned, so always use
-> u16 references to improve those functions performance.
-> 
-> Document the u16 alignment requirements.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied.
+Treat both negative and zero return values from clk_round_rate() as
+errors.  This is needed since subsequent patches will convert
+clk_round_rate()'s return value to be an unsigned type, rather than a
+signed type, since some clock sources can generate rates higher than
+(2^31)-1 Hz.
+
+Eventually, when calling clk_round_rate(), only a return value of zero
+will be considered a error.  All other values will be considered valid
+rates.  The comparison against values less than 0 is kept to preserve
+the correct behavior in the meantime.
+
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Mikko Perttunen <mperttunen@nvidia.com>
+Cc: Arto Merilainen <amerilainen@nvidia.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>
+Cc: Terje Bergström <tbergstrom@nvidia.com>
+---
+Applies on v3.13-rc3.  See also:
+
+http://marc.info/?l=linux-arm-kernel&m=138542591313620&w=2
+
+  drivers/gpu/drm/tegra/hdmi.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index 0cd9bc2056e8..8cf9d3aeb0cd 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -959,7 +959,7 @@ static int tegra_output_hdmi_check_mode(struct tegra_output *output,
+  	parent = clk_get_parent(hdmi->clk_parent);
+
+  	err = clk_round_rate(parent, pclk * 4);
+-	if (err < 0)
++	if (err <= 0)
+  		*status = MODE_NOCLOCK;
+  	else
+  		*status = MODE_OK;
+--8323329-669180444-1386640819=:4127--
