@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab3LJIgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:36:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58459 "EHLO
+	id S1755800Ab3LJIgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:36:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab3LJH7y (ORCPT
+	with ESMTP id S1752571Ab3LJH7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:54 -0500
+	Tue, 10 Dec 2013 02:59:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.10 11/52] ARM: footbridge: fix VGA initialisation
-Date: Tue, 10 Dec 2013 00:00:44 -0800
-Message-Id: <20131210075954.998853533@linuxfoundation.org>
+Subject: [PATCH 3.10 10/52] ARM: fix booting low-vectors machines
+Date: Tue, 10 Dec 2013 00:00:43 -0800
+Message-Id: <20131210075954.931609298@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,75 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
+commit d8aa712c30148ba26fd89a5dc14de95d4c375184 upstream.
 
-It's no good setting vga_base after the VGA console has been
-initialised, because if we do that we get this:
+Commit f6f91b0d9fd9 (ARM: allow kuser helpers to be removed from the
+vector page) required two pages for the vectors code.  Although the
+code setting up the initial page tables was updated, the code which
+allocates page tables for new processes wasn't, neither was the code
+which tears down the mappings.  Fix this.
 
-Unable to handle kernel paging request at virtual address 000b8000
-pgd = c0004000
-[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
-0Internal error: Oops: 5017 [#1] ARM
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
-task: c03e2974 ti: c03d8000 task.ti: c03d8000
-PC is at vgacon_startup+0x258/0x39c
-LR is at request_resource+0x10/0x1c
-pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
-sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
-r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
-r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
-r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
-Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-
-which is an access to the 0xb8000 without the PCI offset required to
-make it work.
-
-Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
+Fixes: f6f91b0d9fd9 ("ARM: allow kuser helpers to be removed from the vector page")
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-footbridge/common.c  |    3 +++
- arch/arm/mach-footbridge/dc21285.c |    2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/pgtable.h |    2 +-
+ arch/arm/mm/mmap.c             |    2 +-
+ arch/arm/mm/pgd.c              |    3 ++-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mach-footbridge/common.c
-+++ b/arch/arm/mach-footbridge/common.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
-+#include <video/vga.h>
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -58,7 +58,7 @@ extern void __pgd_error(const char *file
+  * mapping to be mapped at.  This is particularly important for
+  * non-high vector CPUs.
+  */
+-#define FIRST_USER_ADDRESS	PAGE_SIZE
++#define FIRST_USER_ADDRESS	(PAGE_SIZE * 2)
  
- #include <asm/pgtable.h>
- #include <asm/page.h>
-@@ -196,6 +197,8 @@ void __init footbridge_map_io(void)
- 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
- 		pci_map_io_early(__phys_to_pfn(DC21285_PCI_IO));
+ /*
+  * Use TASK_SIZE as the ceiling argument for free_pgtables() and
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -146,7 +146,7 @@ arch_get_unmapped_area_topdown(struct fi
+ 
+ 	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
+ 	info.length = len;
+-	info.low_limit = PAGE_SIZE;
++	info.low_limit = FIRST_USER_ADDRESS;
+ 	info.high_limit = mm->mmap_base;
+ 	info.align_mask = do_align ? (PAGE_MASK & (SHMLBA - 1)) : 0;
+ 	info.align_offset = pgoff << PAGE_SHIFT;
+--- a/arch/arm/mm/pgd.c
++++ b/arch/arm/mm/pgd.c
+@@ -87,7 +87,8 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ 		init_pud = pud_offset(init_pgd, 0);
+ 		init_pmd = pmd_offset(init_pud, 0);
+ 		init_pte = pte_offset_map(init_pmd, 0);
+-		set_pte_ext(new_pte, *init_pte, 0);
++		set_pte_ext(new_pte + 0, init_pte[0], 0);
++		set_pte_ext(new_pte + 1, init_pte[1], 0);
+ 		pte_unmap(init_pte);
+ 		pte_unmap(new_pte);
  	}
-+
-+	vga_base = PCIMEM_BASE;
- }
- 
- void footbridge_restart(char mode, const char *cmd)
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -18,7 +18,6 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
--#include <video/vga.h>
- 
- #include <asm/irq.h>
- #include <asm/mach/pci.h>
-@@ -291,7 +290,6 @@ void __init dc21285_preinit(void)
- 	int cfn_mode;
- 
- 	pcibios_min_mem = 0x81000000;
--	vga_base = PCIMEM_BASE;
- 
- 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
- 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 
 
