@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686Ab3LJXoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:44:16 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38985 "EHLO
+	id S1751642Ab3LJXoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:44:14 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38993 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3LJXnU (ORCPT
+	with ESMTP id S1751237Ab3LJXnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Dec 2013 18:43:20 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: [PATCH 6/7] Input: pmic8xxx-keypad - Migrate to devm_* APIs
-Date: Tue, 10 Dec 2013 15:43:15 -0800
-Message-Id: <1386718996-3733-7-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 5/7] genirq: Add devm_request_any_context_irq()
+Date: Tue, 10 Dec 2013 15:43:14 -0800
+Message-Id: <1386718996-3733-6-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.1.109.g3d252a9
 In-Reply-To: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
 References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
@@ -21,162 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify the error paths and reduce the lines of code in this
-driver by using the devm_* APIs.
+Some drivers use request_any_context_irq() but there isn't a
+devm_* function for it. Add one so that these drivers don't need
+to explicitly free the irq on driver detach.
 
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/input/keyboard/pmic8xxx-keypad.c | 62 +++++++++-----------------------
- 1 file changed, 17 insertions(+), 45 deletions(-)
+ include/linux/interrupt.h |  5 +++++
+ kernel/irq/devres.c       | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+)
 
-diff --git a/drivers/input/keyboard/pmic8xxx-keypad.c b/drivers/input/keyboard/pmic8xxx-keypad.c
-index 2c9f19a..4e6bfbf 100644
---- a/drivers/input/keyboard/pmic8xxx-keypad.c
-+++ b/drivers/input/keyboard/pmic8xxx-keypad.c
-@@ -586,7 +586,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	kp = kzalloc(sizeof(*kp), GFP_KERNEL);
-+	kp = devm_kzalloc(&pdev->dev, sizeof(*kp), GFP_KERNEL);
- 	if (!kp)
- 		return -ENOMEM;
- 
-@@ -595,32 +595,27 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
- 	kp->pdata	= pdata;
- 	kp->dev		= &pdev->dev;
- 
--	kp->input = input_allocate_device();
-+	kp->input = devm_input_allocate_device(&pdev->dev);
- 	if (!kp->input) {
- 		dev_err(&pdev->dev, "unable to allocate input device\n");
--		rc = -ENOMEM;
--		goto err_alloc_device;
-+		return -ENOMEM;
- 	}
- 
- 	kp->key_sense_irq = platform_get_irq(pdev, 0);
- 	if (kp->key_sense_irq < 0) {
- 		dev_err(&pdev->dev, "unable to get keypad sense irq\n");
--		rc = -ENXIO;
--		goto err_get_irq;
-+		return kp->key_sense_irq;
- 	}
- 
- 	kp->key_stuck_irq = platform_get_irq(pdev, 1);
- 	if (kp->key_stuck_irq < 0) {
- 		dev_err(&pdev->dev, "unable to get keypad stuck irq\n");
--		rc = -ENXIO;
--		goto err_get_irq;
-+		return kp->key_stuck_irq;
- 	}
- 
- 	kp->input->name = pdata->input_name ? : "PMIC8XXX keypad";
- 	kp->input->phys = pdata->input_phys_device ? : "pmic8xxx_keypad/input0";
- 
--	kp->input->dev.parent	= &pdev->dev;
--
- 	kp->input->id.bustype	= BUS_I2C;
- 	kp->input->id.version	= 0x0001;
- 	kp->input->id.product	= 0x0001;
-@@ -634,7 +629,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
- 					kp->keycodes, kp->input);
- 	if (rc) {
- 		dev_err(&pdev->dev, "failed to build keymap\n");
--		goto err_get_irq;
-+		return rc;
- 	}
- 
- 	if (pdata->rep)
-@@ -650,7 +645,7 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
- 	rc = pmic8xxx_kpd_init(kp);
- 	if (rc < 0) {
- 		dev_err(&pdev->dev, "unable to initialize keypad controller\n");
--		goto err_get_irq;
-+		return rc;
- 	}
- 
- 	rc = pmic8xxx_kp_config_gpio(pdata->cols_gpio_start,
-@@ -667,24 +662,26 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
- 		goto err_gpio_config;
- 	}
- 
--	rc = request_any_context_irq(kp->key_sense_irq, pmic8xxx_kp_irq,
--				 IRQF_TRIGGER_RISING, "pmic-keypad", kp);
-+	rc = devm_request_any_context_irq(&pdev->dev, kp->key_sense_irq,
-+			pmic8xxx_kp_irq, IRQF_TRIGGER_RISING, "pmic-keypad",
-+			kp);
- 	if (rc < 0) {
- 		dev_err(&pdev->dev, "failed to request keypad sense irq\n");
--		goto err_get_irq;
-+		return rc;
- 	}
- 
--	rc = request_any_context_irq(kp->key_stuck_irq, pmic8xxx_kp_stuck_irq,
--				 IRQF_TRIGGER_RISING, "pmic-keypad-stuck", kp);
-+	rc = devm_request_any_context_irq(&pdev->dev, kp->key_stuck_irq,
-+			pmic8xxx_kp_stuck_irq, IRQF_TRIGGER_RISING,
-+			"pmic-keypad-stuck", kp);
- 	if (rc < 0) {
- 		dev_err(&pdev->dev, "failed to request keypad stuck irq\n");
--		goto err_req_stuck_irq;
-+		return rc;
- 	}
- 
- 	rc = pmic8xxx_kp_read_u8(kp, &ctrl_val, KEYP_CTRL);
- 	if (rc < 0) {
- 		dev_err(&pdev->dev, "failed to read KEYP_CTRL register\n");
--		goto err_pmic_reg_read;
-+		return rc;
- 	}
- 
- 	kp->ctrl_reg = ctrl_val;
-@@ -692,36 +689,12 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
- 	rc = input_register_device(kp->input);
- 	if (rc < 0) {
- 		dev_err(&pdev->dev, "unable to register keypad input device\n");
--		goto err_pmic_reg_read;
-+		return rc;
- 	}
- 
- 	device_init_wakeup(&pdev->dev, pdata->wakeup);
- 
- 	return 0;
--
--err_pmic_reg_read:
--	free_irq(kp->key_stuck_irq, kp);
--err_req_stuck_irq:
--	free_irq(kp->key_sense_irq, kp);
--err_gpio_config:
--err_get_irq:
--	input_free_device(kp->input);
--err_alloc_device:
--	kfree(kp);
--	return rc;
--}
--
--static int pmic8xxx_kp_remove(struct platform_device *pdev)
--{
--	struct pmic8xxx_kp *kp = platform_get_drvdata(pdev);
--
--	device_init_wakeup(&pdev->dev, 0);
--	free_irq(kp->key_stuck_irq, kp);
--	free_irq(kp->key_sense_irq, kp);
--	input_unregister_device(kp->input);
--	kfree(kp);
--
--	return 0;
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index c9e831d..8334f9b 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -160,6 +160,11 @@ devm_request_irq(struct device *dev, unsigned int irq, irq_handler_t handler,
+ 					 devname, dev_id);
  }
  
- #ifdef CONFIG_PM_SLEEP
-@@ -771,7 +744,6 @@ static SIMPLE_DEV_PM_OPS(pm8xxx_kp_pm_ops,
++extern int __must_check
++devm_request_any_context_irq(struct device *dev, unsigned int irq,
++		 irq_handler_t handler, unsigned long irqflags,
++		 const char *devname, void *dev_id);
++
+ extern void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id);
  
- static struct platform_driver pmic8xxx_kp_driver = {
- 	.probe		= pmic8xxx_kp_probe,
--	.remove		= pmic8xxx_kp_remove,
- 	.driver		= {
- 		.name = PM8XXX_KEYPAD_DEV_NAME,
- 		.owner = THIS_MODULE,
+ /*
+diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
+index bd8e788..f71e9ff 100644
+--- a/kernel/irq/devres.c
++++ b/kernel/irq/devres.c
+@@ -73,6 +73,51 @@ int devm_request_threaded_irq(struct device *dev, unsigned int irq,
+ EXPORT_SYMBOL(devm_request_threaded_irq);
+ 
+ /**
++ *	devm_request_any_context_irq - allocate an interrupt line for a managed device
++ *	@dev: device to request interrupt for
++ *	@irq: Interrupt line to allocate
++ *	@handler: Function to be called when the IRQ occurs
++ *	@thread_fn: function to be called in a threaded interrupt context. NULL
++ *		    for devices which handle everything in @handler
++ *	@irqflags: Interrupt type flags
++ *	@devname: An ascii name for the claiming device
++ *	@dev_id: A cookie passed back to the handler function
++ *
++ *	Except for the extra @dev argument, this function takes the
++ *	same arguments and performs the same function as
++ *	request_any_context_irq().  IRQs requested with this function will be
++ *	automatically freed on driver detach.
++ *
++ *	If an IRQ allocated with this function needs to be freed
++ *	separately, devm_free_irq() must be used.
++ */
++int devm_request_any_context_irq(struct device *dev, unsigned int irq,
++			      irq_handler_t handler, unsigned long irqflags,
++			      const char *devname, void *dev_id)
++{
++	struct irq_devres *dr;
++	int rc;
++
++	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
++			  GFP_KERNEL);
++	if (!dr)
++		return -ENOMEM;
++
++	rc = request_any_context_irq(irq, handler, irqflags, devname, dev_id);
++	if (rc) {
++		devres_free(dr);
++		return rc;
++	}
++
++	dr->irq = irq;
++	dr->dev_id = dev_id;
++	devres_add(dev, dr);
++
++	return 0;
++}
++EXPORT_SYMBOL(devm_request_any_context_irq);
++
++/**
+  *	devm_free_irq - free an interrupt
+  *	@dev: device to free interrupt for
+  *	@irq: Interrupt line to free
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
