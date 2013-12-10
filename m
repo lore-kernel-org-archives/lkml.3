@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab3LJIYA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:24:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58789 "EHLO
+	id S1754773Ab3LJIYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:24:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab3LJIBE (ORCPT
+	with ESMTP id S1753145Ab3LJIBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:04 -0500
+	Tue, 10 Dec 2013 03:01:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        AceLan Kao <acelan.kao@canonical.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 39/52] HID: usbhid: quirk for SiS Touchscreen
-Date: Tue, 10 Dec 2013 00:01:12 -0800
-Message-Id: <20131210075956.947799041@linuxfoundation.org>
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>, Ivan Vecera <ivecera@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 37/52] tg3: avoid double-freeing of rx data memory
+Date: Tue, 10 Dec 2013 00:01:10 -0800
+Message-Id: <20131210075956.808179072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -26,46 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Ivan Vecera <ivecera@redhat.com>
 
-commit 684524d35fe8d13be1f2649633e43bd02c96c695 upstream.
+commit 85aec73d595b8847f9c4ea571deb127913f0d508 upstream.
 
-BugLink: http://bugs.launchpad.net/bugs/1180881
+If build_skb fails the memory associated with the ring buffer is freed but
+the ri->data member is not zeroed in this case. This causes a double-free
+of this memory in tg3_free_rings->... path. The patch moves this block after
+setting ri->data to NULL.
+It would be nice to fix this bug also in stable >= v3.4 trees.
 
-This device needs to be added to the quirks list with HID_QUIRK_NO_INIT_REPORTS,
-otherwise it causes 10 seconds timeout during report initialization.
-
-[12431.828467] hid-multitouch 0003:0457:1013.0475: usb_submit_urb(ctrl) failed: -1
-[12431.828507] hid-multitouch 0003:0457:1013.0475: timeout initializing reports
-
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>
+Cc: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Ivan Vecera <ivecera@redhat.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -915,4 +915,7 @@
- #define USB_VENDOR_ID_PRIMAX	0x0461
- #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -6722,12 +6722,6 @@ static int tg3_rx(struct tg3_napi *tnapi
+ 			pci_unmap_single(tp->pdev, dma_addr, skb_size,
+ 					 PCI_DMA_FROMDEVICE);
  
-+#define USB_VENDOR_ID_SIS	0x0457
-+#define USB_DEVICE_ID_SIS_TS	0x1013
-+
- #endif
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -114,6 +114,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_DUOSENSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_LTS2, HID_QUIRK_NO_INIT_REPORTS },
-+	{ USB_VENDOR_ID_SIS, USB_DEVICE_ID_SIS_TS, HID_QUIRK_NO_INIT_REPORTS },
+-			skb = build_skb(data, frag_size);
+-			if (!skb) {
+-				tg3_frag_free(frag_size != 0, data);
+-				goto drop_it_no_recycle;
+-			}
+-			skb_reserve(skb, TG3_RX_OFFSET(tp));
+ 			/* Ensure that the update to the data happens
+ 			 * after the usage of the old DMA mapping.
+ 			 */
+@@ -6735,6 +6729,12 @@ static int tg3_rx(struct tg3_napi *tnapi
  
- 	{ 0, 0 }
- };
+ 			ri->data = NULL;
+ 
++			skb = build_skb(data, frag_size);
++			if (!skb) {
++				tg3_frag_free(frag_size != 0, data);
++				goto drop_it_no_recycle;
++			}
++			skb_reserve(skb, TG3_RX_OFFSET(tp));
+ 		} else {
+ 			tg3_recycle_rx(tnapi, tpr, opaque_key,
+ 				       desc_idx, *post_ptr);
 
 
