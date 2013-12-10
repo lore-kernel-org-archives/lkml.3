@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab3LJIBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:01:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58800 "EHLO
+	id S1755098Ab3LJIWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:22:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3LJIBI (ORCPT
+	with ESMTP id S1753325Ab3LJIBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:08 -0500
+	Tue, 10 Dec 2013 03:01:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 42/52] Input: mousedev - allow disabling even without CONFIG_EXPERT
-Date: Tue, 10 Dec 2013 00:01:15 -0800
-Message-Id: <20131210075957.147932589@linuxfoundation.org>
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 45/52] USB: pl2303: fixed handling of CS5 setting
+Date: Tue, 10 Dec 2013 00:01:18 -0800
+Message-Id: <20131210075957.347870157@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,33 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit dfaaed08ecc01bd513248ba7999daf50ce028352 upstream.
+commit a313249937820f8b1996133fc285efbd6aad2c5b upstream.
 
-Moust (if not all) modern software, including X, uses /dev/eventX rather than
-the legacy /dev/mouseX devices. It therefore makes sense for general-purpose
-(distro) kernels to use MOUSEDV=m (or even n), so let's drop the EXPERT=y
-requirement.
+This patch fixes the CS5 setting on the PL2303 USB-to-serial devices. CS5 has a
+value of 0 and the CSIZE setting has been skipped altogether by the enclosing
+if. Tested on 3.11.6 and the scope shows the correct output after the fix has
+been applied.
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Tagged to be added to stable, because it fixes a user visible driver bug and is
+simple enough to backport easily.
+
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/pl2303.c |   32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
 
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -80,7 +80,7 @@ config INPUT_MATRIXKMAP
- comment "Userland interfaces"
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -304,24 +304,22 @@ static void pl2303_set_termios(struct tt
+ 	dev_dbg(&port->dev, "0xa1:0x21:0:0  %d - %x %x %x %x %x %x %x\n", i,
+ 	    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
  
- config INPUT_MOUSEDEV
--	tristate "Mouse interface" if EXPERT
-+	tristate "Mouse interface"
- 	default y
- 	help
- 	  Say Y here if you want your mouse to be accessible as char devices
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS5:
+-			buf[6] = 5;
+-			break;
+-		case CS6:
+-			buf[6] = 6;
+-			break;
+-		case CS7:
+-			buf[6] = 7;
+-			break;
+-		default:
+-		case CS8:
+-			buf[6] = 8;
+-			break;
+-		}
+-		dev_dbg(&port->dev, "data bits = %d\n", buf[6]);
++	switch (cflag & CSIZE) {
++	case CS5:
++		buf[6] = 5;
++		break;
++	case CS6:
++		buf[6] = 6;
++		break;
++	case CS7:
++		buf[6] = 7;
++		break;
++	default:
++	case CS8:
++		buf[6] = 8;
++		break;
+ 	}
++	dev_dbg(&port->dev, "data bits = %d\n", buf[6]);
+ 
+ 	/* For reference buf[0]:buf[3] baud rate value */
+ 	/* NOTE: Only the values defined in baud_sup are supported !
 
 
