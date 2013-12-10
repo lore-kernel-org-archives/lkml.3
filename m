@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab3LJH71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:59:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58395 "EHLO
+	id S1752580Ab3LJH7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:59:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3LJH7V (ORCPT
+	with ESMTP id S1752656Ab3LJH7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:21 -0500
+	Tue, 10 Dec 2013 02:59:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.4 01/25] crypto: scatterwalk - Set the chain pointer indication bit
-Date: Tue, 10 Dec 2013 00:00:09 -0800
-Message-Id: <20131210075930.917877325@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>, Leho Kraav <leho@kraav.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.4 25/25] drivers/char/i8k.c: add Dell XPLS L421X
+Date: Tue, 10 Dec 2013 00:00:33 -0800
+Message-Id: <20131210075932.570950741@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -27,36 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 41da8b5adba77e22584f8b45f9641504fa885308 upstream.
+commit 9aa5b0181bdf335f0b731d8502e128a862884bcd upstream.
 
-The scatterwalk_crypto_chain function invokes the scatterwalk_sg_chain
-function to chain two scatterlists, but the chain pointer indication
-bit is not set.  When the resulting scatterlist is used, for example,
-by sg_nents to count the number of scatterlist entries, a segfault occurs
-because sg_nents does not follow the chain pointer to the chained scatterlist.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=60772
 
-Update scatterwalk_sg_chain to set the chain pointer indication bit as is
-done by the sg_chain function.
-
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Leho Kraav <leho@kraav.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/crypto/scatterwalk.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/i8k.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(
- {
- 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
- 	sg1[num - 1].page_link &= ~0x02;
-+	sg1[num - 1].page_link |= 0x01;
- }
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -664,6 +664,13 @@ static struct dmi_system_id __initdata i
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
+ 		},
+ 	},
++	{
++		.ident = "Dell XPS421",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "XPS L421X"),
++		},
++	},
+         { }
+ };
  
- static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
 
 
