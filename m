@@ -1,375 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3LJSKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 13:10:23 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:34541 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab3LJSKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 13:10:19 -0500
-Message-ID: <1386699012.2731.22.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH v3 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Date: Tue, 10 Dec 2013 10:10:12 -0800
-In-Reply-To: <1386063927-6545-5-git-send-email-davidlohr@hp.com>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
-	 <1386063927-6545-5-git-send-email-davidlohr@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755563Ab3LJSSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 13:18:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49156 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188Ab3LJSSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 13:18:09 -0500
+Date: Tue, 10 Dec 2013 18:18:04 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: ebizzy performance regression due to X86 TLB range flush
+Message-ID: <20131210181804.GA24125@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In futex_wake() there is clearly no point in taking the hb->lock if
-we know beforehand that there are no tasks to be woken. This comes
-at the smaller cost of doing some atomic operations to keep track of
-the list's size. Specifically, increment the counter when an element is
-added to the list, and decrement when it is removed. Of course, if the
-counter is 0, then there are no tasks blocked on a futex. Some special
-considerations:
+Running tests on a new machine I found that ebizzy regressed between 3.4
+and 3.10. The ordering of kernel version is a bit off but you can see it
+here
 
-- increment the counter at queue_lock() as we always end up calling
-  queue_me() which adds the element to the list. Upon any error,
-  queue_unlock() is called for housekeeping, for which we decrement
-  to mach the increment done in queue_lock().
+ebizzy
+                          3.0.101                3.2.52                3.11.0                3.12.0                3.4.69               3.10.19
+                          vanilla               vanilla               vanilla               vanilla               vanilla               vanilla
+Mean     1      7633.80 (  0.00%)     7540.60 ( -1.22%)     7296.80 ( -4.41%)     7362.60 ( -3.55%)     7500.80 ( -1.74%)     7441.20 ( -2.52%)
+Mean     2      9546.60 (  0.00%)     9679.60 (  1.39%)     8265.40 (-13.42%)     8125.20 (-14.89%)     9496.40 ( -0.53%)     8307.60 (-12.98%)
+Mean     3      9011.20 (  0.00%)     9277.00 (  2.95%)     8088.00 (-10.25%)     8014.00 (-11.07%)     9225.80 (  2.38%)     8136.80 ( -9.70%)
+Mean     4      8982.20 (  0.00%)     9179.80 (  2.20%)     7877.20 (-12.30%)     7804.40 (-13.11%)     9002.20 (  0.22%)     7952.40 (-11.46%)
+Mean     5      8991.00 (  0.00%)     9053.00 (  0.69%)     7552.20 (-16.00%)     7110.80 (-20.91%)     9022.40 (  0.35%)     7777.40 (-13.50%)
+Mean     6      8999.80 (  0.00%)     9024.00 (  0.27%)     7478.80 (-16.90%)     6858.40 (-23.79%)     8946.20 ( -0.60%)     7595.40 (-15.60%)
+Mean     7      8929.00 (  0.00%)     8969.40 (  0.45%)     7473.80 (-16.30%)     6743.00 (-24.48%)     8942.20 (  0.15%)     7569.00 (-15.23%)
+Mean     8      8894.80 (  0.00%)     8951.60 (  0.64%)     7471.00 (-16.01%)     6506.20 (-26.85%)     8919.20 (  0.27%)     7559.20 (-15.02%)
+Mean     12     8545.20 (  0.00%)     8704.80 (  1.87%)     7181.40 (-15.96%)     6130.40 (-28.26%)     8675.20 (  1.52%)     7271.80 (-14.90%)
+Mean     16     8270.00 (  0.00%)     8513.40 (  2.94%)     6943.40 (-16.04%)     6051.00 (-26.83%)     8454.80 (  2.23%)     7079.00 (-14.40%)
+Mean     20     8040.20 (  0.00%)     8317.40 (  3.45%)     6711.20 (-16.53%)     5967.60 (-25.78%)     8235.20 (  2.43%)     6835.60 (-14.98%)
+Mean     24     7908.80 (  0.00%)     8108.20 (  2.52%)     6570.80 (-16.92%)     5942.80 (-24.86%)     8067.60 (  2.01%)     6692.20 (-15.38%)
+Mean     28     7809.00 (  0.00%)     7937.00 (  1.64%)     6511.20 (-16.62%)     5893.80 (-24.53%)     7947.40 (  1.77%)     6596.00 (-15.53%)
+Mean     32     7758.00 (  0.00%)     7856.60 (  1.27%)     6477.60 (-16.50%)     5878.60 (-24.23%)     7893.60 (  1.75%)     6582.80 (-15.15%)
+Stddev   1        27.41 (  0.00%)       82.88 (-202.38%)       33.40 (-21.84%)       53.44 (-94.95%)       86.41 (-215.24%)       24.08 ( 12.16%)
+Stddev   2       151.35 (  0.00%)       25.35 ( 83.25%)       33.86 ( 77.63%)       74.55 ( 50.74%)      111.26 ( 26.49%)       16.64 ( 89.00%)
+Stddev   3       263.59 (  0.00%)       92.26 ( 65.00%)       27.77 ( 89.46%)       56.03 ( 78.74%)       76.78 ( 70.87%)       30.35 ( 88.49%)
+Stddev   4        44.80 (  0.00%)       39.77 ( 11.23%)       57.74 (-28.89%)       36.71 ( 18.06%)       72.71 (-62.29%)       58.68 (-30.98%)
+Stddev   5        34.25 (  0.00%)       36.81 ( -7.46%)       77.78 (-127.08%)       65.94 (-92.51%)       61.81 (-80.45%)       64.64 (-88.73%)
+Stddev   6        49.11 (  0.00%)       29.70 ( 39.53%)       76.19 (-55.14%)       47.35 (  3.59%)       43.15 ( 12.14%)       37.04 ( 24.58%)
+Stddev   7        23.13 (  0.00%)       13.75 ( 40.55%)       37.18 (-60.76%)       85.62 (-270.26%)       24.94 ( -7.86%)       34.05 (-47.25%)
+Stddev   8        26.53 (  0.00%)       16.67 ( 37.17%)       29.60 (-11.57%)       41.08 (-54.86%)       40.18 (-51.47%)       30.32 (-14.30%)
+Stddev   12       23.47 (  0.00%)       33.39 (-42.23%)       36.43 (-55.22%)       32.29 (-37.56%)       31.92 (-35.99%)       30.66 (-30.60%)
+Stddev   16        7.40 (  0.00%)       14.25 (-92.49%)       48.36 (-553.21%)       10.14 (-36.96%)       64.97 (-777.68%)       64.96 (-777.45%)
+Stddev   20       25.03 (  0.00%)       12.21 ( 51.23%)       20.83 ( 16.80%)       21.74 ( 13.15%)       30.77 (-22.94%)       57.62 (-130.20%)
+Stddev   24       49.13 (  0.00%)       26.10 ( 46.87%)       25.90 ( 47.28%)        7.05 ( 85.64%)       33.13 ( 32.57%)       17.43 ( 64.53%)
+Stddev   28       21.96 (  0.00%)       21.49 (  2.14%)       16.44 ( 25.16%)       13.88 ( 36.82%)       22.97 ( -4.56%)       13.04 ( 40.64%)
+Stddev   32       30.61 (  0.00%)       35.76 (-16.80%)       38.46 (-25.64%)        6.47 ( 78.87%)       25.40 ( 17.04%)       17.31 ( 43.45%)
 
-- decrement the counter at __unqueue_me() to reflect when an element is
-  removed from the queue for wakeup related purposes.
+Bisection initially found at least two problems of which the first was
+commit 611ae8e3 (x86/tlb: enable tlb flush range support for x86). The
+intent of the patch appears to be to preserve existing TLB entries which
+makes sense. The decision on whether to do a full mm flush or a number of
+single page flushes depends on the size of the relevant TLB and the CPU
+which is presuably taking the cost of a TLB refill.
 
-We make sure that the futex ordering guarantees are preserved, ensuring
-that waiters either observes the changed user space value before blocking or
-is woken by a concurrent waker. This is done by relying on the barriers in
-atomic_inc() -- for archs that do have implict mb in atomic_inc() we
-explicitly add them through a set of new functions that are introduced:
-futex_get_mm(), hb_waiters_inc(x) and hb_waiters_dec(). For more details
-please refer to the updated comments in the code and related discussion:
-https://lkml.org/lkml/2013/11/26/556
+It's a gamble because the cost of the per-page flushes must be offset by a
+reduced TLB miss count. There are no indications what the cost of calling
+invlpg are if there are no TLB entries and it's also not taking into
+account how many CPUs it may have to execute these single TLB flushes on.
 
-Furthermore, the overhead of new barriers is trivial. The following are some
-results, from a quad-core x86_64 laptop, measuring the latency of nthread
-wakeups (1 at a time), for 1000 runs:
+Ebizzy sees very little benefit as it discards newly allocated memory very
+quickly which is why it appeared to regress so badly. It's a benchmark
+so there is little point optimising for it. However, I'm curious as
+to whether you are aware of this problem already for this or any other
+workload and whether it has been concluded that the cost is justified or
+not?
 
-+----------+-----------------------------+------------------------------+
-| nthreads | baseline time (ms) [stddev] | atomicops time (ms) [stddev] |
-+----------+-----------------------------+------------------------------+
-|      512 | 2.8360 [0.5168]             | 3.8150 [1.3293]              |
-|      256 | 2.5080 [0.6375]             | 2.5980 [0.9079]              |
-|      128 | 1.0200 [0.4264]             | 1.5180 [0.4902]              |
-|       64 | 0.7890 [0.2667]             | 0.4020 [0.2447]              |
-|       32 | 0.1150 [0.0184]             | 0.1490 [0.1156]              |
-+----------+-----------------------------+------------------------------+
+The below hatchet job happens to work for smaller numbers of clients
+because threads have a chance to run on multiple CPUs in time to decide
+to do a full mm flush. It actually still works out better for ebizzy to
+always flush the full mm and the same might be true for other workloads. I
+haven't thought of a better way of detecting the correct decision though.
 
-Special thanks to tglx for careful review and feedback.
+---8<---
+x86: mm: Take number of CPUs to flush into account
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
+ebizzy
+                       3.13.0-rc3            3.13.0-rc3
+                          vanilla           native-v1r5
+Mean     1      7353.60 (  0.00%)     7388.20 (  0.47%)
+Mean     2      8120.40 (  0.00%)     9517.60 ( 17.21%)
+Mean     3      8087.80 (  0.00%)     8933.40 ( 10.46%)
+Mean     4      7919.20 (  0.00%)     8549.40 (  7.96%)
+Mean     5      7310.60 (  0.00%)     8131.20 ( 11.22%)
+Mean     6      6798.00 (  0.00%)     7434.00 (  9.36%)
+Mean     7      6759.40 (  0.00%)     6942.20 (  2.70%)
+Mean     8      6501.80 (  0.00%)     6526.00 (  0.37%)
+Mean     12     6606.00 (  0.00%)     6669.40 (  0.96%)
+Mean     16     6655.40 (  0.00%)     6702.20 (  0.70%)
+Mean     20     6703.80 (  0.00%)     6727.00 (  0.35%)
+Mean     24     6705.80 (  0.00%)     6742.80 (  0.55%)
+Mean     28     6706.60 (  0.00%)     6737.20 (  0.46%)
+Mean     32     6727.20 (  0.00%)     6746.60 (  0.29%)
+Stddev   1        42.71 (  0.00%)       51.62 (-20.87%)
+Stddev   2       250.26 (  0.00%)       22.37 ( 91.06%)
+Stddev   3        71.67 (  0.00%)       32.38 ( 54.82%)
+Stddev   4        30.25 (  0.00%)       67.76 (-124.00%)
+Stddev   5        71.18 (  0.00%)      130.12 (-82.80%)
+Stddev   6        34.22 (  0.00%)      192.50 (-462.60%)
+Stddev   7       100.59 (  0.00%)      148.51 (-47.64%)
+Stddev   8        20.26 (  0.00%)       80.64 (-297.99%)
+Stddev   12       19.43 (  0.00%)       26.79 (-37.84%)
+Stddev   16       14.47 (  0.00%)       13.95 (  3.62%)
+Stddev   20       21.37 (  0.00%)       17.78 ( 16.81%)
+Stddev   24       12.87 (  0.00%)       17.81 (-38.37%)
+Stddev   28       13.89 (  0.00%)       12.83 (  7.67%)
+Stddev   32       18.14 (  0.00%)        9.99 ( 44.91%)
+
 ---
-Changes from v2: 
- - Improved ordering guarantee comments -- peterz.
- - Reordered SOB tags to reflect me as primary author.
+ arch/x86/mm/tlb.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
- kernel/futex.c | 142 +++++++++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 122 insertions(+), 20 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 75719bd..3a3c606 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -84,8 +84,11 @@
-  * bucket lock. Then it looks for waiters on that futex in the hash
-  * bucket and wakes them.
-  *
-- * Note that the spin_lock serializes waiters and wakers, so that the
-- * following scenario is avoided:
-+ * In scenarios where wakeups are called and no tasks are blocked on a futex,
-+ * taking the hb spinlock can be avoided and simply return. In order for this
-+ * optimization to work, ordering guarantees must exist so that the waiter
-+ * being added to the list is acknowledged when the list is concurrently being
-+ * checked by the waker, avoiding scenarios like the following:
-  *
-  * CPU 0                               CPU 1
-  * val = *futex;
-@@ -106,24 +109,49 @@
-  * This would cause the waiter on CPU 0 to wait forever because it
-  * missed the transition of the user space value from val to newval
-  * and the waker did not find the waiter in the hash bucket queue.
-- * The spinlock serializes that:
-+ *
-+ * The correct serialization ensures that a waiter either observes
-+ * the changed user space value before blocking or is woken by a
-+ * concurrent waker:
-  *
-  * CPU 0                               CPU 1
-  * val = *futex;
-  * sys_futex(WAIT, futex, val);
-  *   futex_wait(futex, val);
-- *   lock(hash_bucket(futex));
-- *   uval = *futex;
-- *                                     *futex = newval;
-- *                                     sys_futex(WAKE, futex);
-- *                                       futex_wake(futex);
-- *                                       lock(hash_bucket(futex));
-+ *
-+ *   waiters++;
-+ *   mb(); (A) <-- paired with -.
-+ *                              |
-+ *   lock(hash_bucket(futex));  |
-+ *                              |
-+ *   uval = *futex;             |
-+ *                              |        *futex = newval;
-+ *                              |        sys_futex(WAKE, futex);
-+ *                              |          futex_wake(futex);
-+ *                              |
-+ *                              `------->   mb(); (B)
-  *   if (uval == val)
-- *      queue();
-+ *     queue();
-  *     unlock(hash_bucket(futex));
-- *     schedule();                       if (!queue_empty())
-- *                                         wake_waiters(futex);
-- *                                       unlock(hash_bucket(futex));
-+ *     schedule();                         if (waiters)
-+ *                                           lock(hash_bucket(futex));
-+ *                                           wake_waiters(futex);
-+ *                                           unlock(hash_bucket(futex));
-+ *
-+ * Where (A) orders the waiters increment and the futex value read; and
-+ * where (B) orders the write to futex and the waiters read.
-+ *
-+ * This yields the following case (where X:=waiters, Y:=futex):
-+ *
-+ *	X = Y = 0
-+ *
-+ *	w[X]=1		w[Y]=1
-+ *	MB		MB
-+ *	r[Y]=y		r[X]=x
-+ *
-+ * Which guarantees that x==0 && y==0 is impossible; which translates back into
-+ * the guarantee that we cannot both miss the futex variable change and the
-+ * enqueue.
-  */
- 
- int __read_mostly futex_cmpxchg_enabled;
-@@ -203,6 +231,7 @@ static const struct futex_q futex_q_init = {
-  * waiting on a futex.
-  */
- struct futex_hash_bucket {
-+	atomic_t waiters;
- 	spinlock_t lock;
- 	struct plist_head chain;
- } ____cacheline_aligned_in_smp;
-@@ -211,6 +240,53 @@ static unsigned long __read_mostly futex_hashsize;
- 
- static struct futex_hash_bucket *futex_queues;
- 
-+static inline void futex_get_mm(union futex_key *key)
-+{
-+	atomic_inc(&key->private.mm->mm_count);
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Ensure futex_get_mm() implies a full barrier such that
-+	 * get_futex_key() implies a full barrier. This is relied upon
-+	 * as full barrier (B), see the ordering comment above.
-+	 */
-+	smp_mb__after_atomic_inc();
-+#endif
-+}
-+
-+/*
-+ * Reflects a new waiter being added to the waitqueue.
-+ */
-+static inline void hb_waiters_inc(struct futex_hash_bucket *hb)
-+{
-+#ifdef CONFIG_SMP
-+	atomic_inc(&hb->waiters);
-+	/*
-+	 * Full barrier (A), see the ordering comment above.
-+	 */
-+	smp_mb__after_atomic_inc();
-+#endif
-+}
-+
-+/*
-+ * Reflects a waiter being removed from the waitqueue by wakeup
-+ * paths.
-+ */
-+static inline void hb_waiters_dec(struct futex_hash_bucket *hb)
-+{
-+#ifdef CONFIG_SMP
-+	atomic_dec(&hb->waiters);
-+#endif
-+}
-+
-+static inline int hb_waiters_pending(struct futex_hash_bucket *hb)
-+{
-+#ifdef CONFIG_SMP
-+	return atomic_read(&hb->waiters);
-+#else
-+	return 1;
-+#endif
-+}
-+
- /*
-  * We hash on the keys returned from get_futex_key (see below).
-  */
-@@ -237,6 +313,8 @@ static inline int match_futex(union futex_key *key1, union futex_key *key2)
-  * Take a reference to the resource addressed by a key.
-  * Can be called while holding spinlocks.
-  *
-+ * Implies a full memory barrier; relied upon as (B), see the comment above
-+ * about ordering.
-  */
- static void get_futex_key_refs(union futex_key *key)
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 0f35bfb..907d124 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -220,6 +220,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
  {
-@@ -245,10 +323,10 @@ static void get_futex_key_refs(union futex_key *key)
+ 	unsigned long addr;
+ 	unsigned act_entries, tlb_entries = 0;
++	unsigned nr_flushes;
  
- 	switch (key->both.offset & (FUT_OFF_INODE|FUT_OFF_MMSHARED)) {
- 	case FUT_OFF_INODE:
--		ihold(key->shared.inode);
-+		ihold(key->shared.inode); /* implies MB */
- 		break;
- 	case FUT_OFF_MMSHARED:
--		atomic_inc(&key->private.mm->mm_count);
-+		futex_get_mm(key); /* implies MB */
- 		break;
- 	}
- }
-@@ -292,6 +370,8 @@ static void drop_futex_key_refs(union futex_key *key)
-  * We can usually work out the index without swapping in the page.
-  *
-  * lock_page() might sleep, the caller should not hold a spinlock.
-+ *
-+ * Implies a full memory barrier (B).
-  */
- static int
- get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
-@@ -321,7 +401,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
- 			return -EFAULT;
- 		key->private.mm = mm;
- 		key->private.address = address;
--		get_futex_key_refs(key);
-+		get_futex_key_refs(key); /* implies MB (B) */
- 		return 0;
- 	}
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+@@ -243,9 +244,11 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 		tlb_entries = tlb_lld_4k[ENTRIES];
+ 	/* Assume all of TLB entries was occupied by this task */
+ 	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
++	nr_flushes = (end - start) >> PAGE_SHIFT;
++	nr_flushes *= cpumask_weight(mm_cpumask(mm));
  
-@@ -428,7 +508,7 @@ again:
- 		key->shared.pgoff = basepage_index(page);
- 	}
- 
--	get_futex_key_refs(key);
-+	get_futex_key_refs(key); /* implies MB (B) */
- 
- out:
- 	unlock_page(page_head);
-@@ -892,6 +972,7 @@ static void __unqueue_futex(struct futex_q *q)
- 
- 	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
- 	plist_del(&q->list, &hb->chain);
-+	hb_waiters_dec(hb);
- }
- 
- /*
-@@ -1051,6 +1132,11 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- 		goto out;
- 
- 	hb = hash_futex(&key);
-+
-+	/* Make sure we really have tasks to wakeup */
-+	if (!hb_waiters_pending(hb))
-+		goto out_put_key;
-+
- 	spin_lock(&hb->lock);
- 
- 	plist_for_each_entry_safe(this, next, &hb->chain, list) {
-@@ -1071,6 +1157,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- 	}
- 
- 	spin_unlock(&hb->lock);
-+out_put_key:
- 	put_futex_key(&key);
- out:
- 	return ret;
-@@ -1189,7 +1276,9 @@ void requeue_futex(struct futex_q *q, struct futex_hash_bucket *hb1,
- 	 */
- 	if (likely(&hb1->chain != &hb2->chain)) {
- 		plist_del(&q->list, &hb1->chain);
-+		hb_waiters_dec(hb1);
- 		plist_add(&q->list, &hb2->chain);
-+		hb_waiters_inc(hb2);
- 		q->lock_ptr = &hb2->lock;
- 	}
- 	get_futex_key_refs(key2);
-@@ -1532,17 +1621,28 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
- 	struct futex_hash_bucket *hb;
- 
- 	hb = hash_futex(&q->key);
-+
-+	/*
-+	 * Increment the counter before taking the lock so that
-+	 * a potential waker won't miss a to-be-slept task that is
-+	 * waiting for the spinlock. This is safe as all queue_lock()
-+	 * users end up calling queue_me(). Similarly, for housekeeping,
-+	 * decrement the counter at queue_unlock() when some error has
-+	 * occurred and we don't end up adding the task to the list.
-+	 */
-+	hb_waiters_inc(hb);
-+
- 	q->lock_ptr = &hb->lock;
- 
- 	spin_lock(&hb->lock);
- 	return hb;
- }
- 
--static inline void
--queue_unlock(struct futex_hash_bucket *hb)
-+static inline void queue_unlock(struct futex_hash_bucket *hb)
- 	__releases(&hb->lock)
- {
- 	spin_unlock(&hb->lock);
-+	hb_waiters_dec(hb);
- }
- 
- /**
-@@ -2274,6 +2374,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
- 		 * Unqueue the futex_q and determine which it was.
- 		 */
- 		plist_del(&q->list, &hb->chain);
-+		hb_waiters_dec(hb);
- 
- 		/* Handle spurious wakeups gracefully */
- 		ret = -EWOULDBLOCK;
-@@ -2803,8 +2904,9 @@ static int __init futex_init(void)
- 		futex_cmpxchg_enabled = 1;
- 
- 	for (i = 0; i < futex_hashsize; i++) {
--		plist_head_init(&futex_queues[i].chain);
-+		atomic_set(&futex_queues[i].waiters, 0);
- 		spin_lock_init(&futex_queues[i].lock);
-+		plist_head_init(&futex_queues[i].chain);
- 	}
- 
- 	return 0;
--- 
-1.8.1.4
-
-
-
+ 	/* tlb_flushall_shift is on balance point, details in commit log */
+-	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
++	if (nr_flushes > act_entries >> tlb_flushall_shift) {
+ 		count_vm_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
