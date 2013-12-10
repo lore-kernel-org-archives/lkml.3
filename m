@@ -1,116 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3LJRWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:22:15 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:36932 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3LJRWM (ORCPT
+	id S1755304Ab3LJRYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:24:32 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:47105 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab3LJRYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:22:12 -0500
-Message-ID: <1386696128.2731.11.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Date: Tue, 10 Dec 2013 09:22:08 -0800
-In-Reply-To: <20131210165736.GN12849@twins.programming.kicks-ass.net>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
-	 <1386063927-6545-5-git-send-email-davidlohr@hp.com>
-	 <20131210165736.GN12849@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Dec 2013 12:24:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGb2v665xtY4m4uCTb_iMojG+ox0HvyCgz6p0P7oxJVvZ0SW9w@mail.gmail.com>
+References: <1386350983-13281-1-git-send-email-wens@csie.org>
+ <1386350983-13281-8-git-send-email-wens@csie.org> <CAGVrzcb_r9_p4urz4XkE2A-G85KAHJa4PJ=Gt9a4RPYQNJ6j0g@mail.gmail.com>
+ <CAGb2v64yFhkTXvdq=1VpemULhXew-5fvmSoTBzEb6iFDiSqy1Q@mail.gmail.com>
+ <CAGVrzcaxV88dU3vEVGUiEQihUHLxq+QvQVQ6VvmOFVRsqbbX7w@mail.gmail.com>
+ <CAGb2v675Cg6S512zfM1z4b+wqE_PesDGWdgcmpzWmPzyzXqbeA@mail.gmail.com>
+ <CAGVrzcaVJtoVhEfV+ZiMOkm3F8NBCf2YRcZSrZPMRfQfEr1u=g@mail.gmail.com> <CAGb2v665xtY4m4uCTb_iMojG+ox0HvyCgz6p0P7oxJVvZ0SW9w@mail.gmail.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Tue, 10 Dec 2013 09:23:48 -0800
+Message-ID: <CAGVrzca7v3FMg1QT+LFQkPOf-o33=U0zpv_t8tkBSrrY+L+6+g@mail.gmail.com>
+Subject: Re: [PATCH 07/10] ARM: dts: sun7i: cubietruck: Enable the GMAC
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 17:57 +0100, Peter Zijlstra wrote:
-> On Tue, Dec 03, 2013 at 01:45:27AM -0800, Davidlohr Bueso wrote:
-> > --- a/kernel/futex.c
-> > +++ b/kernel/futex.c
-> > @@ -82,10 +82,12 @@
-> >   * The waker side modifies the user space value of the futex and calls
-> >   * futex_wake(). It computes the hash bucket and acquires the hash
-> >   * bucket lock. Then it looks for waiters on that futex in the hash
-> > - * bucket and wakes them.
-> > - *
-> > - * Note that the spin_lock serializes waiters and wakers, so that the
-> > - * following scenario is avoided:
-> > + * bucket and wakes them.
-> 
-> Why not let this be the start of a new paragraph?
-> 
-> > In scenarios where wakeups are called and no
-> > + * tasks are blocked on a futex, taking the hb spinlock can be avoided
-> > + * and simply return. In order for this optimization to work, ordering
-> > + * guarantees must exist so that the waiter being added to the list is
-> > + * acknowledged when the list is concurrently being checked by the waker,
-> > + * avoiding scenarios like the following:
-> >   *
-> >   * CPU 0                               CPU 1
-> >   * val = *futex;
-> > @@ -106,24 +108,40 @@
-> >   * This would cause the waiter on CPU 0 to wait forever because it
-> >   * missed the transition of the user space value from val to newval
-> >   * and the waker did not find the waiter in the hash bucket queue.
-> > + * The correct serialization ensures that a waiter either observes
-> > + * the changed user space value before blocking or is woken by a
-> > + * concurrent waker:
-> >   *
-> >   * CPU 0                               CPU 1
-> >   * val = *futex;
-> >   * sys_futex(WAIT, futex, val);
-> >   *   futex_wait(futex, val);
-> > + *
-> > + *   mb(); <-- paired with ------
-> > + *                              |
-> > + *   lock(hash_bucket(futex));  |
-> > + *                              |
-> > + *   uval = *futex;             |
-> > + *                              |        *futex = newval;
-> > + *                              |        sys_futex(WAKE, futex);
-> > + *                              |          futex_wake(futex);
-> > + *                              |
-> > + *                              -------->   mb();
-> >   *   if (uval == val)
-> > + *     queue();
-> >   *     unlock(hash_bucket(futex));
-> > + *     schedule();                         if (!queue_empty())
-> > + *                                           lock(hash_bucket(futex));
-> > + *                                           wake_waiters(futex);
-> > + *                                           unlock(hash_bucket(futex));
-> > + *
-> > + * The length of the list is tracked with atomic ops (hb->waiters),
-> > + * providing the necessary memory barriers for the waiters. For the
-> > + * waker side, however, we rely on get_futex_key_refs(), using either
-> > + * ihold() or the atomic_inc(), for shared futexes. The former provides
-> > + * a full mb on all architectures. For architectures that do not have an
-> > + * implicit barrier in atomic_inc/dec, we explicitly add it - please
-> > + * refer to futex_get_mm() and hb_waiters_inc/dec().
-> >   */
-> 
-> This comment actually confuses me :/
+2013/12/9 Chen-Yu Tsai <wens@csie.org>:
+> On Tue, Dec 10, 2013 at 1:48 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>> 2013/12/8 Chen-Yu Tsai <wens@csie.org>:
+>>> Florian, Giuseppe:
+>>>
+>>> On Sat, Dec 7, 2013 at 9:57 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>>> 2013/12/6 Chen-Yu Tsai <wens@csie.org>:
+>>>>> On Sat, Dec 7, 2013 at 5:09 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>>>>> 2013/12/6 Chen-Yu Tsai <wens@csie.org>:
+>>>>>>> The CubieTruck uses the GMAC with an RGMII phy.
+>>>>>>>
+>>>>>>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>>>>>>> ---
+>>>>>>>  arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 8 ++++++++
+>>>>>>>  1 file changed, 8 insertions(+)
+>>>>>>>
+>>>>>>> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>>>>> index 8a1009d..af212a2 100644
+>>>>>>> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>>>>> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+>>>>>>> @@ -33,6 +33,14 @@
+>>>>>>>                         pinctrl-0 = <&uart0_pins_a>;
+>>>>>>>                         status = "okay";
+>>>>>>>                 };
+>>>>>>> +
+>>>>>>> +               gmac: ethernet@01c50000 {
+>>>>>>> +                       pinctrl-names = "default";
+>>>>>>> +                       pinctrl-0 = <&gmac_pins_rgmii>;
+>>>>>>> +                       snps,phy-addr = <1>;
+>>>>>>
+>>>>>> What is this snps,phy-addr property? Why is not a standard device tree
+>>>>>> node for an Ethernet PHY node used?
+>>>>>
+>>>>> This property is implemented by stmmac and documented in the DT
+>>>>> bindings. stmmac has not been updated to use Ethernet PHY nodes.
+>>>>
+>>>> This driver property should be removed and deprecated since there is
+>>>> an ePAPR standardized Ethernet PHY node. What I am worried here is the
+>>>> loss of information, the standard Ethernet DT node allows to specify
+>>>> much more information (clause, maximum speed, compatible string
+>>>> etc...).
+>>>
+>>> Giuseppe, any thoughts on this?
+>>>
+>>>>> Removing this property will not affect the function of the driver.
+>>>>> The driver probes its MDIO bus and selects the lowest available
+>>>>> address if not specified.
+>>>>
+>>>> So if this is just giving the driver a hint on where to  probe for a
+>>>> PHY on the MDIO bus, then let's drop it and use the standard DT node
+>>>> no?
+>>>
+>>> Sure. I will remove it from the DT.
+>>>
+>>> The stmmac driver does not have a seperate MDIO bus driver, nor
+>>> does it support Ethernet PHY node bindings. So I will not add
+>>> a phy node at this moment.
+>>
+>> This will create needless churn in the DT if you do not do it now,
+>> worse actually, we switch from a DT which specifically described
+>> Ethernet PHY nodes properly to a version where it does, to ultimately
+>> a newer version which does.
+>>
+>> Considering that the absence of a "snps,phy-addr" property will still
+>> result in the MDIO bus to be probed, keeping the existing Ethernet PHY
+>> nodes, referencing them correclty with a "phy-handle" property, but
+>> having no explicit support for these in the driver will not result in
+>> a functional change, and will reduce the DT churn. Also, you could
+>> still sneak a patch in this patchset which parses the standard
+>> EThernet PHY node binding.
+>
+> I see. Adding the PHY node should be no trouble at all.
+> Is there a requirement for a seperate mdio bus in the DT?
 
-Well that explains where the required barriers are coming from.
+Not really no, in that case the MDIO bus is implicitely implemented as
+part of the Ethernet MAC controller, this is just fine.
 
-> 
-> It isn't at all explained what purpose the memory barriers serve.
+> I do not see it in the ePAPR. The stmmac mdio is not a seperate
+> driver, as is for most network controllers I presume.
+> Would attaching the PHY nodes directly under the ethernet controller
+> suffice?
 
-Why doesn't this explain it?
+Sure, that is what most Ethernet driver do actually. They register
+their own MDIO bus and make sure PHYs get attached to it.
 
-"The correct serialization ensures that a waiter either observes
-the changed user space value before blocking or is woken by a
-concurrent waker."
+>
+> We can then introduce PHY node support to the driver and
+> remove the "snps,phy-addr" property at the same time.
 
-Perhaps adding an example?
- plist_add()    |    uaddr = newval
- smp_mb()       |    smp_mb()
- verify uaddr   |    plist_head_empty()
-
-Thanks,
-Davidlohr
-
+Sure, sounds good, thanks!
+-- 
+Florian
