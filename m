@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3LJINT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:13:19 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:39320 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab3LJINQ convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Tue, 10 Dec 2013 03:13:16 -0500
-Message-Id: <52A6DB24020000780010BAC6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Tue, 10 Dec 2013 08:13:08 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "John Stultz" <john.stultz@linaro.org>
-Cc: "David Vrabel" <david.vrabel@citrix.com>,
-        "Richard Cochran" <richardcochran@gmail.com>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <xen-devel@lists.xen.org>,
-        "Prarit Bhargava" <prarit@redhat.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "stable" <stable@vger.kernel.org>
-Subject: Re: [Xen-devel] [RFC][PATCH 3/3] timekeeping: Fix potential
- lost pv notification of time change
-References: <1386652197-7035-1-git-send-email-john.stultz@linaro.org>
- <1386652197-7035-4-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1386652197-7035-4-git-send-email-john.stultz@linaro.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754582Ab3LJIMg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:12:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58958 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab3LJICN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 03:02:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.12 43/62] spi/pxa2xx: add new ACPI IDs
+Date: Tue, 10 Dec 2013 00:01:14 -0800
+Message-Id: <20131210080100.452898258@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
+References: <20131210080057.415644748@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.12.13 at 06:09, John Stultz <john.stultz@linaro.org> wrote:
->  static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
-> -						u32 shift)
-> +						u32 shift, int *action)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-With plain int used here, ...
+------------------
 
-> @@ -1369,7 +1369,7 @@ static void update_wall_time(void)
->  	struct timekeeper *tk = &shadow_timekeeper;
->  	cycle_t offset;
->  	int shift = 0, maxshift;
-> -	unsigned int action;
-> +	unsigned int action = 0;
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-... and unsigned int used here, ...
+commit 54acbd9688e6324470671525c7916011f1ff8081 upstream.
 
-> @@ -1404,7 +1404,7 @@ static void update_wall_time(void)
->  	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
->  	shift = min(shift, maxshift);
->  	while (offset >= tk->cycle_interval) {
-> -		offset = logarithmic_accumulation(tk, offset, shift);
-> +		offset = logarithmic_accumulation(tk, offset, shift, &action);
+Newer Intel PCHs with LPSS have the same SPI controllers than Haswell but
+ACPI IDs are different. Add these IDs to the driver list.
 
-... does this compile without warning for you?
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Jan
+---
+ drivers/spi/spi-pxa2xx.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1077,6 +1077,8 @@ pxa2xx_spi_acpi_get_pdata(struct platfor
+ static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
+ 	{ "INT33C0", 0 },
+ 	{ "INT33C1", 0 },
++	{ "INT3430", 0 },
++	{ "INT3431", 0 },
+ 	{ "80860F0E", 0 },
+ 	{ },
+ };
+
 
