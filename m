@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab3LJWWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:22:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40791 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab3LJWWN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751706Ab3LJWWN (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 10 Dec 2013 17:22:13 -0500
-Date: Tue, 10 Dec 2013 14:22:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/18] sched: Add tracepoints related to NUMA task
- migration
-Message-Id: <20131210142211.099fe782c361707ab3c04742@linux-foundation.org>
-In-Reply-To: <1386690695-27380-18-git-send-email-mgorman@suse.de>
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
-	<1386690695-27380-18-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Received: from www.sr71.net ([198.145.64.142]:56613 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab3LJWWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 17:22:09 -0500
+Message-ID: <52A793D0.4020306@sr71.net>
+Date: Tue, 10 Dec 2013 14:21:04 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] [RFC] mm: slab: separate slab_page from 'struct page'
+References: <20131210204641.3CB515AE@viggo.jf.intel.com> <00000142de5634af-f92870a7-efe2-45cd-b50d-a6fbdf3b353c-000000@email.amazonses.com> <52A78B55.8050500@sr71.net> <00000142de866123-cf1406b5-b7a3-4688-b46f-80e338a622a1-000000@email.amazonses.com>
+In-Reply-To: <00000142de866123-cf1406b5-b7a3-4688-b46f-80e338a622a1-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 15:51:35 +0000 Mel Gorman <mgorman@suse.de> wrote:
+On 12/10/2013 02:00 PM, Christoph Lameter wrote:
+>> > We _need_ to share fields when the structure is handed between different
+>> > subsystems and it needs to be consistent in both places.  For slab page
+>> > at least, the only data that actually gets used consistently is
+>> > page->flags.  It seems silly to bend over backwards just to share a
+>> > single bitfield.
+> If you get corruption in one field then you need to figure out which other
+> subsystem could have accessed that field. Its not a single bitfield. There
+> are numerous relationships between the fields in struct page.
 
-> This patch adds three tracepoints
->  o trace_sched_move_numa	when a task is moved to a node
->  o trace_sched_swap_numa	when a task is swapped with another task
->  o trace_sched_stick_numa	when a numa-related migration fails
-> 
-> The tracepoints allow the NUMA scheduler activity to be monitored and the
-> following high-level metrics can be calculated
-> 
->  o NUMA migrated stuck	 nr trace_sched_stick_numa
->  o NUMA migrated idle	 nr trace_sched_move_numa
->  o NUMA migrated swapped nr trace_sched_swap_numa
->  o NUMA local swapped	 trace_sched_swap_numa src_nid == dst_nid (should never happen)
->  o NUMA remote swapped	 trace_sched_swap_numa src_nid != dst_nid (should == NUMA migrated swapped)
->  o NUMA group swapped	 trace_sched_swap_numa src_ngid == dst_ngid
-> 			 Maybe a small number of these are acceptable
-> 			 but a high number would be a major surprise.
-> 			 It would be even worse if bounces are frequent.
->  o NUMA avg task migs.	 Average number of migrations for tasks
->  o NUMA stddev task mig	 Self-explanatory
->  o NUMA max task migs.	 Maximum number of migrations for a single task
-> 
-> In general the intent of the tracepoints is to help diagnose problems
-> where automatic NUMA balancing appears to be doing an excessive amount of
-> useless work.
-> 
-> ...
->
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1272,11 +1272,13 @@ static int task_numa_migrate(struct task_struct *p)
->  	p->numa_scan_period = task_scan_min(p);
->  
->  	if (env.best_task == NULL) {
-> -		int ret = migrate_task_to(p, env.best_cpu);
-> +		if ((ret = migrate_task_to(p, env.best_cpu)) != 0)
-> +			trace_sched_stick_numa(p, env.src_cpu, env.best_cpu);
->  		return ret;
->  	}
->  
-> -	ret = migrate_swap(p, env.best_task);
-> +	if ((ret = migrate_swap(p, env.best_task)) != 0);
+I'm not saying that every 'struct page' user should get their own
+complete structure.  I'm just saying that the *slabs* should get their
+own structure.  Let's go through it field by field for the "normal"
+'struct page' without debugging options:
 
-I'll zap that semicolon...
+page->flags: shared by everybody, needs to be consistent for things 	
+		like memory error handling
+mapping: unioned over by s_mem for slab
+index: unioned over by freelist for sl[oua]b
+_count: unioned over by lots of stuff by sl[oua]b
+lru: unioned over by lots of stuff by sl[oua]b, including another
+	list_head called 'list' which blk-mq.c is now using.
+private: opaque storage anyway, but unioned over by sl[au]b
 
-> +		trace_sched_stick_numa(p, env.src_cpu, task_cpu(env.best_task));
->  	put_task_struct(env.best_task);
->  	return ret;
->  }
+See? *EVERYTHING* is overridden by at least one of the sl?b allocators
+except ->flags.  In other words, there *ARE* no relationships when it
+comes to the sl?bs, except for page->flags.
 
