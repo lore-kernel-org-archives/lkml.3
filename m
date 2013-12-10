@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab3LJJCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:02:38 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:54858 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab3LJJCd (ORCPT
+	id S1752600Ab3LJJGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:06:32 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:41711 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab3LJJGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:02:33 -0500
-Date: Tue, 10 Dec 2013 09:02:29 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 10/15] mfd: menelaus: Pass menelaus_chip argument to
- menelaus <-> time helpers
-Message-ID: <20131210090229.GS12675@lee--X1>
-References: <20131209161422.GC24047@saruman.home>
- <1386606085-26838-1-git-send-email-balbi@ti.com>
- <1386606085-26838-10-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386606085-26838-10-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Dec 2013 04:06:25 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: [PATCH] pinctrl: make the MSM SoC driver depend on OF
+Date: Tue, 10 Dec 2013 10:06:10 +0100
+Message-Id: <1386666370-6394-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Dec 2013, Felipe Balbi wrote:
+We had a compilation failure on x86_64 due to missing OF support
+as this was an implicit dependency. Add an explicit dependency
+on OF and OF_IRQ on the SoC driver.
 
-> time_to_menelaus() and menelaus_to_time() are static and can easily
-> receive a struct menelaus_chip pointer argument.
-> 
-> After this patch, the_menelaus is only used on exported functions which
-> are currently being used by board-n8x0.c.
-> 
-> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/mfd/menelaus.c | 17 ++++++++---------
->  1 file changed, 8 insertions(+), 9 deletions(-)
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v2->v3:
+- Total failure with older approaches: what we need to do is
+  have the *SoC subdriver* depend on OF and OF_IRQ. This is
+  because the placeholder bool PINCTRL_MSM cannot cascade its
+  dependencies when a subdriver selects it, Kconfig is smart
+  but not that smart.
+ChangeLog v1->v2:
+- OK so "depends on OF" did not work here let's try to simply
+  select OF and OF_IRQ for this then? It's one of those
+  "warning: (PINCTRL_MSM8X74) selects PINCTRL_MSM which has
+  unmet direct dependencies (PINCTRL && OF)" that I simply
+  cannot find my way out of :-/
+---
+ drivers/pinctrl/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Same.
-
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 06e057bb3376..30fcb897eb99 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -211,6 +211,7 @@ config PINCTRL_MSM
+ 
+ config PINCTRL_MSM8X74
+ 	bool "Qualcomm 8x74 pin controller driver"
++	depends on OF && OF_IRQ
+ 	select PINCTRL_MSM
+ 
+ config PINCTRL_NOMADIK
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.1
+
