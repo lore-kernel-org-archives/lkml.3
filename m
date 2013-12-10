@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3LJTUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:20:45 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45093 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754032Ab3LJTSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754032Ab3LJTVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:21:02 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:44755 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab3LJTSA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Dec 2013 14:18:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,866,1378882800"; 
-   d="asc'?scan'208";a="395608694"
-Message-ID: <52A76A03.4040809@linux.intel.com>
-Date: Tue, 10 Dec 2013 11:22:43 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131005 Icedove/17.0.9
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Michal Nazarewicz <mina86@mina86.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stern@rowland.harvard.edu
-Subject: Re: [PATCH v7 2/5] usb: gadget: add quirk_ep_out_aligned_size field
- to struct usb_gadget
-References: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com> <1386633338-10919-3-git-send-email-david.a.cohen@linux.intel.com> <xa1t7gbdfn8c.fsf@mina86.com> <52A68BF7.2080901@linux.intel.com> <20131210044117.GA28252@saruman.home>
-In-Reply-To: <20131210044117.GA28252@saruman.home>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="G657Cm38CrmrdEfGun3weIwOUiAekAWaO"
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: [PATCH v3 3/6] locks: rename locks_remove_flock to locks_remove_file
+Date: Tue, 10 Dec 2013 14:17:32 -0500
+Message-Id: <1386703055-22308-4-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---G657Cm38CrmrdEfGun3weIwOUiAekAWaO
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This function currently removes leases in addition to flock locks, so
+the name is misleading. Rename it to locks_remove_file to indicate that
+it removes locks that are associated with a particular struct file.
 
->>>>  /**
->>>> + * usb_ep_align_maybe - returns @len aligned to ep's maxpacketsize =
-if gadget
->>>> + *	requires quirk_ep_out_aligned_size, otherwise reguens len.
->>>
->>> =E2=80=9Creturns=E2=80=9D
->>
->> I've got no idea how returns became reguens :)
->> But maybe Felipe can fix it when applying?
->=20
-> Sure, but you owe me a beer hehe :-)
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/file_table.c    | 2 +-
+ fs/locks.c         | 2 +-
+ include/linux/fs.h | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Just print this e-mail and you can redeem one as soon as you visit
-Portland :P
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 5fff903..468543c 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -234,7 +234,7 @@ static void __fput(struct file *file)
+ 	 * in the file cleanup chain.
+ 	 */
+ 	eventpoll_release(file);
+-	locks_remove_flock(file);
++	locks_remove_file(file);
+ 
+ 	if (unlikely(file->f_flags & FASYNC)) {
+ 		if (file->f_op->fasync)
+diff --git a/fs/locks.c b/fs/locks.c
+index f96c455..fb10d58 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -2231,7 +2231,7 @@ EXPORT_SYMBOL(locks_remove_posix);
+ /*
+  * This function is called on the last close of an open file.
+  */
+-void locks_remove_flock(struct file *filp)
++void locks_remove_file(struct file *filp)
+ {
+ 	struct inode * inode = file_inode(filp);
+ 	struct file_lock *fl;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 04be202..51974e0 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1012,7 +1012,7 @@ extern struct file_lock * locks_alloc_lock(void);
+ extern void locks_copy_lock(struct file_lock *, struct file_lock *);
+ extern void __locks_copy_lock(struct file_lock *, const struct file_lock *);
+ extern void locks_remove_posix(struct file *, fl_owner_t);
+-extern void locks_remove_flock(struct file *);
++extern void locks_remove_file(struct file *);
+ extern void locks_release_private(struct file_lock *);
+ extern void posix_test_lock(struct file *, struct file_lock *);
+ extern int posix_lock_file(struct file *, struct file_lock *, struct file_lock *);
+@@ -1083,7 +1083,7 @@ static inline void locks_remove_posix(struct file *filp, fl_owner_t owner)
+ 	return;
+ }
+ 
+-static inline void locks_remove_flock(struct file *filp)
++static inline void locks_remove_file(struct file *filp)
+ {
+ 	return;
+ }
+-- 
+1.8.4.2
 
-Br, David
-
-
-
---G657Cm38CrmrdEfGun3weIwOUiAekAWaO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSp2oDAAoJEGU5KLu7JjjxHsMQAJUrEjfOwpNSJBq2cFXVS1oE
-Za3ZzlC37A/cJ+6UKwyJjt7FstZ/e0MBvYqDctucvHxMfJ9mPjzw1AcuE3tB1VOu
-Ase3ltnII52KhUOfwbmwKEERH615zXRa+3MJznlN+maTb7tUSQF8XUor09M/pSWv
-hgkQ13qFUDVPFxv+R/QZrZGGIZqgFyVaIeZzGJAkzv016qLvHKVSX+r46J56jpPp
-AswWkz6Fp8SeA+F5XfFLVcHzSEa2O24oaJ2ERfyGQ2XwEk/fLcGiHMgfYkrtX5o2
-rqvatEqolVHJf0ikV3tK+1A48g4Y60vtWkiNV9D3x5Kcgn7QhnWYrjmgAdqdnptB
-cPz+urtsW8emJ1zV9MlxOBLdEZXJe3IOPddsr9/mG6esBLV5DiZHniBUwt+JRN8Q
-V3mxsj67Xogm2RVcaIQvlwGTABB1jttLuxAHqJm75OkX/y4VuvTL9Y47BdEvDHda
-L3APMQIv9bQ1AmHW57GRiUpgi4ainNOSN5T4IW4ijG9MQaM73qxe7JTAYJIYFol+
-NOGAMQMIFAVDjFO5STeVY3G3cV06Y900obFJj6g7Km4HRBy1qMqIBbf1AtJSIzwY
-nNXj4PJlFy10A8z2eNtTUtvDdqCFfoQlHNTJcnCzyAP28oyYLhFaqsbJfyWI0eWe
-ftXJzh8OyLlkfj5U4QYh
-=vH9A
------END PGP SIGNATURE-----
-
---G657Cm38CrmrdEfGun3weIwOUiAekAWaO--
