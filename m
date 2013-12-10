@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab3LJRc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:32:28 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50464 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752710Ab3LJRc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:32:26 -0500
-Date: Tue, 10 Dec 2013 17:31:46 +0000
-From: Dave Martin <Dave.Martin@arm.com>
-To: Anurag Aggarwal <a.anurag@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Kumar <naveen.sel@samsung.com>,
-        Narendra Meher <narendra.m1@samsung.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
-        "anurag19aggarwal@gmail.com" <anurag19aggarwal@gmail.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        Rajat Suri <rajat.suri@samsung.com>,
-        Poorva Srivastava <poorva.s@samsung.com>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
-Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack
- overflow
-Message-ID: <20131210173137.GA23639@e103592.cambridge.arm.com>
+	id S1755037Ab3LJRcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:32:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754795Ab3LJRco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 12:32:44 -0500
+Date: Tue, 10 Dec 2013 18:32:51 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v5 tip/core/locking 6/7] locking: Add an
+	smp_mb__after_unlock_lock() for UNLOCK+LOCK barrier
+Message-ID: <20131210173250.GA25934@redhat.com>
+References: <20131210012738.GA24317@linux.vnet.ibm.com> <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com> <1386638883-25379-6-git-send-email-paulmck@linux.vnet.ibm.com> <20131210170404.GB23506@redhat.com> <20131210171859.GT4208@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131210171859.GT4208@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:54:42AM +0000, Anurag Aggarwal wrote:
-> >Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+On 12/10, Paul E. McKenney wrote:
+>
+> On Tue, Dec 10, 2013 at 06:04:04PM +0100, Oleg Nesterov wrote:
 > >
-> >I can confirm that the kernel "doesn't crash" with this applied, and
-> >that backtracing at least partially works.  But this is not really
-> >sufficient to demontrate that the now code works better than the old
-> >code in corner cases (which is the point of the patch).
+> > I am wondering, perhaps smp_mb__after_unlock() makes more sense?
 > >
-> >Can you give details of what additional testing you have, or plan to
-> >do?
-> 
-> We saw a data abort in unwinder for one of Samsung Project, during a
-> Samsung Automation test case. 
-> After that I created the initial the patch, and the data abort has not been
-> seen till now.
-> 
-> Is it possible for you to give an idea on what other kind of additional testing 
-> do you have in mind.
+> > Note that it already has the potential user:
+> >
+> > 	--- x/kernel/sched/wait.c
+> > 	+++ x/kernel/sched/wait.c
+> > 	@@ -176,8 +176,9 @@ prepare_to_wait(wait_queue_head_t *q, wa
+> > 		spin_lock_irqsave(&q->lock, flags);
+> > 		if (list_empty(&wait->task_list))
+> > 			__add_wait_queue(q, wait);
+> > 	-	set_current_state(state);
+> > 	+	__set_current_state(state);
+> > 		spin_unlock_irqrestore(&q->lock, flags);
+> > 	+	smp_mb__after_unlock();
+> > 	 }
+> > 	 EXPORT_SYMBOL(prepare_to_wait);
+> >
+> > 	@@ -190,8 +191,9 @@ prepare_to_wait_exclusive(wait_queue_hea
+> > 		spin_lock_irqsave(&q->lock, flags);
+> > 		if (list_empty(&wait->task_list))
+> > 			__add_wait_queue_tail(q, wait);
+> > 	-	set_current_state(state);
+> > 	+	__set_current_state(state);
+> > 		spin_unlock_irqrestore(&q->lock, flags);
+> > 	+	smp_mb__after_unlock();
+> > 	 }
+> > 	 EXPORT_SYMBOL(prepare_to_wait_exclusive);
+> >
+> >
+> > Assuming it can also be used "later", after another LOCK, like in
+> > your example in 5/7.
+>
+> I am fine either way.  But there was an objection to tying this to the
+> unlock because it costs more on many architectures than tying this to
+> the lock.
 
-To be sure how the stack checking code is behaving, it would be good to
-see the overflow check being hit.  With just a single test case, it's
-possible that the bug is now hidden, rather than fixed.
+OK, I see, thanks.
 
-You could try adding some debug printks to see how the backtrace fails.
-You could also try adding a few hand-crafted assembler functions
-with appropriate code and unwind directives to trigger different kinds
-of backtrace failure.  You might have to add a way to artificially limit
-sp_high to check the cases where you run out of stack in the middle of
-popping multiple registers.
+> But if you are saying "in addition to" rather than "instead of" that
+> would be a different conversation.
 
-When thinking about this, I could not think of a good way to integrate
-tests upstream without it being very invasive -- it may be best to keep
-debug code separate unless you can see a clean way to merge it.
+Yes, please forget for now.
 
+Oleg.
 
-Cheers
----Dave
