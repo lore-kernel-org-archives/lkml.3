@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461Ab3LJTyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:54:40 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60161 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3LJTyi (ORCPT
+	id S1751508Ab3LJTzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:55:09 -0500
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:59498 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3LJTzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:54:38 -0500
-Message-ID: <52A77188.50200@jp.fujitsu.com>
-Date: Tue, 10 Dec 2013 14:54:48 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 14:55:07 -0500
 MIME-Version: 1.0
-To: fweisbec@gmail.com
-CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@kernel.org, peterz@infradead.org,
-        oleg@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 02/10 v2] posix-timers: Remove dead process posix cpu
- timers caching
-References: <1386611931-4658-1-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1386611931-4658-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+References: <20131210154724.GA30020@redhat.com>
+	<CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+	<alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+Date: Tue, 10 Dec 2013 11:55:06 -0800
+X-Google-Sender-Auth: E7d1K3Z-LPm2Kfl-d2sPOSEKBKc
+Message-ID: <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+Subject: Re: process 'stuck' at exit.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/9/2013 12:58 PM), Frederic Weisbecker wrote:
-> Now that we removed dead thread posix cpu timers caching,
-> lets remove the dead process wide version. This caching
-> is similar to the per thread version but it should be even
-> more rare:
-> 
-> * If the process id dead, we are not reading its timers
-> status from a thread belonging to its group since they
-> are all dead. So this caching only concern remote process
-> timers reads. Now posix cpu timers using itimers or timer_settime()
-> can't do remote process timers anyway so it's not even clear if there
-> is actually a user for this caching.
-> 
-> * Unlike per thread timers caching, this only applies to
-> zombies targets. Buried targets' process wide timers return
-> 0 values. But then again, timer_gettime() can't read remote
-> process timers, so if the process is dead, there can't be
-> any reader left anyway.
-> 
-> Then again this caching seem to complicate the code for
-> corner cases that are probably not worth it. So lets get
-> rid of it.
-> 
-> Also remove the sample snapshot on dying process timer
-> that is now useless, as suggested by Kosaki.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
+On Tue, Dec 10, 2013 at 11:18 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> So this is pretty unlikely. The retry requires:
+>
+>    get_futex_value_locked() == EFAULT;
+>
+> Now we drop the hash bucket locks and do:
+>
+>    get_user();
+>
+> And if that get_user() faults again, we bail out.
 
-Looks good to me.
+I think you need to look closer.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+We have at least also that "futex_proxy_trylock_atomic() returns
+-EAGAIN" case. Which triggers at some exit condition. Another thread
+in the same group, perhaps never completing the exit because it's
+waiting for this one? I dunno, I didn't look any closer (but this does
+make me think "Hey, we should add Oleg to the Cc too", since
+PF_EXITING is involved).. So maybe there is some situation where that
+EAGAIN will keep happening, forever..
 
+Now, I'm *not* saying that that is it. It's quite possible/likely some
+other loop, but I do have to say that it sure isn't _obvious_. And
+that whole EAGAIN return case is quite deep and special, so ...
 
+                 Linus
 
+PS: Oleg - the whole thread is on lkml. Ping me if you need more context.
