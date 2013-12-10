@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab3LJK4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:56:06 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:41612 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab3LJK4C (ORCPT
+	id S1752675Ab3LJK4S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:56:18 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:64330 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab3LJK4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:56:02 -0500
-X-AuditID: cbfee68e-b7fee6d000003b32-3e-52a6f33fb003
+	Tue, 10 Dec 2013 05:56:08 -0500
+X-AuditID: cbfee690-b7f676d00000310d-3f-52a6f3412729
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, balbi@ti.com,
         sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com, kishon@ti.com,
         jg1.han@samsung.com, jwerner@chromium.org
-Subject: [PATCH RFC 0/4] Fine tune USB 3.0 PHY on exynos5420
-Date: Tue, 10 Dec 2013 16:25:22 +0530
-Message-id: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH RFC 1/4] phy: Add provision for tuning phy.
+Date: Tue, 10 Dec 2013 16:25:23 +0530
+Message-id: <1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.6.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkTtf+87Igg9al5hYH79dbNC9ez2Zx
-	eeElVouOQ4+ZLHoXXGWzuPC0Byi2aw6bxewl/SwWM87vY7JYtKyV2aL5xClmB26P2Q0XWTzm
-	nQz02D93DbtH35ZVjB7Hb2xn8vi8SS6ALYrLJiU1J7MstUjfLoEr42z3CsaCZVwVcy+tYWpg
-	7OHoYuTkkBAwkfjU/poZwhaTuHBvPVsXIxeHkMBSRonZS3exdzFygBVd+OULEZ/OKHHqxFpW
-	kAYhgSlMElMXl4DYbAK6Ek1vdzGC2CICDhJLlt4BG8QscItRomVqB1iDsICNxKzpbWA2i4Cq
-	RNu2PrDNvAIeEvunH2SDuEJB4s3tZ8wgzRICq9glpi/awAbRICDxbfIhFoiLZCU2HYC6WlLi
-	4IobLBMYBRcwMqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECAzy0/+e9e1gvHnA+hBjMtC4
-	icxSosn5wCjJK4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU4kOM
-	TBycUg2M7XO5mfl9Y09uc3SS9X20oDRl1XkfPr4Wpo0Tc2fsPX/BX99W8/LMVhOP9SerTsQy
-	Pf4Qs+BWe2a5jUhKyZllCwQWiJWc3MeyaL630hSzScev3eo6yJnuG3VumXf1/fT8e1b9fj8/
-	qTR+6D6duOzRCfb1nkUBb2QztTLy5iTb9Dx5Gqf+Iv6bEktxRqKhFnNRcSIAvYN36ogCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jQV37z8uCDDZu1bM4eL/eonnxejaL
+In-reply-to: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
+References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSrev4eVmQQeciE4uD9+stmhevZ7O4
+	vPASq0XHocdMFr0LrrJZXHjaAxTbNYfNYvaSfhaLGef3MVksWtbKbNF84hSzA7fH7IaLLB7z
+	TgZ67J+7ht2jb8sqRo/jN7YzeXzeJBfAFsVlk5Kak1mWWqRvl8CVsbNxEnPBBIGKN1/a2BsY
+	u3m7GDk5JARMJE4tn8gKYYtJXLi3nq2LkYtDSGApo8SXvQvZYYp2zt/PCGILCUxnlDjaLANR
+	NIVJ4vqrnywgCTYBXYmmt7vAikQEHCSWLL0DNolZ4BajRMvUDrAVwgLWEp9vPgKbyiKgKjHj
+	/AIgm4ODV8BD4u7KFIhlChJvbj9jBrE5BTwllncdYIVY7CHRdf8+M8hMCYFD7BLXpz1ihpgj
+	IPFt8iEWkDkSArISmw4wQ8yRlDi44gbLBEbhBYwMqxhFUwuSC4qT0otM9IoTc4tL89L1kvNz
+	NzECo+L0v2cTdjDeO2B9iDEZaNxEZinR5HxgVOWVxBsamxlZmJqYGhuZW5qRJqwkzqv2KClI
+	SCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUAyMb+82VbLNKj0c0lpuWhH0LW3OE6+VJSau+SI+E
+	SaYGjw9+TE7zf2D9jXGr8v9YjuuT97F+fP6Rp61XKW01k+aqDerdpfaVDh8zuebsbFTN1Wqp
+	VVQ0POY3x/hLy9fnG27cuxHj4v/S8/+0pY7r9fJ62c4FfFZbMFeDcYFb+MdNnmIXcjkCG5VY
+	ijMSDbWYi4oTAQZ3s4agAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jQV3Hz8uCDF7f17I4eL/eonnxejaL
 	ywsvsVp0HHrMZNG74CqbxYWnPUCxXXPYLGYv6WexmHF+H5PFomWtzBbNJ04xO3B7zG64yOIx
 	72Sgx/65a9g9+rasYvQ4fmM7k8fnTXIBbFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYG
 	hrqGlhbmSgp5ibmptkouPgG6bpk5QOcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLr
-	MTJAAwlrGDPOdq9gLFjGVTH30hqmBsYeji5GDg4JAROJC798uxg5gUwxiQv31rN1MXJxCAlM
-	Z5Q4dWItK0hCSGAKk8TUxSUgNpuArkTT212MILaIgIPEkqV3wBqYBW4xSrRM7QBrEBawkZg1
-	vQ3MZhFQlWjb1scMYvMKeEjsn36QDWKbgsSb28+YJzByL2BkWMUomlqQXFCclJ5rpFecmFtc
-	mpeul5yfu4kRHEPPpHcwrmqwOMQowMGoxMMr8W9pkBBrYllxZe4hRgkOZiUR3m0vlgUJ8aYk
-	VlalFuXHF5XmpBYfYkwG2j6RWUo0OR8Y33kl8YbGJuamxqaWJhYmZpakCSuJ8x5stQ4UEkhP
-	LEnNTk0tSC2C2cLEwSnVwDhzjSfj026bZaWM+dea2M88u+FlwV66MWWmd/ACf+YvSlOdJ564
-	H77/48Q5q68uWfF19bOoKbkKl4S9Zka6vQlzkHOrutDCKCVk/0NZ47GthJ4QxzxGh0fTP9zJ
-	8V7mx7fw6pr3bWcef97X7tO05BWrgVBug03m7d+HnNM/bXb6/81n2vOGMDMlluKMREMt5qLi
-	RADab0hE5QIAAA==
+	MTJAAwlrGDN2Nk5iLpggUPHmSxt7A2M3bxcjJ4eEgInEzvn7GSFsMYkL99azgdhCAtMZJY42
+	y3QxcgHZU5gkrr/6yQKSYBPQlWh6uwusQUTAQWLJ0jtsIEXMArcYJVqmdrCCJIQFrCU+33zE
+	DmKzCKhKzDi/AMjm4OAV8JC4uzIFYpmCxJvbz5hBbE4BT4nlXQdYIRZ7SHTdv888gZF3ASPD
+	KkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgmHsmvYNxVYPFIUYBDkYlHl6Jf0uDhFgTy4or
+	cw8xSnAwK4nwbnuxLEiINyWxsiq1KD++qDQntfgQYzLQUROZpUST84HpIK8k3tDYxNzU2NTS
+	xMLEzJI0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGNdO/83xeFm/xwm50AliC7fJbrIU
+	Vp+i5P2Kv5QjbsN72z3s/gdPexwJt24snXfExC3uvi5Hft7ynZOWdgpWOS86yjt9TzXL6rht
+	y0MNLN89Tz3/NmhC1i8phZ8KWbOzcsXPPVxxr/fZkgk7Nu69NJ9R1zW/VeFqx5q4egnlg9z1
+	W0+8f+EtxK3EUpyRaKjFXFScCAA6ha2V/QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,35 +52,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DWC3-exynos eXtensible host controller present on Exynos5420
-SoC is quirky. The PHY serving this controller operates at High-Speed
-by default, so it detects even Super-speed devices as high-speed ones.
-This PHY needs to be tuned for its Tx LOS levels and Boost levels.
+Some PHY controllers may need to tune PHY post-initialization,
+so that the PHY consumers can call phy-tuning at appropriate
+point of time.
 
-In this patch-set, we are registering a quirk for this DWC3-Exynos
-controller with XHCI, so that once after xhci_reset(), the controller
-can call to tune the associated PHY and achieve the SuperSpeed.
+Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
+---
+ drivers/phy/phy-core.c  |   20 ++++++++++++++++++++
+ include/linux/phy/phy.h |    7 +++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
-These patches are based on new USB 3.0 phy driver for Exynos SoC series. [1]
-
-[1] Add Exynos5 USB 3.0 phy driver based on generic PHY framework
-http://lwn.net/Articles/575586/
-
-Vivek Gautam (4):
-  phy: Add provision for tuning phy.
-  xhci: Add quirk for DWC3-Exynos controller
-  xhci: Tune PHY for the DWC3-Exynos host controller
-  phy-exynos-usb3: Fine tune LOS levels for exynos5420
-
- drivers/phy/phy-core.c         |   20 +++++++
- drivers/phy/phy-exynos5-usb3.c |  107 ++++++++++++++++++++++++++++++++++++++++
- drivers/usb/dwc3/host.c        |    7 +++
- drivers/usb/host/xhci-plat.c   |   62 ++++++++++++++++++++++-
- drivers/usb/host/xhci.h        |    1 +
- include/linux/phy/phy.h        |    7 +++
- include/linux/usb/hcd.h        |    1 +
- 7 files changed, 203 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 03cf8fb..68dbb90 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -239,6 +239,26 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(phy_power_off);
+ 
++int phy_tune(struct phy *phy)
++{
++	int ret = -ENOTSUPP;
++
++	mutex_lock(&phy->mutex);
++	if (phy->ops->tune) {
++		ret =  phy->ops->tune(phy);
++		if (ret < 0) {
++			dev_err(&phy->dev, "phy tuning failed --> %d\n", ret);
++			goto out;
++		}
++	}
++
++out:
++	mutex_unlock(&phy->mutex);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(phy_tune);
++
+ /**
+  * of_phy_get() - lookup and obtain a reference to a phy by phandle
+  * @dev: device that requests this phy
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 6d72269..d3b32b0 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -34,6 +34,7 @@ struct phy_ops {
+ 	int	(*exit)(struct phy *phy);
+ 	int	(*power_on)(struct phy *phy);
+ 	int	(*power_off)(struct phy *phy);
++	int	(*tune)(struct phy *phy);
+ 	struct module *owner;
+ };
+ 
+@@ -127,6 +128,7 @@ int phy_init(struct phy *phy);
+ int phy_exit(struct phy *phy);
+ int phy_power_on(struct phy *phy);
+ int phy_power_off(struct phy *phy);
++int phy_tune(struct phy *phy);
+ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
+ void phy_put(struct phy *phy);
+@@ -199,6 +201,11 @@ static inline int phy_power_off(struct phy *phy)
+ 	return -ENOSYS;
+ }
+ 
++static inline int phy_tune(struct phy *phy)
++{
++	return -ENOSYS;
++}
++
+ static inline struct phy *phy_get(struct device *dev, const char *string)
+ {
+ 	return ERR_PTR(-ENOSYS);
 -- 
 1.7.6.5
 
