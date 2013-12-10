@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3LJIjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:39:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58410 "EHLO
+	id S1755880Ab3LJIjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:39:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58404 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3LJH7a (ORCPT
+	with ESMTP id S1752600Ab3LJH70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:30 -0500
+	Tue, 10 Dec 2013 02:59:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Cluytens <david.cluytens@gmail.com>
-Subject: [PATCH 3.4 24/25] USB: cdc-acm: Added support for the Lenovo RD02-D400 USB Modem
-Date: Tue, 10 Dec 2013 00:00:32 -0800
-Message-Id: <20131210075932.504626070@linuxfoundation.org>
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.4 22/25] USB: mos7840: correct handling of CS5 setting
+Date: Tue, 10 Dec 2013 00:00:30 -0800
+Message-Id: <20131210075932.371320145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -26,27 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Cluytens <david.cluytens@gmail.com>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit 3b59d16c513da258ec8f6a0b4db85f257a0380d6 upstream.
+commit 78692cc3382e0603a47e1f2aaeffe0d99891994d upstream.
 
-Signed-off-by: David Cluytens <david.cluytens@gmail.com>
+This patch removes an erroneous check of CSIZE, which made it impossible to set
+CS5.
+
+Compiles clean, but couldn't test against hardware.
+
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/mos7840.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1542,6 +1542,8 @@ static int acm_reset_resume(struct usb_i
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -1962,25 +1962,25 @@ static void mos7840_change_port_settings
+ 	iflag = tty->termios->c_iflag;
  
- static const struct usb_device_id acm_ids[] = {
- 	/* quirky and broken devices */
-+	{ USB_DEVICE(0x17ef, 0x7000), /* Lenovo USB modem */
-+	.driver_info = NO_UNION_NORMAL, },/* has no union descriptor */
- 	{ USB_DEVICE(0x0870, 0x0001), /* Metricom GS Modem */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
+ 	/* Change the number of bits */
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS5:
+-			lData = LCR_BITS_5;
+-			break;
++	switch (cflag & CSIZE) {
++	case CS5:
++		lData = LCR_BITS_5;
++		break;
+ 
+-		case CS6:
+-			lData = LCR_BITS_6;
+-			break;
++	case CS6:
++		lData = LCR_BITS_6;
++		break;
+ 
+-		case CS7:
+-			lData = LCR_BITS_7;
+-			break;
+-		default:
+-		case CS8:
+-			lData = LCR_BITS_8;
+-			break;
+-		}
++	case CS7:
++		lData = LCR_BITS_7;
++		break;
++
++	default:
++	case CS8:
++		lData = LCR_BITS_8;
++		break;
+ 	}
++
+ 	/* Change the Parity bit */
+ 	if (cflag & PARENB) {
+ 		if (cflag & PARODD) {
 
 
