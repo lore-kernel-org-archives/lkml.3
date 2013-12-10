@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3LJLsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:48:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46590 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab3LJLsi (ORCPT
+	id S1752828Ab3LJLuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:50:16 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52411 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3LJLuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:48:38 -0500
-Date: Tue, 10 Dec 2013 12:48:25 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Chris Redpath <chris.redpath@arm.com>
-Cc: pjt@google.com, mingo@redhat.com, alex.shi@linaro.org,
-        morten.rasmussen@arm.com, dietmar.eggemann@arm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
-Message-ID: <20131210114825.GF12849@twins.programming.kicks-ass.net>
-References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com>
- <1386593950-26475-3-git-send-email-chris.redpath@arm.com>
+	Tue, 10 Dec 2013 06:50:13 -0500
+Message-ID: <52A6FFF0.6080207@parallels.com>
+Date: Tue, 10 Dec 2013 15:50:08 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386593950-26475-3-git-send-email-chris.redpath@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Dave Chinner <david@fromorbit.com>
+CC: <dchinner@redhat.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        <glommer@openvz.org>, <glommer@gmail.com>,
+        Glauber Costa <gloomer@openvz.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v13 13/16] vmscan: take at least one pass with shrinkers
+References: <cover.1386571280.git.vdavydov@parallels.com> <5287164773f8aade33ce17f3c91546c6e1afaf85.1386571280.git.vdavydov@parallels.com> <20131210041826.GB31386@dastard>
+In-Reply-To: <20131210041826.GB31386@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 12:59:10PM +0000, Chris Redpath wrote:
-> If we migrate a sleeping task away from a CPU which has the
-> tick stopped, then both the clock_task and decay_counter will
-> be out of date for that CPU and we will not decay load correctly
-> regardless of how often we update the blocked load.
-> 
-> This is only an issue for tasks which are not on a runqueue
-> (because otherwise that CPU would be awake) and simultaneously
-> the CPU the task previously ran on has had the tick stopped.
+On 12/10/2013 08:18 AM, Dave Chinner wrote:
+> On Mon, Dec 09, 2013 at 12:05:54PM +0400, Vladimir Davydov wrote:
+>> From: Glauber Costa <glommer@openvz.org>
+>>
+>> In very low free kernel memory situations, it may be the case that we
+>> have less objects to free than our initial batch size. If this is the
+>> case, it is better to shrink those, and open space for the new workload
+>> then to keep them and fail the new allocations.
+>>
+>> In particular, we are concerned with the direct reclaim case for memcg.
+>> Although this same technique can be applied to other situations just as
+>> well, we will start conservative and apply it for that case, which is
+>> the one that matters the most.
+> This should be at the start of the series.
 
-OK, so the idiot in a hurry (me) isn't quite getting the issue.
+Since Glauber wanted to introduce this only for memcg-reclaim first,
+this can't be at the start of the series, but I'll move it to go
+immediately after per-memcg shrinking core in the next iteration.
 
-Normally we update the blocked averages from the tick; clearly when no
-tick, no update. So far so good.
-
-Now, we also update blocked load from idle balance -- which would
-include the CPUs without tick through nohz_idle_balance() -- however
-this only appears to be done for CONFIG_FAIR_GROUP_SCHED.
-
-Are you running without cgroup muck? If so should we make this
-unconditional?
-
-If you have cgroup muck enabled; what's the problem? Don't we run
-nohz_idle_balance() frequently enough to be effective for updating the
-blocked load?
-
-You also seem to have overlooked NO_HZ_FULL, that can stop a tick even
-when there's a running task and makes the situation even more fun.
-
-> @@ -4343,6 +4344,25 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
->  	 * be negative here since on-rq tasks have decay-count == 0.
->  	 */
->  	if (se->avg.decay_count) {
-> +		/*
-> +		 * If we migrate a sleeping task away from a CPU
-> +		 * which has the tick stopped, then both the clock_task
-> +		 * and decay_counter will be out of date for that CPU
-> +		 * and we will not decay load correctly.
-> +		 */
-> +		if (!se->on_rq && nohz_test_cpu(task_cpu(p))) {
-> +			struct rq *rq = cpu_rq(task_cpu(p));
-> +			unsigned long flags;
-> +			/*
-> +			 * Current CPU cannot be holding rq->lock in this
-> +			 * circumstance, but another might be. We must hold
-> +			 * rq->lock before we go poking around in its clocks
-> +			 */
-> +			raw_spin_lock_irqsave(&rq->lock, flags);
-> +			update_rq_clock(rq);
-> +			update_cfs_rq_blocked_load(cfs_rq, 0);
-> +			raw_spin_unlock_irqrestore(&rq->lock, flags);
-> +		}
->  		se->avg.decay_count = -__synchronize_entity_decay(se);
->  		atomic_long_add(se->avg.load_avg_contrib,
->  						&cfs_rq->removed_load);
-
-Right, as Ben already said; taking a rq->lock there is unfortunate at
-best.
-
-So normally we 'throttle' the expense of decaying the blocked load to
-ticks. But the above does it on every (suitable) task migration which
-might be far more often.
-
-So ideally we'd get it all sorted through the nohz_idle_balance() path;
-what exactly are the problems with that?
+Thanks.
