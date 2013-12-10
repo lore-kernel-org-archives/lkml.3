@@ -1,172 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab3LJUii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:38:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34284 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab3LJUbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:31:35 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Will Deacon <will.deacon@arm.com>,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 34/34] perf unwinding: Use the per-feature check flags
-Date: Tue, 10 Dec 2013 17:31:16 -0300
-Message-Id: <1386707476-12370-15-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1386707476-12370-1-git-send-email-acme@infradead.org>
-References: <1386707476-12370-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1751815Ab3LJUkg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:40:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836Ab3LJUke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:40:34 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org, jmorris@namei.org
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] KEYS: Miscellaneous fixes
+Date: Tue, 10 Dec 2013 20:40:27 +0000
+Message-ID: <4197.1386708027@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Pihet <jean.pihet@linaro.org>
 
-Use the per-feature check flags for the unwinding feature in order to
-correctly compile the test-all, libunwind and libunwind-debug-frame
-feature checks.
+Hi Linus,
 
-Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set in
-'make -C tools/perf'
+Could you pull the following fixes for the keyring stuff.  They break down into
+five sets:
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linaro-kernel@lists.linaro.org
-Cc: patches@linaro.org
-Link: http://lkml.kernel.org/r/1386678244-13535-3-git-send-email-jean.pihet@linaro.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+ (1) A patch to error handling in the big_key type for huge payloads.  If the
+     payload is larger than the "low limit" and the backing store allocation
+     fails, then big_key_instantiate() doesn't clear the payload pointers in
+     the key, assuming them to have been previously cleared - but only one of
+     them is.
+
+     Unfortunately, the garbage collector still calls big_key_destroy() when
+     sees one of the pointers with a weird value in it (and not NULL) which it
+     then tries to clean up.
+
+ (2) Three patches to fix the keyring type:
+
+     (a) A patch to fix the hash function to correctly divide keyrings off from
+     keys in the topology of the tree inside the associative array.  This is
+     only a problem if searching through nested keyrings - and only if the hash
+     function incorrectly puts the a keyring outside of the 0 branch of the
+     root node.
+
+     (b) A patch to fix keyrings' use of the associative array.  The
+     __key_link_begin() function initially passes a NULL key pointer to
+     assoc_array_insert() on the basis that it's holding a place in the tree
+     whilst it does more allocation and stuff.
+
+     This is only a problem when a node contains 16 keys that match at that
+     level and we want to add an also matching 17th.  This should easily be
+     manufactured with a keyring full of keyrings (without chucking any other
+     sort of key into the mix) - except for (a) above which makes it on average
+     adding the 65th keyring.
+
+     (c) A patch to fix searching down through nested keyrings, where any
+     keyring in the set has more than 16 keyrings and none of the first
+     keyrings we look through has a match (before the tree iteration needs to
+     step to a more distal node).
+
+     Test in keyutils test suite:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=8b4ae963ed92523aea18dfbb8cab3f4979e13bd1
+
+ (3) A patch to fix the big_key type's use of a shmem file as its backing store
+     causing audit messages and LSM check failures.  This is done by setting
+     S_PRIVATE on the file to avoid LSM checks on the file (access to the shmem
+     file goes through the keyctl() interface and so is gated by the LSM that
+     way).
+
+     This isn't normally a problem if a key is used by the context that
+     generated it - and it's currently only used by libkrb5.
+
+     Test in keyutils test suite:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=d9a53cbab42c293962f2f78f7190253fc73bd32e
+
+ (4) A patch to add a generated file to .gitignore.
+
+ (5) A patch to fix the alignment of the system certificate data such that it
+     it works on S390.  As I understand it, on the S390 arch, symbols must be
+     2-byte aligned because loading the address discards the least-significant
+     bit.
+
+David
 ---
- tools/perf/config/Makefile                | 52 ++++++++++++++++++-------------
- tools/perf/config/feature-checks/Makefile |  8 ++---
- 2 files changed, 34 insertions(+), 26 deletions(-)
+The following changes since commit af91706d5ddecb4a9858cca9e90d463037cfd498:
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 2afb132db51a..5a1f4df3c3a8 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -36,6 +36,30 @@ ifeq ($(ARCH),arm)
-   LIBUNWIND_LIBS = -lunwind -lunwind-arm
- endif
- 
-+ifeq ($(LIBUNWIND_LIBS),)
-+  NO_LIBUNWIND := 1
-+else
-+  #
-+  # For linking with debug library, run like:
-+  #
-+  #   make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+  #
-+  ifdef LIBUNWIND_DIR
-+    LIBUNWIND_CFLAGS  = -I$(LIBUNWIND_DIR)/include
-+    LIBUNWIND_LDFLAGS = -L$(LIBUNWIND_DIR)/lib
-+  endif
-+  LIBUNWIND_LDFLAGS += $(LIBUNWIND_LIBS)
-+
-+  # Set per-feature check compilation flags
-+  FEATURE_CHECK_CFLAGS-libunwind = $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libunwind = $(LIBUNWIND_LDFLAGS)
-+  FEATURE_CHECK_CFLAGS-libunwind-debug-frame = $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libunwind-debug-frame = $(LIBUNWIND_LDFLAGS)
-+  #  and the flags for the test-all case
-+  FEATURE_CHECK_CFLAGS-all += $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-all += $(LIBUNWIND_LDFLAGS)
-+endif
-+
- ifeq ($(NO_PERF_REGS),0)
-   CFLAGS += -DHAVE_PERF_REGS_SUPPORT
- endif
-@@ -102,7 +126,7 @@ endif
- 
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
-@@ -305,21 +329,7 @@ ifndef NO_LIBELF
-   endif # NO_DWARF
- endif # NO_LIBELF
- 
--ifeq ($(LIBUNWIND_LIBS),)
--  NO_LIBUNWIND := 1
--endif
--
- ifndef NO_LIBUNWIND
--  #
--  # For linking with debug library, run like:
--  #
--  #   make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
--  #
--  ifdef LIBUNWIND_DIR
--    LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
--    LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
--  endif
--
-   ifneq ($(feature-libunwind), 1)
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
-     NO_LIBUNWIND := 1
-@@ -334,14 +344,12 @@ ifndef NO_LIBUNWIND
-       # non-ARM has no dwarf_find_debug_frame() function:
-       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-     endif
--  endif
--endif
- 
--ifndef NO_LIBUNWIND
--  CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
--  EXTLIBS += $(LIBUNWIND_LIBS)
--  CFLAGS += $(LIBUNWIND_CFLAGS)
--  LDFLAGS += $(LIBUNWIND_LDFLAGS)
-+    CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
-+    EXTLIBS += $(LIBUNWIND_LIBS)
-+    CFLAGS += $(LIBUNWIND_CFLAGS)
-+    LDFLAGS += $(LIBUNWIND_LDFLAGS)
-+  endif # ifneq ($(feature-libunwind), 1)
- endif
- 
- ifndef NO_LIBAUDIT
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index b8bb749c3392..bc86462e80a2 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -32,12 +32,12 @@ CC := $(CC) -MD
- 
- all: $(FILES)
- 
--BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
-+BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
- 
- ###############################
- 
- test-all:
--	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
- 
- test-hello:
- 	$(BUILD)
-@@ -70,10 +70,10 @@ test-libnuma:
- 	$(BUILD) -lnuma
- 
- test-libunwind:
--	$(BUILD) $(LIBUNWIND_LIBS) -lelf
-+	$(BUILD) -lelf
- 
- test-libunwind-debug-frame:
--	$(BUILD) $(LIBUNWIND_LIBS) -lelf
-+	$(BUILD) -lelf
- 
- test-libaudit:
- 	$(BUILD) -laudit
--- 
-1.8.1.4
+  ima: store address of template_fmt_copy in a pointer before calling strsep (2013-11-30 13:09:53 +1100)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-devel-20131210
+
+for you to fetch changes up to 62226983da070f7e51068ec2e3a4da34672964c7:
+
+  KEYS: correct alignment of system_certificate_list content in assembly file (2013-12-10 18:25:28 +0000)
+
+----------------------------------------------------------------
+(from the branch description for keys-devel local branch)
+
+Keyrings development
+Keyrings fixes 2013-12-10
+
+----------------------------------------------------------------
+David Howells (4):
+      KEYS: Pre-clear struct key on allocation
+      KEYS: Fix the keyring hash function
+      KEYS: Fix multiple key add into associative array
+      KEYS: Fix searching of nested keyrings
+
+Eric Paris (1):
+      security: shmem: implement kernel private shmem inodes
+
+Hendrik Brueckner (1):
+      KEYS: correct alignment of system_certificate_list content in assembly file
+
+Rusty Russell (1):
+      Ignore generated file kernel/x509_certificate_list
+
+ Documentation/assoc_array.txt |  6 +++---
+ include/linux/assoc_array.h   |  6 +++---
+ include/linux/shmem_fs.h      |  2 ++
+ kernel/.gitignore             |  1 +
+ kernel/system_certificates.S  | 14 ++++++++++++--
+ kernel/system_keyring.c       |  4 ++--
+ lib/assoc_array.c             |  4 ++--
+ mm/shmem.c                    | 36 +++++++++++++++++++++++++++++-------
+ security/keys/big_key.c       |  2 +-
+ security/keys/key.c           |  8 +-------
+ security/keys/keyring.c       | 17 ++++++++---------
+ 11 files changed, 64 insertions(+), 36 deletions(-)
