@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab3LJApD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:45:03 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8378 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750750Ab3LJApA (ORCPT
+	id S1751380Ab3LJAsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:48:52 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52510 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3LJAsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:45:00 -0500
-Date: Tue, 10 Dec 2013 00:41:41 -0800
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/3] pinctrl: Add msm8x74 configuration
-Message-ID: <20131210084140.GF11990@sonymobile.com>
-References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1386295805-13708-3-git-send-email-bjorn.andersson@sonymobile.com>
- <52A24E08.706@codeaurora.org>
+	Mon, 9 Dec 2013 19:48:51 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-29-52a664f11f86
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 06/14] tools lib traceevent: Get rid of malloc_or_die() in find_event()
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+	<1386567251-22751-7-git-send-email-namhyung@kernel.org>
+	<20131209110350.GH1242@krava.brq.redhat.com>
+Date: Tue, 10 Dec 2013 09:48:49 +0900
+In-Reply-To: <20131209110350.GH1242@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Mon, 9 Dec 2013 12:03:50 +0100")
+Message-ID: <87d2l5ledq.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <52A24E08.706@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 06 Dec 14:22 PST 2013, Stephen Boyd wrote:
+On Mon, 9 Dec 2013 12:03:50 +0100, Jiri Olsa wrote:
+> On Mon, Dec 09, 2013 at 02:34:03PM +0900, Namhyung Kim wrote:
+>> Make it return -2 to distinguish malloc allocation failure.
+>> 
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/lib/traceevent/parse-filter.c | 17 ++++++++++++++---
+>>  1 file changed, 14 insertions(+), 3 deletions(-)
+>> 
+>> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+>> index e9d17bfcdffd..06e5af9f8fc4 100644
+>> --- a/tools/lib/traceevent/parse-filter.c
+>> +++ b/tools/lib/traceevent/parse-filter.c
+>> @@ -301,7 +301,10 @@ find_event(struct pevent *pevent, struct event_list **events,
+>>  		sys_name = NULL;
+>>  	}
+>>  
+>> -	reg = malloc_or_die(strlen(event_name) + 3);
+>> +	reg = malloc(strlen(event_name) + 3);
+>> +	if (reg == NULL)
+>> +		return -2;
+>> +
+>
+> I guess we dont need error defines or enums when this is just
+> static function, but at least please add some comment (description)
+> of return values like in pevent_filter_match function
 
-> > +config PINCTRL_MSM8X74
-> > +	bool "Qualcomm 8x74 pin controller driver"
-> > +	select PINCTRL_MSM
-> 
-> No help?
-> 
+Well, probably we can pass the error_str to find_event().
 
-I could write something up, although I guess someone will add a
-select PINCTRL_MSM8X74 in the mach-msm Kconfig and then we're done
-with it.
+For comments, I think we only add a formal comment on the external APIs.
+So it'll look like this:
 
-> > +		.ctl_reg = 0x1000 + 0x10 * id ,		\
-> 
-> Weird trailing space here.
-> 
+/* 
+ * Returns 0 if succeeded, -1 if not matched or invalid regex,
+ * -2 if memory allocation failed.
+ */
 
-Oops.
+What do you think?
 
-> Also, do we ever plan to have anything more than the gpio pins and the
-> sdc pins? It seems like we spend a lot of space describing exactly the
-> same thing in these structs for each of the 146 gpio pins when we could
-> just know that range 0 to 146 is gpio pins and have different code for
-> that part vs the 6 or something sd pins.
-> 
-
-We have to have a pingroup list, so I did look at having that list
-referencing a common object with the gpio/sdc specific data.
-
-But just having it in one large blob is the way that other pinctrl
-drivers does it and hence a common problem to pinctrl and multi-platform
-arm support.
-
-I have not seen any code in the open referencing the other pins, so I
-left them out for now.
-
-> > +
-> > +static struct of_device_id msm8x74_pinctrl_of_match[] = {
-> 
-> const?
-> 
-
-Of course.
-
-> >
-> > +
-> > +static int __init msm8x74_pinctrl_init(void)
-> > +{
-> > +	return platform_driver_register(&msm8x74_pinctrl_driver);
-> > +}
-> > +arch_initcall(msm8x74_pinctrl_init);
-> > +
-> > +static void __exit msm8x74_pinctrl_exit(void)
-> > +{
-> > +	platform_driver_unregister(&msm8x74_pinctrl_driver);
-> > +}
-> > +module_exit(msm8x74_pinctrl_exit);
-> 
-> Why not module_platform_driver()? I thought pinctrl supported deferred
-> probing?
-> 
-
-As this pinctrl/gpiochip/interrupt-controller is a fairly central part
-of the system there's plenty of things that would just end up being deferred.
-
-Most other pinctrl driver does arch_initcall or core_initcall, so I followed
-suit and brought it in early.
-
-Regards,
-Bjorn
+Thanks,
+Namhyung
