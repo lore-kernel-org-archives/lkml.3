@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab3LJJWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:22:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44657 "EHLO
+	id S1754575Ab3LJJXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:23:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44699 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3LJJWj (ORCPT
+	with ESMTP id S1751544Ab3LJJXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:22:39 -0500
-Date: Tue, 10 Dec 2013 01:22:15 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-789790791ad254408267eb6a216ae7a90973c05a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        jolsa@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+	Tue, 10 Dec 2013 04:23:21 -0500
+Date: Tue, 10 Dec 2013 01:22:25 -0800
+From: tip-bot for Wanpeng Li <tipbot@zytor.com>
+Message-ID: <tip-40ea2b42d7c44386cf81d5636d574193da2c8df2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        liwanp@linux.vnet.ibm.com, peterz@infradead.org,
+        n-horiguchi@ah.jp.nec.com, riel@redhat.com, mgorman@suse.de,
         tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        liwanp@linux.vnet.ibm.com, peterz@infradead.org,
+        n-horiguchi@ah.jp.nec.com, riel@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de
+In-Reply-To: <1386241817-5051-2-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386241817-5051-2-git-send-email-liwanp@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools/perf/build: Fix install dependency
-Git-Commit-ID: 789790791ad254408267eb6a216ae7a90973c05a
+Subject: [tip:sched/core] sched/numa:
+  Drop idx field of task_numa_env struct
+Git-Commit-ID: 40ea2b42d7c44386cf81d5636d574193da2c8df2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,45 +32,44 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:22:23 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:22:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  789790791ad254408267eb6a216ae7a90973c05a
-Gitweb:     http://git.kernel.org/tip/789790791ad254408267eb6a216ae7a90973c05a
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 5 Dec 2013 12:13:54 +0100
+Commit-ID:  40ea2b42d7c44386cf81d5636d574193da2c8df2
+Gitweb:     http://git.kernel.org/tip/40ea2b42d7c44386cf81d5636d574193da2c8df2
+Author:     Wanpeng Li <liwanp@linux.vnet.ibm.com>
+AuthorDate: Thu, 5 Dec 2013 19:10:17 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 5 Dec 2013 13:26:14 +0100
+CommitDate: Thu, 5 Dec 2013 13:38:36 +0100
 
-tools/perf/build: Fix install dependency
+sched/numa: Drop idx field of task_numa_env struct
 
-The traceevents-plugins install targets needs a proper dependency,
-otherwise it might be executed prematurely and in parallel to an
-actual build.
+Drop unused idx field of task_numa_env struct.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/n/tip-rvlbzena4ovzgqiPm6teBofz@git.kernel.org
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org
+Link: http://lkml.kernel.org/r/1386241817-5051-2-git-send-email-liwanp@linux.vnet.ibm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/Makefile.perf | 2 +-
+ kernel/sched/fair.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index ca3b87d..9a8cf37 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -722,7 +722,7 @@ $(LIBTRACEEVENT)-clean:
- 	$(call QUIET_CLEAN, libtraceevent)
- 	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a566c07..49aa01f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1037,7 +1037,7 @@ struct task_numa_env {
  
--install-traceevent-plugins:
-+install-traceevent-plugins: $(LIBTRACEEVENT)
- 	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
+ 	struct numa_stats src_stats, dst_stats;
  
- LIBLK_SOURCES = $(wildcard $(LK_PATH)*.[ch])
+-	int imbalance_pct, idx;
++	int imbalance_pct;
+ 
+ 	struct task_struct *best_task;
+ 	long best_imp;
