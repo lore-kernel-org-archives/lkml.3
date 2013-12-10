@@ -1,169 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385Ab3LJTbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:31:03 -0500
-Received: from elasmtp-spurfowl.atl.sa.earthlink.net ([209.86.89.66]:37903
-	"EHLO elasmtp-spurfowl.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750707Ab3LJTa7 (ORCPT
+	id S1751407Ab3LJTbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:31:33 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:38592 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab3LJTb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:30:59 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=lfq9myo/eLzz5DH33+tkkZymPrrhluEb+HfRpHMKPPBu+boZO5Am7r9+GGwcpQ9e;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Jeff Layton'" <jlayton@redhat.com>, <linux-fsdevel@vger.kernel.org>
-Cc: <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>, <linux-kernel@vger.kernel.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
-Subject: RE: [Nfs-ganesha-devel] [PATCH v3 0/6] locks: implement "filp-private"	(aka UNPOSIX) locks
-Date: Tue, 10 Dec 2013 11:30:54 -0800
-Message-ID: <029701cef5de$58d19c80$0a74d580$@mindspring.com>
+	Tue, 10 Dec 2013 14:31:29 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dan Williams <dcbw@redhat.com>
+Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent mac address
+Date: Tue, 10 Dec 2013 20:31:23 +0100
+User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
+Cc: Kalle Valo <kvalo@adurom.com>, Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <201312101852.17030@pali> <1386703339.30202.19.camel@dcbw.foobar.com>
+In-Reply-To: <1386703339.30202.19.camel@dcbw.foobar.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+Content-Type: multipart/signed;
+  boundary="nextPart2284039.d878SBvJzH";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQFMmfS/maBCm6lZHt2iMnVsKdamJ5tSh/Cw
-Content-Language: en-us
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d0e50412c68a490247dc07ead635e85bb350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+Message-Id: <201312102031.23797@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patchset is the third posting of this set. Behavior between this set
-and
-> the last should be more or less the same. Here is a summary of
-> changes:
-> 
-> v3:
-> - more consolidation of common code between flock_to_posix_lock and
->   flock_to_posix_lock64
-> - better bisectability by reordering changes, such that partial
->   implementation won't be exposed
-> - s/filp/file/ s/FILP/FILE/ in symbol names
-> 
-> v2:
-> - inheritance semantics have been change to be more BSD-lock like
-> - patchset size has been reduced by changing how lock ownership
->   is handled
-> - new F_UNLCKP l_type value has been added
-> 
-> Note too that I've gone ahead and opened a request for the POSIX folks to
-> consider adding this to the POSIX spec once we have something mergeable.
-> They seem amenable to the idea but don't want to enshrine it into the
-> standard until there's a real implementation of it:
-> 
->     http://austingroupbugs.net/view.php?id=768
-> 
-> I also owe them a better writeup of the semantics for these new locks, but
-> have been holding off on doing that until they're a little more settled.
-> 
-> As a side note, I've also had a few other userland developers reach out to
-me
-> as to the status of this work. There seems to be a lot of interest since
-classic
-> POSIX locks are such a pain to work with in threaded programs. Hopefully
-> some will chime in on this posting...
+--nextPart2284039.d878SBvJzH
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-This is looking really good to me. I will  be excited to utilize this
-capability in Ganesha.
+On Tuesday 10 December 2013 20:22:19 Dan Williams wrote:
+> On Tue, 2013-12-10 at 18:52 +0100, Pali Roh=C3=A1r wrote:
+> > On Tuesday 10 December 2013 18:49:22 Dan Williams wrote:
+> > > On Tue, 2013-12-10 at 18:14 +0100, Pali Roh=C3=A1r wrote:
+> > > > On Tuesday 10 December 2013 17:10:50 Pali Roh=C3=A1r wrote:
+> > > > > On Tuesday 10 December 2013 16:49:23 Kalle Valo wrote:
+> > > > > > Pali Roh=C3=A1r <pali.rohar@gmail.com> writes:
+> > > > > > > Driver wl1251 generating mac address randomly at
+> > > > > > > startup and there is no way to set permanent mac
+> > > > > > > address via SET_IEEE80211_PERM_ADDR. This patch
+> > > > > > > export sysfs file which can set permanent mac
+> > > > > > > address by userspace helper program. Patch is
+> > > > > > > needed for devices which do not store mac address
+> > > > > > > in internal wl1251 eeprom.
+> > > > > > >=20
+> > > > > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > > > >=20
+> > > > > > We have ioctl() command for setting the mac address.
+> > > > >=20
+> > > > > Really? Is there ioctl for setting permanent mac
+> > > > > address? Can you show me it?
+> > > >=20
+> > > > Now I looked at it again and I did not found any ioctl
+> > > > for it. There is only ioctl cmd for getting address,
+> > > > not setting it.
+> > > >=20
+> > > > #define SIOCETHTOOL 0x8946
+> > > >=20
+> > > > /* Get permanent hardware address */
+> > > > #define ETHTOOL_GPERMADDR 0x00000020
+> > >=20
+> > > Yeah, because it's supposed to be permanent and
+> > > unchanging. Which means if there was an ioctl for it,
+> > > that would be contrary to the purpose of a permanent MAC
+> > > address.
+> > >=20
+> > > I realize the N900 stores the WiFi MAC address completely
+> > > differently than many other systems, and that's why this
+> > > sysfs file was created.  I don't really have a great
+> > > converged solution for that, other than what you've
+> > > currently got, or perhaps adding SPERMADDR to ethtool.=20
+> > > One thing I *would* like though, is a restriction on the
+> > > sysfs file such that if the permanent MAC is already set,
+> > > it cannot be set again.  Otherwise the permanent MAC
+> > > address isn't permanent at all.
+> > >=20
+> > > Dan
+> >=20
+> > Maybe another way could be to use request_firmware to load
+> > address from userspace... Or what do you think?
+>=20
+> That sounds like a great idea to try.  A number of devices
+> either need stub firmware to read the MAC from EEPROM, or do
+> use request_firmware() to load firmware before they read the
+> MAC.  You may have to use request_firmware() synchronously
+> though to ensure that the MAC is read before registering with
+> mac80211.
+>=20
+> Dan
 
-Thanks
+So, if you like this idea, can you help me how to write udev rule=20
+which will run my own program (it print mac address) and send mac=20
+address when driver ask for mac address in request_firmware?=20
+Problem is that default udev rule for firmware trying to load data=20
+from /lib/firmware/... but in this case mac address first must be=20
+read from special location and converted to correct format.
 
-Frank
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-> Original cover letter from v1 posting follows. Comments and suggestions
-> welcome.
-> 
-> -------------------------------[snip]------------------------------
-> 
-> At LSF this year, there was a discussion about the "wishlist" for userland
-file
-> servers. One of the things brought up was the goofy and problematic
-> behavior of POSIX locks when a file is closed. Boaz started a thread on it
-here:
-> 
->     http://permalink.gmane.org/gmane.linux.file-systems/73364
-> 
-> Userland fileservers often need to maintain more than one open file
-> descriptor on a file. The POSIX spec says:
-> 
-> "All locks associated with a file for a given process shall be removed
-when a
-> file descriptor for that file is closed by that process or the  process
-holding
-> that file descriptor terminates."
-> 
-> This is problematic since you can't close any file descriptor without
-dropping
-> all your POSIX locks. Most userland file servers therefore end up opening
-the
-> file with more access than is really necessary, and keeping fd's open for
-> longer than is necessary to work around this.
-> 
-> This patchset is a first stab at an approach to address this problem by
-adding
-> two new l_type values -- F_RDLCKP and F_WRLCKP (the 'P' is short for
-> "private" -- I'm open to changing that if you have a better mnemonic).
-> 
-> For all intents and purposes these lock types act just like their "non-P"
-> counterpart. The difference is that they are only implicitly released when
-the
-> fd against which they were acquired is closed. As a side effect, these
-locks
-> cannot be merged with "non-P" locks since they have different semantics on
-> close.
-> 
-> I've given this patchset some very basic smoke testing and it seems to do
-the
-> right thing, but it is still pretty rough. If this looks reasonable I'll
-plan to do
-> some documentation updates and will take a stab at trying to get these new
-> lock types added to the POSIX spec (as HCH recommended).
-> 
-> At this point, my main questions are:
-> 
-> 1) does this look useful, particularly for fileserver implementors?
-> 
-> 2) does this look OK API-wise? We could consider different "cmd" values
->    or even different syscalls, but I figured this makes it clearer that
->    "P" and "non-P" locks will still conflict with one another.
-> 
-> Jeff Layton (6):
->   locks: consolidate common code in the flock_to_posix_lock routines
->   locks: consolidate checks for compatible filp->f_mode values in setlk
->     handlers
->   locks: rename locks_remove_flock to locks_remove_file
->   locks: show private lock types in /proc/locks
->   locks: report l_pid as -1 for FL_FILE_PVT locks
->   locks: add new "private" lock type that is owned by the filp
-> 
->  fs/file_table.c                  |   2 +-
->  fs/locks.c                       | 122
-+++++++++++++++++++++------------------
->  include/linux/fs.h               |   5 +-
->  include/uapi/asm-generic/fcntl.h |  16 +++++
->  4 files changed, 85 insertions(+), 60 deletions(-)
-> 
-> --
-> 1.8.4.2
-> 
-> 
->
-----------------------------------------------------------------------------
---
-> Rapidly troubleshoot problems before they affect your business. Most IT
-> organizations don't have a clear picture of how application performance
-> affects their revenue. With AppDynamics, you get 100% visibility into your
-> Java,.NET, & PHP application. Start your 15-day FREE TRIAL of AppDynamics
-> Pro!
-> http://pubads.g.doubleclick.net/gampad/clk?id=84349831&iu=/4140/ostg.clk
-> trk
-> _______________________________________________
-> Nfs-ganesha-devel mailing list
-> Nfs-ganesha-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/nfs-ganesha-devel
+--nextPart2284039.d878SBvJzH
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKnbAsACgkQi/DJPQPkQ1KMAwCfZsn5s3EjIltZnqxjpd4lo+9v
+CQEAn1wBPRMrVsWALaU9ItBeBSaB6Iki
+=vT15
+-----END PGP SIGNATURE-----
+
+--nextPart2284039.d878SBvJzH--
