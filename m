@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3LJPCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:02:17 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:38132 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab3LJPB4 (ORCPT
+	id S1753891Ab3LJPB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:01:59 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:64678 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3LJPB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Dec 2013 10:01:56 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stern@rowland.harvard.edu
+Subject: Re: [PATCH v7 2/5] usb: gadget: add quirk_ep_out_aligned_size field to struct usb_gadget
+In-Reply-To: <52A68BF7.2080901@linux.intel.com>
+Organization: http://mina86.com/
+References: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com> <1386633338-10919-3-git-send-email-david.a.cohen@linux.intel.com> <xa1t7gbdfn8c.fsf@mina86.com> <52A68BF7.2080901@linux.intel.com>
+User-Agent: Notmuch/0.15.2+55~geb6e9d8 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:131210:balbi@ti.com::qyubDPKoJEC5UlIF:000000WtT
+X-Hashcash: 1:20:131210:gregkh@linuxfoundation.org::ZT+4mLVQaeikavLZ:000000000000000000000000000000000000Mvo
+X-Hashcash: 1:20:131210:stern@rowland.harvard.edu::AvQc9rqMEWyQYngf:0000000000000000000000000000000000000ouX
+X-Hashcash: 1:20:131210:linux-kernel@vger.kernel.org::VEO6ds3yduezYd/u:0000000000000000000000000000000002CcW
+X-Hashcash: 1:20:131210:david.a.cohen@linux.intel.com::21irrgDMMQ2djNdF:0000000000000000000000000000000059f1
+X-Hashcash: 1:20:131210:linux-usb@vger.kernel.org::33buDecqCaJ+zvVt:000000000000000000000000000000000000BR2i
+Date: Tue, 10 Dec 2013 16:01:45 +0100
+Message-ID: <xa1ta9g8iwbq.fsf@mina86.com>
 MIME-Version: 1.0
-In-Reply-To: <1386658724.1752.19.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-References: <1386614601-9453-1-git-send-email-natg@google.com>
-	<1386615608.1752.4.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<CAGmqidkxoi9EEe0uC18QQUXwjFP1e_1MXL7VPk+NtU-Ta6FGUg@mail.gmail.com>
-	<52A633B4.9000307@cogentembedded.com>
-	<1386623253.1752.6.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<1386658724.1752.19.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-Date: Tue, 10 Dec 2013 07:01:55 -0800
-Message-ID: <CAGmqidnusPSYt9GHfQVs7SP620jyEN=Aicr1jS3Esb9C5Ov2wA@mail.gmail.com>
-Subject: Re: [PATCH] net-tg3: Initialize REG_BASE_ADDR at PCI config offset
- 120 to 0
-From: Natarajan Gurumoorthy <natg@google.com>
-To: Michael Chan <mchan@broadcom.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, nsujir@broadcom.com,
-        netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael,
-     The only time I see crashes is after the tg3 driver has been
-loaded into the system. I our use case we are poking around
-/sys/devices/pcixxxx/......../config.
-     I guess you will incorporate the original patch into the driver
-and we can abandon this patch.
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Regards
-Nat
+On Tue, Dec 10 2013, David Cohen wrote:
+> I've got no idea how returns became reguens :)
 
+The keys are like right next to each other <http://bash.org/?5300>. ;)
 
-On Mon, Dec 9, 2013 at 10:58 PM, Michael Chan <mchan@broadcom.com> wrote:
-> On Mon, 2013-12-09 at 13:07 -0800, Michael Chan wrote:
->> On Tue, 2013-12-10 at 00:18 +0300, Sergei Shtylyov wrote:
->> > >        We had crashes when the PCI config space got scanned via
->> > > /sys/devices/pcixxxx/....../config.
->> >
->> > > I agree that this fix will not help if the scan happens before the tg3
->> > > driver gets loaded.
->> >
->> >     Then perhaps a better place for such fixup would be a PCI quirk?
->> >
->> Yes, I agree.  Thanks.
->>
->
-> On second thought, I think your original patch should be sufficient and
-> we don't need to add the PCI quirk to cover so many devices.  The reason
-> is that indirect access needs to be explicitly enabled in the
-> MISC_HOST_CTRL (0x68) register.  The default value for register 0x68
-> should have indirect access disabled.
->
-> Nat, does this match what you're seeing?  Did you ever see any system
-> crash before tg3 loads?
->
+> But maybe Felipe can fix it when applying?
+
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
 
 
+--==-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
 
--- 
-Regards
-Nat Gurumoorthy AB6SJ
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpyzZAAoJECBgQBJQdR/0zXEP+wfcKSOb1+Dv4oSP3vMlT/CM
+NHbxADn6FSjAJe36LfUfTAAVD46YCVePl3qsnHBA7Spc8UcCIZp3wLRB40pMNI41
+IkxPMmRji+5ZnZa2bz8+OHgnxipZUsS57/WACU2gFPnPTKjzGWOvumvimx3BUMOt
+m6r3yAueTCUsS5D5CWMgPSRrdoXO0wkXPf3TJLsJC7cSoYlqmYdJv9S0fF8FbwnZ
+mXuouDcQE3gOhoTQ1gAnQs1vL5tJKo+wP/RS4yc0aTy20Ua1ywyQ8fVPoqIgfxrp
+ihE2fcVGh2+HJSMjS1I4tF7aNQLavN0GYNVzdSppw6moLqdNj9Ki/di3Oc8KpEhn
+eA3/g8DRdovYLSruQQck2FLL2wqNuieyCGSd1/3Evq7jvw6DMf/aXUhLVJbmb8yz
+pMQ+CxkiUHM7S9RDA2hVtCWDA61xNLkryRON3OeFvyLTIrEa1LtWHYkl4xUeexNV
+0nrAS6m2kU2VF5wyCLQgjt0a3yWNX3gZBK/PjhEoKjqs388816uiIEztpDtV8KIk
+Wc039XHXM6hqldphCZnzdRejNm6zl8YDAqK+C9BSLUqrwU0YqIWWntukoVnl//t3
+h4wodn7yZIbtsYv1uT8Jpa0u77qZhGFDPbpWOBUnzzpZ0bM0i7I5Qfg22e2YZTeT
+yAPMGzlKu2aXj3K111Wk
+=/zAU
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
