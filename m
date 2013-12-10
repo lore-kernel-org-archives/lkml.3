@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab3LJIiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:38:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58432 "EHLO
+	id S1754999Ab3LJIic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:38:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58425 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682Ab3LJH7i (ORCPT
+	with ESMTP id S1752675Ab3LJH7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:38 -0500
+	Tue, 10 Dec 2013 02:59:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.4 05/25] ASoC: wm8731: fix dsp mode configuration
-Date: Tue, 10 Dec 2013 00:00:13 -0800
-Message-Id: <20131210075931.205716091@linuxfoundation.org>
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.4 03/25] crypto: authenc - Find proper IV address in ablkcipher callback
+Date: Tue, 10 Dec 2013 00:00:11 -0800
+Message-Id: <20131210075931.054503063@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -28,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bo Shen <voice.shen@atmel.com>
+From: Tom Lendacky <thomas.lendacky@amd.com>
 
-commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
+commit fc019c7122dfcd69c50142b57a735539aec5da95 upstream.
 
-According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
-works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
-So, fix LRP for DSP mode as the datesheet specification.
+When performing an asynchronous ablkcipher operation the authenc
+completion callback routine is invoked, but it does not locate and use
+the proper IV.
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The callback routine, crypto_authenc_encrypt_done, is updated to use
+the same method of calculating the address of the IV as is done in
+crypto_authenc_encrypt function which sets up the callback.
+
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8731.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ crypto/authenc.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -406,10 +406,10 @@ static int wm8731_set_dai_fmt(struct snd
- 		iface |= 0x0001;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
-+		iface |= 0x0013;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0013;
-+		iface |= 0x0003;
- 		break;
- 	default:
- 		return -EINVAL;
+--- a/crypto/authenc.c
++++ b/crypto/authenc.c
+@@ -368,9 +368,10 @@ static void crypto_authenc_encrypt_done(
+ 	if (!err) {
+ 		struct crypto_aead *authenc = crypto_aead_reqtfm(areq);
+ 		struct crypto_authenc_ctx *ctx = crypto_aead_ctx(authenc);
+-		struct ablkcipher_request *abreq = aead_request_ctx(areq);
+-		u8 *iv = (u8 *)(abreq + 1) +
+-			 crypto_ablkcipher_reqsize(ctx->enc);
++		struct authenc_request_ctx *areq_ctx = aead_request_ctx(areq);
++		struct ablkcipher_request *abreq = (void *)(areq_ctx->tail
++							    + ctx->reqoff);
++		u8 *iv = (u8 *)abreq - crypto_ablkcipher_ivsize(ctx->enc);
+ 
+ 		err = crypto_authenc_genicv(areq, iv, 0);
+ 	}
 
 
