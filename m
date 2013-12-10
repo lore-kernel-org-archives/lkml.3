@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab3LJVwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 16:52:18 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:35681 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab3LJVwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 16:52:17 -0500
+	id S1751822Ab3LJV5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 16:57:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab3LJV5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 16:57:46 -0500
+Date: Tue, 10 Dec 2013 16:56:18 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131210215618.GA5050@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+References: <20131210154724.GA30020@redhat.com>
+ <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+ <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+ <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+ <20131210203559.GA1209@redhat.com>
+ <20131210204925.GB27373@redhat.com>
+ <1386709583.3685.78.camel@dvhart-mobl4.amr.corp.intel.com>
+ <CA+55aFx1Eech-MXWgJkERjJPSeg_9HVyLo_8nz=saNJyNmS7Kg@mail.gmail.com>
+ <20131210213201.GF27373@redhat.com>
+ <CA+55aFzkoqH5d3Ya9adqdmgZgZEsuZqTFfevor5k6M99HMF9=Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52A787D0.2070400@zytor.com>
-References: <52A6D9B0.7040506@huawei.com>
-	<CAE9FiQUd+sU4GEq0687u8+26jXJiJVboN90+L7svyosmm+V1Rg@mail.gmail.com>
-	<52A787D0.2070400@zytor.com>
-Date: Tue, 10 Dec 2013 13:52:16 -0800
-X-Google-Sender-Auth: TeY3bEfaPJdISlxeOUh7HTmWTnE
-Message-ID: <CAE9FiQU8Y_thGxZamz0Uwt4FGXh7KJu7jGP8ED3dbjQuyq7vcQ@mail.gmail.com>
-Subject: Re: [PATCH] mm,x86: fix span coverage in e820_all_mapped()
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Xishi Qiu <qiuxishi@huawei.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linn Crosetto <linn@hp.com>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzkoqH5d3Ya9adqdmgZgZEsuZqTFfevor5k6M99HMF9=Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 1:29 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/10/2013 01:06 PM, Yinghai Lu wrote:
->> On Tue, Dec 10, 2013 at 1:06 AM, Xishi Qiu <qiuxishi@huawei.com> wrote:
->>> In the following case, e820_all_mapped() will return 1.
->>> A < start < B-1 and B < end < C, it means <start, end> spans two regions.
->>> <start, end>:           [start - end]
->>> e820 addr:          ...[A - B-1][B - C]...
->>
->> should be [start, end) right?
->> and
->> [A, B),[B, C)
->>
->
-> What happens if it spans more than two regions?
+On Tue, Dec 10, 2013 at 01:49:19PM -0800, Linus Torvalds wrote:
+ > On Tue, Dec 10, 2013 at 1:32 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > http://www.codemonkey.org.uk/junk/perf.data.xz
+ > 
+ >  "Forbidden
+ > 
+ >   You don't have permission to access /junk/perf.data.xz on this server."
 
-[A, B), [B+1, C), [C+1, D) ?
-start in [A, B), and end in [C+1, D).
+fixed.
 
-old code:
-first with [A, B), start set to B.
-then with [B+1, C), start still keep as B.
-then with [C+1, D), start still keep as B.
-at last still return 0...aka not_all_mapped.
+ > also, we'd need the vmlinux file to actually decode the data, I think.
 
-old code is still right.
+Hmm, the only vmlinux I have still around is newer than the running kernel,
+so that's not going to be much help.
+
+	Dave
+
