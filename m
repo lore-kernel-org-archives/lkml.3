@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3LJO0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:26:09 -0500
-Received: from collab.rosalab.ru ([195.19.76.181]:42412 "EHLO
-	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3LJO0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:26:07 -0500
-Message-ID: <52A72466.8050606@rosalab.ru>
-Date: Tue, 10 Dec 2013 18:25:42 +0400
-From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Organization: ROSA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1753880Ab3LJO0O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:26:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753840Ab3LJO0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 09:26:11 -0500
+Message-ID: <52A72463.9080108@redhat.com>
+Date: Tue, 10 Dec 2013 09:25:39 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Daniel Vetter <daniel@ffwll.ch>
-CC: intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: i915: NULL pointer dereference in i915_update_dri1_breadcrumb()
- during shutdown
-References: <52A6D08B.1040802@rosalab.ru> <20131210122351.GF9804@phenom.ffwll.local>
-In-Reply-To: <20131210122351.GF9804@phenom.ffwll.local>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 11/18] mm: fix TLB flush race between migration, and change_protection_range
+References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-12-git-send-email-mgorman@suse.de>
+In-Reply-To: <1386572952-1191-12-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 04:23 PM, Daniel Vetter wrote:
-> On Tue, Dec 10, 2013 at 12:27:55PM +0400, Eugene Shatokhin wrote:
->> Hi,
->>
->> I have recently observed a NULL pointer dereference in i915 driver
->> on my Eee PC running ROSA Linux with kernel 3.10.21.
->>
->> The crash occurs during shutdown but quite rarely, not each time.
->>
->> The system log is lost but here is what I extracted from the info
->> displayed on the screen.
->>
->> NULL pointer dereference at 0x4
->> EIP is at i915_update_dri1_breadcrumb+0x25/0x70
->> comm: systemd-journal
->>
->> i915_update_dri1_breadcrumb+0x25:
->> 	mov    0x4(%eax),%ebx // %eax contains 0, the list of register
->> values confirms that.
->>
->> That is the reading of 'master_priv->sarea_priv':
->>
->> void i915_update_dri1_breadcrumb(struct drm_device *dev)
->> {
->> 	drm_i915_private_t *dev_priv = dev->dev_private;
->> 	struct drm_i915_master_private *master_priv;
->>
->> 	if (dev->primary->master) {
->> 		master_priv = dev->primary->master->driver_priv;
->> 		if (master_priv->sarea_priv) // <<< crashes here
->> 			master_priv->sarea_priv->last_dispatch =
->> 				READ_BREADCRUMB(dev_priv);
->> 	}
->> }
->
-> Indeed, that's fairly hapzardous. But also only needed for legacy ums
-> support. I'll send out a patch to block this in kms mode quickly. Please
-> test it.
->
-> Thanks, Daniel
+On 12/09/2013 02:09 AM, Mel Gorman wrote:
 
-Thanks a lot!
+After reading the locking thread that Paul McKenney started,
+I wonder if I got the barriers wrong in these functions...
 
-I am building kernel 3.10.23 now with this patch applied and will let 
-you know if something goes wrong.
+> +#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+> +/*
+> + * Memory barriers to keep this state in sync are graciously provided by
+> + * the page table locks, outside of which no page table modifications happen.
+> + * The barriers below prevent the compiler from re-ordering the instructions
+> + * around the memory barriers that are already present in the code.
+> + */
+> +static inline bool tlb_flush_pending(struct mm_struct *mm)
+> +{
+> +	barrier();
 
-Regards,
-Eugene
+Should this be smp_mb__after_unlock_lock(); ?
+
+> +	return mm->tlb_flush_pending;
+> +}
+> +static inline void set_tlb_flush_pending(struct mm_struct *mm)
+> +{
+> +	mm->tlb_flush_pending = true;
+> +	barrier();
+> +}
+> +/* Clearing is done after a TLB flush, which also provides a barrier. */
+> +static inline void clear_tlb_flush_pending(struct mm_struct *mm)
+> +{
+> +	barrier();
+> +	mm->tlb_flush_pending = false;
+> +}
+
+And these smp_mb__before_spinlock() ?
+
+Paul? Peter?
 
 -- 
-Eugene Shatokhin, ROSA Laboratory.
-www.rosalab.com
+All rights reversed
