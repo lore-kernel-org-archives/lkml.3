@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab3LJQYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:24:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54306 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3LJQYe (ORCPT
+	id S1754416Ab3LJQ0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:26:54 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:41840 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3LJQ0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:24:34 -0500
-Date: Tue, 10 Dec 2013 17:24:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, scott.norton@hp.com,
-        tom.vaden@hp.com, aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20131210162411.GM12849@twins.programming.kicks-ass.net>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
- <1386063927-6545-5-git-send-email-davidlohr@hp.com>
+	Tue, 10 Dec 2013 11:26:51 -0500
+Date: Tue, 10 Dec 2013 17:26:47 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: suravee.suthikulpanit@amd.com, mingo@kernel.org, mingo@redhat.com,
+        jacob.w.shin@gmail.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, hpa@zytor.com, tgl@domain.invalid,
+        linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
+Subject: Re: [PATCH 2/3] perf tools: allow user to specify hardware
+ breakpoint bp_len
+Message-ID: <20131210162646.GH10633@localhost.localdomain>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1380730268-25807-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <20131210152532.GF10633@localhost.localdomain>
+ <20131210162229.GB23086@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386063927-6545-5-git-send-email-davidlohr@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131210162229.GB23086@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 01:45:27AM -0800, Davidlohr Bueso wrote:
-> @@ -203,6 +221,9 @@ static const struct futex_q futex_q_init = {
->   * waiting on a futex.
->   */
->  struct futex_hash_bucket {
-> +#ifdef CONFIG_SMP
-> +	atomic_t waiters;
-> +#endif
->  	spinlock_t lock;
->  	struct plist_head chain;
->  } ____cacheline_aligned_in_smp;
+On Tue, Dec 10, 2013 at 05:22:29PM +0100, Oleg Nesterov wrote:
+> On 12/10, Frederic Weisbecker wrote:
+> >
+> > On Wed, Oct 02, 2013 at 11:11:07AM -0500, suravee.suthikulpanit@amd.com wrote:
+> > > @@ -525,14 +525,11 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+> > >  	if (parse_breakpoint_type(type, &attr))
+> > >  		return -EINVAL;
+> > >
+> > > -	/*
+> > > -	 * We should find a nice way to override the access length
+> > > -	 * Provide some defaults for now
+> > > -	 */
+> > > -	if (attr.bp_type == HW_BREAKPOINT_X)
+> > > -		attr.bp_len = sizeof(long);
+> > > -	else
+> > > -		attr.bp_len = HW_BREAKPOINT_LEN_4;
+> > > +	/* Provide some defaults if len is not specified */
+> > > +	if (!len)
+> > > +		len = attr.bp_type == HW_BREAKPOINT_X ? sizeof(long) :
+> > > +							HW_BREAKPOINT_LEN_4;
+> >
+> > Why is LEN_4 affected in the type?
+> 
+> Hmm, what do you mean?
 
-> @@ -2805,6 +2906,9 @@ static int __init futex_init(void)
->  	for (i = 0; i < futex_hashsize; i++) {
->  		plist_head_init(&futex_queues[i].chain);
->  		spin_lock_init(&futex_queues[i].lock);
-> +#ifdef CONFIG_SMP
-> +		atomic_set(&futex_queues[i].waiters, 0);
-> +#endif
->  	}
->  
->  	return 0;
+I got confused (as usual) by the x = y == foo ? bar : stuff;
 
-Just remove those two #ifdefs, its not like the data structure size
-matters at this point.
+I suggest we avoid that kind of coding style, at least to spare repeated confused
+and annoying emails from me ;-)
