@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3LJKFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:05:39 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40277 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab3LJKF2 (ORCPT
+	id S1753113Ab3LJKGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:06:01 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:61965 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816Ab3LJKFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:05:28 -0500
+	Tue, 10 Dec 2013 05:05:34 -0500
 From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
 To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
@@ -15,12 +15,10 @@ Cc: grant.likely@linaro.org, rob.herring@calxeda.com, swarren@wwwdotorg.org,
         mark.rutland@arm.com, sachin.kamat@linaro.org,
         b.zolnierkie@samsung.com, jg1.han@samsung.com, t.figa@samsung.com,
         christoffer.dall@linaro.org, joshi@samsung.com,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>
-Subject: [PATCH V3 1/2] Phy: Exynos: Add Exynos5250 sata phy driver
-Date: Tue, 10 Dec 2013 15:35:09 +0530
-Message-Id: <1386669911-17319-2-git-send-email-yuvaraj.cd@samsung.com>
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: [PATCH V3 2/2] ARM: dts: Enable ahci sata and sata phy
+Date: Tue, 10 Dec 2013 15:35:10 +0530
+Message-Id: <1386669911-17319-3-git-send-email-yuvaraj.cd@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com>
 References: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com>
@@ -28,387 +26,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the sata phy driver for Exynos5250.Exynos5250 sata
-phy comprises of CMU and TRSV blocks which are of I2C register Map.
-So this patch also adds a i2c client driver, which is used configure
-the CMU and TRSV block of exynos5250 SATA PHY.
+This patch adds dt entry for ahci sata controller and its
+corresponding phy controller.phy node has been added w.r.t
+new generic phy framework.
 
-This patch incorporates the generic phy framework to deal with sata
-phy.
+Changes since V2:
+	1.Used syscon interface to PMU handling.
+	2.Changed "sata-phy-i2c" to "exynos-sataphy-i2c".
 
-This patch depends on the below patches
-	[1].drivers: phy: add generic PHY framework
-		by Kishon Vijay Abraham I<kishon@ti.com>
-	[2].ata: ahci_platform: Manage SATA PHY
-		by Roger Quadros <rogerq@ti.com>
-
-Changes from V2:
-	1.Removed of_match_table
-	2.Moved to syscon interface for PMU handling.
-
-Changes from V1:
-	1.Adapted to latest version of Generic PHY framework
-	2.Removed exynos_sata_i2c_remove function.
+Changes since V1:
+	1.Minor changes to node name convention.
+	2.Updated binding document.
 
 Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-Signed-off-by: Girish K S <ks.giri@samsung.com>
-Signed-off-by: Vasanth Ananthan <vasanth.a@samsung.com>
 ---
- drivers/phy/Kconfig               |   11 ++
- drivers/phy/Makefile              |    1 +
- drivers/phy/exynos5250_phy_i2c.c  |   44 ++++++++
- drivers/phy/sata_phy_exynos5250.c |  219 +++++++++++++++++++++++++++++++++++++
- drivers/phy/sata_phy_exynos5250.h |   35 ++++++
- 5 files changed, 310 insertions(+)
- create mode 100644 drivers/phy/exynos5250_phy_i2c.c
- create mode 100644 drivers/phy/sata_phy_exynos5250.c
- create mode 100644 drivers/phy/sata_phy_exynos5250.h
+ .../devicetree/bindings/ata/exynos-sata-phy.txt    |   19 ++++++++++++++-----
+ .../devicetree/bindings/ata/exynos-sata.txt        |   17 ++++++++++++-----
+ .../devicetree/bindings/ata/exynos_sataphy_i2c.txt |   12 ++++++++++++
+ arch/arm/boot/dts/exynos5250-arndale.dts           |    9 ++++++++-
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 ++------
+ arch/arm/boot/dts/exynos5250.dtsi                  |   16 ++++++++++++----
+ 6 files changed, 60 insertions(+), 21 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index a344f3d..54f9baf 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -51,4 +51,15 @@ config PHY_EXYNOS_DP_VIDEO
- 	help
- 	  Support for Display Port PHY found on Samsung EXYNOS SoCs.
+diff --git a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+index 37824fa..a679e17 100644
+--- a/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
++++ b/Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+@@ -4,11 +4,20 @@ SATA PHY nodes are defined to describe on-chip SATA Physical layer controllers.
+ Each SATA PHY controller should have its own node.
  
-+config EXYNOS5250_SATA_PHY
-+	tristate "Exynos5250 Sata SerDes/PHY driver"
-+	depends on SOC_EXYNOS5250
-+	select GENERIC_PHY
-+	select MFD_SYSCON if ARCH_EXYNOS5
-+	help
-+	  Enable this to support SATA SerDes/Phy found on Samsung's
-+	  Exynos5250 based SoCs.This SerDes/Phy supports SATA 1.5 Gb/s,
-+	  SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds.It supports one SATA host
-+	  port to accept one SATA device.
-+
- endmenu
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index d0caae9..af98f32 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -7,3 +7,4 @@ obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
- obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
- obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
-+obj-$(CONFIG_EXYNOS5250_SATA_PHY)	+= sata_phy_exynos5250.o exynos5250_phy_i2c.o
-diff --git a/drivers/phy/exynos5250_phy_i2c.c b/drivers/phy/exynos5250_phy_i2c.c
+ Required properties:
+-- compatible        : compatible list, contains "samsung,exynos5-sata-phy"
++- compatible        : compatible list, contains "samsung,exynos5250-sata-phy"
+ - reg               : <registers mapping>
+ 
+ Example:
+-        sata@ffe07000 {
+-                compatible = "samsung,exynos5-sata-phy";
+-                reg = <0xffe07000 0x1000>;
+-        };
++	sata_phy: sata-phy@12170000 {
++		compatible = "samsung,exynos5250-sata-phy";
++		reg = <0x12170000 0x1ff>;
++		clocks = <&clock 287>;
++		clock-names = "sata_phyctrl";
++		#phy-cells = <0>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		sataphy-pmu {
++			reg = <0x10040724 0x4>;
++			};
++	};
+diff --git a/Documentation/devicetree/bindings/ata/exynos-sata.txt b/Documentation/devicetree/bindings/ata/exynos-sata.txt
+index 0849f10..918bff8 100644
+--- a/Documentation/devicetree/bindings/ata/exynos-sata.txt
++++ b/Documentation/devicetree/bindings/ata/exynos-sata.txt
+@@ -8,10 +8,17 @@ Required properties:
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
+ - samsung,sata-freq : <frequency in MHz>
++- phys              : as mentioned in phy-bindings.txt
++- phy-names         : as mentioned in phy-bindings.txt
+ 
+ Example:
+-        sata@ffe08000 {
+-                compatible = "samsung,exynos5-sata";
+-                reg = <0xffe08000 0x1000>;
+-                interrupts = <115>;
+-        };
++	sata@122f0000 {
++		compatible = "snps,dwc-ahci";
++		samsung,sata-freq = <66>;
++		reg = <0x122f0000 0x1ff>;
++		interrupts = <0 115 0>;
++		clocks = <&clock 277>, <&clock 143>;
++		clock-names = "sata", "sclk_sata";
++		phys = <&sata_phy>;
++		phy-names = "sata-phy";
++	};
+diff --git a/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt b/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
 new file mode 100644
-index 0000000..c0c1150
+index 0000000..deabba9
 --- /dev/null
-+++ b/drivers/phy/exynos5250_phy_i2c.c
-@@ -0,0 +1,44 @@
-+/*
-+ * Copyright (C) 2013 Samsung Electronics Co.Ltd
-+ * Author:
-+ *	Yuvaraj C D <yuvaraj.cd@samsung.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ *
-+ */
++++ b/Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
+@@ -0,0 +1,12 @@
++Device-Tree bindings for sataphy i2c client driver
 +
-+#include <linux/i2c.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include "sata_phy_exynos5250.h"
++Required properties:
++compatible: Should be "samsung,exynos-sataphy-i2c"
++- reg: I2C address of the sataphy i2c device.
 +
-+static int exynos_sata_i2c_probe(struct i2c_client *client,
-+		const struct i2c_device_id *i2c_id)
-+{
-+	int ret = 0;
-+	ret = sataphy_attach_i2c_client(client);
-+	if (ret < 0)
-+		return ret;
++Example:
 +
-+	dev_info(&client->adapter->dev,
-+		"attached %s into sataphy i2c adapter successfully\n",
-+		client->name);
++	sata-phy@38 {
++		compatible = "samsung,exynos-sataphy-i2c";
++		reg = <0x38>;
++	};
+diff --git a/arch/arm/boot/dts/exynos5250-arndale.dts b/arch/arm/boot/dts/exynos5250-arndale.dts
+index b77a37e..dca74bb 100644
+--- a/arch/arm/boot/dts/exynos5250-arndale.dts
++++ b/arch/arm/boot/dts/exynos5250-arndale.dts
+@@ -381,7 +381,14 @@
+ 	};
+ 
+ 	i2c@121D0000 {
+-		status = "disabled";
++		samsung,i2c-sda-delay = <100>;
++		samsung,i2c-max-bus-freq = <40000>;
++		samsung,i2c-slave-addr = <0x38>;
 +
-+	return ret;
-+}
-+
-+static const struct i2c_device_id sataphy_i2c_device_match[] = {
-+	{ "exynos-sataphy-i2c", 0 },
-+};
-+
-+struct i2c_driver sataphy_i2c_driver = {
-+	.probe		= exynos_sata_i2c_probe,
-+	.id_table	= sataphy_i2c_device_match,
-+	.driver   = {
-+		.name = "exynos-sataphy-i2c",
-+		.owner = THIS_MODULE,
-+		},
-+};
-diff --git a/drivers/phy/sata_phy_exynos5250.c b/drivers/phy/sata_phy_exynos5250.c
-new file mode 100644
-index 0000000..b147119
---- /dev/null
-+++ b/drivers/phy/sata_phy_exynos5250.c
-@@ -0,0 +1,219 @@
-+/*
-+ * Samsung SATA SerDes(PHY) driver
-+ *
-+ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-+ * Authors: Girish K S <ks.giri@samsung.com>
-+ *         Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/i2c.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/spinlock.h>
-+#include <linux/mfd/syscon.h>
-+#include "sata_phy_exynos5250.h"
-+
-+static struct i2c_client *phy_i2c_client;
-+
-+struct exynos_sata_phy {
-+	struct phy *phy;
-+	struct clk *phyclk;
-+	void __iomem *regs;
-+	void __iomem *pmureg;
-+};
-+
-+static bool wait_for_reg_status(void __iomem *base, u32 reg, u32 checkbit,
-+				u32 status)
-+{
-+	unsigned long timeout = jiffies + usecs_to_jiffies(1000);
-+	while (time_before(jiffies, timeout)) {
-+		if ((readl(base + reg) & checkbit) == status)
-+			return true;
-+	}
-+	return false;
-+}
-+
-+int sataphy_attach_i2c_client(struct i2c_client *sata_phy)
-+{
-+	if (!sata_phy)
-+		return -EPROBE_DEFER;
-+	else
-+		phy_i2c_client = sata_phy;
-+
-+	return 0;
-+}
-+
-+static int exynos_sata_phy_power_on(struct phy *phy)
-+{
-+	struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
-+
-+	if (sata_phy->pmureg)
-+		regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
-+			EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
-+
-+	return 0;
-+}
-+
-+static int exynos_sata_phy_power_off(struct phy *phy)
-+{
-+	struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
-+
-+	if (sata_phy->pmureg)
-+		regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
-+			EXYNOS5_SATAPHY_PMU_ENABLE, ~EXYNOS_SATA_PHY_EN);
-+
-+	return 0;
-+}
-+
-+static int exynos_sata_phy_init(struct phy *phy)
-+{
-+	u32 val = 0;
-+	int ret = 0;
-+	u8 buf[] = { 0x3A, 0x0B };
-+	struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
-+
-+	if (sata_phy->pmureg)
-+		regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
-+			EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
-+
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-+
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-+	val |= 0xFF;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-+
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-+	val |= LINK_RESET;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-+
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-+	val |= RESET_CMN_RST_N;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-+	val &= ~PHCTRLM_REF_RATE;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-+
-+	/* High speed enable for Gen3 */
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-+	val |= PHCTRLM_HIGH_SPEED;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-+
-+	val |= CTRL0_P0_PHY_CALIBRATED_SEL | CTRL0_P0_PHY_CALIBRATED;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_CTRL0);
-+
-+	writel(0x2, sata_phy->regs + EXYNOS5_SATA_MODE0);
-+
-+	ret = i2c_master_send(phy_i2c_client, buf, sizeof(buf));
-+	if (ret < 0)
-+		return -ENXIO;
-+
-+	/* release cmu reset */
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-+	val &= ~RESET_CMN_RST_N;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-+
-+	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-+	val |= RESET_CMN_RST_N;
-+	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-+
-+	return (wait_for_reg_status(sata_phy->regs, EXYNOS5_SATA_PHSATA_STATM,
-+		PHSTATM_PLL_LOCKED, 1)) ? 0 : -EINVAL;
-+
-+}
-+
-+static struct phy_ops exynos_sata_phy_ops = {
-+	.init		= exynos_sata_phy_init,
-+	.power_on	= exynos_sata_phy_power_on,
-+	.power_off	= exynos_sata_phy_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int exynos_sata_phy_probe(struct platform_device *pdev)
-+{
-+	struct exynos_sata_phy *sata;
-+	struct device *dev = &pdev->dev;
-+	struct resource *res;
-+	struct phy_provider *phy_provider;
-+	int ret = 0;
-+
-+	sata = devm_kzalloc(dev, sizeof(*sata), GFP_KERNEL);
-+	if (!sata)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	sata->regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(sata->regs))
-+		return PTR_ERR(sata->regs);
-+
-+	sata->pmureg = syscon_regmap_lookup_by_phandle(dev->of_node,
-+					"samsung,syscon-phandle");
-+	if (!sata->pmureg) {
-+		dev_err(dev, "syscon regmap lookup failed.\n");
-+		return PTR_ERR(sata->pmureg);
-+	}
-+	dev_set_drvdata(dev, sata);
-+
-+	if (i2c_add_driver(&sataphy_i2c_driver)) {
-+		dev_err(dev, "failed to register sataphy i2c driver\n");
-+		return -ENOENT;
-+	}
-+
-+	sata->phyclk = devm_clk_get(dev, "sata_phyctrl");
-+	if (IS_ERR(sata->phyclk)) {
-+		dev_err(dev, "failed to get clk for PHY\n");
-+		return PTR_ERR(sata->phyclk);
-+	}
-+
-+	ret = clk_prepare_enable(sata->phyclk);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to enable source clk\n");
-+		return ret;
-+	}
-+
-+	phy_provider = devm_of_phy_provider_register(dev,
-+					of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	sata->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
-+	if (IS_ERR(sata->phy)) {
-+		dev_err(dev, "failed to create PHY\n");
-+		return PTR_ERR(sata->phy);
-+	}
-+	phy_set_drvdata(sata->phy, sata);
-+	return 0;
-+}
-+
-+static const struct of_device_id exynos_sata_phy_of_match[] = {
-+	{ .compatible = "samsung,exynos5250-sata-phy" },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, exynos_sata_phy_of_match);
-+
-+static struct platform_driver exynos_sata_phy_driver = {
-+	.probe	= exynos_sata_phy_probe,
-+	.driver = {
-+		.of_match_table	= exynos_sata_phy_of_match,
-+		.name  = "samsung,sata-phy",
-+		.owner = THIS_MODULE,
-+	}
-+};
-+module_platform_driver(exynos_sata_phy_driver);
-+
-+MODULE_DESCRIPTION("Samsung SerDes PHY driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("ks.giri <ks.giri@samsung.com>");
-+MODULE_AUTHOR("Yuvaraj C D <yuvaraj.cd@samsung.com>");
-diff --git a/drivers/phy/sata_phy_exynos5250.h b/drivers/phy/sata_phy_exynos5250.h
-new file mode 100644
-index 0000000..3e2089d
---- /dev/null
-+++ b/drivers/phy/sata_phy_exynos5250.h
-@@ -0,0 +1,35 @@
-+/*
-+ *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ * Author:
-+ *	Yuvaraj Kumar C D<yuvaraj.cd@samsung.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#define EXYNOS5_SATA_RESET		0x4
-+#define EXYNOS5_SATA_MODE0		0x10
-+#define EXYNOS5_SATA_CTRL0		0x14
-+#define EXYNOS5_SATA_STAT0		0x18
-+#define EXYNOS5_SATA_PHSATA_CTRLM	0xE0
-+#define EXYNOS5_SATA_PHSATA_CTRL0	0xE4
-+#define EXYNOS5_SATA_PHSATA_STATM	0xF0
-+#define EXYNOS5_SATA_PHSTAT0		0xF4
-+
-+#define RESET_CMN_RST_N			(1 << 1)
-+#define LINK_RESET			0xF0000
-+#define CTRL0_P0_PHY_CALIBRATED_SEL	(1 << 9)
-+#define CTRL0_P0_PHY_CALIBRATED		(1 << 8)
-+#define PHCTRLM_REF_RATE		(1 << 1)
-+#define PHCTRLM_HIGH_SPEED		(1 << 0)
-+#define PHSTATM_PLL_LOCKED		(1 << 0)
-+#define SATA_PHY_CON_RESET		(LINK_RESET | 3F)
-+#define EXYNOS_SATA_PHY_EN		(1 << 0)
-+#define SATAPHY_CONTROL_OFFSET		0x0724
-+#define EXYNOS5_SATAPHY_PMU_ENABLE	(1 << 0)
-+
-+int sataphy_attach_i2c_client(struct i2c_client *sata_phy);
-+extern struct i2c_driver sataphy_i2c_driver;
++		sata-phy@38 {
++			compatible = "samsung,exynos-sataphy-i2c";
++			reg = <0x38>;
++		};
+ 	};
+ 
+ 	mmc_0: mmc@12200000 {
+diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+index 13746df..b3c359a4 100644
+--- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
++++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+@@ -90,16 +90,12 @@
+ 		samsung,i2c-max-bus-freq = <40000>;
+ 		samsung,i2c-slave-addr = <0x38>;
+ 
+-		sata-phy {
+-			compatible = "samsung,sata-phy";
++		sata-phy@38 {
++			compatible = "samsung,exynos-sataphy-i2c";
+ 			reg = <0x38>;
+ 		};
+ 	};
+ 
+-	sata@122F0000 {
+-		samsung,sata-freq = <66>;
+-	};
+-
+ 	i2c@12C80000 {
+ 		samsung,i2c-sda-delay = <100>;
+ 		samsung,i2c-max-bus-freq = <66000>;
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 5d5d3d0..5d4c8fa 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -46,6 +46,7 @@
+ 		i2c6 = &i2c_6;
+ 		i2c7 = &i2c_7;
+ 		i2c8 = &i2c_8;
++		i2c9 = &i2c_9;
+ 		pinctrl0 = &pinctrl_0;
+ 		pinctrl1 = &pinctrl_1;
+ 		pinctrl2 = &pinctrl_2;
+@@ -229,16 +230,23 @@
+ 	};
+ 
+ 	sata@122F0000 {
+-		compatible = "samsung,exynos5-sata-ahci";
++		compatible = "snps,dwc-ahci";
++		samsung,sata-freq = <66>;
+ 		reg = <0x122F0000 0x1ff>;
+ 		interrupts = <0 115 0>;
+ 		clocks = <&clock 277>, <&clock 143>;
+ 		clock-names = "sata", "sclk_sata";
++		phys = <&sata_phy>;
++		phy-names = "sata-phy";
+ 	};
+ 
+-	sata-phy@12170000 {
+-		compatible = "samsung,exynos5-sata-phy";
++	sata_phy: sata-phy@12170000 {
++		compatible = "samsung,exynos5250-sata-phy";
+ 		reg = <0x12170000 0x1ff>;
++		clocks = <&clock 287>;
++		clock-names = "sata_phyctrl";
++		#phy-cells = <0>;
++		samsung,syscon-phandle = <&pmu_syscon>;
+ 	};
+ 
+ 	i2c_0: i2c@12C60000 {
+@@ -347,7 +355,7 @@
+ 		clock-names = "i2c";
+ 	};
+ 
+-	i2c@121D0000 {
++	i2c_9: i2c@121D0000 {
+                 compatible = "samsung,exynos5-sata-phy-i2c";
+                 reg = <0x121D0000 0x100>;
+                 #address-cells = <1>;
 -- 
 1.7.9.5
 
