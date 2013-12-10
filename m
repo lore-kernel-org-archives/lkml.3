@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3LJIez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:34:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58478 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab3LJIAC (ORCPT
+	id S1755700Ab3LJIfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:35:38 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56738 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab3LJIfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:02 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 16/52] ASoC: wm8731: fix dsp mode configuration
-Date: Tue, 10 Dec 2013 00:00:49 -0800
-Message-Id: <20131210075955.349588311@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
-References: <20131210075954.196229872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 10 Dec 2013 03:35:33 -0500
+X-AuditID: 9c930197-b7bdbae000000e78-4b-52a6d253e62b
+Date: Tue, 10 Dec 2013 17:38:25 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 2/7] mm/migrate: correct failure handling if
+ !hugepage_migration_support()
+Message-ID: <20131210083825.GB24992@lge.com>
+References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1386580248-22431-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000142d8263858-5c29199b-77e5-47a5-9db6-2ea6ea7c7fc8-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142d8263858-5c29199b-77e5-47a5-9db6-2ea6ea7c7fc8-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 09, 2013 at 04:17:32PM +0000, Christoph Lameter wrote:
+> On Mon, 9 Dec 2013, Joonsoo Kim wrote:
+> 
+> > We should remove the page from the list if we fail without ENOSYS,
+> > since migrate_pages() consider error cases except -ENOMEM and -EAGAIN
+> > as permanent failure and it assumes that the page would be removed from
+> > the list. Without this patch, we could overcount number of failure.
+> 
+> Ok what does the patch do about this? I dont see any modifications. Remove
+> this part of the description?
 
-------------------
+Description is slightly wrong.
+Following is correct one.
 
-From: Bo Shen <voice.shen@atmel.com>
+"We should remove the page from the list if we fail *with* ENOSYS,"
 
-commit b4af6ef99a60c5b56df137d7accd81ba1ee1254e upstream.
+And this patch do this by adding putback_active_hugepage(hpage)
+on ENOSYS case.
 
-According to WM8731 "PD, Rev 4.9 October 2012" datasheet, when it
-works in DSP mode A, LRP = 1, while works in DSP mode B, LRP = 0.
-So, fix LRP for DSP mode as the datesheet specification.
+> 
+> > In addition, we should put back the new hugepage if
+> > !hugepage_migration_support(). If not, we would leak hugepage memory.
+> 
+> Ok looks like that is fixed by this patch.
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/codecs/wm8731.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -407,10 +407,10 @@ static int wm8731_set_dai_fmt(struct snd
- 		iface |= 0x0001;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
-+		iface |= 0x0013;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0013;
-+		iface |= 0x0003;
- 		break;
- 	default:
- 		return -EINVAL;
-
-
+Thanks.
