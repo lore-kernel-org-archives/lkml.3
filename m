@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab3LJIhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:37:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58440 "EHLO
+	id S1752711Ab3LJH7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:59:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab3LJH7l (ORCPT
+	with ESMTP id S1752656Ab3LJH7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:41 -0500
+	Tue, 10 Dec 2013 02:59:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Praveen Murali <pmurali@logicube.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.4 07/25] SCSI: libsas: fix usage of ata_tf_to_fis
-Date: Tue, 10 Dec 2013 00:00:15 -0800
-Message-Id: <20131210075931.340708726@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 3.4 04/25] ASoC: wm8990: Mark the register map as dirty when powering down
+Date: Tue, 10 Dec 2013 00:00:12 -0800
+Message-Id: <20131210075931.128738068@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -28,44 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
+commit 2ab2b74277a86afe0dd92976db695a2bb8b93366 upstream.
 
-Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
-update the libata documentation" we have been passing pmp=1 and is_cmd=0
-to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
-discover correctly.  His investigation found that the BIOS was passing
-pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
-Update libsas to follow the libata example of pulling the pmp setting
-from the ata_link and correct is_cmd to be 1 since all tf's submitted
-through ->qc_issue are commands.  Presumably libsas lldds do not care
-about is_cmd as they have sideband mechanisms to perform link
-management.
+Otherwise we'll skip sync on resume.
 
-http://marc.info/?l=linux-scsi&m=138179681726990
-
-[jejb: checkpatch fix]
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Reported-by: Praveen Murali <pmurali@logicube.com>
-Tested-by: Praveen Murali <pmurali@logicube.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/libsas/sas_ata.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8990.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(str
- 		qc->tf.nsect = 0;
+--- a/sound/soc/codecs/wm8990.c
++++ b/sound/soc/codecs/wm8990.c
+@@ -1265,6 +1265,8 @@ static int wm8990_set_bias_level(struct
+ 
+ 		/* disable POBCTRL, SOFT_ST and BUFDCOPEN */
+ 		snd_soc_write(codec, WM8990_ANTIPOP2, 0x0);
++
++		codec->cache_sync = 1;
+ 		break;
  	}
  
--	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
-+	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
- 	task->uldd_task = qc;
- 	if (ata_is_atapi(qc->tf.protocol)) {
- 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
 
 
