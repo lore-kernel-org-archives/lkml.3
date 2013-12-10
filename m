@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab3LJTUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:20:09 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:49110 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3LJTSB (ORCPT
+	id S1754118Ab3LJTSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:18:00 -0500
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:35190 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3LJTR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:18:01 -0500
+	Tue, 10 Dec 2013 14:17:57 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, nfs-ganesha-devel@lists.sourceforge.net,
         samba-technical@lists.samba.org
-Subject: [PATCH v3 4/6] locks: show private lock types in /proc/locks
-Date: Tue, 10 Dec 2013 14:17:33 -0500
-Message-Id: <1386703055-22308-5-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v3 2/6] locks: consolidate checks for compatible filp->f_mode values in setlk handlers
+Date: Tue, 10 Dec 2013 14:17:31 -0500
+Message-Id: <1386703055-22308-3-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
 References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
@@ -21,62 +21,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a later patch, we'll be adding a new type of lock that's owned by
-the struct file instead of the files_struct. Those sorts of locks
-will be flagged with a new IS_FILE_PVT flag.
-
-Show "private" locks in /proc/locks with a 'P' suffix. This does mean
-that we need to widen the column by one character.
+Move this check into the posix_lock_setup_common handler instead of
+duplicating this check in two places. This also fixes a minor wart in
+the code where we continue referring to the struct flock after
+converting it to struct file_lock.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/locks.c         | 9 ++++++---
- include/linux/fs.h | 1 +
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ fs/locks.c | 46 ++++++++++++----------------------------------
+ 1 file changed, 12 insertions(+), 34 deletions(-)
 
 diff --git a/fs/locks.c b/fs/locks.c
-index fb10d58..e163a30 100644
+index a5848ed..f96c455 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -135,6 +135,7 @@
- #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
- #define IS_FLOCK(fl)	(fl->fl_flags & FL_FLOCK)
- #define IS_LEASE(fl)	(fl->fl_flags & (FL_LEASE|FL_DELEG))
-+#define IS_FILE_PVT(fl)	(fl->fl_flags & FL_FILE_PVT)
+@@ -354,6 +354,18 @@ flock_to_posix_lock_common(struct file_lock *fl, struct file *filp, short type)
+ 	fl->fl_ops = NULL;
+ 	fl->fl_lmops = NULL;
  
- static bool lease_breaking(struct file_lock *fl)
- {
-@@ -2358,13 +2359,15 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
- 		seq_printf(f, "UNKNOWN UNKNOWN  ");
- 	}
- 	if (fl->fl_type & LOCK_MAND) {
--		seq_printf(f, "%s ",
-+		seq_printf(f, "%s  ",
- 			       (fl->fl_type & LOCK_READ)
- 			       ? (fl->fl_type & LOCK_WRITE) ? "RW   " : "READ "
- 			       : (fl->fl_type & LOCK_WRITE) ? "WRITE" : "NONE ");
-+	} else if (IS_FILE_PVT(fl)) {
-+		seq_printf(f, "%s ", fl->fl_type == F_WRLCK ?  "WRITEP" : "READP ");
- 	} else {
--		seq_printf(f, "%s ",
--			       (lease_breaking(fl))
-+		seq_printf(f, "%s  ",
-+			       lease_breaking(fl)
- 			       ? (fl->fl_type == F_UNLCK) ? "UNLCK" : "READ "
- 			       : (fl->fl_type == F_WRLCK) ? "WRITE" : "READ ");
- 	}
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 51974e0..639a3b7 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -888,6 +888,7 @@ static inline int file_check_writeable(struct file *filp)
- #define FL_SLEEP	128	/* A blocking lock */
- #define FL_DOWNGRADE_PENDING	256 /* Lease is being downgraded */
- #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
-+#define FL_FILE_PVT	1024	/* lock is private to the file */
++	/* Ensure that fl->fl_filp has compatible f_mode */
++	switch (type) {
++	case F_RDLCK:
++		if (!(filp->f_mode & FMODE_READ))
++			return -EBADF;
++		break;
++	case F_WRLCK:
++		if (!(filp->f_mode & FMODE_WRITE))
++			return -EBADF;
++		break;
++	}
++
+ 	return assign_type(fl, type);
+ }
  
- /*
-  * Special return value from posix_lock_file() and vfs_lock_file() for
+@@ -2060,23 +2072,6 @@ again:
+ 		file_lock->fl_flags |= FL_SLEEP;
+ 	}
+ 	
+-	error = -EBADF;
+-	switch (flock.l_type) {
+-	case F_RDLCK:
+-		if (!(filp->f_mode & FMODE_READ))
+-			goto out;
+-		break;
+-	case F_WRLCK:
+-		if (!(filp->f_mode & FMODE_WRITE))
+-			goto out;
+-		break;
+-	case F_UNLCK:
+-		break;
+-	default:
+-		error = -EINVAL;
+-		goto out;
+-	}
+-
+ 	error = do_lock_file_wait(filp, cmd, file_lock);
+ 
+ 	/*
+@@ -2178,23 +2173,6 @@ again:
+ 		file_lock->fl_flags |= FL_SLEEP;
+ 	}
+ 	
+-	error = -EBADF;
+-	switch (flock.l_type) {
+-	case F_RDLCK:
+-		if (!(filp->f_mode & FMODE_READ))
+-			goto out;
+-		break;
+-	case F_WRLCK:
+-		if (!(filp->f_mode & FMODE_WRITE))
+-			goto out;
+-		break;
+-	case F_UNLCK:
+-		break;
+-	default:
+-		error = -EINVAL;
+-		goto out;
+-	}
+-
+ 	error = do_lock_file_wait(filp, cmd, file_lock);
+ 
+ 	/*
 -- 
 1.8.4.2
 
