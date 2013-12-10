@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab3LJVma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 16:42:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27584 "EHLO mx1.redhat.com"
+	id S1751621Ab3LJVqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 16:46:01 -0500
+Received: from www.sr71.net ([198.145.64.142]:56311 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab3LJVm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 16:42:28 -0500
-Date: Tue, 10 Dec 2013 16:41:43 -0500
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131210214143.GG27373@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Darren Hart <dvhart@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-References: <20131210154724.GA30020@redhat.com>
- <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
- <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
- <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com>
- <20131210213431.GA6342@redhat.com>
+	id S1750836Ab3LJVp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 16:45:58 -0500
+Message-ID: <52A78B55.8050500@sr71.net>
+Date: Tue, 10 Dec 2013 13:44:53 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210213431.GA6342@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] [RFC] mm: slab: separate slab_page from 'struct page'
+References: <20131210204641.3CB515AE@viggo.jf.intel.com> <00000142de5634af-f92870a7-efe2-45cd-b50d-a6fbdf3b353c-000000@email.amazonses.com>
+In-Reply-To: <00000142de5634af-f92870a7-efe2-45cd-b50d-a6fbdf3b353c-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 10:34:31PM +0100, Oleg Nesterov wrote:
- > On 12/10, Dave Jones wrote:
- > >
- > > On Tue, Dec 10, 2013 at 09:35:59PM +0100, Oleg Nesterov wrote:
- > >  >
- > >  > I am looking at the first message and I can't understand who stuck
- > >  > "at exit".
- > >  >
- > >  > The trace shows that the task with pid=10818 called sys_futex() ?
- > >  >
- > >  > Perhaps "exit" means the userspace paths?
- > >
- > > pid 1131 is wait()'ing for 10818 to exit
- > >
- > > pid 1130 is periodically sending SIGKILL to 10818 because it's gotten
- > > tired of waiting. 10818 is ignoring these because it's stuck in a loop
- > > somewhere in the kernel.
- > 
- > OK, thanks. So it doesn't return to user-space.
- > 
- > could you do
- > 
- > 	cd /sys/kernel/debug/tracing/
- > 	echo 10818 >> set_ftrace_pid
- > 	echo function_graph >> current_tracer
- > 	echo 1 >> tracing_on
- > 
- > and look into "trace" file to find out how exactly it loops?
+On 12/10/2013 01:07 PM, Christoph Lameter wrote:
+> On Tue, 10 Dec 2013, Dave Hansen wrote:
+>> At least for slab, this doesn't turn out to be too big of a deal:
+>> it's only 8 casts.  slub looks like it'll be a bit more work, but
+>> still manageable.
+> 
+> The single page struct definitions makes it easy to see how a certain
+> field is being used in various subsystems. If you add a field then you
+> can see other use cases in other subsystems. If you happen to call
+> them then you know that there is trouble afoot.
 
-http://codemonkey.org.uk/junk/trace
+First of all, I'd really argue with the assertion that the way it is now
+make it easy to figure anything out.  Maybe we can take a vote. :)
 
-	Dave
+We _need_ to share fields when the structure is handed between different
+subsystems and it needs to be consistent in both places.  For slab page
+at least, the only data that actually gets used consistently is
+page->flags.  It seems silly to bend over backwards just to share a
+single bitfield.
+
+> How do you ensure that the sizes and the locations of the fields in
+> multiple page structs stay consistent?
+
+Check out the BUILD_BUG_ON().  That shows one example of how we do it
+for a field location.  We could do the same for sizeof() the two.
+
+> As far as I can tell we are trying to put everything into one page struct
+> to keep track of the uses of various fields and to allow a reference for
+> newcomes to the kernel.
+
+If the goal is to make a structure which is approachable to newcomers to
+the kernel, then I think we've utterly failed.
 
