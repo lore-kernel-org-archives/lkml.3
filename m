@@ -1,124 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab3LJEmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 23:42:49 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52196 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab3LJEmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 23:42:47 -0500
-Date: Mon, 9 Dec 2013 22:41:57 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: Michal Nazarewicz <mina86@mina86.com>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v7 2/5] usb: gadget: add quirk_ep_out_aligned_size field
- to struct usb_gadget
-Message-ID: <20131210044117.GA28252@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1386633338-10919-1-git-send-email-david.a.cohen@linux.intel.com>
- <1386633338-10919-3-git-send-email-david.a.cohen@linux.intel.com>
- <xa1t7gbdfn8c.fsf@mina86.com>
- <52A68BF7.2080901@linux.intel.com>
+	id S1751278Ab3LJE4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 23:56:22 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:39333 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750992Ab3LJE4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 23:56:19 -0500
+Message-ID: <52A69EEE.7080904@free-electrons.com>
+Date: Tue, 10 Dec 2013 05:56:14 +0100
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
-Content-Disposition: inline
-In-Reply-To: <52A68BF7.2080901@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>, daniel.lezcano@linaro.org,
+        tglx@linutronix.de, thierry.reding@gmail.com
+CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] clocksource: tegra: remove deprecated IRQF_DISABLED
+References: <1381639360-6920-1-git-send-email-michael.opdenacker@free-electrons.com> <1386581745-4559-1-git-send-email-michael.opdenacker@free-electrons.com> <52A5F899.1070706@wwwdotorg.org>
+In-Reply-To: <52A5F899.1070706@wwwdotorg.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---KFztAG8eRSV9hGtP
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/09/2013 06:06 PM, Stephen Warren wrote:
+> On 12/09/2013 02:35 AM, Michael Opdenacker wrote:
+>> This patch proposes to remove the use of the IRQF_DISABLED flag
+>>
+>> It's a NOOP since 2.6.35 and it will be removed one day.
+> I assume that the maintainers for drivers/clocksource/ will apply this.
+> If not, let me know, and I can take it through the Tegra tree.
+>
+Yes, Daniel Lezcano told me he applied the 3 patches I sent (thanks!).
 
-On Mon, Dec 09, 2013 at 07:35:19PM -0800, David Cohen wrote:
-> On 12/09/2013 06:34 PM, Michal Nazarewicz wrote:
-> > dOn Tue, Dec 10 2013, David Cohen wrote:
-> >> Due to USB controllers may have different restrictions, usb gadget lay=
-er
-> >> needs to provide a generic way to inform gadget functions to complain
-> >> with non-standard requirements.
-> >>
-> >> This patch adds 'quirk_ep_out_aligned_size' field to struct usb_gadget
-> >> to inform when controller's epout requires buffer size to be aligned to
-> >> MaxPacketSize. A helper is also provided to align buffer size when
-> >> necessary.
-> >>
-> >> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> >> Cc: Alan Stern <stern@rowland.harvard.edu>
-> >> Cc: Michal Nazarewicz <mina86@mina86.com>
-> >=20
-> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> >=20
-> >> ---
-> >>  include/linux/usb/gadget.h | 20 ++++++++++++++++++++
-> >>  1 file changed, 20 insertions(+)
-> >>
-> >> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> >> index 23b3bfd0a842..cae8a6216551 100644
-> >> --- a/include/linux/usb/gadget.h
-> >> +++ b/include/linux/usb/gadget.h
-> >> @@ -502,6 +502,8 @@ struct usb_gadget_ops {
-> >>   *	only supports HNP on a different root port.
-> >>   * @b_hnp_enable: OTG device feature flag, indicating that the A-Host
-> >>   *	enabled HNP support.
-> >> + * @quirk_ep_out_aligned_size: epout requires buffer size to be align=
-ed to
-> >> + *	MaxPacketSize.
-> >>   *
-> >>   * Gadgets have a mostly-portable "gadget driver" implementing device
-> >>   * functions, handling all usb configurations and interfaces.  Gadget
-> >> @@ -541,6 +543,7 @@ struct usb_gadget {
-> >>  	unsigned			b_hnp_enable:1;
-> >>  	unsigned			a_hnp_support:1;
-> >>  	unsigned			a_alt_hnp_support:1;
-> >> +	unsigned			quirk_ep_out_aligned_size:1;
-> >>  };
-> >>  #define work_to_gadget(w)	(container_of((w), struct usb_gadget, work))
-> >> =20
-> >> @@ -559,6 +562,23 @@ static inline struct usb_gadget *dev_to_usb_gadge=
-t(struct device *dev)
-> >> =20
-> >> =20
-> >>  /**
-> >> + * usb_ep_align_maybe - returns @len aligned to ep's maxpacketsize if=
- gadget
-> >> + *	requires quirk_ep_out_aligned_size, otherwise reguens len.
-> >=20
-> > =E2=80=9Creturns=E2=80=9D
->=20
-> I've got no idea how returns became reguens :)
-> But maybe Felipe can fix it when applying?
+Thank you for your support!
 
-Sure, but you owe me a beer hehe :-)
+Cheers,
 
---=20
-balbi
+Michael.
 
---KFztAG8eRSV9hGtP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSppuVAAoJEIaOsuA1yqREtaMQAKfZNdLyIIaZ4jp8yQEQ/1TA
-wc/xMIviG+r9bUy/iPdcxJdsTGYwBPyBzYA2l7y/psDgy2rANnJX55WT683XFEQw
-KIvnKTNXhpRRiydSUv/Zc0F0PFMf+QvWqLU2GSko/7UkkfyRpGESvizXH8fbCoRh
-Acbu3MvAWD/uyohrEaYcHTsQ5kXzv8gHuLX8bJCs3yl36vSFGCVREkL268MmoVes
-SKqSb29fR0HWl6b9HidZW/8wKvVf7y5J4YVa9SE6F8NfqrodamL02LGge/4xrvlO
-0pdQGXCG99XX9s81WQjaQC/w5GCtwfNPynS2/FBYHlGgee+SRV93R4e00bQfJ13b
-KSK9n7pmT5h7/L7WfXIRA5fiyHfUQkLGgNXRhjGD2i5mHfxZ0VjSXA7PCRNWqCMO
-GSQ9Y0uSj5HGnwet+3woJjnCvevtX/ultl/iLZzjNIYFzpCv4OUghaBmxmtlBe7D
-0E3c68h3Q4IH8H3CAM2PT1AciaGvQ9nP/Bv79j+uGryZdKs3KKmb5WVKbjUdiUHi
-k0rGRnLaDlLZjvzND44Nex5eSC0hjjYAXjwe7LtWZ5/eNn9a2d1iT1s5apWjrz7q
-9HknleUjOUz8QfsFI5oc+sCw8uefCOaTtfUA2tT1JIchCgI4+lvTQkJQyFdxomyK
-SpunshkJKk2XljUnC7Bo
-=Fncl
------END PGP SIGNATURE-----
-
---KFztAG8eRSV9hGtP--
