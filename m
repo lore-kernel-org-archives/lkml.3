@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab3LJI2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:28:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57555 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab3LJI2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:28:03 -0500
-Date: Tue, 10 Dec 2013 08:27:59 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3 09/12] sched/numa: fix task scan rate adjustment
-Message-ID: <20131210082758.GC11295@suse.de>
-References: <1386483293-15354-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1386483293-15354-9-git-send-email-liwanp@linux.vnet.ibm.com>
- <1386657875-icl2pjx6-mutt-n-horiguchi@ah.jp.nec.com>
+	id S1755335Ab3LJI2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:28:20 -0500
+Received: from collab.rosalab.ru ([195.19.76.181]:47392 "EHLO
+	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab3LJI2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 03:28:17 -0500
+Message-ID: <52A6D08B.1040802@rosalab.ru>
+Date: Tue, 10 Dec 2013 12:27:55 +0400
+From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Organization: ROSA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1386657875-icl2pjx6-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: intel-gfx@lists.freedesktop.org
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: i915: NULL pointer dereference in i915_update_dri1_breadcrumb() during
+ shutdown
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:44:35AM -0500, Naoya Horiguchi wrote:
-> Hi Wanpeng,
-> 
-> On Sun, Dec 08, 2013 at 02:14:50PM +0800, Wanpeng Li wrote:
-> > commit 04bb2f947 (sched/numa: Adjust scan rate in task_numa_placement) calculate
-> > period_slot which should be used as base value of scan rate increase if remote
-> > access dominate. However, current codes forget to use it, this patch fix it.
-> > 
-> > Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> > ---
-> >  kernel/sched/fair.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 7073c76..b077f1b3 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -1358,7 +1358,7 @@ static void update_task_scan_period(struct task_struct *p,
-> >  		 */
-> >  		period_slot = DIV_ROUND_UP(diff, NUMA_PERIOD_SLOTS);
-> >  		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-> > -		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
-> > +		diff = (period_slot * ratio) / NUMA_PERIOD_SLOTS;
-> >  	}
-> >  
-> >  	p->numa_scan_period = clamp(p->numa_scan_period + diff,
-> 
-> It seems to me that the original code is correct, because the mathematical
-> meaning of this hunk is clear:
-> 
->   diff = (diff calculated by local-remote ratio) * (private-shared ratio)
-> 
+Hi,
 
-Thanks Naoya.
+I have recently observed a NULL pointer dereference in i915 driver on my 
+Eee PC running ROSA Linux with kernel 3.10.21.
 
-The original code is as intended and was meant to scale the difference
-between the NUMA_PERIOD_THRESHOLD and local/remote ratio when adjusting
-the scan period. The period_slot recalculation can be dropped.
+The crash occurs during shutdown but quite rarely, not each time.
+
+The system log is lost but here is what I extracted from the info 
+displayed on the screen.
+
+NULL pointer dereference at 0x4
+EIP is at i915_update_dri1_breadcrumb+0x25/0x70
+comm: systemd-journal
+
+i915_update_dri1_breadcrumb+0x25:
+	mov    0x4(%eax),%ebx // %eax contains 0, the list of register values 
+confirms that.
+
+That is the reading of 'master_priv->sarea_priv':
+
+void i915_update_dri1_breadcrumb(struct drm_device *dev)
+{
+	drm_i915_private_t *dev_priv = dev->dev_private;
+	struct drm_i915_master_private *master_priv;
+
+	if (dev->primary->master) {
+		master_priv = dev->primary->master->driver_priv;
+		if (master_priv->sarea_priv) // <<< crashes here
+			master_priv->sarea_priv->last_dispatch =
+				READ_BREADCRUMB(dev_priv);
+	}
+}
+
+addr2line points to the same line too.
+
+So, i915_update_dri1_breadcrumb() was called somehow when 
+dev->primary->master->driver_priv was NULL already. A race with 
+i915_master_destroy() or something else?
+
+Hardware info, from the output of lspci -vnn:
+------------------------------
+00:02.0 VGA compatible controller [0300]: Intel Corporation Atom 
+Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller [8086:a011] 
+(prog-if 00 [VGA controller])
+	Subsystem: ASUSTeK Computer Inc. Device [1043:83ac]
+	Flags: bus master, fast devsel, latency 0, IRQ 44
+	Memory at f7e00000 (32-bit, non-prefetchable) [size=512K]
+	I/O ports at dc00 [size=8]
+	Memory at d0000000 (32-bit, prefetchable) [size=256M]
+	Memory at f7d00000 (32-bit, non-prefetchable) [size=1M]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+	Capabilities: [d0] Power Management version 2
+	Kernel driver in use: i915
+------------------------------
+
+Regards,
+Eugene
 
 -- 
-Mel Gorman
-SUSE Labs
+Eugene Shatokhin, ROSA Laboratory.
+www.rosalab.com
