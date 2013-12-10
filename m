@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab3LJB2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:28:16 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40043 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab3LJB2M (ORCPT
+	id S1751708Ab3LJB2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 20:28:21 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49557 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3LJB2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Dec 2013 20:28:12 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -15,389 +15,274 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v5 tip/core/locking 1/7] Documentation/memory-barriers.txt: Add needed ACCESS_ONCE() calls to memory-barriers.txt
-Date: Mon,  9 Dec 2013 17:27:57 -0800
-Message-Id: <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v5 tip/core/locking 7/7] rcu: Apply smp_mb__after_unlock_lock() to preserve grace periods
+Date: Mon,  9 Dec 2013 17:28:03 -0800
+Message-Id: <1386638883-25379-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <20131210012738.GA24317@linux.vnet.ibm.com>
+In-Reply-To: <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131210012738.GA24317@linux.vnet.ibm.com>
+ <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121001-6688-0000-0000-00000457C377
+x-cbid: 13121001-0928-0000-0000-0000047D9508
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The Documentation/memory-barriers.txt file was written before the need
-for ACCESS_ONCE() was fully appreciated.  It therefore contains no
-ACCESS_ONCE() calls, which can be a problem when people lift examples
-from it.  This commit therefore adds ACCESS_ONCE() calls.
+RCU must ensure that there is the equivalent of a full memory barrier
+between any memory access preceding grace period and any memory access
+following that same grace period, regardless of which CPU(s) happen to
+execute the two memory accesses.  Therefore, downgrading UNLOCK+LOCK to
+no longer imply a full memory barrier requires some adjustments to RCU.
+
+This commit therefore adds smp_mb__after_unlock_lock() invocations as
+needed after the RCU lock acquisitions that need to be part of a
+full-memory-barrier UNLOCK+LOCK.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- Documentation/memory-barriers.txt | 206 +++++++++++++++++++++++---------------
- 1 file changed, 126 insertions(+), 80 deletions(-)
+ kernel/rcu/tree.c        | 18 +++++++++++++++++-
+ kernel/rcu/tree_plugin.h | 13 +++++++++++++
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 020cccdbdd0c..1d067235b0bc 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -194,18 +194,22 @@ There are some minimal guarantees that may be expected of a CPU:
-  (*) On any given CPU, dependent memory accesses will be issued in order, with
-      respect to itself.  This means that for:
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index dd081987a8ec..a6205a05b5e4 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1133,8 +1133,10 @@ rcu_start_future_gp(struct rcu_node *rnp, struct rcu_data *rdp)
+ 	 * hold it, acquire the root rcu_node structure's lock in order to
+ 	 * start one (if needed).
+ 	 */
+-	if (rnp != rnp_root)
++	if (rnp != rnp_root) {
+ 		raw_spin_lock(&rnp_root->lock);
++		smp_mb__after_unlock_lock();
++	}
  
--	Q = P; D = *Q;
-+	ACCESS_ONCE(Q) = P; smp_read_barrier_depends(); D = ACCESS_ONCE(*Q);
- 
-      the CPU will issue the following memory operations:
- 
- 	Q = LOAD P, D = LOAD *Q
- 
--     and always in that order.
-+     and always in that order.  On most systems, smp_read_barrier_depends()
-+     does nothing, but it is required for DEC Alpha.  The ACCESS_ONCE()
-+     is required to prevent compiler mischief.  Please note that you
-+     should normally use something like rcu_dereference() instead of
-+     open-coding smp_read_barrier_depends().
- 
-  (*) Overlapping loads and stores within a particular CPU will appear to be
-      ordered within that CPU.  This means that for:
- 
--	a = *X; *X = b;
-+	a = ACCESS_ONCE(*X); ACCESS_ONCE(*X) = b;
- 
-      the CPU will only issue the following sequence of memory operations:
- 
-@@ -213,7 +217,7 @@ There are some minimal guarantees that may be expected of a CPU:
- 
-      And for:
- 
--	*X = c; d = *X;
-+	ACCESS_ONCE(*X) = c; d = ACCESS_ONCE(*X);
- 
-      the CPU will only issue:
- 
-@@ -224,6 +228,41 @@ There are some minimal guarantees that may be expected of a CPU:
- 
- And there are a number of things that _must_ or _must_not_ be assumed:
- 
-+ (*) It _must_not_ be assumed that the compiler will do what you want with
-+     memory references that are not protected by ACCESS_ONCE().  Without
-+     ACCESS_ONCE(), the compiler is within its rights to do all sorts
-+     of "creative" transformations:
-+
-+     (-) Repeat the load, possibly getting a different value on the second
-+         and subsequent loads.  This is especially prone to happen when
-+	 register pressure is high.
-+
-+     (-) Merge adjacent loads and stores to the same location.  The most
-+         familiar example is the transformation from:
-+
-+		while (a)
-+			do_something();
-+
-+         to something like:
-+
-+		if (a)
-+			for (;;)
-+				do_something();
-+
-+         Using ACCESS_ONCE() as follows prevents this sort of optimization:
-+
-+		while (ACCESS_ONCE(a))
-+			do_something();
-+
-+     (-) "Store tearing", where a single store in the source code is split
-+         into smaller stores in the object code.  Note that gcc really
-+	 will do this on some architectures when storing certain constants.
-+	 It can be cheaper to do a series of immediate stores than to
-+	 form the constant in a register and then to store that register.
-+
-+     (-) "Load tearing", which splits loads in a manner analogous to
-+     	 store tearing.
-+
-  (*) It _must_not_ be assumed that independent loads and stores will be issued
-      in the order given.  This means that for:
- 
-@@ -450,14 +489,14 @@ The usage requirements of data dependency barriers are a little subtle, and
- it's not always obvious that they're needed.  To illustrate, consider the
- following sequence of events:
- 
--	CPU 1		CPU 2
--	===============	===============
-+	CPU 1		      CPU 2
-+	===============	      ===============
- 	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
- 	B = 4;
- 	<write barrier>
--	P = &B
--			Q = P;
--			D = *Q;
-+	ACCESS_ONCE(P) = &B
-+			      Q = ACCESS_ONCE(P);
-+			      D = *Q;
- 
- There's a clear data dependency here, and it would seem that by the end of the
- sequence, Q must be either &A or &B, and that:
-@@ -477,15 +516,15 @@ Alpha).
- To deal with this, a data dependency barrier or better must be inserted
- between the address load and the data load:
- 
--	CPU 1		CPU 2
--	===============	===============
-+	CPU 1		      CPU 2
-+	===============	      ===============
- 	{ A == 1, B == 2, C = 3, P == &A, Q == &C }
- 	B = 4;
- 	<write barrier>
--	P = &B
--			Q = P;
--			<data dependency barrier>
--			D = *Q;
-+	ACCESS_ONCE(P) = &B
-+			      Q = ACCESS_ONCE(P);
-+			      <data dependency barrier>
-+			      D = *Q;
- 
- This enforces the occurrence of one of the two implications, and prevents the
- third possibility from arising.
-@@ -504,21 +543,22 @@ Another example of where data dependency barriers might be required is where a
- number is read from memory and then used to calculate the index for an array
- access:
- 
--	CPU 1		CPU 2
--	===============	===============
-+	CPU 1		      CPU 2
-+	===============	      ===============
- 	{ M[0] == 1, M[1] == 2, M[3] = 3, P == 0, Q == 3 }
- 	M[1] = 4;
- 	<write barrier>
--	P = 1
--			Q = P;
--			<data dependency barrier>
--			D = M[Q];
-+	ACCESS_ONCE(P) = 1
-+			      Q = ACCESS_ONCE(P);
-+			      <data dependency barrier>
-+			      D = M[Q];
- 
- 
--The data dependency barrier is very important to the RCU system, for example.
--See rcu_dereference() in include/linux/rcupdate.h.  This permits the current
--target of an RCU'd pointer to be replaced with a new modified target, without
--the replacement target appearing to be incompletely initialised.
-+The data dependency barrier is very important to the RCU system,
-+for example.  See rcu_assign_pointer() and rcu_dereference() in
-+include/linux/rcupdate.h.  This permits the current target of an RCU'd
-+pointer to be replaced with a new modified target, without the replacement
-+target appearing to be incompletely initialised.
- 
- See also the subsection on "Cache Coherency" for a more thorough example.
- 
-@@ -530,22 +570,23 @@ A control dependency requires a full read memory barrier, not simply a data
- dependency barrier to make it work correctly.  Consider the following bit of
- code:
- 
--	q = &a;
-+	q = ACCESS_ONCE(a);
- 	if (p) {
- 		<data dependency barrier>
--		q = &b;
-+		q = ACCESS_ONCE(b);
+ 	/*
+ 	 * Get a new grace-period number.  If there really is no grace
+@@ -1354,6 +1356,7 @@ static void note_gp_changes(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		local_irq_restore(flags);
+ 		return;
  	}
- 	x = *q;
++	smp_mb__after_unlock_lock();
+ 	__note_gp_changes(rsp, rnp, rdp);
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ }
+@@ -1368,6 +1371,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
  
- This will not have the desired effect because there is no actual data
--dependency, but rather a control dependency that the CPU may short-circuit by
--attempting to predict the outcome in advance.  In such a case what's actually
--required is:
-+dependency, but rather a control dependency that the CPU may short-circuit
-+by attempting to predict the outcome in advance, so that other CPUs see
-+the load from b as having happened before the load from a.  In such a
-+case what's actually required is:
- 
--	q = &a;
-+	q = ACCESS_ONCE(a);
- 	if (p) {
- 		<read barrier>
--		q = &b;
-+		q = ACCESS_ONCE(b);
+ 	rcu_bind_gp_kthread();
+ 	raw_spin_lock_irq(&rnp->lock);
++	smp_mb__after_unlock_lock();
+ 	if (rsp->gp_flags == 0) {
+ 		/* Spurious wakeup, tell caller to go back to sleep.  */
+ 		raw_spin_unlock_irq(&rnp->lock);
+@@ -1409,6 +1413,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 	 */
+ 	rcu_for_each_node_breadth_first(rsp, rnp) {
+ 		raw_spin_lock_irq(&rnp->lock);
++		smp_mb__after_unlock_lock();
+ 		rdp = this_cpu_ptr(rsp->rda);
+ 		rcu_preempt_check_blocked_tasks(rnp);
+ 		rnp->qsmask = rnp->qsmaskinit;
+@@ -1463,6 +1468,7 @@ static int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
+ 	/* Clear flag to prevent immediate re-entry. */
+ 	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+ 		raw_spin_lock_irq(&rnp->lock);
++		smp_mb__after_unlock_lock();
+ 		rsp->gp_flags &= ~RCU_GP_FLAG_FQS;
+ 		raw_spin_unlock_irq(&rnp->lock);
  	}
- 	x = *q;
+@@ -1480,6 +1486,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
  
-@@ -561,23 +602,23 @@ barrier, though a general barrier would also be viable.  Similarly a read
- barrier or a data dependency barrier should always be paired with at least an
- write barrier, though, again, a general barrier is viable:
+ 	raw_spin_lock_irq(&rnp->lock);
++	smp_mb__after_unlock_lock();
+ 	gp_duration = jiffies - rsp->gp_start;
+ 	if (gp_duration > rsp->gp_max)
+ 		rsp->gp_max = gp_duration;
+@@ -1505,6 +1512,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 	 */
+ 	rcu_for_each_node_breadth_first(rsp, rnp) {
+ 		raw_spin_lock_irq(&rnp->lock);
++		smp_mb__after_unlock_lock();
+ 		ACCESS_ONCE(rnp->completed) = rsp->gpnum;
+ 		rdp = this_cpu_ptr(rsp->rda);
+ 		if (rnp == rdp->mynode)
+@@ -1515,6 +1523,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 	}
+ 	rnp = rcu_get_root(rsp);
+ 	raw_spin_lock_irq(&rnp->lock);
++	smp_mb__after_unlock_lock();
+ 	rcu_nocb_gp_set(rnp, nocb);
  
--	CPU 1		CPU 2
--	===============	===============
--	a = 1;
-+	CPU 1		      CPU 2
-+	===============	      ===============
-+	ACCESS_ONCE(a) = 1;
- 	<write barrier>
--	b = 2;		x = b;
--			<read barrier>
--			y = a;
-+	ACCESS_ONCE(b) = 2;   x = ACCESS_ONCE(b);
-+			      <read barrier>
-+			      y = ACCESS_ONCE(a);
+ 	rsp->completed = rsp->gpnum; /* Declare grace period done. */
+@@ -1749,6 +1758,7 @@ rcu_report_qs_rnp(unsigned long mask, struct rcu_state *rsp,
+ 		rnp_c = rnp;
+ 		rnp = rnp->parent;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
++		smp_mb__after_unlock_lock();
+ 		WARN_ON_ONCE(rnp_c->qsmask);
+ 	}
  
- Or:
+@@ -1778,6 +1788,7 @@ rcu_report_qs_rdp(int cpu, struct rcu_state *rsp, struct rcu_data *rdp)
  
--	CPU 1		CPU 2
--	===============	===============================
-+	CPU 1		      CPU 2
-+	===============	      ===============================
- 	a = 1;
- 	<write barrier>
--	b = &a;		x = b;
--			<data dependency barrier>
--			y = *x;
-+	ACCESS_ONCE(b) = &a;  x = ACCESS_ONCE(b);
-+			      <data dependency barrier>
-+			      y = *x;
+ 	rnp = rdp->mynode;
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	smp_mb__after_unlock_lock();
+ 	if (rdp->passed_quiesce == 0 || rdp->gpnum != rnp->gpnum ||
+ 	    rnp->completed == rnp->gpnum) {
  
- Basically, the read barrier always has to be there, even though it can be of
- the "weaker" type.
-@@ -586,13 +627,13 @@ the "weaker" type.
- match the loads after the read barrier or the data dependency barrier, and vice
- versa:
+@@ -1992,6 +2003,7 @@ static void rcu_cleanup_dead_cpu(int cpu, struct rcu_state *rsp)
+ 	mask = rdp->grpmask;	/* rnp->grplo is constant. */
+ 	do {
+ 		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
++		smp_mb__after_unlock_lock();
+ 		rnp->qsmaskinit &= ~mask;
+ 		if (rnp->qsmaskinit != 0) {
+ 			if (rnp != rdp->mynode)
+@@ -2202,6 +2214,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ 		cond_resched();
+ 		mask = 0;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
++		smp_mb__after_unlock_lock();
+ 		if (!rcu_gp_in_progress(rsp)) {
+ 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 			return;
+@@ -2231,6 +2244,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ 	rnp = rcu_get_root(rsp);
+ 	if (rnp->qsmask == 0) {
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
++		smp_mb__after_unlock_lock();
+ 		rcu_initiate_boost(rnp, flags); /* releases rnp->lock. */
+ 	}
+ }
+@@ -2263,6 +2277,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
  
--	CPU 1                           CPU 2
--	===============                 ===============
--	a = 1;           }----   --->{  v = c
--	b = 2;           }    \ /    {  w = d
--	<write barrier>        \        <read barrier>
--	c = 3;           }    / \    {  x = a;
--	d = 4;           }----   --->{  y = b;
-+	CPU 1                               CPU 2
-+	===================                 ===================
-+	ACCESS_ONCE(a) = 1;  }----   --->{  v = ACCESS_ONCE(c);
-+	ACCESS_ONCE(b) = 2;  }    \ /    {  w = ACCESS_ONCE(d);
-+	<write barrier>            \        <read barrier>
-+	ACCESS_ONCE(c) = 3;  }    / \    {  x = ACCESS_ONCE(a);
-+	ACCESS_ONCE(d) = 4;  }----   --->{  y = ACCESS_ONCE(b);
+ 	/* Reached the root of the rcu_node tree, acquire lock. */
+ 	raw_spin_lock_irqsave(&rnp_old->lock, flags);
++	smp_mb__after_unlock_lock();
+ 	raw_spin_unlock(&rnp_old->fqslock);
+ 	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+ 		rsp->n_force_qs_lh++;
+@@ -2378,6 +2393,7 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+ 			struct rcu_node *rnp_root = rcu_get_root(rsp);
  
+ 			raw_spin_lock(&rnp_root->lock);
++			smp_mb__after_unlock_lock();
+ 			rcu_start_gp(rsp);
+ 			raw_spin_unlock(&rnp_root->lock);
+ 		} else {
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 6abb03dff5c0..eb161d80cbde 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -204,6 +204,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 		rdp = per_cpu_ptr(rcu_preempt_state.rda, cpu);
+ 		rnp = rdp->mynode;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
++		smp_mb__after_unlock_lock();
+ 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BLOCKED;
+ 		t->rcu_blocked_node = rnp;
  
- EXAMPLES OF MEMORY BARRIER SEQUENCES
-@@ -1435,12 +1476,12 @@ three CPUs; then should the following sequence of events occur:
+@@ -312,6 +313,7 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp, unsigned long flags)
+ 	mask = rnp->grpmask;
+ 	raw_spin_unlock(&rnp->lock);	/* irqs remain disabled. */
+ 	raw_spin_lock(&rnp_p->lock);	/* irqs already disabled. */
++	smp_mb__after_unlock_lock();
+ 	rcu_report_qs_rnp(mask, &rcu_preempt_state, rnp_p, flags);
+ }
  
- 	CPU 1				CPU 2
- 	===============================	===============================
--	*A = a;				*E = e;
-+	ACCESS_ONCE(*A) = a;		ACCESS_ONCE(*E) = e;
- 	LOCK M				LOCK Q
--	*B = b;				*F = f;
--	*C = c;				*G = g;
-+	ACCESS_ONCE(*B) = b;		ACCESS_ONCE(*F) = f;
-+	ACCESS_ONCE(*C) = c;		ACCESS_ONCE(*G) = g;
- 	UNLOCK M			UNLOCK Q
--	*D = d;				*H = h;
-+	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*H) = h;
+@@ -381,6 +383,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+ 		for (;;) {
+ 			rnp = t->rcu_blocked_node;
+ 			raw_spin_lock(&rnp->lock);  /* irqs already disabled. */
++			smp_mb__after_unlock_lock();
+ 			if (rnp == t->rcu_blocked_node)
+ 				break;
+ 			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+@@ -605,6 +608,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
+ 	while (!list_empty(lp)) {
+ 		t = list_entry(lp->next, typeof(*t), rcu_node_entry);
+ 		raw_spin_lock(&rnp_root->lock); /* irqs already disabled */
++		smp_mb__after_unlock_lock();
+ 		list_del(&t->rcu_node_entry);
+ 		t->rcu_blocked_node = rnp_root;
+ 		list_add(&t->rcu_node_entry, lp_root);
+@@ -629,6 +633,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
+ 	 * in this case.
+ 	 */
+ 	raw_spin_lock(&rnp_root->lock); /* irqs already disabled */
++	smp_mb__after_unlock_lock();
+ 	if (rnp_root->boost_tasks != NULL &&
+ 	    rnp_root->boost_tasks != rnp_root->gp_tasks &&
+ 	    rnp_root->boost_tasks != rnp_root->exp_tasks)
+@@ -772,6 +777,7 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
+ 	unsigned long mask;
  
- Then there is no guarantee as to what order CPU 3 will see the accesses to *A
- through *H occur in, other than the constraints imposed by the separate locks
-@@ -1460,17 +1501,17 @@ However, if the following occurs:
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	smp_mb__after_unlock_lock();
+ 	for (;;) {
+ 		if (!sync_rcu_preempt_exp_done(rnp)) {
+ 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+@@ -787,6 +793,7 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
+ 		raw_spin_unlock(&rnp->lock); /* irqs remain disabled */
+ 		rnp = rnp->parent;
+ 		raw_spin_lock(&rnp->lock); /* irqs already disabled */
++		smp_mb__after_unlock_lock();
+ 		rnp->expmask &= ~mask;
+ 	}
+ }
+@@ -806,6 +813,7 @@ sync_rcu_preempt_exp_init(struct rcu_state *rsp, struct rcu_node *rnp)
+ 	int must_wait = 0;
  
- 	CPU 1				CPU 2
- 	===============================	===============================
--	*A = a;
--	LOCK M		[1]
--	*B = b;
--	*C = c;
--	UNLOCK M	[1]
--	*D = d;				*E = e;
--					LOCK M		[2]
--					*F = f;
--					*G = g;
--					UNLOCK M	[2]
--					*H = h;
-+	ACCESS_ONCE(*A) = a;
-+	LOCK M		     [1]
-+	ACCESS_ONCE(*B) = b;
-+	ACCESS_ONCE(*C) = c;
-+	UNLOCK M	     [1]
-+	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*E) = e;
-+					LOCK M		     [2]
-+					ACCESS_ONCE(*F) = f;
-+					ACCESS_ONCE(*G) = g;
-+					UNLOCK M	     [2]
-+					ACCESS_ONCE(*H) = h;
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	smp_mb__after_unlock_lock();
+ 	if (list_empty(&rnp->blkd_tasks)) {
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	} else {
+@@ -886,6 +894,7 @@ void synchronize_rcu_expedited(void)
+ 	/* Initialize ->expmask for all non-leaf rcu_node structures. */
+ 	rcu_for_each_nonleaf_node_breadth_first(rsp, rnp) {
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
++		smp_mb__after_unlock_lock();
+ 		rnp->expmask = rnp->qsmaskinit;
+ 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	}
+@@ -1191,6 +1200,7 @@ static int rcu_boost(struct rcu_node *rnp)
+ 		return 0;  /* Nothing left to boost. */
  
- CPU 3 might see:
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	smp_mb__after_unlock_lock();
  
-@@ -2177,11 +2218,11 @@ A programmer might take it for granted that the CPU will perform memory
- operations in exactly the order specified, so that if the CPU is, for example,
- given the following piece of code to execute:
+ 	/*
+ 	 * Recheck under the lock: all tasks in need of boosting
+@@ -1377,6 +1387,7 @@ static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
+ 	if (IS_ERR(t))
+ 		return PTR_ERR(t);
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	smp_mb__after_unlock_lock();
+ 	rnp->boost_kthread_task = t;
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 	sp.sched_priority = RCU_BOOST_PRIO;
+@@ -1769,6 +1780,7 @@ static void rcu_prepare_for_idle(int cpu)
+ 			continue;
+ 		rnp = rdp->mynode;
+ 		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
++		smp_mb__after_unlock_lock();
+ 		rcu_accelerate_cbs(rsp, rnp, rdp);
+ 		raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
+ 	}
+@@ -2209,6 +2221,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 	struct rcu_node *rnp = rdp->mynode;
  
--	a = *A;
--	*B = b;
--	c = *C;
--	d = *D;
--	*E = e;
-+	a = ACCESS_ONCE(*A);
-+	ACCESS_ONCE(*B) = b;
-+	c = ACCESS_ONCE(*C);
-+	d = ACCESS_ONCE(*D);
-+	ACCESS_ONCE(*E) = e;
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
++	smp_mb__after_unlock_lock();
+ 	c = rcu_start_future_gp(rnp, rdp);
+ 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
  
- they would then expect that the CPU will complete the memory operation for each
- instruction before moving on to the next one, leading to a definite sequence of
-@@ -2228,12 +2269,12 @@ However, it is guaranteed that a CPU will be self-consistent: it will see its
- _own_ accesses appear to be correctly ordered, without the need for a memory
- barrier.  For instance with the following code:
- 
--	U = *A;
--	*A = V;
--	*A = W;
--	X = *A;
--	*A = Y;
--	Z = *A;
-+	U = ACCESS_ONCE(*A);
-+	ACCESS_ONCE(*A) = V;
-+	ACCESS_ONCE(*A) = W;
-+	X = ACCESS_ONCE(*A);
-+	ACCESS_ONCE(*A) = Y;
-+	Z = ACCESS_ONCE(*A);
- 
- and assuming no intervention by an external influence, it can be assumed that
- the final result will appear to be:
-@@ -2250,7 +2291,12 @@ accesses:
- 
- in that order, but, without intervention, the sequence may have almost any
- combination of elements combined or discarded, provided the program's view of
--the world remains consistent.
-+the world remains consistent.  Note that ACCESS_ONCE() is -not- optional
-+in the above example, as there are architectures where a given CPU might
-+interchange successive loads to the same location.  On such architectures,
-+ACCESS_ONCE() does whatever is necessary to prevent this, for example, on
-+Itanium the volatile casts used by ACCESS_ONCE() cause GCC to emit the
-+special ld.acq and st.rel instructions that prevent such reordering.
- 
- The compiler may also combine, discard or defer elements of the sequence before
- the CPU even sees them.
-@@ -2264,13 +2310,13 @@ may be reduced to:
- 
- 	*A = W;
- 
--since, without a write barrier, it can be assumed that the effect of the
--storage of V to *A is lost.  Similarly:
-+since, without either a write barrier or an ACCESS_ONCE(), it can be
-+assumed that the effect of the storage of V to *A is lost.  Similarly:
- 
- 	*A = Y;
- 	Z = *A;
- 
--may, without a memory barrier, be reduced to:
-+may, without a memory barrier or an ACCESS_ONCE(), be reduced to:
- 
- 	*A = Y;
- 	Z = Y;
 -- 
 1.8.1.5
 
