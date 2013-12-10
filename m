@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751127Ab3LJTxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:53:20 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:52123 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab3LJTxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:53:19 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS bugfixes for 3.13-rc4
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20131210195315.3F9504266DC@whiskey.americas.sgi.com>
-Date: Tue, 10 Dec 2013 13:53:15 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1751461Ab3LJTyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:54:40 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60161 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab3LJTyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:54:38 -0500
+Message-ID: <52A77188.50200@jp.fujitsu.com>
+Date: Tue, 10 Dec 2013 14:54:48 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: fweisbec@gmail.com
+CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@kernel.org, peterz@infradead.org,
+        oleg@redhat.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 02/10 v2] posix-timers: Remove dead process posix cpu
+ timers caching
+References: <1386611931-4658-1-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1386611931-4658-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+(12/9/2013 12:58 PM), Frederic Weisbecker wrote:
+> Now that we removed dead thread posix cpu timers caching,
+> lets remove the dead process wide version. This caching
+> is similar to the per thread version but it should be even
+> more rare:
+> 
+> * If the process id dead, we are not reading its timers
+> status from a thread belonging to its group since they
+> are all dead. So this caching only concern remote process
+> timers reads. Now posix cpu timers using itimers or timer_settime()
+> can't do remote process timers anyway so it's not even clear if there
+> is actually a user for this caching.
+> 
+> * Unlike per thread timers caching, this only applies to
+> zombies targets. Buried targets' process wide timers return
+> 0 values. But then again, timer_gettime() can't read remote
+> process timers, so if the process is dead, there can't be
+> any reader left anyway.
+> 
+> Then again this caching seem to complicate the code for
+> corner cases that are probably not worth it. So lets get
+> rid of it.
+> 
+> Also remove the sample snapshot on dying process timer
+> that is now useless, as suggested by Kosaki.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
 
-   Please pull these bugfixes for xfs.  There is a security fix for memory
-   corruption in xfs_attrlist_by_handle, a fix for trim, and a fix for buffer
-   overrun in the agfl when growing filesystems with a v4 superblock.
+Looks good to me.
 
-Thanks,
-	Ben
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-The following changes since commit dc1ccc48159d63eca5089e507c82c7d22ef60839:
 
-  Linux 3.13-rc2 (2013-11-29 12:57:14 -0800)
 
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.13-rc4
-
-for you to fetch changes up to f94c44573e7c22860e2c3dfe349c45f72ba35ad3:
-
-  xfs: growfs overruns AGFL buffer on V4 filesystems (2013-12-10 10:04:27 -0600)
-
-----------------------------------------------------------------
-xfs: bugfixes for 3.13-rc4
-
-- fix for buffer overrun in agfl with growfs on v4 superblock
-- return EINVAL if requested discard length is less than a block
-- fix possible memory corruption in xfs_attrlist_by_handle()
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      xfs: underflow bug in xfs_attrlist_by_handle()
-
-Dave Chinner (1):
-      xfs: growfs overruns AGFL buffer on V4 filesystems
-
-Jie Liu (1):
-      xfs: don't perform discard if the given range length is less than block size
-
- fs/xfs/xfs_discard.c | 5 +++--
- fs/xfs/xfs_fsops.c   | 6 +++++-
- fs/xfs/xfs_ioctl.c   | 3 ++-
- fs/xfs/xfs_ioctl32.c | 3 ++-
- 4 files changed, 12 insertions(+), 5 deletions(-)
