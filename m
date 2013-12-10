@@ -1,84 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3LJN4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:56:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:41745 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab3LJNzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:55:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
-   d="scan'208";a="449857005"
-Date: Tue, 10 Dec 2013 15:55:48 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com,
-        sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com, kishon@ti.com,
-        jg1.han@samsung.com, jwerner@chromium.org
-Subject: Re: [PATCH RFC 3/4] xhci: Tune PHY for the DWC3-Exynos host
- controller
-Message-ID: <20131210135548.GA28456@xps8300>
-References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
- <1386672926-26885-4-git-send-email-gautam.vivek@samsung.com>
+	id S1753576Ab3LJN7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:59:39 -0500
+Received: from relay.parallels.com ([195.214.232.42]:49870 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab3LJN7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 08:59:36 -0500
+Message-ID: <52A71E43.9040200@parallels.com>
+Date: Tue, 10 Dec 2013 17:59:31 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386672926-26885-4-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Glauber Costa <glommer@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Race in memcg kmem?
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Tue, Dec 10, 2013 at 04:25:25PM +0530, Vivek Gautam wrote:
-> @@ -170,6 +189,15 @@ static int xhci_plat_probe(struct platform_device *pdev)
->  	}
->  
->  	/*
-> +	 * The parent of the xhci-plat device may pass in a PHY via
-> +	 * platform data.  If it exists, store it in our struct usb_hcd
-> +	 * so that we can use it later.
-> +	 */
-> +	phy_generic = dev_get_platdata(&pdev->dev);
-> +	if (phy_generic)
-> +		xhci->shared_hcd->phy_generic = *phy_generic;
+Looking through the per-memcg kmem_cache initialization code, I have a
+bad feeling that it is prone to a race. Before getting to fixing it, I'd
+like to ensure this race is not only in my imagination. Here it goes.
 
-Getting the handle to the phy from platform data like this is not
-going to work for long. It should be possible to get it normally with
-phy_get(). It's not going to be possible to get the handle from the
-platform data like this if the xhci-hcd platform device is created
-from ACPI or DT. You are also not considering case where you have two
-phys.
+We keep per-memcg kmem caches in the memcg_params field of each root
+cache. The memcg_params array is grown dynamically by
+memcg_update_cache_size(). I guess that if this function is executed
+concurrently with memcg_create_kmem_cache() we can get a race resulting
+in a memory leak.
 
-Vivek, I have made a patch set for the phy framework allowing
-associations between the phys and their users to be made in same way
-gpios and clk make them. With those you should be able to create a
-lookup entry to the phy framework in drivers/usb/dwc3/host.c. Then we
-could use phy_get() here already. Please check them. Subject of the
-thread:
+-- memcg_create_kmem_cache(memcg, cachep) --
+creates a new kmem_cache corresponding to a memcg and assigns it to the
+root cache; called in the background - it is OK to have several such
+functions trying to create a cache for the same memcg concurrently, but
+only one of them should succeed.
+@cachep is the root cache
+@memcg is the memcg we want to create a cache for.
 
-"phy: remove the need for the phys to know about their users"
+The function:
 
-The lookup table can then be added in drivers/usb/dwc3/host.c with
-something like this:
+A1) assures there is no cache corresponding to the memcg (if it is we
+have nothing to do):
+    idx = memcg_cache_id(memcg);
+    if (cachep->memcg_params[idx])
+        goto out;
 
-int dwc3_host_init(struct dwc3 *dwc)
-{
-        struct platform_device  *xhci;
-        struct phy_lookup_table *table;
-        ...
-        table->dev_id = dev_name(&xhci->dev);
-        if (dwc->usb2_generic_phy)
-                table->table[0].phy_name = dev_name(&dwc->usb2_generic_phy->dev);
-        if (dwc->usb3_generic_phy)
-                table->table[1].phy_name = dev_name(&dwc->usb3_generic_phy->dev);
-        phy_add_lookup_table(table);
-        ...
+A2) creates and assigns a new cache:
+    new_cachep = kmem_cache_dup(memcg, cachep);
+    // init new_cachep
+    cachep->memcg_params->memcg_caches[idx] = new_cachep;
 
-Br,
 
--- 
-heikki
+-- memcg_update_cache_size(s, num_groups) --
+grows s->memcg_params to accomodate data for num_groups memcg's
+@s is the root cache whose memcg_params we want to grow
+@num_groups is the new number of kmem-active cgroups (defines the new
+size of memcg_params array).
+
+The function:
+
+B1) allocates and assigns a new cache:
+    cur_params = s->memcg_params;
+    s->memcg_params = kzalloc(size, GFP_KERNEL);
+
+B2) copies per-memcg cache ptrs from the old memcg_params array to the
+new one:
+    for (i = 0; i < memcg_limited_groups_array_size; i++) {
+        if (!cur_params->memcg_caches[i])
+            continue;
+        s->memcg_params->memcg_caches[i] =
+                    cur_params->memcg_caches[i];
+    }
+
+B3) frees the old array:
+    kfree(cur_params);
+
+
+Since these two functions do not share any mutexes, we can get the
+following race:
+
+Assume, by the time Cpu0 gets to memcg_create_kmem_cache(), the memcg
+cache has already been created by another thread, so this function
+should do nothing.
+
+Cpu0    Cpu1
+----    ----
+        B1
+A1              we haven't initialized memcg_params yet so Cpu0 will
+                proceed to A2 to alloc and assign a new cache
+A2
+        B2      Cpu1 rewrites the memcg cache ptr set by Cpu0 at A2
+                - a memory leak?
+        B3
+
+I'd like to add that even if I'm right about the race, this is rather
+not critical, because memcg_update_cache_sizes() is called very rarely.
+
+
+BTW, it seems to me that the way we update memcg_params in
+memcg_update_cache_size() make cache_from_memcg_idx() prone to
+use-after-free:
+
+> static inline struct kmem_cache *
+> cache_from_memcg_idx(struct kmem_cache *s, int idx)
+> {
+>     if (!s->memcg_params)
+>         return NULL;
+>     return s->memcg_params->memcg_caches[idx];
+> }
+
+This is equivalent to
+
+1) struct memcg_cache_params *params = s->memcg_params;
+2) return params->memcg_caches[idx];
+
+If memcg_update_cache_size() is executed between steps 1 and 2 on
+another CPU, at step 2 we will dereference memcg_params that has already
+been freed. This is very unlikely, but still possible. Perhaps, we
+should free old memcg params only after a sync_rcu()?
+
+Thanks.
