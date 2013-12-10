@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab3LJI1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:27:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58722 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab3LJIAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:38 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 03/52] ALSA: hda - Fix headset mic input after muted internal mic (Dell/Realtek)
-Date: Tue, 10 Dec 2013 00:00:36 -0800
-Message-Id: <20131210075954.461246587@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
-References: <20131210075954.196229872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1755318Ab3LJI2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:28:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57555 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754157Ab3LJI2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 03:28:03 -0500
+Date: Tue, 10 Dec 2013 08:27:59 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3 09/12] sched/numa: fix task scan rate adjustment
+Message-ID: <20131210082758.GC11295@suse.de>
+References: <1386483293-15354-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1386483293-15354-9-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1386657875-icl2pjx6-mutt-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1386657875-icl2pjx6-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Dec 10, 2013 at 01:44:35AM -0500, Naoya Horiguchi wrote:
+> Hi Wanpeng,
+> 
+> On Sun, Dec 08, 2013 at 02:14:50PM +0800, Wanpeng Li wrote:
+> > commit 04bb2f947 (sched/numa: Adjust scan rate in task_numa_placement) calculate
+> > period_slot which should be used as base value of scan rate increase if remote
+> > access dominate. However, current codes forget to use it, this patch fix it.
+> > 
+> > Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> > ---
+> >  kernel/sched/fair.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 7073c76..b077f1b3 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -1358,7 +1358,7 @@ static void update_task_scan_period(struct task_struct *p,
+> >  		 */
+> >  		period_slot = DIV_ROUND_UP(diff, NUMA_PERIOD_SLOTS);
+> >  		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+> > -		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+> > +		diff = (period_slot * ratio) / NUMA_PERIOD_SLOTS;
+> >  	}
+> >  
+> >  	p->numa_scan_period = clamp(p->numa_scan_period + diff,
+> 
+> It seems to me that the original code is correct, because the mathematical
+> meaning of this hunk is clear:
+> 
+>   diff = (diff calculated by local-remote ratio) * (private-shared ratio)
+> 
 
-------------------
+Thanks Naoya.
 
-From: David Henningsson <david.henningsson@canonical.com>
+The original code is as intended and was meant to scale the difference
+between the NUMA_PERIOD_THRESHOLD and local/remote ratio when adjusting
+the scan period. The period_slot recalculation can be dropped.
 
-commit d59915d0655c5864b514f21daaeac98c047875dc upstream.
-
-By trial and error, I found this patch could work around an issue
-where the headset mic would stop working if you switch between the
-internal mic and the headset mic, and the internal mic was muted.
-
-It still takes a second or two before the headset mic actually starts
-working, but still better than nothing.
-
-Information update from Kailang:
-  The verb was ADC digital mute(bit 6 default 1).
-  Switch internal mic and headset mic will run alc_headset_mode_default.
-  The coef index 0x11 will set to 0x0041.
-  Because headset mode was fixed type. It doesn't need to run
-  alc_determine_headset_type.
-  So, the value still keep 0x0041. ADC was muted.
-
-BugLink: https://bugs.launchpad.net/bugs/1256840
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_realtek.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3041,6 +3041,7 @@ static void alc_headset_mode_ctia(struct
- 		alc_write_coef_idx(codec, 0x18, 0x7388);
- 		break;
- 	case 0x10ec0668:
-+		alc_write_coef_idx(codec, 0x11, 0x0001);
- 		alc_write_coef_idx(codec, 0x15, 0x0d60);
- 		alc_write_coef_idx(codec, 0xc3, 0x0000);
- 		break;
-@@ -3063,6 +3064,7 @@ static void alc_headset_mode_omtp(struct
- 		alc_write_coef_idx(codec, 0x18, 0x7388);
- 		break;
- 	case 0x10ec0668:
-+		alc_write_coef_idx(codec, 0x11, 0x0001);
- 		alc_write_coef_idx(codec, 0x15, 0x0d50);
- 		alc_write_coef_idx(codec, 0xc3, 0x0000);
- 		break;
-
-
+-- 
+Mel Gorman
+SUSE Labs
