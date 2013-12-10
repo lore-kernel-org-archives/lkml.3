@@ -1,288 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3LJICc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:02:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab3LJICW (ORCPT
+	id S1754481Ab3LJIIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:08:42 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:46224 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab3LJIIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.12 49/62] SCSI: Disable WRITE SAME for RAID and virtual host adapter drivers
-Date: Tue, 10 Dec 2013 00:01:20 -0800
-Message-Id: <20131210080100.857418575@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
-References: <20131210080057.415644748@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Tue, 10 Dec 2013 03:08:36 -0500
+Date: Tue, 10 Dec 2013 09:08:27 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 3.13-rc4
+Message-ID: <20131210090827.52735ab4@mschwide>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121008-6892-0000-0000-000007274216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Hi Linus,
 
-------------------
+please pull from the 'for-linus' branch of
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-commit 54b2b50c20a61b51199bedb6e5d2f8ec2568fb43 upstream.
+to receive the following updates:
+One patch to increase the number of possible CPUs to 256, with the latest
+machine a single LPAR can have up to 101 CPUs. Plus a number of bug fixes,
+the clock_gettime patch fixes a regression added in the 3.13 merge window.
 
-Some host adapters do not pass commands through to the target disk
-directly. Instead they provide an emulated target which may or may not
-accurately report its capabilities. In some cases the physical device
-characteristics are reported even when the host adapter is processing
-commands on the device's behalf. This can lead to adapter firmware hangs
-or excessive I/O errors.
+Heiko Carstens (2):
+      s390/smp,sclp: fix size of sclp_cpu_info structure
+      s390/vdso: fix access-list entry initialization
 
-This patch disables WRITE SAME for devices connected to host adapters
-that provide an emulated target. Driver writers can disable WRITE SAME
-by setting the no_write_same flag in the host adapter template.
+Hendrik Brueckner (1):
+      s390/sclp: replace uninitialized early_event_mask_sccb variable with sccb_early
 
-[jejb: fix up rejections due to eh_deadline patch]
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Martin Schwidefsky (2):
+      s390/vdso: ectg gettime support for CLOCK_THREAD_CPUTIME_ID
+      s390/time,vdso: fix clock_gettime for CLOCK_MONOTONIC
 
----
- drivers/ata/libata-scsi.c                 |    1 +
- drivers/firewire/sbp2.c                   |    1 +
- drivers/scsi/3w-9xxx.c                    |    3 ++-
- drivers/scsi/3w-sas.c                     |    3 ++-
- drivers/scsi/3w-xxxx.c                    |    3 ++-
- drivers/scsi/aacraid/linit.c              |    1 +
- drivers/scsi/arcmsr/arcmsr_hba.c          |    1 +
- drivers/scsi/gdth.c                       |    1 +
- drivers/scsi/hosts.c                      |    1 +
- drivers/scsi/hpsa.c                       |    1 +
- drivers/scsi/ipr.c                        |    3 ++-
- drivers/scsi/ips.c                        |    1 +
- drivers/scsi/megaraid.c                   |    1 +
- drivers/scsi/megaraid/megaraid_mbox.c     |    1 +
- drivers/scsi/megaraid/megaraid_sas_base.c |    1 +
- drivers/scsi/pmcraid.c                    |    1 +
- drivers/scsi/sd.c                         |    6 ++++++
- drivers/scsi/storvsc_drv.c                |    1 +
- include/scsi/scsi_host.h                  |    6 ++++++
- 19 files changed, 33 insertions(+), 4 deletions(-)
+Stefan Weinhuber (1):
+      s390/dasd: fix memory leak caused by dangling references to request_queue
 
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3625,6 +3625,7 @@ int ata_scsi_add_hosts(struct ata_host *
- 		shost->max_lun = 1;
- 		shost->max_channel = 1;
- 		shost->max_cmd_len = 16;
-+		shost->no_write_same = 1;
+Xose Vazquez Perez (1):
+      s390: increase CONFIG_NR_CPUS limit
+
+ arch/s390/Kconfig                       |    6 +++---
+ arch/s390/include/asm/sclp.h            |    3 ++-
+ arch/s390/kernel/asm-offsets.c          |    1 +
+ arch/s390/kernel/vdso.c                 |    2 +-
+ arch/s390/kernel/vdso32/clock_gettime.S |    9 ++-------
+ arch/s390/kernel/vdso64/clock_getres.S  |    4 +++-
+ arch/s390/kernel/vdso64/clock_gettime.S |   10 +++++-----
+ drivers/s390/block/dasd_genhd.c         |    1 -
+ drivers/s390/char/sclp_early.c          |    5 ++---
+ 9 files changed, 19 insertions(+), 22 deletions(-)
+
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 5877e71..1e1a03d 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -347,14 +347,14 @@ config SMP
+ 	  Even if you don't know what to do here, say Y.
  
- 		/* Schedule policy is determined by ->qc_defer()
- 		 * callback and it needs to see every deferred qc.
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1623,6 +1623,7 @@ static struct scsi_host_template scsi_dr
- 	.cmd_per_lun		= 1,
- 	.can_queue		= 1,
- 	.sdev_attrs		= sbp2_scsi_sysfs_attrs,
-+	.no_write_same		= 1,
+ config NR_CPUS
+-	int "Maximum number of CPUs (2-64)"
+-	range 2 64
++	int "Maximum number of CPUs (2-256)"
++	range 2 256
+ 	depends on SMP
+ 	default "32" if !64BIT
+ 	default "64" if 64BIT
+ 	help
+ 	  This allows you to specify the maximum number of CPUs which this
+-	  kernel will support.  The maximum supported value is 64 and the
++	  kernel will support. The maximum supported value is 256 and the
+ 	  minimum value which makes sense is 2.
+ 
+ 	  This is purely to save memory - each supported CPU adds
+diff --git a/arch/s390/include/asm/sclp.h b/arch/s390/include/asm/sclp.h
+index 30ef748..2f39095 100644
+--- a/arch/s390/include/asm/sclp.h
++++ b/arch/s390/include/asm/sclp.h
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/types.h>
+ #include <asm/chpid.h>
++#include <asm/cpu.h>
+ 
+ #define SCLP_CHP_INFO_MASK_SIZE		32
+ 
+@@ -37,7 +38,7 @@ struct sclp_cpu_info {
+ 	unsigned int standby;
+ 	unsigned int combined;
+ 	int has_cpu_type;
+-	struct sclp_cpu_entry cpu[255];
++	struct sclp_cpu_entry cpu[MAX_CPU_ADDRESS + 1];
  };
  
- MODULE_AUTHOR("Kristian Hoegsberg <krh@bitplanet.net>");
---- a/drivers/scsi/3w-9xxx.c
-+++ b/drivers/scsi/3w-9xxx.c
-@@ -2025,7 +2025,8 @@ static struct scsi_host_template driver_
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= twa_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
+ int sclp_get_cpu_info(struct sclp_cpu_info *info);
+diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
+index 496116c..e4c99a1 100644
+--- a/arch/s390/kernel/asm-offsets.c
++++ b/arch/s390/kernel/asm-offsets.c
+@@ -72,6 +72,7 @@ int main(void)
+ 	/* constants used by the vdso */
+ 	DEFINE(__CLOCK_REALTIME, CLOCK_REALTIME);
+ 	DEFINE(__CLOCK_MONOTONIC, CLOCK_MONOTONIC);
++	DEFINE(__CLOCK_THREAD_CPUTIME_ID, CLOCK_THREAD_CPUTIME_ID);
+ 	DEFINE(__CLOCK_REALTIME_RES, MONOTONIC_RES_NSEC);
+ 	BLANK();
+ 	/* idle data offsets */
+diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
+index a84476f..6136490 100644
+--- a/arch/s390/kernel/vdso.c
++++ b/arch/s390/kernel/vdso.c
+@@ -125,7 +125,7 @@ int vdso_alloc_per_cpu(struct _lowcore *lowcore)
+ 		psal[i] = 0x80000000;
  
- /* This function will probe and initialize a card */
---- a/drivers/scsi/3w-sas.c
-+++ b/drivers/scsi/3w-sas.c
-@@ -1600,7 +1600,8 @@ static struct scsi_host_template driver_
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= twl_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
---- a/drivers/scsi/3w-xxxx.c
-+++ b/drivers/scsi/3w-xxxx.c
-@@ -2279,7 +2279,8 @@ static struct scsi_host_template driver_
- 	.cmd_per_lun		= TW_MAX_CMDS_PER_LUN,	
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= tw_host_attrs,
--	.emulated		= 1
-+	.emulated		= 1,
-+	.no_write_same		= 1,
- };
- 
- /* This function will probe and initialize a card */
---- a/drivers/scsi/aacraid/linit.c
-+++ b/drivers/scsi/aacraid/linit.c
-@@ -1081,6 +1081,7 @@ static struct scsi_host_template aac_dri
- #endif
- 	.use_clustering			= ENABLE_CLUSTERING,
- 	.emulated			= 1,
-+	.no_write_same			= 1,
- };
- 
- static void __aac_shutdown(struct aac_dev * aac)
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -137,6 +137,7 @@ static struct scsi_host_template arcmsr_
- 	.cmd_per_lun		= ARCMSR_MAX_CMD_PERLUN,
- 	.use_clustering		= ENABLE_CLUSTERING,
- 	.shost_attrs		= arcmsr_host_attrs,
-+	.no_write_same		= 1,
- };
- static struct pci_device_id arcmsr_device_id_table[] = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110)},
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4686,6 +4686,7 @@ static struct scsi_host_template gdth_te
-         .cmd_per_lun            = GDTH_MAXC_P_L,
-         .unchecked_isa_dma      = 1,
-         .use_clustering         = ENABLE_CLUSTERING,
-+	.no_write_same		= 1,
- };
- 
- #ifdef CONFIG_ISA
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -388,6 +388,7 @@ struct Scsi_Host *scsi_host_alloc(struct
- 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
- 	shost->use_clustering = sht->use_clustering;
- 	shost->ordered_tag = sht->ordered_tag;
-+	shost->no_write_same = sht->no_write_same;
- 
- 	if (sht->supported_mode == MODE_UNKNOWN)
- 		/* means we didn't set it ... default to INITIATOR */
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -562,6 +562,7 @@ static struct scsi_host_template hpsa_dr
- 	.sdev_attrs = hpsa_sdev_attrs,
- 	.shost_attrs = hpsa_shost_attrs,
- 	.max_sectors = 8192,
-+	.no_write_same = 1,
- };
- 
- 
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -6305,7 +6305,8 @@ static struct scsi_host_template driver_
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.shost_attrs = ipr_ioa_attrs,
- 	.sdev_attrs = ipr_dev_attrs,
--	.proc_name = IPR_NAME
-+	.proc_name = IPR_NAME,
-+	.no_write_same = 1,
- };
- 
- /**
---- a/drivers/scsi/ips.c
-+++ b/drivers/scsi/ips.c
-@@ -374,6 +374,7 @@ static struct scsi_host_template ips_dri
- 	.sg_tablesize		= IPS_MAX_SG,
- 	.cmd_per_lun		= 3,
- 	.use_clustering		= ENABLE_CLUSTERING,
-+	.no_write_same		= 1,
- };
- 
- 
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -4244,6 +4244,7 @@ static struct scsi_host_template megarai
- 	.eh_device_reset_handler	= megaraid_reset,
- 	.eh_bus_reset_handler		= megaraid_reset,
- 	.eh_host_reset_handler		= megaraid_reset,
-+	.no_write_same			= 1,
- };
- 
- static int
---- a/drivers/scsi/megaraid/megaraid_mbox.c
-+++ b/drivers/scsi/megaraid/megaraid_mbox.c
-@@ -367,6 +367,7 @@ static struct scsi_host_template megarai
- 	.eh_host_reset_handler		= megaraid_reset_handler,
- 	.change_queue_depth		= megaraid_change_queue_depth,
- 	.use_clustering			= ENABLE_CLUSTERING,
-+	.no_write_same			= 1,
- 	.sdev_attrs			= megaraid_sdev_attrs,
- 	.shost_attrs			= megaraid_shost_attrs,
- };
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -2148,6 +2148,7 @@ static struct scsi_host_template megasas
- 	.bios_param = megasas_bios_param,
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.change_queue_depth = megasas_change_queue_depth,
-+	.no_write_same = 1,
- };
- 
- /**
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -4314,6 +4314,7 @@ static struct scsi_host_template pmcraid
- 	.this_id = -1,
- 	.sg_tablesize = PMCRAID_MAX_IOADLS,
- 	.max_sectors = PMCRAID_IOA_MAX_SECTORS,
-+	.no_write_same = 1,
- 	.cmd_per_lun = PMCRAID_MAX_CMD_PER_LUN,
- 	.use_clustering = ENABLE_CLUSTERING,
- 	.shost_attrs = pmcraid_host_attrs,
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2638,6 +2638,12 @@ static void sd_read_write_same(struct sc
+ 	lowcore->paste[4] = (u32)(addr_t) psal;
+-	psal[0] = 0x20000000;
++	psal[0] = 0x02000000;
+ 	psal[2] = (u32)(addr_t) aste;
+ 	*(unsigned long *) (aste + 2) = segment_table +
+ 		_ASCE_TABLE_LENGTH + _ASCE_USER_BITS + _ASCE_TYPE_SEGMENT;
+diff --git a/arch/s390/kernel/vdso32/clock_gettime.S b/arch/s390/kernel/vdso32/clock_gettime.S
+index 5be8e47..65fc397 100644
+--- a/arch/s390/kernel/vdso32/clock_gettime.S
++++ b/arch/s390/kernel/vdso32/clock_gettime.S
+@@ -46,18 +46,13 @@ __kernel_clock_gettime:
+ 	jnm	3f
+ 	a	%r0,__VDSO_TK_MULT(%r5)
+ 3:	alr	%r0,%r2
+-	al	%r0,__VDSO_XTIME_NSEC(%r5)	/*  + tk->xtime_nsec */
+-	al	%r1,__VDSO_XTIME_NSEC+4(%r5)
+-	brc	12,4f
+-	ahi	%r0,1
+-4:	al	%r0,__VDSO_WTOM_NSEC(%r5)	/*  + wall_to_monotonic.nsec */
++	al	%r0,__VDSO_WTOM_NSEC(%r5)
+ 	al	%r1,__VDSO_WTOM_NSEC+4(%r5)
+ 	brc	12,5f
+ 	ahi	%r0,1
+ 5:	l	%r2,__VDSO_TK_SHIFT(%r5)	/* Timekeeper shift */
+ 	srdl	%r0,0(%r2)			/*  >> tk->shift */
+-	l	%r2,__VDSO_XTIME_SEC+4(%r5)
+-	al	%r2,__VDSO_WTOM_SEC+4(%r5)
++	l	%r2,__VDSO_WTOM_SEC+4(%r5)
+ 	cl	%r4,__VDSO_UPD_COUNT+4(%r5)	/* check update counter */
+ 	jne	1b
+ 	basr	%r5,0
+diff --git a/arch/s390/kernel/vdso64/clock_getres.S b/arch/s390/kernel/vdso64/clock_getres.S
+index 176e1f7..34deba7 100644
+--- a/arch/s390/kernel/vdso64/clock_getres.S
++++ b/arch/s390/kernel/vdso64/clock_getres.S
+@@ -23,7 +23,9 @@ __kernel_clock_getres:
+ 	je	0f
+ 	cghi	%r2,__CLOCK_MONOTONIC
+ 	je	0f
+-	cghi	%r2,-2		/* CLOCK_THREAD_CPUTIME_ID for this thread */
++	cghi	%r2,__CLOCK_THREAD_CPUTIME_ID
++	je	0f
++	cghi	%r2,-2		/* Per-thread CPUCLOCK with PID=0, VIRT=1 */
+ 	jne	2f
+ 	larl	%r5,_vdso_data
+ 	icm	%r0,15,__LC_ECTG_OK(%r5)
+diff --git a/arch/s390/kernel/vdso64/clock_gettime.S b/arch/s390/kernel/vdso64/clock_gettime.S
+index 0add107..91940ed 100644
+--- a/arch/s390/kernel/vdso64/clock_gettime.S
++++ b/arch/s390/kernel/vdso64/clock_gettime.S
+@@ -22,7 +22,9 @@ __kernel_clock_gettime:
+ 	larl	%r5,_vdso_data
+ 	cghi	%r2,__CLOCK_REALTIME
+ 	je	4f
+-	cghi	%r2,-2		/* CLOCK_THREAD_CPUTIME_ID for this thread */
++	cghi	%r2,__CLOCK_THREAD_CPUTIME_ID
++	je	9f
++	cghi	%r2,-2		/* Per-thread CPUCLOCK with PID=0, VIRT=1 */
+ 	je	9f
+ 	cghi	%r2,__CLOCK_MONOTONIC
+ 	jne	12f
+@@ -35,13 +37,11 @@ __kernel_clock_gettime:
+ 	jnz	0b
+ 	stck	48(%r15)			/* Store TOD clock */
+ 	lgf	%r2,__VDSO_TK_SHIFT(%r5)	/* Timekeeper shift */
+-	lg	%r0,__VDSO_XTIME_SEC(%r5)	/* tk->xtime_sec */
+-	alg	%r0,__VDSO_WTOM_SEC(%r5)	/*  + wall_to_monotonic.sec */
++	lg	%r0,__VDSO_WTOM_SEC(%r5)
+ 	lg	%r1,48(%r15)
+ 	sg	%r1,__VDSO_XTIME_STAMP(%r5)	/* TOD - cycle_last */
+ 	msgf	%r1,__VDSO_TK_MULT(%r5)		/*  * tk->mult */
+-	alg	%r1,__VDSO_XTIME_NSEC(%r5)	/*  + tk->xtime_nsec */
+-	alg	%r1,__VDSO_WTOM_NSEC(%r5)	/*  + wall_to_monotonic.nsec */
++	alg	%r1,__VDSO_WTOM_NSEC(%r5)
+ 	srlg	%r1,%r1,0(%r2)			/*  >> tk->shift */
+ 	clg	%r4,__VDSO_UPD_COUNT(%r5)	/* check update counter */
+ 	jne	0b
+diff --git a/drivers/s390/block/dasd_genhd.c b/drivers/s390/block/dasd_genhd.c
+index f649217..f224d59 100644
+--- a/drivers/s390/block/dasd_genhd.c
++++ b/drivers/s390/block/dasd_genhd.c
+@@ -87,7 +87,6 @@ void dasd_gendisk_free(struct dasd_block *block)
  {
- 	struct scsi_device *sdev = sdkp->device;
+ 	if (block->gdp) {
+ 		del_gendisk(block->gdp);
+-		block->gdp->queue = NULL;
+ 		block->gdp->private_data = NULL;
+ 		put_disk(block->gdp);
+ 		block->gdp = NULL;
+diff --git a/drivers/s390/char/sclp_early.c b/drivers/s390/char/sclp_early.c
+index f7aa080..1465e95 100644
+--- a/drivers/s390/char/sclp_early.c
++++ b/drivers/s390/char/sclp_early.c
+@@ -35,7 +35,6 @@ struct read_info_sccb {
+ 	u8	_reserved5[4096 - 112];	/* 112-4095 */
+ } __packed __aligned(PAGE_SIZE);
  
-+	if (sdev->host->no_write_same) {
-+		sdev->no_write_same = 1;
-+
-+		return;
-+	}
-+
- 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
- 		sdev->no_report_opcodes = 1;
+-static __initdata struct init_sccb early_event_mask_sccb __aligned(PAGE_SIZE);
+ static __initdata struct read_info_sccb early_read_info_sccb;
+ static __initdata char sccb_early[PAGE_SIZE] __aligned(PAGE_SIZE);
+ static unsigned long sclp_hsa_size;
+@@ -113,7 +112,7 @@ static void __init sclp_facilities_detect(void)
  
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1697,6 +1697,7 @@ static struct scsi_host_template scsi_dr
- 	.use_clustering =	DISABLE_CLUSTERING,
- 	/* Make sure we dont get a sg segment crosses a page boundary */
- 	.dma_boundary =		PAGE_SIZE-1,
-+	.no_write_same =	1,
- };
+ bool __init sclp_has_linemode(void)
+ {
+-	struct init_sccb *sccb = &early_event_mask_sccb;
++	struct init_sccb *sccb = (void *) &sccb_early;
  
- enum {
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -475,6 +475,9 @@ struct scsi_host_template {
- 	 */
- 	unsigned ordered_tag:1;
+ 	if (sccb->header.response_code != 0x20)
+ 		return 0;
+@@ -126,7 +125,7 @@ bool __init sclp_has_linemode(void)
  
-+	/* True if the controller does not support WRITE SAME */
-+	unsigned no_write_same:1;
-+
- 	/*
- 	 * Countdown for host blocking with no commands outstanding.
- 	 */
-@@ -674,6 +677,9 @@ struct Scsi_Host {
- 	/* Don't resume host in EH */
- 	unsigned eh_noresume:1;
+ bool __init sclp_has_vt220(void)
+ {
+-	struct init_sccb *sccb = &early_event_mask_sccb;
++	struct init_sccb *sccb = (void *) &sccb_early;
  
-+	/* The controller does not support WRITE SAME */
-+	unsigned no_write_same:1;
-+
- 	/*
- 	 * Optional work queue to be utilized by the transport
- 	 */
-
+ 	if (sccb->header.response_code != 0x20)
+ 		return 0;
 
