@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3LJIDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:03:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59061 "EHLO
+	id S1754135Ab3LJIDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:03:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3LJICy (ORCPT
+	with ESMTP id S1754059Ab3LJICw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:54 -0500
+	Tue, 10 Dec 2013 03:02:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.12 28/62] can: flexcan: use correct clock as base for bit rate calculation
-Date: Tue, 10 Dec 2013 00:00:59 -0800
-Message-Id: <20131210080059.417469585@linuxfoundation.org>
+Subject: [PATCH 3.12 27/62] can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
+Date: Tue, 10 Dec 2013 00:00:58 -0800
+Message-Id: <20131210080059.342079757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,40 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 1a3e5173f5e72cbf7f0c8927b33082e361c16d72 upstream.
+commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
 
-The flexcan IP core uses the peripheral clock ("per") as basic clock for the
-bit timing calculation. However the driver uses the the wrong clock ("ipg").
-This leads to wrong bit rates if the rates on both clock are different.
+This patch fixes the issue that the sja1000_interrupt() function may have
+returned IRQ_NONE without processing the optional pre_irq() and post_irq()
+function before. Further the irq processing counter 'n' is moved to the end of
+the while statement to return correct IRQ_[NONE|HANDLED] values at error
+conditions.
 
-This patch fixes the problem by using the correct clock for the bit rate
-calculation.
-
+Reported-by: Wolfgang Grandegger <wg@grandegger.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/flexcan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/can/sja1000/sja1000.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -1020,13 +1020,13 @@ static int flexcan_probe(struct platform
- 			dev_err(&pdev->dev, "no ipg clock defined\n");
- 			return PTR_ERR(clk_ipg);
- 		}
--		clock_freq = clk_get_rate(clk_ipg);
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -494,20 +494,20 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 	uint8_t isrc, status;
+ 	int n = 0;
  
- 		clk_per = devm_clk_get(&pdev->dev, "per");
- 		if (IS_ERR(clk_per)) {
- 			dev_err(&pdev->dev, "no per clock defined\n");
- 			return PTR_ERR(clk_per);
+-	/* Shared interrupts and IRQ off? */
+-	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
+-		return IRQ_NONE;
+-
+ 	if (priv->pre_irq)
+ 		priv->pre_irq(priv);
+ 
++	/* Shared interrupts and IRQ off? */
++	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
++		goto out;
++
+ 	while ((isrc = priv->read_reg(priv, SJA1000_IR)) &&
+ 	       (n < SJA1000_MAX_IRQ)) {
+-		n++;
++
+ 		status = priv->read_reg(priv, SJA1000_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+-			return IRQ_NONE;
++			goto out;
+ 
+ 		if (isrc & IRQ_WUI)
+ 			netdev_warn(dev, "wakeup interrupt\n");
+@@ -535,7 +535,7 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 				status = priv->read_reg(priv, SJA1000_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+-					return IRQ_NONE;
++					goto out;
+ 			}
  		}
-+		clock_freq = clk_get_rate(clk_per);
+ 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
+@@ -543,8 +543,9 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 			if (sja1000_err(dev, isrc, status))
+ 				break;
+ 		}
++		n++;
  	}
+-
++out:
+ 	if (priv->post_irq)
+ 		priv->post_irq(priv);
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 
