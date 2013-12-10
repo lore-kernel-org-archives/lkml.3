@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3LJMXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:23:00 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50025 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3LJMW6 (ORCPT
+	id S1753184Ab3LJMXJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:23:09 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:54984 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3LJMXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:22:58 -0500
-Date: Tue, 10 Dec 2013 12:22:34 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Denis Carikli <denis@eukrea.com>
-Message-ID: <20131210122234.GI29268@sirena.org.uk>
-References: <20131210150201.c99abbdcc7eb1a20d39dafc1@canb.auug.org.au>
+	Tue, 10 Dec 2013 07:23:03 -0500
+Date: Tue, 10 Dec 2013 13:23:52 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: i915: NULL pointer dereference in i915_update_dri1_breadcrumb()
+ during shutdown
+Message-ID: <20131210122351.GF9804@phenom.ffwll.local>
+Mail-Followup-To: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
+	intel-gfx@lists.freedesktop.org,
+	LKML <linux-kernel@vger.kernel.org>
+References: <52A6D08B.1040802@rosalab.ru>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y+KtxNjwEe4Q3Zyh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131210150201.c99abbdcc7eb1a20d39dafc1@canb.auug.org.au>
-X-Cookie: It's clever, but is it art?
+In-Reply-To: <52A6D08B.1040802@rosalab.ru>
+X-Operating-System: Linux phenom 3.12.0+
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the final tree
- (sound-asoc tree related)
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 10, 2013 at 12:27:55PM +0400, Eugene Shatokhin wrote:
+> Hi,
+> 
+> I have recently observed a NULL pointer dereference in i915 driver
+> on my Eee PC running ROSA Linux with kernel 3.10.21.
+> 
+> The crash occurs during shutdown but quite rarely, not each time.
+> 
+> The system log is lost but here is what I extracted from the info
+> displayed on the screen.
+> 
+> NULL pointer dereference at 0x4
+> EIP is at i915_update_dri1_breadcrumb+0x25/0x70
+> comm: systemd-journal
+> 
+> i915_update_dri1_breadcrumb+0x25:
+> 	mov    0x4(%eax),%ebx // %eax contains 0, the list of register
+> values confirms that.
+> 
+> That is the reading of 'master_priv->sarea_priv':
+> 
+> void i915_update_dri1_breadcrumb(struct drm_device *dev)
+> {
+> 	drm_i915_private_t *dev_priv = dev->dev_private;
+> 	struct drm_i915_master_private *master_priv;
+> 
+> 	if (dev->primary->master) {
+> 		master_priv = dev->primary->master->driver_priv;
+> 		if (master_priv->sarea_priv) // <<< crashes here
+> 			master_priv->sarea_priv->last_dispatch =
+> 				READ_BREADCRUMB(dev_priv);
+> 	}
+> }
 
---y+KtxNjwEe4Q3Zyh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Indeed, that's fairly hapzardous. But also only needed for legacy ums
+support. I'll send out a patch to block this in kms mode quickly. Please
+test it.
 
-On Tue, Dec 10, 2013 at 03:02:01PM +1100, Stephen Rothwell wrote:
+Thanks, Daniel
 
-> Caused by commit 436aa86f0414 ("ASoC: eukrea-tlv320: Add DT support")
-> from the sound-asoc tree.
+> 
+> addr2line points to the same line too.
+> 
+> So, i915_update_dri1_breadcrumb() was called somehow when
+> dev->primary->master->driver_priv was NULL already. A race with
+> i915_master_destroy() or something else?
+> 
+> Hardware info, from the output of lspci -vnn:
+> ------------------------------
+> 00:02.0 VGA compatible controller [0300]: Intel Corporation Atom
+> Processor D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller
+> [8086:a011] (prog-if 00 [VGA controller])
+> 	Subsystem: ASUSTeK Computer Inc. Device [1043:83ac]
+> 	Flags: bus master, fast devsel, latency 0, IRQ 44
+> 	Memory at f7e00000 (32-bit, non-prefetchable) [size=512K]
+> 	I/O ports at dc00 [size=8]
+> 	Memory at d0000000 (32-bit, prefetchable) [size=256M]
+> 	Memory at f7d00000 (32-bit, non-prefetchable) [size=1M]
+> 	Expansion ROM at <unassigned> [disabled]
+> 	Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+> 	Capabilities: [d0] Power Management version 2
+> 	Kernel driver in use: i915
+> ------------------------------
+> 
+> Regards,
+> Eugene
+> 
+> -- 
+> Eugene Shatokhin, ROSA Laboratory.
+> www.rosalab.com
 
-Dropped for tomorrow.
-
---y+KtxNjwEe4Q3Zyh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSpweHAAoJELSic+t+oim9mBUQAIz7pH1hz6xF+Erwgv64OLXv
-Gy6df5UI0Slch0Ep0dfabRlfSRhpbSyPeE+euazRkmMfeY0f1cCdPvf2+uIvhVmw
-0fGLj2kkfUvO5oA2SMz4ftAsZDIMR0LyvKAPs9SR49qK0NpN8lrsJY9mc+JlzmFp
-I77o6W1qjqE9IVTFg9iQAvGDxJTPi4Yq1RB6n9aeBZlki6l/fCuuBg3eDdAn08fT
-326W21S74WfAcrdC3tmo7WuNVPZNKrSb4WS+tZZBScKO6RkjgYVeA5YHo/w7wYlm
-Kykjw3YeYiLXB41/LeZh9/63dgR2XmRsC/77oOwFM03/grsuBqggXcsK7TgCpemI
-9yw+8jX/s11qFeaHxDJW5xCVIJi11BcrQRSvNk436EhEUZ6Lc4+kmrGXJ8y9kT0s
-SYcisbouLbiFNyL7Xy1m+HaoARPxGOFkC4Pu8bou4xHBTYV01teZmEzSDsor9t00
-IX8bXZCZMgbxqDER9f0ZVf9hVOe5Gypl+Isaip2tnrsNWkamAIjgqBmGAY8x5fsf
-7vXGOryLnkV52tQZMh2K4qXDt/GhCbVceH7IlkkbUlpfgT0OxdA/zhwBxozBUysX
-jPJjbKHRFTFmrwGJc4dgcE4pC0N+HT0NRDHww/cj5UPnDlAJVhuZroMoxIdBHzFt
-Pl8KkRdpd7/wSSu92pCB
-=b54o
------END PGP SIGNATURE-----
-
---y+KtxNjwEe4Q3Zyh--
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
