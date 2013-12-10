@@ -1,75 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab3LJLBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:01:12 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34414 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751805Ab3LJLBJ (ORCPT
+	id S1752263Ab3LJLIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:08:11 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:54629 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab3LJLIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:01:09 -0500
-Message-ID: <52A6F469.9020109@hurleysoftware.com>
-Date: Tue, 10 Dec 2013 06:00:57 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 06:08:05 -0500
+Date: Tue, 10 Dec 2013 12:07:59 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20131210110759.GA26659@gmail.com>
+References: <1386617830-18926-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Karl Dahlke <eklhad@comcast.net>, mpatocka@redhat.com
-CC: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12] Broken terminal due to echo bufferring
-References: <alpine.LRH.2.02.1312082127020.19329@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1312092103290.11182@file01.intranet.prod.int.rdu2.redhat.com> <20131110054819.eklhad@comcast.net>
-In-Reply-To: <20131110054819.eklhad@comcast.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386617830-18926-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 05:48 AM, Karl Dahlke wrote:
-> | An involved discussion about race conditions and asynchronous events,
-> | which is beyond me.
-> | Please continue; I'm sure you will figure it out,
-> | and perhaps educate me along the way.
-> | But this thread began with the following program that revealed,
-> | I believe, the same echo crlf bug that I pointed out.
->
->> #include <stdio.h>
->> #include <unistd.h>
->>
->> int main(void)
->> {
->> int c;
->> while ((c = getchar()) != EOF) {
->> if (c == '\n') write(1, "prompt>", 7);
->> }
->> return 0;
->> }
->
-> Peter sent me a patch which fixed my bug, in its console switch form.
-> And also seemed to fix the bug whenever I was in a cooked mode program.
-> So I was happy.
-> For grins I compiled this program, to see if it also
-> ran properly.
-> It does, while it is running.
-> Prompt and newline come out in sequence, in order,
-> and everything looks right.
-> Hit control d, for EOF, as the program expects, and all is well.
-> But hit ^c for interrupt, and as Tilly says,
-> "All hell done broke loose now."
-> The tty spills out a bunch of accumulated text that it has displayed in the past.
-> Don't know where it comes from, or why.
-> I ran the program several times, interrupt,
-> and the same thing happened each time, even the same stored output,
-> as though it were a 4k block that was retained from somewhere.
-> Try it and see (with Peter's latest patches).
 
-Hi Karl,
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-That's happening because you're also running the 'tty: Fix ^C echo' patch
-series which pre-dates this fix and is _not_ compatible with it.
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> Best Regards,
+> 
+> -Arnaldo
+> 
+> The following changes since commit 6d65894bc028d0342829ea1e64c9e9efad571124:
+> 
+>   tools lib traceevent: Update kvm plugin with is_writable_pte helper (2013-12-04 15:38:14 -0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to e993d10caeb6dca690dbaf86e1981ba240d1414a:
+> 
+>   perf symbols: fix bug in usage of the basename() function (2013-12-09 15:41:59 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Add an option in 'perf script' to print the source line number, from Adrian Hunter
+> 
+> . Fix symoff printing in callchains in 'perf script', from Adrian Hunter.
+> 
+> . Assorted mmap_pages handling fixes, from Adrian Hunter.
+> 
+> . Fix summary percentage when processing files in 'perf trace', fom David Ahern.
+> 
+> . Handle old kernels where the "raw_syscalls" tracepoints were called plan "syscalls",
+>   in 'perf trace', from David Ahern.
+> 
+> . Several man pages typo fixes from Dongsheng Yang.
+> 
+> . Add '-v' option to 'perf kvm', from Dongsheng Yang.
+> 
+> . Make perf kvm diff support --guestmount, from Dongsheng Yang.
+> 
+> . Get rid of several die() calls in libtraceevent, from Namhyung Kim.
+> 
+> . Use basename() in a more robust way, to avoid problems related to different
+>   system library implementations for that function, from Stephane Eranian.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (6):
+>       perf script: Fix symoff printing in callchains
+>       perf script: Add an option to print the source line number
+>       perf record: Fix display of incorrect mmap pages
+>       perf evlist: Remove unnecessary parentheses
+>       perf evlist: Fix max mmap_pages
+>       perf evlist: Fix mmap pages rounding to power of 2
+> 
+> David Ahern (2):
+>       perf trace: Add support for syscalls vs raw_syscalls
+>       perf trace: Fix summary percentage when processing files
+> 
+> Dongsheng Yang (6):
+>       perf kvm: Introduce option -v for perf kvm command.
+>       perf kvm: Fix bug in 'stat report'
+>       perf archive: Remove duplicated 'runs' in man page
+>       perf annotate: Fix typo
+>       perf kvm: Move code to generate filename for perf-kvm to function.
+>       perf kvm: Make perf kvm diff support --guestmount.
+> 
+> Namhyung Kim (5):
+>       tools lib traceevent: Get rid of malloc_or_die() in pevent_filter_alloc()
+>       tools lib traceevent: Get rid of malloc_or_die() in add_event()
+>       tools lib traceevent: Get rid of die() in create_arg_item()
+>       tools lib traceevent: Get rid of malloc_or_die() in pevent_filter_add_filter_str()
+>       tools lib traceevent: Get rid of die() in pevent_filter_clear_trivial()
+> 
+> Stephane Eranian (1):
+>       perf symbols: fix bug in usage of the basename() function
+> 
+> Steven Rostedt (1):
+>       tools lib traceevent: Report better error message on bad function args
+> 
+>  tools/lib/traceevent/event-parse.c        | 28 +++++++++------
+>  tools/lib/traceevent/event-parse.h        |  2 +-
+>  tools/lib/traceevent/parse-filter.c       | 57 ++++++++++++++++++++++++-------
+>  tools/perf/Documentation/perf-archive.txt |  6 ++--
+>  tools/perf/Documentation/perf-kvm.txt     |  7 ++--
+>  tools/perf/Documentation/perf-script.txt  |  2 +-
+>  tools/perf/builtin-annotate.c             |  2 +-
+>  tools/perf/builtin-diff.c                 |  3 +-
+>  tools/perf/builtin-kvm.c                  | 11 +++---
+>  tools/perf/builtin-record.c               |  2 +-
+>  tools/perf/builtin-script.c               | 10 ++++++
+>  tools/perf/builtin-trace.c                | 32 +++++++++++++++--
+>  tools/perf/util/dso.c                     | 29 +++++++++++++++-
+>  tools/perf/util/evlist.c                  | 10 +++---
+>  tools/perf/util/map.c                     | 17 +++++++++
+>  tools/perf/util/map.h                     |  2 ++
+>  tools/perf/util/session.c                 | 15 +++++++-
+>  tools/perf/util/session.h                 |  1 +
+>  tools/perf/util/util.c                    | 14 ++++++++
+>  tools/perf/util/util.h                    | 14 ++++++++
+>  20 files changed, 214 insertions(+), 50 deletions(-)
 
-I've already asked Greg to drop that series for other reasons (which he
-had planned on anyway).
+Pulled, thanks Arnaldo!
 
-Regards,
-Peter Hurley
+There's one detail I noticed about the recent trace-plugin changes:
 
+comet:~/tip/tools/perf> make install
+  BUILD:   Doing 'make -j12' parallel build
+  SUBDIR   Documentation
+  INSTALL  Documentation-man
+  INSTALL  GTK UI
+  SUBDIR   /home/mingo/tip/tools/lib/traceevent/
+  INSTALL  binaries
+  INSTALL  plugin_jbd2.so
+  INSTALL  plugin_hrtimer.so
+  INSTALL  plugin_kmem.so
+  INSTALL  plugin_kvm.so
+  INSTALL  plugin_mac80211.so
+  INSTALL  plugin_sched_switch.so
+  INSTALL  plugin_function.so
+  INSTALL  plugin_xen.so
+  INSTALL  plugin_scsi.so
+  INSTALL  plugin_cfg80211.so
+  INSTALL  libexec
+  INSTALL  perf-archive
+  INSTALL  perl-scripts
+  INSTALL  python-scripts
+  INSTALL  perf_completion-script
+  INSTALL  tests
+
+those plugin installs are way too verbose, they should really be in a 
+single summarized line, only saying something like:
+
+  INSTALL  plugins
+
+Just like we already sum up 'binaries', 'libexec', 'tests', etc.
+
+Thanks,
+
+	Ingo
