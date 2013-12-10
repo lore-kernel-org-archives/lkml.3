@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3LJIgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:36:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58471 "EHLO
+	id S1755768Ab3LJIgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:36:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab3LJH77 (ORCPT
+	with ESMTP id S1752777Ab3LJH7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:59 -0500
+	Tue, 10 Dec 2013 02:59:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 14/52] ARM: mvebu: use the virtual CPU registers to access coherency registers
-Date: Tue, 10 Dec 2013 00:00:47 -0800
-Message-Id: <20131210075955.213861130@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 11/52] ARM: footbridge: fix VGA initialisation
+Date: Tue, 10 Dec 2013 00:00:44 -0800
+Message-Id: <20131210075954.998853533@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,46 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit b6dda00cddcc71d2030668bc0cc0fed758c411c2 upstream.
+commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
 
-The Armada XP provides a mechanism called "virtual CPU registers" or
-"per-CPU register banking", to access the per-CPU registers of the
-current CPU, without having to worry about finding on which CPU we're
-running. CPU0 has its registers at 0x21800, CPU1 at 0x21900, CPU2 at
-0x21A00 and CPU3 at 0x21B00. The virtual registers accessing the
-current CPU registers are at 0x21000.
+It's no good setting vga_base after the VGA console has been
+initialised, because if we do that we get this:
 
-However, in the Device Tree node that provides the register addresses
-for the coherency unit (which is responsible for ensuring coherency
-between processors, and I/O coherency between processors and the
-DMA-capable devices), a mistake was made: the CPU0-specific registers
-were specified instead of the virtual CPU registers. This means that
-the coherency barrier needed for I/O coherency was not behaving
-properly when executed from a CPU different from CPU0. This patch
-fixes that by using the virtual CPU registers.
+Unable to handle kernel paging request at virtual address 000b8000
+pgd = c0004000
+[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
+0Internal error: Oops: 5017 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
+task: c03e2974 ti: c03d8000 task.ti: c03d8000
+PC is at vgacon_startup+0x258/0x39c
+LR is at request_resource+0x10/0x1c
+pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
+sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
+r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
+r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
+r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
+Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb5 "arm: mvebu: Add hardware I/O Coherency support"
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+which is an access to the 0xb8000 without the PCI offset required to
+make it work.
+
+Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-footbridge/common.c  |    3 +++
+ arch/arm/mach-footbridge/dc21285.c |    2 --
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -51,7 +51,7 @@
+--- a/arch/arm/mach-footbridge/common.c
++++ b/arch/arm/mach-footbridge/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
++#include <video/vga.h>
  
- 			coherency-fabric@20200 {
- 				compatible = "marvell,coherency-fabric";
--				reg = <0x20200 0xb0>, <0x21810 0x1c>;
-+				reg = <0x20200 0xb0>, <0x21010 0x1c>;
- 			};
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+@@ -196,6 +197,8 @@ void __init footbridge_map_io(void)
+ 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
+ 		pci_map_io_early(__phys_to_pfn(DC21285_PCI_IO));
+ 	}
++
++	vga_base = PCIMEM_BASE;
+ }
  
- 			serial@12000 {
+ void footbridge_restart(char mode, const char *cmd)
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -18,7 +18,6 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+-#include <video/vga.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+@@ -291,7 +290,6 @@ void __init dc21285_preinit(void)
+ 	int cfn_mode;
+ 
+ 	pcibios_min_mem = 0x81000000;
+-	vga_base = PCIMEM_BASE;
+ 
+ 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
+ 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 
 
