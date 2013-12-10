@@ -1,156 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154Ab3LJABn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:01:43 -0500
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37244 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750699Ab3LJABm (ORCPT
+	id S1751418Ab3LJACF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:02:05 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:53445 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab3LJAB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:01:42 -0500
-Message-ID: <52A659DD.2030904@hurleysoftware.com>
-Date: Mon, 09 Dec 2013 19:01:33 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 9 Dec 2013 19:01:59 -0500
+Date: Mon, 9 Dec 2013 17:01:54 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hanjun Guo <guohanjun@huawei.com>, linux-alpha@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH 1/9] PCI: Use dev_is_pci() to check whether it is pci
+ device
+Message-ID: <20131210000154.GE4699@google.com>
+References: <1386244373-35796-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Karl Dahlke <eklhad@comcast.net>
-Subject: Re: [PATCH 3.12] Broken terminal due to echo bufferring
-References: <alpine.LRH.2.02.1312082127020.19329@file01.intranet.prod.int.rdu2.redhat.com> <52A5E531.9010909@hurleysoftware.com> <alpine.LRH.2.02.1312091645400.9569@file01.intranet.prod.int.rdu2.redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1312091645400.9569@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386244373-35796-1-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 05:18 PM, Mikulas Patocka wrote:
->
->
-> On Mon, 9 Dec 2013, Peter Hurley wrote:
->
->> On 12/08/2013 09:55 PM, Mikulas Patocka wrote:
->>> Hi
->>>
->>> I discovered that kernel 3.12 has broken terminal handling.
->>>
->>> I created this program to show the problem:
->>> #include <stdio.h>
->>> #include <unistd.h>
->>>
->>> int main(void)
->>> {
->>>           int c;
->>>           while ((c = getchar()) != EOF) {
->>>                   if (c == '\n') write(1, "prompt>", 7);
->>>           }
->>>           return 0;
->>> }
->>>
->>> Each time the user presses enter, the program prints "prompt>". Normally,
->>> when you press enter, you should see:
->>>
->>> prompt>
->>> prompt>
->>> prompt>
->>> prompt>_
->>>
->>> However, with kernel 3.12.4, you occasionally see
->>>
->>> prompt>
->>> prompt>
->>> prompt>prompt>
->>> _
->>>
->>> This bug happens randomly, it is timing-dependent. I am using single-core
->>> 600MHz processor with preemptible kernel, the bug may or may not happen on
->>> other computers.
->>>
->>> This bug is caused by Peter Hurley's echo buffering patches
->>> (cbfd0340ae1993378fd47179db949e050e16e697). The patches change n_tty.c so
->>> that it accumulates echoed characters and sends them out in a batch.
->>> Something like this happens:
->>>
->>> * The user presses enter
->>> * n_tty.c adds '\n' to the echo buffer using echo_char_raw
->>> * n_tty.c adds '\n' to the input queue using put_tty_queue
->>> * A process is switched
->>> * Userspace reads '\n' from the terminal input queue
->>> * Userspace writes the string "prompt>" to the terminal
->>> * A process is switched back
->>> * The echo buffer is flushed
->>> * '\n' from the echo buffer is printed.
->>>
->>>
->>> Echo bufferring is fundamentally wrong idea - you must make sure that you
->>> flush the echo buffer BEFORE you add a character to input queue and BEFORE
->>> you send any signal on behalf of that character. If you delay echo, you
->>> are breaking behavior of various programs because the program output will
->>> be interleaved with the echoed characters.
->>
->> There is nothing fundamentally broken with buffering echoes; it's just that
->> there is a bug wrt when to process the echoes (ie, when to force the output).
->>
->> In the example you provided, the write() should cause the echoes to flush
->> but doesn't because the commit marker hasn't been advanced.
->>
->> The commit marker wasn't advanced _yet_ because there is a race window between
->> the reader being woken as a result of the newline and the flush_echoes()
->> which happens with every received input.
->>
->> Either closing the race window or advancing the commit marker prior to
->> write() output will fix the problem; right now, I'm looking at which is least
->> painful.
->>
->> Regards,
->> Peter Hurley
->
-> I still think you should drop this.
->
->
-> The user types on the keyboard so slowly, that lock contention doesn't
-> matter. Specialized programs that use terminal to transmit bulk data don't
-> use cooked mode and echo. So I don't really see any use case where
-> something depends on performance of echoed characters.
->
->
-> Those patches just complicate the code for no benefit.
->
->
-> When you read a variable that may be asynchronously modified, you need
-> ACCESS_ONCE - for example you need this in process_echoes when accessing
-> the variables outside the lock:
-> if (ACCESS_ONCE(ldata->echo_commit) == ACCESS_ONCE(ldata->echo_tail))
+[+cc arch lists]
 
-Not necessarily. Stale values in an SMP environment may not be a problem;
-in this case, a possibly stale echo_tail simply means that the output_lock
-will be obtained unnecessarily (which is cheaper every-so-often than contending
-over the echo_tail cache line every write, especially on x86 where there is
-no problem).
+On Thu, Dec 05, 2013 at 07:52:53PM +0800, Yijing Wang wrote:
+> Use dev_is_pci() instead of directly compare
+> pci_bus_type to check whether it is pci device.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 
-Similarly, so many fences had to be passed to get to the echo_commit load
-from userspace that performing a load-acquire here and store-release in
-commit_echoes would be ridiculously superfluous.
+I applied all these to my pci/yijing-dev_is_pci branch for v3.14, thanks!
 
-> Anyway accessing variables that may change without locks or barriers is
-> generally bad idea and it is hard to verify it. Terminal layer is not
-> performance-sensitive part of the kernel, so it isn't justified to use
-> such dirty tricks.
->
->
-> Another problem: what about this in process_echoes and flush_echoes?
-> if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
-> 	return;
-> - so if the user turns off echo, echoes are not performed. But the buffer
-> is not flushed. So when the user turns on echo again, previously buffered
-> characters will be echoed. That is wrong.
+Browse them here: http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/yijing-dev_is_pci
 
-The check for !L_ECHO pre-dates my patches; it might be wrong but userspace
-may have come to rely on this behavior. That said, feel free to submit a fix
-for that, if you think it's broken.
+This should be no functional change.
 
-Regards,
-Peter Hurley
+ arch/alpha/kernel/pci_iommu.c        |    2 +-
+ arch/arm/common/it8152.c             |    4 ++--
+ arch/arm/mach-ixp4xx/common-pci.c    |    6 +++---
+ arch/ia64/hp/common/sba_iommu.c      |    2 +-
+ arch/ia64/sn/pci/pci_dma.c           |   24 ++++++++++++------------
+ arch/parisc/kernel/drivers.c         |   22 +++++-----------------
+ arch/powerpc/sysdev/fsl_pci.c        |    2 +-
+ arch/sparc/include/asm/dma-mapping.h |   10 ++++------
+ arch/sparc/kernel/iommu.c            |    2 +-
+ arch/sparc/kernel/ioport.c           |    4 +---
+ arch/x86/kernel/acpi/boot.c          |    4 +---
+ drivers/pci/pci-acpi.c               |    2 +-
+ 12 files changed, 33 insertions(+), 51 deletions(-)
 
+Bjorn
+
+> ---
+>  drivers/pci/pci-acpi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+> index 577074e..e0431f1 100644
+> --- a/drivers/pci/pci-acpi.c
+> +++ b/drivers/pci/pci-acpi.c
+> @@ -358,7 +358,7 @@ static void pci_acpi_cleanup(struct device *dev)
+>  
+>  static bool pci_acpi_bus_match(struct device *dev)
+>  {
+> -	return dev->bus == &pci_bus_type;
+> +	return dev_is_pci(dev);
+>  }
+>  
+>  static struct acpi_bus_type acpi_pci_bus = {
+> -- 
+> 1.7.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
