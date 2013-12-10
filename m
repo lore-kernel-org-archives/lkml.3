@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3LJH7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:59:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58436 "EHLO
+	id S1752762Ab3LJH7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:59:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab3LJH7k (ORCPT
+	with ESMTP id S1752141Ab3LJH7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:40 -0500
+	Tue, 10 Dec 2013 02:59:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.4 06/25] SCSI: enclosure: fix WARN_ON in dual path device removing
-Date: Tue, 10 Dec 2013 00:00:14 -0800
-Message-Id: <20131210075931.273322099@linuxfoundation.org>
+Subject: [PATCH 3.4 08/25] SCSI: hpsa: do not discard scsi status on aborted commands
+Date: Tue, 10 Dec 2013 00:00:16 -0800
+Message-Id: <20131210075931.408063690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -26,47 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
+commit 2e311fbabdc23b7eaec77313dc3b9a151a5407b5 upstream.
 
-Bug report from: wenxiong@linux.vnet.ibm.com
+We inadvertantly discarded the scsi status for aborted commands.
+For some commands (e.g. reads from tape drives) these can't be retried,
+and if we discarded the scsi status, the scsi mid layer couldn't notice
+anything was wrong and the error was not reported.
 
-The issue is happened in dual controller configuration. We got the
-sysfs warnings when rmmod the ipr module.
-
-enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
-for each componment deivce, device_unregister() ->device_del()->kobject_del()
-->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
-
-For each componment device,
-enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
-in which checking kobj->sd again, it has been set as NULL when doing
-device_unregister. So we saw all these sysfs WARNING.
-
-Tested-by: wenxiong@linux.vnet.ibm.com
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/enclosure.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -198,6 +198,13 @@ static void enclosure_remove_links(struc
- {
- 	char name[ENCLOSURE_NAME_SIZE];
- 
-+	/*
-+	 * In odd circumstances, like multipath devices, something else may
-+	 * already have removed the links, so check for this condition first.
-+	 */
-+	if (!cdev->dev->kobj.sd)
-+		return;
-+
- 	enclosure_link_name(cdev, name);
- 	sysfs_remove_link(&cdev->dev->kobj, name);
- 	sysfs_remove_link(&cdev->cdev.kobj, "device");
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1219,7 +1219,7 @@ static void complete_scsi_command(struct
+ 					"has check condition: aborted command: "
+ 					"ASC: 0x%x, ASCQ: 0x%x\n",
+ 					cp, asc, ascq);
+-				cmd->result = DID_SOFT_ERROR << 16;
++				cmd->result |= DID_SOFT_ERROR << 16;
+ 				break;
+ 			}
+ 			/* Must be some other type of check condition */
 
 
