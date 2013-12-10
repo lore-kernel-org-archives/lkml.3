@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3LJNzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:55:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1749 "EHLO mx1.redhat.com"
+	id S1753545Ab3LJN4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:56:00 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41745 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab3LJNzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:55:53 -0500
-Date: Tue, 10 Dec 2013 14:55:42 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
-        patches@linaro.org, Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 1/2] perf tools: Automate setup of
- FEATURE_CHECK_(C|LD)FLAGS-all variables
-Message-ID: <20131210135542.GE8108@krava.brq.redhat.com>
-References: <1386678244-13535-1-git-send-email-jean.pihet@linaro.org>
+	id S1753240Ab3LJNzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 08:55:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
+   d="scan'208";a="449857005"
+Date: Tue, 10 Dec 2013 15:55:48 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, balbi@ti.com,
+        sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com, kishon@ti.com,
+        jg1.han@samsung.com, jwerner@chromium.org
+Subject: Re: [PATCH RFC 3/4] xhci: Tune PHY for the DWC3-Exynos host
+ controller
+Message-ID: <20131210135548.GA28456@xps8300>
+References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
+ <1386672926-26885-4-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386678244-13535-1-git-send-email-jean.pihet@linaro.org>
+In-Reply-To: <1386672926-26885-4-git-send-email-gautam.vivek@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:24:02PM +0100, Jean Pihet wrote:
-> Add CFLAGS and LDFLAGS for each feature to be checked during the
-> build. This allows to pass particular flags and parameters to the
-> feature checks compilation.
-> 
-> Use the per-feature check flags for the unwinding feature in order
-> to correctly compile the test-all, libunwind and libunwind-debug-frame
-> feature checks.
-> 
-> This change set simplifies the flags passing mechanism between the
-> Makefiles in config/Makefile and config/feature-checks; this
-> could be farther optimized by moving the compilation flags to the
-> per-feature check flags for all features to be checked.
-> 
-> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR
-> set in 'make -C tools/perf'
-> 
-> 
-> Jean Pihet (2):
->   perf: add per-feature check flags
->   perf: unwinding: use the per-feature check flags
-> 
->  tools/perf/config/Makefile                | 52 ++++++++++++++++++-------------
->  tools/perf/config/feature-checks/Makefile |  8 ++---
->  2 files changed, 34 insertions(+), 26 deletions(-)
-> 
+Hi,
 
-while at it, how about following update
+On Tue, Dec 10, 2013 at 04:25:25PM +0530, Vivek Gautam wrote:
+> @@ -170,6 +189,15 @@ static int xhci_plat_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	/*
+> +	 * The parent of the xhci-plat device may pass in a PHY via
+> +	 * platform data.  If it exists, store it in our struct usb_hcd
+> +	 * so that we can use it later.
+> +	 */
+> +	phy_generic = dev_get_platdata(&pdev->dev);
+> +	if (phy_generic)
+> +		xhci->shared_hcd->phy_generic = *phy_generic;
 
-thanks,
-jirka
+Getting the handle to the phy from platform data like this is not
+going to work for long. It should be possible to get it normally with
+phy_get(). It's not going to be possible to get the handle from the
+platform data like this if the xhci-hcd platform device is created
+from ACPI or DT. You are also not considering case where you have two
+phys.
 
+Vivek, I have made a patch set for the phy framework allowing
+associations between the phys and their users to be made in same way
+gpios and clk make them. With those you should be able to create a
+lookup entry to the phy framework in drivers/usb/dwc3/host.c. Then we
+could use phy_get() here already. Please check them. Subject of the
+thread:
 
----
-Instead of explicitly adding same value into
-FEATURE_CHECK_(C|LD)FLAGS-all variables we can
-do that automatically.
+"phy: remove the need for the phys to know about their users"
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/config/Makefile | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+The lookup table can then be added in drivers/usb/dwc3/host.c with
+something like this:
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f75d814..05fd0e2 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -55,9 +55,6 @@ else
-   FEATURE_CHECK_LDFLAGS-libunwind = $(LIBUNWIND_LDFLAGS)
-   FEATURE_CHECK_CFLAGS-libunwind-debug-frame = $(LIBUNWIND_CFLAGS)
-   FEATURE_CHECK_LDFLAGS-libunwind-debug-frame = $(LIBUNWIND_LDFLAGS)
--  #  and the flags for the test-all case
--  FEATURE_CHECK_CFLAGS-all += $(LIBUNWIND_CFLAGS)
--  FEATURE_CHECK_LDFLAGS-all += $(LIBUNWIND_LDFLAGS)
- endif
- 
- ifeq ($(NO_PERF_REGS),0)
-@@ -168,6 +165,17 @@ CORE_FEATURE_TESTS =			\
- 	stackprotector-all		\
- 	timerfd
- 
-+# Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
-+# If in the future we need per-feature checks/flags for features not
-+# mentioned in this list we need to refactor this ;-).
-+set_test_all_flags = $(eval $(set_test_all_flags_code))
-+define set_test_all_flags_code
-+  FEATURE_CHECK_CFLAGS-all  += $(FEATURE_CHECK_CFLAGS-$(1))
-+  FEATURE_CHECK_LDFLAGS-all += $(FEATURE_CHECK_LDFLAGS-$(1))
-+endef
-+
-+$(foreach feat,$(CORE_FEATURE_TESTS),$(call set_test_all_flags,$(feat)))
-+
- #
- # So here we detect whether test-all was rebuilt, to be able
- # to skip the print-out of the long features list if the file
+int dwc3_host_init(struct dwc3 *dwc)
+{
+        struct platform_device  *xhci;
+        struct phy_lookup_table *table;
+        ...
+        table->dev_id = dev_name(&xhci->dev);
+        if (dwc->usb2_generic_phy)
+                table->table[0].phy_name = dev_name(&dwc->usb2_generic_phy->dev);
+        if (dwc->usb3_generic_phy)
+                table->table[1].phy_name = dev_name(&dwc->usb3_generic_phy->dev);
+        phy_add_lookup_table(table);
+        ...
+
+Br,
+
 -- 
-1.8.3.1
-
+heikki
