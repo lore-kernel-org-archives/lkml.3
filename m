@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab3LJO0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:26:01 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:38911 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab3LJOZ7 (ORCPT
+	id S1753836Ab3LJO0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:26:09 -0500
+Received: from collab.rosalab.ru ([195.19.76.181]:42412 "EHLO
+	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab3LJO0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:25:59 -0500
-Message-ID: <1386685557.30495.344.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] net: sk == 0xffffffff fix - not for commit
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Date: Tue, 10 Dec 2013 06:25:57 -0800
-In-Reply-To: <52A6BAC6.4090407@samsung.com>
-References: <1386589672-5830-1-git-send-email-andrzej.p@samsung.com>
-	 <1386603119.30495.331.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <52A6BAC6.4090407@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 10 Dec 2013 09:26:07 -0500
+Message-ID: <52A72466.8050606@rosalab.ru>
+Date: Tue, 10 Dec 2013 18:25:42 +0400
+From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Organization: ROSA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Daniel Vetter <daniel@ffwll.ch>
+CC: intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: i915: NULL pointer dereference in i915_update_dri1_breadcrumb()
+ during shutdown
+References: <52A6D08B.1040802@rosalab.ru> <20131210122351.GF9804@phenom.ffwll.local>
+In-Reply-To: <20131210122351.GF9804@phenom.ffwll.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 07:55 +0100, Andrzej Pietrasiewicz wrote:
-> W dniu 09.12.2013 16:31, Eric Dumazet pisze:
-> > On Mon, 2013-12-09 at 12:47 +0100, Andrzej Pietrasiewicz wrote:
-> >> NOT FOR COMMITTING TO MAINLINE.
-> >>
-> >> With g_ether loaded the sk occasionally becomes 0xffffffff.
-> >> It happens usually after transferring few hundreds of kilobytes to few
-> >> tens of megabytes. If sk is 0xffffffff then dereferencing it causes
-> >> kernel panic.
-> >>
-> >> This is a *workaround*. I don't know enough net code to understand the core
-> >> of the problem. However, with this patch applied the problems are gone,
-> >> or at least pushed farther away.
-> >
-> > Is it happening on SMP or UP ?
-> 
-> UP build, S5PC110
+On 12/10/2013 04:23 PM, Daniel Vetter wrote:
+> On Tue, Dec 10, 2013 at 12:27:55PM +0400, Eugene Shatokhin wrote:
+>> Hi,
+>>
+>> I have recently observed a NULL pointer dereference in i915 driver
+>> on my Eee PC running ROSA Linux with kernel 3.10.21.
+>>
+>> The crash occurs during shutdown but quite rarely, not each time.
+>>
+>> The system log is lost but here is what I extracted from the info
+>> displayed on the screen.
+>>
+>> NULL pointer dereference at 0x4
+>> EIP is at i915_update_dri1_breadcrumb+0x25/0x70
+>> comm: systemd-journal
+>>
+>> i915_update_dri1_breadcrumb+0x25:
+>> 	mov    0x4(%eax),%ebx // %eax contains 0, the list of register
+>> values confirms that.
+>>
+>> That is the reading of 'master_priv->sarea_priv':
+>>
+>> void i915_update_dri1_breadcrumb(struct drm_device *dev)
+>> {
+>> 	drm_i915_private_t *dev_priv = dev->dev_private;
+>> 	struct drm_i915_master_private *master_priv;
+>>
+>> 	if (dev->primary->master) {
+>> 		master_priv = dev->primary->master->driver_priv;
+>> 		if (master_priv->sarea_priv) // <<< crashes here
+>> 			master_priv->sarea_priv->last_dispatch =
+>> 				READ_BREADCRUMB(dev_priv);
+>> 	}
+>> }
+>
+> Indeed, that's fairly hapzardous. But also only needed for legacy ums
+> support. I'll send out a patch to block this in kms mode quickly. Please
+> test it.
+>
+> Thanks, Daniel
 
-OK
+Thanks a lot!
 
-I believe you need additional debugging to track the exact moment
-0xffffffff is fed to 'sk'
+I am building kernel 3.10.23 now with this patch applied and will let 
+you know if something goes wrong.
 
-It looks like a very strange bug, involving a problem in some assembly
-helper, register save/restore, compiler bug or stack corruption or
-something.
+Regards,
+Eugene
 
-You should not have more than 150 instructions to decode, including
-__inet_lookup_established()
-
-Since __inet_lookup_established() dereferences the socket pointer, I do
-not see why it would crash ~20 instructions _later_
-
-
-
+-- 
+Eugene Shatokhin, ROSA Laboratory.
+www.rosalab.com
