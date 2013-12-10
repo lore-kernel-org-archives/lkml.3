@@ -1,32 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab3LJLNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:13:15 -0500
-Received: from [157.56.120.103] ([157.56.120.103]:30033 "EHLO
-	emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753044Ab3LJLNM convert rfc822-to-8bit (ORCPT
+	id S1753198Ab3LJLPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:15:12 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44186 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3LJLPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:13:12 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 10 Dec 2013 06:15:08 -0500
+Date: Tue, 10 Dec 2013 11:14:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
+Message-ID: <20131210111449.GY4360@n2100.arm.linux.org.uk>
+References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net> <20131128055706.GM8834@intel.com> <20131209235035.GA11632@n2100.arm.linux.org.uk> <20131210101331.GG29580@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Personal Loan
-To: Recipients <officexchange0002@magicboard.onmicrosoft.com>
-From: "''Hyde Finance Loan Company''" 
-	<officexchange0002@magicboard.onmicrosoft.com>
-Date: Tue, 10 Dec 2013 16:40:57 +0530
-Reply-To: <hydenance@gmail.com>
-Message-ID: <17e7ee40-33dd-409e-a845-f38a05a829a3@SINPR06MB123.apcprd06.prod.outlook.com>
-X-Originating-IP: [116.202.27.98]
-X-ClientProxiedBy: BN1PR06CA012.namprd06.prod.outlook.com (10.141.56.32) To
- SINPR06MB123.apcprd06.prod.outlook.com (10.242.54.151)
-X-Forefront-PRVS: 005671E15D
-X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(199002)(189002)(47446002)(76576001)(79102001)(76176001)(76796001)(56776001)(80976001)(47776003)(65816001)(17643785005)(69226001)(53256004)(76786001)(33646001)(77096001)(74502001)(63696002)(558084003)(83072002)(85852003)(50986001)(74706001)(47976001)(54316002)(50466002)(47736001)(76482001)(43066001)(85306002)(74366001)(74316001)(87266001)(325944007)(42186004)(74662001)(81686001)(90146001)(23756003)(56816005)(49866001)(87976001)(74876001)(64872005)(81816001)(81542001)(46102001)(31686002)(4396001)(221733001)(80022001)(51856001)(89136003)(66066001)(77982001)(59766001)(54356001)(19580405001)(81342001)(83322001)(19580395003)(1496004)(62346011);DIR:OUT;SFP:1501;SCL:5;SRVR:SINPR06MB123;H:[116.202.27.98];CLIP:116.202.27.98;FPR:;RD:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: magicboard.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210101331.GG29580@intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Loans available at 3%.Contact us for more info if interested.Serious minded only.Contact us Via Email: hydenance@gmail.com
+On Tue, Dec 10, 2013 at 03:43:31PM +0530, Vinod Koul wrote:
+> On Mon, Dec 09, 2013 at 11:50:35PM +0000, Russell King - ARM Linux wrote:
+> > On Thu, Nov 28, 2013 at 11:27:06AM +0530, Vinod Koul wrote:
+> > > + Dan
+> > > 
+> > > On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
+> > > > The following commit:
+> > > > 
+> > > >   54f8d501e842 dmaengine: remove DMA unmap from drivers
+> > > > 
+> > > > removed the last caller to mv_desc_get_dest_addr(), creating the
+> > > > warning:
+> > > > 
+> > > >   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
+> > > >   but not used [-Wunused-function]
+> > > > 
+> > > > Remove it.
+> > > > 
+> > > > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> > > Acked-by: Vinod Koul <vinod.koul@intel.com>
+> > > 
+> > > This should go thru Dan's tree
+> > 
+> > So what's happening with this patch?  I don't see it in -rc yet.
+> Dan has applied this to his next. So this should show us in next rc1
+
+Wrong answer.  This is a compile regression introduced in the last merge
+window, it should be going into an -rc kernel.
