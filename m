@@ -1,114 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab3LJBz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:55:27 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:50022 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab3LJBz0 (ORCPT
+	id S1751950Ab3LJB5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 20:57:17 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:60848 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3LJB5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 20:55:26 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rBA1sbfj032704, This message is accepted by code: ctloc85258
-Message-ID: <52A674E0.2080407@realsil.com.cn>
-Date: Tue, 10 Dec 2013 09:56:48 +0800
-From: micky <micky_ching@realsil.com.cn>
+	Mon, 9 Dec 2013 20:57:13 -0500
+Message-ID: <52A674F1.7000104@gmail.com>
+Date: Tue, 10 Dec 2013 02:57:05 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: wwang <wei_wang@realsil.com.cn>, Samuel Ortiz <sameo@linux.intel.com>,
-        Francis Moreau <francis.moro@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com> <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de> <529D92D6.8050409@gmail.com> <20131209221721.GB8612@zurbaran> <52A670E4.5050501@realsil.com.cn>
-In-Reply-To: <52A670E4.5050501@realsil.com.cn>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Olof Johansson <olof@lixom.net>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/9] ARM: Initial support for Marvell Berlin SoCs
+References: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com> <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com> <20131210014043.GA32701@quad.lixom.net>
+In-Reply-To: <20131210014043.GA32701@quad.lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Francis:
-On 12/10/2013 09:39 AM, wwang wrote:
-> which is based on Thomas' patch. 
+On 12/10/2013 02:40 AM, Olof Johansson wrote:
+> On Sun, Dec 08, 2013 at 03:13:57PM +0100, Sebastian Hesselbarth wrote:
+>> Hopefully last round of initial support patches for Marvell Berlin SoCs
+>> before I can send the final PR for v3.14.
+>>
+>> Compared to last version sent, this patch set has now a Reviewed-by from
+>> Thomas Gleixner for the irqchip driver (Thanks for that!). Also, l2x0
+>> compatibles can now be reordered alphabetically instead of by derivate
+>> thanks to [1].
+>>
+>> Marvell Docs have been updated to not mention Armada 1000 which has been
+>> discontinued by Marvell and vanished from their website. The dtsi/dts file
+>> have been renamed to vendor,name.dts[i], which is the preferred new naming
+>> scheme.
+>>
+>> Open issues are the never ending dw_apb_timers_of story, which I ignore
+>> for now and hope they get in someday. Also, TWD SMP dependency and
+>> early l2x0_of_init will be addressed at a later date. At the current
+>> feature set of Berlin SoC, I don't see why the above issues should further
+>> stall this patches.
+>>
+>> I guess, all patches can go through ARM SoC tree, except Tauros3 patch
+>> which I should submit to Russell's patch tracker?
+>
+> Yep, sounds good.
+>
+> I took a cursory glance at the patchset and it looks sane to me. I didn't
+> review in detail though.
+>
+> One open question: Why don't you just add this to mach-mvebu? I thought
+> all modern Marvell platforms were going to converge on that eventually
+> anyway, and it's easy to add it now that it's early and simple..
 
-Can you help us test this patch, we disable irq while suspend here.
+Olof,
 
- From 6b2bd6d85780bfd8d4fe5289aee1b09dd655d2d4 Mon Sep 17 00:00:00 2001
-From: Micky Ching <micky_ching@realsil.com.cn>
-Date: Thu, 5 Dec 2013 16:44:19 +0800
-Subject: [PATCH] mfd: rtsx: fix pci remove panic while resuming
+I started with mach-mvebu in the first RFC, but Berlin SoCs are from a
+different business unit at Marvell and are more PXA compatible than
+Orion/Kirkwood/Armada 370/XP. Most notably, they lack the "mbus" and
+IP is either from PXA/MMP or Synopsys DW. Thomas Petazzoni and also
+Jisheng Zhang from Marvell suggested to not put it into mvebu but
+have a different mach folder instead.
 
-On some special condition, when resume from suspend, the rtsx_pci will
-being removed. And card insert/remove interrupt triggered during
-removing, this will cause kernel panic, since in card detect work will
-read pci register but device is no longer exist.
+> Also, see below:
+>
+>> Sebastian Hesselbarth (9):
+>>    irqchip: add DesignWare APB ICTL interrupt controller
+>>    MAINTAINERS: add ARM Marvell Berlin SoC
+>>    ARM: l2x0: add Marvell Tauros3 support
+>>    ARM: add Marvell Berlin SoC familiy to Marvell doc
+>>    ARM: add Marvell Berlin SoCs to multi_v7_defconfig
+>>    ARM: add Marvell Berlin UART0 lowlevel debug
+>>    ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
+>>    ARM: add Armada 1500-mini and Chromecast device tree files
+>>    ARM: add initial support for Marvell Berlin SoCs
+>>
+>>   Documentation/arm/Marvell/README                   |  24 +++
+>>   Documentation/devicetree/bindings/arm/l2cc.txt     |  23 ++-
+>>   .../devicetree/bindings/arm/marvell,berlin.txt     |  24 +++
+>>   .../interrupt-controller/snps,dw-apb-ictl.txt      |  32 +++
+>>   MAINTAINERS                                        |   6 +
+>>   arch/arm/Kconfig                                   |   2 +
+>>   arch/arm/Kconfig.debug                             |  10 +
+>>   arch/arm/Makefile                                  |   1 +
+>>   arch/arm/boot/dts/Makefile                         |   3 +
+>>   arch/arm/boot/dts/google,chromecast.dts            |  29 +++
+>>   arch/arm/boot/dts/marvell,berlin2.dtsi             | 227 +++++++++++++++++++++
+>>   arch/arm/boot/dts/marvell,berlin2cd.dtsi           | 210 +++++++++++++++++++
+>>   arch/arm/boot/dts/sony,nsz-gs7.dts                 |  29 +++
+>
+> We have had a long-standing standard of naming the dts files
+> <family>-<board>.dts (or <soc_vendor>-<board>.dts).  Let's continue
+> sticking to that since it helps keep the namespace somewhat segmented per
+> platform in arch/arm/boot/dts.
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
-  drivers/mfd/rtsx_pcr.c |   21 ++++++++++++++++-----
-  1 file changed, 16 insertions(+), 5 deletions(-)
+Also, here: I had the naming that way until v3, then Kumar suggested to
+use prefixed naming scheme. Maybe I got it wrong?
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 11e20af..efdd9b9 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1228,14 +1228,14 @@ static void rtsx_pci_remove(struct pci_dev *pcidev)
+Are you suggesting to name the above back to:
+berlin2[cd].dtsi,
+berlin2-nsz-gs7.dts, and
+berlin2cd-chromecast.dts?
 
-      pcr->remove_pci = true;
-
--    cancel_delayed_work(&pcr->carddet_work);
--    cancel_delayed_work(&pcr->idle_work);
-+    cancel_delayed_work_sync(&pcr->carddet_work);
-+    cancel_delayed_work_sync(&pcr->idle_work);
-
-      mfd_remove_devices(&pcidev->dev);
-
-      dma_free_coherent(&(pcr->pci->dev), RTSX_RESV_BUF_LEN,
-              pcr->rtsx_resv_buf, pcr->rtsx_resv_buf_addr);
--    free_irq(pcr->irq, (void *)pcr);
-+    free_irq(pcr->irq, pcr);
-      if (pcr->msi_en)
-          pci_disable_msi(pcr->pci);
-      iounmap(pcr->remap_addr);
-@@ -1268,8 +1268,13 @@ static int rtsx_pci_suspend(struct pci_dev 
-*pcidev, pm_message_t state)
-      handle = pci_get_drvdata(pcidev);
-      pcr = handle->pcr;
-
--    cancel_delayed_work(&pcr->carddet_work);
--    cancel_delayed_work(&pcr->idle_work);
-+    spin_lock_irq(&pcr->lock);
-+    rtsx_pci_writel(pcr, RTSX_BIER, 0);
-+    pcr->bier = 0;
-+    spin_unlock_irq(&pcr->lock);
-+    cancel_delayed_work_sync(&pcr->carddet_work);
-+    cancel_delayed_work_sync(&pcr->idle_work);
-+    free_irq(pcr->irq, pcr);
-
-      mutex_lock(&pcr->pcr_mutex);
-
-@@ -1295,6 +1300,12 @@ static int rtsx_pci_resume(struct pci_dev *pcidev)
-      handle = pci_get_drvdata(pcidev);
-      pcr = handle->pcr;
-
-+    ret = rtsx_pci_acquire_irq(pcr);
-+    if (ret < 0)
-+        return ret;
-+    synchronize_irq(pcr->irq);
-+    rtsx_pci_enable_bus_int(pcr);
-+
-      mutex_lock(&pcr->pcr_mutex);
-
-      pci_set_power_state(pcidev, PCI_D0);
--- 
-1.7.9.5
-
-
--- 
-Best Regards
-Micky.
-
+Sebastian
