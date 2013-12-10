@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab3LJGHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:07:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705Ab3LJGHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:07:53 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>
-Subject: [PATCH net V2 1/2] tun: unbreak truncated packet signalling
-Date: Tue, 10 Dec 2013 13:49:45 +0800
-Message-Id: <1386654586-18151-1-git-send-email-jasowang@redhat.com>
+	id S1751711Ab3LJGI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:08:28 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:55044 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab3LJGI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 01:08:26 -0500
+Message-ID: <52A6AFD1.4010002@linaro.org>
+Date: Tue, 10 Dec 2013 14:08:17 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        rafael.j.wysocki@intel.com,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>
+Subject: Re: questions of cpuidle
+References: <52A5C846.30308@linaro.org> <52A5E135.2020500@linux.vnet.ibm.com>
+In-Reply-To: <52A5E135.2020500@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
-(tuntap: hardware vlan tx support) breaks the truncated packet signal by nev
-return a length greater than iov length in tun_put_user(). This patch fixes
-by always return the length of packet plus possible vlan header. Caller can
-detect the truncated packet by comparing the return value and the size of io
-length.
+On 12/09/2013 11:26 PM, Preeti U Murthy wrote:
+>> > If the cpu stopped the interrupt during deep c-state and without
+>> > monitor/mwait support, which kind of ipi can wake the cpu? I mean like a
+>> > x86 cpu, APIC stopped in c3 mode, but actually ipi send via apic bus. So
+>> > I don't know which ipi work?
+>> > 
+> As far as my understanding goes, an external interrupt sent via the apic
+> bus wakes up a core in deep idle state first,
 
-Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-Changes from v1:
-- increase total unconditionally
-- do not move veth structure out of the vlan handing block
----
- drivers/net/tun.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+Is there some evidence for this? Documents or some explanation?
+ meaning powers on the core
+> and hence the local apic. It does not yet acknowledge the interrupt,
+> meaning it cannot invoke the interrupt handler immediately.
+>    After the core goes through some initialization steps after wakeup,
+> it will be in a position to acknowledge the external interrupt and
+> service it accordingly.
+> 
+> Ideally the interrupt handler of this external interrupt should be that
+> of the local timer itself since it was meant to act on the behalf of the
+> local timer interrupt.
+> 
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index e26cbea..cd142134 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1184,7 +1184,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- {
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total = 0;
--	int vlan_offset = 0;
-+	int vlan_offset = 0, offset;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
-@@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		total += tun->vnet_hdr_sz;
- 	}
- 
-+	offset = total;
-+	total += skb->len;
- 	if (!vlan_tx_tag_present(skb)) {
- 		len = min_t(int, skb->len, len);
- 	} else {
-@@ -1262,24 +1264,24 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
- 		len = min_t(int, skb->len + VLAN_HLEN, len);
-+		total += VLAN_HLEN;
- 
- 		copy = min_t(int, vlan_offset, len);
--		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
-+		ret = skb_copy_datagram_const_iovec(skb, 0, iv, offset, copy);
- 		len -= copy;
--		total += copy;
-+		offset += copy;
- 		if (ret || !len)
- 			goto done;
- 
- 		copy = min_t(int, sizeof(veth), len);
--		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
-+		ret = memcpy_toiovecend(iv, (void *)&veth, offset, copy);
- 		len -= copy;
--		total += copy;
-+		offset += copy;
- 		if (ret || !len)
- 			goto done;
- 	}
- 
--	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
--	total += len;
-+	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, offset, len);
- 
- done:
- 	tun->dev->stats.tx_packets++;
+Added more Intel experts.
+
+Many thanks for response, Preeti!
+
+But I still don't know how to get external/internal interrupt by a deep
+c-state cpu.
+In Intel Architecture Software Developer's Manual Vol.3A, Figure 10-3.
+Local APICs and I/O APIC When P6 Family Processors Are Used in
+Multiple-Processor Systems.
+The Local APIC is response for the the external/internal interrupt
+receiving. and It is included in CPU.
+
+And some explanation often be used in wikipedia.
+(http://www.hardwaresecrets.com/article/Everything-You-Need-to-Know-About-the-CPU-C-States-Power-Saving-Modes/611/4)
+It said the APIC clock was stopped in deep c-state, So I am wondering
+how can the nonfunctional LAPIC pass interrupt to CPU?
+
+And for monitor/mwait idle method, seems deep c-state cpu need to keep a
+eye on memory bus. So seems the memory controller in cpu package is
+impossible to get into sleep, right?
 -- 
-1.8.3.2
-
+Thanks
+    Alex
