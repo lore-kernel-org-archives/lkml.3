@@ -1,58 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3LJPgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:36:36 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:49505 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3LJPgd (ORCPT
+	id S1753320Ab3LJPik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:38:40 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:61191 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3LJPii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:36:33 -0500
-Date: Tue, 10 Dec 2013 16:36:29 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
-        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
-        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20131210153629.GA1397@gmail.com>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
- <1386063927-6545-5-git-send-email-davidlohr@hp.com>
- <alpine.DEB.2.02.1312061924390.30673@ionos.tec.linutronix.de>
- <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
+	Tue, 10 Dec 2013 10:38:38 -0500
+Date: Tue, 10 Dec 2013 13:38:30 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2013-12-10
+Message-ID: <20131210153830.GA1542@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
 Content-Disposition: inline
-In-Reply-To: <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Fri, 2013-12-06 at 19:26 +0100, Thomas Gleixner wrote:
-> > On Tue, 3 Dec 2013, Davidlohr Bueso wrote:
-> > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > 
-> > Who is the author of this? According to the SOB chains its Waiman, who
-> > handed it down to Jason and it finally got sumbitted by you. Is that
-> > correct?
-> 
-> This was a group effort for the original patchset -- things did change
-> quite a bit for this particular patch in v2. Waiman and Jason helped
-> review and test the original atomic ops code.
+Hi John,
 
-Then please put that into the credits (in the changelog and/or in the 
-source code), and/or into copyright notices, etc. - but keep the 
-SOB-chain the true route of the patch, where the primary author is the 
-first in the SOB and where the person sending the patch is the last 
-SOB. (the two are identical normally.)
+More patches to 3.14. Here we have the support for Low Energy Connection
+Oriented Channels (LE CoC). Basically, as the name says, this adds supports
+for connection oriented channels in the same way we already have them for
+BR/EDR connections so profiles/protocols that work on top of BR/EDR can now
+work on LE plus a plenty of new possibilities for LE.
 
-Thanks,
+Please pull. Thanks!!
 
-	Ingo
+	Gustavo
+
+---
+The following changes since commit 201a5929c8c788f9ef53b010065c9ce70c9c06f0:
+
+  Bluetooth: Remove dead code from SMP encryption function (2013-12-04 11:09:05 -0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 71fb419724fadab4efdf98210aa3fe053bd81d29:
+
+  Bluetooth: Fix handling of L2CAP Command Reject over LE (2013-12-10 01:15:44 -0800)
+
+----------------------------------------------------------------
+Johan Hedberg (35):
+      Bluetooth: Remove unnecessary braces from one-line if-statement
+      Bluetooth: Add module parameter to enable LE CoC support
+      Bluetooth: Update l2cap_global_chan_by_psm() to take a link type
+      Bluetooth: Allow l2cap_chan_check_security() to be used for LE links.
+      Bluetooth: Pass command length to LE signaling channel handlers
+      Bluetooth: Move LE L2CAP initiator procedure to its own function
+      Bluetooth: Add definitions for LE connection oriented channels
+      Bluetooth: Add initial code for LE L2CAP Connect Request
+      Bluetooth: Add smp_sufficient_security helper function
+      Bluetooth: Refactor L2CAP connect rejection to its own function
+      Bluetooth: Add basic LE L2CAP connect request receiving support
+      Bluetooth: Fix L2CAP channel closing for LE connections
+      Bluetooth: Add L2CAP Disconnect suppport for LE
+      Bluetooth: Make l2cap_le_sig_cmd logic consistent
+      Bluetooth: Add LE L2CAP flow control mode
+      Bluetooth: Track LE L2CAP credits in l2cap_chan
+      Bluetooth: Limit L2CAP_OPTIONS socket option usage with LE
+      Bluetooth: Add new BT_SNDMTU and BT_RCVMTU socket options
+      Bluetooth: Implement returning of LE L2CAP credits
+      Bluetooth: Add LE flow control discipline
+      Bluetooth: Reject LE CoC commands when the feature is not enabled
+      Bluetooth: Introduce L2CAP channel callback for suspending
+      Bluetooth: Add LE L2CAP segmentation support for outgoing data
+      Bluetooth: Implement LE L2CAP reassembly
+      Bluetooth: Fix LE L2CAP Connect Request handling together with SMP
+      Bluetooth: Fix suspending the L2CAP socket if we start with 0 credits
+      Bluetooth: Limit LE MPS to the MTU value
+      Bluetooth: Fix clearing of chan->omtu for LE CoC channels
+      Bluetooth: Fix CID ranges for LE CoC CID allocations
+      Bluetooth: Fix validating LE PSM values
+      Bluetooth: Add debugfs controls for LE CoC MPS and Credits
+      Bluetooth: Simplify l2cap_chan initialization for LE CoC
+      Bluetooth: Use min_t for calculating chan->mps
+      Bluetooth: Fix valid LE PSM check
+      Bluetooth: Fix handling of L2CAP Command Reject over LE
+
+Marcel Holtmann (2):
+      Bluetooth: Increase minor version of core module
+      Bluetooth: Use macros for connectionless slave broadcast features
+
+ include/net/bluetooth/bluetooth.h |   3 +
+ include/net/bluetooth/hci.h       |   6 +
+ include/net/bluetooth/hci_core.h  |   6 +
+ include/net/bluetooth/l2cap.h     |  45 +++
+ net/bluetooth/af_bluetooth.c      |   2 +-
+ net/bluetooth/hci_core.c          |   6 +-
+ net/bluetooth/l2cap_core.c        | 744 ++++++++++++++++++++++++++++++++++++++++++++---
+ net/bluetooth/l2cap_sock.c        | 181 ++++++++++--
+ net/bluetooth/smp.c               |  16 +-
+ net/bluetooth/smp.h               |   1 +
+ 10 files changed, 937 insertions(+), 73 deletions(-)
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpzV2AAoJEPs3PUX4s20oxPEP+gKUiBXuXH8cyiF3fHgdpfja
+Q4DEGbSX3bvIRtZdY3lCGN0EZkG9nWa8xWoKDKkR+7pbkK1JRwbPfrjwNdr03GHK
+uCOPzPIFmZIFLHslcq5OJIrmyVMMaDi5900PJVf3SIj3TluJkHyThLZf4op7G3Qv
+a/mQeNgNsMBmR/EYkBMzyfYrje78ZFDhobXBE7ZL3Cs6Vrp2XGkEBq/3pnez0ic0
+KQJIPwVg7Hghhuh17pvo47MOmJnOoO7qXLOF3LhUW33a6NscwkKH/YFR2nxU2pLa
+z14skOOGSo7MjWQnu6KSJ9g37iQyxSfTvRAUVequCBxnrt0KZhzSAY1tJQkEWvTZ
+LU9aw3vN+cTYY+w/AsIFRGdzDm8jEwg2/XL4jXT2rloShTDlnqxj0nwaeyzh4Mih
+vLGTpDIvPal4GkgkbRUKgnkGQ15WQ6x8w80tiisI07gz31NvUypH4U5CS0vhOYcH
+cYwmiB7pdASnEa3756x+Orj5XCYva4sVKMfChm/2ypcTOIGiJHXEDSLbbzBtNQ6J
+rIr03l9g6IFtCUDnQa68DURYMkX6Gi4R9rkzqT47Io5zIv10YEP6OM0IrKrC62YS
+780bU8axG++NxxmnqRUGgILar1Xiqyjw7QToQjzzkNKF3osXleiNuL2QV1hL2p+7
+VNOzGHJPA1Z5+BX2KzTj
+=BClH
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
