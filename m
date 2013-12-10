@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3LJIda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:33:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58627 "EHLO
+	id S1755564Ab3LJId2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:33:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58634 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab3LJIAK (ORCPT
+	with ESMTP id S1752862Ab3LJIAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:10 -0500
+	Tue, 10 Dec 2013 03:00:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vijaya Mohan Guvva <vmohan@brocade.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 20/52] SCSI: bfa: Fix crash when symb name set for offline vport
-Date: Tue, 10 Dec 2013 00:00:53 -0800
-Message-Id: <20131210075955.620671698@linuxfoundation.org>
+Subject: [PATCH 3.10 21/52] SCSI: enclosure: fix WARN_ON in dual path device removing
+Date: Tue, 10 Dec 2013 00:00:54 -0800
+Message-Id: <20131210075955.687637018@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,79 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vijaya Mohan Guvva <vmohan@brocade.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 22a08538dca5c0630226f1c0c58dccd12e463d22 upstream.
+commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
 
-This patch fixes a crash when tried setting symbolic name for an offline
-vport through sysfs. Crash is due to uninitialized pointer lport->ns,
-which gets initialized only on linkup (port online).
+Bug report from: wenxiong@linux.vnet.ibm.com
 
-Signed-off-by: Vijaya Mohan Guvva <vmohan@brocade.com>
+The issue is happened in dual controller configuration. We got the
+sysfs warnings when rmmod the ipr module.
+
+enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
+for each componment deivce, device_unregister() ->device_del()->kobject_del()
+->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
+
+For each componment device,
+enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
+in which checking kobj->sd again, it has been set as NULL when doing
+device_unregister. So we saw all these sysfs WARNING.
+
+Tested-by: wenxiong@linux.vnet.ibm.com
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/bfa/bfa_fcs.h       |    1 +
- drivers/scsi/bfa/bfa_fcs_lport.c |   14 +++++++++++---
- drivers/scsi/bfa/bfad_attr.c     |    7 ++-----
- 3 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/misc/enclosure.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/scsi/bfa/bfa_fcs.h
-+++ b/drivers/scsi/bfa/bfa_fcs.h
-@@ -299,6 +299,7 @@ wwn_t bfa_fcs_lport_get_rport(struct bfa
- struct bfa_fcs_lport_s *bfa_fcs_lookup_port(struct bfa_fcs_s *fcs,
- 					    u16 vf_id, wwn_t lpwwn);
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -198,6 +198,13 @@ static void enclosure_remove_links(struc
+ {
+ 	char name[ENCLOSURE_NAME_SIZE];
  
-+void bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port, char *symname);
- void bfa_fcs_lport_get_info(struct bfa_fcs_lport_s *port,
- 			    struct bfa_lport_info_s *port_info);
- void bfa_fcs_lport_get_attr(struct bfa_fcs_lport_s *port,
---- a/drivers/scsi/bfa/bfa_fcs_lport.c
-+++ b/drivers/scsi/bfa/bfa_fcs_lport.c
-@@ -1097,6 +1097,17 @@ bfa_fcs_lport_init(struct bfa_fcs_lport_
- 	bfa_sm_send_event(lport, BFA_FCS_PORT_SM_CREATE);
- }
- 
-+void
-+bfa_fcs_lport_set_symname(struct bfa_fcs_lport_s *port,
-+				char *symname)
-+{
-+	strcpy(port->port_cfg.sym_name.symname, symname);
++	/*
++	 * In odd circumstances, like multipath devices, something else may
++	 * already have removed the links, so check for this condition first.
++	 */
++	if (!cdev->dev->kobj.sd)
++		return;
 +
-+	if (bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
-+		bfa_fcs_lport_ns_util_send_rspn_id(
-+			BFA_FCS_GET_NS_FROM_PORT(port), NULL);
-+}
-+
- /*
-  *  fcs_lport_api
-  */
-@@ -4950,9 +4961,6 @@ bfa_fcs_lport_ns_util_send_rspn_id(void
- 	u8 *psymbl = &symbl[0];
- 	int len;
- 
--	if (!bfa_sm_cmp_state(port, bfa_fcs_lport_sm_online))
--		return;
--
- 	/* Avoid sending RSPN in the following states. */
- 	if (bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_offline) ||
- 	    bfa_sm_cmp_state(ns, bfa_fcs_lport_ns_sm_plogi_sending) ||
---- a/drivers/scsi/bfa/bfad_attr.c
-+++ b/drivers/scsi/bfa/bfad_attr.c
-@@ -610,11 +610,8 @@ bfad_im_vport_set_symbolic_name(struct f
- 		return;
- 
- 	spin_lock_irqsave(&bfad->bfad_lock, flags);
--	if (strlen(sym_name) > 0) {
--		strcpy(fcs_vport->lport.port_cfg.sym_name.symname, sym_name);
--		bfa_fcs_lport_ns_util_send_rspn_id(
--			BFA_FCS_GET_NS_FROM_PORT((&fcs_vport->lport)), NULL);
--	}
-+	if (strlen(sym_name) > 0)
-+		bfa_fcs_lport_set_symname(&fcs_vport->lport, sym_name);
- 	spin_unlock_irqrestore(&bfad->bfad_lock, flags);
- }
- 
+ 	enclosure_link_name(cdev, name);
+ 	sysfs_remove_link(&cdev->dev->kobj, name);
+ 	sysfs_remove_link(&cdev->cdev.kobj, "device");
 
 
