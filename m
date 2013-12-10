@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab3LJGIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:08:44 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:60070 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab3LJGId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:08:33 -0500
-X-AuditID: cbfee690-b7f676d00000310d-22-52a6afdf50ca
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
- <000c01cef252$1b341040$519c30c0$%han@samsung.com>
- <20131209174439.GH29268@sirena.org.uk>
-In-reply-to: <20131209174439.GH29268@sirena.org.uk>
-Subject: Re: [PATCH 3/6] regulator: fixed: use devm_regulator_register()
-Date: Tue, 10 Dec 2013 15:08:31 +0900
-Message-id: <001101cef56e$40712e50$c1538af0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac71BljfRQ/G9fWSSxCwc/IXRRGMsQAZ2+NQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd3765cFGexosLCY+vAJm8XlhZdY
-	Lb5d6WCyuLxrDpsDi8fOWXfZPTat6mTz6NuyitHj8ya5AJYoLpuU1JzMstQifbsErozfNz6x
-	FHSzVCy9tIm5gXE2cxcjJ4eEgInE6Y83WSFsMYkL99azdTFycQgJLGOUuPytlRGm6NnpJ8wQ
-	iemMErdb50M5vxglPs85xwJSxSagJvHly2H2LkYODhEBVYn/r9xBTGaBXInubekQ5bMYJbac
-	fc4GUs4pYCxx6eVcVpAaYQEPiYZGEZAwC1Dn+seNTCA2r4CtxP4TDWwQtqDEj8n3wDYxC2hJ
-	rN95nAnClpfYvOYtM8gYCQF1iUd/dSEOMJKY8D0bokJEYt+Ld4wgF0gInGOX6L51hx1ilYDE
-	t8mHWCBaZSU2HYAGiaTEwRU3WCYwSsxCsngWksWzkCyehWTFAkaWVYyiqQXJBcVJ6UUmesWJ
-	ucWleel6yfm5mxghETlhB+O9A9aHGJOB1k9klhJNzgdGdF5JvKGxmZGFqYmpsZG5pRlpwkri
-	vGqPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MJZYHW1d4SeZo+mtkO72RWTOzB92ES8+
-	tx9abar/6J7gp8PRuwqVLorW1Wyc+1715OxbPBtufWZItri1/1xLgKlnik7RfvdFYd0qxlPm
-	6975luZxSPmCxIp+g1O3zKzdTUp1d3K2zwjWVpv7dbJCFOM7d9e+l7bX33y58CPCp/v5q7sz
-	HtyZeFmJpTgj0VCLuag4EQC5hYbn3gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd3765cFGTRPM7GY+vAJm8XlhZdY
-	Lb5d6WCyuLxrDpsDi8fOWXfZPTat6mTz6NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaM3zc+sRR0s1QsvbSJuYFxNnMXIyeHhICJxLPTT6BsMYkL99az
-	dTFycQgJTGeUuN06nxnC+cUo8XnOORaQKjYBNYkvXw6zdzFycIgIqEr8f+UOYjIL5Ep0b0uH
-	KJ/FKLHl7HM2kHJOAWOJSy/nsoLUCAt4SDQ0ioCEWYA61z9uZAKxeQVsJfafaGCDsAUlfky+
-	B7aJWUBLYv3O40wQtrzE5jVvmUHGSAioSzz6qwtxgJHEhO/ZEBUiEvtevGOcwCg0C8mgWUgG
-	zUIyaBaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxguP9mfQOxlUNFocYBTgYlXh4
-	Jf4tDRJiTSwrrsw9xCjBwawkwutZtyxIiDclsbIqtSg/vqg0J7X4EGMy0J8TmaVEk/OBqSiv
-	JN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhhVJH74vAo+njZ3
-	PceL6d2Vomsity5/MeNt9BWd879+bhVb+PnU1jAflXeP7pinrjvF138tcLJF+a6552b1hkw4
-	E/Hf837Xg9syz3X/bj5QNGVB0B4z4x//Mv5Y79v8Zv9auZ9mMr8zfLPdsq63ah76wehZvPve
-	8c32h0vrT2/4eef1xfeKzSa1DEosxRmJhlrMRcWJAH4XxRE7AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751983Ab3LJGJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:09:33 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:15306 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942Ab3LJGJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 01:09:30 -0500
+X-IronPort-AV: E=Sophos;i="4.93,863,1378828800"; 
+   d="scan'208";a="9227959"
+Message-ID: <52A7667A.3040407@cn.fujitsu.com>
+Date: Tue, 10 Dec 2013 14:07:38 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix bug for perf kvm report without guestmount.
+References: <1386365588-13046-1-git-send-email-yangds.fnst@cn.fujitsu.com> <20131206115627.GA2279@ghostprotocols.net> <52A4AED8.3000506@gmail.com> <20131209180705.GB8098@ghostprotocols.net> <52A60705.5030303@gmail.com> <20131209184901.GE8098@ghostprotocols.net> <52A61D43.6020007@gmail.com> <52A7637E.8080007@cn.fujitsu.com> <52A6AE87.3040706@gmail.com>
+In-Reply-To: <52A6AE87.3040706@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/10 14:09:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/10 14:09:10,
+	Serialize complete at 2013/12/10 14:09:10
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 10, 2013 2:45 AM, Mark Brown wrote:
-> On Fri, Dec 06, 2013 at 04:09:29PM +0900, Jingoo Han wrote:
-> > Use devm_regulator_register() to make cleanup paths simpler.
-> 
-> This has the same issue as the gpio regulator - it needs a more complete
-> conversion to devm to be safe due to the use of other resources by the
-> regulator while it's running.  The conversion looks straightfoward
-> though.
+On 12/10/2013 01:02 AM, David Ahern wrote:
+> On 12/10/13, 11:54 AM, Dongsheng Yang wrote:
+>> Okey, David, I saw your commit 207b57926 (perf kvm: Fix regression with
+>> guest machine creation) here. It is applied to fix a bug of SEGFAULT. I
+>> have to say that it changed the behavior of report and lead to 
+>> current bug.
+>
+>
+> Dongsheng, I appreciate your perseverance here. I am trying to survive 
+> this week due to a lot of demands on my time. Next week or the week 
+> after I will revisit your questions and comments on perf-kvm.
 
-OK, I see.
-Please ignore this patch.
-Thank you for your comment.
+It is all right to me :).
 
-Best regards,
-Jingoo Han
+Thanx !!
+
+Yang
+>
+> David
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
