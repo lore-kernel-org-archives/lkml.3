@@ -1,115 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3LJP0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:26:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2803 "EHLO mx1.redhat.com"
+	id S1754162Ab3LJP1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:27:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43581 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab3LJP0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:26:19 -0500
-Date: Tue, 10 Dec 2013 17:29:51 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH net V2 2/2] macvtap: signal truncated packets
-Message-ID: <20131210152951.GE25293@redhat.com>
-References: <1386654586-18151-1-git-send-email-jasowang@redhat.com>
- <1386654586-18151-2-git-send-email-jasowang@redhat.com>
+	id S1753766Ab3LJP1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:27:03 -0500
+Date: Tue, 10 Dec 2013 16:27:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: George Spelvin <linux@horizon.com>
+Cc: jack@suse.cz, linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tytso@mit.edu, viro@ZenIV.linux.org.uk
+Subject: Re: 3.11.4: kernel BUG at fs/buffer.c:1268
+Message-ID: <20131210152701.GE1543@quack.suse.cz>
+References: <20131128153420.GA21176@quack.suse.cz>
+ <20131210093528.23399.qmail@science.horizon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386654586-18151-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <20131210093528.23399.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:49:46PM +0800, Jason Wang wrote:
-> macvtap_put_user() never return a value grater than iov length, this in fact
-> bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
-> returning the size of packet plus the possible vlan header to let the trunca
-> checking work.
-> 
-> Cc: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from v1:
-> - increase total unconditionally
-> - do not move the structure veth out of the vlan handling block
-> ---
->  drivers/net/macvtap.c | 19 ++++++++++---------
->  1 file changed, 10 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index 957cc5c..ded4b2c 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -770,7 +770,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
->  	int ret;
->  	int vnet_hdr_len = 0;
->  	int vlan_offset = 0;
-> -	int copied;
-> +	int copied, offset;
->  
->  	if (q->flags & IFF_VNET_HDR) {
->  		struct virtio_net_hdr vnet_hdr;
-> @@ -785,7 +785,8 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
->  		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
->  			return -EFAULT;
->  	}
-> -	copied = vnet_hdr_len;
-> +	offset = copied = vnet_hdr_len;
-> +	copied += skb->len;
->  
->  	if (!vlan_tx_tag_present(skb))
->  		len = min_t(int, skb->len, len);
-> @@ -800,24 +801,24 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
->  
->  		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
->  		len = min_t(int, skb->len + VLAN_HLEN, len);
-> +		copied += VLAN_HLEN;
->  
->  		copy = min_t(int, vlan_offset, len);
-> -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
-> +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, offset, copy);
->  		len -= copy;
-> -		copied += copy;
-> +		offset += copy;
->  		if (ret || !len)
->  			goto done;
->  
->  		copy = min_t(int, sizeof(veth), len);
-> -		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
-> +		ret = memcpy_toiovecend(iv, (void *)&veth, offset, copy);
->  		len -= copy;
-> -		copied += copy;
-> +		offset += copy;
->  		if (ret || !len)
->  			goto done;
->  	}
->  
-> -	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
-> -	copied += len;
-> +	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, offset, len);
->  
->  done:
->  	return ret ? ret : copied;
+On Tue 10-12-13 04:35:28, George Spelvin wrote:
+> One of those additional WARN_ON tests tripped, hooray!
+> And it turned out to be in the ext4 metadata checksumming.  To be
+> precise, ext4_block_bitmap_csum_set() returned with irqs disabled,
+> and kaboom.
+  Ha, great. Thanks for the persistence in testing.
 
-I commented on this already. copied is how much we copied,
-so its value is correct.
-You want to name the new one total_len or something along
-these lines and return it.
+> Since I have this experimental feature turned on and most people don't,
+> this explains why I'm finding it and World+Dog aren't.
+> 
+> I appear to be the designated finder of ext4 metadata_csum bugs, so tytso
+> notified on general principles.  I dropped the generic linux-fsdevel
+> list from the Cc: list.
+> 
+> But looking at the code, it just calls into the linux-crypto layer and
+> Tim Chen's SSE CRC32C implementation which uses kernel_fpu_begin()
+> and kernel_fpu_end() if the block is large enough.
+  Yup, that code was also my last hope but I can't say I see any problem in
+there either.
 
-> @@ -875,7 +876,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
->  	}
->  
->  	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
-> -	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
-> +	ret = min_t(ssize_t, ret, len);
->  	if (ret > 0)
->  		iocb->ki_pos = ret;
->  out:
-> -- 
-> 1.8.3.2
+> I was going to add and Herbert Xu and Tim Chen and all those mailing
+> lists, but looking at the code, it sure *looks* like they're Doing The
+> right Thing, so I'm holding off for a bit.
+> 
+> I'm not sure quite where to pass th buck on this one.
+> 
+> Relevant platform info:
+> - Intel i7-2700K processor, with SSE4.2 and thus the CRC32C instruction.
+> - CONFIG_PREEMPT_VOLUNTARY=y
+> - # CONFIG_PREEMPT_NONE is not set
+> - CONFIG_PREEMPT_VOLUNTARY=y
+> - # CONFIG_PREEMPT is not set
+> - CONFIG_PREEMPT_COUNT=y
+> - CONFIG_DEBUG_ATOMIC_SLEEP=y
+> - CONFIG_DEBUG_BUGVERBOSE=y
+> 
+...
+> 
+> === Discussion ===
+> desc.shash.tfm is filled in from sbi->s_chksum_driver, which is filled in at
+> ext4_fill_super() time by crypto_alloc_shash("crc32c", 0, 0).
+> 
+> Thus, shash->update should turn into a call to crypto/crc32c.c:chksum_update(),
+> which calls lib/crc32.c:__crc32c_le().
+> 
+> Now, I happen to be running an i7-2700k which has sse4_2, and thus calls
+> into the x86 specific code, and apparently for large blocks it uses PCLMULQDQ,
+> which requires kernel_fpu_begin/end.
+> 
+> At least that makes some degree of sense.  The low level code, though
+> uses the functions in a very simple way that I can't see how it could fail
+> to unlock at the end.
+  Hum, can you try disabling the HW support of CRC32C implementation
+(CRYPTO_CRC32C_INTEL)? If the problem disappears, we know there's some
+problem in the HW support code...
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
