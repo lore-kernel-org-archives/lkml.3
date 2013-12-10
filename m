@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3LJIbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:31:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58679 "EHLO
+	id S1755498Ab3LJIcA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:32:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58659 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab3LJIAZ (ORCPT
+	with ESMTP id S1752909Ab3LJIAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:25 -0500
+	Tue, 10 Dec 2013 03:00:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.10 29/52] parisc: fix mmap(MAP_FIXED|MAP_SHARED) to already mmapped address
-Date: Tue, 10 Dec 2013 00:01:02 -0800
-Message-Id: <20131210075956.270356938@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.10 26/52] NFSv4: Update list of irrecoverable errors on DELEGRETURN
+Date: Tue, 10 Dec 2013 00:00:59 -0800
+Message-Id: <20131210075956.032308087@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -26,83 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0576da2c08e3d332f1b0653030d28ab804585ab6 upstream.
+commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
 
-locale-gen on Debian showed a strange problem on parisc:
-mmap2(NULL, 536870912, PROT_NONE, MAP_SHARED, 3, 0) = 0x42a54000
-mmap2(0x42a54000, 103860, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, 3, 0) = -1 EINVAL (Invalid argument)
+If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
+then there is no recovery possible. Just quit without returning an error.
 
-Basically it was just trying to re-mmap() a file at the same address
-which it was given by a previous mmap() call. But this remapping failed
-with EINVAL.
+Also, note that the client must not assume that the NFSv4 lease has been
+renewed when it sees an error on DELEGRETURN.
 
-The problem is, that when MAP_FIXED and MAP_SHARED flags were used, we didn't
-included the mapping-based offset when we verified the alignment of the given
-fixed address against the offset which we calculated it in the previous call.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/sys_parisc.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ fs/nfs/nfs4proc.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -61,8 +61,15 @@ static int get_offset(struct address_spa
- 	return (unsigned long) mapping >> 8;
- }
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4401,11 +4401,17 @@ static void nfs4_delegreturn_done(struct
+ 		return;
  
--static unsigned long get_shared_area(struct address_space *mapping,
--		unsigned long addr, unsigned long len, unsigned long pgoff)
-+static unsigned long shared_align_offset(struct file *filp, unsigned long pgoff)
-+{
-+	struct address_space *mapping = filp ? filp->f_mapping : NULL;
-+
-+	return (get_offset(mapping) + pgoff) << PAGE_SHIFT;
-+}
-+
-+static unsigned long get_shared_area(struct file *filp, unsigned long addr,
-+		unsigned long len, unsigned long pgoff)
- {
- 	struct vm_unmapped_area_info info;
- 
-@@ -71,7 +78,7 @@ static unsigned long get_shared_area(str
- 	info.low_limit = PAGE_ALIGN(addr);
- 	info.high_limit = TASK_SIZE;
- 	info.align_mask = PAGE_MASK & (SHMLBA - 1);
--	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
-+	info.align_offset = shared_align_offset(filp, pgoff);
- 	return vm_unmapped_area(&info);
- }
- 
-@@ -82,20 +89,18 @@ unsigned long arch_get_unmapped_area(str
- 		return -ENOMEM;
- 	if (flags & MAP_FIXED) {
- 		if ((flags & MAP_SHARED) &&
--		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
-+		    (addr - shared_align_offset(filp, pgoff)) & (SHMLBA - 1))
- 			return -EINVAL;
- 		return addr;
- 	}
- 	if (!addr)
- 		addr = TASK_UNMAPPED_BASE;
- 
--	if (filp) {
--		addr = get_shared_area(filp->f_mapping, addr, len, pgoff);
--	} else if(flags & MAP_SHARED) {
--		addr = get_shared_area(NULL, addr, len, pgoff);
--	} else {
-+	if (filp || (flags & MAP_SHARED))
-+		addr = get_shared_area(filp, addr, len, pgoff);
-+	else
- 		addr = get_unshared_area(addr, len);
--	}
-+
- 	return addr;
- }
- 
+ 	switch (task->tk_status) {
+-	case -NFS4ERR_STALE_STATEID:
+-	case -NFS4ERR_EXPIRED:
+ 	case 0:
+ 		renew_lease(data->res.server, data->timestamp);
+ 		break;
++	case -NFS4ERR_ADMIN_REVOKED:
++	case -NFS4ERR_DELEG_REVOKED:
++	case -NFS4ERR_BAD_STATEID:
++	case -NFS4ERR_OLD_STATEID:
++	case -NFS4ERR_STALE_STATEID:
++	case -NFS4ERR_EXPIRED:
++		task->tk_status = 0;
++		break;
+ 	default:
+ 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
+ 				-EAGAIN) {
 
 
