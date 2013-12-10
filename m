@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3LJNgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:36:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48362 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab3LJNgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:36:14 -0500
-Date: Tue, 10 Dec 2013 14:36:03 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
-        patches@linaro.org, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v4 0/2] perf: config: add per-feature check flags
-Message-ID: <20131210133603.GD8108@krava.brq.redhat.com>
-References: <1386678244-13535-1-git-send-email-jean.pihet@linaro.org>
+	id S1753251Ab3LJNgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:36:41 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:50909 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3LJNgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 08:36:39 -0500
+Date: Tue, 10 Dec 2013 14:36:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] clocksource/clockevents fixes for 3.13
+Message-ID: <20131210133633.GB31366@gmail.com>
+References: <52A0AC37.5010006@linaro.org>
+ <20131210122051.GD30001@gmail.com>
+ <52A71027.4000902@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386678244-13535-1-git-send-email-jean.pihet@linaro.org>
+In-Reply-To: <52A71027.4000902@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:24:02PM +0100, Jean Pihet wrote:
-> Add CFLAGS and LDFLAGS for each feature to be checked during the
-> build. This allows to pass particular flags and parameters to the
-> feature checks compilation.
-> 
-> Use the per-feature check flags for the unwinding feature in order
-> to correctly compile the test-all, libunwind and libunwind-debug-frame
-> feature checks.
-> 
-> This change set simplifies the flags passing mechanism between the
-> Makefiles in config/Makefile and config/feature-checks; this
-> could be farther optimized by moving the compilation flags to the
-> per-feature check flags for all features to be checked.
-> 
-> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR
-> set in 'make -C tools/perf'
-> 
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
-thanks,
-jirka
+> On 12/10/2013 01:20 PM, Ingo Molnar wrote:
+> >
+> >* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+> >
+> >>
+> >>Hi Thomas,
+> >>
+> >>here are the fixes for 3.13 based on timers/urgent
+> >
+> >Please generally also post the patches to make it easier to review
+> >them.
+> 
+> Hi Ingo,
+> 
+> what do you mean by "also post the patches" ? The patches were 
+> posted in the mailing lists and I picked them up after people 
+> reviewed them.
+
+For example I found none of Dinh Nguyen's two patches on lkml.
+
+Even if they were on lkml it's generally good practice to post patches 
+for pull requests even if they are mostly resends of existing patches, 
+especially for an urgent tree. That makes it easier for people to 
+chime in on patches.
+
+> Or shall I give a combined diff when sending the PR ?
+
+Individual patches posted as a threaded reply to the pull request mail 
+would be nice - those are easy for other people to ignore, yet they 
+are informative to people who are interested in the series.
+
+Thanks,
+
+	Ingo
