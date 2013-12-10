@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab3LJC5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 21:57:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58435 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab3LJC5d (ORCPT
+	id S1752116Ab3LJDBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:01:19 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:34877 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab3LJDBR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 21:57:33 -0500
-Date: Mon, 9 Dec 2013 20:56:49 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>, Jingoo Han <jg1.han@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 31/39] USB: remove DEFINE_PCI_DEVICE_TABLE macro
-Message-ID: <20131210025649.GC20090@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
- <003401ceefb6$22c930e0$685b92a0$%han@samsung.com>
- <20131209040342.GA20608@saruman.home>
- <20131209083317.GA27716@kroah.com>
+	Mon, 9 Dec 2013 22:01:17 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9Ek0hoCL9XbhcSqy"
-Content-Disposition: inline
-In-Reply-To: <20131209083317.GA27716@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
+	<20131204183554.GA16693@kroah.com>
+	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
+	<20131204214325.GA19565@kroah.com>
+	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
+	<20131204220247.GA22031@kroah.com>
+	<CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
+Date: Tue, 10 Dec 2013 05:01:16 +0200
+Message-ID: <CAMoF9u1W4-xUFjtMw+SuwR=wgnpfq4uMucKciqrqp81WK1aNmw@mail.gmail.com>
+Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
+From: Octavian Purdila <tavi.purdila@gmail.com>
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Rogers <irogers@google.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        David Butcher <Dave.Butcher@arm.com>, romlem@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9Ek0hoCL9XbhcSqy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 5, 2013 at 4:02 AM, Arve Hjønnevåg <arve@android.com> wrote:
+> On Wed, Dec 4, 2013 at 2:02 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Wed, Dec 04, 2013 at 01:55:34PM -0800, Colin Cross wrote:
+>>> On Wed, Dec 4, 2013 at 1:43 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> > On Wed, Dec 04, 2013 at 12:46:42PM -0800, Colin Cross wrote:
+>>> >> On Wed, Dec 4, 2013 at 10:35 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> >> <snip>
+>>> >>
+>>> >> > And finally, is this all really needed?  Why not just fix the structures
+>>> >> > to be "correct", and then fix userspace to use the correct structures as
+>>> >> > well, thereby not needing a compat layer at all?
+>>> >>
+>>> >> Some of the binder ioctls take userspace pointers.  Are you suggesting
+>>> >> storing those pointers in a __u64 to avoid having to have a
+>>> >> compat_ioctl?
+>>> >
+>>> > Yes, that's the best way to solve the issue, right?
+>>>
+>>> It's the least code, but in exchange you lose all the type safety and
+>>> warnings when copying in and out of the pointers, as well as sparse
+>>> checking on the __user attribute.
+>>
+>> Not if you make the cast right at the beginning, when you first "touch"
+>> the data, but yes, it does take some of the type saftey away, at the
+>> expense of simpler code to mess up :)
+>>
+>>> That doesn't seem like a good tradeoff to me.  In addition it requires
+>>> modifying the existing heavily used 32 bit api, which means a
+>>> mostly-equivalent compat layer added in libbinder to support old
+>>> kernels.
+>>
+>> Wait, I thought that libbinder would have to be changed anyway here, to
+>> handle 64bit kernels (in both 32 and 64bit userspace).  Since you are
+>> already changing it, why not just "do it correctly"?
+>>
+>
+> Yes libbinder will have to be changed to support calls between 32 bit
+> and 64 bit processes, so I don't see much value in a patchset that
+> only supports all 32 bit or all 64 bit processes. If user space is
+> fixed to use 64 bit pointers on a 64 bit system, then much of the code
+> added in this patchset becomes useless (and probably harmful as it
+> appears to prevent 32 bit processes from communicating with 64 bit
+> processes).
+>
 
-On Mon, Dec 09, 2013 at 12:33:17AM -0800, 'Greg Kroah-Hartman' wrote:
-> On Sun, Dec 08, 2013 at 10:03:42PM -0600, Felipe Balbi wrote:
-> > On Tue, Dec 03, 2013 at 08:27:58AM +0900, Jingoo Han wrote:
-> > > Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> > > is not preferred.
-> > >=20
-> > > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> >=20
-> > I wonder why I wasn't Cc:ed to this email considering it touches three
-> > drivers I care about.
-> >=20
-> > Greg, I have the original ones in my tree and I would really like to
-> > avoid rebasing my 'next' branch. Do we keep it there or do you want to
-> > avoid merging those commits ?
->=20
-> Just keep it there and we can handle the merge, it shouldn't be a big
-> deal, right?
+Hi,
 
-Should not. Thanks Greg.
+Coincidentally, I have been working on a compat layer myself lately.
+It is implemented in the binder driver with no changes in libbinder
+and it includes support for mixed mode.
 
---=20
-balbi
+Unless you think that the kernel compat layer is a dead end, I can
+post the patches here for review. IMO the kernel compat layer gives
+you greater flexibility because it keeps the 32bit ABI unchanged. Of
+course it comes with the price of increased complexity.
 
---9Ek0hoCL9XbhcSqy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSpoLxAAoJEIaOsuA1yqREIRcP+gMWVCuaSt3qTgaagnoXbELt
-GTxcWT6xkxtAyXtHsumndE2VUlYt3G3JOEYZxbDwZTWK2VJV0Kg8ej64kr/up5gI
-Ve45Np8ML3UCNWhnhdGS+aYZ5lhu+gRMvkSXPe72660OUxK8SDBjHhZmVTr+sSpE
-b7+nTrJ1juvOCKDazgyC781OiZz+amgqEZXTvfeinmkzxtxE5xWkYcppwa7SXSfw
-xC67zoH7PIoaAs5Ja/5gecXcVtgIH+d1NoqAJSxAXvakrsjd5bRYypxFfQf5Dgsb
-pxNl931oZXdWSisWH3wPonCD2VrNNsbTzurEvGAQjRaU26dRbuZY5howxQoAmzsm
-KasaT8FYTxcGxqCJRJ7b+ev2RJRhtEP/nNqHIFP7rizdwbj5fZ7zr2drKl5PsOB7
-tS37qG3W+birCSdzCZBvlujEx/0TnkDI0E4/4mlNbzf97GkASos/JOITUFFbNBbM
-iTZSjUEXBEcBl09fmOwJQ1OSKjm/coCQgzosTZnNtEf/ZLyL9EvISuZUGHn3g0sb
-Hm7pzuo+PMyqBGGpKsSUnEY4lkAr/j4DjLdmS3GdRJqaWofGoXOjGBaXDCEEpCEl
-GW2JlORHtvtnSpfGOslORfIrar1lUZTSpjYjGTnM3CKkhX61xwu5YX5nvt++JxU+
-YVf9EACHkeZ3Xm9hAxZA
-=3hfb
------END PGP SIGNATURE-----
-
---9Ek0hoCL9XbhcSqy--
+Thanks,
+Tavi
