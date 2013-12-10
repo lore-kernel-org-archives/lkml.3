@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab3LJAfq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:35:46 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38844 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab3LJAfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:35:41 -0500
-Message-ID: <52A66190.9060907@zytor.com>
-Date: Mon, 09 Dec 2013 16:34:24 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
-        Eric Biederman <ebiederm@xmission.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
-References: <20131210001620.GA7938@www.outflux.net>
-In-Reply-To: <20131210001620.GA7938@www.outflux.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751779Ab3LJAfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:35:44 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:53478 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab3LJAf0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 19:35:26 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
+Subject: [PATCH 2/2] time: clockevents: Adjust timer interval when frequency changes
+Date: Mon,  9 Dec 2013 16:34:46 -0800
+Message-Id: <1386635686-15686-3-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1386635686-15686-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <alpine.DEB.2.02.1312071151340.30673@ionos.tec.linutronix.de>
+ <1386635686-15686-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 04:16 PM, Kees Cook wrote:
-> For general-purpose (i.e. distro) kernel builds it makes sense to build with
-> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
-> with kexec. However, in the face of trying to lock down a system with such
-> a kernel, there needs to be a way to disable kexec (much like module loading
-> can be disabled). Without this, it is too easy for the root user to modify
-> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
+To adjust the timer's interval in periodic mode, the clockevent device
+is put into periodic mode during clockevents_update_freq() in case the
+timer is in periodic mode.
 
-So the logic is to load a crashkernel and then lock down the machine
-before services, networking etc. are enabled?
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ kernel/time/clockevents.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-	-hpa
-
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 641d91003a45..f85e5fda9c66 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -443,10 +443,13 @@ int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
+ {
+ 	clockevents_config(dev, freq);
+ 
+-	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
+-		return 0;
++	if (dev->mode == CLOCK_EVT_MODE_ONESHOT)
++		return clockevents_program_event(dev, dev->next_event, false);
++
++	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
++		dev->set_mode(CLOCK_EVT_MODE_PERIODIC, dev);
+ 
+-	return clockevents_program_event(dev, dev->next_event, false);
++	return 0;
+ }
+ 
+ /**
+-- 
+1.8.5.1
 
