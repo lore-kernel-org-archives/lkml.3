@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab3LJIRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:17:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59225 "EHLO
+	id S1754921Ab3LJISe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:18:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58875 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933Ab3LJIRp (ORCPT
+	with ESMTP id S1753526Ab3LJIBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:17:45 -0500
-Date: Tue, 10 Dec 2013 00:19:22 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ethan Zhao <ethan.kernel@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        raghavendra.kt@linux.vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/debugfs: Check debugfs initialization before using it
-Message-ID: <20131210081922.GA2475@kroah.com>
-References: <20131208140100.GA22793@kroah.com>
- <CABawtvO5YxH8J3d9Ea2ya3UUCEwjPWBRJaCJJMfovgmtPPBcRQ@mail.gmail.com>
- <20131209082527.GA26950@kroah.com>
- <CABawtvOdjncv7Zo29GbdGPm-ATsPNTVZqfje2qXTYeBRX=0w9A@mail.gmail.com>
- <20131209085526.GB4125@kroah.com>
- <CABawtvPhE9enmt2NdSemVsDRp6ca38xyQSTO2mEujx0kikWtoA@mail.gmail.com>
- <20131209111747.GA6562@kroah.com>
- <CABawtvNUBwTVzFfR4UotCexARN4+As5wKEPyGmRzN7-xZ6J00w@mail.gmail.com>
- <20131209184050.GC28986@kroah.com>
- <CABawtvMbMUf-tj77m9t=t45R3-1e8gE--8QZ7neU-HuSjGcveA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABawtvMbMUf-tj77m9t=t45R3-1e8gE--8QZ7neU-HuSjGcveA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 10 Dec 2013 03:01:41 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 05/62] ALSA: hda - Fix bad EAPD setup for HP machines with AD1984A
+Date: Tue, 10 Dec 2013 00:00:36 -0800
+Message-Id: <20131210080057.825511111@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
+References: <20131210080057.415644748@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 04:03:41PM +0800, Ethan Zhao wrote:
-> On Tue, Dec 10, 2013 at 2:40 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Dec 09, 2013 at 09:42:23PM +0800, Ethan Zhao wrote:
-> >> Greg,
-> >>     I am the man who built a Xen dom0, but couldn't see debugfs
-> >> directory and files as expected. there is no warning or tip for me to
-> >> enable the CONFIG_DEBUG_FS=y in .config , it cost me minutes to figure
-> >> out what's
-> >> the matter. and I know should check defugfs config and initialization as
-> >> zswap_debugfs, tracer_debugfs ,rproc_debugfs did. Is it useless ? if
-> >> it could save me just 1 minute next time ?
-> >
-> > So you would want a "warning" showing up for every single part of the
-> > kernel that uses debugfs for when it isn't enabled?  That doesn't make
-> > too much sense now, does it?
-> 
-> No, It is nice and like sun light when someone is struggling with the
-> bugs in darkness,
-> if some tips or warning output to them.
-> 
-> You have forgotten the initial stage you met :)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-So, you really want to see 20+ KERNEL WARNINGS in your system when you
-boot without CONFIG_DEBUGFS enabled?  No, that's not ok at all, sorry,
-that is not going to happen.
+------------------
 
-Running a kernel without debugfs is a valid state, you are treating it
-as an error, which isn't ok.
+From: Takashi Iwai <tiwai@suse.de>
 
-greg k-h
+commit 1cd9b2f78bf29d5282e02b32f9b3ecebc5842a7c upstream.
+
+It seems that EAPD on NID 0x16 is the only control over all outputs on
+HP machines with AD1984A while turning EAPD on NID 0x12 breaks the
+output.  Thus we need to avoid fiddling EAPD on NID.  As a quick
+workaround, just set own_eapd_ctrl flag for the wrong EAPD, then
+implement finer EAPD controls.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66321
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -964,6 +964,7 @@ static void ad1884_fixup_hp_eapd(struct
+ 	switch (action) {
+ 	case HDA_FIXUP_ACT_PRE_PROBE:
+ 		spec->gen.vmaster_mute.hook = ad1884_vmaster_hp_gpio_hook;
++		spec->gen.own_eapd_ctl = 1;
+ 		snd_hda_sequence_write_cache(codec, gpio_init_verbs);
+ 		break;
+ 	case HDA_FIXUP_ACT_PROBE:
+
+
