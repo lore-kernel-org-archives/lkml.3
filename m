@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3LJRsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:48:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46022 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab3LJRsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:48:41 -0500
-Message-ID: <1386697762.30202.6.camel@dcbw.foobar.com>
-Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting
- permanent mac address
-From: Dan Williams <dcbw@redhat.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Kalle Valo <kvalo@adurom.com>, Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Date: Tue, 10 Dec 2013 11:49:22 -0600
-In-Reply-To: <201312101814.35112@pali>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	 <87txegpuyk.fsf@purkki.adurom.net> <201312101710.51015@pali>
-	 <201312101814.35112@pali>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755478Ab3LJRtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:49:18 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:58498 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab3LJRtQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 12:49:16 -0500
+Date: Tue, 10 Dec 2013 09:49:09 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Ingo Molnar <mingo@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH v5 tip/core/locking 5/7]
+ Documentation/memory-barriers.txt: Downgrade UNLOCK+LOCK
+Message-ID: <20131210174909.GX4208@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131210012738.GA24317@linux.vnet.ibm.com>
+ <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386638883-25379-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131210131422.GG12849@twins.programming.kicks-ass.net>
+ <20131210171247.GQ4208@linux.vnet.ibm.com>
+ <20131210172528.GQ12849@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210172528.GQ12849@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121017-8236-0000-0000-000004C2035B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 18:14 +0100, Pali Rohár wrote:
-> On Tuesday 10 December 2013 17:10:50 Pali Rohár wrote:
-> > On Tuesday 10 December 2013 16:49:23 Kalle Valo wrote:
-> > > Pali Rohár <pali.rohar@gmail.com> writes:
-> > > > Driver wl1251 generating mac address randomly at startup
-> > > > and there is no way to set permanent mac address via
-> > > > SET_IEEE80211_PERM_ADDR. This patch export sysfs file
-> > > > which can set permanent mac address by userspace helper
-> > > > program. Patch is needed for devices which do not store
-> > > > mac address in internal wl1251 eeprom.
-> > > > 
-> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > 
-> > > We have ioctl() command for setting the mac address.
+On Tue, Dec 10, 2013 at 06:25:28PM +0100, Peter Zijlstra wrote:
+> On Tue, Dec 10, 2013 at 09:12:47AM -0800, Paul E. McKenney wrote:
+> > > The way I read the above it says that you need
+> > > smp_mb__after_unlock_lock() when the UNLOCK and LOCK are on the same
+> > > variable. That doesn't make sense, I thought that was the one case we
+> > > all agreed on it would indeed be a full barrier without extra trickery.
 > > 
-> > Really? Is there ioctl for setting permanent mac address?
-> > Can you show me it?
+> > On x86, sure, but smp_mb__after_unlock_lock() is nothingness on x86
+> > anyway.  Other architectures might benefit from requiring that the
+> > smp_mb__after_unlock_lock() be used in this case.
 > 
-> Now I looked at it again and I did not found any ioctl for it. 
-> There is only ioctl cmd for getting address, not setting it.
-> 
-> #define SIOCETHTOOL 0x8946
-> 
-> /* Get permanent hardware address */
-> #define ETHTOOL_GPERMADDR 0x00000020
+> Confused, UNLOCK X, LOCK X, must always be fully serializing. That's the
+> entire purpose of the thing.
 
-Yeah, because it's supposed to be permanent and unchanging.  Which means
-if there was an ioctl for it, that would be contrary to the purpose of a
-permanent MAC address.
+>From the viewpoint of some CPU holding the lock, yes.  If some CPU does
+not hold the lock, the guarantee is a choice.
 
-I realize the N900 stores the WiFi MAC address completely differently
-than many other systems, and that's why this sysfs file was created.  I
-don't really have a great converged solution for that, other than what
-you've currently got, or perhaps adding SPERMADDR to ethtool.  One thing
-I *would* like though, is a restriction on the sysfs file such that if
-the permanent MAC is already set, it cannot be set again.  Otherwise the
-permanent MAC address isn't permanent at all.
+> The only place you can go play games (and clearly we are going there) is
+> when the UNLOCK and LOCK are on different variables.
 
-Dan
+I agree that if UNLOCK and LOCK are on different variables, we do not
+need to guarantee ordering of the two critical sections.  But if they
+are on the same variable, why would it be different from the viewpoint
+of some CPU not holding the lock?
 
+							Thanx, Paul
 
