@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab3LJPUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:20:34 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34206 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab3LJPUZ (ORCPT
+	id S1754253Ab3LJPWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:22:38 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:39514 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab3LJPWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:20:25 -0500
-Message-ID: <52A7312F.9030807@linaro.org>
-Date: Tue, 10 Dec 2013 23:20:15 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 10:22:36 -0500
+Date: Tue, 10 Dec 2013 10:22:30 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH driver-core-next] sysfs: fix use-after-free in sysfs_kill_sb()
+Message-ID: <20131210152230.GB4610@htj.dyndns.org>
+References: <20131205031051.GC5135@yliu-dev.sh.intel.com>
+ <20131205225019.GA32005@mtj.dyndns.org>
+ <20131209145651.GV5135@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] nohz_full: fix code sytle issue of tick_nohz_full_stop_tick
-References: <1386074112-30754-1-git-send-email-alex.shi@linaro.org> <1386074112-30754-2-git-send-email-alex.shi@linaro.org> <20131203150038.GE10134@e103034-lin>
-In-Reply-To: <20131203150038.GE10134@e103034-lin>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131209145651.GV5135@yliu-dev.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2013 11:00 PM, Morten Rasmussen wrote:
-> In subject: s/sytle/style/
-> 
-> On Tue, Dec 03, 2013 at 12:35:10PM +0000, Alex Shi wrote:
->> > Code usually starts with 'tab' instead of 7 'space'es in kernel
->> > 
+>From e09aae4796ac5b90c6514fc9789fc259bf783129 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 10 Dec 2013 10:16:30 -0500
 
-Found another function has the code style issue too.
+While restructuring the [u]mount path, 4b93dc9b1c68 ("sysfs, kernfs:
+prepare mount path for kernfs") incorrectly updated sysfs_kill_sb() so
+that it first kills super_block and then tries to dereference its
+namespace tag to drop it.  Fix it by caching namespace tag before
+killing the superblock and then drop the cached namespace tag.
 
->From f594f0b721e57f90b51d0dd1692e5aae67d83b81 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@linaro.org>
-Date: Thu, 28 Nov 2013 14:27:11 +0800
-Subject: [PATCH 1/4] nohz_full: fix code style issue
-
-Code usually starts with 'tab' instead of 7 'space'es in kernel.
-
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Tested-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Tested-by: Vlastimil Babka <vbabka@suse.cz>
+Link: http://lkml.kernel.org/g/20131205031051.GC5135@yliu-dev.sh.intel.com
 ---
- kernel/sched/core.c      | 16 ++++++++--------
- kernel/time/tick-sched.c | 16 ++++++++--------
- 2 files changed, 16 insertions(+), 16 deletions(-)
+ fs/sysfs/mount.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c180860..636d89e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -664,18 +664,18 @@ static inline bool got_nohz_idle_kick(void)
- #ifdef CONFIG_NO_HZ_FULL
- bool sched_can_stop_tick(void)
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index e7e3aa8..8d07527 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -45,8 +45,10 @@ static struct dentry *sysfs_mount(struct file_system_type *fs_type,
+ 
+ static void sysfs_kill_sb(struct super_block *sb)
  {
--       struct rq *rq;
-+	struct rq *rq;
- 
--       rq = this_rq();
-+	rq = this_rq();
- 
--       /* Make sure rq->nr_running update is visible after the IPI */
--       smp_rmb();
-+	/* Make sure rq->nr_running update is visible after the IPI */
-+	smp_rmb();
- 
--       /* More than one running task need preemption */
--       if (rq->nr_running > 1)
--               return false;
-+	/* More than one running task need preemption */
-+	if (rq->nr_running > 1)
-+		return false;
- 
--       return true;
-+	return true;
- }
- #endif /* CONFIG_NO_HZ_FULL */
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3612fc7..b55d1c0 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -681,18 +681,18 @@ out:
- static void tick_nohz_full_stop_tick(struct tick_sched *ts)
- {
- #ifdef CONFIG_NO_HZ_FULL
--       int cpu = smp_processor_id();
-+	int cpu = smp_processor_id();
- 
--       if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
--               return;
-+	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
-+		return;
- 
--       if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
--	       return;
-+	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
-+		return;
- 
--       if (!can_stop_full_tick())
--               return;
-+	if (!can_stop_full_tick())
-+		return;
- 
--       tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
-+	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
- #endif
++	void *ns = (void *)kernfs_super_ns(sb);
++
+ 	kernfs_kill_sb(sb);
+-	kobj_ns_drop(KOBJ_NS_TYPE_NET, (void *)kernfs_super_ns(sb));
++	kobj_ns_drop(KOBJ_NS_TYPE_NET, ns);
  }
  
+ static struct file_system_type sysfs_fs_type = {
 -- 
-1.8.1.2
+1.8.4.2
 
-
--- 
-Thanks
-    Alex
