@@ -1,197 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab3LJPwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:52:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab3LJPvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:51:50 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 17/18] sched: Add tracepoints related to NUMA task migration
-Date: Tue, 10 Dec 2013 15:51:35 +0000
-Message-Id: <1386690695-27380-18-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1386690695-27380-1-git-send-email-mgorman@suse.de>
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+	id S1755243Ab3LJPxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:53:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53122 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab3LJPxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:53:02 -0500
+Date: Tue, 10 Dec 2013 16:52:46 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Huang Ying <ying.huang@intel.com>, lkp@linux.intel.com
+Subject: Re: [PATCH] sched: Revert need_resched() to look at TIF_NEED_RESCHED
+Message-ID: <20131210155246.GI12849@twins.programming.kicks-ass.net>
+References: <tip-7a7m5qqbn5pmwnd4wko9u6da@git.kernel.org>
+ <20130927091427.GE24743@yliu-dev.sh.intel.com>
+ <20130927153003.GF15690@laptop.programming.kicks-ass.net>
+ <87y53ubk6a.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y53ubk6a.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds three tracepoints
- o trace_sched_move_numa	when a task is moved to a node
- o trace_sched_swap_numa	when a task is swapped with another task
- o trace_sched_stick_numa	when a numa-related migration fails
+On Mon, Dec 09, 2013 at 12:11:33PM +0530, Aneesh Kumar K.V wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
+> 
+> > Subject: sched: Revert need_resched() to look at TIF_NEED_RESCHED
+> > From: Peter Zijlstra <peterz@infradead.org>
+> > Date: Fri Sep 27 17:20:30 CEST 2013
+> >
+> > Yuanhan reported a serious throughput regression in his pigz
+> > benchmark. Using the ftrace patch I found that several idle paths
+> > need more TLC before we can switch the generic need_resched() over to
+> > preempt_need_resched.
+> >
+> > The preemption paths benefit most from preempt_need_resched and do
+> > indeed use it; all other need_resched() users don't really care that
+> > much so reverting need_resched() back to tif_need_resched() is the
+> > simple and safe solution.
+> >
+> > Reported-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> I guess we still need to fix should_resched() I am hitting the below
+> with upstream
+> 
+> 
+> BUG: soft lockup - CPU#0 stuck for 23s! [qemu-system-ppc:4394]
+> Modules linked in:
+> CPU: 0 PID: 4394 Comm: qemu-system-ppc Not tainted 3.13.0-rc3+ #98
+> task: c0000001d0788400 ti: c0000001dca00000 task.ti: c0000001dca00000
+> NIP: c00000000082dd80 LR: c000000000081ae0 CTR: c000000000062ba0
+> REGS: c0000001dca02f70 TRAP: 0901   Not tainted  (3.13.0-rc3+)
+> MSR: 8000000000009032 <SF,EE,ME,IR,DR,RI>  CR: 24822024  XER: 00000000
+> CFAR: c000000000081adc SOFTE: 1
+> GPR00: c000000000081ae0 c0000001dca031f0 c000000000d67ab0 0000000000000001
+> GPR04: 0000000071000002 0000000000000001 00000189a0d786b7 00000000018c0000
+> GPR08: 0000000000000001 0000000000000000 0000000000000000 c000000000da0000
+> GPR12: 0000000000000c00 c00000000fef0000
+> NIP [c00000000082dd80] ._cond_resched+0x0/0x40
+> LR [c000000000081ae0] .kvmppc_prepare_to_enter+0x2a0/0x2e0
+> Call Trace:
+> [c0000001dca031f0] [c000000000081ae0] .kvmppc_prepare_to_enter+0x2a0/0x2e0 (unreliable)
+> [c0000001dca03290] [c00000000008f2cc] .kvmppc_handle_exit_pr+0xec/0xa40
+> [c0000001dca03340] [c0000000000918c4] kvm_start_lightweight+0xac/0xbc
+> [c0000001dca03510] [c00000000008efe0] .kvmppc_vcpu_run_pr+0x130/0x2a0
+> [c0000001dca039e0] [c0000000000855bc] .kvmppc_vcpu_run+0x2c/0x40
+> [c0000001dca03a50] [c000000000082c94] .kvm_arch_vcpu_ioctl_run+0x54/0x1b0
+> [c0000001dca03ae0] [c00000000007d5f8] .kvm_vcpu_ioctl+0x478/0x740
+> [c0000001dca03ca0] [c000000000218864] .do_vfs_ioctl+0x4a4/0x760
+> [c0000001dca03d80] [c000000000218b78] .SyS_ioctl+0x58/0xb0
+> [c0000001dca03e30] [c000000000009e58] syscall_exit+0x0/0x98
+> Instruction dump:
+> e92d0260 e94911c0 812a0004 5529f07e 5529103e 912a0004 38210080 e8010010
+> ebc1fff0 ebe1fff8 7c0803a6 4e800020 <7c0802a6> 38600000 f8010010 f821ff91 
+> 
+> 
+> The revert which Alexander tried had those
+> 
+> http://mid.gmane.org/20131128132641.GP10022@twins.programming.kicks-ass.net
 
-The tracepoints allow the NUMA scheduler activity to be monitored and the
-following high-level metrics can be calculated
+-ENOPARSE..
 
- o NUMA migrated stuck	 nr trace_sched_stick_numa
- o NUMA migrated idle	 nr trace_sched_move_numa
- o NUMA migrated swapped nr trace_sched_swap_numa
- o NUMA local swapped	 trace_sched_swap_numa src_nid == dst_nid (should never happen)
- o NUMA remote swapped	 trace_sched_swap_numa src_nid != dst_nid (should == NUMA migrated swapped)
- o NUMA group swapped	 trace_sched_swap_numa src_ngid == dst_ngid
-			 Maybe a small number of these are acceptable
-			 but a high number would be a major surprise.
-			 It would be even worse if bounces are frequent.
- o NUMA avg task migs.	 Average number of migrations for tasks
- o NUMA stddev task mig	 Self-explanatory
- o NUMA max task migs.	 Maximum number of migrations for a single task
-
-In general the intent of the tracepoints is to help diagnose problems
-where automatic NUMA balancing appears to be doing an excessive amount of
-useless work.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
- include/trace/events/sched.h | 87 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/core.c          |  2 +
- kernel/sched/fair.c          |  6 ++-
- 3 files changed, 93 insertions(+), 2 deletions(-)
-
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 04c3084..67e1bbf 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -443,6 +443,93 @@ TRACE_EVENT(sched_process_hang,
- );
- #endif /* CONFIG_DETECT_HUNG_TASK */
- 
-+DECLARE_EVENT_CLASS(sched_move_task_template,
-+
-+	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
-+
-+	TP_ARGS(tsk, src_cpu, dst_cpu),
-+
-+	TP_STRUCT__entry(
-+		__field( pid_t,	pid			)
-+		__field( pid_t,	tgid			)
-+		__field( pid_t,	ngid			)
-+		__field( int,	src_cpu			)
-+		__field( int,	src_nid			)
-+		__field( int,	dst_cpu			)
-+		__field( int,	dst_nid			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->pid		= task_pid_nr(tsk);
-+		__entry->tgid		= task_tgid_nr(tsk);
-+		__entry->ngid		= task_numa_group_id(tsk);
-+		__entry->src_cpu	= src_cpu;
-+		__entry->src_nid	= cpu_to_node(src_cpu);
-+		__entry->dst_cpu	= dst_cpu;
-+		__entry->dst_nid	= cpu_to_node(dst_cpu);
-+	),
-+
-+	TP_printk("pid=%d tgid=%d ngid=%d src_cpu=%d src_nid=%d dst_cpu=%d dst_nid=%d",
-+			__entry->pid, __entry->tgid, __entry->ngid,
-+			__entry->src_cpu, __entry->src_nid,
-+			__entry->dst_cpu, __entry->dst_nid)
-+);
-+
-+/*
-+ * Tracks migration of tasks from one runqueue to another. Can be used to
-+ * detect if automatic NUMA balancing is bouncing between nodes
-+ */
-+DEFINE_EVENT(sched_move_task_template, sched_move_numa,
-+	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
-+
-+	TP_ARGS(tsk, src_cpu, dst_cpu)
-+);
-+
-+DEFINE_EVENT(sched_move_task_template, sched_stick_numa,
-+	TP_PROTO(struct task_struct *tsk, int src_cpu, int dst_cpu),
-+
-+	TP_ARGS(tsk, src_cpu, dst_cpu)
-+);
-+
-+TRACE_EVENT(sched_swap_numa,
-+
-+	TP_PROTO(struct task_struct *src_tsk, int src_cpu,
-+		 struct task_struct *dst_tsk, int dst_cpu),
-+
-+	TP_ARGS(src_tsk, src_cpu, dst_tsk, dst_cpu),
-+
-+	TP_STRUCT__entry(
-+		__field( pid_t,	src_pid			)
-+		__field( pid_t,	src_tgid		)
-+		__field( pid_t,	src_ngid		)
-+		__field( int,	src_cpu			)
-+		__field( int,	src_nid			)
-+		__field( pid_t,	dst_pid			)
-+		__field( pid_t,	dst_tgid		)
-+		__field( pid_t,	dst_ngid		)
-+		__field( int,	dst_cpu			)
-+		__field( int,	dst_nid			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->src_pid	= task_pid_nr(src_tsk);
-+		__entry->src_tgid	= task_tgid_nr(src_tsk);
-+		__entry->src_ngid	= task_numa_group_id(src_tsk);
-+		__entry->src_cpu	= src_cpu;
-+		__entry->src_nid	= cpu_to_node(src_cpu);
-+		__entry->dst_pid	= task_pid_nr(dst_tsk);
-+		__entry->dst_tgid	= task_tgid_nr(dst_tsk);
-+		__entry->dst_ngid	= task_numa_group_id(dst_tsk);
-+		__entry->dst_cpu	= dst_cpu;
-+		__entry->dst_nid	= cpu_to_node(dst_cpu);
-+	),
-+
-+	TP_printk("src_pid=%d src_tgid=%d src_ngid=%d src_cpu=%d src_nid=%d dst_pid=%d dst_tgid=%d dst_ngid=%d dst_cpu=%d dst_nid=%d",
-+			__entry->src_pid, __entry->src_tgid, __entry->src_ngid,
-+			__entry->src_cpu, __entry->src_nid,
-+			__entry->dst_pid, __entry->dst_tgid, __entry->dst_ngid,
-+			__entry->dst_cpu, __entry->dst_nid)
-+);
- #endif /* _TRACE_SCHED_H */
- 
- /* This part must be outside protection */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e85cda2..e485d2b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1108,6 +1108,7 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p)
- 	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
- 		goto out;
- 
-+	trace_sched_swap_numa(cur, arg.src_cpu, p, arg.dst_cpu);
- 	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
- 
- out:
-@@ -4090,6 +4091,7 @@ int migrate_task_to(struct task_struct *p, int target_cpu)
- 
- 	/* TODO: This is not properly updating schedstats */
- 
-+	trace_sched_move_numa(p, curr_cpu, target_cpu);
- 	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
- }
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 18bf84e..26fe588 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1272,11 +1272,13 @@ static int task_numa_migrate(struct task_struct *p)
- 	p->numa_scan_period = task_scan_min(p);
- 
- 	if (env.best_task == NULL) {
--		int ret = migrate_task_to(p, env.best_cpu);
-+		if ((ret = migrate_task_to(p, env.best_cpu)) != 0)
-+			trace_sched_stick_numa(p, env.src_cpu, env.best_cpu);
- 		return ret;
- 	}
- 
--	ret = migrate_swap(p, env.best_task);
-+	if ((ret = migrate_swap(p, env.best_task)) != 0);
-+		trace_sched_stick_numa(p, env.src_cpu, task_cpu(env.best_task));
- 	put_task_struct(env.best_task);
- 	return ret;
- }
--- 
-1.8.4
 
