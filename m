@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3LJPK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:10:57 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:64290 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab3LJPKz (ORCPT
+	id S1754120Ab3LJPLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:11:48 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:63503 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753832Ab3LJPLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:10:55 -0500
-Date: Tue, 10 Dec 2013 16:10:50 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
- Document ACCESS_ONCE()
-Message-ID: <20131210151050.GC873@gmail.com>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
- <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131205095042.GB16749@gmail.com>
- <20131205180547.GU15492@linux.vnet.ibm.com>
- <20131205224710.GA21140@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205224710.GA21140@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Dec 2013 10:11:46 -0500
+Message-ID: <1386688302.6304.30.camel@marge.simpson.net>
+Subject: Re: [question] sched: idle_avg and migration latency
+From: Mike Galbraith <bitbucket@online.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@linaro.org>
+Date: Tue, 10 Dec 2013 16:11:42 +0100
+In-Reply-To: <52A6FB5C.7010706@linaro.org>
+References: <52A6FB5C.7010706@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:c/Zm6xMfRbPv71VIRzmZEMrU9WT7cF910zzZcF9JzNp
+ KaTEjOYT1WJjgef2ZCNC8tuuL9x1UJ763oAnkDqoHqCaYUiKkr
+ nvvs1o4Zm4PMjlcoo9gQ0mzoELC+rdTOqOm55A6oKrw6nhwNhN
+ ZGWLJtwHzPrSwBz9DGYDZeAIGnLTwhbBO8w1CcfH3aHjUFSbHl
+ aolxw3sW6W33PsLilF2HdtzxzC7Slk15zZX7WaUUz7xsALsJ7p
+ FUhZz+VapyxHFZbL6PKewnIz84Au6rg97+3r+POGiTClT3hJPy
+ CFUX/rM7Du5pSnSiSn3oWDAxOTmPwjOanX2hef542q88nu3YCC
+ q9KZn0keBBuMw9R0e5pQ3rshjPq+yfZR6oXRi1XswSdIqYbTNW
+ n25y+455Hw3xQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Thu, Dec 05, 2013 at 10:05:47AM -0800, Paul E. McKenney wrote:
-> > On Thu, Dec 05, 2013 at 10:50:42AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > + (*) The compiler is within its rights to reload a variable, for example,
-> > > > +     in cases where high register pressure prevents the compiler from
-> > > > +     keeping all data of interest in registers.  The compiler might
-> > > > +     therefore optimize the variable tmp out of our previous example:
-> > > > +
-> > > > +	while (tmp = a)
-> > > > +		do_something_with(tmp);
-> > > > +
-> > > > +     This could result in the following code, which is perfectly safe in
-> > > > +     single-threaded code, but can be fatal in concurrent code:
-> > > > +
-> > > > +	while (a)
-> > > > +		do_something_with(a);
-> > > > +
-> > > > +     For example, the optimized version of this code could result in
-> > > > +     passing a zero to do_something_with() in the case where the variable
-> > > > +     a was modified by some other CPU between the "while" statement and
-> > > > +     the call to do_something_with().
-> > > 
-> > > Nit: I guess references to variable names such as 'a' should be quoted 
-> > > (same for 'tmp', 'b', etc):
-> > > 
-> > >         For example, the optimized version of this code could result in
-> > >         passing a zero to do_something_with() in the case where the variable
-> > >         'a' was modified by some other CPU between the "while" statement and
-> > >         the call to do_something_with().
-> > > 
-> > > which makes reading it less ambiguous and more fluid IMO. This 
-> > > observation applies to the whole document as 'a' is used in many 
-> > > places.
-> > 
-> > Good point, fixed.
+On Tue, 2013-12-10 at 12:30 +0100, Daniel Lezcano wrote: 
+> Hi All,
 > 
-> Which reminds me -- the thing that makes me most nervous about 
-> prohibiting speculative stores is the bit about having to anticipate 
-> all compiler optimizations that might get rid of the needed 
-> conditionals.
+> I am trying to understand how is computed the idle_avg and how it is 
+> used regarding the migration latency.
 > 
-> Thoughts?
+> 1. What is the sysctl_sched_migration_cost value ? It is initialized to 
+> 500000UL. Is it an arbitrarily chosen value ? Could it change depending 
+> on the hardware performances ?
 
-As long as current compiler versions behave I don't the potential of 
-future problems is a problem that can (or should) be solved via 
-documentation - there will always be a colorful tension between 
-specification and reality, both at the hardware, the code and the 
-compiler level ;-)
+Yeah, it's a magic number.  We used to use boot time measurements.
 
-It doesn't hurt to outline our expectations in any case, agreed?
+> 2. The idle_balance function checks:
+> 
+>          if (this_rq->avg_idle < sysctl_sched_migration_cost)
+>                  return 0;
+> 
+> IIUC, it is not worth to migrate a task to this cpu as we expect to run 
+> another task before we can pull a task to the current cpu, right ?
 
-Thanks,
+No, that's all about not beating living hell outta ourselves on every
+micro-idle.  As with all load balancing, it's usually too much balancing
+that creates a problem.  You need it, but it's really expensive, so less
+is more.
 
-	Ingo
+> Then if there is no task to balance we will enter idle, thus we 
+> initialize the idle_stamp to the current clock.
+> 
+> When another task is woken up with the ttwu_do_wakeup, the duration of 
+> the idle time is computed in there:
+> 
+> 	if (rq->idle_stamp) {
+> 		u64 delta = rq_clock(rq) - rq->idle_stamp;
+> 		u64 max = 2*sysctl_sched_migration_cost;
+> 
+> 		if (delta > max)
+> 			rq->avg_idle = max;
+> 		else
+> 			update_avg(&rq->avg_idle, delta);
+> 		rq->idle_stamp = 0;
+> 	}
+> 
+> Why is the 'delta' leveraged by 'max' ?
+
+That has changed a little recently.  I originally slammed avg_idle
+itself straight to max to ensure that a bursty load would idle balance,
+and not use stale data.  If you start cross core switching at high
+frequency, you'll still shut idle balancing quickly.
+
+> 3. And finally the function update_avg does:
+> 
+> 	s64 diff = sample - *avg;
+> 	*avg += diff >> 3;
+> 
+> Why is diff >> 3 used instead of the number of values ?
+
+Ingo's quick like bunny smooth average.
+
+-Mike
+
