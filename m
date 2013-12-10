@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LJGsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:48:13 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:42483 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab3LJGsL (ORCPT
+	id S1751546Ab3LJGyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:54:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51369 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab3LJGyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:48:11 -0500
-X-AuditID: cbfec7f4-b7f966d0000003d9-6e-52a6b928d1ff
-Message-id: <52A6B91E.1010609@samsung.com>
-Date: Tue, 10 Dec 2013 07:47:58 +0100
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330
- Thunderbird/17.0.5
-MIME-version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: USB list <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] gadget: make USB_CONFIGFS_MASS_STORAGE depend on BLOCK
-References: <52A61781.6070708@infradead.org>
-In-reply-to: <52A61781.6070708@infradead.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xa7oaO5cFGXxYZmBx8H69RfPi9WwW
-	l3fNYbNYtKyV2eLtneksDqwem1doeeyfu4bd4/iN7UwenzfJBbBEcdmkpOZklqUW6dslcGX8
-	XLeGtWALT0VXyxGmBsYtXF2MnBwSAiYSm9ZtZIGwxSQu3FvP1sXIxSEksJRR4nhzJxOE85lR
-	YunGVUAZDg5eAS2Jp38dQBpYBFQlFt19xApiswkYS+w92MEIYosKhElMfXuHDcTmFRCU+DH5
-	HtgCEQENid9XrrCCzGQWmMsocfDcD7CEsIC3xJWFj1lB5gsJ6EjsaK8ACXMK6EosnLGSCcRm
-	FrCWWDlpGyOELS+xec1b5gmMArOQrJiFpGwWkrIFjMyrGEVTS5MLipPScw31ihNzi0vz0vWS
-	83M3MUJC+MsOxsXHrA4xCnAwKvHwFjAsCxJiTSwrrsw9xCjBwawkwutZBxTiTUmsrEotyo8v
-	Ks1JLT7EyMTBKdXA6L/7a/l8VdFr6Qy5kpvurpraYqNg41oxYcJh2Uc7FCvdJJYwBTDuvZgw
-	P0trcTDbg2UG3i7/uH+pfFp/e0a2Md+hk15L5py6ra9zXsDvXNP+P87iLLuZ2LWDm/dvcnq6
-	cs0nUc1vjhvLn/zpY9kiavFn/5bAl+unvpqZvSlXoeu0JO+2PgfueUosxRmJhlrMRcWJAJaJ
-	WEg/AgAA
+	Tue, 10 Dec 2013 01:54:37 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 0/5] PCI: allocate 64bit mmio pref
+Date: Mon,  9 Dec 2013 22:54:39 -0800
+Message-Id: <1386658484-15774-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+mmio 64 allocation that could help Guo Chao <yan@linux.vnet.ibm.com> on powerpc mmio allocation.
+It will try to assign 64 bit resource above 4g at first.
 
-W dniu 09.12.2013 20:18, Randy Dunlap pisze:
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Make USB_CONFIGFS_MASS_STORAGE depend on BLOCK just like the other
-> gadget MASS_STORAGE options do.  This fixes the following build errors
-> that occur when BLOCK is not enabled:
+And it is based on current pci/for-linus.
 
-Already submitted
+-v2: update after patch that move device_del down to pci_destroy_dev.
+     add "Try best to allocate pref mmio 64bit above 4G"
 
-http://www.spinics.net/lists/linux-usb/msg96739.html
+-v3: refresh and send out after pci_clip_resource() changes,
+     as Bjorn is not happy with attachments.
 
-AP
+-v4: make pcibios_resource_to_bus take bus directly.
 
+Yinghai Lu (5):
+  PCI: pcibus address to resource converting take bus instead of dev
+  PCI: Don't use 4G bus address directly in resource allocation
+  PCI: Try to allocate mem64 above 4G at first
+  PCI: Try best to allocate pref mmio 64bit above 4g
+  PCI: Sort pci root bus resources list
 
->
-> drivers/usb/gadget/storage_common.c: In function 'fsg_lun_open':
-> drivers/usb/gadget/storage_common.c:241:3: error: implicit declaration of function 'bdev_logical_block_size' [-Werror=implicit-function-declaration]
-> drivers/usb/gadget/storage_common.c:242:3: error: implicit declaration of function 'blksize_bits' [-Werror=implicit-function-declaration]
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> ---
->   drivers/usb/gadget/Kconfig |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- lnx-313-rc3.orig/drivers/usb/gadget/Kconfig
-> +++ lnx-313-rc3/drivers/usb/gadget/Kconfig
-> @@ -681,7 +681,7 @@ config USB_CONFIGFS_PHONET
->
->   config USB_CONFIGFS_MASS_STORAGE
->   	boolean "Mass storage"
-> -	depends on USB_CONFIGFS
-> +	depends on USB_CONFIGFS && BLOCK
->   	select USB_F_MASS_STORAGE
->   	help
->   	  The Mass Storage Gadget acts as a USB Mass Storage disk drive.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+ arch/alpha/kernel/pci-sysfs.c       |   4 +-
+ arch/powerpc/kernel/pci-common.c    |   4 +-
+ arch/powerpc/kernel/pci_of_scan.c   |   4 +-
+ arch/sparc/kernel/pci.c             |   6 +-
+ arch/x86/include/asm/pci.h          |   1 -
+ drivers/pci/bus.c                   |  73 +++++++++++++++---
+ drivers/pci/host-bridge.c           |  24 +++---
+ drivers/pci/probe.c                 |  18 ++---
+ drivers/pci/quirks.c                |   2 +-
+ drivers/pci/rom.c                   |   2 +-
+ drivers/pci/setup-bus.c             | 149 +++++++++++++++++++++++-------------
+ drivers/pci/setup-res.c             |  16 +++-
+ drivers/pcmcia/i82092.c             |   2 +-
+ drivers/pcmcia/yenta_socket.c       |   6 +-
+ drivers/scsi/sym53c8xx_2/sym_glue.c |   5 +-
+ drivers/video/arkfb.c               |   2 +-
+ drivers/video/s3fb.c                |   2 +-
+ drivers/video/vt8623fb.c            |   2 +-
+ include/linux/pci.h                 |   8 +-
+ 19 files changed, 217 insertions(+), 113 deletions(-)
+
+-- 
+1.8.4
 
