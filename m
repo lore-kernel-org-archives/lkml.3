@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567Ab3LJL2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:28:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:60613 "EHLO mail.skyhub.de"
+	id S1752674Ab3LJLaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:30:17 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:33431 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab3LJL2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:28:05 -0500
-Date: Tue, 10 Dec 2013 12:27:59 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/2] tools/: Convert to new topic libraries
-Message-ID: <20131210112758.GA31437@pd.tnic>
-References: <1386605664-24041-1-git-send-email-bp@alien8.de>
- <1386605664-24041-2-git-send-email-bp@alien8.de>
- <87zjo9jxs5.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87zjo9jxs5.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751565Ab3LJLaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 06:30:13 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2] powerpc 8xx: Loading kernels over 8Mbytes without CONFIG_PIN_TLB
+Message-Id: <20131210112945.E4E311A2BF3@localhost.localdomain>
+Date: Tue, 10 Dec 2013 12:29:45 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 10:32:42AM +0900, Namhyung Kim wrote:
-> I'm sorry to raise a naming issue again. But why the lib has 'k' and
-> the directory doesn't? Isn't it more natural to prepend 'k' to 'api'
-> as the name "api" looks too general?
->
->   - libkapifs.{a,so} /kapi/fs/fs.c
->
-> (Please ignore if it's already discussed..)
+Today, the only way to load kernels whose size is greater than 8Mbytes is to
+activate CONFIG_PIN_TLB. Otherwise, the physical memory initially mapped is
+limited to 8Mbytes. This patch adds the capability to select the size of initial
+memory between 8/16/24 Mbytes and this is regardless of whether CONFIG_PIN_TLB
+is active or not. It allows to load "big" kernels (for instance when activating
+CONFIG_LOCKDEP_SUPPORT) without having to activate CONFIG_PIN_TLB.
 
-Hmm, no, it hasn't been discussed but I assumed tools/lib/api/ being in
-the *kernel* repository implicitly says which api functionality we're
-collecting there. One of the main reasons to have tools/ in the kernel
-AFAIU is to have those tools which are using its API close. Therefore,
-tools/lib/api/ should be unambiguous.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-libkapifs.a (and the .so version even more, for that matter, and if we
-decide to do it one day) would probably need more distinction and the
-"k" in "kapi" there makes more sense.
-
-This is at least how I see it from here.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff -ur a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -980,6 +980,29 @@
+ config PIN_TLB
+ 	bool "Pinned Kernel TLBs (860 ONLY)"
+ 	depends on ADVANCED_OPTIONS && 8xx
++
++choice
++	prompt "Initial Data Memory Mapped on 8xx"
++	default 8xx_MAP_8M
++	depends on ADVANCED_OPTIONS && 8xx
++
++config	8xx_INIT_MAP_8M
++	bool "8 Mbytes"
++
++config	8xx_INIT_MAP_16M
++	bool "16 Mbytes"
++
++config	8xx_INIT_MAP_24M
++	bool "24 Mbytes"
++
++endchoice
++
++config 8xx_INIT_MAP
++	hex
++	default 0x01800000 if 8xx_INIT_MAP_24M
++	default 0x01000000 if 8xx_INIT_MAP_16M
++	default 0x00800000
++
+ endmenu
+ 
+ if PPC64
+diff -ur a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -841,11 +841,13 @@
+ 	ori	r8, r8, MI_BOOTINIT|0x2 /* Inhibit cache -- Cort */
+ 	mtspr	SPRN_MD_RPN, r8
+ 
+-#ifdef CONFIG_PIN_TLB
++#if defined (CONFIG_8xx_INIT_MAP_16M) || defined (CONFIG_8xx_INIT_MAP_24M)
+ 	/* Map two more 8M kernel data pages.
+ 	*/
++#ifdef CONFIG_PIN_TLB
+ 	addi	r10, r10, 0x0100
+ 	mtspr	SPRN_MD_CTR, r10
++#endif
+ 
+ 	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
+ 	addis	r8, r8, 0x0080		/* Add 8M */
+@@ -858,15 +860,19 @@
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
+ 
++#ifdef CONFIG_8xx_INIT_MAP_24M
++#ifdef CONFIG_PIN_TLB
+ 	addi	r10, r10, 0x0100
+ 	mtspr	SPRN_MD_CTR, r10
++#endif
+ 
+ 	addis	r8, r8, 0x0080		/* Add 8M */
+ 	mtspr	SPRN_MD_EPN, r8
+ 	mtspr	SPRN_MD_TWC, r9
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
+-#endif
++#endif /* CONFIG_8xx_INIT_MAP_24M */
++#endif /* CONFIG_8xx_INIT_MAP_16M || CONFIG_8xx_INIT_MAP_24M */
+ 
+ 	/* Since the cache is enabled according to the information we
+ 	 * just loaded into the TLB, invalidate and enable the caches here.
+diff -ur a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -213,12 +213,8 @@
+ 	 */
+ 	BUG_ON(first_memblock_base != 0);
+ 
+-#ifdef CONFIG_PIN_TLB
+ 	/* 8xx can only access 24MB at the moment */
+-	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01800000));
+-#else
+-	/* 8xx can only access 8MB at the moment */
+-	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
+-#endif
++	memblock_set_current_limit(min_t(u64, first_memblock_size,
++		CONFIG_8xx_INIT_MAP));
+ }
+ #endif /* CONFIG_8xx */
