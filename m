@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab3LJUbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:31:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34296 "EHLO
+	id S1752224Ab3LJUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:33:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34315 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3LJUbf (ORCPT
+	with ESMTP id S1751350Ab3LJUbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:31:35 -0500
+	Tue, 10 Dec 2013 15:31:38 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 29/34] perf symbols: Set freed members to NULL in dso destructor
-Date: Tue, 10 Dec 2013 17:31:11 -0300
-Message-Id: <1386707476-12370-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 26/34] perf symbols: Set alloc flag close to setting the long_name
+Date: Tue, 10 Dec 2013 17:31:08 -0300
+Message-Id: <1386707476-12370-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386707476-12370-1-git-send-email-acme@infradead.org>
 References: <1386707476-12370-1-git-send-email-acme@infradead.org>
@@ -31,9 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-To help in debugging use after free bugs.
+This is a preparatory patch to do with dso__set_long_name what was done
+with the short name variant.
 
-Reported-by: Ingo Molnar <mingo@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -43,42 +43,117 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3ckwsob2g1q23s77nuhexrq7@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-mb7eqhkyejq1qcf3p22wz2x7@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-event.c |  2 +-
+ tools/perf/util/symbol.c      | 31 +++++++++++--------------------
+ tools/perf/util/symbol.h      |  3 ++-
+ 3 files changed, 14 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 2c7e1899a735..19babb0d365d 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -475,13 +475,23 @@ void dso__delete(struct dso *dso)
- 	int i;
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
- 		symbols__delete(&dso->symbols[i]);
--	if (dso->short_name_allocated)
-+
-+	if (dso->short_name_allocated) {
- 		free((char *)dso->short_name);
--	if (dso->long_name_allocated)
-+		dso->short_name		  = NULL;
-+		dso->short_name_allocated = false;
-+	}
-+
-+	if (dso->long_name_allocated) {
- 		free((char *)dso->long_name);
-+		dso->long_name		 = NULL;
-+		dso->long_name_allocated = false;
-+	}
-+
- 	dso_cache__free(&dso->cache);
- 	dso__free_a2l(dso);
- 	free(dso->symsrc_filename);
-+	dso->symsrc_filename = NULL;
- 	free(dso);
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 9c6989ca2bea..d7cff57945c2 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -154,7 +154,7 @@ static struct dso *kernel_get_module_dso(const char *module)
+ 
+ 	vmlinux_name = symbol_conf.vmlinux_name;
+ 	if (vmlinux_name) {
+-		if (dso__load_vmlinux(dso, map, vmlinux_name, NULL) <= 0)
++		if (dso__load_vmlinux(dso, map, vmlinux_name, false, NULL) <= 0)
+ 			return NULL;
+ 	} else {
+ 		if (dso__load_vmlinux_path(dso, map, NULL) <= 0) {
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 265a149bc43f..9a5de8837d6d 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1408,7 +1408,8 @@ struct map *map_groups__find_by_name(struct map_groups *mg,
  }
  
+ int dso__load_vmlinux(struct dso *dso, struct map *map,
+-		      const char *vmlinux, symbol_filter_t filter)
++		      const char *vmlinux, bool vmlinux_allocated,
++		      symbol_filter_t filter)
+ {
+ 	int err = -1;
+ 	struct symsrc ss;
+@@ -1438,6 +1439,7 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
+ 		else
+ 			dso->data_type = DSO_BINARY_TYPE__VMLINUX;
+ 		dso__set_long_name(dso, (char *)vmlinux);
++		dso->long_name_allocated = vmlinux_allocated;
+ 		dso__set_loaded(dso, map->type);
+ 		pr_debug("Using %s for symbols\n", symfs_vmlinux);
+ 	}
+@@ -1456,21 +1458,16 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 
+ 	filename = dso__build_id_filename(dso, NULL, 0);
+ 	if (filename != NULL) {
+-		err = dso__load_vmlinux(dso, map, filename, filter);
+-		if (err > 0) {
+-			dso->long_name_allocated = 1;
++		err = dso__load_vmlinux(dso, map, filename, true, filter);
++		if (err > 0)
+ 			goto out;
+-		}
+ 		free(filename);
+ 	}
+ 
+ 	for (i = 0; i < vmlinux_path__nr_entries; ++i) {
+-		err = dso__load_vmlinux(dso, map, vmlinux_path[i], filter);
+-		if (err > 0) {
+-			dso__set_long_name(dso, strdup(vmlinux_path[i]));
+-			dso->long_name_allocated = 1;
++		err = dso__load_vmlinux(dso, map, vmlinux_path[i], false, filter);
++		if (err > 0)
+ 			break;
+-		}
+ 	}
+ out:
+ 	return err;
+@@ -1607,15 +1604,8 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 	}
+ 
+ 	if (!symbol_conf.ignore_vmlinux && symbol_conf.vmlinux_name != NULL) {
+-		err = dso__load_vmlinux(dso, map,
+-					symbol_conf.vmlinux_name, filter);
+-		if (err > 0) {
+-			dso__set_long_name(dso,
+-					   strdup(symbol_conf.vmlinux_name));
+-			dso->long_name_allocated = 1;
+-			return err;
+-		}
+-		return err;
++		return dso__load_vmlinux(dso, map, symbol_conf.vmlinux_name,
++					 false, filter);
+ 	}
+ 
+ 	if (!symbol_conf.ignore_vmlinux && vmlinux_path != NULL) {
+@@ -1671,7 +1661,8 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
+ 		 */
+ 		if (symbol_conf.default_guest_vmlinux_name != NULL) {
+ 			err = dso__load_vmlinux(dso, map,
+-				symbol_conf.default_guest_vmlinux_name, filter);
++						symbol_conf.default_guest_vmlinux_name,
++						false, filter);
+ 			return err;
+ 		}
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index f1031a1358a1..6de9c2b8a601 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -206,7 +206,8 @@ bool symsrc__possibly_runtime(struct symsrc *ss);
+ 
+ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter);
+ int dso__load_vmlinux(struct dso *dso, struct map *map,
+-		      const char *vmlinux, symbol_filter_t filter);
++		      const char *vmlinux, bool vmlinux_allocated,
++		      symbol_filter_t filter);
+ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 			   symbol_filter_t filter);
+ int dso__load_kallsyms(struct dso *dso, const char *filename, struct map *map,
 -- 
 1.8.1.4
 
