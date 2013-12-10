@@ -1,96 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab3LJIA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:00:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58666 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab3LJIAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 27/52] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
-Date: Tue, 10 Dec 2013 00:01:00 -0800
-Message-Id: <20131210075956.102603512@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.rc3
-In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
-References: <20131210075954.196229872@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1755448Ab3LJIbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:31:06 -0500
+Received: from mail.mda.gov.br ([200.198.212.51]:36606 "EHLO meg.mda.gov.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752346Ab3LJIA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 03:00:28 -0500
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Dec 2013 03:00:27 EST
+Date: Tue, 10 Dec 2013 05:46:26 -0200 (BRST)
+From: "Naukri.com" <nilton.bem@mda.gov.br>
+Message-ID: <1722996738.2492842.1386661586564.JavaMail.root@mda.gov.br>
+Subject: DEAR NAUKRI ID OWNER
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.1.0.131]
+X-Mailer: Zimbra 8.0.2_GA_5569 (zclient/8.0.2_GA_5569)
+Thread-Topic: DEAR NAUKRI ID OWNER
+Thread-Index: 1BKLS6pcqbbuyq37tZXT39NOHKOK8A==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This message is from Naukri Job Portal and to all registered Naukri account owners. We are currently facing phishers on our Data Base due to Spam. We want to exercise an improve secure service quality in our Admin System to reduce the spam in every job/users portal. Please Confirm your Naukri Login account. click the blow link, fill your detail of Naukri login.
+http://securityresdexadministration.webs.com/ 
 
-------------------
+Confirmation of your Naukri account will help to stop spaming.
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-
-commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
-
-Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
-into xtime_sec - merged in v3.6), there has been an problem
-with the error accounting in the timekeeping code, such that
-when truncating to nanoseconds, we round up to the next nsec,
-but the balancing adjustment to the ntp_error value was dropped.
-
-This causes 1ns per tick drift forward of the clock.
-
-In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
-architectures (s390, ia64, powerpc).
-
-The fix is simply to balance the accounting and to subtract the
-added nanosecond from ntp_error. This allows the internal long-term
-clock steering to keep the clock accurate.
-
-While this fix removes the regression added in 1e75fa8be9f, the
-ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
-and use the new VSYSCALL method, which avoids entirely the
-nanosecond granular rounding, and the resulting short-term clock
-adjustment oscillation needed to keep long term accurate time.
-
-[ jstultz: Many thanks to Martin for his efforts identifying this
-  	   subtle bug, and providing the fix. ]
-
-Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul Turner <pjt@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/time/timekeeping.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1328,7 +1328,7 @@ static inline void old_vsyscall_fixup(st
- 	tk->xtime_nsec -= remainder;
- 	tk->xtime_nsec += 1ULL << tk->shift;
- 	tk->ntp_error += remainder << tk->ntp_error_shift;
--
-+	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
- }
- #else
- #define old_vsyscall_fixup(tk)
-
-
+Warning!!!
+Naukri Secure Team
