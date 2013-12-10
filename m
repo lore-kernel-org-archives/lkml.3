@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab3LJWrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:47:17 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44026 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3LJWrK (ORCPT
+	id S1751346Ab3LJWrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:47:31 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:36512 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3LJWr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:47:10 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.236.217
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX185hjniU8A4Vk8niRmgwnJZ
-Date: Tue, 10 Dec 2013 14:46:59 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
-        NeilBrown <neilb@suse.de>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
-Message-ID: <20131210224659.GY13171@atomide.com>
-References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
- <1381784555-18344-2-git-send-email-marek@goldelico.com>
- <20131111164917.GN15154@atomide.com>
- <CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
- <20131111233152.GR15154@atomide.com>
- <CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Dec 2013 17:47:27 -0500
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [PATCH] gpio-charger: support wakeup events
+Date: Wed, 11 Dec 2013 02:47:16 +0400
+Message-Id: <1386715636-18134-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.8.4.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Belisko Marek <marek.belisko@gmail.com> [131210 14:13]:
-> On Tue, Nov 12, 2013 at 12:31 AM, Tony Lindgren <tony@atomide.com> wrote:
-> >
-> > It would be best to set it up as omap-ctrl.c driver under drivers
-> > somewhere with few functions exported for DSS and MMC drivers.
->
-> I create small dummy driver based on phy-omap-control which can be
-> used but before sending patch (with more updates) I would like to get
-> some feedback if my direction is correct.
+Add support for using gpio-charger IRQ as a wakeup event.
 
-Cool thanks. Yeah what you have can easily be combined with the patches
-Balaji has posted to make HSMMC use drivers/mfd/syscon.c via regmap
-for the SCM register access. Maybe take a look at the work in progress
-patches in thread:
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/power/gpio-charger.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-[PATCH v4 0/7] mmc: omap_hsmmc: pbias dt and cleanup
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index 4e858a2..a0024b2 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -28,6 +28,7 @@
+ struct gpio_charger {
+ 	const struct gpio_charger_platform_data *pdata;
+ 	unsigned int irq;
++	bool wakeup_enabled;
+ 
+ 	struct power_supply charger;
+ };
+@@ -136,6 +137,8 @@ static int gpio_charger_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, gpio_charger);
+ 
++	device_init_wakeup(&pdev->dev, 1);
++
+ 	return 0;
+ 
+ err_gpio_free:
+@@ -159,18 +162,32 @@ static int gpio_charger_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
++static int gpio_charger_suspend(struct device *dev)
++{
++	struct gpio_charger *gpio_charger = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev))
++		gpio_charger->wakeup_enabled =
++			enable_irq_wake(gpio_charger->irq);
++
++	return 0;
++}
++
+ static int gpio_charger_resume(struct device *dev)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
+ 
++	if (gpio_charger->wakeup_enabled)
++		disable_irq_wake(gpio_charger->irq);
+ 	power_supply_changed(&gpio_charger->charger);
+ 
+ 	return 0;
+ }
+ #endif
+ 
+-static SIMPLE_DEV_PM_OPS(gpio_charger_pm_ops, NULL, gpio_charger_resume);
++static SIMPLE_DEV_PM_OPS(gpio_charger_pm_ops,
++		gpio_charger_suspend, gpio_charger_resume);
+ 
+ static struct platform_driver gpio_charger_driver = {
+ 	.probe = gpio_charger_probe,
+-- 
+1.8.4.3
 
-And also see my comments regarding using the SCM GENERAL register area
-as base for the syscon.c driver. That should work for your driver too,
-right? And then you can access the SYSCON1 register that way from your
-consumer driver ;)
-
-Regards,
-
-Tony
