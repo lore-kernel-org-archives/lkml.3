@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab3LJIs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:48:57 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55928 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3LJIsz (ORCPT
+	id S1753268Ab3LJIuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:50:15 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:34207 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3LJIuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:48:55 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-c0-52a6d574db58
-Date: Tue, 10 Dec 2013 17:51:47 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v2 4/7] mm/migrate: remove putback_lru_pages, fix comment
- on putback_movable_pages
-Message-ID: <20131210085147.GD24992@lge.com>
-References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1386580248-22431-5-git-send-email-iamjoonsoo.kim@lge.com>
- <52a67d8c.6966420a.7a42.555fSMTPIN_ADDED_BROKEN@mx.google.com>
+	Tue, 10 Dec 2013 03:50:12 -0500
+Date: Tue, 10 Dec 2013 08:50:07 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, sameo@linux.intel.com,
+        Tony Lindgren <tony@atomide.com>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 01/15] mfd: menelaus: Drop __exit section annotation
+Message-ID: <20131210085007.GO12675@lee--X1>
+References: <1386042188-12246-1-git-send-email-balbi@ti.com>
+ <20131203095136.GF11828@lee--X1>
+ <20131208190739.GA18977@saruman.home>
+ <20131209093748.GA12675@lee--X1>
+ <20131209161422.GC24047@saruman.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52a67d8c.6966420a.7a42.555fSMTPIN_ADDED_BROKEN@mx.google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131209161422.GC24047@saruman.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >@@ -1704,6 +1688,12 @@ int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
-> > 	nr_remaining = migrate_pages(&migratepages, alloc_misplaced_dst_page,
-> > 				     node, MIGRATE_ASYNC, MR_NUMA_MISPLACED);
-> > 	if (nr_remaining) {
-> >+		if (!list_empty(&migratepages)) {
-> >+			list_del(&page->lru);
-> >+			dec_zone_page_state(page, NR_ISOLATED_ANON +
-> >+					page_is_file_cache(page));
-> >+			putback_lru_page(page);
-> >+		}
-> > 		putback_lru_pages(&migratepages);
+> > > > The code looks mostly fine, but the implementation of the commit logs
+> > > > seems lazy. Please submit a v3 using coherent sentences with full
+> > > > explanations and correct punctuation.
+> > > 
+> > > example ?
+> > 
+> > All of your commit messages.
+> > 
+> > > that macro just helps removing some extra
+> > 
+> >   ^- Sentences start with an uppercase character.
+> > 
+> > > line of code and hides ffs() calls.
+> > > 
+> > > while at that, also fix a variable shadowing
+> > 
+> >   ^- Sentences start with an uppercase character.
+> > 
+> > > bug where 'int irq' was being redeclared inside
+> > > inner loop while it was also argument to interrupt
+> > > handler.
+> > 
+> >   < ---------------   50 chars   ----------------- >
+> > 
+> > Please use the full 72 char (or there abouts) width of the buffer.
 > 
-> You should remove this line. Otherwise,
+> I don't see any mention of punctuation problems, however. Also, you're
+> not complaining about the content at all, which tells me those sentences
+> aren't as incoherent as you claimed before.
 
-Yes, you are right. I will send next version. T_T
+I didn't read them in any detail. I traversed through the patches and
+saw that the formatting looked obscure on all of them. As I have come
+to expect more of your submissions, I provided a generic reply
+detailing how I expected the commit logs to be. I wasn't insinuated
+that you failed to meet all of the criteria, but they definitely fell
+short of the mark.
 
-> 
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> But fair enough, I'll fix those up and add Aaro's Tested-by
 
-Thanks.
+Thank you.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
