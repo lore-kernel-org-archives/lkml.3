@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3LJIbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:31:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58691 "EHLO
+	id S1755470Ab3LJIbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:31:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58679 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab3LJIA3 (ORCPT
+	with ESMTP id S1752943Ab3LJIAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:29 -0500
+	Tue, 10 Dec 2013 03:00:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hong Zhiguo <zhiguohong@tencent.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 3.10 31/52] Update of blkg_stat and blkg_rwstat may happen in bh context. While u64_stats_fetch_retry is only preempt_disable on 32bit UP system. This is not enough to avoid preemption by bh and may read strange 64 bit value.
-Date: Tue, 10 Dec 2013 00:01:04 -0800
-Message-Id: <20131210075956.404684981@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.10 29/52] parisc: fix mmap(MAP_FIXED|MAP_SHARED) to already mmapped address
+Date: Tue, 10 Dec 2013 00:01:02 -0800
+Message-Id: <20131210075956.270356938@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,44 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hong Zhiguo <zhiguohong@tencent.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 2c575026fae6e63771bd2a4c1d407214a8096a89 upstream.
+commit 0576da2c08e3d332f1b0653030d28ab804585ab6 upstream.
 
-Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+locale-gen on Debian showed a strange problem on parisc:
+mmap2(NULL, 536870912, PROT_NONE, MAP_SHARED, 3, 0) = 0x42a54000
+mmap2(0x42a54000, 103860, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, 3, 0) = -1 EINVAL (Invalid argument)
+
+Basically it was just trying to re-mmap() a file at the same address
+which it was given by a previous mmap() call. But this remapping failed
+with EINVAL.
+
+The problem is, that when MAP_FIXED and MAP_SHARED flags were used, we didn't
+included the mapping-based offset when we verified the alignment of the given
+fixed address against the offset which we calculated it in the previous call.
+
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-cgroup.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/parisc/kernel/sys_parisc.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -399,9 +399,9 @@ static inline uint64_t blkg_stat_read(st
- 	uint64_t v;
- 
- 	do {
--		start = u64_stats_fetch_begin(&stat->syncp);
-+		start = u64_stats_fetch_begin_bh(&stat->syncp);
- 		v = stat->cnt;
--	} while (u64_stats_fetch_retry(&stat->syncp, start));
-+	} while (u64_stats_fetch_retry_bh(&stat->syncp, start));
- 
- 	return v;
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -61,8 +61,15 @@ static int get_offset(struct address_spa
+ 	return (unsigned long) mapping >> 8;
  }
-@@ -467,9 +467,9 @@ static inline struct blkg_rwstat blkg_rw
- 	struct blkg_rwstat tmp;
  
- 	do {
--		start = u64_stats_fetch_begin(&rwstat->syncp);
-+		start = u64_stats_fetch_begin_bh(&rwstat->syncp);
- 		tmp = *rwstat;
--	} while (u64_stats_fetch_retry(&rwstat->syncp, start));
-+	} while (u64_stats_fetch_retry_bh(&rwstat->syncp, start));
+-static unsigned long get_shared_area(struct address_space *mapping,
+-		unsigned long addr, unsigned long len, unsigned long pgoff)
++static unsigned long shared_align_offset(struct file *filp, unsigned long pgoff)
++{
++	struct address_space *mapping = filp ? filp->f_mapping : NULL;
++
++	return (get_offset(mapping) + pgoff) << PAGE_SHIFT;
++}
++
++static unsigned long get_shared_area(struct file *filp, unsigned long addr,
++		unsigned long len, unsigned long pgoff)
+ {
+ 	struct vm_unmapped_area_info info;
  
- 	return tmp;
+@@ -71,7 +78,7 @@ static unsigned long get_shared_area(str
+ 	info.low_limit = PAGE_ALIGN(addr);
+ 	info.high_limit = TASK_SIZE;
+ 	info.align_mask = PAGE_MASK & (SHMLBA - 1);
+-	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
++	info.align_offset = shared_align_offset(filp, pgoff);
+ 	return vm_unmapped_area(&info);
  }
+ 
+@@ -82,20 +89,18 @@ unsigned long arch_get_unmapped_area(str
+ 		return -ENOMEM;
+ 	if (flags & MAP_FIXED) {
+ 		if ((flags & MAP_SHARED) &&
+-		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
++		    (addr - shared_align_offset(filp, pgoff)) & (SHMLBA - 1))
+ 			return -EINVAL;
+ 		return addr;
+ 	}
+ 	if (!addr)
+ 		addr = TASK_UNMAPPED_BASE;
+ 
+-	if (filp) {
+-		addr = get_shared_area(filp->f_mapping, addr, len, pgoff);
+-	} else if(flags & MAP_SHARED) {
+-		addr = get_shared_area(NULL, addr, len, pgoff);
+-	} else {
++	if (filp || (flags & MAP_SHARED))
++		addr = get_shared_area(filp, addr, len, pgoff);
++	else
+ 		addr = get_unshared_area(addr, len);
+-	}
++
+ 	return addr;
+ }
+ 
 
 
