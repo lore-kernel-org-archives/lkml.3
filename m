@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab3LJICt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:02:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59027 "EHLO
+	id S1754316Ab3LJIGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:06:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab3LJICl (ORCPT
+	with ESMTP id S1754031Ab3LJICr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:41 -0500
+	Tue, 10 Dec 2013 03:02:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Leitner <colin.leitner@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.12 59/62] USB: mos7840: correct handling of CS5 setting
-Date: Tue, 10 Dec 2013 00:01:30 -0800
-Message-Id: <20131210080101.537882425@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>, Leho Kraav <leho@kraav.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.12 62/62] drivers/char/i8k.c: add Dell XPLS L421X
+Date: Tue, 10 Dec 2013 00:01:33 -0800
+Message-Id: <20131210080101.746168287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,66 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 78692cc3382e0603a47e1f2aaeffe0d99891994d upstream.
+commit 9aa5b0181bdf335f0b731d8502e128a862884bcd upstream.
 
-This patch removes an erroneous check of CSIZE, which made it impossible to set
-CS5.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=60772
 
-Compiles clean, but couldn't test against hardware.
-
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Leho Kraav <leho@kraav.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/char/i8k.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1813,25 +1813,25 @@ static void mos7840_change_port_settings
- 	iflag = tty->termios.c_iflag;
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -664,6 +664,13 @@ static struct dmi_system_id __initdata i
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
+ 		},
+ 	},
++	{
++		.ident = "Dell XPS421",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "XPS L421X"),
++		},
++	},
+         { }
+ };
  
- 	/* Change the number of bits */
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			lData = LCR_BITS_5;
--			break;
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		lData = LCR_BITS_5;
-+		break;
- 
--		case CS6:
--			lData = LCR_BITS_6;
--			break;
-+	case CS6:
-+		lData = LCR_BITS_6;
-+		break;
- 
--		case CS7:
--			lData = LCR_BITS_7;
--			break;
--		default:
--		case CS8:
--			lData = LCR_BITS_8;
--			break;
--		}
-+	case CS7:
-+		lData = LCR_BITS_7;
-+		break;
-+
-+	default:
-+	case CS8:
-+		lData = LCR_BITS_8;
-+		break;
- 	}
-+
- 	/* Change the Parity bit */
- 	if (cflag & PARENB) {
- 		if (cflag & PARODD) {
 
 
