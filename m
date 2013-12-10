@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3LJQKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:10:42 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42484 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab3LJQKg (ORCPT
+	id S1755262Ab3LJQLB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:11:01 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:38865 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab3LJQKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:10:36 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Andrew Jones <drjones@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Cc: Jiang Liu <liuj97@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v6 7/7] jump_label: use defined macros instead of hard-coding for better readability
-Date: Wed, 11 Dec 2013 00:03:53 +0800
-Message-Id: <1386691433-6827-8-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
+	Tue, 10 Dec 2013 11:10:55 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Kalle Valo <kvalo@adurom.com>
+Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent mac address
+Date: Tue, 10 Dec 2013 17:10:50 +0100
+User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
+Cc: Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
+        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <1386494714-21070-16-git-send-email-pali.rohar@gmail.com> <87txegpuyk.fsf@purkki.adurom.net>
+In-Reply-To: <87txegpuyk.fsf@purkki.adurom.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart5139172.ScLoRPZvaW";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312101710.51015@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use macro JUMP_LABEL_TRUE_BRANCH instead of hard-coding for better
-readability.
+--nextPart5139172.ScLoRPZvaW
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
----
- include/linux/jump_label.h | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+On Tuesday 10 December 2013 16:49:23 Kalle Valo wrote:
+> Pali Roh=C3=A1r <pali.rohar@gmail.com> writes:
+> > Driver wl1251 generating mac address randomly at startup and
+> > there is no way to set permanent mac address via
+> > SET_IEEE80211_PERM_ADDR. This patch export sysfs file which
+> > can set permanent mac address by userspace helper program.
+> > Patch is needed for devices which do not store mac address
+> > in internal wl1251 eeprom.
+> >=20
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+>=20
+> We have ioctl() command for setting the mac address.
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 3999977..192ccba 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -81,18 +81,21 @@ struct module;
- #include <linux/atomic.h>
- #ifdef HAVE_JUMP_LABEL
- 
--#define JUMP_LABEL_TRUE_BRANCH 1UL
-+#define JUMP_LABEL_TYPE_FALSE_BRANCH	0UL
-+#define JUMP_LABEL_TYPE_TRUE_BRANCH	1UL
-+#define JUMP_LABEL_TYPE_MASK		1UL
- 
- static
- inline struct jump_entry *jump_label_get_entries(struct static_key *key)
- {
- 	return (struct jump_entry *)((unsigned long)key->entries
--						& ~JUMP_LABEL_TRUE_BRANCH);
-+						& ~JUMP_LABEL_TYPE_MASK);
- }
- 
- static inline bool jump_label_get_branch_default(struct static_key *key)
- {
--	if ((unsigned long)key->entries & JUMP_LABEL_TRUE_BRANCH)
-+	if (((unsigned long)key->entries & JUMP_LABEL_TYPE_MASK) ==
-+	    JUMP_LABEL_TYPE_TRUE_BRANCH)
- 		return true;
- 	return false;
- }
-@@ -123,9 +126,11 @@ extern void static_key_slow_dec(struct static_key *key);
- extern void jump_label_apply_nops(struct module *mod);
- 
- #define STATIC_KEY_INIT_TRUE ((struct static_key) \
--	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
-+	{ .enabled = ATOMIC_INIT(1), \
-+	  .entries = (void *)JUMP_LABEL_TYPE_TRUE_BRANCH })
- #define STATIC_KEY_INIT_FALSE ((struct static_key) \
--	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
-+	{ .enabled = ATOMIC_INIT(0), \
-+	  .entries = (void *)JUMP_LABEL_TYPE_FALSE_BRANCH })
- 
- #else  /* !HAVE_JUMP_LABEL */
- 
--- 
-1.8.1.2
+Really? Is there ioctl for setting permanent mac address?
+Can you show me it?
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart5139172.ScLoRPZvaW
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlKnPQoACgkQi/DJPQPkQ1ID0wCeK8927F0vrMmTB9OXR9P7AGi4
+sfoAn1nv5jrhT8VNKmoyC7Ev8fgQ1pLK
+=KlEV
+-----END PGP SIGNATURE-----
+
+--nextPart5139172.ScLoRPZvaW--
