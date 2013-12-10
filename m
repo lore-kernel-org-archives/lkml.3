@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab3LJIU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:20:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58842 "EHLO
+	id S1753396Ab3LJIBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:01:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab3LJIB2 (ORCPT
+	with ESMTP id S1753310Ab3LJIBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:28 -0500
+	Tue, 10 Dec 2013 03:01:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.12 17/62] ARM: OMAPFB: panel-sony-acx565akm: fix bad unlock balance
-Date: Tue, 10 Dec 2013 00:00:48 -0800
-Message-Id: <20131210080058.643628491@linuxfoundation.org>
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.12 11/62] crypto: authenc - Find proper IV address in ablkcipher callback
+Date: Tue, 10 Dec 2013 00:00:42 -0800
+Message-Id: <20131210080058.240271356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -28,55 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Tom Lendacky <thomas.lendacky@amd.com>
 
-commit c37dd677988ca50bc8bc60ab5ab053720583c168 upstream.
+commit fc019c7122dfcd69c50142b57a735539aec5da95 upstream.
 
-When booting Nokia N900 smartphone with v3.12 + omap2plus_defconfig
-(LOCKDEP enabled) and CONFIG_DISPLAY_PANEL_SONY_ACX565AKM enabled,
-the following BUG is seen during the boot:
+When performing an asynchronous ablkcipher operation the authenc
+completion callback routine is invoked, but it does not locate and use
+the proper IV.
 
-[    7.302154] =====================================
-[    7.307128] [ BUG: bad unlock balance detected! ]
-[    7.312103] 3.12.0-los.git-2093492-00120-g5e01dc7 #3 Not tainted
-[    7.318450] -------------------------------------
-[    7.323425] kworker/u2:1/12 is trying to release lock (&ddata->mutex) at:
-[    7.330657] [<c031b760>] acx565akm_enable+0x12c/0x18c
-[    7.335998] but there are no more locks to release!
+The callback routine, crypto_authenc_encrypt_done, is updated to use
+the same method of calculating the address of the IV as is done in
+crypto_authenc_encrypt function which sets up the callback.
 
-Fix by removing double unlock and handling the locking completely inside
-acx565akm_panel_power_on() when doing the power on.
-
-Reported-by: Eduardo Valentin <eduardo.valentin@ti.com>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/omap2/displays-new/panel-sony-acx565akm.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ crypto/authenc.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
-+++ b/drivers/video/omap2/displays-new/panel-sony-acx565akm.c
-@@ -526,6 +526,8 @@ static int acx565akm_panel_power_on(stru
- 	struct omap_dss_device *in = ddata->in;
- 	int r;
+--- a/crypto/authenc.c
++++ b/crypto/authenc.c
+@@ -368,9 +368,10 @@ static void crypto_authenc_encrypt_done(
+ 	if (!err) {
+ 		struct crypto_aead *authenc = crypto_aead_reqtfm(areq);
+ 		struct crypto_authenc_ctx *ctx = crypto_aead_ctx(authenc);
+-		struct ablkcipher_request *abreq = aead_request_ctx(areq);
+-		u8 *iv = (u8 *)(abreq + 1) +
+-			 crypto_ablkcipher_reqsize(ctx->enc);
++		struct authenc_request_ctx *areq_ctx = aead_request_ctx(areq);
++		struct ablkcipher_request *abreq = (void *)(areq_ctx->tail
++							    + ctx->reqoff);
++		u8 *iv = (u8 *)abreq - crypto_ablkcipher_ivsize(ctx->enc);
  
-+	mutex_lock(&ddata->mutex);
-+
- 	dev_dbg(&ddata->spi->dev, "%s\n", __func__);
- 
- 	in->ops.sdi->set_timings(in, &ddata->videomode);
-@@ -614,10 +616,7 @@ static int acx565akm_enable(struct omap_
- 	if (omapdss_device_is_enabled(dssdev))
- 		return 0;
- 
--	mutex_lock(&ddata->mutex);
- 	r = acx565akm_panel_power_on(dssdev);
--	mutex_unlock(&ddata->mutex);
--
- 	if (r)
- 		return r;
- 
+ 		err = crypto_authenc_genicv(areq, iv, 0);
+ 	}
 
 
