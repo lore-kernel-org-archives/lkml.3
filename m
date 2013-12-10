@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab3LJIVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:21:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58830 "EHLO
+	id S1755039Ab3LJIVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:21:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374Ab3LJIBW (ORCPT
+	with ESMTP id S1753356Ab3LJIBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:22 -0500
+	Tue, 10 Dec 2013 03:01:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.12 13/62] ARM: footbridge: fix VGA initialisation
-Date: Tue, 10 Dec 2013 00:00:44 -0800
-Message-Id: <20131210080058.374836992@linuxfoundation.org>
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Horia Geanta <horia.geanta@freescale.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.12 10/62] crypto: ccm - Fix handling of zero plaintext when computing mac
+Date: Tue, 10 Dec 2013 00:00:41 -0800
+Message-Id: <20131210080058.172789356@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,77 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Horia Geanta <horia.geanta@freescale.com>
 
-commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
+commit 5638cabf3e4883f38dfb246c30980cebf694fbda upstream.
 
-It's no good setting vga_base after the VGA console has been
-initialised, because if we do that we get this:
+There are cases when cryptlen can be zero in crypto_ccm_auth():
+-encryptiom: input scatterlist length is zero (no plaintext)
+-decryption: input scatterlist contains only the mac
+plus the condition of having different source and destination buffers
+(or else scatterlist length = max(plaintext_len, ciphertext_len)).
 
-Unable to handle kernel paging request at virtual address 000b8000
-pgd = c0004000
-[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
-0Internal error: Oops: 5017 [#1] ARM
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
-task: c03e2974 ti: c03d8000 task.ti: c03d8000
-PC is at vgacon_startup+0x258/0x39c
-LR is at request_resource+0x10/0x1c
-pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
-sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
-r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
-r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
-r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
-Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+These are not handled correctly, leading to crashes like:
 
-which is an access to the 0xb8000 without the PCI offset required to
-make it work.
+root@p4080ds:~/crypto# insmod tcrypt.ko mode=45
+------------[ cut here ]------------
+kernel BUG at crypto/scatterwalk.c:37!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=8 P4080 DS
+Modules linked in: tcrypt(+) crc32c xts xcbc vmac pcbc ecb gcm ghash_generic gf128mul ccm ctr seqiv
+CPU: 3 PID: 1082 Comm: cryptomgr_test Not tainted 3.11.0 #14
+task: ee12c5b0 ti: eecd0000 task.ti: eecd0000
+NIP: c0204d98 LR: f9225848 CTR: c0204d80
+REGS: eecd1b70 TRAP: 0700   Not tainted  (3.11.0)
+MSR: 00029002 <CE,EE,ME>  CR: 22044022  XER: 20000000
 
-Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+GPR00: f9225c94 eecd1c20 ee12c5b0 eecd1c28 ee879400 ee879400 00000000 ee607464
+GPR08: 00000001 00000001 00000000 006b0000 c0204d80 00000000 00000002 c0698e20
+GPR16: ee987000 ee895000 fffffff4 ee879500 00000100 eecd1d58 00000001 00000000
+GPR24: ee879400 00000020 00000000 00000000 ee5b2800 ee607430 00000004 ee607460
+NIP [c0204d98] scatterwalk_start+0x18/0x30
+LR [f9225848] get_data_to_compute+0x28/0x2f0 [ccm]
+Call Trace:
+[eecd1c20] [f9225974] get_data_to_compute+0x154/0x2f0 [ccm] (unreliable)
+[eecd1c70] [f9225c94] crypto_ccm_auth+0x184/0x1d0 [ccm]
+[eecd1cb0] [f9225d40] crypto_ccm_encrypt+0x60/0x2d0 [ccm]
+[eecd1cf0] [c020d77c] __test_aead+0x3ec/0xe20
+[eecd1e20] [c020f35c] test_aead+0x6c/0xe0
+[eecd1e40] [c020f420] alg_test_aead+0x50/0xd0
+[eecd1e60] [c020e5e4] alg_test+0x114/0x2e0
+[eecd1ee0] [c020bd1c] cryptomgr_test+0x4c/0x60
+[eecd1ef0] [c0047058] kthread+0xa8/0xb0
+[eecd1f40] [c000eb0c] ret_from_kernel_thread+0x5c/0x64
+Instruction dump:
+0f080000 81290024 552807fe 0f080000 5529003a 4bffffb4 90830000 39400000
+39000001 8124000c 2f890000 7d28579e <0f090000> 81240008 91230004 4e800020
+---[ end trace 6d652dfcd1be37bd ]---
+
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: Horia Geanta <horia.geanta@freescale.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-footbridge/common.c  |    3 +++
- arch/arm/mach-footbridge/dc21285.c |    2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ crypto/ccm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-footbridge/common.c
-+++ b/arch/arm/mach-footbridge/common.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
-+#include <video/vga.h>
- 
- #include <asm/pgtable.h>
- #include <asm/page.h>
-@@ -196,6 +197,8 @@ void __init footbridge_map_io(void)
- 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
- 		pci_map_io_early(__phys_to_pfn(DC21285_PCI_IO));
+--- a/crypto/ccm.c
++++ b/crypto/ccm.c
+@@ -271,7 +271,8 @@ static int crypto_ccm_auth(struct aead_r
  	}
-+
-+	vga_base = PCIMEM_BASE;
- }
  
- void footbridge_restart(enum reboot_mode mode, const char *cmd)
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -18,7 +18,6 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
--#include <video/vga.h>
+ 	/* compute plaintext into mac */
+-	get_data_to_compute(cipher, pctx, plain, cryptlen);
++	if (cryptlen)
++		get_data_to_compute(cipher, pctx, plain, cryptlen);
  
- #include <asm/irq.h>
- #include <asm/mach/pci.h>
-@@ -291,7 +290,6 @@ void __init dc21285_preinit(void)
- 	int cfn_mode;
- 
- 	pcibios_min_mem = 0x81000000;
--	vga_base = PCIMEM_BASE;
- 
- 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
- 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
+ out:
+ 	return err;
 
 
