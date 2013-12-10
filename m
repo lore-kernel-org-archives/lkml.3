@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab3LJGIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:08:34 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:53086 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3LJGIa (ORCPT
+	id S1751922Ab3LJGIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:08:44 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:60070 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3LJGId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:08:30 -0500
-MIME-Version: 1.0
-X-Originating-IP: [218.164.103.91]
-In-Reply-To: <CAFRkauCX+dLNiuoy7bPWO_ZE06OhorqYkkGh5pc8L3XyqNA-rg@mail.gmail.com>
-References: <1384589723.7840.1.camel@phoenix>
-	<1386125959.1974.309@driftwood>
-	<CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
-	<20131209064654.GA20485@kroah.com>
-	<CAFRkauCQdOyWbck+WtmNxtnenKyPAFNcqqUgcGSb1kAqj56sYA@mail.gmail.com>
-	<20131209090530.GA4586@kroah.com>
-	<CAFRkauCX+dLNiuoy7bPWO_ZE06OhorqYkkGh5pc8L3XyqNA-rg@mail.gmail.com>
-Date: Tue, 10 Dec 2013 14:08:29 +0800
-Message-ID: <CAFRkauBwUoE9109Oq9cgG71uOw5Uc+zZyDWsuCf47oLk-a2ngQ@mail.gmail.com>
-Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
-From: Axel Lin <axel.lin@ingics.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Dec 2013 01:08:33 -0500
+X-AuditID: cbfee690-b7f676d00000310d-22-52a6afdf50ca
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000a01cef251$c79ea9e0$56dbfda0$%han@samsung.com>
+ <000c01cef252$1b341040$519c30c0$%han@samsung.com>
+ <20131209174439.GH29268@sirena.org.uk>
+In-reply-to: <20131209174439.GH29268@sirena.org.uk>
+Subject: Re: [PATCH 3/6] regulator: fixed: use devm_regulator_register()
+Date: Tue, 10 Dec 2013 15:08:31 +0900
+Message-id: <001101cef56e$40712e50$c1538af0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac71BljfRQ/G9fWSSxCwc/IXRRGMsQAZ2+NQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd3765cFGexosLCY+vAJm8XlhZdY
+	Lb5d6WCyuLxrDpsDi8fOWXfZPTat6mTz6NuyitHj8ya5AJYoLpuU1JzMstQifbsErozfNz6x
+	FHSzVCy9tIm5gXE2cxcjJ4eEgInE6Y83WSFsMYkL99azdTFycQgJLGOUuPytlRGm6NnpJ8wQ
+	iemMErdb50M5vxglPs85xwJSxSagJvHly2H2LkYODhEBVYn/r9xBTGaBXInubekQ5bMYJbac
+	fc4GUs4pYCxx6eVcVpAaYQEPiYZGEZAwC1Dn+seNTCA2r4CtxP4TDWwQtqDEj8n3wDYxC2hJ
+	rN95nAnClpfYvOYtM8gYCQF1iUd/dSEOMJKY8D0bokJEYt+Ld4wgF0gInGOX6L51hx1ilYDE
+	t8mHWCBaZSU2HYAGiaTEwRU3WCYwSsxCsngWksWzkCyehWTFAkaWVYyiqQXJBcVJ6UUmesWJ
+	ucWleel6yfm5mxghETlhB+O9A9aHGJOB1k9klhJNzgdGdF5JvKGxmZGFqYmpsZG5pRlpwkri
+	vGqPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MJZYHW1d4SeZo+mtkO72RWTOzB92ES8+
+	tx9abar/6J7gp8PRuwqVLorW1Wyc+1715OxbPBtufWZItri1/1xLgKlnik7RfvdFYd0qxlPm
+	6975luZxSPmCxIp+g1O3zKzdTUp1d3K2zwjWVpv7dbJCFOM7d9e+l7bX33y58CPCp/v5q7sz
+	HtyZeFmJpTgj0VCLuag4EQC5hYbn3gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd3765cFGTRPM7GY+vAJm8XlhZdY
+	Lb5d6WCyuLxrDpsDi8fOWXfZPTat6mTz6NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaM3zc+sRR0s1QsvbSJuYFxNnMXIyeHhICJxLPTT6BsMYkL99az
+	dTFycQgJTGeUuN06nxnC+cUo8XnOORaQKjYBNYkvXw6zdzFycIgIqEr8f+UOYjIL5Ep0b0uH
+	KJ/FKLHl7HM2kHJOAWOJSy/nsoLUCAt4SDQ0ioCEWYA61z9uZAKxeQVsJfafaGCDsAUlfky+
+	B7aJWUBLYv3O40wQtrzE5jVvmUHGSAioSzz6qwtxgJHEhO/ZEBUiEvtevGOcwCg0C8mgWUgG
+	zUIyaBaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxguP9mfQOxlUNFocYBTgYlXh4
+	Jf4tDRJiTSwrrsw9xCjBwawkwutZtyxIiDclsbIqtSg/vqg0J7X4EGMy0J8TmaVEk/OBqSiv
+	JN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhhVJH74vAo+njZ3
+	PceL6d2Vomsity5/MeNt9BWd879+bhVb+PnU1jAflXeP7pinrjvF138tcLJF+a6552b1hkw4
+	E/Hf837Xg9syz3X/bj5QNGVB0B4z4x//Mv5Y79v8Zv9auZ9mMr8zfLPdsq63ah76wehZvPve
+	8c32h0vrT2/4eef1xfeKzSa1DEosxRmJhlrMRcWJAH4XxRE7AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/12/9 Axel Lin <axel.lin@ingics.com>:
-> 2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
->> On Mon, Dec 09, 2013 at 04:54:29PM +0800, Axel Lin wrote:
->>> 2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
->>> > On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
->>> >> 2013/12/4 Rob Landley <rob@landley.net>:
->>> >> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
->>> >> >>
->>> >> >> The deleted variable is always 1 in current code.
->>> >> >> Initialize deleted variable to be 0, so delete_path() will be called only
->>> >> >> when
->>> >> >> necessary.
->>> >> >>
->>> >> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->>> >> >
->>> >> >
->>> >> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
->>> >> > nobody's objected to this, you might want to forward it to
->>> >> > trivial@kernel.org.
->>> >> >
->>> >> > That said, you could describe what it _does_ a little more?
->>> >>
->>> >> I was expecting Greg to pick up this patch.
->>> >>
->>> >> I thought the description is pretty clear.
->>> >> What the patch does is changing the init value of deleted variable to 0.
->>> >> The intention of this change is to avoid unnecessary delete_path() call.
->>> >
->>> > I agree the logic is a bit odd here, but are you seeing an "unnecessary"
->>> > delete_path() call happening?  The code has always been like this from
->>> > what I can tell...
->>>
->>> Honestly, I havn't see the "unnecessary" delete_path() call happening druing my
->>> test. I look at the code when I was debugging a hangup issue.
->>> (In the end, I think the issue is not related to the devtmpfs code.)
->>> But I found the logic for the deleted variable looks odd.
->>> There are below possible (unlikely) case:
->>> When strchr(nodename, '/') != 0 and
->>> 1. If dentry->d_inode is NULL
->>> 2. vfs_getattr returns error
->>> 3. vfs_unlink returns error except -ENOENT.
->>>
->>> In these cases, delete_path() will fail anyway.
->>>
->>> Although this is a unlikely case, and I know the code is there since initial
->>> commit. But I think it's still good to fix it.
->>
->> Have you tested your patch to verify nothing breaks?
-> Yes. I have this patch in my local build image since the day I sent the patch.
-Hi Greg,
-If you want more testing for this patch to ensure nothing break,
-I think maybe Fengguang can also help to test it.
+On Tuesday, December 10, 2013 2:45 AM, Mark Brown wrote:
+> On Fri, Dec 06, 2013 at 04:09:29PM +0900, Jingoo Han wrote:
+> > Use devm_regulator_register() to make cleanup paths simpler.
+> 
+> This has the same issue as the gpio regulator - it needs a more complete
+> conversion to devm to be safe due to the use of other resources by the
+> regulator while it's running.  The conversion looks straightfoward
+> though.
 
-Hi, Fengguang
-Can you help to add this patch to your test systems?
-It's a one-line change, you can find the patch at
-https://patchwork.kernel.org/patch/3192361/
+OK, I see.
+Please ignore this patch.
+Thank you for your comment.
 
-Regards,
-Axel
+Best regards,
+Jingoo Han
+
