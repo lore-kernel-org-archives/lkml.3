@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab3LJJR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:17:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44147 "EHLO
+	id S1753344Ab3LJJSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:18:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44191 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab3LJJRv (ORCPT
+	with ESMTP id S1751585Ab3LJJSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:17:51 -0500
-Date: Tue, 10 Dec 2013 01:17:24 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-a2cb3cf20e06ef119ae541c1a08dc1977f7f0fff@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@redhat.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, jolsa@redhat.com,
-        fweisbec@gmail.com, ak@linux.intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@gmail.com,
-        adrian.hunter@intel.com
-Reply-To: mingo@kernel.org, mingo@redhat.com, eranian@google.com,
-        acme@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
-        ak@linux.intel.com, tglx@linutronix.de, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@gmail.com,
-        adrian.hunter@intel.com
-In-Reply-To: <529F3944.9050007@intel.com>
-References: <529F3944.9050007@intel.com>
+	Tue, 10 Dec 2013 04:18:16 -0500
+Date: Tue, 10 Dec 2013 01:17:46 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-e0e96d03f004e8953a731053b61e275f276fff01@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1386076182-14484-4-git-send-email-jolsa@redhat.com>
+References: <1386076182-14484-4-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script:
-  Do not call perf_event__preprocess_sample() twice)
-Git-Commit-ID: a2cb3cf20e06ef119ae541c1a08dc1977f7f0fff
+Subject: [tip:perf/core] tools lib traceevent: Add plugin build support
+Git-Commit-ID: e0e96d03f004e8953a731053b61e275f276fff01
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,192 +33,159 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:17:31 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:17:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a2cb3cf20e06ef119ae541c1a08dc1977f7f0fff
-Gitweb:     http://git.kernel.org/tip/a2cb3cf20e06ef119ae541c1a08dc1977f7f0fff
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Wed, 4 Dec 2013 16:16:36 +0200
+Commit-ID:  e0e96d03f004e8953a731053b61e275f276fff01
+Gitweb:     http://git.kernel.org/tip/e0e96d03f004e8953a731053b61e275f276fff01
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 3 Dec 2013 14:09:17 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 4 Dec 2013 15:09:53 -0300
+CommitDate: Wed, 4 Dec 2013 15:17:16 -0300
 
-perf script: Do not call perf_event__preprocess_sample() twice)
+tools lib traceevent: Add plugin build support
 
-The perf_event__preprocess_sample() function is called in
-process_sample_event().  Instead of calling it again in
-perf_evsel__print_ip(), pass through the resultant addr_location.
+Backporting missing pieces of plugin building infrastructure:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
+  - Adding Makefile 'plugins' target to build all
+    defined plugins
+
+  - Adding Makefile 'install_plugins' target as 'install_lib'
+    target dependency
+
+  - Link plugin objects with shared object building
+
+Backported from Steven Rostedt's trace-cmd repo (HEAD 0f2c2fb):
+git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+
+Plugins are by default installed into following locations:
+
+  '$(HOME)/.traceevent/plugins'
+     - If we are installing under $(HOME)
+
+  '$(prefix)/lib/traceevent/plugins'
+     - Otherwise
+
+This path is propagated to the plugin object as a plugins search path.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/529F3944.9050007@intel.com
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1386076182-14484-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c | 11 ++++++-----
- tools/perf/util/session.c   | 31 ++++++++++++++-----------------
- tools/perf/util/session.h   |  4 ++--
- 3 files changed, 22 insertions(+), 24 deletions(-)
+ tools/lib/traceevent/Makefile | 52 ++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 47 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 952dce9..c555bdd 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -414,7 +414,8 @@ static void print_sample_bts(union perf_event *event,
- 			     struct perf_sample *sample,
- 			     struct perf_evsel *evsel,
- 			     struct machine *machine,
--			     struct thread *thread)
-+			     struct thread *thread,
-+			     struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 2ccb5bc..1526798 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -43,6 +43,30 @@ man_dir_SQ = '$(subst ','\'',$(man_dir))'
+ export man_dir man_dir_SQ INSTALL
+ export DESTDIR DESTDIR_SQ
  
-@@ -424,7 +425,7 @@ static void print_sample_bts(union perf_event *event,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_evsel__print_ip(evsel, event, sample, machine,
-+		perf_evsel__print_ip(evsel, sample, machine, al,
- 				     output[attr->type].print_ip_opts,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
-@@ -443,7 +444,7 @@ static void print_sample_bts(union perf_event *event,
- static void process_event(union perf_event *event, struct perf_sample *sample,
- 			  struct perf_evsel *evsel, struct machine *machine,
- 			  struct thread *thread,
--			  struct addr_location *al __maybe_unused)
-+			  struct addr_location *al)
- {
- 	struct perf_event_attr *attr = &evsel->attr;
- 
-@@ -458,7 +459,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
- 	}
- 
- 	if (is_bts_event(attr)) {
--		print_sample_bts(event, sample, evsel, machine, thread);
-+		print_sample_bts(event, sample, evsel, machine, thread, al);
- 		return;
- 	}
- 
-@@ -474,7 +475,7 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
- 		else
- 			printf("\n");
- 
--		perf_evsel__print_ip(evsel, event, sample, machine,
-+		perf_evsel__print_ip(evsel, sample, machine, al,
- 				     output[attr->type].print_ip_opts,
- 				     PERF_MAX_STACK_DEPTH);
- 	}
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 4ce146b..8a7da6f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1487,11 +1487,10 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 	return NULL;
- }
- 
--void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
--			  struct perf_sample *sample, struct machine *machine,
-+void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
-+			  struct machine *machine, struct addr_location *al,
- 			  unsigned int print_opts, unsigned int stack_depth)
- {
--	struct addr_location al;
- 	struct callchain_cursor_node *node;
- 	int print_ip = print_opts & PRINT_IP_OPT_IP;
- 	int print_sym = print_opts & PRINT_IP_OPT_SYM;
-@@ -1500,15 +1499,10 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 	int print_oneline = print_opts & PRINT_IP_OPT_ONELINE;
- 	char s = print_oneline ? ' ' : '\t';
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
--		error("problem processing %d event, skipping it.\n",
--			event->header.type);
--		return;
--	}
--
- 	if (symbol_conf.use_callchain && sample->callchain) {
-+		struct addr_location node_al;
- 
--		if (machine__resolve_callchain(machine, evsel, al.thread,
-+		if (machine__resolve_callchain(machine, evsel, al->thread,
- 					       sample, NULL, NULL,
- 					       PERF_MAX_STACK_DEPTH) != 0) {
- 			if (verbose)
-@@ -1517,6 +1511,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 		}
- 		callchain_cursor_commit(&callchain_cursor);
- 
-+		if (print_symoffset)
-+			node_al = *al;
++set_plugin_dir := 1
 +
- 		while (stack_depth) {
- 			node = callchain_cursor_current(&callchain_cursor);
- 			if (!node)
-@@ -1531,9 +1528,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			if (print_sym) {
- 				printf(" ");
- 				if (print_symoffset) {
--					al.addr = node->ip;
--					al.map  = node->map;
--					symbol__fprintf_symname_offs(node->sym, &al, stdout);
-+					node_al.addr = node->ip;
-+					node_al.map  = node->map;
-+					symbol__fprintf_symname_offs(node->sym, &node_al, stdout);
- 				} else
- 					symbol__fprintf_symname(node->sym, stdout);
- 			}
-@@ -1553,7 +1550,7 @@ next:
- 		}
++# Set plugin_dir to preffered global plugin location
++# If we install under $HOME directory we go under
++# $(HOME)/.traceevent/plugins
++#
++# We dont set PLUGIN_DIR in case we install under $HOME
++# directory, because by default the code looks under:
++# $(HOME)/.traceevent/plugins by default.
++#
++ifeq ($(plugin_dir),)
++ifeq ($(prefix),$(HOME))
++override plugin_dir = $(HOME)/.traceevent/plugins
++set_plugin_dir := 0
++else
++override plugin_dir = $(prefix)/lib/traceevent/plugins
++endif
++endif
++
++ifeq ($(set_plugin_dir),1)
++PLUGIN_DIR = -DPLUGIN_DIR="$(DESTDIR)/$(plugin_dir)"
++PLUGIN_DIR_SQ = '$(subst ','\'',$(PLUGIN_DIR))'
++endif
++
+ # copy a bit from Linux kbuild
  
- 	} else {
--		if (al.sym && al.sym->ignore)
-+		if (al->sym && al->sym->ignore)
- 			return;
+ ifeq ("$(origin V)", "command line")
+@@ -96,6 +120,7 @@ export prefix bindir src obj
+ # Shell quotes
+ bindir_SQ = $(subst ','\'',$(bindir))
+ bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
++plugin_dir_SQ = $(subst ','\'',$(plugin_dir))
  
- 		if (print_ip)
-@@ -1562,15 +1559,15 @@ next:
- 		if (print_sym) {
- 			printf(" ");
- 			if (print_symoffset)
--				symbol__fprintf_symname_offs(al.sym, &al,
-+				symbol__fprintf_symname_offs(al->sym, al,
- 							     stdout);
- 			else
--				symbol__fprintf_symname(al.sym, stdout);
-+				symbol__fprintf_symname(al->sym, stdout);
- 		}
+ LIB_FILE = libtraceevent.a libtraceevent.so
  
- 		if (print_dso) {
- 			printf(" (");
--			map__fprintf_dsoname(al.map, stdout);
-+			map__fprintf_dsoname(al->map, stdout);
- 			printf(")");
- 		}
- 	}
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 50f6409..7e5d4398 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -105,8 +105,8 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp);
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
+@@ -138,8 +163,8 @@ else
+   print_app_build =		echo '  BUILD    '$(OBJ);
+   print_fpic_compile =		echo '  CC FPIC  '$(OBJ);
+   print_shared_lib_compile =	echo '  BUILD    SHARED LIB '$(OBJ);
+-  print_plugin_obj_compile =	echo '  BUILD    PLUGIN OBJ '$(OBJ);
+-  print_plugin_build =		echo '  BUILD    PLUGIN     '$(OBJ);
++  print_plugin_obj_compile =	echo '  CC FPIC  '$(OBJ);
++  print_plugin_build =		echo '  BUILD    PLUGIN '$(OBJ);
+   print_static_lib_build =	echo '  BUILD    STATIC LIB '$(OBJ);
+   print_install =		echo '  INSTALL  '$1'	to	$(DESTDIR_SQ)$2';
+ endif
+@@ -187,9 +212,11 @@ PEVENT_LIB_OBJS += parse-filter.o
+ PEVENT_LIB_OBJS += parse-utils.o
+ PEVENT_LIB_OBJS += kbuffer-parse.o
  
--void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
--			  struct perf_sample *sample, struct machine *machine,
-+void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
-+			  struct machine *machine, struct addr_location *al,
- 			  unsigned int print_opts, unsigned int stack_depth);
+-ALL_OBJS = $(PEVENT_LIB_OBJS)
++PLUGINS := $(PLUGIN_OBJS:.o=.so)
++
++ALL_OBJS = $(PEVENT_LIB_OBJS) $(PLUGIN_OBJS)
  
- int perf_session__cpu_bitmap(struct perf_session *session,
+-CMD_TARGETS = $(LIB_FILE)
++CMD_TARGETS = $(LIB_FILE) $(PLUGINS)
+ 
+ TARGETS = $(CMD_TARGETS)
+ 
+@@ -204,9 +231,17 @@ libtraceevent.so: $(PEVENT_LIB_OBJS)
+ libtraceevent.a: $(PEVENT_LIB_OBJS)
+ 	$(Q)$(do_build_static_lib)
+ 
++plugins: $(PLUGINS)
++
+ $(PEVENT_LIB_OBJS): %.o: $(src)/%.c TRACEEVENT-CFLAGS
+ 	$(Q)$(do_fpic_compile)
+ 
++$(PLUGIN_OBJS): %.o : $(src)/%.c
++	$(Q)$(do_compile_plugin_obj)
++
++$(PLUGINS): %.so: %.o
++	$(Q)$(do_plugin_build)
++
+ define make_version.h
+ 	(echo '/* This file is automatically generated. Do not modify. */';		\
+ 	echo \#define VERSION_CODE $(shell						\
+@@ -294,9 +329,16 @@ define do_install
+ 	$(INSTALL) $1 '$(DESTDIR_SQ)$2'
+ endef
+ 
+-install_lib: all_cmd
++install_lib: all_cmd install_plugins
+ 	$(Q)$(call do_install,$(LIB_FILE),$(bindir_SQ))
+ 
++PLUGINS_INSTALL = $(subst .so,.install,$(PLUGINS))
++
++$(PLUGINS_INSTALL): %.install : %.so force
++	$(Q)$(call do_install,$<,$(plugin_dir_SQ))
++
++install_plugins: $(PLUGINS_INSTALL)
++
+ install: install_lib
+ 
+ clean:
