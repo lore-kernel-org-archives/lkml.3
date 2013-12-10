@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3LJIXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:23:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58796 "EHLO
+	id S1753266Ab3LJIBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:01:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3LJIBH (ORCPT
+	with ESMTP id S1753204Ab3LJIAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:07 -0500
+	Tue, 10 Dec 2013 03:00:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 41/52] Input: allow deselecting serio drivers even without CONFIG_EXPERT
-Date: Tue, 10 Dec 2013 00:01:14 -0800
-Message-Id: <20131210075957.081372079@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>, Leho Kraav <leho@kraav.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 3.10 50/52] drivers/char/i8k.c: add Dell XPLS L421X
+Date: Tue, 10 Dec 2013 00:01:23 -0800
+Message-Id: <20131210075957.686634779@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,79 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Alan Cox <alan@linux.intel.com>
 
-commit bcd2623073e98f69f84720308db0b142c4da0bd6 upstream.
+commit 9aa5b0181bdf335f0b731d8502e128a862884bcd upstream.
 
-There is plenty of consumer hardware (e.g., mac books) that does not use AT
-keyboards or PS/2 mice. It therefore makes sense for distro kernels to
-build the related drivers as modules to avoid loading them on hardware that
-does not need them. As such, these options should no longer be protected by
-EXPERT.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=60772
 
-Moreover, building these drivers as modules gets rid of the following ugly
-error during boot:
-
-[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
-[    3.439537] i8042: No controller found
-
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reported-by: Leho Kraav <leho@kraav.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/keyboard/Kconfig |    4 ++--
- drivers/input/serio/Kconfig    |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/char/i8k.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- menuconfig INPUT_KEYBOARD
--	bool "Keyboards" if EXPERT || !X86
-+	bool "Keyboards"
- 	default y
- 	help
- 	  Say Y here, and a list of supported keyboards will be displayed.
-@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -664,6 +664,13 @@ static struct dmi_system_id __initdata i
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
+ 		},
+ 	},
++	{
++		.ident = "Dell XPS421",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "XPS L421X"),
++		},
++	},
+         { }
+ };
  
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EXPERT || !X86
-+	tristate "AT keyboard"
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- config SERIO
--	tristate "Serial I/O support" if EXPERT || !X86
-+	tristate "Serial I/O support"
- 	default y
- 	help
- 	  Say Yes here if you have any input device that uses serial I/O to
-@@ -19,7 +19,7 @@ config SERIO
- if SERIO
- 
- config SERIO_I8042
--	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
-+	tristate "i8042 PC Keyboard controller"
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390
-@@ -169,7 +169,7 @@ config SERIO_MACEPS2
- 	  module will be called maceps2.
- 
- config SERIO_LIBPS2
--	tristate "PS/2 driver library" if EXPERT
-+	tristate "PS/2 driver library"
- 	depends on SERIO_I8042 || SERIO_I8042=n
- 	help
- 	  Say Y here if you are using a driver for device connected
 
 
