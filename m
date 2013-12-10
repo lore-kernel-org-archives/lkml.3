@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab3LJBFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:05:44 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:65343 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab3LJBFm (ORCPT
+	id S1751871Ab3LJBGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 20:06:13 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:47936 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab3LJBGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 20:05:42 -0500
-X-AuditID: 9c93017e-b7bb9ae000000ec8-f4-52a668e4269e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 08/17] tracing/probes: Split [ku]probes_fetch_type_table
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
-	<1386570005-3368-9-git-send-email-namhyung@kernel.org>
-	<52A5DD30.4080101@hitachi.com>
-Date: Tue, 10 Dec 2013 10:05:40 +0900
-In-Reply-To: <52A5DD30.4080101@hitachi.com> (Masami Hiramatsu's message of
-	"Tue, 10 Dec 2013 00:09:36 +0900")
-Message-ID: <878uvtldln.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 9 Dec 2013 20:06:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <52A66190.9060907@zytor.com>
+References: <20131210001620.GA7938@www.outflux.net>
+	<52A66190.9060907@zytor.com>
+Date: Mon, 9 Dec 2013 17:06:10 -0800
+X-Google-Sender-Auth: uV5EXaCjYJ5AxINFmTeAO2JdlIc
+Message-ID: <CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com>
+Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
+        Eric Biederman <ebiederm@xmission.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        kexec@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
-
-On Tue, 10 Dec 2013 00:09:36 +0900, Masami Hiramatsu wrote:
-> (2013/12/09 15:19), Namhyung Kim wrote:
->> @@ -398,21 +376,21 @@ static const struct fetch_type *find_fetch_type(const char *type)
->>  
->>  		switch (bs) {
->>  		case 8:
->> -			return find_fetch_type("u8");
->> +			return find_fetch_type("u8", ftbl);
->>  		case 16:
->> -			return find_fetch_type("u16");
->> +			return find_fetch_type("u16", ftbl);
->>  		case 32:
->> -			return find_fetch_type("u32");
->> +			return find_fetch_type("u32", ftbl);
->>  		case 64:
->> -			return find_fetch_type("u64");
->> +			return find_fetch_type("u64", ftbl);
->>  		default:
->>  			goto fail;
->>  		}
->>  	}
->>  
->> -	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
->> -		if (strcmp(type, fetch_type_table[i].name) == 0)
->> -			return &fetch_type_table[i];
->> +	for (i = 0; i < NR_FETCH_TYPES; i++)
+On Mon, Dec 9, 2013 at 4:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/09/2013 04:16 PM, Kees Cook wrote:
+>> For general-purpose (i.e. distro) kernel builds it makes sense to build with
+>> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+>> with kexec. However, in the face of trying to lock down a system with such
+>> a kernel, there needs to be a way to disable kexec (much like module loading
+>> can be disabled). Without this, it is too easy for the root user to modify
+>> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Acked-by: Rik van Riel <riel@redhat.com>
 >
-> Hmm, I consider this should use correct length of given array. Thus,
-> I'd like recommend you to do;
-> giving the size of fetch_type_table, or define *probe_fetch_type_table with
-> NR_FETCH_TYPES size, or introduce a gatekeeper, e.g. special terminator entry
-> for initializing.
+> So the logic is to load a crashkernel and then lock down the machine
+> before services, networking etc. are enabled?
 
-Ah, okay.  So I'd like to go with the gatekeeper approach since I added
-the NR_FETCH_TYPES only for iterating the table so no need to keep the
-size itself.  And it might be better for additional change in the
-future.
+Right, or to just turn it off at boot time if kexec will not be used at all.
 
-Thanks,
-Namhyung
+-Kees
 
->
->> +/* Fetch type information table */
->> +const struct fetch_type uprobes_fetch_type_table[] = {
->
-> For example, here if I see the NR_FETCH_TYPES in above [], I can ensure
-> the table has at least that size (and if there is a space, it will be
-> filled with zero, in that case, we just need to add a checking
-> fetch_type_table[i].name != NULL).
->
-> Thank you,
+-- 
+Kees Cook
+Chrome OS Security
