@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab3LJIWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:22:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58810 "EHLO
+	id S1755129Ab3LJIWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:22:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58807 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab3LJIBN (ORCPT
+	with ESMTP id S1753315Ab3LJIBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:13 -0500
+	Tue, 10 Dec 2013 03:01:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Leitner <colin.leitner@gmail.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 45/52] USB: pl2303: fixed handling of CS5 setting
-Date: Tue, 10 Dec 2013 00:01:18 -0800
-Message-Id: <20131210075957.347870157@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.10 44/52] mei: add 9 series PCH mei device ids
+Date: Tue, 10 Dec 2013 00:01:17 -0800
+Message-Id: <20131210075957.280950042@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -27,67 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit a313249937820f8b1996133fc285efbd6aad2c5b upstream.
+commit 76a9635979e543f04a5885198e68ff28e3311b67 upstream.
 
-This patch fixes the CS5 setting on the PL2303 USB-to-serial devices. CS5 has a
-value of 0 and the CSIZE setting has been skipped altogether by the enclosing
-if. Tested on 3.11.6 and the scope shows the correct output after the fix has
-been applied.
+And Lynx Point H Refresh and Wildcat Point LP
+device ids.
 
-Tagged to be added to stable, because it fixes a user visible driver bug and is
-simple enough to backport easily.
-
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |   32 +++++++++++++++-----------------
- 1 file changed, 15 insertions(+), 17 deletions(-)
+ drivers/misc/mei/hw-me-regs.h |    5 ++++-
+ drivers/misc/mei/pci-me.c     |    4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -304,24 +304,22 @@ static void pl2303_set_termios(struct tt
- 	dev_dbg(&port->dev, "0xa1:0x21:0:0  %d - %x %x %x %x %x %x %x\n", i,
- 	    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -109,9 +109,12 @@
+ #define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
+ #define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
  
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			buf[6] = 5;
--			break;
--		case CS6:
--			buf[6] = 6;
--			break;
--		case CS7:
--			buf[6] = 7;
--			break;
--		default:
--		case CS8:
--			buf[6] = 8;
--			break;
--		}
--		dev_dbg(&port->dev, "data bits = %d\n", buf[6]);
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		buf[6] = 5;
-+		break;
-+	case CS6:
-+		buf[6] = 6;
-+		break;
-+	case CS7:
-+		buf[6] = 7;
-+		break;
-+	default:
-+	case CS8:
-+		buf[6] = 8;
-+		break;
- 	}
-+	dev_dbg(&port->dev, "data bits = %d\n", buf[6]);
+-#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
++#define MEI_DEV_ID_LPT_H      0x8C3A  /* Lynx Point H */
+ #define MEI_DEV_ID_LPT_W      0x8D3A  /* Lynx Point - Wellsburg */
+ #define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
++#define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
++
++#define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
+ /*
+  * MEI HW Section
+  */
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -79,9 +79,11 @@ static DEFINE_PCI_DEVICE_TABLE(mei_me_pc
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_1)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_2)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_PPT_3)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_H)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_W)},
+ 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_LP)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_LPT_HR)},
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, MEI_DEV_ID_WPT_LP)},
  
- 	/* For reference buf[0]:buf[3] baud rate value */
- 	/* NOTE: Only the values defined in baud_sup are supported !
+ 	/* required last entry */
+ 	{0, }
 
 
