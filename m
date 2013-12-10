@@ -1,102 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab3LJUPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:15:06 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:44395 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750768Ab3LJUPD (ORCPT
+	id S1751686Ab3LJUQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:16:20 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:35516 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab3LJUQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:15:03 -0500
-Date: Tue, 10 Dec 2013 21:10:22 +0100
-From: "maxime.ripard" <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: linux-sunxi <linux-sunxi@googlegroups.com>,
-        David Miller <davem@davemloft.net>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        netdev <netdev@vger.kernel.org>,
-        "rob.herring" <rob.herring@calxeda.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Subject: Re: [linux-sunxi] Re: [PATCH 02/10] net: stmmac: Honor DT parameter
- to force DMA store and forward mode
-Message-ID: <20131210201022.GE3651@lukather>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <CAGb2v67ZNtbQm+ZW5v_3wNbz1=oLhXks6gbTSjLYa=Nnoz8w-A@mail.gmail.com>
- <20131207100737.GI24519@lukather>
- <2994980.boLDbkkER8@flatron>
- <CAGb2v64BMNjbbc7j2XesuPEXZV+RnjtP1sAPQ4icU=-wjh3YNQ@mail.gmail.com>
+	Tue, 10 Dec 2013 15:16:19 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fWddYNRDgTk9wQGZ"
-Content-Disposition: inline
-In-Reply-To: <CAGb2v64BMNjbbc7j2XesuPEXZV+RnjtP1sAPQ4icU=-wjh3YNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131210200426.GA31862@redhat.com>
+References: <20131209211824.GA15006@redhat.com>
+	<CA+55aFxkW2cFB3us0_A+Nq04UYOq4H_ta5rNYyuYyZd=YOuk2w@mail.gmail.com>
+	<20131210191837.GA30680@redhat.com>
+	<CA+55aFxng2sriDQzt4w_=+ihUWms6jToXzDPymDRuowN8hCFKw@mail.gmail.com>
+	<20131210200426.GA31862@redhat.com>
+Date: Tue, 10 Dec 2013 12:16:18 -0800
+X-Google-Sender-Auth: EN3Bc-lnxR88dC4Wx19oPI20zXQ
+Message-ID: <CA+55aFyWtF762kRv4FyYS7E9sKtuFiEJZ87JudN55xHaBvwAQg@mail.gmail.com>
+Subject: Re: [PATCH 0/1] uprobes: Kill __replace_page(), change
+ uprobe_write_opcode() to rely on gup(WRITE)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 10, 2013 at 12:04 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> We'd be *much* better off using get_user_pages_fast() if possible -
+>> and I bet _is_ possible in 99% of all cases.
+>
+> We can't. get_user_pages_fast() takes mmap_sem.
 
---fWddYNRDgTk9wQGZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, and we need to look up the page table entry anyway, so what we
+actually want here is just the page table walker, none of the "get
+page" crap at all.
 
-On Mon, Dec 09, 2013 at 10:59:38AM +0800, Chen-Yu Tsai wrote:
-> On Sat, Dec 7, 2013 at 7:06 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> > On Saturday 07 of December 2013 11:07:37 maxime.ripard wrote:
-> >> On Sat, Dec 07, 2013 at 09:23:27AM +0800, Chen-Yu Tsai wrote:
-> >> > Point taken. The current implementation will override settings passe=
-d from
-> >> > platform data. ORing the two would be better.
-> >>
-> >> Platform_data and DT-based configuration are pretty unlikely to be
-> >> used together, so ORing it doesn't have much sense.
-> >
-> > In fact, the recommended way is to always use platform data alone if it=
- is
-> > present or try to parse DT otherwise, so no mixing of data from these t=
-wo
-> > sources should be done.
->=20
-> Would binding platform data with compatibles, as I did so in this patch
-> series, be a bad idea then?
+So the core function should (I think) just do something like:
 
-What I meant was that you'll either be probed will pdev->dev.of_node
-or pdev->dev.platform_data filled, but not both at the same time, so
-ORing it isn't really sensible.
+ - new_page = NULL
+ - get page table lock
+ - look up page tables
+ - if it's dirty and private, or we have a new page for it, replace
+the instruction
+ - drop page table lock
+ - we're done, free the new page if we didn't use it.
 
-But I don't see why you couldn't reuse the stmmac_platform_data
-structure in your patch.
+with a retry for the "uhhuh, it's not dirty and private, and we don't
+have a new page", so we do
+ - drop the lock
+ - use a "get_user()" or something to page it in.
+ - allocate a new page if necessary
+ - goto retry
 
-Maxime
+which gets us a single page table walk for the common case, and a
+retry for the "uhhuh, we needed to page it in or allocate a new page"
+condition.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Put another way: I actually think the existing "__replace_page()" code
+is closer to being good than that disgusting uprobe_write_opcode()
+function. I think you may be getting rid of the wrong ugly function.
 
---fWddYNRDgTk9wQGZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSp3UuAAoJEBx+YmzsjxAgFpUQALmnbKSdGnMDFHC7P7U9mpkN
-Ni/XAfEGW26cgaHRMsbfnWl1/PK49Y3a4oV4CeXP1Ppizx3FFIcLOIMzIQ7v1W+P
-nmBKa6vQ5vd+dR3y+5ieoAKWfduVwLHcYFLwp5Je3mtihJcA4Vzg7Dn6i0pUJwVc
-mase7vou7HO4dKWBPcjNwU5RPpiCEkfKVEfTwWI0Eqf+JrFJiMiDLl6lpbcLfJWV
-4mE+L+i9Y7jkoeKTrMbNhvkb9m2Sr9xe6537qP6x2wZvK0JCypnjVBFZ8mXqRmHy
-SkmBWnwvtGT3N7YwCIqzv5ko6AS+lgaO1y2Q5NcKf9dtTPN45foDrmbaQwv/3udB
-Z9udO41pQdujcGf5kl4ktPhr2RcT3ALEmzSTx897HSmX5s8vh55qBVY2uqY9O2db
-Wbi6th30PvfodehYe67zll8V8XAVIyRMKcatZ/CAOmqTeJvh8ZI+gDOUBlUSHPOK
-Bpz7aZpSEraEBDyhqXC7q245kXpRueHEeKLRTU1cwXnfvxfXiHl7mbKNeTzBzrbd
-UHznK6KILPgW4VoVsrGHxiiovmcJwV6LQG5BnoyQOlXSKJXL6slDCe+cbdro11TZ
-ImpKFZQKvM8cVsn+nwTKpEi+OKS6E9/BCotcgYQ9ejTNKZA8GTa831bPTaXxbRVc
-3cNfzO3k/lBFUe5UVnyg
-=mL1q
------END PGP SIGNATURE-----
-
---fWddYNRDgTk9wQGZ--
+                Linus
