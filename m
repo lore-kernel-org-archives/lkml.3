@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3LJICU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:02:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58948 "EHLO
+	id S1754227Ab3LJIL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:11:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58980 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab3LJICK (ORCPT
+	with ESMTP id S1753838Ab3LJICT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:10 -0500
+	Tue, 10 Dec 2013 03:02:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.12 41/62] parisc: fix mmap(MAP_FIXED|MAP_SHARED) to already mmapped address
-Date: Tue, 10 Dec 2013 00:01:12 -0800
-Message-Id: <20131210080100.317975822@linuxfoundation.org>
+        Tom Herbert <therbert@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Shawn Landden <shawn@churchofgit.com>
+Subject: [PATCH 3.12 47/62] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+Date: Tue, 10 Dec 2013 00:01:18 -0800
+Message-Id: <20131210080100.722174251@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,83 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Shawn Landden <shawn@churchofgit.com>
 
-commit 0576da2c08e3d332f1b0653030d28ab804585ab6 upstream.
+commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
 
-locale-gen on Debian showed a strange problem on parisc:
-mmap2(NULL, 536870912, PROT_NONE, MAP_SHARED, 3, 0) = 0x42a54000
-mmap2(0x42a54000, 103860, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, 3, 0) = -1 EINVAL (Invalid argument)
+Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
+added an internal flag MSG_SENDPAGE_NOTLAST, similar to
+MSG_MORE.
 
-Basically it was just trying to re-mmap() a file at the same address
-which it was given by a previous mmap() call. But this remapping failed
-with EINVAL.
+algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
+and need to see the new flag as identical to MSG_MORE.
 
-The problem is, that when MAP_FIXED and MAP_SHARED flags were used, we didn't
-included the mapping-based offset when we verified the alignment of the given
-fixed address against the offset which we calculated it in the previous call.
+This fixes sendfile() on AF_ALG.
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+v3: also fix udp
+
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
+Original-patch: Richard Weinberger <richard@nod.at>
+Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/sys_parisc.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ crypto/algif_hash.c     |    3 +++
+ crypto/algif_skcipher.c |    3 +++
+ net/ipv4/udp.c          |    3 +++
+ 3 files changed, 9 insertions(+)
 
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -61,8 +61,15 @@ static int get_offset(struct address_spa
- 	return (unsigned long) mapping >> 8;
- }
+--- a/crypto/algif_hash.c
++++ b/crypto/algif_hash.c
+@@ -117,6 +117,9 @@ static ssize_t hash_sendpage(struct sock
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
--static unsigned long get_shared_area(struct address_space *mapping,
--		unsigned long addr, unsigned long len, unsigned long pgoff)
-+static unsigned long shared_align_offset(struct file *filp, unsigned long pgoff)
-+{
-+	struct address_space *mapping = filp ? filp->f_mapping : NULL;
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
 +
-+	return (get_offset(mapping) + pgoff) << PAGE_SHIFT;
-+}
+ 	lock_sock(sk);
+ 	sg_init_table(ctx->sgl.sg, 1);
+ 	sg_set_page(ctx->sgl.sg, page, size, offset);
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -381,6 +381,9 @@ static ssize_t skcipher_sendpage(struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
+ 
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
 +
-+static unsigned long get_shared_area(struct file *filp, unsigned long addr,
-+		unsigned long len, unsigned long pgoff)
- {
- 	struct vm_unmapped_area_info info;
+ 	lock_sock(sk);
+ 	if (!ctx->more && ctx->used)
+ 		goto unlock;
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1075,6 +1075,9 @@ int udp_sendpage(struct sock *sk, struct
+ 	if (flags & MSG_SENDPAGE_NOTLAST)
+ 		flags |= MSG_MORE;
  
-@@ -71,7 +78,7 @@ static unsigned long get_shared_area(str
- 	info.low_limit = PAGE_ALIGN(addr);
- 	info.high_limit = TASK_SIZE;
- 	info.align_mask = PAGE_MASK & (SHMLBA - 1);
--	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
-+	info.align_offset = shared_align_offset(filp, pgoff);
- 	return vm_unmapped_area(&info);
- }
- 
-@@ -82,20 +89,18 @@ unsigned long arch_get_unmapped_area(str
- 		return -ENOMEM;
- 	if (flags & MAP_FIXED) {
- 		if ((flags & MAP_SHARED) &&
--		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
-+		    (addr - shared_align_offset(filp, pgoff)) & (SHMLBA - 1))
- 			return -EINVAL;
- 		return addr;
- 	}
- 	if (!addr)
- 		addr = TASK_UNMAPPED_BASE;
- 
--	if (filp) {
--		addr = get_shared_area(filp->f_mapping, addr, len, pgoff);
--	} else if(flags & MAP_SHARED) {
--		addr = get_shared_area(NULL, addr, len, pgoff);
--	} else {
-+	if (filp || (flags & MAP_SHARED))
-+		addr = get_shared_area(filp, addr, len, pgoff);
-+	else
- 		addr = get_unshared_area(addr, len);
--	}
++	if (flags & MSG_SENDPAGE_NOTLAST)
++		flags |= MSG_MORE;
 +
- 	return addr;
- }
+ 	if (!up->pending) {
+ 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
  
 
 
