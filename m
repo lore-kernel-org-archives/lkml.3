@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab3LJUEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:04:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab3LJUEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:04:31 -0500
-Date: Tue, 10 Dec 2013 21:04:26 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@alien8.de>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/1] uprobes: Kill __replace_page(), change
-	uprobe_write_opcode() to rely on gup(WRITE)
-Message-ID: <20131210200426.GA31862@redhat.com>
-References: <20131209211824.GA15006@redhat.com> <CA+55aFxkW2cFB3us0_A+Nq04UYOq4H_ta5rNYyuYyZd=YOuk2w@mail.gmail.com> <20131210191837.GA30680@redhat.com> <CA+55aFxng2sriDQzt4w_=+ihUWms6jToXzDPymDRuowN8hCFKw@mail.gmail.com>
+	id S1751561Ab3LJUGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:06:05 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:47281 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3LJUGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:06:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxng2sriDQzt4w_=+ihUWms6jToXzDPymDRuowN8hCFKw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Tue, 10 Dec 2013 15:06:01 -0500
+X-Google-Sender-Auth: pDcHDQk3VvhfUNbjkJdGeLR9EA4
+Message-ID: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>
+Subject: SELinux change in 3.13 causes sync hang
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Eric Paris <eparis@redhat.com>, Anand Avati <avati@redhat.com>
+Cc: James Morris <jmorris@namei.org>, Eric Sandeen <sandeen@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10, Linus Torvalds wrote:
->
-> On Tue, Dec 10, 2013 at 11:18 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > Well, if we use get_user_pages() we have vma for free.
->
-> No we don't. get_user_pages() is expensive as hell.
+We've had a report[1] in Fedora of sync(1) hanging after logging into
+GNOME and running the command in a terminal.  I was able to recreate
+this on my local system and did a git bisect.  The bisect blames:
 
-I understand, I said "if we use get_user_pages()".
+commit 102aefdda4d8275ce7d7100bc16c88c74272b260
+Author: Anand Avati <avati@redhat.com>
+Date:   Tue Apr 16 18:56:19 2013 -0400
 
-> We'd be *much* better off using get_user_pages_fast() if possible -
-> and I bet _is_ possible in 99% of all cases.
+    selinux: consider filesystem subtype in policies
 
-We can't. get_user_pages_fast() takes mmap_sem.
+Looking at the backtrace via sysrq-t gets us the backtraces below, and
+the lock accounting information.  The fusermount process involved
+seems to be doing e.g.:
 
-Perhaps we can do something, say add FOLL_FAST_ONLY, but until then
-we need the 1st get_user_pages(write => 0) anyway.
+ 1455 ?        S      0:00 fusermount -o
+rw,nosuid,nodev,subtype=gvfsd-fuse -- /run/user/1000/gvfs
 
-> > But I am not sure about "and verify it for now" above. Do you mean
-> > that uprobe_write_opcode() should do another valid_vma() ?
->
-> No. I think we should just do something like
->
->     if (vma->vm_flags & (VM_SHARED | VM_HUGETLB))
->         return -EINVAL;
+and I don't see /run/user/1000/gvfs/ listed in /proc/self/mounts
 
-OK, but WARN_ON(VM_SHARED | VM_HUGETLB) looks better imho. Because
-this should not happen.
+Thoughts on this?  It seems the change does something subtle with FUSE
+mounts that cause them to hang, and then a manual sync(1) hangs on
+iterate_supers.
 
-> then just looking up the page table _once_ - instead of
-> three times - would make the code safer and faster.
+josh
 
-Unlikely we can do this only once... At least I do not see how.
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=1033965
 
-> It *may* be safe if callers do
-> all the right black magic, but it's by no means obvious.
+[  152.923866] fusermount      S ffff88031cee5c00  4176  1420   1401 0x00000080
+[  152.923869]  ffff880309367c10 0000000000000046 00000000001d5140
+ffff880309367fd8
+[  152.923873]  ffff880309367fd8 00000000001d5140 ffff88030954ae00
+ffff8803090d67b0
+[  152.923876]  ffff880309367c50 ffff8803090d69b0 0000000000000000
+ffff88030954ae00
+[  152.923880] Call Trace:
+[  152.923883]  [<ffffffff81705959>] schedule+0x29/0x70
+[  152.923888]  [<ffffffffa0661d15>] __fuse_get_req+0x185/0x270 [fuse]
+[  152.923892]  [<ffffffff81096850>] ? wake_up_bit+0x30/0x30
+[  152.923896]  [<ffffffffa0661e10>] fuse_get_req+0x10/0x20 [fuse]
+[  152.923900]  [<ffffffffa06651df>] fuse_getxattr+0x4f/0x160 [fuse]
+[  152.923903]  [<ffffffff812eb4b5>] sb_finish_set_opts+0x215/0x340
+[  152.923906]  [<ffffffff812eb841>] selinux_set_mnt_opts+0x261/0x610
+[  152.923909]  [<ffffffff812e5e2a>] ? selinux_parse_opts_str+0x1ba/0x2a0
+[  152.923912]  [<ffffffff812ebc77>] selinux_sb_kern_mount+0x87/0x150
+[  152.923916]  [<ffffffff812e0cf6>] security_sb_kern_mount+0x16/0x20
+[  152.923919]  [<ffffffff811da20a>] mount_fs+0x8a/0x1b0
+[  152.923922]  [<ffffffff811f7aa3>] vfs_kern_mount+0x63/0xf0
+[  152.923925]  [<ffffffff811fa36e>] do_mount+0x23e/0xa20
+[  152.923928]  [<ffffffff81166964>] ? __get_free_pages+0x14/0x50
+[  152.923931]  [<ffffffff811f9fb6>] ? copy_mount_options+0x36/0x170
+[  152.923934]  [<ffffffff811fabd3>] SyS_mount+0x83/0xc0
+[  152.923937]  [<ffffffff81711499>] system_call_fastpath+0x16/0x1b
 
-I agree, this needs more documentation in any case.
+[  152.936687] sync            D ffff88031cee1700  4176  2023   1987 0x00000080
+[  152.936691]  ffff8802fc507e48 0000000000000046 00000000001d5140
+ffff8802fc507fd8
+[  152.936694]  ffff8802fc507fd8 00000000001d5140 ffff8802da9e9700
+ffff8802da9e9700
+[  152.936697]  ffff8803090d11b0 fffffffeffffffff ffff8803090d11b8
+ffffffff81209340
+[  152.936701] Call Trace:
+[  152.936704]  [<ffffffff81209340>] ? generic_write_sync+0x70/0x70
+[  152.936708]  [<ffffffff81705959>] schedule+0x29/0x70
+[  152.936710]  [<ffffffff81706f5d>] rwsem_down_read_failed+0xbd/0x120
+[  152.936714]  [<ffffffff81357de4>] call_rwsem_down_read_failed+0x14/0x30
+[  152.936717]  [<ffffffff81704b53>] ? down_read+0x83/0xa0
+[  152.936721]  [<ffffffff811d9b5c>] ? iterate_supers+0x9c/0x110
+[  152.936724]  [<ffffffff811d9b5c>] iterate_supers+0x9c/0x110
+[  152.936727]  [<ffffffff812095c5>] sys_sync+0x35/0x90
+[  152.936730]  [<ffffffff81711499>] system_call_fastpath+0x16/0x1b
 
-Oleg.
 
+Showing all locks held in the system:
+[  152.938636] 2 locks held by fusermount/1420:
+[  152.938637]  #0:  (&type->s_umount_key#44/1){+.+.+.}, at:
+[<ffffffff811d919a>] sget+0x2ca/0x660
+[  152.938646]  #1:  (&sbsec->lock){+.+.+.}, at: [<ffffffff812eb654>]
+selinux_set_mnt_opts+0x74/0x610
+[  152.938668] 1 lock held by sync/2023:
+[  152.938669]  #0:  (&type->s_umount_key#50){.+.+..}, at:
+[<ffffffff811d9b5c>] iterate_supers+0x9c/0x110
