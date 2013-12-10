@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab3LJS3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 13:29:37 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:42472 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab3LJS3f (ORCPT
+	id S1755798Ab3LJSbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 13:31:07 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:63035 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab3LJSbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 13:29:35 -0500
+	Tue, 10 Dec 2013 13:31:04 -0500
+Message-ID: <52A75DE6.8090901@linaro.org>
+Date: Tue, 10 Dec 2013 19:31:02 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131210123035.D1586C40A27@trevor.secretlab.ca>
-References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
-	<CAHCPf3s_SXYXLRwvn7tzqTCQ-gB=emRMK_dXkEmw_HWigiD7Mw@mail.gmail.com>
-	<20131210123035.D1586C40A27@trevor.secretlab.ca>
-Date: Tue, 10 Dec 2013 10:29:34 -0800
-Message-ID: <CAFECyb93r5QGWRYDQxzWJ-xtptWBAEiQtAx=woLC5x+3WhbNqQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
-From: Roy Franz <roy.franz@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Matt Sealey <neko@bakuhatsu.net>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Mark Salter <msalter@redhat.com>, Patch Tracking <patches@linaro.org>,
-        linaro-uefi <linaro-uefi@lists.linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Mike Galbraith <bitbucket@online.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [question] sched: idle_avg and migration latency
+References: <52A6FB5C.7010706@linaro.org> <1386688302.6304.30.camel@marge.simpson.net>
+In-Reply-To: <1386688302.6304.30.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 4:30 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Fri, 6 Dec 2013 11:20:45 -0600, Matt Sealey <neko@bakuhatsu.net> wrote:
->> On Wed, Dec 4, 2013 at 4:44 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->> > On Wed, Dec 04, 2013 at 03:06:47PM -0600, Matt Sealey wrote:
->> Grant suggested I should propose some patches; sure, if I'm not otherwise busy.
+On 12/10/2013 04:11 PM, Mike Galbraith wrote:
+> On Tue, 2013-12-10 at 12:30 +0100, Daniel Lezcano wrote:
+>> Hi All,
 >>
->> Maybe the Linaro guys can recommend a platform (real or emulated) that
->> would be best to test it on with the available UEFI?
+>> I am trying to understand how is computed the idle_avg and how it is
+>> used regarding the migration latency.
+>>
+>> 1. What is the sysctl_sched_migration_cost value ? It is initialized to
+>> 500000UL. Is it an arbitrarily chosen value ? Could it change depending
+>> on the hardware performances ?
 >
-> Roy Franz (cc'd) has got UEFI running under QEMU. A few modifications
-> were required to both stock UEFI and QEMU. I'm not sure what the status
-> of mainlining those patches is. I think there are still a few things
-> that Roy has to fix, but you should be able to get the current patches
-> from him to get going.
+> Yeah, it's a magic number.  We used to use boot time measurements.
 >
-> g.
+>> 2. The idle_balance function checks:
+>>
+>>           if (this_rq->avg_idle < sysctl_sched_migration_cost)
+>>                   return 0;
+>>
+>> IIUC, it is not worth to migrate a task to this cpu as we expect to run
+>> another task before we can pull a task to the current cpu, right ?
 >
+> No, that's all about not beating living hell outta ourselves on every
+> micro-idle.  As with all load balancing, it's usually too much balancing
+> that creates a problem.  You need it, but it's really expensive, so less
+> is more.
+>
+>> Then if there is no task to balance we will enter idle, thus we
+>> initialize the idle_stamp to the current clock.
+>>
+>> When another task is woken up with the ttwu_do_wakeup, the duration of
+>> the idle time is computed in there:
+>>
+>> 	if (rq->idle_stamp) {
+>> 		u64 delta = rq_clock(rq) - rq->idle_stamp;
+>> 		u64 max = 2*sysctl_sched_migration_cost;
+>>
+>> 		if (delta > max)
+>> 			rq->avg_idle = max;
+>> 		else
+>> 			update_avg(&rq->avg_idle, delta);
+>> 		rq->idle_stamp = 0;
+>> 	}
+>>
+>> Why is the 'delta' leveraged by 'max' ?
+>
+> That has changed a little recently.  I originally slammed avg_idle
+> itself straight to max to ensure that a bursty load would idle balance,
+> and not use stale data.  If you start cross core switching at high
+> frequency, you'll still shut idle balancing quickly.
 
-Hi Grant and Matt,
+Ok, thanks for the explanation.
 
-I have put together a quick wiki page describing the current status,
-with git trees for
-UEFI and QEMU, and instructions for running the model.  I just whipped
-this up now, so it
-is pretty basic, but should have all the required information.
+I think I am a bit puzzled with the 'idle_avg' name. I am guessing the 
+semantic of this variable is "how long this cpu has been idle".
 
-https://wiki.linaro.org/LEG/Engineering/Kernel/UEFI/VersatileExpress/QEMU
+The idle duration, with the no_hz, could be long, several seconds if the 
+work queues have been migrated and if the timer affinity is set to 
+another cpu. So if we fall in this case and there is a burst of activity 
++ micro-idle and idle_avg is not leverage to max, it will stay high 
+during an amount of time, thus pulling tasks at each micro idle period, 
+right ?
 
-Please let me know if you have any questions.
+>> 3. And finally the function update_avg does:
+>>
+>> 	s64 diff = sample - *avg;
+>> 	*avg += diff >> 3;
+>>
+>> Why is diff >> 3 used instead of the number of values ?
+>
+> Ingo's quick like bunny smooth average.
 
-Thanks,
-Roy
+Yeah, average computation on-the-fly. But why 'divide by 8' ? (Cc'ed Ingo).
+
+Thanks for taking the time to answer.
+
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
