@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab3LJIGw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:06:52 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:37352 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab3LJICl (ORCPT
+	id S1753977Ab3LJICk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59018 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab3LJICf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:41 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] afs: proc cells and rootcell are writeable
-Date: Tue, 10 Dec 2013 09:02:37 +0100
-User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <201311201430.56135@pali>
-In-Reply-To: <201311201430.56135@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart18741960.cN2F2aPSBm";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312100902.37942@pali>
+	Tue, 10 Dec 2013 03:02:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.12 56/62] n_tty: Fix missing newline echo
+Date: Tue, 10 Dec 2013 00:01:27 -0800
+Message-Id: <20131210080101.337569507@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
+References: <20131210080057.415644748@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart18741960.cN2F2aPSBm
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Wednesday 20 November 2013 14:30:55 Pali Roh=C3=A1r wrote:
-> Both proc files are writeable and used for configuring cells.
-> But there is missing correct mode flag for writeable files.
-> Without this patch both proc files are read only.
->=20
-> diff --git a/fs/afs/proc.c b/fs/afs/proc.c
-> index 526e4bb..276cb6e 100644
-> --- a/fs/afs/proc.c
-> +++ b/fs/afs/proc.c
-> @@ -147,11 +147,11 @@ int afs_proc_init(void)
->  	if (!proc_afs)
->  		goto error_dir;
->=20
-> -	p =3D proc_create("cells", 0, proc_afs, &afs_proc_cells_fops);
-> +	p =3D proc_create("cells", S_IFREG | S_IRUGO | S_IWUSR,
-> proc_afs, &afs_proc_cells_fops); if (!p)
->  		goto error_cells;
->=20
-> -	p =3D proc_create("rootcell", 0, proc_afs,
-> &afs_proc_rootcell_fops); +	p =3D proc_create("rootcell",
-> S_IFREG | S_IRUGO | S_IWUSR, proc_afs,
-> &afs_proc_rootcell_fops); if (!p)
->  		goto error_rootcell;
+------------------
 
-Hello, can somebody review my patch?
+From: Peter Hurley <peter@hurleysoftware.com>
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+commit 39434abd942c8e4b9c14c06a03b3245beaf8467f upstream.
 
---nextPart18741960.cN2F2aPSBm
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+When L_ECHONL is on, newlines are echoed regardless of the L_ECHO
+state; if set, ensure accumulated echoes are flushed before finishing
+the current input processing and before more output.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Reported-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com
+Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-iEYEABECAAYFAlKmyp0ACgkQi/DJPQPkQ1J99wCfWhMYfTbws3Cz3AB+/sq12jGe
-CB8AniDL+DEU0vjQn19GGphkBgvYsEGX
-=I2yg
------END PGP SIGNATURE-----
+---
+ drivers/tty/n_tty.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---nextPart18741960.cN2F2aPSBm--
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -810,7 +810,8 @@ static void process_echoes(struct tty_st
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	size_t echoed;
+ 
+-	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_tail)
++	if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
++	    ldata->echo_commit == ldata->echo_tail)
+ 		return;
+ 
+ 	mutex_lock(&ldata->output_lock);
+@@ -825,7 +826,8 @@ static void flush_echoes(struct tty_stru
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 
+-	if (!L_ECHO(tty) || ldata->echo_commit == ldata->echo_head)
++	if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
++	    ldata->echo_commit == ldata->echo_head)
+ 		return;
+ 
+ 	mutex_lock(&ldata->output_lock);
+
+
