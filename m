@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3LJNgl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:36:41 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:50909 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab3LJNgj (ORCPT
+	id S1753381Ab3LJNiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:38:02 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:43452 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab3LJNh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:36:39 -0500
-Date: Tue, 10 Dec 2013 14:36:33 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] clocksource/clockevents fixes for 3.13
-Message-ID: <20131210133633.GB31366@gmail.com>
-References: <52A0AC37.5010006@linaro.org>
- <20131210122051.GD30001@gmail.com>
- <52A71027.4000902@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A71027.4000902@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Dec 2013 08:37:59 -0500
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH V2 0/3] PM: Enable option of re-use runtime PM callbacks at system suspend
+Date: Tue, 10 Dec 2013 14:37:39 +0100
+Message-Id: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+To put devices into low power state during system suspend, it is convenient
+for some runtime PM supported power domains, subsystems and drivers to have
+the option of re-using and invoking the runtime PM callbacks from their system
+PM callbacks.
 
-* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+The benefit is that we don't need to implement wrapper functions which
+handles runtime PM resourses, typically called from both runtime PM and system
+PM callbacks.
 
-> On 12/10/2013 01:20 PM, Ingo Molnar wrote:
-> >
-> >* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> >
-> >>
-> >>Hi Thomas,
-> >>
-> >>here are the fixes for 3.13 based on timers/urgent
-> >
-> >Please generally also post the patches to make it easier to review
-> >them.
-> 
-> Hi Ingo,
-> 
-> what do you mean by "also post the patches" ? The patches were 
-> posted in the mailing lists and I picked them up after people 
-> reviewed them.
+Some new helper macros for defining the PM callbacks are added.
 
-For example I found none of Dinh Nguyen's two patches on lkml.
+SET_PM_RUNTIME_PM_OPS; to define runtime PM callbacks for CONFIG_PM instead of
+CONFIG_PM_RUNTIME.
 
-Even if they were on lkml it's generally good practice to post patches 
-for pull requests even if they are mostly resends of existing patches, 
-especially for an urgent tree. That makes it easier for people to 
-chime in on patches.
+SET_LATE_SYSTEM_SLEEP_PM_OPS; to define common late/early system PM callbacks,
+same approach is applicable to the existing SET_SYSTEM_SLEEP_PM_OPS which
+defines common suspend/resume system PM callbacks.
 
-> Or shall I give a combined diff when sending the PR ?
+A minor fix was needed for the platform bus, which runtime PM callbacks are set
+to the pm_generic_runtime_suspend|resume functions. These were implemented only
+for CONFIG_PM_RUNTIME and thus the platform bus prevented driver's runtime PM
+callbacks to be invoked when only CONFIG_PM_SLEEP was used. We move them into
+CONFIG_PM to resolve the problem.
 
-Individual patches posted as a threaded reply to the pull request mail 
-would be nice - those are easy for other people to ignore, yet they 
-are informative to people who are interested in the series.
+Changes in v2:
+	Updated commit messages to try to better reflect the changes. 
+	Removed the below patches from this patch set. Let's leave those to be
+	addressed separately, if needed.
+	- PM / Sleep: Add pm_generic functions to re-use runtime PM callbacks
+	- drm/exynos: Convert to suspend_late/resume_early callbacks for fimc
 
-Thanks,
 
-	Ingo
+Ulf Hansson (3):
+  PM / Runtime: Add second macro for definition of runtime PM callbacks
+  PM / Runtime: Implement the pm_generic_runtime functions for
+    CONFIG_PM
+  PM / Sleep: Add macro to define common late/early system PM callbacks
+
+ drivers/base/power/generic_ops.c |    4 ++--
+ include/linux/pm.h               |   21 +++++++++++++++++++++
+ include/linux/pm_runtime.h       |   12 ++++++++----
+ 3 files changed, 31 insertions(+), 6 deletions(-)
+
+-- 
+1.7.9.5
+
