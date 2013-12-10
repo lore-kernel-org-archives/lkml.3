@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab3LJIeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:34:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58489 "EHLO
+	id S1754929Ab3LJIeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:34:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58537 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab3LJIAE (ORCPT
+	with ESMTP id S1752841Ab3LJIAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:04 -0500
+	Tue, 10 Dec 2013 03:00:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Kirby <sim@hostway.ca>, Ian Applegate <ia@cloudflare.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 17/52] vfs: fix subtle use-after-free of pipe_inode_info
-Date: Tue, 10 Dec 2013 00:00:50 -0800
-Message-Id: <20131210075955.417751046@linuxfoundation.org>
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 18/52] can: sja1000: fix {pre,post}_irq() handling and IRQ handler return value
+Date: Tue, 10 Dec 2013 00:00:51 -0800
+Message-Id: <20131210075955.485811266@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -28,133 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit b0d8d2292160bb63de1972361ebed100c64b5b37 upstream.
+commit 2fea6cd303c0d0cd9067da31d873b6a6d5bd75e7 upstream.
 
-The pipe code was trying (and failing) to be very careful about freeing
-the pipe info only after the last access, with a pattern like:
+This patch fixes the issue that the sja1000_interrupt() function may have
+returned IRQ_NONE without processing the optional pre_irq() and post_irq()
+function before. Further the irq processing counter 'n' is moved to the end of
+the while statement to return correct IRQ_[NONE|HANDLED] values at error
+conditions.
 
-        spin_lock(&inode->i_lock);
-        if (!--pipe->files) {
-                inode->i_pipe = NULL;
-                kill = 1;
-        }
-        spin_unlock(&inode->i_lock);
-        __pipe_unlock(pipe);
-        if (kill)
-                free_pipe_info(pipe);
-
-where the final freeing is done last.
-
-HOWEVER.  The above is actually broken, because while the freeing is
-done at the end, if we have two racing processes releasing the pipe
-inode info, the one that *doesn't* free it will decrement the ->files
-count, and unlock the inode i_lock, but then still use the
-"pipe_inode_info" afterwards when it does the "__pipe_unlock(pipe)".
-
-This is *very* hard to trigger in practice, since the race window is
-very small, and adding debug options seems to just hide it by slowing
-things down.
-
-Simon originally reported this way back in July as an Oops in
-kmem_cache_allocate due to a single bit corruption (due to the final
-"spin_unlock(pipe->mutex.wait_lock)" incrementing a field in a different
-allocation that had re-used the free'd pipe-info), it's taken this long
-to figure out.
-
-Since the 'pipe->files' accesses aren't even protected by the pipe lock
-(we very much use the inode lock for that), the simple solution is to
-just drop the pipe lock early.  And since there were two users of this
-pattern, create a helper function for it.
-
-Introduced commit ba5bb147330a ("pipe: take allocation and freeing of
-pipe_inode_info out of ->i_mutex").
-
-Reported-by: Simon Kirby <sim@hostway.ca>
-Reported-by: Ian Applegate <ia@cloudflare.com>
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Wolfgang Grandegger <wg@grandegger.com>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/pipe.c |   39 +++++++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 20 deletions(-)
+ drivers/net/can/sja1000/sja1000.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -726,11 +726,25 @@ pipe_poll(struct file *filp, poll_table
- 	return mask;
- }
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -494,20 +494,20 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 	uint8_t isrc, status;
+ 	int n = 0;
  
-+static void put_pipe_info(struct inode *inode, struct pipe_inode_info *pipe)
-+{
-+	int kill = 0;
-+
-+	spin_lock(&inode->i_lock);
-+	if (!--pipe->files) {
-+		inode->i_pipe = NULL;
-+		kill = 1;
-+	}
-+	spin_unlock(&inode->i_lock);
-+
-+	if (kill)
-+		free_pipe_info(pipe);
-+}
-+
- static int
- pipe_release(struct inode *inode, struct file *file)
- {
--	struct pipe_inode_info *pipe = inode->i_pipe;
--	int kill = 0;
-+	struct pipe_inode_info *pipe = file->private_data;
- 
- 	__pipe_lock(pipe);
- 	if (file->f_mode & FMODE_READ)
-@@ -743,17 +757,9 @@ pipe_release(struct inode *inode, struct
- 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
- 		kill_fasync(&pipe->fasync_writers, SIGIO, POLL_OUT);
- 	}
--	spin_lock(&inode->i_lock);
--	if (!--pipe->files) {
--		inode->i_pipe = NULL;
--		kill = 1;
--	}
--	spin_unlock(&inode->i_lock);
- 	__pipe_unlock(pipe);
- 
--	if (kill)
--		free_pipe_info(pipe);
+-	/* Shared interrupts and IRQ off? */
+-	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
+-		return IRQ_NONE;
 -
-+	put_pipe_info(inode, pipe);
- 	return 0;
- }
+ 	if (priv->pre_irq)
+ 		priv->pre_irq(priv);
  
-@@ -1014,7 +1020,6 @@ static int fifo_open(struct inode *inode
- {
- 	struct pipe_inode_info *pipe;
- 	bool is_pipe = inode->i_sb->s_magic == PIPEFS_MAGIC;
--	int kill = 0;
- 	int ret;
- 
- 	filp->f_version = 0;
-@@ -1130,15 +1135,9 @@ err_wr:
- 	goto err;
- 
- err:
--	spin_lock(&inode->i_lock);
--	if (!--pipe->files) {
--		inode->i_pipe = NULL;
--		kill = 1;
--	}
--	spin_unlock(&inode->i_lock);
- 	__pipe_unlock(pipe);
--	if (kill)
--		free_pipe_info(pipe);
++	/* Shared interrupts and IRQ off? */
++	if (priv->read_reg(priv, SJA1000_IER) == IRQ_OFF)
++		goto out;
 +
-+	put_pipe_info(inode, pipe);
- 	return ret;
- }
+ 	while ((isrc = priv->read_reg(priv, SJA1000_IR)) &&
+ 	       (n < SJA1000_MAX_IRQ)) {
+-		n++;
++
+ 		status = priv->read_reg(priv, SJA1000_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+-			return IRQ_NONE;
++			goto out;
+ 
+ 		if (isrc & IRQ_WUI)
+ 			netdev_warn(dev, "wakeup interrupt\n");
+@@ -535,7 +535,7 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 				status = priv->read_reg(priv, SJA1000_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+-					return IRQ_NONE;
++					goto out;
+ 			}
+ 		}
+ 		if (isrc & (IRQ_DOI | IRQ_EI | IRQ_BEI | IRQ_EPI | IRQ_ALI)) {
+@@ -543,8 +543,9 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 			if (sja1000_err(dev, isrc, status))
+ 				break;
+ 		}
++		n++;
+ 	}
+-
++out:
+ 	if (priv->post_irq)
+ 		priv->post_irq(priv);
  
 
 
