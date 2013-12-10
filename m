@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab3LJLaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:30:17 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:33431 "EHLO mailhub1.si.c-s.fr"
+	id S1752775Ab3LJLac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:30:32 -0500
+Received: from oker.escape.de ([194.120.234.254]:54140 "EHLO oker.escape.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab3LJLaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:30:13 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2] powerpc 8xx: Loading kernels over 8Mbytes without CONFIG_PIN_TLB
-Message-Id: <20131210112945.E4E311A2BF3@localhost.localdomain>
-Date: Tue, 10 Dec 2013 12:29:45 +0100 (CET)
+	id S1751805Ab3LJLaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 06:30:14 -0500
+Date: Tue, 10 Dec 2013 12:22:57 +0100
+From: Jochen Striepe <jochen@tolot.escape.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
+Message-ID: <20131210112257.GJ2208@pompeji.miese-zwerge.org>
+References: <20130813103202.GB2338@pompeji.miese-zwerge.org>
+ <20130818180232.GL29406@linux.vnet.ibm.com>
+ <20130818184848.GA2398@pompeji.miese-zwerge.org>
+ <20130909215836.GD17483@pompeji.miese-zwerge.org>
+ <20130909222751.GL3966@linux.vnet.ibm.com>
+ <20130914112834.GM1509@pompeji.miese-zwerge.org>
+ <20130923164931.GC2322@pompeji.miese-zwerge.org>
+ <20131206002614.GD15492@linux.vnet.ibm.com>
+ <20131206135804.GI2208@pompeji.miese-zwerge.org>
+ <20131206145441.GA24148@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131206145441.GA24148@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today, the only way to load kernels whose size is greater than 8Mbytes is to
-activate CONFIG_PIN_TLB. Otherwise, the physical memory initially mapped is
-limited to 8Mbytes. This patch adds the capability to select the size of initial
-memory between 8/16/24 Mbytes and this is regardless of whether CONFIG_PIN_TLB
-is active or not. It allows to load "big" kernels (for instance when activating
-CONFIG_LOCKDEP_SUPPORT) without having to activate CONFIG_PIN_TLB.
+	Hi again,
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+On Fri, Dec 06, 2013 at 06:54:41AM -0800, Paul E. McKenney wrote:
+> On Fri, Dec 06, 2013 at 02:58:04PM +0100, Jochen Striepe wrote:
+> > On Thu, Dec 05, 2013 at 04:26:14PM -0800, Paul E. McKenney wrote:
+> > > Hmmm...  Does the following patch help?
+> > [...]
+> > > rcu: Kick CPU halfway to RCU CPU stall warning
+> > 
+> > The stall didn't appear at all since my last email, running 3.12.x
+> > kernels since release. But I will test your patch later today. I assume
+> > applying on top of 3.12.3 is correct?
+> 
+> 3.12.3 should take that patch just fine.
 
-diff -ur a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -980,6 +980,29 @@
- config PIN_TLB
- 	bool "Pinned Kernel TLBs (860 ONLY)"
- 	depends on ADVANCED_OPTIONS && 8xx
-+
-+choice
-+	prompt "Initial Data Memory Mapped on 8xx"
-+	default 8xx_MAP_8M
-+	depends on ADVANCED_OPTIONS && 8xx
-+
-+config	8xx_INIT_MAP_8M
-+	bool "8 Mbytes"
-+
-+config	8xx_INIT_MAP_16M
-+	bool "16 Mbytes"
-+
-+config	8xx_INIT_MAP_24M
-+	bool "24 Mbytes"
-+
-+endchoice
-+
-+config 8xx_INIT_MAP
-+	hex
-+	default 0x01800000 if 8xx_INIT_MAP_24M
-+	default 0x01000000 if 8xx_INIT_MAP_16M
-+	default 0x00800000
-+
- endmenu
- 
- if PPC64
-diff -ur a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -841,11 +841,13 @@
- 	ori	r8, r8, MI_BOOTINIT|0x2 /* Inhibit cache -- Cort */
- 	mtspr	SPRN_MD_RPN, r8
- 
--#ifdef CONFIG_PIN_TLB
-+#if defined (CONFIG_8xx_INIT_MAP_16M) || defined (CONFIG_8xx_INIT_MAP_24M)
- 	/* Map two more 8M kernel data pages.
- 	*/
-+#ifdef CONFIG_PIN_TLB
- 	addi	r10, r10, 0x0100
- 	mtspr	SPRN_MD_CTR, r10
-+#endif
- 
- 	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
- 	addis	r8, r8, 0x0080		/* Add 8M */
-@@ -858,15 +860,19 @@
- 	addis	r11, r11, 0x0080	/* Add 8M */
- 	mtspr	SPRN_MD_RPN, r11
- 
-+#ifdef CONFIG_8xx_INIT_MAP_24M
-+#ifdef CONFIG_PIN_TLB
- 	addi	r10, r10, 0x0100
- 	mtspr	SPRN_MD_CTR, r10
-+#endif
- 
- 	addis	r8, r8, 0x0080		/* Add 8M */
- 	mtspr	SPRN_MD_EPN, r8
- 	mtspr	SPRN_MD_TWC, r9
- 	addis	r11, r11, 0x0080	/* Add 8M */
- 	mtspr	SPRN_MD_RPN, r11
--#endif
-+#endif /* CONFIG_8xx_INIT_MAP_24M */
-+#endif /* CONFIG_8xx_INIT_MAP_16M || CONFIG_8xx_INIT_MAP_24M */
- 
- 	/* Since the cache is enabled according to the information we
- 	 * just loaded into the TLB, invalidate and enable the caches here.
-diff -ur a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
---- a/arch/powerpc/mm/init_32.c
-+++ b/arch/powerpc/mm/init_32.c
-@@ -213,12 +213,8 @@
- 	 */
- 	BUG_ON(first_memblock_base != 0);
- 
--#ifdef CONFIG_PIN_TLB
- 	/* 8xx can only access 24MB at the moment */
--	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01800000));
--#else
--	/* 8xx can only access 8MB at the moment */
--	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
--#endif
-+	memblock_set_current_limit(min_t(u64, first_memblock_size,
-+		CONFIG_8xx_INIT_MAP));
- }
- #endif /* CONFIG_8xx */
+Sorry for the delay. On my copy of 3.12.3, the patch does not apply.
+kernel/rcu/ does not exist, and the patch did not apply cleanly on
+kernel/rcutree.c: record_gp_stall_check_time() is a little different
+from what your patch expects, and I'm not that much into rcu work as
+to understand the implications. :)
+
+If you want me to go back to 3.12.0 I can do so, but as the issue
+does not reproduce very well I doubt that would help very much.
+Ideas? Is there a version of the patch for -stable, or does the
+patch conflict with the work done there?
+
+Best greetings,
+Jochen.
