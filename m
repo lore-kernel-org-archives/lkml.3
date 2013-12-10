@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3LJIBf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:01:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58835 "EHLO
+	id S1754977Ab3LJIT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:19:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58857 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3LJIBZ (ORCPT
+	with ESMTP id S1753466Ab3LJIBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:25 -0500
+	Tue, 10 Dec 2013 03:01:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.12 15/62] ARM: multi_v7_defconfig: enable SDHCI_BCM_KONA and MMC_BLOCK_MINORS=16
-Date: Tue, 10 Dec 2013 00:00:46 -0800
-Message-Id: <20131210080058.508990895@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 01/62] ALSA: hda - Fix silent output on ASUS W7J laptop
+Date: Tue, 10 Dec 2013 00:00:32 -0800
+Message-Id: <20131210080057.516929649@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,37 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f39918eec72c841037f16475867dac1a2b0bfc01 upstream.
+commit 6ddf0fd1c462a418a3cbb8b0653820dc48ffbd98 upstream.
 
-Enable MMC/SD on the Broadcom mobile platforms, and increase the block
-minors from the default 8 to 16 (since the Broadcom board by default
-has root on the 8th partition).
+The recent kernels got regressions on ASUS W7J with ALC660 codec where
+no sound comes out.  After a long debugging session, we found out that
+setting the pin control on the unused NID 0x10 is mandatory for the
+outputs.  And, it was found out that another magic of NID 0x0f that is
+required for other ASUS laptops isn't needed on this machine.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66081
+Reported-and-tested-by: Andrey Lipaev <lipaev@mail.ru>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/configs/multi_v7_defconfig |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_realtek.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -132,12 +132,14 @@ CONFIG_USB_GPIO_VBUS=y
- CONFIG_USB_ISP1301=y
- CONFIG_USB_MXS_PHY=y
- CONFIG_MMC=y
-+CONFIG_MMC_BLOCK_MINORS=16
- CONFIG_MMC_ARMMMCI=y
- CONFIG_MMC_SDHCI=y
- CONFIG_MMC_SDHCI_PLTFM=y
- CONFIG_MMC_SDHCI_ESDHC_IMX=y
- CONFIG_MMC_SDHCI_TEGRA=y
- CONFIG_MMC_SDHCI_SPEAR=y
-+CONFIG_MMC_SDHCI_BCM_KONA=y
- CONFIG_MMC_OMAP=y
- CONFIG_MMC_OMAP_HS=y
- CONFIG_EDAC=y
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4266,6 +4266,7 @@ enum {
+ 	ALC861_FIXUP_AMP_VREF_0F,
+ 	ALC861_FIXUP_NO_JACK_DETECT,
+ 	ALC861_FIXUP_ASUS_A6RP,
++	ALC660_FIXUP_ASUS_W7J,
+ };
+ 
+ /* On some laptops, VREF of pin 0x0f is abused for controlling the main amp */
+@@ -4315,10 +4316,21 @@ static const struct hda_fixup alc861_fix
+ 		.v.func = alc861_fixup_asus_amp_vref_0f,
+ 		.chained = true,
+ 		.chain_id = ALC861_FIXUP_NO_JACK_DETECT,
++	},
++	[ALC660_FIXUP_ASUS_W7J] = {
++		.type = HDA_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			/* ASUS W7J needs a magic pin setup on unused NID 0x10
++			 * for enabling outputs
++			 */
++			{0x10, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x24},
++			{ }
++		},
+ 	}
+ };
+ 
+ static const struct snd_pci_quirk alc861_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x1043, 0x1253, "ASUS W7J", ALC660_FIXUP_ASUS_W7J),
+ 	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", ALC861_FIXUP_ASUS_A6RP),
+ 	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", ALC861_FIXUP_AMP_VREF_0F),
+ 	SND_PCI_QUIRK(0x1462, 0x7254, "HP DX2200", ALC861_FIXUP_NO_JACK_DETECT),
 
 
