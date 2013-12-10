@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab3LJLsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:48:06 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:37583 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab3LJLsC (ORCPT
+	id S1753001Ab3LJLsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:48:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:46590 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab3LJLsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:48:02 -0500
-Date: Tue, 10 Dec 2013 12:47:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-Message-ID: <20131210114757.GC29875@gmail.com>
-References: <1386617830-18926-1-git-send-email-acme@infradead.org>
- <20131210111229.GB26659@gmail.com>
- <20131210114421.GI8098@ghostprotocols.net>
+	Tue, 10 Dec 2013 06:48:38 -0500
+Date: Tue, 10 Dec 2013 12:48:25 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Redpath <chris.redpath@arm.com>
+Cc: pjt@google.com, mingo@redhat.com, alex.shi@linaro.org,
+        morten.rasmussen@arm.com, dietmar.eggemann@arm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] sched: update runqueue clock before migrations away
+Message-ID: <20131210114825.GF12849@twins.programming.kicks-ass.net>
+References: <1386593950-26475-1-git-send-email-chris.redpath@arm.com>
+ <1386593950-26475-3-git-send-email-chris.redpath@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131210114421.GI8098@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386593950-26475-3-git-send-email-chris.redpath@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-
-> Em Tue, Dec 10, 2013 at 12:12:29PM +0100, Ingo Molnar escreveu:
-> > 
-> > Hm, I've unpulled it because 'perf top' crashes on exit, in 
-> > dso__delete():
+On Mon, Dec 09, 2013 at 12:59:10PM +0000, Chris Redpath wrote:
+> If we migrate a sleeping task away from a CPU which has the
+> tick stopped, then both the clock_task and decay_counter will
+> be out of date for that CPU and we will not decay load correctly
+> regardless of how often we update the blocked load.
 > 
-> 495		if (dso->sname_alloc)
-> 496			free((char *)dso->short_name)
+> This is only an issue for tasks which are not on a runqueue
+> (because otherwise that CPU would be awake) and simultaneously
+> the CPU the task previously ran on has had the tick stopped.
 
-Btw., instead of trusting flags I'd argue that using the pointer as a 
-flag and clearing the pointer too is a much more robust freeing 
-pattern in general:
+OK, so the idiot in a hurry (me) isn't quite getting the issue.
 
-		if (dso->short_name) {
-			free(dso->short_name);
-			dso->short_name = NULL;
-		}
+Normally we update the blocked averages from the tick; clearly when no
+tick, no update. So far so good.
 
-or so ...
+Now, we also update blocked load from idle balance -- which would
+include the CPUs without tick through nohz_idle_balance() -- however
+this only appears to be done for CONFIG_FAIR_GROUP_SCHED.
 
-Thanks,
+Are you running without cgroup muck? If so should we make this
+unconditional?
 
-	Ingo
+If you have cgroup muck enabled; what's the problem? Don't we run
+nohz_idle_balance() frequently enough to be effective for updating the
+blocked load?
+
+You also seem to have overlooked NO_HZ_FULL, that can stop a tick even
+when there's a running task and makes the situation even more fun.
+
+> @@ -4343,6 +4344,25 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+>  	 * be negative here since on-rq tasks have decay-count == 0.
+>  	 */
+>  	if (se->avg.decay_count) {
+> +		/*
+> +		 * If we migrate a sleeping task away from a CPU
+> +		 * which has the tick stopped, then both the clock_task
+> +		 * and decay_counter will be out of date for that CPU
+> +		 * and we will not decay load correctly.
+> +		 */
+> +		if (!se->on_rq && nohz_test_cpu(task_cpu(p))) {
+> +			struct rq *rq = cpu_rq(task_cpu(p));
+> +			unsigned long flags;
+> +			/*
+> +			 * Current CPU cannot be holding rq->lock in this
+> +			 * circumstance, but another might be. We must hold
+> +			 * rq->lock before we go poking around in its clocks
+> +			 */
+> +			raw_spin_lock_irqsave(&rq->lock, flags);
+> +			update_rq_clock(rq);
+> +			update_cfs_rq_blocked_load(cfs_rq, 0);
+> +			raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +		}
+>  		se->avg.decay_count = -__synchronize_entity_decay(se);
+>  		atomic_long_add(se->avg.load_avg_contrib,
+>  						&cfs_rq->removed_load);
+
+Right, as Ben already said; taking a rq->lock there is unfortunate at
+best.
+
+So normally we 'throttle' the expense of decaying the blocked load to
+ticks. But the above does it on every (suitable) task migration which
+might be far more often.
+
+So ideally we'd get it all sorted through the nohz_idle_balance() path;
+what exactly are the problems with that?
