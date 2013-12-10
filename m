@@ -1,140 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab3LJS2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 13:28:08 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:58979 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab3LJS2F (ORCPT
+	id S1755737Ab3LJS24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 13:28:56 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:58796 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab3LJS2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 13:28:05 -0500
-Date: Tue, 10 Dec 2013 19:28:00 +0100
+	Tue, 10 Dec 2013 13:28:50 -0500
+Date: Tue, 10 Dec 2013 19:28:47 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, Oleg Nesterov <oleg@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH tip/core/locking 4/4] Documentation/memory-barriers.txt:
- Document ACCESS_ONCE()
-Message-ID: <20131210182800.GA20770@gmail.com>
-References: <20131204224628.GA30159@linux.vnet.ibm.com>
- <1386197219-31964-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1386197219-31964-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20131205132101.45c56f93@lwn.net>
- <20131205214406.GY15492@linux.vnet.ibm.com>
- <20131210152006.GD873@gmail.com>
- <20131210174400.GW4208@linux.vnet.ibm.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        dvhart@linux.intel.com, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
+        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
+        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
+Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
+Message-ID: <20131210182847.GB20770@gmail.com>
+References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
+ <1386063927-6545-5-git-send-email-davidlohr@hp.com>
+ <alpine.DEB.2.02.1312061924390.30673@ionos.tec.linutronix.de>
+ <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
+ <20131210153629.GA1397@gmail.com>
+ <1386692253.2731.5.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131210174400.GW4208@linux.vnet.ibm.com>
+In-Reply-To: <1386692253.2731.5.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-> > +for barrier() that affects only the specific accesses flagged by the
-> > +ACCESS_ONCE().
+> On Tue, 2013-12-10 at 16:36 +0100, Ingo Molnar wrote:
+> > * Davidlohr Bueso <davidlohr@hp.com> wrote:
 > > 
-> > Does not seem to be obvious enough to me - does it affect accesses 
-> > to the variables referenced (but still allows accesses to separate 
-> > variables reordered), or does it affect compiler-ordering of all 
-> > ACCESS_ONCE() instances, instructing the compiler to preserve 
-> > program order?
+> > > On Fri, 2013-12-06 at 19:26 +0100, Thomas Gleixner wrote:
+> > > > On Tue, 3 Dec 2013, Davidlohr Bueso wrote:
+> > > > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> > > > > Signed-off-by: Jason Low <jason.low2@hp.com>
+> > > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > > > 
+> > > > Who is the author of this? According to the SOB chains its Waiman, who
+> > > > handed it down to Jason and it finally got sumbitted by you. Is that
+> > > > correct?
+> > > 
+> > > This was a group effort for the original patchset -- things did change
+> > > quite a bit for this particular patch in v2. Waiman and Jason helped
+> > > review and test the original atomic ops code.
+> > 
+> > Then please put that into the credits (in the changelog and/or in the 
+> > source code), and/or into copyright notices, etc. - but keep the 
+> > SOB-chain the true route of the patch, where the primary author is the 
+> > first in the SOB and where the person sending the patch is the last 
+> > SOB. (the two are identical normally.)
 > 
-> I cover this in the bullet item about reordering memory accesses:
-> 
->  (*) The compiler is within its rights to reorder memory accesses unless
->      you tell it not to.  For example, consider the following interaction
->      between process-level code and an interrupt handler:
-> 
-> 	void process_level(void)
-> 	{
-> 		msg = get_message();
-> 		flag = true;
-> 	}
-> 
-> 	void interrupt_handler(void)
-> 	{
-> 		if (flag)
-> 			process_message(msg);
-> 	}
-> 
->      There is nothing to prevent the the compiler from transforming
->      process_level() to the following, in fact, this might well be a
->      win for single-threaded code:
-> 
-> 	void process_level(void)
-> 	{
-> 		flag = true;
-> 		msg = get_message();
-> 	}
-> 
->      If the interrupt occurs between these two statement, then
->      interrupt_handler() might be passed a garbled msg.  Use ACCESS_ONCE()
->      to prevent this as follows:
-> 
-> 	void process_level(void)
-> 	{
-> 		ACCESS_ONCE(msg) = get_message();
-> 		ACCESS_ONCE(flag) = true;
-> 	}
-> 
-> 	void interrupt_handler(void)
-> 	{
-> 		if (ACCESS_ONCE(flag))
-> 			process_message(ACCESS_ONCE(msg));
-> 	}
-> 
->      Note that the ACCESS_ONCE() wrappers in interrupt_handler()
->      are needed if this interrupt handler can itself be interrupted
->      by something that also accesses 'flag' and 'msg', for example,
->      a nested interrupt or an NMI.  Otherwise, ACCESS_ONCE() is not
->      needed in interrupt_handler() other than for documentation purposes.
->      (Note also that nested interrupts do not typically occur in modern
->      Linux kernels, in fact, if an interrupt handler returns with
->      interrupts enabled, you will get a WARN_ONCE() splat.)
-> 
->      This effect could also be achieved using barrier(), but ACCESS_ONCE()
->      is more selective:  With ACCESS_ONCE(), the compiler need only forget
->      the contents of the indicated memory located, while with barrier()
->      the compiler must discard the value of all memory locations that
->      it has currented cached in any machine registers.
-> 
-> Does that cover it?
+> Ok, I wasn't aware of that primary author rule, sorry. The exact 
+> same thing would go for patch 2 then. Is this something you want me 
+> to correct for this particular series, or to keep in mind for the 
+> future?
 
-btw.:
-
-  s/indicated memory located/
-    indicated memory location
-
-?
-
-So, what I don't see this statement cover (and I might be dense about 
-it!) is whether two ACCESS_ONCE() macros referring to different 
-variables are allowed to be reordered with each other.
-
-If the compiler reorders:
-
-	ACCESS_ONCE(x);
-	ACCESS_ONCE(y);
-
-to:
-
-	ACCESS_ONCE(y);
-	ACCESS_ONCE(x);
-
-then AFAICS it still meets the "compiler need only forget the contents 
-of the indicated memory located" requirement that you listed, right?
-
-[ I have a good excuse for asking this: after a long day my IQ dropped 
-  by 50 points and all that! :-) ]
+Would be nice to fix it, the SOB chain is important for fine print 
+reasons.
 
 Thanks,
 
