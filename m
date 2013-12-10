@@ -1,140 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab3LJXgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:36:54 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:37294 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776Ab3LJXgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:36:50 -0500
-Message-ID: <52A7A58F.8090705@c-s.fr>
-Date: Wed, 11 Dec 2013 00:36:47 +0100
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2] powerpc 8xx: Loading kernels over 8Mbytes without
- CONFIG_PIN_TLB
-References: <20131210112945.E4E311A2BF3@localhost.localdomain>	 <1386714253.10013.123.camel@snotra.buserror.net> <52A79E31.9070304@c-s.fr> <1386717537.10013.150.camel@snotra.buserror.net>
-In-Reply-To: <1386717537.10013.150.camel@snotra.buserror.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751866Ab3LJXh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:37:27 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37869 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3LJXf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:35:28 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3/8] regmap: Add support for using regmap over ssbi
+Date: Tue, 10 Dec 2013 15:35:18 -0800
+Message-Id: <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.1.109.g3d252a9
+In-Reply-To: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
+References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Srinivas Ramana <sramana@codeaurora.org>
 
-Le 11/12/2013 00:18, Scott Wood a écrit :
-> On Wed, 2013-12-11 at 00:05 +0100, leroy christophe wrote:
->> Le 10/12/2013 23:24, Scott Wood a écrit :
->>> On Tue, 2013-12-10 at 12:29 +0100, Christophe Leroy wrote:
->>>> Today, the only way to load kernels whose size is greater than 8Mbytes is to
->>>> activate CONFIG_PIN_TLB. Otherwise, the physical memory initially mapped is
->>>> limited to 8Mbytes. This patch adds the capability to select the size of initial
->>>> memory between 8/16/24 Mbytes and this is regardless of whether CONFIG_PIN_TLB
->>>> is active or not. It allows to load "big" kernels (for instance when activating
->>>> CONFIG_LOCKDEP_SUPPORT) without having to activate CONFIG_PIN_TLB.
->>>>
->>>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
->>>>
->>>> diff -ur a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
->>>> --- a/arch/powerpc/Kconfig
->>>> +++ b/arch/powerpc/Kconfig
->>>> @@ -980,6 +980,29 @@
->>>>    config PIN_TLB
->>>>    	bool "Pinned Kernel TLBs (860 ONLY)"
->>>>    	depends on ADVANCED_OPTIONS && 8xx
->>>> +
->>>> +choice
->>>> +	prompt "Initial Data Memory Mapped on 8xx"
->>>> +	default 8xx_MAP_8M
->>>> +	depends on ADVANCED_OPTIONS && 8xx
->>>> +
->>>> +config	8xx_INIT_MAP_8M
->>>> +	bool "8 Mbytes"
->>>> +
->>>> +config	8xx_INIT_MAP_16M
->>>> +	bool "16 Mbytes"
->>>> +
->>>> +config	8xx_INIT_MAP_24M
->>>> +	bool "24 Mbytes"
->>> Are you working with a loader that passes initial-mapped-area size in r7
->>> as per ePAPR?  If so, we could rely on that at runtime.  If you're using
->>> a non-ancient U-Boot, it should qualify here even if it's not fully
->>> ePAPR compliant (it passes the value of the bootm_mapsize variable in
->>> r7).
->> Ok, let me check that. But it means that the size of the kernel I can
->> boot will depend on the initial memory mapped by uboot ? Isn't it
->> limitating ?
-> The ePAPR IMA is supposed to be large enough to include the OS image,
-> device tree, etc.
->
->> Even if uboot only maps 8Mbytes, why couldn't I be allowed to boot a
->> kernel having 10 Mbytes data if I have 32 Mbytes mem on the board ?
->> I don't like the idea of having to change the bootloader just because I
->> want to activate CONFIG_LOCKDEP to debug my kernel.
-> Well, as noted, if you're using a non-ancient U-Boot you shouldn't have
-> to change anything because it already implements r7.  Now, the value of
-> r7 it passes might be a lie as far as ePAPR is concerned, since it's
-> supposed to represent what's actually mapped, but that's another matter.
->
-> Even fixing that wouldn't mean you have to change U-Boot every time the
-> kernel size changes; you'd just set it to something reasonable and be
-> done with it.  I'm not fond of adding kconfigs to hack around a problem
-> that has already been addressed in the standard that governs the PPC
-> boot process that U-Boot claims to implement.
-Well, ok, that makes sense. I'll investigate around that solution.
->
->>>> -#ifdef CONFIG_PIN_TLB
->>>> +#if defined (CONFIG_8xx_INIT_MAP_16M) || defined (CONFIG_8xx_INIT_MAP_24M)
->>>>    	/* Map two more 8M kernel data pages.
->>>>    	*/
->>>> +#ifdef CONFIG_PIN_TLB
->>>>    	addi	r10, r10, 0x0100
->>>>    	mtspr	SPRN_MD_CTR, r10
->>>> +#endif
->>>>    
->>>>    	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
->>>>    	addis	r8, r8, 0x0080		/* Add 8M */
->>>> @@ -858,15 +860,19 @@
->>>>    	addis	r11, r11, 0x0080	/* Add 8M */
->>>>    	mtspr	SPRN_MD_RPN, r11
->>>>    
->>>> +#ifdef CONFIG_8xx_INIT_MAP_24M
->>>> +#ifdef CONFIG_PIN_TLB
->>>>    	addi	r10, r10, 0x0100
->>>>    	mtspr	SPRN_MD_CTR, r10
->>>> +#endif
->>> Are these ifdefs for CONFIG_PIN_TLB really needed?  It shouldn't harm
->>> anything to use those entries even if they're not being pinned.
->> I'm not sure I understand your comment.
->> ifdef for CONFIG_PIN_TLB was already there before, but was enclosing the
->> whole block, so 24 Mbytes were automatically mapped when you selected
->> CONFIG_PIN_TLB and only 8 Mbytes were mapped when you didn't select
->> CONFIG_PIN_TLB.
->> I reduced the scope of those ifdefs so that they now apply on the
->> pinning only.
-> There wasn't previously an ifdef specifically around the setting of
-> SPRN_MD_CTR.  That's new.  There was an ifdef around the entire block,
-> which has gone away because you are now trying to map more than 8M
-> regardless of CONFIG_PIN_TLB, but that has nothing to do with whether
-> there should be an ifdef around SPRN_MD_CTR.
->
->
-Euh, ok, but then we have to fix it in the whole function, not only in 
-this block. Do you think it is worth doing it ?
-Then we are back to the problem we discussed some months ago which is 
-that the 8xx is decrementing the MD_CTR after writting a TLB entry, and 
-if pinning is activated it decrements it out of the pinnable area. So it 
-would still be needed to:
-* Reposition it for each entry for when the pinning is activated
-* Make sure we set it out of the area at the end when the pinning is not 
-active hence the area not protected.
-* Then we should probably reverse the entries, start at 31 and go down 
-to 28 instead of going from 28 to 31 as do today.
-But is it worth doing such a big change which will not add anything 
-functionnaly speaking ?
+This patch will add support for using regmap API over SSBI.
+Many of the Qualcomm PMIC chips(ex: PM8038, 8921) uses SSBI interface.
+This patch adds only regmap-ssbi suport. Individual PMIC drivers will
+need to register with their config to use the regmap API.
+regmap-ssbi uses the SSBI driver interface.
 
-Christophe
+Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Srinivas Ramana <sramana@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/base/regmap/Kconfig       |   5 +-
+ drivers/base/regmap/Makefile      |   1 +
+ drivers/base/regmap/regmap-ssbi.c | 103 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h            |   4 ++
+ 4 files changed, 112 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/base/regmap/regmap-ssbi.c
+
+diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+index 4251570..fd0e264 100644
+--- a/drivers/base/regmap/Kconfig
++++ b/drivers/base/regmap/Kconfig
+@@ -3,7 +3,7 @@
+ # subsystems should select the appropriate symbols.
+ 
+ config REGMAP
+-	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ)
++	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ || REGMAP_SSBI)
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	select IRQ_DOMAIN if REGMAP_IRQ
+@@ -23,3 +23,6 @@ config REGMAP_MMIO
+ 
+ config REGMAP_IRQ
+ 	bool
++
++config REGMAP_SSBI
++	tristate
+diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
+index a7c670b..3f53763 100644
+--- a/drivers/base/regmap/Makefile
++++ b/drivers/base/regmap/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
+ obj-$(CONFIG_REGMAP_SPMI) += regmap-spmi.o
+ obj-$(CONFIG_REGMAP_MMIO) += regmap-mmio.o
+ obj-$(CONFIG_REGMAP_IRQ) += regmap-irq.o
++obj-$(CONFIG_REGMAP_SSBI) += regmap-ssbi.o
+diff --git a/drivers/base/regmap/regmap-ssbi.c b/drivers/base/regmap/regmap-ssbi.c
+new file mode 100644
+index 0000000..71bce4d
+--- /dev/null
++++ b/drivers/base/regmap/regmap-ssbi.c
+@@ -0,0 +1,103 @@
++/*
++ * Register map access API - SSBI support
++ *
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/device.h>
++#include <linux/regmap.h>
++#include <linux/module.h>
++#include <linux/ssbi.h>
++
++static int regmap_ssbi_read(void *context,
++			    const void *reg, size_t reg_size,
++			    void *val, size_t val_size)
++{
++	int ret;
++
++	BUG_ON(reg_size != 2);
++
++	while (val_size) {
++		ret = ssbi_read(context, *(u16 *)reg, val, 1);
++		if (ret)
++			return ret;
++		reg += sizeof(u16);
++		val += sizeof(u8);
++		val_size -= sizeof(u8);
++	}
++
++	return 0;
++}
++
++static int regmap_ssbi_gather_write(void *context,
++				   const void *reg, size_t reg_size,
++				   const void *val, size_t val_size)
++{
++	int ret;
++
++	BUG_ON(reg_size != 2);
++
++	while (val_size) {
++		ret = ssbi_write(context, *(u16 *)reg, val, 1);
++		if (ret)
++			return ret;
++		reg += sizeof(u16);
++		val += sizeof(u8);
++		val_size -= sizeof(u8);
++	}
++
++	return 0;
++}
++
++static int regmap_ssbi_write(void *context, const void *data, size_t count)
++{
++	BUG_ON(count < 2);
++	return regmap_ssbi_gather_write(context, data, 2, data + 2, count - 2);
++}
++
++static const struct regmap_bus regmap_ssbi = {
++	.read				= regmap_ssbi_read,
++	.write				= regmap_ssbi_write,
++	.gather_write			= regmap_ssbi_gather_write,
++	.reg_format_endian_default	= REGMAP_ENDIAN_NATIVE,
++	.val_format_endian_default	= REGMAP_ENDIAN_NATIVE,
++};
++
++/**
++ * regmap_init_ssbi(): Initialise register map
++ *
++ * @dev: Device that will be interacted with
++ * @config: Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer to
++ * a struct regmap.
++ */
++struct regmap *regmap_init_ssbi(struct device *dev,
++			       const struct regmap_config *config)
++{
++	return regmap_init(dev, &regmap_ssbi, dev->parent, config);
++}
++EXPORT_SYMBOL_GPL(regmap_init_ssbi);
++
++/**
++ * devm_regmap_init_ssbi(): Initialise managed register map
++ *
++ * @dev: Device that will be interacted with
++ * @config: Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer
++ * to a struct regmap.  The regmap will be automatically freed by the
++ * device management code.
++ */
++struct regmap *devm_regmap_init_ssbi(struct device *dev,
++				    const struct regmap_config *config)
++{
++	return devm_regmap_init(dev, &regmap_ssbi, dev->parent, config);
++}
++EXPORT_SYMBOL_GPL(devm_regmap_init_ssbi);
++
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index e559078..528ee99 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -326,6 +326,8 @@ struct regmap *regmap_init_spmi(struct spmi_device *dev,
+ struct regmap *regmap_init_mmio_clk(struct device *dev, const char *clk_id,
+ 				    void __iomem *regs,
+ 				    const struct regmap_config *config);
++struct regmap *regmap_init_ssbi(struct device *dev,
++				const struct regmap_config *config);
+ 
+ struct regmap *devm_regmap_init(struct device *dev,
+ 				const struct regmap_bus *bus,
+@@ -340,6 +342,8 @@ struct regmap *devm_regmap_init_spmi(struct spmi_device *dev,
+ struct regmap *devm_regmap_init_mmio_clk(struct device *dev, const char *clk_id,
+ 					 void __iomem *regs,
+ 					 const struct regmap_config *config);
++struct regmap *devm_regmap_init_ssbi(struct device *dev,
++					const struct regmap_config *config);
+ 
+ /**
+  * regmap_init_mmio(): Initialise register map
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
