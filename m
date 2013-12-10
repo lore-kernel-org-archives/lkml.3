@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab3LJBk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 20:40:59 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:43893 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab3LJBk5 (ORCPT
+	id S1751653Ab3LJBnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 20:43:04 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:45445 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab3LJBnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 20:40:57 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.38 with qID rBA1dqXb025283, This message is accepted by code: ctloc85258
-Message-ID: <52A670E4.5050501@realsil.com.cn>
-Date: Tue, 10 Dec 2013 09:39:48 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 9 Dec 2013 20:43:00 -0500
+Date: Mon, 9 Dec 2013 17:40:43 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/9] ARM: Initial support for Marvell Berlin SoCs
+Message-ID: <20131210014043.GA32701@quad.lixom.net>
+References: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Francis Moreau <francis.moro@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "Lee Jones" <lee.jones@linaro.org>, micky <micky_ching@realsil.com.cn>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-References: <20131117195358.GO27323@pd.tnic> <4523614.I5MBhorHFt@vostro.rjw.lan> <5292FF5D.1050304@gmail.com> <1821758.2MoNI3h1Mv@vostro.rjw.lan> <52985041.5050000@gmail.com> <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de> <5299FF38.7060203@gmail.com> <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de> <529D92D6.8050409@gmail.com> <20131209221721.GB8612@zurbaran>
-In-Reply-To: <20131209221721.GB8612@zurbaran>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.8]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386512047-874-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 06:17 AM, Samuel Ortiz wrote:
-> Hi Francis,
->
-> Adding Lee to the Cc list.
->
-> On Tue, Dec 03, 2013 at 09:14:14AM +0100, Francis Moreau wrote:
->> Now that you did the hard work, I hope driver's maintainer/developper
->> will care about this issue.
-> I applied Thomas' patch to mfd-fixes.
-> Thanks a lot to you and Thomas for that.
->
-> Cheers,
-> Samuel.
->
+Hi,
 
-Hi Samuel:
+On Sun, Dec 08, 2013 at 03:13:57PM +0100, Sebastian Hesselbarth wrote:
+> Hopefully last round of initial support patches for Marvell Berlin SoCs
+> before I can send the final PR for v3.14.
+> 
+> Compared to last version sent, this patch set has now a Reviewed-by from
+> Thomas Gleixner for the irqchip driver (Thanks for that!). Also, l2x0
+> compatibles can now be reordered alphabetically instead of by derivate
+> thanks to [1].
+> 
+> Marvell Docs have been updated to not mention Armada 1000 which has been
+> discontinued by Marvell and vanished from their website. The dtsi/dts file
+> have been renamed to vendor,name.dts[i], which is the preferred new naming
+> scheme.
+> 
+> Open issues are the never ending dw_apb_timers_of story, which I ignore
+> for now and hope they get in someday. Also, TWD SMP dependency and
+> early l2x0_of_init will be addressed at a later date. At the current
+> feature set of Berlin SoC, I don't see why the above issues should further
+> stall this patches.
+> 
+> I guess, all patches can go through ARM SoC tree, except Tauros3 patch
+> which I should submit to Russell's patch tracker?
 
-Add Micky to the list, who is responsible for maintaining this driver now.
+Yep, sounds good.
 
-We can't reproduce this issue with our platform, so it seems a little 
-difficult for us to catch the point. We have tested Thomas' patch, it's 
-OK with our platform. But we find it maybe not very complete.
-Micky will send his patch later, which is based on Thomas' patch.
+I took a cursory glance at the patchset and it looks sane to me. I didn't
+review in detail though.
 
-BR,
-Wei
+One open question: Why don't you just add this to mach-mvebu? I thought
+all modern Marvell platforms were going to converge on that eventually
+anyway, and it's easy to add it now that it's early and simple..
+
+Also, see below:
+
+> Sebastian Hesselbarth (9):
+>   irqchip: add DesignWare APB ICTL interrupt controller
+>   MAINTAINERS: add ARM Marvell Berlin SoC
+>   ARM: l2x0: add Marvell Tauros3 support
+>   ARM: add Marvell Berlin SoC familiy to Marvell doc
+>   ARM: add Marvell Berlin SoCs to multi_v7_defconfig
+>   ARM: add Marvell Berlin UART0 lowlevel debug
+>   ARM: add Armada 1500 and Sony NSZ-GS7 device tree files
+>   ARM: add Armada 1500-mini and Chromecast device tree files
+>   ARM: add initial support for Marvell Berlin SoCs
+> 
+>  Documentation/arm/Marvell/README                   |  24 +++
+>  Documentation/devicetree/bindings/arm/l2cc.txt     |  23 ++-
+>  .../devicetree/bindings/arm/marvell,berlin.txt     |  24 +++
+>  .../interrupt-controller/snps,dw-apb-ictl.txt      |  32 +++
+>  MAINTAINERS                                        |   6 +
+>  arch/arm/Kconfig                                   |   2 +
+>  arch/arm/Kconfig.debug                             |  10 +
+>  arch/arm/Makefile                                  |   1 +
+>  arch/arm/boot/dts/Makefile                         |   3 +
+>  arch/arm/boot/dts/google,chromecast.dts            |  29 +++
+>  arch/arm/boot/dts/marvell,berlin2.dtsi             | 227 +++++++++++++++++++++
+>  arch/arm/boot/dts/marvell,berlin2cd.dtsi           | 210 +++++++++++++++++++
+>  arch/arm/boot/dts/sony,nsz-gs7.dts                 |  29 +++
+
+We have had a long-standing standard of naming the dts files
+<family>-<board>.dts (or <soc_vendor>-<board>.dts).  Let's continue
+sticking to that since it helps keep the namespace somewhat segmented per
+platform in arch/arm/boot/dts.
 
 
-
+-Olof
