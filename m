@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3LJICA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:02:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58885 "EHLO
+	id S1753772Ab3LJICJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58920 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3LJIBq (ORCPT
+	with ESMTP id S1753595Ab3LJICB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:46 -0500
+	Tue, 10 Dec 2013 03:02:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.12 08/62] crypto: s390 - Fix aes-xts parameter corruption
-Date: Tue, 10 Dec 2013 00:00:39 -0800
-Message-Id: <20131210080058.038172939@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 3.12 37/62] NFSv4: Update list of irrecoverable errors on DELEGRETURN
+Date: Tue, 10 Dec 2013 00:01:08 -0800
+Message-Id: <20131210080100.047952024@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,98 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 9dda2769af4f3f3093434648c409bb351120d9e8 upstream.
+commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
 
-Some s390 crypto algorithms incorrectly use the crypto_tfm structure to
-store private data. As the tfm can be shared among multiple threads, this
-can result in data corruption.
+If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
+then there is no recovery possible. Just quit without returning an error.
 
-This patch fixes aes-xts by moving the xts and pcc parameter blocks from
-the tfm onto the stack (48 + 96 bytes).
+Also, note that the client must not assume that the NFSv4 lease has been
+renewed when it sees an error on DELEGRETURN.
 
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/crypto/aes_s390.c |   31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
+ fs/nfs/nfs4proc.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/s390/crypto/aes_s390.c
-+++ b/arch/s390/crypto/aes_s390.c
-@@ -55,8 +55,7 @@ struct pcc_param {
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4938,11 +4938,17 @@ static void nfs4_delegreturn_done(struct
  
- struct s390_xts_ctx {
- 	u8 key[32];
--	u8 xts_param[16];
--	struct pcc_param pcc;
-+	u8 pcc_key[32];
- 	long enc;
- 	long dec;
- 	int key_len;
-@@ -591,7 +590,7 @@ static int xts_aes_set_key(struct crypto
- 		xts_ctx->enc = KM_XTS_128_ENCRYPT;
- 		xts_ctx->dec = KM_XTS_128_DECRYPT;
- 		memcpy(xts_ctx->key + 16, in_key, 16);
--		memcpy(xts_ctx->pcc.key + 16, in_key + 16, 16);
-+		memcpy(xts_ctx->pcc_key + 16, in_key + 16, 16);
+ 	trace_nfs4_delegreturn_exit(&data->args, &data->res, task->tk_status);
+ 	switch (task->tk_status) {
+-	case -NFS4ERR_STALE_STATEID:
+-	case -NFS4ERR_EXPIRED:
+ 	case 0:
+ 		renew_lease(data->res.server, data->timestamp);
  		break;
- 	case 48:
- 		xts_ctx->enc = 0;
-@@ -602,7 +601,7 @@ static int xts_aes_set_key(struct crypto
- 		xts_ctx->enc = KM_XTS_256_ENCRYPT;
- 		xts_ctx->dec = KM_XTS_256_DECRYPT;
- 		memcpy(xts_ctx->key, in_key, 32);
--		memcpy(xts_ctx->pcc.key, in_key + 32, 32);
-+		memcpy(xts_ctx->pcc_key, in_key + 32, 32);
- 		break;
++	case -NFS4ERR_ADMIN_REVOKED:
++	case -NFS4ERR_DELEG_REVOKED:
++	case -NFS4ERR_BAD_STATEID:
++	case -NFS4ERR_OLD_STATEID:
++	case -NFS4ERR_STALE_STATEID:
++	case -NFS4ERR_EXPIRED:
++		task->tk_status = 0;
++		break;
  	default:
- 		*flags |= CRYPTO_TFM_RES_BAD_KEY_LEN;
-@@ -621,29 +620,33 @@ static int xts_aes_crypt(struct blkciphe
- 	unsigned int nbytes = walk->nbytes;
- 	unsigned int n;
- 	u8 *in, *out;
--	void *param;
-+	struct pcc_param pcc_param;
-+	struct {
-+		u8 key[32];
-+		u8 init[16];
-+	} xts_param;
- 
- 	if (!nbytes)
- 		goto out;
- 
--	memset(xts_ctx->pcc.block, 0, sizeof(xts_ctx->pcc.block));
--	memset(xts_ctx->pcc.bit, 0, sizeof(xts_ctx->pcc.bit));
--	memset(xts_ctx->pcc.xts, 0, sizeof(xts_ctx->pcc.xts));
--	memcpy(xts_ctx->pcc.tweak, walk->iv, sizeof(xts_ctx->pcc.tweak));
--	param = xts_ctx->pcc.key + offset;
--	ret = crypt_s390_pcc(func, param);
-+	memset(pcc_param.block, 0, sizeof(pcc_param.block));
-+	memset(pcc_param.bit, 0, sizeof(pcc_param.bit));
-+	memset(pcc_param.xts, 0, sizeof(pcc_param.xts));
-+	memcpy(pcc_param.tweak, walk->iv, sizeof(pcc_param.tweak));
-+	memcpy(pcc_param.key, xts_ctx->pcc_key, 32);
-+	ret = crypt_s390_pcc(func, &pcc_param.key[offset]);
- 	if (ret < 0)
- 		return -EIO;
- 
--	memcpy(xts_ctx->xts_param, xts_ctx->pcc.xts, 16);
--	param = xts_ctx->key + offset;
-+	memcpy(xts_param.key, xts_ctx->key, 32);
-+	memcpy(xts_param.init, pcc_param.xts, 16);
- 	do {
- 		/* only use complete blocks */
- 		n = nbytes & ~(AES_BLOCK_SIZE - 1);
- 		out = walk->dst.virt.addr;
- 		in = walk->src.virt.addr;
- 
--		ret = crypt_s390_km(func, param, out, in, n);
-+		ret = crypt_s390_km(func, &xts_param.key[offset], out, in, n);
- 		if (ret < 0 || ret != n)
- 			return -EIO;
- 
+ 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
+ 				-EAGAIN) {
 
 
