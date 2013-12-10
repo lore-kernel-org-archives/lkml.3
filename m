@@ -1,133 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab3LJL5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:57:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58900 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750740Ab3LJL5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:57:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
-   d="scan'208";a="422249440"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-CC: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
- DW_DMAC.
-Thread-Topic: [PATCH] dma: dw: Add suspend and resume handling for PCI mode
- DW_DMAC.
-Thread-Index: AQHO9Z7p9Jc6qxjFmEKtLOANDd+AQQ==
-Date: Tue, 10 Dec 2013 11:56:50 +0000
-Message-ID: <1386676582.1871.137.camel@smile>
-References: <1386684373-24753-1-git-send-email-chiau.ee.chew@intel.com>
-	 <20131210101025.GF29580@intel.com>
-In-Reply-To: <20131210101025.GF29580@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.173]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <07AAAC32D71EEB4B880C4DBEA2E2BC03@intel.com>
+	id S1752036Ab3LJMBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:01:53 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:44504 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab3LJMBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 07:01:52 -0500
+Date: Tue, 10 Dec 2013 09:01:43 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
+Message-ID: <20131210120143.GJ8098@ghostprotocols.net>
+References: <1386617830-18926-1-git-send-email-acme@infradead.org>
+ <20131210111229.GB26659@gmail.com>
+ <20131210114421.GI8098@ghostprotocols.net>
+ <20131210114757.GC29875@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210114757.GC29875@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBABvTue015112
 
-On Tue, 2013-12-10 at 15:40 +0530, Vinod Koul wrote:
-> On Tue, Dec 10, 2013 at 10:06:13PM +0800, Chew Chiau Ee wrote:
-> > From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> > 
-> > This is to disable/enable DW_DMAC hw during suspend/resume.
-> > 
-> > Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> > Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > ---
-> >  drivers/dma/dw/pci.c |   33 +++++++++++++++++++++++++++++++++
-> >  1 files changed, 33 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/dma/dw/pci.c b/drivers/dma/dw/pci.c
-> > index e89fc24..97bc3a2 100644
-> > --- a/drivers/dma/dw/pci.c
-> > +++ b/drivers/dma/dw/pci.c
-> > @@ -75,6 +75,36 @@ static void dw_pci_remove(struct pci_dev *pdev)
-> >  		dev_warn(&pdev->dev, "can't remove device properly: %d\n", ret);
-> >  }
-> >  
-> > +#ifdef CONFIG_PM_SLEEP
-> > +
-> > +static int dw_pci_suspend_noirq(struct device *dev)
-> > +{
-> > +	struct pci_dev *pci = to_pci_dev(dev);
-> > +	struct dw_dma_chip *chip = pci_get_drvdata(pci);
-> > +
-> > +	return dw_dma_suspend(chip);
-> > +};
-> > +
-> > +static int dw_pci_resume_noirq(struct device *dev)
-> > +{
-> > +	struct pci_dev *pci = to_pci_dev(dev);
-> > +	struct dw_dma_chip *chip = pci_get_drvdata(pci);
-> > +
-> > +	return dw_dma_resume(chip);
-> > +};
-> > +
-> > +#else /* !CONFIG_PM_SLEEP */
-> > +
-> > +#define dw_pci_suspend_noirq	NULL
-> > +#define dw_pci_resume_noirq	NULL
-> > +
-> > +#endif /* !CONFIG_PM_SLEEP */
-> How about SET_SYSTEM_SLEEP_PM_OPS instead?
+Em Tue, Dec 10, 2013 at 12:47:57PM +0100, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+> > Em Tue, Dec 10, 2013 at 12:12:29PM +0100, Ingo Molnar escreveu:
+> > > Hm, I've unpulled it because 'perf top' crashes on exit, in 
+> > > dso__delete():
 
-So, we are using *_noirq versions of the functions here. What happened
-when we switch to normal ones? Any side effects?
+> > 495		if (dso->sname_alloc)
+> > 496			free((char *)dso->short_name)
 
+> Btw., instead of trusting flags I'd argue that using the pointer as a 
+> flag and clearing the pointer too is a much more robust freeing 
+> pattern in general:
+
+> 		if (dso->short_name) {
+> 			free(dso->short_name);
+> 			dso->short_name = NULL;
+> 		}
 > 
-> --
-> ~Vinod
-> > +
-> > +static const struct dev_pm_ops dw_pci_dev_pm_ops = {
-> > +	.suspend_noirq = dw_pci_suspend_noirq,
-> > +	.resume_noirq = dw_pci_resume_noirq,
-> > +};
-> > +
-> >  static DEFINE_PCI_DEVICE_TABLE(dw_pci_id_table) = {
-> >  	/* Medfield */
-> >  	{ PCI_VDEVICE(INTEL, 0x0827), (kernel_ulong_t)&dw_pci_pdata },
-> > @@ -92,6 +122,9 @@ static struct pci_driver dw_pci_driver = {
-> >  	.id_table	= dw_pci_id_table,
-> >  	.probe		= dw_pci_probe,
-> >  	.remove		= dw_pci_remove,
-> > +	.driver	= {
-> > +		.pm	= &dw_pci_dev_pm_ops,
-> > +	},
-> >  };
-> >  
-> >  module_pci_driver(dw_pci_driver);
-> > -- 
-> > 1.7.4.4
-> > 
-> 
+> or so ...
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
+This is not an unusual idiom, if you look at tools/perf/util/ev{list,sel}.c,
+for instance, you'll see it in many destructors.
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+In this case there is a micro optimization where sometimes the shortname
+is just a pointer to the tail part of the long name, hence the flag.
+
+- Arnaldo
