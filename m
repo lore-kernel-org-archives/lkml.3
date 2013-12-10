@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3LJIBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:01:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58824 "EHLO
+	id S1754988Ab3LJIUy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:20:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58834 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab3LJIBS (ORCPT
+	with ESMTP id S1753382Ab3LJIBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:18 -0500
+	Tue, 10 Dec 2013 03:01:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.12 11/62] crypto: authenc - Find proper IV address in ablkcipher callback
-Date: Tue, 10 Dec 2013 00:00:42 -0800
-Message-Id: <20131210080058.240271356@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.12 14/62] ARM: footbridge: fix EBSA285 LEDs
+Date: Tue, 10 Dec 2013 00:00:45 -0800
+Message-Id: <20131210080058.441824263@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,41 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Lendacky <thomas.lendacky@amd.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit fc019c7122dfcd69c50142b57a735539aec5da95 upstream.
+commit 67130c5464f50428aea0b4526a6729d61f9a1d53 upstream.
 
-When performing an asynchronous ablkcipher operation the authenc
-completion callback routine is invoked, but it does not locate and use
-the proper IV.
+- The LEDs register is write-only: it can't be read-modify-written.
+- The LEDs are write-1-for-off not 0.
+- The check for the platform was inverted.
 
-The callback routine, crypto_authenc_encrypt_done, is updated to use
-the same method of calculating the address of the IV as is done in
-crypto_authenc_encrypt function which sets up the callback.
-
-Signed-off-by: Tom Lendacky <thomas.lendacky@amd.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Fixes: cf6856d693dd ("ARM: mach-footbridge: retire custom LED code")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/authenc.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/arm/mach-footbridge/ebsa285.c |   22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
---- a/crypto/authenc.c
-+++ b/crypto/authenc.c
-@@ -368,9 +368,10 @@ static void crypto_authenc_encrypt_done(
- 	if (!err) {
- 		struct crypto_aead *authenc = crypto_aead_reqtfm(areq);
- 		struct crypto_authenc_ctx *ctx = crypto_aead_ctx(authenc);
--		struct ablkcipher_request *abreq = aead_request_ctx(areq);
--		u8 *iv = (u8 *)(abreq + 1) +
--			 crypto_ablkcipher_reqsize(ctx->enc);
-+		struct authenc_request_ctx *areq_ctx = aead_request_ctx(areq);
-+		struct ablkcipher_request *abreq = (void *)(areq_ctx->tail
-+							    + ctx->reqoff);
-+		u8 *iv = (u8 *)abreq - crypto_ablkcipher_ivsize(ctx->enc);
+--- a/arch/arm/mach-footbridge/ebsa285.c
++++ b/arch/arm/mach-footbridge/ebsa285.c
+@@ -30,21 +30,24 @@ static const struct {
+ 	const char *name;
+ 	const char *trigger;
+ } ebsa285_leds[] = {
+-	{ "ebsa285:amber", "heartbeat", },
+-	{ "ebsa285:green", "cpu0", },
++	{ "ebsa285:amber", "cpu0", },
++	{ "ebsa285:green", "heartbeat", },
+ 	{ "ebsa285:red",},
+ };
  
- 		err = crypto_authenc_genicv(areq, iv, 0);
- 	}
++static unsigned char hw_led_state;
++
+ static void ebsa285_led_set(struct led_classdev *cdev,
+ 		enum led_brightness b)
+ {
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	if (b != LED_OFF)
+-		*XBUS_LEDS |= led->mask;
++	if (b == LED_OFF)
++		hw_led_state |= led->mask;
+ 	else
+-		*XBUS_LEDS &= ~led->mask;
++		hw_led_state &= ~led->mask;
++	*XBUS_LEDS = hw_led_state;
+ }
+ 
+ static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
+@@ -52,18 +55,19 @@ static enum led_brightness ebsa285_led_g
+ 	struct ebsa285_led *led = container_of(cdev,
+ 			struct ebsa285_led, cdev);
+ 
+-	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
++	return hw_led_state & led->mask ? LED_OFF : LED_FULL;
+ }
+ 
+ static int __init ebsa285_leds_init(void)
+ {
+ 	int i;
+ 
+-	if (machine_is_ebsa285())
++	if (!machine_is_ebsa285())
+ 		return -ENODEV;
+ 
+-	/* 3 LEDS All ON */
+-	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	/* 3 LEDS all off */
++	hw_led_state = XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
++	*XBUS_LEDS = hw_led_state;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
+ 		struct ebsa285_led *led;
 
 
