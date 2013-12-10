@@ -1,122 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3LJQJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:09:31 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:63448 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752841Ab3LJQJ3 (ORCPT
+	id S1754934Ab3LJQJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:09:49 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:43064
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751687Ab3LJQJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:09:29 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v6 4/7] arm64: introduce aarch64_insn_gen_{nop|branch_imm}() helper functions
-Date: Wed, 11 Dec 2013 00:03:50 +0800
-Message-Id: <1386691433-6827-5-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
+	Tue, 10 Dec 2013 11:09:45 -0500
+X-Forefront-Antispam-Report: CIP:66.35.236.232;KIP:(null);UIP:(null);IPV:NLI;H:SJ-ITEXEDGE02.altera.priv.altera.com;RD:none;EFVD:NLI
+X-SpamScore: 11
+X-BigFish: VS11(z37d5kzzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h286p1155h)
+From: <dinguyen@altera.com>
+To: <dinh.linux@gmail.com>, <mingo@kernel.org>, <daniel.lezcano@linaro.org>,
+        <tglx@linutronix.de>
+CC: <jamie@jamieiles.com>, <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <heiko@sntech.de>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: [PATCHv5 2/2] clocksource: dw_apb_timer_of: Fix support for dts binding "snps,dw-apb-timer"
+Date: Tue, 10 Dec 2013 10:07:58 -0600
+Message-ID: <1386691678-29618-2-git-send-email-dinguyen@altera.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386691678-29618-1-git-send-email-dinguyen@altera.com>
+References: <1386691678-29618-1-git-send-email-dinguyen@altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: altera.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce aarch64_insn_gen_{nop|branch_imm}() helper functions, which
-will be used to implement jump label on ARM64.
+From: Dinh Nguyen <dinguyen@altera.com>
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
+In commit 620f5e1cbf (dts: Rename DW APB timer compatible strings), both
+"snps,dw-apb-timer-sp" and "snps,dw-apb-timer-osc" were deprecated in place
+of "snps,dw-apb-timer". But the driver also needs to be udpated in order to
+support this new binding "snps,dw-apb-timer".
+
+Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
 ---
- arch/arm64/include/asm/insn.h | 10 ++++++++++
- arch/arm64/kernel/insn.c      | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+)
+v5: Separate patch to fix bindings
+v4: none
+v3: none
+v2: none
+---
+ drivers/clocksource/dw_apb_timer_of.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
-index fb44660..c44ad39 100644
---- a/arch/arm64/include/asm/insn.h
-+++ b/arch/arm64/include/asm/insn.h
-@@ -66,6 +66,11 @@ enum aarch64_insn_imm_type {
- 	AARCH64_INSN_IMM_MAX
+diff --git a/drivers/clocksource/dw_apb_timer_of.c b/drivers/clocksource/dw_apb_timer_of.c
+index b29d7cd..8d6e5f6 100644
+--- a/drivers/clocksource/dw_apb_timer_of.c
++++ b/drivers/clocksource/dw_apb_timer_of.c
+@@ -113,7 +113,6 @@ static u64 read_sched_clock(void)
+ 
+ static const struct of_device_id sptimer_ids[] __initconst = {
+ 	{ .compatible = "picochip,pc3x2-rtc" },
+-	{ .compatible = "snps,dw-apb-timer-sp" },
+ 	{ /* Sentinel */ },
  };
  
-+enum aarch64_insn_branch_type {
-+	AARCH64_INSN_BRANCH_NOLINK,
-+	AARCH64_INSN_BRANCH_LINK,
-+};
-+
- #define	__AARCH64_INSN_FUNCS(abbr, mask, val)	\
- static __always_inline bool aarch64_insn_is_##abbr(u32 code) \
- { return (code & (mask)) == (val); } \
-@@ -89,6 +94,11 @@ int aarch64_insn_write(void *addr, u32 insn);
- enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
- u32 aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
- 				  u32 insn, u64 imm);
-+u32 aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
-+				enum aarch64_insn_branch_type type);
-+u32 aarch64_insn_gen_hint(enum aarch64_insn_hint_op op);
-+u32 aarch64_insn_gen_nop(void);
-+
- bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
- 
- int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
-diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
-index 03e9a5f..ead3239 100644
---- a/arch/arm64/kernel/insn.c
-+++ b/arch/arm64/kernel/insn.c
-@@ -14,6 +14,7 @@
-  * You should have received a copy of the GNU General Public License
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
-+#include <linux/bitops.h>
- #include <linux/compiler.h>
- #include <linux/kernel.h>
- #include <linux/smp.h>
-@@ -260,3 +261,42 @@ u32 __kprobes aarch64_insn_encode_immediate(enum aarch64_insn_imm_type type,
- 
- 	return insn;
+@@ -151,4 +150,7 @@ static void __init dw_apb_timer_init(struct device_node *timer)
+ 	num_called++;
  }
+ CLOCKSOURCE_OF_DECLARE(pc3x2_timer, "picochip,pc3x2-timer", dw_apb_timer_init);
+-CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer-osc", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer_osc, "snps,dw-apb-timer-osc", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer_sp, "snps,dw-apb-timer-sp", dw_apb_timer_init);
++CLOCKSOURCE_OF_DECLARE(apb_timer, "snps,dw-apb-timer", dw_apb_timer_init);
 +
-+u32 __kprobes aarch64_insn_gen_branch_imm(unsigned long pc, unsigned long addr,
-+					  enum aarch64_insn_branch_type type)
-+{
-+	u32 insn;
-+	long offset;
-+
-+	/*
-+	 * PC: A 64-bit Program Counter holding the address of the current
-+	 * instruction. A64 instructions must be word-aligned.
-+	 */
-+	BUG_ON((pc & 0x3) || (addr & 0x3));
-+
-+	/*
-+	 * B/BL support [-128M, 128M) offset
-+	 * ARM64 virtual address arrangement guarantees all kernel and module
-+	 * texts are within +/-128M.
-+	 */
-+	offset = ((long)addr - (long)pc);
-+	BUG_ON(offset < -SZ_128M || offset >= SZ_128M);
-+
-+	if (type == AARCH64_INSN_BRANCH_LINK)
-+		insn = aarch64_insn_get_bl_value();
-+	else
-+		insn = aarch64_insn_get_b_value();
-+
-+	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_26, insn,
-+					     offset >> 2);
-+}
-+
-+u32 __kprobes aarch64_insn_gen_hint(enum aarch64_insn_hint_op op)
-+{
-+	return aarch64_insn_get_hint_value() | op;
-+}
-+
-+u32 __kprobes aarch64_insn_gen_nop(void)
-+{
-+	return aarch64_insn_gen_hint(AARCH64_INSN_HINT_NOP);
-+}
 -- 
-1.8.1.2
+1.7.9.5
+
 
