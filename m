@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab3LJWYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:24:52 -0500
-Received: from plane.gmane.org ([80.91.229.3]:49622 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab3LJWYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:24:49 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Subject: Re: [PATCH v2 02/11] arm: pxa27x: support ICP DAS LP-8x4x
-Date: Tue, 10 Dec 2013 22:24:29 +0000 (UTC)
-Message-ID: <l884at$icv$1@ger.gmane.org>
-References: <1385879185-22455-3-git-send-email-ynvich@gmail.com>
-	<1386348542-9584-1-git-send-email-ynvich@gmail.com>
-	<CACRpkdYVsGSyMS6sSTqqJ4XrE3GqpWkJsY7GDazi5ix7xjKQ=Q@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ppp89-110-30-154.pppoe.avangarddsl.ru
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: linux-arm-kernel@lists.infradead.org
+	id S1751874Ab3LJWY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:24:58 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:54412 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3LJWYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 17:24:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D030A9EC63@satlexdag05.amd.com>
+References: <CA+5PVA747A4283Rz-_udrFZqihgYo3_YYKw4n8Qqv5oUNQfz1w@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D030A9EC63@satlexdag05.amd.com>
+Date: Tue, 10 Dec 2013 17:24:53 -0500
+X-Google-Sender-Auth: MgAPvhDjyXnZdP3T_BZBcieR_5g
+Message-ID: <CA+5PVA432hZ4GSxTxBg4zQ9QMqKCSMK95bHbXaZ+XoPE=P_76g@mail.gmail.com>
+Subject: Re: Radeon crash with v3.13-rc3-157-g17b2112
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Dave Airlie <airlied@redhat.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 13:43:27 +0100, Linus Walleij wrote:
- 
-> Argh! Now you're adding another user for a legacy custom pin control
-> implementation. But if noone is going to modernize PXA2xx what can we do
-> :-/
+On Tue, Dec 10, 2013 at 5:07 PM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> -----Original Message-----
+>> From: jwboyer@gmail.com [mailto:jwboyer@gmail.com] On Behalf Of Josh
+>> Boyer
+>> Sent: Tuesday, December 10, 2013 5:04 PM
+>> To: Deucher, Alexander; Guenter Roeck; Dave Airlie
+>> Cc: Linux-Kernel@Vger. Kernel. Org; DRI mailing list; Linus Torvalds
+>> Subject: Radeon crash with v3.13-rc3-157-g17b2112
+>>
+>> Hi All,
+>>
+>> Booting today's rawhide kernel fails on my Dell XPS 8300 machine.  I
+>> added nomodeset to the command line because it seemed to glitch out
+>> when doing the handoff to the radeon driver and that let me boot far
+>> enough to start networking.  I then loaded the radeon driver with:
+>> modprobe radeon modeset=1 and was greeted with the backtrace below.
+>>
+>> I haven't done a bisect yet, but I can if needs be.  I was hoping this
+>> would trigger someone's memory.  Plain 3.13-rc3 works, so it's
+>> something in the DRM merge that Linus did after -rc3.  Given the
+>> backtrace, this one might be suspect:
+>>
+>> commit ec39f64bba3421c2060fcbd1aeb6eec81fe0a42d
+>> Author: Guenter Roeck <linux@roeck-us.net>
+>> Date:   Fri Nov 22 21:52:00 2013 -0800
+>>
+>>     drm/radeon/dpm: Convert to use devm_hwmon_register_with_groups
+>>
+>
+> Should be fixed by the patch in:
+> https://bugs.freedesktop.org/show_bug.cgi?id=72457
 
-I plan to work on pxa2xx (pxa25x to be precise) after finishing with 
-sa1100 - my second (well, first) PDA is Sharp SL-6000 (pxa255).
+OK.  I'll give that a spin soon.  Thanks for the quick reply!
 
-StrongARM somewhat resembles pxa2xx, so some of the drivers will be 
-shared, some expertise will be shared, etc. I tried doing pxa first, but 
-later found that it might be easier to update sa1100.
-
--- 
-With best wishes
-Dmitry
-
+josh
