@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3LJP3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:29:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865Ab3LJP3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:29:21 -0500
-Date: Tue, 10 Dec 2013 17:32:56 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Vlad Yasevich <vyasevich@gmail.com>
-Subject: Re: [PATCH net V2 1/2] tun: unbreak truncated packet signalling
-Message-ID: <20131210153256.GF25293@redhat.com>
-References: <1386654586-18151-1-git-send-email-jasowang@redhat.com>
+	id S1754295Ab3LJPaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:30:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37207 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3LJPaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:30:24 -0500
+Date: Tue, 10 Dec 2013 10:30:00 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] x86, microcode: Do Intel microcode revision check
+ signed
+Message-ID: <20131210153000.GA3804@phenom.dumpdata.com>
+References: <1386363843-32530-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386654586-18151-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1386363843-32530-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 01:49:45PM +0800, Jason Wang wrote:
-> Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
-> (tuntap: hardware vlan tx support) breaks the truncated packet signal by nev
-> return a length greater than iov length in tun_put_user(). This patch fixes
-> by always return the length of packet plus possible vlan header. Caller can
-> detect the truncated packet by comparing the return value and the size of io
-> length.
+On Fri, Dec 06, 2013 at 01:04:02PM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from v1:
-> - increase total unconditionally
-> - do not move veth structure out of the vlan handing block
-> ---
->  drivers/net/tun.c | 16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
+> The Intel SDM Vol 3 9.11.1 Microcode update states that
+> the update revision field is signed. However we do the comparison
+> unsigned, as the comparison gets promoted.
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index e26cbea..cd142134 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1184,7 +1184,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+> Use a cast to really do a signed comparison of the microcode
+> revision.
+
+Why not just update the struct?
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/microcode_intel_lib.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/microcode_intel_lib.c b/arch/x86/kernel/microcode_intel_lib.c
+> index ce69320..68503d1 100644
+> --- a/arch/x86/kernel/microcode_intel_lib.c
+> +++ b/arch/x86/kernel/microcode_intel_lib.c
+> @@ -41,7 +41,7 @@ update_match_cpu(unsigned int csig, unsigned int cpf,
+>  int
+>  update_match_revision(struct microcode_header_intel *mc_header, int rev)
 >  {
->  	struct tun_pi pi = { 0, skb->protocol };
->  	ssize_t total = 0;
-> -	int vlan_offset = 0;
-> +	int vlan_offset = 0, offset;
+> -	return (mc_header->rev <= rev) ? 0 : 1;
+> +	return ((int)mc_header->rev <= rev) ? 0 : 1;
+>  }
 >  
->  	if (!(tun->flags & TUN_NO_PI)) {
->  		if ((len -= sizeof(pi)) < 0)
-> @@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  		total += tun->vnet_hdr_sz;
->  	}
->  
-> +	offset = total;
-> +	total += skb->len;
->  	if (!vlan_tx_tag_present(skb)) {
->  		len = min_t(int, skb->len, len);
->  	} else {
-> @@ -1262,24 +1264,24 @@ static ssize_t tun_put_user(struct tun_struct *tun,
->  
->  		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
->  		len = min_t(int, skb->len + VLAN_HLEN, len);
-> +		total += VLAN_HLEN;
->  
->  		copy = min_t(int, vlan_offset, len);
-> -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
-> +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, offset, copy);
->  		len -= copy;
-> -		total += copy;
-> +		offset += copy;
->  		if (ret || !len)
->  			goto done;
->  
->  		copy = min_t(int, sizeof(veth), len);
-> -		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
-> +		ret = memcpy_toiovecend(iv, (void *)&veth, offset, copy);
->  		len -= copy;
-> -		total += copy;
-> +		offset += copy;
->  		if (ret || !len)
->  			goto done;
->  	}
->  
-> -	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
-> -	total += len;
-> +	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, offset, len);
->  
->  done:
->  	tun->dev->stats.tx_packets++;
-
-offset is not descriptive. I would call new variable "copied",
-and change all code to use that, do
-total = copied + skb->len, total is then the total length.
-
+>  int microcode_sanity_check(void *mc, int print_err)
 > -- 
-> 1.8.3.2
+> 1.8.3.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
