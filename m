@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab3LJTLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:11:15 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55534 "EHLO
+	id S1752322Ab3LJTLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:11:14 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55533 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751374Ab3LJTLN (ORCPT
+	by vger.kernel.org with ESMTP id S1751086Ab3LJTLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Dec 2013 14:11:13 -0500
 From: Will Deacon <will.deacon@arm.com>
 To: linux-kernel@vger.kernel.org
 Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
         Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 2/2] word-at-a-time: provide generic big-endian zero_bytemask implementation
-Date: Tue, 10 Dec 2013 19:10:58 +0000
-Message-Id: <1386702658-21430-2-git-send-email-will.deacon@arm.com>
+Subject: [PATCH 1/2] dcache: allow word-at-a-time name hashing with big-endian CPUs
+Date: Tue, 10 Dec 2013 19:10:57 +0000
+Message-Id: <1386702658-21430-1-git-send-email-will.deacon@arm.com>
 X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1386702658-21430-1-git-send-email-will.deacon@arm.com>
-References: <1386702658-21430-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whilst architectures may be able to do better than this (which they can,
-by simply defining their own macro), this is a generic stab at a
-zero_bytemask implementation for the asm-generic, big-endian
-word-at-a-time implementation.
+When explicitly hashing the end of a string with the word-at-a-time
+interface, we have to be careful which end of the word we pick up.
 
-On arm64, a clz instruction is used to implement the fls efficiently.
+On big-endian CPUs, the upper-bits will contain the data we're after,
+so ensure we generate our masks accordingly (and avoid hashing whatever
+random junk may have been sitting after the string).
 
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
+ fs/dcache.c | 4 ++++
+ fs/namei.c  | 9 ++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
-I'm happy to move this into the arch/ backends, but there's a strong
-linkage between this and the generic word-at-a-time algorithm that could
-easily break if they don't live together.
-
- include/asm-generic/word-at-a-time.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/include/asm-generic/word-at-a-time.h b/include/asm-generic/word-at-a-time.h
-index 3f21f1b72e45..d3909effd725 100644
---- a/include/asm-generic/word-at-a-time.h
-+++ b/include/asm-generic/word-at-a-time.h
-@@ -49,4 +49,12 @@ static inline bool has_zero(unsigned long val, unsigned long *data, const struct
- 	return (val + c->high_bits) & ~rhs;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 4bdb300b16e2..60c7264163bc 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -192,7 +192,11 @@ static inline int dentry_string_cmp(const unsigned char *cs, const unsigned char
+ 		if (!tcount)
+ 			return 0;
+ 	}
++#ifdef __BIG_ENDIAN
++	mask = ~(~0ul >> tcount*8);
++#else
+ 	mask = ~(~0ul << tcount*8);
++#endif
+ 	return unlikely(!!((a ^ b) & mask));
  }
  
-+#ifndef zero_bytemask
-+#ifdef CONFIG_64BIT
-+#define zero_bytemask(mask)	(~0ul << fls64(mask))
+diff --git a/fs/namei.c b/fs/namei.c
+index c53d3a9547f9..ac35646b3da6 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1598,11 +1598,6 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
+  *   do a "get_unaligned()" if this helps and is sufficiently
+  *   fast.
+  *
+- * - Little-endian machines (so that we can generate the mask
+- *   of low bytes efficiently). Again, we *could* do a byte
+- *   swapping load on big-endian architectures if that is not
+- *   expensive enough to make the optimization worthless.
+- *
+  * - non-CONFIG_DEBUG_PAGEALLOC configurations (so that we
+  *   do not trap on the (extremely unlikely) case of a page
+  *   crossing operation.
+@@ -1646,7 +1641,11 @@ unsigned int full_name_hash(const unsigned char *name, unsigned int len)
+ 		if (!len)
+ 			goto done;
+ 	}
++#ifdef __BIG_ENDIAN
++	mask = ~(~0ul >> len*8);
 +#else
-+#define zero_bytemask(mask)	(~0ul << fls(mask))
-+#endif /* CONFIG_64BIT */
-+#endif /* zero_bytemask */
-+
- #endif /* _ASM_WORD_AT_A_TIME_H */
+ 	mask = ~(~0ul << len*8);
++#endif
+ 	hash += mask & a;
+ done:
+ 	return fold_hash(hash);
 -- 
 1.8.2.2
 
