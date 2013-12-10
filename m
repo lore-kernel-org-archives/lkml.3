@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab3LJQLB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:11:01 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:38865 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab3LJQKz (ORCPT
+	id S1754896Ab3LJQJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:09:47 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:46532 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841Ab3LJQJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:10:55 -0500
+	Tue, 10 Dec 2013 11:09:43 -0500
 From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Kalle Valo <kvalo@adurom.com>
-Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent mac address
-Date: Tue, 10 Dec 2013 17:10:50 +0100
+Subject: Re: [PATCH v2 02/16] wl1251: add sysfs interface for bluetooth coexistence mode configuration
+Date: Tue, 10 Dec 2013 17:09:38 +0100
 User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
 Cc: Luciano Coelho <luca@coelho.fi>,
         "John W. Linville" <linville@tuxdriver.com>,
@@ -18,55 +18,69 @@ Cc: Luciano Coelho <luca@coelho.fi>,
         linux-kernel@vger.kernel.org, freemangordon@abv.bg,
         aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
         joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <1386494714-21070-16-git-send-email-pali.rohar@gmail.com> <87txegpuyk.fsf@purkki.adurom.net>
-In-Reply-To: <87txegpuyk.fsf@purkki.adurom.net>
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        David Gnedt <david.gnedt@davizone.at>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <1386494714-21070-3-git-send-email-pali.rohar@gmail.com> <87y53spv2p.fsf@purkki.adurom.net>
+In-Reply-To: <87y53spv2p.fsf@purkki.adurom.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart5139172.ScLoRPZvaW";
+  boundary="nextPart1900256.WvqENPmUIs";
   protocol="application/pgp-signature";
   micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312101710.51015@pali>
+Message-Id: <201312101709.38566@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5139172.ScLoRPZvaW
+--nextPart1900256.WvqENPmUIs
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Tuesday 10 December 2013 16:49:23 Kalle Valo wrote:
+On Tuesday 10 December 2013 16:46:54 Kalle Valo wrote:
 > Pali Roh=C3=A1r <pali.rohar@gmail.com> writes:
-> > Driver wl1251 generating mac address randomly at startup and
-> > there is no way to set permanent mac address via
-> > SET_IEEE80211_PERM_ADDR. This patch export sysfs file which
-> > can set permanent mac address by userspace helper program.
-> > Patch is needed for devices which do not store mac address
-> > in internal wl1251 eeprom.
+> > From: David Gnedt <david.gnedt@davizone.at>
 > >=20
+> > Port the bt_coex_mode sysfs interface from wl1251 driver
+> > version included in the Maemo Fremantle kernel to allow
+> > bt-coexistence mode configuration. This enables userspace
+> > applications to set one of the modes WL1251_BT_COEX_OFF,
+> > WL1251_BT_COEX_ENABLE and WL1251_BT_COEX_MONOAUDIO. The
+> > default mode is WL1251_BT_COEX_OFF.
+> > It should be noted that this driver always enabled
+> > bt-coexistence before and enabled bt-coexistence directly
+> > affects the receiving performance, rendering it unusable in
+> > some low-signal situations. Especially monitor mode is
+> > affected very badly with bt-coexistence enabled.
+> >=20
+> > Signed-off-by: David Gnedt <david.gnedt@davizone.at>
 > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
 >=20
-> We have ioctl() command for setting the mac address.
+> I think this is also what I wrote a long time. And also this
+> sysfs hack should not go to upstream.
+>=20
+> Over the years there has been some talk about solving the BT
+> coex properly, but I haven't seen any patches. I guess the
+> proper solution would be that BT subsystem in kernel would
+> notify wireless drivers about BT use?
 
-Really? Is there ioctl for setting permanent mac address?
-Can you show me it?
+See other drivers in upstream, they doing something similar...
 
 =2D-=20
 Pali Roh=C3=A1r
 pali.rohar@gmail.com
 
---nextPart5139172.ScLoRPZvaW
+--nextPart1900256.WvqENPmUIs
 Content-Type: application/pgp-signature; name=signature.asc 
 Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEABECAAYFAlKnPQoACgkQi/DJPQPkQ1ID0wCeK8927F0vrMmTB9OXR9P7AGi4
-sfoAn1nv5jrhT8VNKmoyC7Ev8fgQ1pLK
-=KlEV
+iEYEABECAAYFAlKnPMIACgkQi/DJPQPkQ1IGggCgzNsUtLFGcAD+yCko8VRuygN3
+SB0An3DFjuGsXApnVSreed7qES4Dphmd
+=/quV
 -----END PGP SIGNATURE-----
 
---nextPart5139172.ScLoRPZvaW--
+--nextPart1900256.WvqENPmUIs--
