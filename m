@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab3LJTPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:15:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629Ab3LJTPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:15:03 -0500
-Date: Tue, 10 Dec 2013 14:14:09 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Rob Landley <rob@landley.net>, Eric Biederman <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
-Message-ID: <20131210191409.GE13909@redhat.com>
-References: <20131210001620.GA7938@www.outflux.net>
- <52A66190.9060907@zytor.com>
- <CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com>
- <20131210143540.GA13909@redhat.com>
- <f4fbae55-7d7b-400d-b50f-258002371368@email.android.com>
- <20131210183352.GD13909@redhat.com>
- <52A76348.5080803@zytor.com>
+	id S1753074Ab3LJTP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:15:58 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:54658 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab3LJTP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:15:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A76348.5080803@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52A766A4.7040202@zytor.com>
+References: <CAMe9rOrKGSxr9X5txGq2Js0vGwXdwxPT+ip70-YZs-Wz-aPgQg@mail.gmail.com>
+	<52A766A4.7040202@zytor.com>
+Date: Tue, 10 Dec 2013 11:15:57 -0800
+Message-ID: <CAMe9rOoU51t9KUYEYFCVZVwDLTuGWyd9_d97-pcsFrT_WcYS0w@mail.gmail.com>
+Subject: Re: RFC: binutils PATCH: Set e_type to ET_EXEC for -pie -Ttext-segment=
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Binutils <binutils@sourceware.org>, Jiri Kosina <jkosina@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Boyer <jwboyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 10:54:00AM -0800, H. Peter Anvin wrote:
-> On 12/10/2013 10:33 AM, Vivek Goyal wrote:
-> > On Tue, Dec 10, 2013 at 08:32:38AM -0800, H. Peter Anvin wrote:
-> >> Of course it isn't.
-> > 
-> > I am not sure what are you trying to say. This is too brief.
-> > 
-> > Thanks
-> > Vivek
-> > 
-> 
-> Of course it is not sufficient.  Once you can get arbitrary code into
-> kernel space (CPL 0) you can do anything, and "disabling jump back" is
-> just a speed bump.
+On Tue, Dec 10, 2013 at 11:08 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/10/2013 04:20 AM, H.J. Lu wrote:
+>> On Mon, Dec 9, 2013 at 8:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> Where do the _32 and _32S relocations come from?  Are we mixing multiple things inside -pie?
+>>
+>> They come from crt1.o and crtbegin.o.  -pie uses Scrt1.o and crtbeginS.o.
+>>
+>
+> OK, so this is fundamentally an issue with the gcc wrapper... there
+> isn't a way to get the relocatable crt files without telling the linker
+> to link PIE (except perhaps using some -Wl option, maybe "-Wl,-no-pie"?)
+>
+> Either way, if the *only* goal is to get the file above a certain point,
+> like 4 GiB, then there is no reason not to randomize upward.
+>
 
-Agreed that disabling jump back is only a speed bump.
+I agree that kernel should load ET_DYN binary anywhere.  I will
+change linker to set type to ET_EXEC if p_vaddr != 0.
 
-Kees, so how would be use this knob?
-
-- If I put it in some init script, then root will permission to modify
-  and remove it.
-
-- Can one specify sysctl parameters on command line? If yes, then one
-  can disable this using kernel command line and in that case kdump will
-  be disabled too.
-
-Thanks
-Vivek
+-- 
+H.J.
