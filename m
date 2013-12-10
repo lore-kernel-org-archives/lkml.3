@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab3LJPrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:47:00 -0500
-Received: from purkki.adurom.net ([80.68.90.206]:40477 "EHLO purkki.adurom.net"
+	id S1754691Ab3LJPrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:47:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55547 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab3LJPq6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:46:58 -0500
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Dec 2013 10:46:58 EST
-From: Kalle Valo <kvalo@adurom.com>
-To: Pali =?utf-8?Q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        David Gnedt <david.gnedt@davizone.at>
-Subject: Re: [PATCH v2 02/16] wl1251: add sysfs interface for bluetooth coexistence mode configuration
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-	<1386494714-21070-1-git-send-email-pali.rohar@gmail.com>
-	<1386494714-21070-3-git-send-email-pali.rohar@gmail.com>
-Date: Tue, 10 Dec 2013 17:46:54 +0200
-In-Reply-To: <1386494714-21070-3-git-send-email-pali.rohar@gmail.com> ("Pali
-	=?utf-8?Q?Roh=C3=A1r=22's?= message of "Sun, 8 Dec 2013 10:25:00 +0100")
-Message-ID: <87y53spv2p.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753267Ab3LJPrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:47:11 -0500
+Message-ID: <52A744DF.7060005@ti.com>
+Date: Tue, 10 Dec 2013 18:44:15 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v3 02/23] mm/memblock: debug: don't free reserved array
+ if !ARCH_DISCARD_MEMBLOCK
+References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>	<1386625856-12942-3-git-send-email-santosh.shilimkar@ti.com> <20131209161134.e161ddfedf284f2052cad4a5@linux-foundation.org>
+In-Reply-To: <20131209161134.e161ddfedf284f2052cad4a5@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pali Rohár <pali.rohar@gmail.com> writes:
+Hi Andrew,
 
-> From: David Gnedt <david.gnedt@davizone.at>
->
-> Port the bt_coex_mode sysfs interface from wl1251 driver version included
-> in the Maemo Fremantle kernel to allow bt-coexistence mode configuration.
-> This enables userspace applications to set one of the modes
-> WL1251_BT_COEX_OFF, WL1251_BT_COEX_ENABLE and WL1251_BT_COEX_MONOAUDIO.
-> The default mode is WL1251_BT_COEX_OFF.
-> It should be noted that this driver always enabled bt-coexistence before
-> and enabled bt-coexistence directly affects the receiving performance,
-> rendering it unusable in some low-signal situations. Especially monitor
-> mode is affected very badly with bt-coexistence enabled.
->
-> Signed-off-by: David Gnedt <david.gnedt@davizone.at>
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+On 12/10/2013 02:11 AM, Andrew Morton wrote:
+> On Mon, 9 Dec 2013 16:50:35 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> 
+>> Now the Nobootmem allocator will always try to free memory allocated for
+>> reserved memory regions (free_low_memory_core_early()) without taking
+>> into to account current memblock debugging configuration
+>> (CONFIG_ARCH_DISCARD_MEMBLOCK and CONFIG_DEBUG_FS state).
+>> As result if:
+>>   - CONFIG_DEBUG_FS defined
+>>   - CONFIG_ARCH_DISCARD_MEMBLOCK not defined;
+>> -  reserved memory regions array have been resized during boot
+>>
+>> then:
+>> - memory allocated for reserved memory regions array will be freed to
+>> buddy allocator;
+>> - debug_fs entry "sys/kernel/debug/memblock/reserved" will show garbage
+>> instead of state of memory reservations. like:
+>>     0: 0x98393bc0..0x9a393bbf
+>>     1: 0xff120000..0xff11ffff
+>>     2: 0x00000000..0xffffffff
+>>
+>> Hence, do not free memory allocated for reserved memory regions if
+>> defined(CONFIG_DEBUG_FS) && !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
+> 
+> Alternatives:
+> 
+> - disable /proc/sys/kernel/debug/memblock/reserved in this case
+> 
+> - disable defined(CONFIG_DEBUG_FS) &&
+>    !defined(CONFIG_ARCH_DISCARD_MEMBLOCK) in Kconfig.
 
-I think this is also what I wrote a long time. And also this sysfs hack
-should not go to upstream.
+Yes. But this is debug information and it's useful to have it.
 
-Over the years there has been some talk about solving the BT coex
-properly, but I haven't seen any patches. I guess the proper solution
-would be that BT subsystem in kernel would notify wireless drivers about
-BT use?
+> 
+> How much memory are we talking about here?  If it's more than "very
+> little" then I think either of these would be better - most users will
+> value the extra memory over an accurate
+> /proc/sys/kernel/debug/memblock/reserved?
+> 
 
--- 
-Kalle Valo
+Sorry, I have no real statistic information and I hit this issue while testing this series
+by simulating huge amount of bootmem allocation during kernel boot.
+The real number of entries i saw on Keystone & OMAP boards is no more than ~20.
+
+Few digits below:
+- size of static reserved memory regions array is 2048 bytes
+- the size of array is doubled during each allocation
+
+Regards,
+-grygorii
