@@ -1,41 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab3LJPYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:24:55 -0500
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:48758 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752352Ab3LJPYy (ORCPT
+	id S1752930Ab3LJPZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:25:39 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43916 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab3LJPZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:24:54 -0500
-Date: Tue, 10 Dec 2013 15:24:53 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: rcu: Avoid irq disable in rcu_cpu_kthread
-In-Reply-To: <20131210000521.GH4208@linux.vnet.ibm.com>
-Message-ID: <00000142dd1c5d5c-e95b9eb8-e27a-4de7-b301-becee6402c4e-000000@email.amazonses.com>
-References: <00000142c495b75b-c1878909-baf9-42a8-9ba7-62d216d806a7-000000@email.amazonses.com> <20131210000521.GH4208@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 10 Dec 2013 10:25:37 -0500
+Date: Tue, 10 Dec 2013 16:25:34 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: suravee.suthikulpanit@amd.com
+Cc: mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
+        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        hpa@zytor.com, tgl@domain.invalid, linux-kernel@vger.kernel.org,
+        sherry.hurwitz@amd.com
+Subject: Re: [PATCH 2/3] perf tools: allow user to specify hardware
+ breakpoint bp_len
+Message-ID: <20131210152532.GF10633@localhost.localdomain>
+References: <1380730268-25807-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1380730268-25807-3-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.10-54.240.9.70
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1380730268-25807-3-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013, Paul E. McKenney wrote:
+On Wed, Oct 02, 2013 at 11:11:07AM -0500, suravee.suthikulpanit@amd.com wrote:
+> From: Jacob Shin <jacob.w.shin@gmail.com>
+> 
+> Currently bp_len is given a default value of 4. Allow user to override it:
+> 
+>   $ perf stat -e mem:0x1000/8
+>                             ^
+>                             bp_len
+> 
+> If no value is given, it will default to 4 as it did before.
+> 
+> Signed-off-by: Jacob Shin <jacob.w.shin@gmail.com>
+> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> ---
+>  tools/perf/Documentation/perf-record.txt |  7 +++++--
+>  tools/perf/util/parse-events.c           | 17 +++++++----------
+>  tools/perf/util/parse-events.h           |  2 +-
+>  tools/perf/util/parse-events.l           |  1 +
+>  tools/perf/util/parse-events.y           | 26 ++++++++++++++++++++++++--
+>  5 files changed, 38 insertions(+), 15 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+> index e297b74..e07491f 100644
+> --- a/tools/perf/Documentation/perf-record.txt
+> +++ b/tools/perf/Documentation/perf-record.txt
+> @@ -33,12 +33,15 @@ OPTIONS
+>          - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
+>  	  hexadecimal event descriptor.
+>  
+> -        - a hardware breakpoint event in the form of '\mem:addr[:access]'
+> +        - a hardware breakpoint event in the form of '\mem:addr[/len][:access]'
+>            where addr is the address in memory you want to break in.
+>            Access is the memory access type (read, write, execute) it can
+> -          be passed as follows: '\mem:addr[:[r][w][x]]'.
+> +          be passed as follows: '\mem:addr[:[r][w][x]]'. len is the range,
+> +          number of bytes from specified addr, which the breakpoint will cover.
+>            If you want to profile read-write accesses in 0x1000, just set
+>            'mem:0x1000:rw'.
+> +          If you want to profile write accesses in [0x1000~1008), just set
+> +          'mem:0x1000/8:w'.
+>  
+>  --filter=<filter>::
+>          Event filter.
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 9812531..65d81ae 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -515,7 +515,7 @@ do {					\
+>  }
+>  
+>  int parse_events_add_breakpoint(struct list_head *list, int *idx,
+> -				void *ptr, char *type)
+> +				void *ptr, char *type, u64 len)
+>  {
+>  	struct perf_event_attr attr;
+>  
+> @@ -525,14 +525,11 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+>  	if (parse_breakpoint_type(type, &attr))
+>  		return -EINVAL;
+>  
+> -	/*
+> -	 * We should find a nice way to override the access length
+> -	 * Provide some defaults for now
+> -	 */
+> -	if (attr.bp_type == HW_BREAKPOINT_X)
+> -		attr.bp_len = sizeof(long);
+> -	else
+> -		attr.bp_len = HW_BREAKPOINT_LEN_4;
+> +	/* Provide some defaults if len is not specified */
+> +	if (!len)
+> +		len = attr.bp_type == HW_BREAKPOINT_X ? sizeof(long) :
+> +							HW_BREAKPOINT_LEN_4;
 
-> On Thu, Dec 05, 2013 at 09:06:55PM +0000, Christoph Lameter wrote:
-> > Once we have the per cpu patchset merged we could do the following [it
-> > even works without that patchset but the __this_cpu ops will not do
-> > preemption checks]. Would this work?
->
-> Looks plausible at first glance.  But are you really seeing performance
-> issues with this code?  It is only compiled into the kernel when you build
-> with CONFIG_RCU_BOOST=y -- are you actually using that for your workloads?
+Why is LEN_4 affected in the type?
 
-I have not done any benchmarking. Just looking for more use cases for the
-this_cpu ops. There is a lot of use of per cpu operations in the rcu code
-which seems to be areas in which these operations can help.
+> +	attr.bp_len = len;
 
+Thanks.
