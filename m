@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab3LJOC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:02:26 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:54128 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab3LJOCX (ORCPT
+	id S1753377Ab3LJOLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:11:51 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37197 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3LJOLs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:02:23 -0500
-Date: Tue, 10 Dec 2013 15:02:19 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        linux@arm.linux.org.uk, tony.luck@intel.com, fenghua.yu@intel.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, fengguang.wu@intel.com, james.hogan@imgtec.com,
-        jason.low2@hp.com, viresh.kumar@linaro.org, hanjun.guo@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] nohz_full: update cpu load fix in nohz_full
-Message-ID: <20131210140217.GA10633@localhost.localdomain>
-References: <1386074112-30754-1-git-send-email-alex.shi@linaro.org>
- <1386074112-30754-4-git-send-email-alex.shi@linaro.org>
+	Tue, 10 Dec 2013 09:11:48 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CABawtvMGOJg5DPRwdWAOSTkxgurv5bx8n=3yJFOq=aagxzseZQ@mail.gmail.com>
+References: <1386581831-312-1-git-send-email-ethan.kernel@gmail.com> <20131209213057.GA11314@phenom.dumpdata.com> <CABawtvMGOJg5DPRwdWAOSTkxgurv5bx8n=3yJFOq=aagxzseZQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386074112-30754-4-git-send-email-alex.shi@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] [SCSI] iscsi_boot_sysfs: Fix a memory leak in iscsi_boot_destroy_kset()
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Tue, 10 Dec 2013 09:11:00 -0500
+To: Ethan Zhao <ethan.kernel@gmail.com>
+CC: michaelc@cs.wisc.edu, pjones@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <74430a05-1640-4174-977d-52d2d2b8519f@email.android.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 08:35:12PM +0800, Alex Shi wrote:
-> We are not always 0 when update nohz cpu load, after nohz_full enabled.
-> But current code still treat the cpu as idle. that is incorrect.
-> Fix it to use correct cpu_load.
-> 
-> Signed-off-by: Alex Shi <alex.shi@linaro.org>
-> ---
->  kernel/sched/proc.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-> index 16f5a30..f1441f0 100644
-> --- a/kernel/sched/proc.c
-> +++ b/kernel/sched/proc.c
-> @@ -568,8 +568,14 @@ void update_cpu_load_nohz(void)
->  		/*
->  		 * We were idle, this means load 0, the current load might be
->  		 * !0 due to remote wakeups and the sort.
-> +		 * or we may has only one task and in NO_HZ_FULL, then still use
-> +		 * normal cpu load.
->  		 */
-> -		__update_cpu_load(this_rq, 0, pending_updates);
-> +		if (this_rq->cfs.h_nr_running) {
-> +			unsigned load = get_rq_runnable_load(this_rq);
-> +			__update_cpu_load(this_rq, load, pending_updates);
-> +		} else
-> +			__update_cpu_load(this_rq, 0, pending_updates);
+Ethan Zhao <ethan.kernel@gmail.com> wrote:
+>Konrad,
+>
+> boot_kset was allocated when module loaded by
+>ibft_init()
+>  iscsi_boot_create_kset()
+>     kzalloc()
+>
+>but wasn't freed when module unloaded by
+>ibft_exit()
+>   ibft_cleanup()
+>     iscsi_boot_destroy_kset()
+>
+>Thanks,
+>Ethan
+>
+>On Tue, Dec 10, 2013 at 5:30 AM, Konrad Rzeszutek Wilk
+><konrad.wilk@oracle.com> wrote:
+>> On Mon, Dec 09, 2013 at 05:37:11PM +0800, Ethan Zhao wrote:
+>>> From: "Ethan Zhao" <ethan.kernel@gmail.com>
+>>>
+>>> Load and unload iscsi_ibft module will cause kernel memory leak, fix
+>it
+>>> in scsi/iscsi_boot_sysfs.c iscsi_boot_destroy_kset().
+>>>
+>>
+>> Is there a stack trace?
+>>> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+>>> ---
+>>>  drivers/scsi/iscsi_boot_sysfs.c | 1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/drivers/scsi/iscsi_boot_sysfs.c
+>b/drivers/scsi/iscsi_boot_sysfs.c
+>>> index 14c1c8f..680bf6f 100644
+>>> --- a/drivers/scsi/iscsi_boot_sysfs.c
+>>> +++ b/drivers/scsi/iscsi_boot_sysfs.c
+>>> @@ -490,5 +490,6 @@ void iscsi_boot_destroy_kset(struct
+>iscsi_boot_kset *boot_kset)
+>>>               iscsi_boot_remove_kobj(boot_kobj);
+>>>
+>>>       kset_unregister(boot_kset->kset);
+>>> +     kfree(boot_kset);
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(iscsi_boot_destroy_kset);
+>>> --
+>>> 1.8.3.4 (Apple Git-47)
+>>>
 
-But decay_load_missed() doesnt handle non 0 loads, right? It probably make more sense
-to first fix __update_cpu_load() to make it handle this kind of thing before fixing the caller.
+Right. In the past we did not do that b/c certain drivers (like broadcom) would allocate on the kset their name and try to free (the driver would after freeing the ibft). So you would end up with this patch a double free ( and it might be fixed by now but I can't recall).
 
-Now you had patches that remove the cpu_load secondary idx I think? You should move this patch to
-that series.
+My question was - did you observer a crash or bug. Hence the question about stack trace? How did you see this?
 
->  	}
->  	raw_spin_unlock(&this_rq->lock);
->  }
-> -- 
-> 1.8.1.2
-> 
+Thank you.
+
