@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab3LJIue (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:50:34 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:33994 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab3LJIua (ORCPT
+	id S1752960Ab3LJIys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:54:48 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:36324 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841Ab3LJIyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:50:30 -0500
+	Tue, 10 Dec 2013 03:54:46 -0500
+Message-ID: <52A6D6DD.50702@hitachi.com>
+Date: Tue, 10 Dec 2013 17:54:53 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131210140218.645eaf6983481bafe5833eef@canb.auug.org.au>
-References: <20131210140218.645eaf6983481bafe5833eef@canb.auug.org.au>
-Date: Tue, 10 Dec 2013 09:50:30 +0100
-Message-ID: <CACRpkdYznRuiwgbZMZqz9UDsgPiOgs7t8i8cVm+d4ykhMXMz2Q@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the pinctrl tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-arch@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: Re: [PATCH -tip v5 12/18] ftrace/kprobes: Use NOKPROBE_SYMBOL
+ macro in ftrace
+References: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal> <20131209104746.13397.22146.stgit@kbuild-fedora.novalocal> <20131209120450.4da43296@gandalf.local.home>
+In-Reply-To: <20131209120450.4da43296@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 4:02 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+(2013/12/10 2:04), Steven Rostedt wrote:
+> On Mon, 09 Dec 2013 10:47:46 +0000
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+> 
+>> --- a/kernel/trace/trace_probe.h
+>> +++ b/kernel/trace/trace_probe.h
+>> @@ -124,8 +124,8 @@ struct probe_arg {
+>>  	const struct fetch_type	*type;	/* Type of this argument */
+>>  };
+>>  
+>> -static inline __kprobes void call_fetch(struct fetch_param *fprm,
+>> -				 struct pt_regs *regs, void *dest)
+>> +static inline void call_fetch(struct fetch_param *fprm,
+>> +			      struct pt_regs *regs, void *dest)
+>>  {
+>>  	return fprm->fn(regs, fprm->data, dest);
+>>  }
+>>
+> 
+> Is this OK to be probed? I've had cases where a header "static inline"
+> was not always inlined. Unless you have "__always_inline" this is not
+> guaranteed to be inlined.
 
-> After merging the pinctrl tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> sound/soc/fsl/eukrea-tlv320.c:28:28: fatal error: asm/mach-types.h: No such file or directory
->  #include <asm/mach-types.h>
->                             ^
+Ah, right! I need to change it to __always_inline to prevent
+probing on it.
 
-It is trying to include an ARM-only file in an x86_64 compile...
-I think the Kconfig for that driver needs a
+> 
+> As for the rest of the patch:
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-depends on ARM
+Thank you! :)
 
-Yours,
-Linus Walleij
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
