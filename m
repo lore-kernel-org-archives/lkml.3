@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab3LJDxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 22:53:20 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64996 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3LJDxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 22:53:19 -0500
+	id S1752174Ab3LJDxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:53:40 -0500
+Received: from ttcsn157-7.ttc.cz ([212.158.157.7]:37183 "EHLO ixit.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858Ab3LJDxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 22:53:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131209013019.GA18048@kroah.com>
-References: <1386455752-17600-1-git-send-email-preetamjdsouza@gmail.com>
-	<20131209013019.GA18048@kroah.com>
-Date: Mon, 9 Dec 2013 19:53:19 -0800
-Message-ID: <CABYqeiVRqoAZAH+9_=mn=5+fMPHtehTK7zyAagNwuuAHC_UtZA@mail.gmail.com>
-Subject: Re: [PATCH] Staging: android: fix parantheses coding style issue in alarm-dev.c
-From: "Preetam D'Souza" <preetamjdsouza@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Brian Swetland <swetland@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Tue, 10 Dec 2013 04:51:41 +0100
+From: David Heidelberger <david.heidelberger@ixit.cz>
+To: John <da_audiophile@yahoo.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] expand micro-optimizations in kernel to newer model CPUs
+In-Reply-To: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+References: <1386518000.90452.YahooMailNeo@web140004.mail.bf1.yahoo.com>
+Message-ID: <864985fbeb1d8148439e25ec01f47a67@ixit.cz>
+User-Agent: Roundcube Webmail/0.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Greg--I'm working against Linus' latest tree on
-https://github.com/torvalds/linux.git ... which tree should I be using
-for the updated code?
+Hello,
 
-Thanks!
-Preetam
+this patch is used in Gentoo geek-sources and mptcp-sources (and 
+probably in lot other kernel sources sets). So, there was lot testing.
 
-On Sun, Dec 8, 2013 at 5:30 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sat, Dec 07, 2013 at 02:35:52PM -0800, Preetam D'Souza wrote:
->> This patch fixes an unecessary return statement parantheses error
->> found in alarm-dev.c by the checkpatch.pl tool -- alarm-dev.c now has
->> no more errors/warnings!
->>
->> Signed-off-by: Preetam D'Souza <preetamjdsouza@gmail.com>
->> ---
->>  drivers/staging/android/alarm-dev.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> This was already fixed a while ago, what tree are you working against?
->
-> sorry, I can't apply this again.
->
-> greg k-h
+It's not _big_ performance difference, but -mtune=native is nice to 
+have.
+It could be great, if this kernel option could be fully utilized without 
+need of additional patching.
+
+Thank for your work guys.
+
+Cheers,
+David
+
+Dne 2013-12-08 16:53, John napsal:
+> I have been maintaining the attached patch since kernel v3.9.[1]  I
+> submit for review the most recent incarnation which works with the
+> v3.12 tree.  As you can see by the ANOVA plots referenced in the
+> comments, these micro optimizations are value-added statistically
+> based on a compilation endpoint and are on-par with the included
+> "core2" option in the mainline kernel itself.
+> 
+> I maintain an unofficial Arch Linux kernel repo and have been
+> building/packaging kernels using this patch for many different CPUs
+> and Arches.  I feel this code has been tested by the >2,500 users of
+> my repo on many different CPUs and under both x86 and x86_64
+> systems[2] and feel it is worth for inclusion into the mainline
+> kernel.
+> 
+> Please cc me on replies as I am NOT a regular subscriber to lkml. 
+>  Thank you.
+> 
+> 1. https://github.com/graysky2/kernel_gcc_patch
+> 2, http://repo-ck.com/stats.pdf
