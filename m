@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab3LJSzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 13:55:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50648 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab3LJSzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 13:55:11 -0500
-Message-ID: <52A76348.5080803@zytor.com>
-Date: Tue, 10 Dec 2013 10:54:00 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Rob Landley <rob@landley.net>, Eric Biederman <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
-References: <20131210001620.GA7938@www.outflux.net> <52A66190.9060907@zytor.com> <CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com> <20131210143540.GA13909@redhat.com> <f4fbae55-7d7b-400d-b50f-258002371368@email.android.com> <20131210183352.GD13909@redhat.com>
-In-Reply-To: <20131210183352.GD13909@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752108Ab3LJTAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:00:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51279 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab3LJTAk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:00:40 -0500
+Date: Tue, 10 Dec 2013 14:00:36 -0500 (EST)
+Message-Id: <20131210.140036.1328560146971385473.davem@davemloft.net>
+To: vyasevich@gmail.com
+Cc: zwu.kernel@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wuzhy@linux.vnet.ibm.com
+Subject: Re: [PATCH 2/2] tun: remove useless codes in tun_chr_aio_read()
+ and tun_recvmsg()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52A74CD1.808@gmail.com>
+References: <1386363300-19040-2-git-send-email-zwu.kernel@gmail.com>
+	<20131209.203646.425478975392590777.davem@davemloft.net>
+	<52A74CD1.808@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 10 Dec 2013 11:00:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 10:33 AM, Vivek Goyal wrote:
-> On Tue, Dec 10, 2013 at 08:32:38AM -0800, H. Peter Anvin wrote:
->> Of course it isn't.
+From: Vlad Yasevich <vyasevich@gmail.com>
+Date: Tue, 10 Dec 2013 12:18:09 -0500
+
+> On 12/09/2013 08:36 PM, David Miller wrote:
+>> From: Zhi Yong Wu <zwu.kernel@gmail.com>
+>> Date: Sat,  7 Dec 2013 04:55:00 +0800
+>> 
+>>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>>
+>>> By checking related codes, it is impossible that ret > len or total_len,
+>>> so we should remove some useless codes in both above functions.
+>>>
+>>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> 
+>> Applied.
 > 
-> I am not sure what are you trying to say. This is too brief.
+> Wait a sec.  We want to be able to return a value bigger then len
+> to trigger a MSG_TRUNC.  Jason has patches for to fix this.  If you
+> apply this, we'll have to re-introduce this code back in.
 > 
-> Thanks
-> Vivek
-> 
+> Same goes for patch 1/2.
 
-Of course it is not sufficient.  Once you can get arbitrary code into
-kernel space (CPL 0) you can do anything, and "disabling jump back" is
-just a speed bump.
-
-	-hpa
-
-
+That's fine, right now the code makes no sense as the condition can
+never be triggered so there is no harm removing the illogical code
+meanwhile.
