@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab3LJIPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:15:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58913 "EHLO
+	id S1753699Ab3LJIB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:01:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab3LJIB6 (ORCPT
+	with ESMTP id S1753561Ab3LJIBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:58 -0500
+	Tue, 10 Dec 2013 03:01:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.12 35/62] SCSI: hpsa: do not discard scsi status on aborted commands
-Date: Tue, 10 Dec 2013 00:01:06 -0800
-Message-Id: <20131210080059.912560985@linuxfoundation.org>
+        David Chen <david.chen@canonical.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 07/62] ALSA: hda - Add mono speaker quirk for Dell Inspiron 5439
+Date: Tue, 10 Dec 2013 00:00:38 -0800
+Message-Id: <20131210080057.970899163@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,33 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 2e311fbabdc23b7eaec77313dc3b9a151a5407b5 upstream.
+commit eb82594b75b0cf54c667189e061934b7c49b5d42 upstream.
 
-We inadvertantly discarded the scsi status for aborted commands.
-For some commands (e.g. reads from tape drives) these can't be retried,
-and if we discarded the scsi status, the scsi mid layer couldn't notice
-anything was wrong and the error was not reported.
+This machine also has mono output if run through DAC node 0x03.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+BugLink: https://bugs.launchpad.net/bugs/1256212
+Tested-by: David Chen <david.chen@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/hpsa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1289,7 +1289,7 @@ static void complete_scsi_command(struct
- 					"has check condition: aborted command: "
- 					"ASC: 0x%x, ASCQ: 0x%x\n",
- 					cp, asc, ascq);
--				cmd->result = DID_SOFT_ERROR << 16;
-+				cmd->result |= DID_SOFT_ERROR << 16;
- 				break;
- 			}
- 			/* Must be some other type of check condition */
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4007,6 +4007,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
++	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS),
+ 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
 
 
