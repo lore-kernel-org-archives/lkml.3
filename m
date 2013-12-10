@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab3LJIl6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:41:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58365 "EHLO
+	id S1756006Ab3LJImP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:42:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab3LJH7L (ORCPT
+	with ESMTP id S1751919Ab3LJH7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:11 -0500
+	Tue, 10 Dec 2013 02:59:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Shawn Landden <shawn@churchofgit.com>
-Subject: [PATCH 3.4 14/25] net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
-Date: Tue, 10 Dec 2013 00:00:22 -0800
-Message-Id: <20131210075931.838036216@linuxfoundation.org>
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Heiko Stuebner <heiko@sntech.de>, Pavel Machek <pavel@ucw.cz>,
+        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.4 13/25] irq: Enable all irqs unconditionally in irq_resume
+Date: Tue, 10 Dec 2013 00:00:21 -0800
+Message-Id: <20131210075931.762016224@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -29,71 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Landden <shawn@churchofgit.com>
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-commit d3f7d56a7a4671d395e8af87071068a195257bf6 upstream.
+commit ac01810c9d2814238f08a227062e66a35a0e1ea2 upstream.
 
-Commit 35f9c09fe (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag MSG_SENDPAGE_NOTLAST, similar to
-MSG_MORE.
+When the system enters suspend, it disables all interrupts in
+suspend_device_irqs(), including the interrupts marked EARLY_RESUME.
 
-algif_hash, algif_skcipher, and udp used MSG_MORE from tcp_sendpages()
-and need to see the new flag as identical to MSG_MORE.
+On the resume side things are different. The EARLY_RESUME interrupts
+are reenabled in sys_core_ops->resume and the non EARLY_RESUME
+interrupts are reenabled in the normal system resume path.
 
-This fixes sendfile() on AF_ALG.
+When suspend_noirq() failed or suspend is aborted for any other
+reason, we might omit the resume side call to sys_core_ops->resume()
+and therefor the interrupts marked EARLY_RESUME are not reenabled and
+stay disabled forever.
 
-v3: also fix udp
+To solve this, enable all irqs unconditionally in irq_resume()
+regardless whether interrupts marked EARLY_RESUMEhave been already
+enabled or not.
 
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David S. Miller <davem@davemloft.net>
-Reported-and-tested-by: Shawn Landden <shawnlandden@gmail.com>
-Original-patch: Richard Weinberger <richard@nod.at>
-Signed-off-by: Shawn Landden <shawn@churchofgit.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This might try to reenable already enabled interrupts in the non
+failure case, but the only affected platform is XEN and it has been
+confirmed that it does not cause any side effects.
+
+[ tglx: Massaged changelog. ]
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Cc: <ian.campbell@citrix.com>
+Cc: <rjw@rjwysocki.net>
+Cc: <len.brown@intel.com>
+Cc: <gregkh@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/1385388587-16442-1-git-send-email-ldewangan@nvidia.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/algif_hash.c     |    3 +++
- crypto/algif_skcipher.c |    3 +++
- net/ipv4/udp.c          |    3 +++
- 3 files changed, 9 insertions(+)
+ kernel/irq/pm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -117,6 +117,9 @@ static ssize_t hash_sendpage(struct sock
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
  
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -381,6 +381,9 @@ static ssize_t skcipher_sendpage(struct
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
+-		if (is_early != want_early)
++		if (!is_early && want_early)
+ 			continue;
  
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1042,6 +1042,9 @@ int udp_sendpage(struct sock *sk, struct
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	if (!up->pending) {
- 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
- 
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
 
 
