@@ -1,38 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3LJIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:04:29 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:39868 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3LJIEX (ORCPT
+	id S1754240Ab3LJIE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:04:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59065 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab3LJICz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:04:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <efacba489a23b3a87321a02828ed1a5094e5c490.1386571280.git.vdavydov@parallels.com>
-References: <cover.1386571280.git.vdavydov@parallels.com>
-	<efacba489a23b3a87321a02828ed1a5094e5c490.1386571280.git.vdavydov@parallels.com>
-Date: Tue, 10 Dec 2013 12:04:23 +0400
-Message-ID: <CAA6-i6oESDwswkmz9hUT7=v8AE4z4GeTqwqrMzxOyTUtanLB-A@mail.gmail.com>
-Subject: Re: [PATCH v13 04/16] memcg: move memcg_caches_array_size() function
-From: Glauber Costa <glommer@gmail.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: dchinner@redhat.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 10 Dec 2013 03:02:55 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andrew Glen <AGlen@bepmarine.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.12 29/62] can: c_can: dont call pm_runtime_get_sync() from interrupt context
+Date: Tue, 10 Dec 2013 00:01:00 -0800
+Message-Id: <20131210080059.489550128@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
+References: <20131210080057.415644748@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 12:05 PM, Vladimir Davydov
-<vdavydov@parallels.com> wrote:
-> I need to move this up a bit, and I am doing in a separate patch just to
-> reduce churn in the patch that needs it.
->
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Reviewed-by: Glauber Costa <glommer@openvz.org>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+
+commit e35d46adc49b469fd92bdb64fea8af93640e6651 upstream.
+
+The c_can driver contians a callpath (c_can_poll -> c_can_state_change ->
+c_can_get_berr_counter) which may call pm_runtime_get_sync() from the IRQ
+handler, which is not allowed and results in "BUG: scheduling while atomic".
+
+This problem is fixed by introducing __c_can_get_berr_counter, which will not
+call pm_runtime_get_sync().
+
+Reported-by: Andrew Glen <AGlen@bepmarine.com>
+Tested-by: Andrew Glen <AGlen@bepmarine.com>
+Signed-off-by: Andrew Glen <AGlen@bepmarine.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/can/c_can/c_can.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -712,22 +712,31 @@ static int c_can_set_mode(struct net_dev
+ 	return 0;
+ }
+ 
+-static int c_can_get_berr_counter(const struct net_device *dev,
+-					struct can_berr_counter *bec)
++static int __c_can_get_berr_counter(const struct net_device *dev,
++				    struct can_berr_counter *bec)
+ {
+ 	unsigned int reg_err_counter;
+ 	struct c_can_priv *priv = netdev_priv(dev);
+ 
+-	c_can_pm_runtime_get_sync(priv);
+-
+ 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
+ 	bec->rxerr = (reg_err_counter & ERR_CNT_REC_MASK) >>
+ 				ERR_CNT_REC_SHIFT;
+ 	bec->txerr = reg_err_counter & ERR_CNT_TEC_MASK;
+ 
++	return 0;
++}
++
++static int c_can_get_berr_counter(const struct net_device *dev,
++				  struct can_berr_counter *bec)
++{
++	struct c_can_priv *priv = netdev_priv(dev);
++	int err;
++
++	c_can_pm_runtime_get_sync(priv);
++	err = __c_can_get_berr_counter(dev, bec);
+ 	c_can_pm_runtime_put_sync(priv);
+ 
+-	return 0;
++	return err;
+ }
+ 
+ /*
+@@ -872,7 +881,7 @@ static int c_can_handle_state_change(str
+ 	if (unlikely(!skb))
+ 		return 0;
+ 
+-	c_can_get_berr_counter(dev, &bec);
++	__c_can_get_berr_counter(dev, &bec);
+ 	reg_err_counter = priv->read_reg(priv, C_CAN_ERR_CNT_REG);
+ 	rx_err_passive = (reg_err_counter & ERR_CNT_RP_MASK) >>
+ 				ERR_CNT_RP_SHIFT;
+
+
