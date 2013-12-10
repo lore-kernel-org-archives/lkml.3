@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561Ab3LJTdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:33:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:62320 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3LJTdK (ORCPT
+	id S1751621Ab3LJTdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:33:22 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:36902 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567Ab3LJTdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:33:10 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 0/9] ARM: Initial support for Marvell Berlin SoCs
-Date: Tue, 10 Dec 2013 20:33:00 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <1383661723-17956-1-git-send-email-sebastian.hesselbarth@gmail.com> <52A674F1.7000104@gmail.com> <20131210191653.GA10105@quad.lixom.net>
-In-Reply-To: <20131210191653.GA10105@quad.lixom.net>
+	Tue, 10 Dec 2013 14:33:17 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312102033.00953.arnd@arndb.de>
-X-Provags-ID: V02:K0:RrYeDd+bEyH18vfkj2fGmOfH8/Aim5cqoJTHUJGrH+y
- 1xhxGzcJzcTlgdrdQWLLFCO0OArFFkuDCm6828Ly9NFinAk21U
- T+kOipTFWES1Tlaa4W1lyeJLurrCuxfO7TFuZ7yMfdZhIuauWS
- 2tyJTa7VjUJFa1VuoAcyDbxgCYM4FRlCFiW7Hy7oAaXDEO9JgP
- Ih42UOo8537y7rZlYneUvSxLbB7J32BGIDzbUKnYelJCycMCBM
- 4arvpV9ClJaLWCHjK0qYmCNB7jpHNsRIOMRxTke3pWXGmLqrxM
- SluqU++TQ7pinE+Ui7t93oUeGqvGDy0wIBHDPJB4+MTSL4z78E
- foH8BnZE+D9LmYcYL/EE=
+In-Reply-To: <20131210191409.GE13909@redhat.com>
+References: <20131210001620.GA7938@www.outflux.net>
+	<52A66190.9060907@zytor.com>
+	<CAGXu5jKkCNWQKH-Ozm72C3aY_NBzRdNo2GmqKbVVJds5xs=SXg@mail.gmail.com>
+	<20131210143540.GA13909@redhat.com>
+	<f4fbae55-7d7b-400d-b50f-258002371368@email.android.com>
+	<20131210183352.GD13909@redhat.com>
+	<52A76348.5080803@zytor.com>
+	<20131210191409.GE13909@redhat.com>
+Date: Tue, 10 Dec 2013 11:33:16 -0800
+X-Google-Sender-Auth: X-Dt5YkETYAOAygqO_RuY3iEvyo
+Message-ID: <CAGXu5j+1-X+35ks29XuG8g=ZLVSFSmQJbTETdc3QYqOonpNVTQ@mail.gmail.com>
+Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
+From: Kees Cook <keescook@chromium.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rob Landley <rob@landley.net>, Eric Biederman <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        kexec@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 10 December 2013, Olof Johansson wrote:
-> > I started with mach-mvebu in the first RFC, but Berlin SoCs are from a
-> > different business unit at Marvell and are more PXA compatible than
-> > Orion/Kirkwood/Armada 370/XP. Most notably, they lack the "mbus" and
-> > IP is either from PXA/MMP or Synopsys DW. Thomas Petazzoni and also
-> > Jisheng Zhang from Marvell suggested to not put it into mvebu but
-> > have a different mach folder instead.
-> 
-> Hmm, ok. Well, maybe later on we can look at aggregating them more again. It'd
-> be nice to get fewer top-level platform directories per vendor.
+On Tue, Dec 10, 2013 at 11:14 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, Dec 10, 2013 at 10:54:00AM -0800, H. Peter Anvin wrote:
+>> On 12/10/2013 10:33 AM, Vivek Goyal wrote:
+>> > On Tue, Dec 10, 2013 at 08:32:38AM -0800, H. Peter Anvin wrote:
+>> >> Of course it isn't.
+>> >
+>> > I am not sure what are you trying to say. This is too brief.
+>> >
+>> > Thanks
+>> > Vivek
+>> >
+>>
+>> Of course it is not sufficient.  Once you can get arbitrary code into
+>> kernel space (CPL 0) you can do anything, and "disabling jump back" is
+>> just a speed bump.
+>
+> Agreed that disabling jump back is only a speed bump.
+>
+> Kees, so how would be use this knob?
+>
+> - If I put it in some init script, then root will permission to modify
+>   and remove it.
 
-I possibly a lot of directories just become empty in the long run and
-we remove them once all all code has been subsystemized and drivered.
+Correct. Same applies to changing the kernel itself, yes. However, all
+those options require a reboot, and unexpected system reboots should
+signal a significant problem to a system owner. :) This is a big step
+better than a silent kernel root kit getting installed.
 
-	Arnd
+> - Can one specify sysctl parameters on command line? If yes, then one
+>   can disable this using kernel command line and in that case kdump will
+>   be disabled too.
+
+If they can be set on the command line, I'd like to know about it.
+That would let me flip the bit even earlier, since I don't use kexec
+at all (and don't need to wait until boot up is done).
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
