@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab3LJHNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:13:34 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:33166 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab3LJHNd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:13:33 -0500
-Date: Mon, 9 Dec 2013 23:13:24 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'David Woodhouse'" <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 19/39] mtd: denali: remove DEFINE_PCI_DEVICE_TABLE macro
-Message-ID: <20131210071324.GA11489@norris.computersforpeace.net>
-References: <001501ceefb1$69c96820$3d5c3860$%han@samsung.com>
- <002801ceefb4$cef24a20$6cd6de60$%han@samsung.com>
+	id S1752340Ab3LJHO2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:14:28 -0500
+Received: from ozlabs.org ([203.10.76.45]:52501 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789Ab3LJHOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 02:14:18 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "LKML" <linux-kernel@vger.kernel.org>
+Cc: <linux-kbuild@vger.kernel.org>
+Subject: [PATCH] scripts/gcc-version.sh: handle CC="gcc -m32"
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 10 Dec 2013 17:43:29 +1030
+Message-ID: <87d2l5ji06.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002801ceefb4$cef24a20$6cd6de60$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 08:18:28AM +0900, Jingoo Han wrote:
-> Don't use DEFINE_PCI_DEVICE_TABLE macro, because this macro
-> is not preferred.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Without it we get ugly warnings (though build still succeeds).
 
-Pushed to l2-mtd.git.
+$ make -j8 CC="gcc -m32"
+In file included from <command-line>:0:0:
+/usr/include/stdc-predef.h:30:26: fatal error: bits/predefs.h: No such file or directory
+ #include <bits/predefs.h>
+                          ^
+compilation terminated.
+In file included from <command-line>:0:0:
+/usr/include/stdc-predef.h:30:26: fatal error: bits/predefs.h: No such file or directory
+ #include <bits/predefs.h>
+                          ^
+compilation terminated.
+/home/rusty/devel/kernel/linux/scripts/gcc-version.sh: line 31: printf: #: invalid number
+/home/rusty/devel/kernel/linux/scripts/gcc-version.sh: line 31: printf: #: invalid number
+/bin/sh: 1: [: 0001: unexpected operator
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+make[1]: Nothing to be done for `all'.
+...
 
-Brian
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/scripts/gcc-version.sh b/scripts/gcc-version.sh
+index 7f2126df91f2..d48b0cbaf246 100644
+--- a/scripts/gcc-version.sh
++++ b/scripts/gcc-version.sh
+@@ -14,7 +14,7 @@ if [ "$1" = "-p" ] ; then
+ 	shift;
+ fi
+ 
+-compiler="$*"
++compiler="$1"
+ 
+ if [ ${#compiler} -eq 0 ]; then
+ 	echo "Error: No compiler specified."
