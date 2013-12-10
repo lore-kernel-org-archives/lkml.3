@@ -1,232 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab3LJXWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:22:13 -0500
-Received: from fieldses.org ([174.143.236.118]:50549 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab3LJXWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:22:11 -0500
-Date: Tue, 10 Dec 2013 18:22:04 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20131210232204.GD20831@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
- <1386703055-22308-2-git-send-email-jlayton@redhat.com>
- <20131210212253.GC20831@fieldses.org>
+	id S1751460Ab3LJXWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:22:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53905 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab3LJXWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:22:18 -0500
+Date: Tue, 10 Dec 2013 15:22:01 -0800
+From: tip-bot for Matthew Garrett <tipbot@zytor.com>
+Message-ID: <tip-04bf9ba720fcc4fa313fa122b799ae0989b6cd50@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        matthew.garrett@nebula.com, stable@vger.kernel.org,
+        matt.fleming@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        matthew.garrett@nebula.com, stable@vger.kernel.org,
+        matt.fleming@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1385754283-2464-1-git-send-email-matthew.garrett@nebula.com>
+References: <1385754283-2464-1-git-send-email-matthew.garrett@nebula.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, efi: Don't use (U)
+ EFI time services on 32 bit
+Git-Commit-ID: 04bf9ba720fcc4fa313fa122b799ae0989b6cd50
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20131210212253.GC20831@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 15:22:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 04:22:53PM -0500, bfields wrote:
-> On Tue, Dec 10, 2013 at 02:17:30PM -0500, Jeff Layton wrote:
-> > Currently, there's a lot of copy and paste between the two.  Add some
-> > functions to do the initialization of the file_lock from values
-> > passed in, and turn the flock/flock64 variants of those functions into
-> > wrappers around them.
-> > 
-> > Unfortunately it's harder to consolidate the fl_start/fl_end
-> > calculations due to the differently sized types involved so I've left
-> > them separate for now.
-> 
-> I'd think you could assign everything to the flock64 type and do the
-> common work there or something.
-> 
-> But I'm confused about what the current code is actually trying to do:
-> if I'm chasing down the definitions right, these quantities are all
-> signed, and when start is defined as an off_t it can overflow in the
-> SEEK_CUR and SEEK_END cases.  And
-> 
-> 	if (fl->fl_end < fl->fl_start)
-> 		return -EOVERFLOW
-> 
-> is counting on overlow wrapping around, which I thought wasn't
-> guaranteed in the case of signed arithmetic?
+Commit-ID:  04bf9ba720fcc4fa313fa122b799ae0989b6cd50
+Gitweb:     http://git.kernel.org/tip/04bf9ba720fcc4fa313fa122b799ae0989b6cd50
+Author:     Matthew Garrett <matthew.garrett@nebula.com>
+AuthorDate: Fri, 29 Nov 2013 14:44:43 -0500
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 10 Dec 2013 15:02:34 -0800
 
-E.g. the following (untested) removes the duplication and should return
--EOVERFLOW in the cases we currently do a random conversion from 64- to
-32-bit and back.  Susv3 says:
+x86, efi: Don't use (U)EFI time services on 32 bit
 
-	[EOVERFLOW]
-	The cmd argument is F_GETLK, F_SETLK, or F_SETLKW and the
-	smallest or, if l_len is non-zero, the largest offset of any
-	byte in the requested segment cannot be represented correctly in
-	an object of type off_t.
+UEFI time services are often broken once we're in virtual mode. We were
+already refusing to use them on 64-bit systems, but it turns out that
+they're also broken on some 32-bit firmware, including the Dell Venue.
+Disable them for now, we can revisit once we have the 1:1 mappings code
+incorporated.
 
-so that's what I tried to do.
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Link: http://lkml.kernel.org/r/1385754283-2464-1-git-send-email-matthew.garrett@nebula.com
+Cc: <stable@vger.kernel.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/platform/efi/efi.c | 7 -------
+ 1 file changed, 7 deletions(-)
 
---b.
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 92a0f0a..47832f5 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -344,48 +344,41 @@ static int assign_type(struct file_lock *fl, long type)
- 	return 0;
- }
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 92c0234..cceb813 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -690,13 +690,6 @@ void __init efi_init(void)
  
--/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-- * style lock.
-- */
--static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
--			       struct flock *l)
-+static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
-+					struct flock64 *l, loff_t offset_max)
- {
--	off_t start, end;
-+	loff_t start;
+ 	set_bit(EFI_MEMMAP, &x86_efi_facility);
  
- 	switch (l->l_whence) {
- 	case SEEK_SET:
--		start = 0;
--		break;
-+		fl->fl_start = 0;
- 	case SEEK_CUR:
--		start = filp->f_pos;
--		break;
-+		fl->fl_start = filp->f_pos;
- 	case SEEK_END:
--		start = i_size_read(file_inode(filp));
--		break;
-+		fl->fl_start = i_size_read(file_inode(filp));
- 	default:
- 		return -EINVAL;
- 	}
-+	if (l->l_start < 0)
-+		return -EINVAL;
-+	if (l->l_start > offset_max - fl->fl_start)
-+		return -EOVERFLOW;
-+	fl->fl_start += l->l_start;
-+	if (l->l_len > offset_max - fl->fl_start)
-+		return -EOVERFLOW;
-+	if (fl->fl_start + l->l_len < 0)
-+		return -EINVAL;
- 
- 	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
- 	   POSIX-2001 defines it. */
--	start += l->l_start;
--	if (start < 0)
--		return -EINVAL;
--	fl->fl_end = OFFSET_MAX;
--	if (l->l_len > 0) {
--		end = start + l->l_len - 1;
--		fl->fl_end = end;
--	} else if (l->l_len < 0) {
--		end = start - 1;
--		fl->fl_end = end;
--		start += l->l_len;
--		if (start < 0)
--			return -EINVAL;
+-#ifdef CONFIG_X86_32
+-	if (efi_is_native()) {
+-		x86_platform.get_wallclock = efi_get_time;
+-		x86_platform.set_wallclock = efi_set_rtc_mmss;
 -	}
--	fl->fl_start = start;	/* we record the absolute position */
--	if (fl->fl_end < fl->fl_start)
--		return -EOVERFLOW;
--	
-+	if (l->l_len > 0)
-+		fl->fl_end = fl->fl_start + l->l_len - 1;
-+	else if (l->l_len < 0) {
-+		fl->fl_end = start - 1;
-+		fl->fl_start += l->l_len;
-+	} else
-+		fl->fl_end = OFFSET_MAX;
-+
- 	fl->fl_owner = current->files;
- 	fl->fl_pid = current->tgid;
- 	fl->fl_file = filp;
-@@ -396,50 +389,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	return assign_type(fl, l->l_type);
- }
- 
-+/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-+ * style lock.
-+ */
-+static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-+			       struct flock *l)
-+{
-+	struct flock64 ll = {
-+		.l_type = l->l_type,
-+		.l_whence = l->l_whence,
-+		.l_start = l->l_start,
-+		.l_len = l->l_len,
-+	};
-+	
-+	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
-+}
-+
- #if BITS_PER_LONG == 32
- static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 				 struct flock64 *l)
- {
--	loff_t start;
+-#endif
 -
--	switch (l->l_whence) {
--	case SEEK_SET:
--		start = 0;
--		break;
--	case SEEK_CUR:
--		start = filp->f_pos;
--		break;
--	case SEEK_END:
--		start = i_size_read(file_inode(filp));
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	start += l->l_start;
--	if (start < 0)
--		return -EINVAL;
--	fl->fl_end = OFFSET_MAX;
--	if (l->l_len > 0) {
--		fl->fl_end = start + l->l_len - 1;
--	} else if (l->l_len < 0) {
--		fl->fl_end = start - 1;
--		start += l->l_len;
--		if (start < 0)
--			return -EINVAL;
--	}
--	fl->fl_start = start;	/* we record the absolute position */
--	if (fl->fl_end < fl->fl_start)
--		return -EOVERFLOW;
--	
--	fl->fl_owner = current->files;
--	fl->fl_pid = current->tgid;
--	fl->fl_file = filp;
--	fl->fl_flags = FL_POSIX;
--	fl->fl_ops = NULL;
--	fl->fl_lmops = NULL;
--
--	return assign_type(fl, l->l_type);
-+	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
- }
+ #if EFI_DEBUG
+ 	print_efi_memmap();
  #endif
- 
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 95e46c8..36025f7 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -186,8 +186,6 @@ struct flock {
- };
- #endif
- 
--#ifndef CONFIG_64BIT
--
- #ifndef HAVE_ARCH_STRUCT_FLOCK64
- #ifndef __ARCH_FLOCK64_PAD
- #define __ARCH_FLOCK64_PAD
-@@ -202,6 +200,5 @@ struct flock64 {
- 	__ARCH_FLOCK64_PAD
- };
- #endif
--#endif /* !CONFIG_64BIT */
- 
- #endif /* _ASM_GENERIC_FCNTL_H */
