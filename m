@@ -1,211 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3LJWMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:12:00 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:40132 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab3LJWL6 (ORCPT
+	id S1752258Ab3LJWM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:12:27 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:57961 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab3LJWM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:11:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131111233152.GR15154@atomide.com>
-References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
-	<1381784555-18344-2-git-send-email-marek@goldelico.com>
-	<20131111164917.GN15154@atomide.com>
-	<CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
-	<20131111233152.GR15154@atomide.com>
-Date: Tue, 10 Dec 2013 23:11:57 +0100
-Message-ID: <CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
-        NeilBrown <neilb@suse.de>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 10 Dec 2013 17:12:26 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stas Sergeev <stsp@list.ru>,
+        Margarita Manterola <margamanterola@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Caylan Van Larson <i@caylan.net>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Maximiliano Curia <maxy@gnuservers.com.ar>,
+        Pavel Machek <pavel@ucw.cz>,
+        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Subject: [PATCH v4] n_tty: Fix buffer overruns with larger-than-4k pastes
+Date: Tue, 10 Dec 2013 17:12:02 -0500
+Message-Id: <1386713522-6959-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <52A79030.9090403@hurleysoftware.com>
+References: <52A79030.9090403@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+readline() inadvertently triggers an error recovery path when
+pastes larger than 4k overrun the line discipline buffer. The
+error recovery path discards input when the line discipline buffer
+is full and operating in canonical mode and no newline has been
+received. Because readline() changes the termios to non-canonical
+mode to read the line char-by-char, the line discipline buffer
+can become full, and then when readline() restores termios back
+to canonical mode for the caller, the now-full line discipline
+buffer triggers the error recovery.
 
-On Tue, Nov 12, 2013 at 12:31 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Belisko Marek <marek.belisko@gmail.com> [131111 14:01]:
->> Hi Tony,
->>
->> On Mon, Nov 11, 2013 at 5:49 PM, Tony Lindgren <tony@atomide.com> wrote:
->> > * Marek Belisko <marek@goldelico.com> [131014 14:11]:
->> >> devconf1 reg access is localized only in mach-omap2 and we need to export
->> >> updating of devconf1 from omapdss venc driver (bypass and acbias bits).
->> >> Add simple api call which update only necessary bits.
->> > ...
->> >
->> >> +void update_bypass_acbias(bool bypass, bool acbias)
->> >> +{
->> >> +#ifdef CONFIG_ARCH_OMAP3
->> >> +     int val = omap_ctrl_readl(OMAP343X_CONTROL_DEVCONF1);
->> >> +
->> >> +     if (bypass)
->> >> +             val |= OMAP2_TVOUTBYPASS;
->> >> +     else
->> >> +             val &= ~OMAP2_TVOUTBYPASS;
->> >> +
->> >> +     if (acbias)
->> >> +             val |= OMAP2_TVACEN;
->> >> +     else
->> >> +             val &= ~OMAP2_TVACEN;
->> >> +
->> >> +     omap_ctrl_writel(val, OMAP343X_CONTROL_DEVCONF1);
->> >> +#endif
->> >
->> > If this is truly a pinmux, you could already access this
->> > using pinctrl-single,bits device tree driver.
->> >
->> > But I guess that won't work yet, so it's best to set this
->> > up as a separate driver like we've done for the USB PHY
->> > registers.
->>
->> Can you please point me to that driver directly? I cannot see benefit
->> of new driver as as it will be only dummy driver
->> with export_symbol_gpl of upper function. Can it sit then in dss
->> directory or somewhere else? Thanks.
->
-> You can take a look at drivers/usb/phy/phy-omap-control.c.
->
-> Then there's a device tree using example for control_devconf0 in
-> Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt.
->
-> Looks like CONTROL_DEVCONF1 contains a bunch of misc registers,
-> and arch/arm/mach-omap2/hsmmc.c seems to be tinkering with it too.
->
-> It would be best to set it up as omap-ctrl.c driver under drivers
-> somewhere with few functions exported for DSS and MMC drivers.
-I create small dummy driver based on phy-omap-control which can be
-used but before sending patch (with more updates) I would like to get
-some feedback if my direction is correct.
-diff --git a/drivers/misc/omap-ctrl.c b/drivers/misc/omap-ctrl.c
-new file mode 100644
-index 0000000..ca2e576
---- /dev/null
-+++ b/drivers/misc/omap-ctrl.c
-@@ -0,0 +1,84 @@
-+/*
-+ * omap-ctrl.c - The part of omap control module.
+When changing termios from non-canon to canon mode and the read
+buffer contains data, simulate an EOF push _without_ the
+DISABLED_CHAR in the read buffer.
+
+Importantly for the readline() problem, the termios can be
+changed back to non-canonical mode without changes to the read
+buffer occurring; ie., as if the previous termios change had not
+happened (as long as no intervening read took place).
+
+Preserve existing userspace behavior which allows '\0's already
+received in non-canon mode to be read as '\0's in canon mode
+(rather than trigger add'l EOF pushes or an actual EOF).
+
+Patch based on original proposal and discussion here
+https://bugzilla.kernel.org/show_bug.cgi?id=55991
+by Stas Sergeev <stsp@users.sourceforge.net>
+
+Reported-by: Margarita Manterola <margamanterola@gmail.com>
+Cc: Maximiliano Curia <maxy@gnuservers.com.ar>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Acked-by: Stas Sergeev <stsp@users.sourceforge.net>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+
+v3 - Fix false-positive end-of-file indication when an actual
+     EOF push coincidentally happens to be the next input
+     char (but not @ line start)
+
+v4 - Always reset line_start to read_tail when changing icanon
+   - Reset 'fake' EOF push status when flushing buffers
+   - Allow '\0' written in non-canon to be read in canon
+     (preserves existing userspace-visible behavior)
+
+ drivers/tty/n_tty.c | 26 +++++++++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 669a507..1a25552 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -105,6 +105,7 @@ struct n_tty_data {
+ 
+ 	/* must hold exclusive termios_rwsem to reset these */
+ 	unsigned char lnext:1, erasing:1, raw:1, real_raw:1, icanon:1;
++	unsigned char push:1;
+ 
+ 	/* shared by producer and consumer */
+ 	char read_buf[N_TTY_BUF_SIZE];
+@@ -341,6 +342,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
+ 
+ 	ldata->erasing = 0;
+ 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
++	ldata->push = 0;
+ }
+ 
+ static void n_tty_packet_mode_flush(struct tty_struct *tty)
+@@ -1758,7 +1760,16 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ 
+ 	if (!old || (old->c_lflag ^ tty->termios.c_lflag) & ICANON) {
+ 		bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+-		ldata->line_start = ldata->canon_head = ldata->read_tail;
++		ldata->line_start = ldata->read_tail;
++		if (!L_ICANON(tty) || !read_cnt(ldata)) {
++			ldata->canon_head = ldata->read_tail;
++			ldata->push = 0;
++		} else {
++			set_bit((ldata->read_head - 1) & (N_TTY_BUF_SIZE - 1),
++				ldata->read_flags);
++			ldata->canon_head = ldata->read_head;
++			ldata->push = 1;
++		}
+ 		ldata->erasing = 0;
+ 		ldata->lnext = 0;
+ 	}
+@@ -1964,6 +1975,12 @@ static int copy_from_read_buf(struct tty_struct *tty,
+  *	it copies one line of input up to and including the line-delimiting
+  *	character into the user-space buffer.
+  *
++ *	NB: When termios is changed from non-canonical to canonical mode and
++ *	the read buffer contains data, n_tty_set_termios() simulates an EOF
++ *	push (as if C-d were input) _without_ the DISABLED_CHAR in the buffer.
++ *	This causes data already processed as input to be immediately available
++ *	as input although a newline has not been received.
 + *
-+ * Copyright (C) 2013 Goldelico GmbH
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: Marek Belisko <marek@goldelico.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+
-+static u32 __iomem *devconf1;
-+
-+void omap_ctrl_tvoutbypass(int on)
-+{
-+    int val = readl(devconf1);
-+
-+    if (on)
-+       val |= BIT(18);
-+    else
-+       val &= ~BIT(18);
-+
-+    writel(val, devconf1);
-+}
-+EXPORT_SYMBOL_GPL(omap_ctrl_tvoutbypass);
-+
-+
-+void omap_ctrl_acen(int on)
-+{
-+    int val = readl(devconf1);
-+
-+    if (on)
-+       val |= BIT(11);
-+    else
-+       val &= ~BIT(11);
-+
-+    writel(val, devconf1);
-+}
-+EXPORT_SYMBOL_GPL(omap_ctrl_acen);
-+
-+
-+static int omap_ctrl_probe(struct platform_device *pdev)
-+{
-+    struct resource *res;
-+
-+    res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+       "devconf1");
-+    devconf1 = devm_ioremap_resource(
-+       &pdev->dev, res);
-+    if (IS_ERR(devconf1))
-+       return PTR_ERR(devconf1);
-+
-+    return 0;
-+}
-+
-+struct platform_driver omap_ctrl_driver = {
-+    .probe = omap_ctrl_probe,
-+    .driver = {
-+    .name = "omap-ctrl",
-+    .owner = THIS_MODULE,
-+    },
-+};
-+
-+static int __init omap_ctrl_init(void)
-+{
-+    return platform_driver_register(&omap_ctrl_driver);
-+}
-+subsys_initcall(omap_ctrl_init);
-+
-+static void __exit omap_ctrl_exit(void)
-+{
-+    platform_driver_unregister(&omap_ctrl_driver);
-+}
-
-I use that driver with platform device in board file with proper
-resources and it works fine. It could be easily added also DT
-bindings.
-Also you mention somewhere in drivers (but I think misc isn't right
-place for that). Any opinion on that? Thanks for feedback.
-
->
-> The reason why it should be a separate driver is that the system
-> control module can live a separate runtime PM life from the
-> drivers using the CONTROL_DEVCONF register bits.
->
-> Regards,
->
-> Tony
-
-BR,
-
-marek
-
+  *	Called under the atomic_read_lock mutex
+  *
+  *	n_tty_read()/consumer path:
+@@ -2010,7 +2027,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+ 	n += found;
+ 	c = n;
+ 
+-	if (found && read_buf(ldata, eol) == __DISABLED_CHAR) {
++	if (found && !ldata->push && read_buf(ldata, eol) == __DISABLED_CHAR) {
+ 		n--;
+ 		eof_push = !n && ldata->read_tail != ldata->line_start;
+ 	}
+@@ -2037,7 +2054,10 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+ 	ldata->read_tail += c;
+ 
+ 	if (found) {
+-		ldata->line_start = ldata->read_tail;
++		if (!ldata->push)
++			ldata->line_start = ldata->read_tail;
++		else
++			ldata->push = 0;
+ 		tty_audit_push(tty);
+ 	}
+ 	return eof_push ? -EAGAIN : 0;
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+1.8.1.2
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
