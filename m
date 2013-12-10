@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab3LJAeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:34:36 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58123 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab3LJAef (ORCPT
+	id S1751568Ab3LJAfY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:35:24 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:48126 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab3LJAfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:34:35 -0500
-X-AuditID: 9c93017e-b7bb9ae000000ec8-50-52a66197eb43
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCHSET 00/14] tools lib traceevent: Get rid of *die() calls from parse-filter.c
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-	<20131209112449.47eeedaa@gandalf.local.home>
-	<20131209184119.GD8098@ghostprotocols.net>
-Date: Tue, 10 Dec 2013 09:34:31 +0900
-In-Reply-To: <20131209184119.GD8098@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Mon, 9 Dec 2013 15:41:19 -0300")
-Message-ID: <87haahlf1k.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 9 Dec 2013 19:35:22 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>
+Subject: [PATCH 0/2] clockevents
+Date: Mon,  9 Dec 2013 16:34:44 -0800
+Message-Id: <1386635686-15686-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <alpine.DEB.2.02.1312071151340.30673@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1312071151340.30673@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+Hi Thomas,
 
-On Mon, 9 Dec 2013 15:41:19 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 09, 2013 at 11:24:49AM -0500, Steven Rostedt escreveu:
->> On Mon,  9 Dec 2013 14:33:57 +0900 Namhyung Kim <namhyung@kernel.org> wrote:
->> > This patchset tries to remove all die() calls in event filter parsing
->> > code.  The only remaining bits are in trace-seq.c which implement
->> > print functions and I want to hear what's the best way we can handle
->> > the error case during the print.
->
->> Other than what I commented on, the rest can have my:
->> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
->
-> Added this to all the ones I applied, Namhyung, please address the other
-> concerns and check which ones were not applied so that you can have them
-> in your next request.
+before respinning the complete series, I thought we could take a look at
+the changes to the timer core, since I expect them to need to be refined
+for an actual submission.
 
-Okay, will do!
+The first patch is the patch you proposed to serialize callers of
+clockevents_update_freq(). I guess you may find some better words to
+describe your changes. I found it not that easy to find a nice
+description for somebody else's patch.
 
-Thanks,
-Namhyung
+The second patch is my shot at extending clockevents_update_freq()
+to also handle timers in periodic mode. In my approach I assume that
+simply calling the timer's 'set_mode()' API takes care of programming an
+appropriate interval based on the current timer frequency. If that
+doesn't work for all timers, I guess it would require a new API call. Or
+I just missed some other way.
+
+	Thanks,
+	Sören
+
+Soren Brinkmann (2):
+  time: Serialize calls to 'clockevents_update_freq' in the timing core
+  time: clockevents: Adjust timer interval when frequency changes
+
+ kernel/time/clockevents.c    | 32 +++++++++++++++++++++++++-------
+ kernel/time/tick-broadcast.c | 25 +++++++++++++++++++------
+ kernel/time/tick-internal.h  |  4 ++++
+ 3 files changed, 48 insertions(+), 13 deletions(-)
+
+-- 
+1.8.5.1
+
