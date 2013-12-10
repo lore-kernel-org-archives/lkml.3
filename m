@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab3LJXqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:46:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab3LJXqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:46:09 -0500
-Date: Tue, 10 Dec 2013 18:00:09 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131210230009.GF5050@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Darren Hart <dvhart@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-References: <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
- <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
- <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com>
- <20131210213431.GA6342@redhat.com>
- <20131210214143.GG27373@redhat.com>
- <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
- <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
- <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
- <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
+	id S1751406Ab3LJXrz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:47:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:39885 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab3LJXrx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:47:53 -0500
+Message-ID: <52A7A827.3030607@codeaurora.org>
+Date: Tue, 10 Dec 2013 15:47:51 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Ball <cjb@laptop.org>
+CC: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] mmc: msm_sdcc: Limit driver to platforms that use
+ it
+References: <1386185952-27259-1-git-send-email-sboyd@codeaurora.org> <1386185952-27259-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1386185952-27259-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 02:48:52PM -0800, Linus Torvalds wrote:
- > On Tue, Dec 10, 2013 at 2:42 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
- > >
- > > And yes, I remember that we do not do an extra check for the fshared
- > > case, because get_user_pages_fast() should do it for us already. If
- > > not we are fubared not only in the futex code.
- > 
- > Yeah. It turns out we do do the access check indirectly - by looking
- > at the PAGE_USER bit, even if we don't necessarily check the actual
- > limits. So get_user_pages_fast() is fine.
- > 
- > > But there is a subtle detail:
- > 
- > Yup, see my email from ten minutes ago, we found the same thing. And
- > that would seem to explain the endless loop, and also the timing
- > (since Dave mentions he started doing large-pages lately).
- > 
- > So I think the "__get_user_pages_fast(address, 1, !ro, &page)" thing
- > should work.
- > 
- > Dave, can you re-create that trinity run and test that patch? I think
- > we've got this, but it might be nice to leave the hung machine up and
- > running until it's verified.. Although I don't really see what else we
- > could need or get out of it, so..
+On 12/04/13 11:39, Stephen Boyd wrote:
+> The msm_sdcc driver uses mach specific dma APIs. This is not
+> compatible with the multi-platform ARM effort. Let's only compile
+> this driver on MSM devices that are prepared to support it,
+> allowing the DT based MSM devices to enter the multi-platform ARM
+> build.
+>
+> Cc: Chris Ball <cjb@laptop.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
 
-The only thing I'm still unclear on, is how that pid allegedly wasn't doing
-a futex call as part of its run. The only thing I can think of is that
-the other pid that _did_ do a futex call did it on a page that was MAP_SHARED
-between all the other children, and this 'spin forever' thing only
-happens when the last process with a reference on that page exits ?
+Chris, can you please ack/review this change?
 
-does that make sense?
+>  drivers/mmc/host/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 7fc5099..4e8ca9d 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -324,7 +324,7 @@ config MMC_ATMELMCI
+>  
+>  config MMC_MSM
+>  	tristate "Qualcomm SDCC Controller Support"
+> -	depends on MMC && ARCH_MSM
+> +	depends on MMC && (ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50)
+>  	help
+>  	  This provides support for the SD/MMC cell found in the
+>  	  MSM and QSD SOCs from Qualcomm. The controller also has
 
-	Dave
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
