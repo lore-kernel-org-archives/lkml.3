@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab3LJRTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:19:01 -0500
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:38506 "HELO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754597Ab3LJRS7 (ORCPT
+	id S1755486Ab3LJRTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:19:11 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33138 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755452Ab3LJRTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:18:59 -0500
+	Tue, 10 Dec 2013 12:19:05 -0500
+Date: Tue, 10 Dec 2013 09:18:59 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v5 tip/core/locking 6/7] locking: Add an
+ smp_mb__after_unlock_lock() for UNLOCK+LOCK barrier
+Message-ID: <20131210171859.GT4208@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131210012738.GA24317@linux.vnet.ibm.com>
+ <1386638883-25379-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386638883-25379-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131210170404.GB23506@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1386181979-26547-1-git-send-email-fkan@apm.com>
-References: <1386181979-26547-1-git-send-email-fkan@apm.com>
-Date: Tue, 10 Dec 2013 09:18:58 -0800
-Message-ID: <CAL85gmC1xRdwN0kj2w-ScNNFqEy8KC800gmV0NH36TCYcLg33Q@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Add missing components for X-Gene reboot drivers.
-From: Feng Kan <fkan@apm.com>
-To: patches <patches@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Cc: Feng Kan <fkan@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210170404.GB23506@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121017-8236-0000-0000-000004C12D5A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any update on this? Thanks
+On Tue, Dec 10, 2013 at 06:04:04PM +0100, Oleg Nesterov wrote:
+> On 12/09, Paul E. McKenney wrote:
+> >
+> > This commit therefore adds a smp_mb__after_unlock_lock(), which may be
+> > placed after a LOCK primitive to restore the full-memory-barrier semantic.
+> > All definitions are currently no-ops, but will be upgraded for some
+> > architectures when queued locks arrive.
+> 
+> I am wondering, perhaps smp_mb__after_unlock() makes more sense?
+> 
+> Note that it already has the potential user:
+> 
+> 	--- x/kernel/sched/wait.c
+> 	+++ x/kernel/sched/wait.c
+> 	@@ -176,8 +176,9 @@ prepare_to_wait(wait_queue_head_t *q, wa
+> 		spin_lock_irqsave(&q->lock, flags);
+> 		if (list_empty(&wait->task_list))
+> 			__add_wait_queue(q, wait);
+> 	-	set_current_state(state);
+> 	+	__set_current_state(state);
+> 		spin_unlock_irqrestore(&q->lock, flags);
+> 	+	smp_mb__after_unlock();
+> 	 }
+> 	 EXPORT_SYMBOL(prepare_to_wait);
+> 	 
+> 	@@ -190,8 +191,9 @@ prepare_to_wait_exclusive(wait_queue_hea
+> 		spin_lock_irqsave(&q->lock, flags);
+> 		if (list_empty(&wait->task_list))
+> 			__add_wait_queue_tail(q, wait);
+> 	-	set_current_state(state);
+> 	+	__set_current_state(state);
+> 		spin_unlock_irqrestore(&q->lock, flags);
+> 	+	smp_mb__after_unlock();
+> 	 }
+> 	 EXPORT_SYMBOL(prepare_to_wait_exclusive);
+> 	 
+> 
+> Assuming it can also be used "later", after another LOCK, like in
+> your example in 5/7.
 
-On Wed, Dec 4, 2013 at 10:32 AM, Feng Kan <fkan@apm.com> wrote:
-> Add dts node for X-Gene reboot driver. Apply documentation dts binding.
-> Some minor compile warning fix and enable reboot driver by default.
->
-> Feng Kan (4):
->   Documentation: add dts binding for X-Gene reboot dts node.
->   arm64: add missing dts entry for X-Gene platform.
->   arm64: Enable system reset via arch Kconfig for X-Gene system.
->   arm64: removed using of the mask attribute in the dts for reset bit.
->
->  .../devicetree/bindings/arm64/xgene/reboot.txt     |   11 +++++++++++
->  arch/arm64/Kconfig                                 |    1 +
->  arch/arm64/boot/dts/apm-storm.dtsi                 |    5 +++++
->  drivers/power/reset/xgene-reboot.c                 |    5 ++---
->  4 files changed, 19 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm64/xgene/reboot.txt
->
-> --
-> 1.7.6.1
->
+I am fine either way.  But there was an objection to tying this to the
+unlock because it costs more on many architectures than tying this to
+the lock.
+
+But if you are saying "in addition to" rather than "instead of" that
+would be a different conversation.
+
+							Thanx, Paul
+
