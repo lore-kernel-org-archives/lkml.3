@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab3LJH7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:59:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58349 "EHLO
+	id S1752592Ab3LJH7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:59:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58379 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3LJH7I (ORCPT
+	with ESMTP id S1751530Ab3LJH7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:08 -0500
+	Tue, 10 Dec 2013 02:59:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>,
-        Anatolij Gustschin <agust@denx.de>, Liu Gang <Gang.Liu@freescale.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.4 12/25] powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
-Date: Tue, 10 Dec 2013 00:00:20 -0800
-Message-Id: <20131210075931.694949274@linuxfoundation.org>
+        Sergei Trofimovich <slyfox@gentoo.org>, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>, Al Viro <viro@zeniv.linux.org.uk>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net
+Subject: [PATCH 3.4 17/25] um: add missing declaration of getrlimit() and friends
+Date: Tue, 10 Dec 2013 00:00:25 -0800
+Message-Id: <20131210075932.038233258@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -28,57 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Gang <Gang.Liu@freescale.com>
+From: Sergei Trofimovich <slyfox@gentoo.org>
 
-commit 1aeef303b5d9e243c41d5b80f8bb059366514a10 upstream.
+commit fdfa4c952844fce881df8c76de9c7180cbe913ab upstream.
 
-For MPC8572/MPC8536, the status of GPIOs defined as output
-cannot be determined by reading GPDAT register, so the code
-use shadow data register instead. But the code may give the
-wrong status of GPIOs defined as input under some scenarios:
+arch/um/os-Linux/start_up.c: In function 'check_coredump_limit':
+arch/um/os-Linux/start_up.c:338:16: error: storage size of 'lim' isn't known
+arch/um/os-Linux/start_up.c:339:2: error: implicit declaration of function 'getrlimit' [-Werror=implicit-function-declaration]
 
-1. If some pins were configured as inputs and were asserted
-high before booting the kernel, the shadow data has been
-initialized with those pin values.
-2. Some pins have been configured as output first and have
-been set to the high value, then reconfigured as input.
-
-The above cases will make the shadow data for those input
-pins to be set to high. Then reading the pin status will
-always return high even if the actual pin status is low.
-
-The code should eliminate the effects of the shadow data to
-the input pins, and the status of those pins should be
-read directly from GPDAT.
-
-Acked-by: Scott Wood <scottwood@freescale.com>
-Acked-by: Anatolij Gustschin <agust@denx.de>
-Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+CC: Jeff Dike <jdike@addtoit.com>
+CC: Richard Weinberger <richard@nod.at>
+CC: Al Viro <viro@zeniv.linux.org.uk>
+CC: user-mode-linux-devel@lists.sourceforge.net
+CC: user-mode-linux-user@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-mpc8xxx.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/um/os-Linux/start_up.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_
- 	u32 val;
- 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
- 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
-+	u32 out_mask, out_shadow;
- 
--	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
-+	out_mask = in_be32(mm->regs + GPIO_DIR);
- 
--	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
-+	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
-+	out_shadow = mpc8xxx_gc->data & out_mask;
-+
-+	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
- }
- 
- static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
+--- a/arch/um/os-Linux/start_up.c
++++ b/arch/um/os-Linux/start_up.c
+@@ -15,6 +15,8 @@
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <sys/wait.h>
++#include <sys/time.h>
++#include <sys/resource.h>
+ #include <asm/unistd.h>
+ #include "init.h"
+ #include "os.h"
 
 
