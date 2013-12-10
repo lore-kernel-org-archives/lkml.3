@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815Ab3LJUkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 15:40:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10951 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3LJUke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 15:40:34 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org, jmorris@namei.org
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] KEYS: Miscellaneous fixes
-Date: Tue, 10 Dec 2013 20:40:27 +0000
-Message-ID: <4197.1386708027@warthog.procyon.org.uk>
+	id S1751349Ab3LJUnr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 15:43:47 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:52526 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab3LJUnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 15:43:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1312102130580.28330@ionos.tec.linutronix.de>
+References: <20131210154724.GA30020@redhat.com>
+	<CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+	<alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+	<CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+	<alpine.DEB.2.02.1312102130580.28330@ionos.tec.linutronix.de>
+Date: Tue, 10 Dec 2013 12:43:45 -0800
+X-Google-Sender-Auth: KwGV_Zlbn_C24UtuM87AJcVwfu0
+Message-ID: <CA+55aFx3UkrX5Q5kL7mWOoEwd+cr3mTjmsZBw-ZRZ-OsU3i4pg@mail.gmail.com>
+Subject: Re: process 'stuck' at exit.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 10, 2013 at 12:33 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> The -EAGAIN is when the user value changed, simplified:
 
-Hi Linus,
+No it's not.
 
-Could you pull the following fixes for the keyring stuff.  They break down into
-five sets:
+Thomas, stop this crap already. Look at the f*cking code carefully
+instead of just dismissing cases.
 
- (1) A patch to error handling in the big_key type for huge payloads.  If the
-     payload is larger than the "low limit" and the backing store allocation
-     fails, then big_key_instantiate() doesn't clear the payload pointers in
-     the key, assuming them to have been previously cleared - but only one of
-     them is.
+The worrisome EAGAIN case is
 
-     Unfortunately, the garbage collector still calls big_key_destroy() when
-     sees one of the pointers with a weird value in it (and not NULL) which it
-     then tries to clean up.
+  futex_requeue
+    futex_proxy_trylock_atomic
+      futex_lock_pi_atomic
+        lookup_pi_state:
+          ret = (p->flags & PF_EXITPIDONE) ? -ESRCH : -EAGAIN;
 
- (2) Three patches to fix the keyring type:
+and now futex_requeue() will do "goto repeat" for that EAGAIN case.
 
-     (a) A patch to fix the hash function to correctly divide keyrings off from
-     keys in the topology of the tree inside the associative array.  This is
-     only a problem if searching through nested keyrings - and only if the hash
-     function incorrectly puts the a keyring outside of the 0 branch of the
-     root node.
+So, Christ, Thomas, you have now *twice* dismissed a real concern with
+totally bogus "that can never happen" by explaining some totally
+unrelated *simple* case rather than the much more complex case.
 
-     (b) A patch to fix keyrings' use of the associative array.  The
-     __key_link_begin() function initially passes a NULL key pointer to
-     assoc_array_insert() on the basis that it's holding a place in the tree
-     whilst it does more allocation and stuff.
+So please. Really. Truly look at the code and thing about it, or shut
+the f*ck up. No more of this shit where you glance at the code, find
+some simple case, and say "that can't happen", and dismiss the
+bug-report.
 
-     This is only a problem when a node contains 16 keys that match at that
-     level and we want to add an also matching 17th.  This should easily be
-     manufactured with a keyring full of keyrings (without chucking any other
-     sort of key into the mix) - except for (a) above which makes it on average
-     adding the 65th keyring.
+So far Dave's bug-reports have generally pretty much universally shown
+real bugs. Being dismissive about it is not helpful, quite the
+reverse.
 
-     (c) A patch to fix searching down through nested keyrings, where any
-     keyring in the set has more than 16 keyrings and none of the first
-     keyrings we look through has a match (before the tree iteration needs to
-     step to a more distal node).
+Maybe the loop I'm pointing at cannot happen, but *your* explanation
+for why it couldn't happen was pure and utter garbage, and was clearly
+because you hadn't even bothered to look at all the cases.
 
-     Test in keyutils test suite:
-
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=8b4ae963ed92523aea18dfbb8cab3f4979e13bd1
-
- (3) A patch to fix the big_key type's use of a shmem file as its backing store
-     causing audit messages and LSM check failures.  This is done by setting
-     S_PRIVATE on the file to avoid LSM checks on the file (access to the shmem
-     file goes through the keyctl() interface and so is gated by the LSM that
-     way).
-
-     This isn't normally a problem if a key is used by the context that
-     generated it - and it's currently only used by libkrb5.
-
-     Test in keyutils test suite:
-
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/keyutils.git/commit/?id=d9a53cbab42c293962f2f78f7190253fc73bd32e
-
- (4) A patch to add a generated file to .gitignore.
-
- (5) A patch to fix the alignment of the system certificate data such that it
-     it works on S390.  As I understand it, on the S390 arch, symbols must be
-     2-byte aligned because loading the address discards the least-significant
-     bit.
-
-David
----
-The following changes since commit af91706d5ddecb4a9858cca9e90d463037cfd498:
-
-  ima: store address of template_fmt_copy in a pointer before calling strsep (2013-11-30 13:09:53 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-devel-20131210
-
-for you to fetch changes up to 62226983da070f7e51068ec2e3a4da34672964c7:
-
-  KEYS: correct alignment of system_certificate_list content in assembly file (2013-12-10 18:25:28 +0000)
-
-----------------------------------------------------------------
-(from the branch description for keys-devel local branch)
-
-Keyrings development
-Keyrings fixes 2013-12-10
-
-----------------------------------------------------------------
-David Howells (4):
-      KEYS: Pre-clear struct key on allocation
-      KEYS: Fix the keyring hash function
-      KEYS: Fix multiple key add into associative array
-      KEYS: Fix searching of nested keyrings
-
-Eric Paris (1):
-      security: shmem: implement kernel private shmem inodes
-
-Hendrik Brueckner (1):
-      KEYS: correct alignment of system_certificate_list content in assembly file
-
-Rusty Russell (1):
-      Ignore generated file kernel/x509_certificate_list
-
- Documentation/assoc_array.txt |  6 +++---
- include/linux/assoc_array.h   |  6 +++---
- include/linux/shmem_fs.h      |  2 ++
- kernel/.gitignore             |  1 +
- kernel/system_certificates.S  | 14 ++++++++++++--
- kernel/system_keyring.c       |  4 ++--
- lib/assoc_array.c             |  4 ++--
- mm/shmem.c                    | 36 +++++++++++++++++++++++++++++-------
- security/keys/big_key.c       |  2 +-
- security/keys/key.c           |  8 +-------
- security/keys/keyring.c       | 17 ++++++++---------
- 11 files changed, 64 insertions(+), 36 deletions(-)
+                Linus
