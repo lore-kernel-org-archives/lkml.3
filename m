@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab3LJKFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:05:13 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:45049 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab3LJKFG convert rfc822-to-8bit (ORCPT
+	id S1752813Ab3LJKF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 05:05:27 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:62327 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab3LJKFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:05:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131210095723.GB2352@krava.brq.redhat.com>
-References: <1386411461-21510-1-git-send-email-jean.pihet@linaro.org>
-	<1386411461-21510-3-git-send-email-jean.pihet@linaro.org>
-	<20131209171719.GA16631@krava.brq.redhat.com>
-	<CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
-	<20131210095723.GB2352@krava.brq.redhat.com>
-Date: Tue, 10 Dec 2013 11:05:04 +0100
-Message-ID: <CAFrcx1kKmTf=6DjAbn8F=--KaijotSqo8_dkRFpgo5J+q8Vfeg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf: unwinding: use the per-feature check flags
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
-        Will Deacon <will.deacon@arm.com>, Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 10 Dec 2013 05:05:22 -0500
+From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: grant.likely@linaro.org, rob.herring@calxeda.com, swarren@wwwdotorg.org,
+        mark.rutland@arm.com, sachin.kamat@linaro.org,
+        b.zolnierkie@samsung.com, jg1.han@samsung.com, t.figa@samsung.com,
+        christoffer.dall@linaro.org, joshi@samsung.com,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: [PATCH V3 0/2] Exynos5250 SATA Support
+Date: Tue, 10 Dec 2013 15:35:08 +0530
+Message-Id: <1386669911-17319-1-git-send-email-yuvaraj.cd@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+This patch series enable the SATA support on Exynos5250 based boards.
+It incorporates the generic phy framework to deal with sata phy.
 
-On 10 December 2013 10:57, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Mon, Dec 09, 2013 at 07:02:02PM +0100, Jean Pihet wrote:
->> Hi Jiri,
->>
->> On 9 December 2013 18:17, Jiri Olsa <jolsa@redhat.com> wrote:
->> > On Sat, Dec 07, 2013 at 11:17:41AM +0100, Jean Pihet wrote:
->> >> Use the per-feature check flags for the unwinding feature in order
->> >> to correctly compile the libunwind and libunwind-debug-frame feature
->> >> checks.
->> >>
->> >> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set
->> >> in 'make -C tools/perf'
->> >>
->> >> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
->> >> Cc: Jiri Olsa <jolsa@redhat.com>
->> >
->> > SNIP
->> >
->> >> +BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
->> >>
->> >>  ###############################
->> >>
->> >>  test-all:
->> >> -     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
->> >> +     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
->> >
->> > hum, the test-all build command should have every possible flags we use, right?
->> > including LIBUNWIND_CFLAGS, LIBUNWIND_LDFLAGS
->> Oh yes you are right. I am overlooked the test-all feature (which
->> never builds on my modest embedded systems).
->> $(LIBUNWIND_LIBS) should be replaced by $(LIBUNWIND_CFLAGS)
->> $(LIBUNWIND_LDFLAGS), is that a reasonable approach?
->
-> hum, I'm just dealing with same issue for new libdw feature.. ;-)
->
-> I was wondering we could just setup:
->   FEATURE_CHECK_CFLAGS-all
->   FEATURE_CHECK_LDFLAGS-all
->
-> automatically from all defined FEATURE_CHECK_(C|LD)FLAGS-*
-> just a thought.. haven't tried it yet
-Yes that is the idea. The per-feature flags are designed for that
-purpose. For now I have the fix for libunwind only, cf. here below.
-All features should use the flags. There are complex cases though (e.g
-perl flags in config/Makefile andconfig/feature-checks)...
+This patch depends on the below patches
+	[1]. drivers: phy: add generic PHY framework
+		by Kishon Vijay Abraham I<kishon@ti.com>
+	[2]. ata: ahci_platform: Manage SATA PHY
+		by Roger Quadros <rogerq@ti.com>
+	[3].ARM: dts: Add pmu sysreg node to exynos5250 and
+		exynos5420 dtsi files
+		by Leela Krishna Amudala <l.krishna@samsung.com>
+	[4]. i2c: s3c2410 : Add polling mode support
+		by Vasanth Ananthan <vasanth.a@samsung.com>
 
-My plan is to submit the ix for libunwind first and if ok care about
-the other features. Is that OK?
+Changes from V2:
+	1.Removed of_match_table
+	2.Moved to syscon interface for PMU handling.
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index d24b4bd..65bc78e 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -56,10 +56,14 @@ else
-   endif
-   LIBUNWIND_LDFLAGS += $(LIBUNWIND_LIBS)
+Changes from V1:
+	1. Dropped the patch 
+	ahci: exynos: add ahci sata support on Exynos platform
 
-+  # Set per-feature check compilation flags
-   FEATURE_CHECK_CFLAGS-libunwind = $(LIBUNWIND_CFLAGS)
-   FEATURE_CHECK_LDFLAGS-libunwind = $(LIBUNWIND_LDFLAGS)
-   FEATURE_CHECK_CFLAGS-libunwind-debug-frame = $(LIBUNWIND_CFLAGS)
-   FEATURE_CHECK_LDFLAGS-libunwind-debug-frame = $(LIBUNWIND_LDFLAGS)
-+  #  and the flags for the test-all case
-+  FEATURE_CHECK_CFLAGS-all += $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-all += $(LIBUNWIND_LDFLAGS)
- endif
-
- ifeq ($(NO_PERF_REGS),0)
+	2.Adapt to latest generic PHY framework available in 
+	git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git next
 
 
->
-> jirka
+Yuvaraj Kumar C D (2):
+  Phy: Exynos: Add Exynos5250 sata phy driver
+  ARM: dts: Enable ahci sata and sata phy
 
-Thx,
-Jean
+ .../devicetree/bindings/ata/exynos-sata-phy.txt    |   19 +-
+ .../devicetree/bindings/ata/exynos-sata.txt        |   17 +-
+ .../devicetree/bindings/ata/exynos_sataphy_i2c.txt |   12 ++
+ arch/arm/boot/dts/exynos5250-arndale.dts           |    9 +-
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |   16 +-
+ drivers/phy/Kconfig                                |   11 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/exynos5250_phy_i2c.c                   |   44 ++++
+ drivers/phy/sata_phy_exynos5250.c                  |  219 ++++++++++++++++++++
+ drivers/phy/sata_phy_exynos5250.h                  |   35 ++++
+ 11 files changed, 370 insertions(+), 21 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/exynos_sataphy_i2c.txt
+ create mode 100644 drivers/phy/exynos5250_phy_i2c.c
+ create mode 100644 drivers/phy/sata_phy_exynos5250.c
+ create mode 100644 drivers/phy/sata_phy_exynos5250.h
+
+-- 
+1.7.9.5
+
