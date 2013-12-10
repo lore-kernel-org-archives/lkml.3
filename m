@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab3LJAMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:12:15 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61857 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab3LJAMM (ORCPT
+	id S1751342Ab3LJANb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:13:31 -0500
+Received: from qmta10.westchester.pa.mail.comcast.net ([76.96.62.17]:48952
+	"EHLO qmta10.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750699Ab3LJAN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:12:12 -0500
-X-AuditID: 9c930179-b7ce4ae000000e86-86-52a65c5a8464
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/2] perf report: Add --header/--header-only options
-References: <1386583370-1699-1-git-send-email-jolsa@redhat.com>
-	<1386583370-1699-2-git-send-email-jolsa@redhat.com>
-Date: Tue, 10 Dec 2013 09:12:10 +0900
-In-Reply-To: <1386583370-1699-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Mon, 9 Dec 2013 11:02:49 +0100")
-Message-ID: <87ppp5lg2t.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
+	Mon, 9 Dec 2013 19:13:29 -0500
+To: peter@hurleysoftware.com
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, stable@vger.kernel.org
+From: Karl Dahlke <eklhad@comcast.net>
+Reply-to: Karl Dahlke <eklhad@comcast.net>
+References: <20131107184607.eklhad@comcast.net> <1386630367-4658-1-git-send-email-peter@hurleysoftware.com>
+User-Agent: edbrowse/3.4.9
+Subject: Bug in tty cooked mode kernel 3.12.3
+Date: Mon, 09 Dec 2013 19:12:04 -0500
+Message-ID: <20131109191204.eklhad@comcast.net>
+Mime-Version: 1.0
 Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  9 Dec 2013 11:02:49 +0100, Jiri Olsa wrote:
-> Currently the perf.data header is always displayed for stdio
-> output, which is no always useful.
->
-> Disabling header information by default and adding following
-> options to control header output:
->   --header      - display header information (old default)
->   --header-only - display header information only w/o further
->                   processing, forces stdio output
->
-[SNIP]
-> +--header
-> +	Show perf.data header.
+> Thanks for the report, Karl.
+> 
+> Please test the patch below (requires
+> commit 39434abd942c8e4b9c14c06a03b3245beaf8467f,
+> 'n_tty: Fix missing newline echo').
+> This should fix the 'newline output after the new prompt' problem.
 
-This explanation looks too terse.  How about this?
+Hey hey - you did it!
+I did my console switch, which *always* revealed the bug,
+and it is not there any more.
+I've also spent a couple hours in cooked mode programs, like my editor,
+and the lines are all correct.
+I'll keep at it for a few days, but for now I'm going to say it's fixed.
+Please push this into the next release, and perhaps backport
+if possible; for those of us in cooked line mode
+it was really an inconvenient bug.
+Finally, my complements to you.
+I read the code in n_tty.c and I don't understand any of it.
+It's way beyond me.
+Nice job, and thank you.
 
-	Show header information in the perf.data file.  This includes
-        various information like hostname, os and perf version, cpu/mem
-        info, perf command line, event list and so on.  Currently only
-        --stdio output supports this feature.
 
-Thanks,
-Namhyung
-
-> +
-> +--header-only
-> +	Show only perf.data header (forces --stdio).
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-stat[1], linkperf:perf-annotate[1]
+Karl Dahlke
