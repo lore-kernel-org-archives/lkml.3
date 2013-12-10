@@ -1,39 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751139Ab3LJVi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 16:38:29 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:59345 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab3LJVi1 (ORCPT
+	id S1751863Ab3LJVj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 16:39:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30737 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751280Ab3LJVj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 16:38:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386707123.23829.23.camel@flatline.rdu.redhat.com>
-References: <CA+5PVA56s68i_Ad+FiT_8_OHZt3BeZdpqdzc6RVbgOx68=MaOQ@mail.gmail.com>
-	<1386707123.23829.23.camel@flatline.rdu.redhat.com>
-Date: Tue, 10 Dec 2013 16:38:27 -0500
-X-Google-Sender-Auth: 9mjPx-yK5moEVI9n1nIyY_xy_54
-Message-ID: <CA+5PVA4OTOC3nR5vQp3M8J12gn42_rLxxPB-whhPdgPrOVNZMg@mail.gmail.com>
-Subject: Re: SELinux change in 3.13 causes sync hang
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Anand Avati <avati@redhat.com>, James Morris <jmorris@namei.org>,
-        Eric Sandeen <sandeen@redhat.com>,
+	Tue, 10 Dec 2013 16:39:28 -0500
+Date: Tue, 10 Dec 2013 16:39:25 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131210163925.6f5ecad1@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1312102227200.28330@ionos.tec.linutronix.de>
+References: <20131210154724.GA30020@redhat.com>
+	<CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+	<alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+	<CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+	<20131210202752.GA27373@redhat.com>
+	<alpine.DEB.2.02.1312102133400.28330@ionos.tec.linutronix.de>
+	<20131210205523.GC27373@redhat.com>
+	<1386710734.3685.85.camel@dvhart-mobl4.amr.corp.intel.com>
+	<alpine.DEB.2.02.1312102227200.28330@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 3:25 PM, Eric Paris <eparis@redhat.com> wrote:
-> I still believe (assuming Josh says it tests ok) that a revert is a
-> reasonable fix until next window.  But I might know the actual problem:
+On Tue, 10 Dec 2013 22:28:01 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Sorry for the delay.  Hit something else post-rc3 that causes my
-machine to not boot.
+> On Tue, 10 Dec 2013, Darren Hart wrote:
+> > On Tue, 2013-12-10 at 15:55 -0500, Dave Jones wrote:
+> > > On Tue, Dec 10, 2013 at 09:34:24PM +0100, Thomas Gleixner wrote:
+> > >  
+> > >  > >  > PS: Oleg - the whole thread is on lkml. Ping me if you need more context.
+> > >  > > 
+> > >  > > btw, I've left the machine in that state, and will for as long as necesary
+> > >  > > in case someone has any ideas for further tracing experiments.
+> > >  > 
+> > >  > Can you gather a trace with the function tracer? That will tell us
+> > >  > what the thing is actually doing.
+> > > 
+> > > Feed me command lines, and I'll see what I can do.
+> > > 
+> > > 	Dave
+> > > 
+> > 
+> > So let's see if we can determine the call chain inside futex_requeue, if
+> > there is one. We want to see if we are calling the following functions:
+> > 
+> > futex.c: free_pi_state
+> > futex.c: get_futex_value_locked
+> > futex.c: futex_proxy_trylock_atomic
+> > futex.c: lookup_pi_state
+> > futex.c: fault_in_user_writeable
+> > 
+> > I'm hoping we can make use of ftrace here?
+> > 
+> > Consider:
+> > 
+> > $ trace-cmd record -P <PID> -p function -l '*futex*'
 
-3.13-rc3 exhibits the problem as expected.  The commit reverts cleanly
-on top of -rc3 and the resulting kernel doesn't have the issue.
+Note the above just picks functions that have "futex" in its name, and
+will not include all the functions you listed above.
 
-josh
+> > 
+> > And to try outside of futex:
+> > 
+> > $ trace-cmd record -P <PID> -p function
+> > 
+> > Then ^C after a few seconds. The trace will be in trace.dat
+> 
+> We definitely want the latter. The futex code gets compiled into some
+> badly traceable mess.
+
+Yeah, lets use all functions. If its in a loop, we should see exactly
+what is happening, with full function tracing.
+
+You may be able to simplify it to just:
+
+	trace-cmd record -p function sleep 10
+
+and then read the trace. Nasty loopers usually dominate these types of
+traces so no need to filter on them in the recording.
+
+-- Steve
