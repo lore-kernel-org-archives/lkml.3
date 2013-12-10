@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab3LJIJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:09:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58997 "EHLO
+	id S1754570Ab3LJIJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:09:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891Ab3LJIC2 (ORCPT
+	with ESMTP id S1753801Ab3LJICY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:28 -0500
+	Tue, 10 Dec 2013 03:02:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Gundersen <teg@jklm.no>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.12 52/62] Input: allow deselecting serio drivers even without CONFIG_EXPERT
-Date: Tue, 10 Dec 2013 00:01:23 -0800
-Message-Id: <20131210080101.070213560@linuxfoundation.org>
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.12 50/62] iwlwifi: dvm: dont override mac80211s queue setting
+Date: Tue, 10 Dec 2013 00:01:21 -0800
+Message-Id: <20131210080100.924613737@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -27,79 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Gundersen <teg@jklm.no>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit bcd2623073e98f69f84720308db0b142c4da0bd6 upstream.
+commit f6b129527ca15bae29ffb9417ddaa1c9d99ffc5d upstream.
 
-There is plenty of consumer hardware (e.g., mac books) that does not use AT
-keyboards or PS/2 mice. It therefore makes sense for distro kernels to
-build the related drivers as modules to avoid loading them on hardware that
-does not need them. As such, these options should no longer be protected by
-EXPERT.
+Since we set IEEE80211_HW_QUEUE_CONTROL, we can let
+mac80211 do the queue assignement and don't need to
+override its decisions.
+While reassiging the same values is harmless of course,
+it triggered  a WARNING when iwlwifi and mac80211 came
+to different conclusions. This happened when mac80211 set
+IEEE80211_TX_CTL_SEND_AFTER_DTIM, but didn't route the
+packet to the cab_queue because no stations were asleep.
 
-Moreover, building these drivers as modules gets rid of the following ugly
-error during boot:
+iwlwifi should not override mac80211's decicions for
+offchannel packets and packets to  be sent after DTIM,
+but it should override mac80211's decision for AMPDUs
+since we have a special queue for them. So for AMPDU,
+we still override info->hw_queue by the AMPDU queue.
 
-[    2.337745] i8042: PNP: No PS/2 controller found. Probing ports directly.
-[    3.439537] i8042: No controller found
+This avoids:
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 2531 at drivers/net/wireless/iwlwifi/dvm/tx.c:456 iwlagn_tx_skb+0x6c5/0x883()
+Modules linked in:
+CPU: 0 PID: 2531 Comm: hostapd Not tainted 3.12.0-rc5+ #1
+Hardware name:                  /D53427RKE, BIOS RKPPT10H.86A.0017.2013.0425.1251 04/25/2013
+ 0000000000000000 0000000000000009 ffffffff8189aa62 0000000000000000
+ ffffffff8105a4f2 ffff880058339a48 ffffffff815f8a04 0000000000000000
+ ffff8800560097b0 0000000000000208 0000000000000000 ffff8800561a9e5e
+Call Trace:
+ [<ffffffff8189aa62>] ? dump_stack+0x41/0x51
+ [<ffffffff8105a4f2>] ? warn_slowpath_common+0x78/0x90
+ [<ffffffff815f8a04>] ? iwlagn_tx_skb+0x6c5/0x883
+ [<ffffffff815f8a04>] ? iwlagn_tx_skb+0x6c5/0x883
+ [<ffffffff818a0040>] ? put_cred+0x15/0x15
+ [<ffffffff815f6db4>] ? iwlagn_mac_tx+0x19/0x2f
+ [<ffffffff8186cc45>] ? __ieee80211_tx+0x226/0x29b
+ [<ffffffff8186e6bd>] ? ieee80211_tx+0xa6/0xb5
+ [<ffffffff8186e98b>] ? ieee80211_monitor_start_xmit+0x1e9/0x204
+ [<ffffffff8171ce5f>] ? dev_hard_start_xmit+0x271/0x3ec
+ [<ffffffff817351ac>] ? sch_direct_xmit+0x66/0x164
+ [<ffffffff8171d1bf>] ? dev_queue_xmit+0x1e5/0x3c8
+ [<ffffffff817fac5a>] ? packet_sendmsg+0xac5/0xb3d
+ [<ffffffff81709a09>] ? sock_sendmsg+0x37/0x52
+ [<ffffffff810f9e0c>] ? __do_fault+0x338/0x36b
+ [<ffffffff81713820>] ? verify_iovec+0x44/0x94
+ [<ffffffff81709e63>] ? ___sys_sendmsg+0x1f1/0x283
+ [<ffffffff81140a73>] ? __inode_wait_for_writeback+0x67/0xae
+ [<ffffffff8111735e>] ? __cache_free.isra.46+0x178/0x187
+ [<ffffffff811173b1>] ? kmem_cache_free+0x44/0x84
+ [<ffffffff81132c22>] ? dentry_kill+0x13d/0x149
+ [<ffffffff81132f6f>] ? dput+0xe5/0xef
+ [<ffffffff81136e04>] ? fget_light+0x2e/0x7c
+ [<ffffffff8170ae62>] ? __sys_sendmsg+0x39/0x57
+ [<ffffffff818a7e39>] ? system_call_fastpath+0x16/0x1b
+---[ end trace 1b3eb79359c1d1e6 ]---
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/keyboard/Kconfig |    4 ++--
- drivers/input/serio/Kconfig    |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- menuconfig INPUT_KEYBOARD
--	bool "Keyboards" if EXPERT || !X86
-+	bool "Keyboards"
- 	default y
- 	help
- 	  Say Y here, and a list of supported keyboards will be displayed.
-@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
+--- a/drivers/net/wireless/iwlwifi/dvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
+@@ -433,27 +433,19 @@ int iwlagn_tx_skb(struct iwl_priv *priv,
+ 	/* Copy MAC header from skb into command buffer */
+ 	memcpy(tx_cmd->hdr, hdr, hdr_len);
  
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EXPERT || !X86
-+	tristate "AT keyboard"
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- config SERIO
--	tristate "Serial I/O support" if EXPERT || !X86
-+	tristate "Serial I/O support"
- 	default y
- 	help
- 	  Say Yes here if you have any input device that uses serial I/O to
-@@ -19,7 +19,7 @@ config SERIO
- if SERIO
++	txq_id = info->hw_queue;
++
+ 	if (is_agg)
+ 		txq_id = priv->tid_data[sta_id][tid].agg.txq_id;
+ 	else if (info->flags & IEEE80211_TX_CTL_SEND_AFTER_DTIM) {
+ 		/*
+-		 * Send this frame after DTIM -- there's a special queue
+-		 * reserved for this for contexts that support AP mode.
+-		 */
+-		txq_id = ctx->mcast_queue;
+-
+-		/*
+ 		 * The microcode will clear the more data
+ 		 * bit in the last frame it transmits.
+ 		 */
+ 		hdr->frame_control |=
+ 			cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+-	} else if (info->flags & IEEE80211_TX_CTL_TX_OFFCHAN)
+-		txq_id = IWL_AUX_QUEUE;
+-	else
+-		txq_id = ctx->ac_to_queue[skb_get_queue_mapping(skb)];
++	}
  
- config SERIO_I8042
--	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
-+	tristate "i8042 PC Keyboard controller"
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN && !S390 && \
-@@ -170,7 +170,7 @@ config SERIO_MACEPS2
- 	  module will be called maceps2.
+-	WARN_ON_ONCE(!is_agg && txq_id != info->hw_queue);
+ 	WARN_ON_ONCE(is_agg &&
+ 		     priv->queue_to_mac80211[txq_id] != info->hw_queue);
  
- config SERIO_LIBPS2
--	tristate "PS/2 driver library" if EXPERT
-+	tristate "PS/2 driver library"
- 	depends on SERIO_I8042 || SERIO_I8042=n
- 	help
- 	  Say Y here if you are using a driver for device connected
 
 
