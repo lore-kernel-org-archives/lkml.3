@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab3LJLLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:11:55 -0500
-Received: from mga03.intel.com ([143.182.124.21]:42876 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab3LJLLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:11:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
-   d="scan'208";a="441628250"
-Date: Tue, 10 Dec 2013 15:43:31 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Dan Williams <dan.j.williams@intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
-Message-ID: <20131210101331.GG29580@intel.com>
-References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
- <20131128055706.GM8834@intel.com>
- <20131209235035.GA11632@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131209235035.GA11632@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752846Ab3LJLMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:12:10 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:34236 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab3LJLME (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 06:12:04 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 3/3] m68k: Convert arch/m68k/mm/fault.c to pr_*()
+Date: Tue, 10 Dec 2013 12:12:00 +0100
+Message-Id: <1386673920-5670-3-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386673920-5670-1-git-send-email-geert@linux-m68k.org>
+References: <1386673920-5670-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 11:50:35PM +0000, Russell King - ARM Linux wrote:
-> On Thu, Nov 28, 2013 at 11:27:06AM +0530, Vinod Koul wrote:
-> > + Dan
-> > 
-> > On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
-> > > The following commit:
-> > > 
-> > >   54f8d501e842 dmaengine: remove DMA unmap from drivers
-> > > 
-> > > removed the last caller to mv_desc_get_dest_addr(), creating the
-> > > warning:
-> > > 
-> > >   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
-> > >   but not used [-Wunused-function]
-> > > 
-> > > Remove it.
-> > > 
-> > > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-> > Acked-by: Vinod Koul <vinod.koul@intel.com>
-> > 
-> > This should go thru Dan's tree
-> 
-> So what's happening with this patch?  I don't see it in -rc yet.
-Dan has applied this to his next. So this should show us in next rc1
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/mm/fault.c |   23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
 
---
-~Vinod
+diff --git a/arch/m68k/mm/fault.c b/arch/m68k/mm/fault.c
+index c7725f1de05d..2bd7487440c4 100644
+--- a/arch/m68k/mm/fault.c
++++ b/arch/m68k/mm/fault.c
+@@ -25,9 +25,8 @@ int send_fault_sig(struct pt_regs *regs)
+ 	siginfo.si_signo = current->thread.signo;
+ 	siginfo.si_code = current->thread.code;
+ 	siginfo.si_addr = (void *)current->thread.faddr;
+-#ifdef DEBUG
+-	printk("send_fault_sig: %p,%d,%d\n", siginfo.si_addr, siginfo.si_signo, siginfo.si_code);
+-#endif
++	pr_debug("send_fault_sig: %p,%d,%d\n", siginfo.si_addr,
++		 siginfo.si_signo, siginfo.si_code);
+ 
+ 	if (user_mode(regs)) {
+ 		force_sig_info(siginfo.si_signo,
+@@ -45,10 +44,10 @@ int send_fault_sig(struct pt_regs *regs)
+ 		 * terminate things with extreme prejudice.
+ 		 */
+ 		if ((unsigned long)siginfo.si_addr < PAGE_SIZE)
+-			printk(KERN_ALERT "Unable to handle kernel NULL pointer dereference");
++			pr_alert("Unable to handle kernel NULL pointer dereference");
+ 		else
+-			printk(KERN_ALERT "Unable to handle kernel access");
+-		printk(" at virtual address %p\n", siginfo.si_addr);
++			pr_alert("Unable to handle kernel access");
++		pr_cont(" at virtual address %p\n", siginfo.si_addr);
+ 		die_if_kernel("Oops", regs, 0 /*error_code*/);
+ 		do_exit(SIGKILL);
+ 	}
+@@ -75,10 +74,8 @@ int do_page_fault(struct pt_regs *regs, unsigned long address,
+ 	int fault;
+ 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
+ 
+-#ifdef DEBUG
+-	printk ("do page fault:\nregs->sr=%#x, regs->pc=%#lx, address=%#lx, %ld, %p\n",
++	pr_debug("do page fault:\nregs->sr=%#x, regs->pc=%#lx, address=%#lx, %ld, %p\n",
+ 		regs->sr, regs->pc, address, error_code, mm ? mm->pgd : NULL);
+-#endif
+ 
+ 	/*
+ 	 * If we're in an interrupt or have no user
+@@ -117,9 +114,7 @@ retry:
+  * we can handle it..
+  */
+ good_area:
+-#ifdef DEBUG
+-	printk("do_page_fault: good_area\n");
+-#endif
++	pr_debug("do_page_fault: good_area\n");
+ 	switch (error_code & 3) {
+ 		default:	/* 3: write, present */
+ 			/* fall through */
+@@ -142,9 +137,7 @@ good_area:
+ 	 */
+ 
+ 	fault = handle_mm_fault(mm, vma, address, flags);
+-#ifdef DEBUG
+-	printk("handle_mm_fault returns %d\n",fault);
+-#endif
++	pr_debug("handle_mm_fault returns %d\n", fault);
+ 
+ 	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
+ 		return 0;
+-- 
+1.7.9.5
+
