@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab3LJCXF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 21:23:05 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:49136 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750787Ab3LJCXB (ORCPT
+	id S1751938Ab3LJCYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 21:24:08 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:60477 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab3LJCYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 21:23:01 -0500
-Message-ID: <52A67A71.6020404@atmel.com>
-Date: Tue, 10 Dec 2013 10:20:33 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 9 Dec 2013 21:24:05 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Wei Yongjun <weiyj.lk@gmail.com>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] r_du_lvdsenc.c : Check return value of devm_ioremap_resource with IS_ERR
+Date: Tue, 10 Dec 2013 03:24:13 +0100
+Message-ID: <1623649.XDp4FCPInj@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.17-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1386470506-553-1-git-send-email-ethan.kernel@gmail.com>
+References: <1386470506-553-1-git-send-email-ethan.kernel@gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>, <plagnioj@jcrosoft.com>
-CC: <linux-pwm@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <galak@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 1/2] PWM: atmel-pwm: add PWM controller driver
-References: <1384766002-2852-1-git-send-email-voice.shen@atmel.com> <20131202105957.GD18060@ulmo.nvidia.com> <529D4B58.9020700@atmel.com>
-In-Reply-To: <529D4B58.9020700@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Hi Ethan,
 
-On 12/03/2013 11:09 AM, Bo Shen wrote:
->>> +        atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
->>> +        atmel_pwm->chip.of_pwm_n_cells = 3;
->>> +        atmel_pwm->chip.base = -1;
->>> +    } else {
->>> +        atmel_pwm->chip.base = pdev->id;
->>
->> That's not correct. The chip cannot be tied to pdev->id, because that ID
->> is the instance number of the device. So typically you would have
->> devices name like this:
->>
->>     atmel-pwm.0
->>     atmel-pwm.1
->>     ...
->>
->> Now, if you have that, then you won't be able to register the second
->> instance because the first instance will already have requested PWMs
->> 0-3, and setting .base to 1 will cause PWMs 1-4 to be requested, which
->> intersects with the range of the first instance.
->>
->> The same applies of course if you have other PWM controllers in the
->> system which have similar instance names.
->>
->> So the right thing to do here is to provide that number via platform
->> data so that platform code can define it, knowing in advance all ranges
->> for all other PWM controllers and thereby make sure there's no
->> intersection.
->
-> OK, I will fix this.
+Thank you for the patch.
 
-After read deeply of PWM framework, for non device tree, I think we'd 
-better let the PWM core to choose chip.base as device tree, while not 
-pass a number through platform data to it. Or else, it will confuse the 
-user to set the chip.base, must set it in correct value to avoid 
-intersection. And, actually we won't use chip.base in driver itself.
+On Sunday 08 December 2013 10:41:46 ethan.zhao wrote:
+> function devm_ioremap_resource() doesn't return NULL, should check its
+> return value with helper IS_ERR().
+> 
+> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
 
-Hi J,
-   what's your opinion?
+This issue has already been addressed by a patch sent to the dri-devel mailing 
+list by Wei Yongjun (https://lkml.org/lkml/2013/8/22/637).
 
-Best Regards,
-Bo Shen
+I've asked for a v2 to be submitted but haven't received any reply. I'll fix 
+the problem myself and send the patch now.
+
+> ---
+>  drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+> b/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c index a0f6a17..93190ab 100644
+> --- a/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+> +++ b/drivers/gpu/drm/rcar-du/rcar_du_lvdsenc.c
+> @@ -151,7 +151,7 @@ static int rcar_du_lvdsenc_get_resources(struct
+> rcar_du_lvdsenc *lvds, }
+> 
+>  	lvds->mmio = devm_ioremap_resource(&pdev->dev, mem);
+> -	if (lvds->mmio == NULL) {
+> +	if (IS_ERR(lvds->mmio)) {
+>  		dev_err(&pdev->dev, "failed to remap memory resource for %s\n",
+>  			name);
+>  		return -ENOMEM;
+
+-- 
+Regards,
+
+Laurent Pinchart
 
