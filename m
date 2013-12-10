@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3LJNi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:38:28 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:53741 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab3LJNiJ (ORCPT
+	id S1753248Ab3LJNlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:41:40 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39136 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab3LJNli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:38:09 -0500
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH V2 3/3] PM / Sleep: Add macro to define common late/early system PM callbacks
-Date: Tue, 10 Dec 2013 14:37:42 +0100
-Message-Id: <1386682662-17633-4-git-send-email-ulf.hansson@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org>
-References: <1386682662-17633-1-git-send-email-ulf.hansson@linaro.org>
+	Tue, 10 Dec 2013 08:41:38 -0500
+Date: Tue, 10 Dec 2013 14:41:33 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL RESEND] clocksource/clockevents fixes for 3.13
+Message-ID: <20131210134133.GC31366@gmail.com>
+References: <52A716E0.4080103@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A716E0.4080103@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use the same approach as for the existing SET_SYSTEM_SLEEP_PM_OPS,
-but for the late and early callbacks instead.
 
-The new SET_LATE_SYSTEM_SLEEP_PM_OPS, defined for CONFIG_PM_SLEEP, will
-point ->suspend_late, ->freeze_late and ->poweroff_late to the same
-function. Vice verse happens for ->resume_early, ->thaw_early and
-->restore_early.
+* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- include/linux/pm.h |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+> 
+> Hi Thomas, Ingo,
+> 
+> here are the fixes for 3.13 based on timers/urgent
+> 
+>  * Axel Lin added a missing dependency on CLKSRC_MMIO in the Kconfig
+> for the time-efm32.
+> 
+>  * Dinh Nguyen fixed read_sched_clock to return the right value for
+> the dw_apb_timer.
+> 
+>  * Ezequiel Garcia registered the sched clock after the counter,
+> thus preventing time jump in the traces for the armada-370-xp.
+> 
+>  * Marc Zyngier stopped the timer before enabling the irq in order
+> to prevent it to be fired before the clockevent is registered for
+> the sunxi.
+> 
+>  * Thierry Reding removed a of_node_put in clksrc-of because the
+> reference is not held.
 
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 7a830a7..8c6583a 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -311,6 +311,18 @@ struct dev_pm_ops {
- #define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
- #endif
- 
-+#ifdef CONFIG_PM_SLEEP
-+#define SET_LATE_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
-+	.suspend_late = suspend_fn, \
-+	.resume_early = resume_fn, \
-+	.freeze_late = suspend_fn, \
-+	.thaw_early = resume_fn, \
-+	.poweroff_late = suspend_fn, \
-+	.restore_early = resume_fn,
-+#else
-+#define SET_LATE_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
-+#endif
-+
- #ifdef CONFIG_PM_RUNTIME
- #define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn) \
- 	.runtime_suspend = suspend_fn, \
--- 
-1.7.9.5
+(For future reference, please post all patches not just a combo 
+patch.)
 
+> Dinh Nguyen (2):
+>       clocksource: dw_apb_timer: Move timer defines to header file.
+>       clocksource: dw_apb_timer_of: Fix read_sched_clock
+
+Nit: we generally don't use periods at the end of titles, it looks 
+inconsistent in shortlogs.
+
+> diff --git a/drivers/clocksource/dw_apb_timer.c
+> b/drivers/clocksource/dw_apb_timer.c
+> index e54ca10..c3a8f52 100644
+> --- a/drivers/clocksource/dw_apb_timer.c
+> +++ b/drivers/clocksource/dw_apb_timer.c
+> @@ -18,25 +18,6 @@
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> 
+> -#define APBT_MIN_PERIOD			4
+> -#define APBT_MIN_DELTA_USEC		200
+> -
+> -#define APBTMR_N_LOAD_COUNT		0x00
+> -#define APBTMR_N_CURRENT_VALUE		0x04
+> -#define APBTMR_N_CONTROL		0x08
+> -#define APBTMR_N_EOI			0x0c
+> -#define APBTMR_N_INT_STATUS		0x10
+> -
+> -#define APBTMRS_INT_STATUS		0xa0
+> -#define APBTMRS_EOI			0xa4
+> -#define APBTMRS_RAW_INT_STATUS		0xa8
+> -#define APBTMRS_COMP_VERSION		0xac
+> -
+> -#define APBTMR_CONTROL_ENABLE		(1 << 0)
+> -/* 1: periodic, 0:free running. */
+> -#define APBTMR_CONTROL_MODE_PERIODIC	(1 << 1)
+> -#define APBTMR_CONTROL_INT		(1 << 2)
+> -
+>  static inline struct dw_apb_clock_event_device *
+>  ced_to_dw_apb_ced(struct clock_event_device *evt)
+>  {
+> diff --git a/drivers/clocksource/dw_apb_timer_of.c
+> b/drivers/clocksource/dw_apb_timer_of.c
+> index 45ba8ae..c3fe17e 100644
+> --- a/drivers/clocksource/dw_apb_timer_of.c
+> +++ b/drivers/clocksource/dw_apb_timer_of.c
+> @@ -102,18 +102,17 @@ static void __init add_clocksource(struct
+> device_node *source_timer)
+>  	 * timer is found. sched_io_base then points to the current_value
+>  	 * register of the clocksource timer.
+>  	 */
+> -	sched_io_base = iobase + 0x04;
+> +	sched_io_base = iobase;
+>  	sched_rate = rate;
+>  }
+> 
+>  static u64 read_sched_clock(void)
+>  {
+> -	return __raw_readl(sched_io_base);
+> +	return ~__raw_readl(sched_io_base + APBTMR_N_CURRENT_VALUE);
+
+AFAICS the minimal fix here for v3.13 would be to just do:
+
+> -	return __raw_readl(sched_io_base);
+> +	return ~__raw_readl(sched_io_base);
+
+Right? That way the fix is just a oneliner and we could delay the 
+header file and magic-constants use cleanups to v3.14.
+
+Thanks,
+
+	Ingo
