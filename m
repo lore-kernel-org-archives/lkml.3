@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab3LJVXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 16:23:01 -0500
-Received: from fieldses.org ([174.143.236.118]:34671 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab3LJVW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 16:22:59 -0500
-Date: Tue, 10 Dec 2013 16:22:53 -0500
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20131210212253.GC20831@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
- <1386703055-22308-2-git-send-email-jlayton@redhat.com>
+	id S1751824Ab3LJVYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 16:24:09 -0500
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:48371 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3LJVYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 16:24:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386703055-22308-2-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <CA+55aFx1Eech-MXWgJkERjJPSeg_9HVyLo_8nz=saNJyNmS7Kg@mail.gmail.com>
+References: <20131210154724.GA30020@redhat.com>
+	<CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
+	<alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+	<CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+	<20131210203559.GA1209@redhat.com>
+	<20131210204925.GB27373@redhat.com>
+	<1386709583.3685.78.camel@dvhart-mobl4.amr.corp.intel.com>
+	<CA+55aFx1Eech-MXWgJkERjJPSeg_9HVyLo_8nz=saNJyNmS7Kg@mail.gmail.com>
+Date: Tue, 10 Dec 2013 13:24:06 -0800
+X-Google-Sender-Auth: -X1Fm6XaFlq9LUNJye6sNt5vUlA
+Message-ID: <CA+55aFzZ_pRt4CtMNLQZsNnCvNu-91ZBsEVH3QSTbYfNK998sw@mail.gmail.com>
+Subject: Re: process 'stuck' at exit.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 02:17:30PM -0500, Jeff Layton wrote:
-> Currently, there's a lot of copy and paste between the two.  Add some
-> functions to do the initialization of the file_lock from values
-> passed in, and turn the flock/flock64 variants of those functions into
-> wrappers around them.
-> 
-> Unfortunately it's harder to consolidate the fl_start/fl_end
-> calculations due to the differently sized types involved so I've left
-> them separate for now.
+On Tue, Dec 10, 2013 at 1:18 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> to get a good profile for a minute, and then looking at the
+> instruction-level profiles in futex_requeue() should be possible.
 
-I'd think you could assign everything to the flock64 type and do the
-common work there or something.
+Ugh. Looking at kernel/futex.s even *without* debugging enabled is
+pretty messy. Although much of it seems to be because the hash is
+actually fairly complex. jhash2() really ends up expanding to a lot of
+instructions.
 
-But I'm confused about what the current code is actually trying to do:
-if I'm chasing down the definitions right, these quantities are all
-signed, and when start is defined as an off_t it can overflow in the
-SEEK_CUR and SEEK_END cases.  And
+But especially if that kernel was compiled with debug information,
+then 'perf report' is pretty good about matching it up with the source
+code, so it might not be *too* hard to try to figure out where the
+loop is.
 
-	if (fl->fl_end < fl->fl_start)
-		return -EOVERFLOW
+And if it's not in futex_requeue() (there are loops at other levels,
+like futex_get_key()), then having the callchain information for the
+costly operations will hopefully give a hint where the top loop is. So
+profiling data can be very powerful for things like this.
 
-is counting on overlow wrapping around, which I thought wasn't
-guaranteed in the case of signed arithmetic?
-
---b.
-
-
-> 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c | 31 +++++++++++++++----------------
->  1 file changed, 15 insertions(+), 16 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 6084f5a..a5848ed 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -344,6 +344,19 @@ static int assign_type(struct file_lock *fl, long type)
->  	return 0;
->  }
->  
-> +static int
-> +flock_to_posix_lock_common(struct file_lock *fl, struct file *filp, short type)
-> +{
-> +	fl->fl_owner = current->files;
-> +	fl->fl_pid = current->tgid;
-> +	fl->fl_file = filp;
-> +	fl->fl_flags = FL_POSIX;
-> +	fl->fl_ops = NULL;
-> +	fl->fl_lmops = NULL;
-> +
-> +	return assign_type(fl, type);
-> +}
-> +
->  /* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
->   * style lock.
->   */
-> @@ -386,14 +399,7 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
->  	if (fl->fl_end < fl->fl_start)
->  		return -EOVERFLOW;
->  	
-> -	fl->fl_owner = current->files;
-> -	fl->fl_pid = current->tgid;
-> -	fl->fl_file = filp;
-> -	fl->fl_flags = FL_POSIX;
-> -	fl->fl_ops = NULL;
-> -	fl->fl_lmops = NULL;
-> -
-> -	return assign_type(fl, l->l_type);
-> +	return flock_to_posix_lock_common(fl, filp, l->l_type);
->  }
->  
->  #if BITS_PER_LONG == 32
-> @@ -431,15 +437,8 @@ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
->  	fl->fl_start = start;	/* we record the absolute position */
->  	if (fl->fl_end < fl->fl_start)
->  		return -EOVERFLOW;
-> -	
-> -	fl->fl_owner = current->files;
-> -	fl->fl_pid = current->tgid;
-> -	fl->fl_file = filp;
-> -	fl->fl_flags = FL_POSIX;
-> -	fl->fl_ops = NULL;
-> -	fl->fl_lmops = NULL;
->  
-> -	return assign_type(fl, l->l_type);
-> +	return flock_to_posix_lock_common(fl, filp, l->l_type);
->  }
->  #endif
->  
-> -- 
-> 1.8.4.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+              Linus
