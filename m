@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3LJMvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:51:10 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61490 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab3LJMvF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:51:05 -0500
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v5 3/3] perf diff: color the Weighted Diff column
-Date: Tue, 10 Dec 2013 18:19:02 +0530
-Message-Id: <1386679742-13357-4-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.5.rc0.5.g70ebc73.dirty
-In-Reply-To: <1386679742-13357-1-git-send-email-artagnon@gmail.com>
-References: <1386679742-13357-1-git-send-email-artagnon@gmail.com>
+	id S1753411Ab3LJMxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:53:05 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:56007 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010Ab3LJMxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 07:53:01 -0500
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in irq_resume
+Date: Tue, 10 Dec 2013 13:52:53 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <20131210080057.415644748@linuxfoundation.org> <20131210090113.GA22756@amd.pavel.ucw.cz> <20131210090847.GA4600@kroah.com>
+In-Reply-To: <20131210090847.GA4600@kroah.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201312101352.53714.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In
+Am Dienstag, 10. Dezember 2013, 10:08:47 schrieb Greg Kroah-Hartman:
+> On Tue, Dec 10, 2013 at 10:01:13AM +0100, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > 3.12-stable review patch.  If anyone has any objections, please let
+> > > 
+> > >  me know.
+> > 
+> > Objections... well... I'm not sure if it meets stable criteria. In
+> > particular, I don't think it was ever demonstrated as having bad
+> > effect on the users.
+> 
+> Well, I'm guessing someone on the cc: here wanted it in stable@, so I'll
+> let them speak up as to why...
 
-  $ perf diff -c wdiff:M,N
+As for bad effects on users ... any suspend_noirq callback returning an error 
+and thus aborting the suspend will cause the error fixed by this, as the 
+early-irqs won't get reenabled in the suspend-rollback [due to the syscore_ops 
+doing their resume never being run].
 
-color the numbers in the Weighted Diff column either green or red,
-depending on whether the number is positive or negative.
+You could for example lose keys connected thru the gpio-keys driver until the 
+next reboot.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/builtin-diff.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+And it seems at least Laxman and myself were affected by it.
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index c07cd3c..8e6e541 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -777,6 +777,7 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
- 	struct hist_entry *pair = get_pair_fmt(he, dfmt);
- 	double diff;
-+	s64 wdiff;
- 	char pfmt[20] = " ";
- 
- 	if (!pair)
-@@ -805,6 +806,18 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
- 		return value_color_snprintf(hpp->buf, hpp->size,
- 					pfmt, diff);
-+	case COMPUTE_WEIGHTED_DIFF:
-+		if (he->dummy)
-+			goto dummy_print;
-+		if (pair->diff.computed)
-+			wdiff = pair->diff.wdiff;
-+		else
-+			wdiff = compute_wdiff(he, pair);
-+
-+		scnprintf(pfmt, 20, "%%14ld", dfmt->header_width);
-+		return color_snprintf(hpp->buf, hpp->size,
-+				wdiff > 0 ? PERF_COLOR_GREEN : PERF_COLOR_RED,
-+				pfmt, wdiff);
- 	default:
- 		BUG_ON(1);
- 	}
-@@ -825,6 +838,12 @@ static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
- 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
- }
- 
-+static int hpp__color_wdiff(struct perf_hpp_fmt *fmt,
-+			struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	return __hpp__color_compare(fmt, hpp, he, COMPUTE_WEIGHTED_DIFF);
-+}
-+
- static void
- hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
- {
-@@ -1006,6 +1025,9 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	case PERF_HPP_DIFF__RATIO:
- 		fmt->color = hpp__color_ratio;
- 		break;
-+	case PERF_HPP_DIFF__WEIGHTED_DIFF:
-+		fmt->color = hpp__color_wdiff;
-+		break;
- 	default:
- 		break;
- 	}
--- 
-1.8.5.rc0.5.g70ebc73.dirty
 
+Heiko
