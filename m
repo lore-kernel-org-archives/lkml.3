@@ -1,174 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab3LJXot (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:44:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38980 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab3LJXnT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:43:19 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: [PATCH 4/7] Input: pm8xxx-vibrator - Migrate to regmap APIs
-Date: Tue, 10 Dec 2013 15:43:13 -0800
-Message-Id: <1386718996-3733-5-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.1.109.g3d252a9
-In-Reply-To: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
-References: <1386718996-3733-1-git-send-email-sboyd@codeaurora.org>
+	id S1751681Ab3LJXqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:46:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab3LJXqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:46:09 -0500
+Date: Tue, 10 Dec 2013 18:00:09 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131210230009.GF5050@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+References: <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+ <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+ <20131210203559.GA1209@redhat.com>
+ <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
+ <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the regmap APIs for this driver instead of custom pm8xxx
-APIs. This breaks this driver's dependency on the pm8xxx APIs and
-allows us to easily port it to other bus protocols in the future.
+On Tue, Dec 10, 2013 at 02:48:52PM -0800, Linus Torvalds wrote:
+ > On Tue, Dec 10, 2013 at 2:42 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+ > >
+ > > And yes, I remember that we do not do an extra check for the fshared
+ > > case, because get_user_pages_fast() should do it for us already. If
+ > > not we are fubared not only in the futex code.
+ > 
+ > Yeah. It turns out we do do the access check indirectly - by looking
+ > at the PAGE_USER bit, even if we don't necessarily check the actual
+ > limits. So get_user_pages_fast() is fine.
+ > 
+ > > But there is a subtle detail:
+ > 
+ > Yup, see my email from ten minutes ago, we found the same thing. And
+ > that would seem to explain the endless loop, and also the timing
+ > (since Dave mentions he started doing large-pages lately).
+ > 
+ > So I think the "__get_user_pages_fast(address, 1, !ro, &page)" thing
+ > should work.
+ > 
+ > Dave, can you re-create that trinity run and test that patch? I think
+ > we've got this, but it might be nice to leave the hung machine up and
+ > running until it's verified.. Although I don't really see what else we
+ > could need or get out of it, so..
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/input/misc/pm8xxx-vibrator.c | 61 +++++++++---------------------------
- 1 file changed, 14 insertions(+), 47 deletions(-)
+The only thing I'm still unclear on, is how that pid allegedly wasn't doing
+a futex call as part of its run. The only thing I can think of is that
+the other pid that _did_ do a futex call did it on a page that was MAP_SHARED
+between all the other children, and this 'spin forever' thing only
+happens when the last process with a reference on that page exits ?
 
-diff --git a/drivers/input/misc/pm8xxx-vibrator.c b/drivers/input/misc/pm8xxx-vibrator.c
-index 2a92ab0..cb5a8e8f 100644
---- a/drivers/input/misc/pm8xxx-vibrator.c
-+++ b/drivers/input/misc/pm8xxx-vibrator.c
-@@ -17,7 +17,7 @@
- #include <linux/platform_device.h>
- #include <linux/input.h>
- #include <linux/slab.h>
--#include <linux/mfd/pm8xxx/core.h>
-+#include <linux/regmap.h>
- 
- #define VIB_DRV			0x4A
- 
-@@ -35,7 +35,7 @@
-  * struct pm8xxx_vib - structure to hold vibrator data
-  * @vib_input_dev: input device supporting force feedback
-  * @work: work structure to set the vibration parameters
-- * @dev: device supporting force feedback
-+ * @regmap: regmap for register read/write
-  * @speed: speed of vibration set from userland
-  * @active: state of vibrator
-  * @level: level of vibration to set in the chip
-@@ -44,7 +44,7 @@
- struct pm8xxx_vib {
- 	struct input_dev *vib_input_dev;
- 	struct work_struct work;
--	struct device *dev;
-+	struct regmap *regmap;
- 	int speed;
- 	int level;
- 	bool active;
-@@ -52,42 +52,6 @@ struct pm8xxx_vib {
- };
- 
- /**
-- * pm8xxx_vib_read_u8 - helper to read a byte from pmic chip
-- * @vib: pointer to vibrator structure
-- * @data: placeholder for data to be read
-- * @reg: register address
-- */
--static int pm8xxx_vib_read_u8(struct pm8xxx_vib *vib,
--				 u8 *data, u16 reg)
--{
--	int rc;
--
--	rc = pm8xxx_readb(vib->dev->parent, reg, data);
--	if (rc < 0)
--		dev_warn(vib->dev, "Error reading pm8xxx reg 0x%x(0x%x)\n",
--				reg, rc);
--	return rc;
--}
--
--/**
-- * pm8xxx_vib_write_u8 - helper to write a byte to pmic chip
-- * @vib: pointer to vibrator structure
-- * @data: data to write
-- * @reg: register address
-- */
--static int pm8xxx_vib_write_u8(struct pm8xxx_vib *vib,
--				 u8 data, u16 reg)
--{
--	int rc;
--
--	rc = pm8xxx_writeb(vib->dev->parent, reg, data);
--	if (rc < 0)
--		dev_warn(vib->dev, "Error writing pm8xxx reg 0x%x(0x%x)\n",
--				reg, rc);
--	return rc;
--}
--
--/**
-  * pm8xxx_vib_set - handler to start/stop vibration
-  * @vib: pointer to vibrator structure
-  * @on: state to set
-@@ -95,14 +59,14 @@ static int pm8xxx_vib_write_u8(struct pm8xxx_vib *vib,
- static int pm8xxx_vib_set(struct pm8xxx_vib *vib, bool on)
- {
- 	int rc;
--	u8 val = vib->reg_vib_drv;
-+	unsigned int val = vib->reg_vib_drv;
- 
- 	if (on)
- 		val |= ((vib->level << VIB_DRV_SEL_SHIFT) & VIB_DRV_SEL_MASK);
- 	else
- 		val &= ~VIB_DRV_SEL_MASK;
- 
--	rc = pm8xxx_vib_write_u8(vib, val, VIB_DRV);
-+	rc = regmap_write(vib->regmap, VIB_DRV, val);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -118,9 +82,9 @@ static void pm8xxx_work_handler(struct work_struct *work)
- {
- 	struct pm8xxx_vib *vib = container_of(work, struct pm8xxx_vib, work);
- 	int rc;
--	u8 val;
-+	unsigned int val;
- 
--	rc = pm8xxx_vib_read_u8(vib, &val, VIB_DRV);
-+	rc = regmap_read(vib->regmap, VIB_DRV, &val);
- 	if (rc < 0)
- 		return;
- 
-@@ -184,27 +148,30 @@ static int pm8xxx_vib_probe(struct platform_device *pdev)
- 	struct pm8xxx_vib *vib;
- 	struct input_dev *input_dev;
- 	int error;
--	u8 val;
-+	unsigned int val;
- 
- 	vib = devm_kzalloc(&pdev->dev, sizeof(*vib), GFP_KERNEL);
- 	if (!vib)
- 		return -ENOMEM;
- 
-+	vib->regmap = dev_get_regmap(pdev->dev.parent, NULL);
-+	if (!vib->regmap)
-+		return -ENODEV;
-+
- 	input_dev = devm_input_allocate_device(&pdev->dev);
- 	if (!input_dev)
- 		return -ENOMEM;
- 
- 	INIT_WORK(&vib->work, pm8xxx_work_handler);
--	vib->dev = &pdev->dev;
- 	vib->vib_input_dev = input_dev;
- 
- 	/* operate in manual mode */
--	error = pm8xxx_vib_read_u8(vib, &val, VIB_DRV);
-+	error = regmap_read(vib->regmap, VIB_DRV, &val);
- 	if (error < 0)
- 		return error;
- 
- 	val &= ~VIB_DRV_EN_MANUAL_MASK;
--	error = pm8xxx_vib_write_u8(vib, val, VIB_DRV);
-+	error = regmap_write(vib->regmap, VIB_DRV, val);
- 	if (error < 0)
- 		return error;
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+does that make sense?
+
+	Dave
 
