@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab3LJAka (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:40:30 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36356 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab3LJAkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:40:22 -0500
-Date: Tue, 10 Dec 2013 01:40:16 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Rui Wang <ruiv.wang@gmail.com>, Lance Ortiz <lance.ortiz@hp.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        jiang.liu@intel.com, Tony Luck <tony.luck@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rui Wang <rui.y.wang@intel.com>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] aerdrv: Fix severity usage in aer trace event
-Message-ID: <20131210004016.GG31650@pd.tnic>
-References: <1386476273-2418-1-git-send-email-rui.y.wang@intel.com>
- <20131208144312.GC4338@pd.tnic>
- <20131208150904.GD4338@pd.tnic>
- <CAErSpo7M=d0qMUCV2CCjkkbMX7h-xQcp0tuST89G_HefTQVoyg@mail.gmail.com>
+	id S1751674Ab3LJAll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:41:41 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:55174 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab3LJAlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 19:41:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAErSpo7M=d0qMUCV2CCjkkbMX7h-xQcp0tuST89G_HefTQVoyg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52A66235.3010405@zytor.com>
+References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
+	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
+	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
+	<52A6389E.90404@zytor.com>
+	<CAMe9rOpuFzqA7tOGZ3Eh8Vb76+Y5T2xirAfB08NHbSS5R-OjuQ@mail.gmail.com>
+	<52A653C4.1050208@zytor.com>
+	<CAMe9rOpuf1=LPBJzUHmgb2x6WDu=yUsKE+iZansaPDQfCPaejw@mail.gmail.com>
+	<52A66235.3010405@zytor.com>
+Date: Mon, 9 Dec 2013 16:41:38 -0800
+Message-ID: <CAMe9rOrKQFnzZH+=rnbnfeK1BzZZE-O7SGNA9QnxvHmByWRyTA@mail.gmail.com>
+Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 04:41:18PM -0700, Bjorn Helgaas wrote:
-> I think it's worthwhile to keep all three patches together, and I'd
-> be happy to merge them via PCI. It looks like Joe had some good
-> questions, so once you resolve them, I can merge them, or ack them and
-> you can take them. I think either way will be fine.
+On Mon, Dec 9, 2013 at 4:37 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/09/2013 03:53 PM, H.J. Lu wrote:
+>>>>
+>>>> x86-64 small model is limited to 4GB in size.  You can't build
+>>>> a dynamic executable in small model larger than 4GB.
+>>>>
+>>>> There are medium and large models.  But they are slower than
+>>>> small models as well as small models in PIE.  Also there are
+>>>> no glibc run-times for medium and large models.
+>>>>
+>>> Compiling for the small PIC model shouldn't automatically mean
+>>> generating a PIE (ET_DYN) executable, though (and if those are
+>>> inherently linked, that is a fundamental bug IMNSHO.)
+>>
+>> PIE uses PIC. But GCC has -fPIE and -fPIC.  They aren't
+>> the same.   You build PIE with
+>>
+>> 1. Compile with -fPIE.
+>> 2. Link with -pie.
+>>
+>
+> I'm talking about the memory model ("small PIC model").  I don't see why
+> it should be encapsulated in a PIE (ET_DYN) container if the user
+> doesn't want it to be relocatable.
+>
 
-So actually I'm only really interested in the first patch which clearly
-fixes a minor issue in the PCIe AER tracepoint and that one I probably
-should take through the RAS tree as the original patch adding the
-tracepoint went through it too. Unless you really want to take it - then
-be my guest! :-)
+I see.  Maybe linker can set ET_EXEC if vaddr is non-zero.
 
-My intention with aerdrv_errprint.c was to cleanup some obvious stuff
-which sprang at me while looking at the code, *without* *any* change in
-functionality except the minor and obviously sensible
-
-	s/aer_tlp_header:/TLP Header:/
-
-replacement. (printk strings are not an API anyway).
-
-If you're fine with those patches as they are right now, I can apply
-them or you can take them or whatever. If not, then so be it.
-
-If someone wants to diddle with what could be done better and more
-readable, then that someone can do this at his own time - I don't really
-want to waste mine.
-
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+H.J.
