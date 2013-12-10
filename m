@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711Ab3LJGI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:08:28 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:55044 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab3LJGI0 (ORCPT
+	id S1751842Ab3LJGIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:08:34 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:53086 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3LJGIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:08:26 -0500
-Message-ID: <52A6AFD1.4010002@linaro.org>
-Date: Tue, 10 Dec 2013 14:08:17 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Tue, 10 Dec 2013 01:08:30 -0500
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        rafael.j.wysocki@intel.com,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>
-Subject: Re: questions of cpuidle
-References: <52A5C846.30308@linaro.org> <52A5E135.2020500@linux.vnet.ibm.com>
-In-Reply-To: <52A5E135.2020500@linux.vnet.ibm.com>
+X-Originating-IP: [218.164.103.91]
+In-Reply-To: <CAFRkauCX+dLNiuoy7bPWO_ZE06OhorqYkkGh5pc8L3XyqNA-rg@mail.gmail.com>
+References: <1384589723.7840.1.camel@phoenix>
+	<1386125959.1974.309@driftwood>
+	<CAFRkauAzR=BqJGrMzN0i-tvi5mcQvyB9Kihk0YvxMpk=SWGvFA@mail.gmail.com>
+	<20131209064654.GA20485@kroah.com>
+	<CAFRkauCQdOyWbck+WtmNxtnenKyPAFNcqqUgcGSb1kAqj56sYA@mail.gmail.com>
+	<20131209090530.GA4586@kroah.com>
+	<CAFRkauCX+dLNiuoy7bPWO_ZE06OhorqYkkGh5pc8L3XyqNA-rg@mail.gmail.com>
+Date: Tue, 10 Dec 2013 14:08:29 +0800
+Message-ID: <CAFRkauBwUoE9109Oq9cgG71uOw5Uc+zZyDWsuCf47oLk-a2ngQ@mail.gmail.com>
+Subject: Re: [PATCH] devtmpfs: Calling delete_path() only when necessary
+From: Axel Lin <axel.lin@ingics.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Cc: Rob Landley <rob@landley.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 11:26 PM, Preeti U Murthy wrote:
->> > If the cpu stopped the interrupt during deep c-state and without
->> > monitor/mwait support, which kind of ipi can wake the cpu? I mean like a
->> > x86 cpu, APIC stopped in c3 mode, but actually ipi send via apic bus. So
->> > I don't know which ipi work?
->> > 
-> As far as my understanding goes, an external interrupt sent via the apic
-> bus wakes up a core in deep idle state first,
+2013/12/9 Axel Lin <axel.lin@ingics.com>:
+> 2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+>> On Mon, Dec 09, 2013 at 04:54:29PM +0800, Axel Lin wrote:
+>>> 2013/12/9 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+>>> > On Wed, Dec 04, 2013 at 02:44:14PM +0800, Axel Lin wrote:
+>>> >> 2013/12/4 Rob Landley <rob@landley.net>:
+>>> >> > On 11/16/2013 02:15:23 AM, Axel Lin wrote:
+>>> >> >>
+>>> >> >> The deleted variable is always 1 in current code.
+>>> >> >> Initialize deleted variable to be 0, so delete_path() will be called only
+>>> >> >> when
+>>> >> >> necessary.
+>>> >> >>
+>>> >> >> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+>>> >> >
+>>> >> >
+>>> >> > I'm not seeing this in linux-next, or a reply on the web archive. Assuming
+>>> >> > nobody's objected to this, you might want to forward it to
+>>> >> > trivial@kernel.org.
+>>> >> >
+>>> >> > That said, you could describe what it _does_ a little more?
+>>> >>
+>>> >> I was expecting Greg to pick up this patch.
+>>> >>
+>>> >> I thought the description is pretty clear.
+>>> >> What the patch does is changing the init value of deleted variable to 0.
+>>> >> The intention of this change is to avoid unnecessary delete_path() call.
+>>> >
+>>> > I agree the logic is a bit odd here, but are you seeing an "unnecessary"
+>>> > delete_path() call happening?  The code has always been like this from
+>>> > what I can tell...
+>>>
+>>> Honestly, I havn't see the "unnecessary" delete_path() call happening druing my
+>>> test. I look at the code when I was debugging a hangup issue.
+>>> (In the end, I think the issue is not related to the devtmpfs code.)
+>>> But I found the logic for the deleted variable looks odd.
+>>> There are below possible (unlikely) case:
+>>> When strchr(nodename, '/') != 0 and
+>>> 1. If dentry->d_inode is NULL
+>>> 2. vfs_getattr returns error
+>>> 3. vfs_unlink returns error except -ENOENT.
+>>>
+>>> In these cases, delete_path() will fail anyway.
+>>>
+>>> Although this is a unlikely case, and I know the code is there since initial
+>>> commit. But I think it's still good to fix it.
+>>
+>> Have you tested your patch to verify nothing breaks?
+> Yes. I have this patch in my local build image since the day I sent the patch.
+Hi Greg,
+If you want more testing for this patch to ensure nothing break,
+I think maybe Fengguang can also help to test it.
 
-Is there some evidence for this? Documents or some explanation?
- meaning powers on the core
-> and hence the local apic. It does not yet acknowledge the interrupt,
-> meaning it cannot invoke the interrupt handler immediately.
->    After the core goes through some initialization steps after wakeup,
-> it will be in a position to acknowledge the external interrupt and
-> service it accordingly.
-> 
-> Ideally the interrupt handler of this external interrupt should be that
-> of the local timer itself since it was meant to act on the behalf of the
-> local timer interrupt.
-> 
+Hi, Fengguang
+Can you help to add this patch to your test systems?
+It's a one-line change, you can find the patch at
+https://patchwork.kernel.org/patch/3192361/
 
-Added more Intel experts.
-
-Many thanks for response, Preeti!
-
-But I still don't know how to get external/internal interrupt by a deep
-c-state cpu.
-In Intel Architecture Software Developer's Manual Vol.3A, Figure 10-3.
-Local APICs and I/O APIC When P6 Family Processors Are Used in
-Multiple-Processor Systems.
-The Local APIC is response for the the external/internal interrupt
-receiving. and It is included in CPU.
-
-And some explanation often be used in wikipedia.
-(http://www.hardwaresecrets.com/article/Everything-You-Need-to-Know-About-the-CPU-C-States-Power-Saving-Modes/611/4)
-It said the APIC clock was stopped in deep c-state, So I am wondering
-how can the nonfunctional LAPIC pass interrupt to CPU?
-
-And for monitor/mwait idle method, seems deep c-state cpu need to keep a
-eye on memory bus. So seems the memory controller in cpu package is
-impossible to get into sleep, right?
--- 
-Thanks
-    Alex
+Regards,
+Axel
