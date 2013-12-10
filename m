@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab3LJJ5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:57:31 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:57207 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab3LJJ45 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:56:57 -0500
-Date: Tue, 10 Dec 2013 09:56:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [TRIVIAL PATCH 1/2] regulator: s5m8767: Define symbol for buck
- control mask
-Message-ID: <20131210095652.GX12675@lee--X1>
-References: <1386666583-3280-1-git-send-email-k.kozlowski@samsung.com>
+	id S1752791Ab3LJJ5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:57:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45458 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752549Ab3LJJ5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 04:57:38 -0500
+Date: Tue, 10 Dec 2013 10:57:23 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Arnaldo <acme@ghostprotocols.net>,
+        Will Deacon <will.deacon@arm.com>, Patch Tracking <patches@linaro.org>
+Subject: Re: [PATCH 2/2] perf: unwinding: use the per-feature check flags
+Message-ID: <20131210095723.GB2352@krava.brq.redhat.com>
+References: <1386411461-21510-1-git-send-email-jean.pihet@linaro.org>
+ <1386411461-21510-3-git-send-email-jean.pihet@linaro.org>
+ <20131209171719.GA16631@krava.brq.redhat.com>
+ <CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386666583-3280-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <CAFrcx1khWGXJOyyqOBedyZsmLWYdhmkGsn0FhNt6hwCYhf5qfA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013, Krzysztof Kozlowski wrote:
-
-> Replace hard-coded value for mask used in BUCKX_CTRL registers (for
-> BUCKX_EN field) with a symbol. This also removes two local variables.
+On Mon, Dec 09, 2013 at 07:02:02PM +0100, Jean Pihet wrote:
+> Hi Jiri,
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  drivers/regulator/s5m8767.c         |   11 ++++++-----
->  include/linux/mfd/samsung/s5m8767.h |    3 ++-
->  2 files changed, 8 insertions(+), 6 deletions(-)
+> On 9 December 2013 18:17, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Sat, Dec 07, 2013 at 11:17:41AM +0100, Jean Pihet wrote:
+> >> Use the per-feature check flags for the unwinding feature in order
+> >> to correctly compile the libunwind and libunwind-debug-frame feature
+> >> checks.
+> >>
+> >> Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set
+> >> in 'make -C tools/perf'
+> >>
+> >> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> >> Cc: Jiri Olsa <jolsa@redhat.com>
+> >
+> > SNIP
+> >
+> >> +BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
+> >>
+> >>  ###############################
+> >>
+> >>  test-all:
+> >> -     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+> >> +     $(BUILD) -Werror -fstack-protector -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+> >
+> > hum, the test-all build command should have every possible flags we use, right?
+> > including LIBUNWIND_CFLAGS, LIBUNWIND_LDFLAGS
+> Oh yes you are right. I am overlooked the test-all feature (which
+> never builds on my modest embedded systems).
+> $(LIBUNWIND_LIBS) should be replaced by $(LIBUNWIND_CFLAGS)
+> $(LIBUNWIND_LDFLAGS), is that a reasonable approach?
 
-For the MFD part:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+hum, I'm just dealing with same issue for new libdw feature.. ;-)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I was wondering we could just setup:
+  FEATURE_CHECK_CFLAGS-all
+  FEATURE_CHECK_LDFLAGS-all
+
+automatically from all defined FEATURE_CHECK_(C|LD)FLAGS-*
+just a thought.. haven't tried it yet
+
+jirka
