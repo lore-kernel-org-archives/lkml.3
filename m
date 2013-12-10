@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab3LJIPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:15:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58909 "EHLO
+	id S1753664Ab3LJIBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:01:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58878 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab3LJIB4 (ORCPT
+	with ESMTP id S1753401Ab3LJIBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:01:56 -0500
+	Tue, 10 Dec 2013 03:01:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Praveen Murali <pmurali@logicube.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.12 34/62] SCSI: libsas: fix usage of ata_tf_to_fis
-Date: Tue, 10 Dec 2013 00:01:05 -0800
-Message-Id: <20131210080059.844093501@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.12 06/62] ALSA: hda - Fix silent output on MacBook Air 2,1
+Date: Tue, 10 Dec 2013 00:00:37 -0800
+Message-Id: <20131210080057.903386682@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,44 +29,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
+commit 0756f09c4946fe2d9ce2ebcb6f2e3c58830d22a3 upstream.
 
-Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
-update the libata documentation" we have been passing pmp=1 and is_cmd=0
-to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
-discover correctly.  His investigation found that the BIOS was passing
-pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
-Update libsas to follow the libata example of pulling the pmp setting
-from the ata_link and correct is_cmd to be 1 since all tf's submitted
-through ->qc_issue are commands.  Presumably libsas lldds do not care
-about is_cmd as they have sideband mechanisms to perform link
-management.
+MacBook Air 2,1 has a fairly different pin assignment from its brother
+MBA 1,1, and yet another quirks are needed for pin 0x18 and 0x19,
+similarly like what iMac 9,1 requires, in order to make the sound
+working on it.
 
-http://marc.info/?l=linux-scsi&m=138179681726990
-
-[jejb: checkpatch fix]
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Reported-by: Praveen Murali <pmurali@logicube.com>
-Tested-by: Praveen Murali <pmurali@logicube.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-and-tested-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/libsas/sas_ata.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |   39 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 31 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(str
- 		qc->tf.nsect = 0;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1769,6 +1769,7 @@ enum {
+ 	ALC889_FIXUP_DAC_ROUTE,
+ 	ALC889_FIXUP_MBP_VREF,
+ 	ALC889_FIXUP_IMAC91_VREF,
++	ALC889_FIXUP_MBA21_VREF,
+ 	ALC882_FIXUP_INV_DMIC,
+ 	ALC882_FIXUP_NO_PRIMARY_HP,
+ 	ALC887_FIXUP_ASUS_BASS,
+@@ -1872,17 +1873,13 @@ static void alc889_fixup_mbp_vref(struct
  	}
+ }
  
--	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
-+	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
- 	task->uldd_task = qc;
- 	if (ata_is_atapi(qc->tf.protocol)) {
- 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
+-/* Set VREF on speaker pins on imac91 */
+-static void alc889_fixup_imac91_vref(struct hda_codec *codec,
+-				     const struct hda_fixup *fix, int action)
++static void alc889_fixup_mac_pins(struct hda_codec *codec,
++				  const hda_nid_t *nids, int num_nids)
+ {
+ 	struct alc_spec *spec = codec->spec;
+-	static hda_nid_t nids[2] = { 0x18, 0x1a };
+ 	int i;
+ 
+-	if (action != HDA_FIXUP_ACT_INIT)
+-		return;
+-	for (i = 0; i < ARRAY_SIZE(nids); i++) {
++	for (i = 0; i < num_nids; i++) {
+ 		unsigned int val;
+ 		val = snd_hda_codec_get_pin_target(codec, nids[i]);
+ 		val |= AC_PINCTL_VREF_50;
+@@ -1891,6 +1888,26 @@ static void alc889_fixup_imac91_vref(str
+ 	spec->gen.keep_vref_in_automute = 1;
+ }
+ 
++/* Set VREF on speaker pins on imac91 */
++static void alc889_fixup_imac91_vref(struct hda_codec *codec,
++				     const struct hda_fixup *fix, int action)
++{
++	static hda_nid_t nids[2] = { 0x18, 0x1a };
++
++	if (action == HDA_FIXUP_ACT_INIT)
++		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
++}
++
++/* Set VREF on speaker pins on mba21 */
++static void alc889_fixup_mba21_vref(struct hda_codec *codec,
++				    const struct hda_fixup *fix, int action)
++{
++	static hda_nid_t nids[2] = { 0x18, 0x19 };
++
++	if (action == HDA_FIXUP_ACT_INIT)
++		alc889_fixup_mac_pins(codec, nids, ARRAY_SIZE(nids));
++}
++
+ /* Don't take HP output as primary
+  * Strangely, the speaker output doesn't work on Vaio Z and some Vaio
+  * all-in-one desktop PCs (for example VGC-LN51JGB) through DAC 0x05
+@@ -2087,6 +2104,12 @@ static const struct hda_fixup alc882_fix
+ 		.chained = true,
+ 		.chain_id = ALC882_FIXUP_GPIO1,
+ 	},
++	[ALC889_FIXUP_MBA21_VREF] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = alc889_fixup_mba21_vref,
++		.chained = true,
++		.chain_id = ALC889_FIXUP_MBP_VREF,
++	},
+ 	[ALC882_FIXUP_INV_DMIC] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_inv_dmic_0x12,
+@@ -2151,7 +2174,7 @@ static const struct snd_pci_quirk alc882
+ 	SND_PCI_QUIRK(0x106b, 0x3000, "iMac", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3200, "iMac 7,1 Aluminum", ALC882_FIXUP_EAPD),
+ 	SND_PCI_QUIRK(0x106b, 0x3400, "MacBookAir 1,1", ALC889_FIXUP_MBP_VREF),
+-	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBP_VREF),
++	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC889_FIXUP_MBA21_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3600, "Macbook 3,1", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC889_FIXUP_MBP_VREF),
+ 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_FIXUP_MACPRO_GPIO),
 
 
