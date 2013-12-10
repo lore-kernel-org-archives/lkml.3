@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3LJRIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 12:08:51 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:49213 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3LJRIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 12:08:49 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Kalle Valo <kvalo@adurom.com>, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 01/16] wl1251: fix scan behaviour while not associated
-Date: Tue, 10 Dec 2013 18:08:44 +0100
-User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
-Cc: Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        David Gnedt <david.gnedt@davizone.at>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <20131210092114.GB22756@amd.pavel.ucw.cz> <8738m0r9wv.fsf@purkki.adurom.net>
-In-Reply-To: <8738m0r9wv.fsf@purkki.adurom.net>
+	id S1754916Ab3LJRJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 12:09:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49299 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab3LJRJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 12:09:33 -0500
+Message-ID: <52A74AAE.70804@zytor.com>
+Date: Tue, 10 Dec 2013 09:09:02 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1950882.g5FqhQI21j";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] x86, microcode: Do Intel microcode revision check
+ signed
+References: <1386363843-32530-1-git-send-email-andi@firstfloor.org> <20131210153000.GA3804@phenom.dumpdata.com> <20131210155533.GI21717@two.firstfloor.org>
+In-Reply-To: <20131210155533.GI21717@two.firstfloor.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312101808.44713@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1950882.g5FqhQI21j
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 12/10/2013 07:55 AM, Andi Kleen wrote:
+> On Tue, Dec 10, 2013 at 10:30:00AM -0500, Konrad Rzeszutek Wilk wrote:
+>> On Fri, Dec 06, 2013 at 01:04:02PM -0800, Andi Kleen wrote:
+>>> From: Andi Kleen <ak@linux.intel.com>
+>>>
+>>> The Intel SDM Vol 3 9.11.1 Microcode update states that
+>>> the update revision field is signed. However we do the comparison
+>>> unsigned, as the comparison gets promoted.
+>>>
+>>> Use a cast to really do a signed comparison of the microcode
+>>> revision.
+>>
+>> Why not just update the struct?
+> 
+> It would need updating various printks I think. So I chose the simpler cast,
+> as that already solves the comparison problem.
+> 
+> -Andi
+> 
 
-On Tuesday 10 December 2013 16:41:04 Kalle Valo wrote:
-> Pavel Machek <pavel@ucw.cz> writes:
-> > ssids can have \0s in them... and what is worse, they may
-> > not be 0 terminated AFAICT.
-> >=20
-> > Potential solution is at
-> > http://www.spinics.net/lists/linux-wireless/msg98640.html .
->=20
-> I just use print_hex_dump_bytes() to print SSIDs.
+Updating the printks sounds like the right thing, too.
 
-Ok and has kernel printf modifier for size_t?
+	-hpa
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1950882.g5FqhQI21j
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKnSpwACgkQi/DJPQPkQ1L9pQCgjFc7/1zXxMNs6AWKB6PogyxB
-v9MAoIMHpQbRIy/N2p6/y3ViuvDYtIcf
-=/Nzb
------END PGP SIGNATURE-----
-
---nextPart1950882.g5FqhQI21j--
