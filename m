@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab3LJNUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:20:12 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:36536 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3LJNUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:20:07 -0500
+	id S1753289Ab3LJNUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 08:20:34 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42418 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751498Ab3LJNUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 08:20:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
+   d="scan'208";a="441698600"
+Date: Tue, 10 Dec 2013 17:51:59 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Dan Williams <dan.j.williams@intel.com>, andriy.shevchenko@intel.com,
+        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V4] dma: add channel request API that supports deferred
+ probe
+Message-ID: <20131210122159.GJ29580@intel.com>
+References: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <20131209235523.GW31386@dastard>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
-	<20131209121534.GE4278@hercules>
-	<CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
-	<20131209235523.GW31386@dastard>
-Date: Tue, 10 Dec 2013 08:20:07 -0500
-X-Google-Sender-Auth: qmDrjCYpWJPc9cvalVX2dvSJh_M
-Message-ID: <CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
-Subject: Re: XFS security fix never sent to -stable?
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        Kees Cook <keescook@google.com>,
-        Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
-        xfs@oss.sgi.com, "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 6:55 PM, Dave Chinner <david@fromorbit.com> wrote:
-> [cc xfs list, cc stable@vger.kernel.org]
->
-> On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
->> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
->> <luis.henriques@canonical.com> wrote:
->> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
->> >> Hi,
->> >>
->> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
->> >> capability check to free eofblocks ioctl") is a security fix that was
->> >> never sent to -stable? From what I can see, it was introduced in 3.8
->> >> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
->> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
->> >>
->> >> I don't see this in the 3.8.y tree. Should it be added there and newer?
->> >
->> > Thanks Kees, I'm queuing it for the 3.11 kernel.
->>
->> There's also this one:
->>
->> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
->>
->> It fixes CVE-2013-6382
->
-> First I've heard about it there being a CVE for that bug. Since when
-> has it been considered best practice to publish CVEs without first
-> (or ever) directly contacting the relevant upstream developers?
+On Tue, Nov 26, 2013 at 10:04:22AM -0700, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> dma_request_slave_channel() simply returns NULL whenever DMA channel
+> lookup fails. Lookup could fail for two distinct reasons:
+> 
+> a) No DMA specification exists for the channel name.
+>    This includes situations where no DMA specifications exist at all, or
+>    other general lookup problems.
+> 
+> b) A DMA specification does exist, yet the driver for that channel is not
+>    yet registered.
+> 
+> Case (b) should trigger deferred probe in client drivers. However, since
+> they have no way to differentiate the two situations, it cannot.
+> 
+> Implement new function dma_request_slave_channel_reason(), which performs
+> identically to dma_request_slave_channel(), except that it returns an
+> error-pointer rather than NULL, which allows callers to detect when
+> deferred probe should occur.
+> 
+> Eventually, all drivers should be converted to this new API, the old API
+> removed, and the new API renamed to the more desirable name. This patch
+> doesn't convert the existing API and all drivers in one go, since some
+> drivers call dma_request_slave_channel() then dma_request_channel() if
+> that fails. That would require either modifying dma_request_channel() in
+> the same way, or adding extra error-handling code to all affected
+> drivers, and there are close to 100 drivers using the other API, rather
+> than just the 15-20 or so that use dma_request_slave_channel(), which
+> might be tenable in a single patch.
+> 
+> acpi_dma_request_slave_chan_by_name() doesn't currently implement
+> deferred probe. It should, but this will be addressed later.
+> 
+> Acked-by: Dan Williams <dan.j.williams@intel.com>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Applied, to topic/defer_probe, this wont be rebased so feel free to merge
 
-We got a Fedora bug for it, and there are similar RHEL bugs open.  I
-had assumed you would be informed either via upstream or through
-those.  The CVE request was submitted by Kees here:
-http://seclists.org/oss-sec/2013/q4/330
-
-josh
+--
+~Vinod
