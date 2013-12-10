@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab3LJGcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 01:32:17 -0500
-Received: from smtp-j2.jaringonecloud.my ([202.187.161.27]:53049 "EHLO
-	smtp-j2.jaringonecloud.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab3LJGcO convert rfc822-to-8bit (ORCPT
+	id S1751760Ab3LJGdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 01:33:37 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:45022 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab3LJGdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 01:32:14 -0500
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 10 Dec 2013 01:33:36 -0500
+Message-ID: <52A6B5BB.3060506@linaro.org>
+Date: Tue, 10 Dec 2013 14:33:31 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: ATTENTION:
-To: Recipients <c.care_web@blumail.org>
-From: "Membership Authentification Form" <c.care_web@blumail.org>
-Date: Tue, 10 Dec 2013 07:13:17 +0100
-X-Antivirus: avast! (VPS 131209-2, 12/09/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20131210061329.A754B4081F@vmx7.jaringonecloud.my>
-X-TM-AS-MML: disable
-X-TM-AS-Product-Ver: IMSVA-8.5.0.1165-7.1.0.1007-20348.004
-X-TM-AS-Result: No--5.361-5.0-31-10
-X-imss-scan-details: No--5.361-5.0-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
-X-TMASE-Version: IMSVA-8.5.0.1165-7.1.1007-20348.004
-X-TMASE-Result: 10--5.361500-5.000000
-X-TMASE-MatchedRID: T3hsd5K8wIDlbVXI4/z5mmaq3a6nCtxandxf4OzpbpUGA3wiVVULSFBj
-	qHxYOqwsxExqCOWzGsx34EaNoQAMFU3NdyQQY/k0dbzzQciRhbSWv2d/ekijAZBPs9PtbzACRbx
-	UnI4S/BU8iXN/aNlK7mnnlMi49yP/EdxHnJgM42v191NQzhGRryTzSFehhfJrOMmGWbouINmxFl
-	Cb6T1EnamAfpMgmLcUfGgTZcrVQ2WscQW+NCamoovNiuH26FVnUEhWy9W70AEgBwKKRHe+r0OEv
-	18nzetjFYY8h5gxXqCjsVxcDq4wKLgkKVM5HhNj+hnS7A03sgM=
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        preeti@linux.vnet.ibm.com, "len.brown@intel.com" <len.brown@intel.com>
+Subject: Re: questions of cpuidle
+References: <52A5C846.30308@linaro.org> <52A5D0E0.7050201@linaro.org>
+In-Reply-To: <52A5D0E0.7050201@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATTENTION:
+On 12/09/2013 10:17 PM, Daniel Lezcano wrote:
+> 
+> Concerning the wake up of the cpu: the cpu disabled the irq and goes to
+> sleep, it is up to the firmware to wake up the cpu when an interrupt
+> occurs. It will exits its sleep state, call clock_events_notify(EXIT),
+> by this way re-switching to the local timer, and then re-enabling the
+> local interrupt which leads to the interrupt handler.
 
-Monday 9th of  December 2013 08:16:22 MYT from 41.206.151.183, your account
-was recently accessed with this details, please if you recognize this
-details,ignore this message, or use this web link to reconfirm your
-account details to prevent spammers and unauthorized users to gain access
-to your account;
+Thanks a lots for excellent article and detailed explains!
 
-http://www.emailmeform.com/builder/form/z7KbBhGaf0YV9X4
+So, if the firmware is in response to wake up cpu. that means there is a
+unit which control the firmware and it can not be power down. Do you
+know which unit running the firmware to wake up deep idle CPU.
+And does the wake up pass via GIC to CPU? If so, does the GIC need keep
+awake when all cpu idle? If not, how the firmware give the interrupt to
+CPU? And I am wondering if the deep idle cpu voltage get to near 0.
+How the cpu get the interrupt signal?
 
-@2013 all right reserve Security Alert! Webmaster Administration.
+> 
+> There are some more informations in the wiki page [1].
+> 
+>   -- Daniel
+> 
+> [1] https://wiki.linaro.org/WorkingGroups/PowerManagement/Doc/WakeUpSources
+
+
+-- 
+Thanks
+    Alex
