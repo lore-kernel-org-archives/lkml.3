@@ -1,61 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab3LJDMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 22:12:01 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:1213 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab3LJDMA (ORCPT
+	id S1752110Ab3LJDPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 22:15:43 -0500
+Received: from mailout.micron.com ([137.201.242.129]:41637 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab3LJDPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 22:12:00 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 09 Dec 2013 19:08:38 -0800
-Message-ID: <52A6867C.7030902@nvidia.com>
-Date: Tue, 10 Dec 2013 12:11:56 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Mon, 9 Dec 2013 22:15:41 -0500
+From: =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
+To: "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?gb2312?B?UWkgV2FuZyDN9cbwIChxaXdhbmcp?= <qiwang@micron.com>
+Subject: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash after
+ erasure interrupted
+Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Index: Ac7bkfL3+Un6Pi2jSbO3yZA9UtDETwNhLovgAa9rO+AAZiFEEAAABJ+gAPpBsUA=
+Date: Tue, 10 Dec 2013 03:15:07 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
+ <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20348.003
+X-TM-AS-Result: No--23.620100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpiolib: return -ENOENT when no GPIO mapping exists
-References: <1386295616-14192-1-git-send-email-acourbot@nvidia.com> <20131209124018.GD2281@intel.com>
-In-Reply-To: <20131209124018.GD2281@intel.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBA3FnnM010677
 
-On 12/09/2013 09:40 PM, Mika Westerberg wrote:
-> On Fri, Dec 06, 2013 at 11:06:56AM +0900, Alexandre Courbot wrote:
->> Some devices drivers make use of optional GPIO parameters. For such
->> drivers, it is important to discriminate between the case where no
->> GPIO mapping has been defined for the function they are requesting, and
->> the case where a mapping exists but an error occured while resolving it
->> or when acquiring the GPIO.
->>
->> This patch changes the family of gpiod_get() functions such that they
->> will return -ENOENT if and only if no GPIO mapping is defined for the
->> requested function. Other error codes are used when an actual error
->> occured during the GPIO resolution.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->> I think this change should be merged early as not having it may prevent
->> some users to switch to gpiod. I stumbled upon this issue while
->> considering porting a simple driver (pwm_bl) that has an optional GPIO
->> parameter.
->>
->> Mika, Andy: if Linus agrees with this change, could you take care of
->> having -ENOENT returned as well for the ACPI and SFI GPIOs lookup?
->
-> Sure. I have a patch for this already so once this gets merged, I'll send
-> out the ACPI version.
+Hi Artem:
+As we talked in mail before, please check my patch as below:
 
-Please feel free to send it now, as it should not break anything if your 
-patch is merged before mine anyway.
+From: Qi Wang <qiwang@micron.com>
 
+nor_erase_prepare() will be called before erase a NOR flash, it will program '0'
+into a block to mark this block. But program data into a erasure interrupted block
+can cause program timtout(several minutes at most) error, could impact other 
+operation on NOR flash. So UBIFS can read this block first to avoid unneeded 
+program operation. 
+
+This patch try to put read operation at head of write operation in 
+nor_erase_prepare(), read out the data. 
+If the data is already corrupt, then no need to program any data into this block, 
+just go to erase this block.
+
+Signed-off-by: Qi Wang <qiwang@qiwang@micron.com>
+---
+diff --git a/drivers/mtd/ubi/io.c b/drivers/mtd/ubi/io.c
+index bf79def..0a6343d 100644
+--- a/drivers/mtd/ubi/io.c
++++ b/drivers/mtd/ubi/io.c
+@@ -499,6 +499,7 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	size_t written;
+ 	loff_t addr;
+ 	uint32_t data = 0;
++	struct ubi_ec_hdr ec_hdr;
+ 	/*
+ 	 * Note, we cannot generally define VID header buffers on stack,
+ 	 * because of the way we deal with these buffers (see the header
+@@ -509,49 +510,38 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
+ 	struct ubi_vid_hdr vid_hdr;
+ 
+ 	/*
++	 * If VID or EC is valid, need to corrupt it before erase operation.  
+ 	 * It is important to first invalidate the EC header, and then the VID
+ 	 * header. Otherwise a power cut may lead to valid EC header and
+ 	 * invalid VID header, in which case UBI will treat this PEB as
+ 	 * corrupted and will try to preserve it, and print scary warnings.
+ 	 */
+ 	addr = (loff_t)pnum * ubi->peb_size;
+-	err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-	if (!err) {
+-		addr += ubi->vid_hdr_aloffset;
+-		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
+-		if (!err)
+-			return 0;
++	err = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if(err1)
++			goto error;
+ 	}
+ 
+-	/*
+-	 * We failed to write to the media. This was observed with Spansion
+-	 * S29GL512N NOR flash. Most probably the previously eraseblock erasure
+-	 * was interrupted at a very inappropriate moment, so it became
+-	 * unwritable. In this case we probably anyway have garbage in this
+-	 * PEB.
+-	 */
+-	err1 = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
+-	if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-	    err1 == UBI_IO_FF) {
+-		struct ubi_ec_hdr ec_hdr;
+-
+-		err1 = ubi_io_read_ec_hdr(ubi, pnum, &ec_hdr, 0);
+-		if (err1 == UBI_IO_BAD_HDR_EBADMSG || err1 == UBI_IO_BAD_HDR ||
+-		    err1 == UBI_IO_FF)
+-			/*
+-			 * Both VID and EC headers are corrupted, so we can
+-			 * safely erase this PEB and not afraid that it will be
+-			 * treated as a valid PEB in case of an unclean reboot.
+-			 */
+-			return 0;
++	err = ubi_io_read_vid_hdr(ubi, pnum, &vid_hdr, 0);
++	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
++	    err != UBI_IO_FF){
++	    	addr += ubi->vid_hdr_aloffset;
++		err1 = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
++		if (err1)
++			goto error;	
+ 	}
++	return 0;
+ 
++error:
+ 	/*
+-	 * The PEB contains a valid VID header, but we cannot invalidate it.
++	 * The PEB contains a valid VID or EC header, but we cannot invalidate it.
+ 	 * Supposedly the flash media or the driver is screwed up, so return an
+ 	 * error.
+ 	 */
+-	ubi_err("cannot invalidate PEB %d, write returned %d read returned %d",
++	ubi_err("cannot invalidate PEB %d, read returned %d write returned %d",
+ 		pnum, err, err1);
+ 	ubi_dump_flash(ubi, pnum, 0, ubi->peb_size);
+ 	return -EIO;
+---
+
+I have tested this patch on Micron NOR flash, part number is£ºJS28F512M29EWHA.
+If have any questions, please let me know. 
+Thank you
+
+Best Regards, 
+Qi Wang ÍõÆğ
+ESG APAC AE 
+Tel: 86-021-38997158
+Mobile: 86-15201958202
+Email: qiwang@micron.com
+Address: No 601 Fasai Rd, Pudong, Shanghai, China, 200131
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
