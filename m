@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751061Ab3LJWrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:47:10 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:58876 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab3LJWrH (ORCPT
+	id S1751278Ab3LJWrR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:47:17 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44026 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab3LJWrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:47:07 -0500
+	Tue, 10 Dec 2013 17:47:10 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.236.217
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX185hjniU8A4Vk8niRmgwnJZ
+Date: Tue, 10 Dec 2013 14:46:59 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
+        NeilBrown <neilb@suse.de>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
+Message-ID: <20131210224659.GY13171@atomide.com>
+References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
+ <1381784555-18344-2-git-send-email-marek@goldelico.com>
+ <20131111164917.GN15154@atomide.com>
+ <CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
+ <20131111233152.GR15154@atomide.com>
+ <CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20131210223615.GA10239@bubble.grove.modra.org>
-References: <CAMe9rOob2T+VWkZyHpaoBy6fUeTyAocpw4-cBpdrar2rtdAeew@mail.gmail.com>
-	<20131210223615.GA10239@bubble.grove.modra.org>
-Date: Tue, 10 Dec 2013 14:47:06 -0800
-Message-ID: <CAMe9rOr9L7OmdxGyzgiWuTTBXy4A+qUVa+3Mar+J_hE8H=rRZg@mail.gmail.com>
-Subject: Re: RFC: binutils PATCH: Set e_type to ET_EXEC for -pie -Ttext-segment=
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Binutils <binutils@sourceware.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 2:36 PM, Alan Modra <amodra@gmail.com> wrote:
-> On Mon, Dec 09, 2013 at 07:10:23PM -0800, H.J. Lu wrote:
->> Linker sets e_type in ELF header to ET_DYN for -pie -Ttext-segment=0xXXX.
->> When I added -Ttext-segment=0xXXX, one goal was to load
->> small model executable above 4GB on Linux/x86-64, which
->> was done with -pie -Ttext-segment=0xXXX.  But -pie sets
->> e_type in ELF header to ET_DYN and kernel may ignore
->> p_vaddr in ELF header to load ET_DYN binary at a random
->> address.  This patch changes ld to set e_type in ELF header
->> to ET_EXEC if the first PT_LOAD segment has non-zero
->> p_vaddr.  If this is unacceptable as generic ELF change,
->> I can make it specific to x86.
+* Belisko Marek <marek.belisko@gmail.com> [131210 14:13]:
+> On Tue, Nov 12, 2013 at 12:31 AM, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> > It would be best to set it up as omap-ctrl.c driver under drivers
+> > somewhere with few functions exported for DSS and MMC drivers.
 >
-> Well, I suppose it's a hack to use ET_DYN for executables in the first
-> place, so one more hack in the linker hardly matters.  Why not just
-> patch the kernel though?  The kernel can look at the first PT_LOAD
-> header just as easily as the linker, and it's the kernel that is doing
-> the loading after all.
->
+> I create small dummy driver based on phy-omap-control which can be
+> used but before sending patch (with more updates) I would like to get
+> some feedback if my direction is correct.
 
-Kernel should have some freedom on where to load ET_DYN object.
-But when -Ttext-segment= is used, programmer expects the
-executable will be loaded at the specified address.  Setting
-ET_EXEC will guarantee that it will be loaded at that address.
+Cool thanks. Yeah what you have can easily be combined with the patches
+Balaji has posted to make HSMMC use drivers/mfd/syscon.c via regmap
+for the SCM register access. Maybe take a look at the work in progress
+patches in thread:
 
+[PATCH v4 0/7] mmc: omap_hsmmc: pbias dt and cleanup
 
--- 
-H.J.
+And also see my comments regarding using the SCM GENERAL register area
+as base for the syscon.c driver. That should work for your driver too,
+right? And then you can access the SYSCON1 register that way from your
+consumer driver ;)
+
+Regards,
+
+Tony
