@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab3LJALg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:11:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55073 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3LJALf (ORCPT
+	id S1751267Ab3LJAMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:12:15 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61857 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab3LJAMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:11:35 -0500
-Date: Mon, 9 Dec 2013 16:11:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v3 02/23] mm/memblock: debug: don't free reserved array
- if !ARCH_DISCARD_MEMBLOCK
-Message-Id: <20131209161134.e161ddfedf284f2052cad4a5@linux-foundation.org>
-In-Reply-To: <1386625856-12942-3-git-send-email-santosh.shilimkar@ti.com>
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
-	<1386625856-12942-3-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Dec 2013 19:12:12 -0500
+X-AuditID: 9c930179-b7ce4ae000000e86-86-52a65c5a8464
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf report: Add --header/--header-only options
+References: <1386583370-1699-1-git-send-email-jolsa@redhat.com>
+	<1386583370-1699-2-git-send-email-jolsa@redhat.com>
+Date: Tue, 10 Dec 2013 09:12:10 +0900
+In-Reply-To: <1386583370-1699-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Mon, 9 Dec 2013 11:02:49 +0100")
+Message-ID: <87ppp5lg2t.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Dec 2013 16:50:35 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+On Mon,  9 Dec 2013 11:02:49 +0100, Jiri Olsa wrote:
+> Currently the perf.data header is always displayed for stdio
+> output, which is no always useful.
+>
+> Disabling header information by default and adding following
+> options to control header output:
+>   --header      - display header information (old default)
+>   --header-only - display header information only w/o further
+>                   processing, forces stdio output
+>
+[SNIP]
+> +--header
+> +	Show perf.data header.
 
-> Now the Nobootmem allocator will always try to free memory allocated for
-> reserved memory regions (free_low_memory_core_early()) without taking
-> into to account current memblock debugging configuration
-> (CONFIG_ARCH_DISCARD_MEMBLOCK and CONFIG_DEBUG_FS state).
-> As result if:
->  - CONFIG_DEBUG_FS defined
->  - CONFIG_ARCH_DISCARD_MEMBLOCK not defined;
-> -  reserved memory regions array have been resized during boot
-> 
-> then:
-> - memory allocated for reserved memory regions array will be freed to
-> buddy allocator;
-> - debug_fs entry "sys/kernel/debug/memblock/reserved" will show garbage
-> instead of state of memory reservations. like:
->    0: 0x98393bc0..0x9a393bbf
->    1: 0xff120000..0xff11ffff
->    2: 0x00000000..0xffffffff
-> 
-> Hence, do not free memory allocated for reserved memory regions if
-> defined(CONFIG_DEBUG_FS) && !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
+This explanation looks too terse.  How about this?
 
-Alternatives:
+	Show header information in the perf.data file.  This includes
+        various information like hostname, os and perf version, cpu/mem
+        info, perf command line, event list and so on.  Currently only
+        --stdio output supports this feature.
 
-- disable /proc/sys/kernel/debug/memblock/reserved in this case
+Thanks,
+Namhyung
 
-- disable defined(CONFIG_DEBUG_FS) &&
-  !defined(CONFIG_ARCH_DISCARD_MEMBLOCK) in Kconfig.
-
-How much memory are we talking about here?  If it's more than "very
-little" then I think either of these would be better - most users will
-value the extra memory over an accurate
-/proc/sys/kernel/debug/memblock/reserved?
+> +
+> +--header-only
+> +	Show only perf.data header (forces --stdio).
+> +
+>  SEE ALSO
+>  --------
+>  linkperf:perf-stat[1], linkperf:perf-annotate[1]
