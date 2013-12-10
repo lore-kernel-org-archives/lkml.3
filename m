@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab3LJIZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:25:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58760 "EHLO
+	id S1755245Ab3LJI0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:26:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab3LJIAy (ORCPT
+	with ESMTP id S1752367Ab3LJIAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:00:54 -0500
+	Tue, 10 Dec 2013 03:00:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Cluytens <david.cluytens@gmail.com>
-Subject: [PATCH 3.10 49/52] USB: cdc-acm: Added support for the Lenovo RD02-D400 USB Modem
-Date: Tue, 10 Dec 2013 00:01:22 -0800
-Message-Id: <20131210075957.620131350@linuxfoundation.org>
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.10 46/52] USB: ftdi_sio: fixed handling of unsupported CSIZE setting
+Date: Tue, 10 Dec 2013 00:01:19 -0800
+Message-Id: <20131210075957.414492150@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
 References: <20131210075954.196229872@linuxfoundation.org>
@@ -26,27 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Cluytens <david.cluytens@gmail.com>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit 3b59d16c513da258ec8f6a0b4db85f257a0380d6 upstream.
+commit 8704211f65a2106ba01b6ac9727cdaf9ca11594c upstream.
 
-Signed-off-by: David Cluytens <david.cluytens@gmail.com>
+FTDI UARTs support only 7 or 8 data bits. Until now the ftdi_sio driver would
+only report this limitation for CS6 to dmesg and fail to reflect this fact to
+tcgetattr.
+
+This patch reverts the unsupported CSIZE setting and reports the fact with less
+severance to dmesg for both CS5 and CS6.
+
+To test the patch it's sufficient to call
+
+    stty -F /dev/ttyUSB0 cs5
+
+which will succeed without the patch and report an error with the patch
+applied.
+
+As an additional fix this patch ensures that the control request will always
+include a data bit size.
+
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |   37 ++++++++++++++++++++++++-------------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1529,6 +1529,8 @@ static int acm_reset_resume(struct usb_i
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2131,6 +2131,20 @@ static void ftdi_set_termios(struct tty_
+ 		termios->c_cflag |= CRTSCTS;
+ 	}
  
- static const struct usb_device_id acm_ids[] = {
- 	/* quirky and broken devices */
-+	{ USB_DEVICE(0x17ef, 0x7000), /* Lenovo USB modem */
-+	.driver_info = NO_UNION_NORMAL, },/* has no union descriptor */
- 	{ USB_DEVICE(0x0870, 0x0001), /* Metricom GS Modem */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
++	/*
++	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
++	 * support CS5/6 and revert the CSIZE setting instead.
++	 */
++	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
++		dev_warn(ddev, "requested CSIZE setting not supported\n");
++
++		termios->c_cflag &= ~CSIZE;
++		if (old_termios)
++			termios->c_cflag |= old_termios->c_cflag & CSIZE;
++		else
++			termios->c_cflag |= CS8;
++	}
++
+ 	cflag = termios->c_cflag;
+ 
+ 	if (!old_termios)
+@@ -2167,19 +2181,16 @@ no_skip:
+ 	} else {
+ 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+ 	}
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS7:
+-			urb_value |= 7;
+-			dev_dbg(ddev, "Setting CS7\n");
+-			break;
+-		case CS8:
+-			urb_value |= 8;
+-			dev_dbg(ddev, "Setting CS8\n");
+-			break;
+-		default:
+-			dev_err(ddev, "CSIZE was set but not CS7-CS8\n");
+-		}
++	switch (cflag & CSIZE) {
++	case CS7:
++		urb_value |= 7;
++		dev_dbg(ddev, "Setting CS7\n");
++		break;
++	default:
++	case CS8:
++		urb_value |= 8;
++		dev_dbg(ddev, "Setting CS8\n");
++		break;
+ 	}
+ 
+ 	/* This is needed by the break command since it uses the same command
 
 
