@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab3LJIad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:30:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9437 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab3LJIaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:30:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,864,1378882800"; 
-   d="scan'208";a="441548422"
-Date: Tue, 10 Dec 2013 09:29:55 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: micky <micky_ching@realsil.com.cn>
-Cc: wwang <wei_wang@realsil.com.cn>, Francis Moreau <francis.moro@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Message-ID: <20131210082955.GG8612@zurbaran>
-References: <1821758.2MoNI3h1Mv@vostro.rjw.lan>
- <52985041.5050000@gmail.com>
- <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
- <5299FF38.7060203@gmail.com>
- <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de>
- <529D92D6.8050409@gmail.com>
- <20131209221721.GB8612@zurbaran>
- <52A670E4.5050501@realsil.com.cn>
- <52A674E0.2080407@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A674E0.2080407@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752965Ab3LJIA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:00:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58666 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab3LJIAW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 03:00:22 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andy Lutomirski <luto@amacapital.net>, Paul Turner <pjt@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.10 27/52] time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
+Date: Tue, 10 Dec 2013 00:01:00 -0800
+Message-Id: <20131210075956.102603512@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210075954.196229872@linuxfoundation.org>
+References: <20131210075954.196229872@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Micky,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Dec 10, 2013 at 09:56:48AM +0800, micky wrote:
-> Hi Francis:
-> On 12/10/2013 09:39 AM, wwang wrote:
-> >which is based on Thomas' patch.
-> 
-> Can you help us test this patch, we disable irq while suspend here.
-I already pushed a patch from Thomas to mfd-fixes that seems to fix the
-resume breakage:
+------------------
 
-https://git.kernel.org/cgit/linux/kernel/git/sameo/mfd-fixes.git/commit/?id=19e49e445e198197c5e243f92d333d076e23d032
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Cheers,
-Samuel.
+commit 4be77398ac9d948773116b6be4a3c91b3d6ea18c upstream.
 
---
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Since commit 1e75fa8be9f (time: Condense timekeeper.xtime
+into xtime_sec - merged in v3.6), there has been an problem
+with the error accounting in the timekeeping code, such that
+when truncating to nanoseconds, we round up to the next nsec,
+but the balancing adjustment to the ntp_error value was dropped.
+
+This causes 1ns per tick drift forward of the clock.
+
+In 3.7, this logic was isolated to only GENERIC_TIME_VSYSCALL_OLD
+architectures (s390, ia64, powerpc).
+
+The fix is simply to balance the accounting and to subtract the
+added nanosecond from ntp_error. This allows the internal long-term
+clock steering to keep the clock accurate.
+
+While this fix removes the regression added in 1e75fa8be9f, the
+ideal solution is to move away from GENERIC_TIME_VSYSCALL_OLD
+and use the new VSYSCALL method, which avoids entirely the
+nanosecond granular rounding, and the resulting short-term clock
+adjustment oscillation needed to keep long term accurate time.
+
+[ jstultz: Many thanks to Martin for his efforts identifying this
+  	   subtle bug, and providing the fix. ]
+
+Originally-from: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Paul Turner <pjt@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1385149491-20307-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/time/timekeeping.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1328,7 +1328,7 @@ static inline void old_vsyscall_fixup(st
+ 	tk->xtime_nsec -= remainder;
+ 	tk->xtime_nsec += 1ULL << tk->shift;
+ 	tk->ntp_error += remainder << tk->ntp_error_shift;
+-
++	tk->ntp_error -= (1ULL << tk->shift) << tk->ntp_error_shift;
+ }
+ #else
+ #define old_vsyscall_fixup(tk)
+
+
