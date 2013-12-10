@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab3LJMiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:38:20 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45378 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab3LJMiQ (ORCPT
+	id S1753187Ab3LJMiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:38:50 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:62830 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab3LJMir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:38:16 -0500
-Date: Tue, 10 Dec 2013 12:38:13 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Denis Carikli <denis@eukrea.com>
-Message-ID: <20131210123813.GJ29268@sirena.org.uk>
-References: <20131210150201.c99abbdcc7eb1a20d39dafc1@canb.auug.org.au>
+	Tue, 10 Dec 2013 07:38:47 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lTbjHS9ResYW5N/f"
-Content-Disposition: inline
-In-Reply-To: <20131210150201.c99abbdcc7eb1a20d39dafc1@canb.auug.org.au>
-X-Cookie: It's clever, but is it art?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: linux-next: build failure after merge of the final tree
- (sound-asoc tree related)
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <52A6FFF0.6080207@parallels.com>
+References: <cover.1386571280.git.vdavydov@parallels.com>
+	<5287164773f8aade33ce17f3c91546c6e1afaf85.1386571280.git.vdavydov@parallels.com>
+	<20131210041826.GB31386@dastard>
+	<52A6FFF0.6080207@parallels.com>
+Date: Tue, 10 Dec 2013 16:38:46 +0400
+Message-ID: <CAA6-i6pWF-iiqLEUwcODKUCr+ng-H0Wc=L7+WFxUxo=Yr7MM8A@mail.gmail.com>
+Subject: Re: [PATCH v13 13/16] vmscan: take at least one pass with shrinkers
+From: Glauber Costa <glommer@gmail.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Dave Chinner <david@fromorbit.com>, dchinner@redhat.com,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, devel@openvz.org,
+        Glauber Costa <glommer@openvz.org>, Glauber Costa <gloomer@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 10, 2013 at 3:50 PM, Vladimir Davydov
+<vdavydov@parallels.com> wrote:
+> On 12/10/2013 08:18 AM, Dave Chinner wrote:
+>> On Mon, Dec 09, 2013 at 12:05:54PM +0400, Vladimir Davydov wrote:
+>>> From: Glauber Costa <glommer@openvz.org>
+>>>
+>>> In very low free kernel memory situations, it may be the case that we
+>>> have less objects to free than our initial batch size. If this is the
+>>> case, it is better to shrink those, and open space for the new workload
+>>> then to keep them and fail the new allocations.
+>>>
+>>> In particular, we are concerned with the direct reclaim case for memcg.
+>>> Although this same technique can be applied to other situations just as
+>>> well, we will start conservative and apply it for that case, which is
+>>> the one that matters the most.
+>> This should be at the start of the series.
+>
+> Since Glauber wanted to introduce this only for memcg-reclaim first,
+> this can't be at the start of the series, but I'll move it to go
+> immediately after per-memcg shrinking core in the next iteration.
+>
+> Thanks.
 
---lTbjHS9ResYW5N/f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So, the reason for that being memcg only, is that the reclaim for
+small objects triggered
+a bunch of XFS regressions (I am sure the regressions are general, but
+I've tested them using
+ZFS).
 
-On Tue, Dec 10, 2013 at 03:02:01PM +1100, Stephen Rothwell wrote:
-> Hi all,
->=20
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+In theory they shouldn't, so we can try to make it global again, so
+long as it comes together
+with benchmarks demonstrating that it is a safe change.
 
-Can you please update the contact list for the ASoC tree to use
-broonie@kernel.org instead of broonie@linaro.org?
-
---lTbjHS9ResYW5N/f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSpwsyAAoJELSic+t+oim9Q1kP/1RxLaCAhulJ/+ez5Erp6S3O
-VzF125/HEbUJTLhPUmbWaAUY74K2lVBoNT2oMjkbybwT7VSkPng736SACEnohxq/
-6vJXHKKzCfPPSfYjFulTitux6SrEg04PYhayDB374zDLp9hsG/R/xOoENsNTqc1u
-rWk3C/JlpTq9WroqpOpOtbdfWWOC5CXuKGGCYWAS2XGQZUhAuM9dd84mJBsEaMfW
-8du8OwPiLTg7D67MA1XYO8744mlx/BjpYJFoYnGDWP6FQgG3jmvRypkqMvXQqr1q
-AOSxQqYF9HVn7BoVg9gsZbgvu9EeKO7pPWC6LVjsIa+jNKzdKRkQfdX+/3vfzk7T
-aN2zQZrALwGFZWgWUT3GtTFVinXeMIcf8+n04K2oxEJAJEckuA/uIOIUcvEi/unM
-VD8qIgphkAYIGq3kifCbYRSmBdEvq7f4JmQBHF4DzEr9v3d2CjaYENo3ZcsMyiQm
-vtq3VRCMxckgV4EluqQnVNBZ1ZquxhAA8aehNkSdko8LY/S1uwlNHxWnU8DlmixP
-C0GDk6wwAQdbBuazgvCcHR6k6UWV65W09vvfokJLIs/F9SfWdNbrQfBZMXLy4iBo
-6TuWyuHz31K9b3j1T002BoEPFQz3Ljzw3kVXvzgZGavzvxsZESkgyfpYVqRe7cKe
-MO/M97fkeoRGOb7hAy5q
-=FaKb
------END PGP SIGNATURE-----
-
---lTbjHS9ResYW5N/f--
+I am not sure the filesystem people would benefit from that directly,
+though. So it may not be worth the hassle...
