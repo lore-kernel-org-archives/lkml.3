@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407Ab3LJTbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 14:31:33 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:38592 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab3LJTb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 14:31:29 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dan Williams <dcbw@redhat.com>
-Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent mac address
-Date: Tue, 10 Dec 2013 20:31:23 +0100
-User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.11.3; x86_64; ; )
-Cc: Kalle Valo <kvalo@adurom.com>, Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com> <201312101852.17030@pali> <1386703339.30202.19.camel@dcbw.foobar.com>
-In-Reply-To: <1386703339.30202.19.camel@dcbw.foobar.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2284039.d878SBvJzH";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1751474Ab3LJTcH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 14:32:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751429Ab3LJTcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 14:32:05 -0500
+Date: Tue, 10 Dec 2013 14:31:55 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 5/6] locks: report l_pid as -1 for FL_FILE_PVT locks
+Message-ID: <20131210143155.147c6a55@tlielax.poochiereds.net>
+In-Reply-To: <1386703055-22308-6-git-send-email-jlayton@redhat.com>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-6-git-send-email-jlayton@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201312102031.23797@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2284039.d878SBvJzH
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, 10 Dec 2013 14:17:34 -0500
+Jeff Layton <jlayton@redhat.com> wrote:
 
-On Tuesday 10 December 2013 20:22:19 Dan Williams wrote:
-> On Tue, 2013-12-10 at 18:52 +0100, Pali Roh=C3=A1r wrote:
-> > On Tuesday 10 December 2013 18:49:22 Dan Williams wrote:
-> > > On Tue, 2013-12-10 at 18:14 +0100, Pali Roh=C3=A1r wrote:
-> > > > On Tuesday 10 December 2013 17:10:50 Pali Roh=C3=A1r wrote:
-> > > > > On Tuesday 10 December 2013 16:49:23 Kalle Valo wrote:
-> > > > > > Pali Roh=C3=A1r <pali.rohar@gmail.com> writes:
-> > > > > > > Driver wl1251 generating mac address randomly at
-> > > > > > > startup and there is no way to set permanent mac
-> > > > > > > address via SET_IEEE80211_PERM_ADDR. This patch
-> > > > > > > export sysfs file which can set permanent mac
-> > > > > > > address by userspace helper program. Patch is
-> > > > > > > needed for devices which do not store mac address
-> > > > > > > in internal wl1251 eeprom.
-> > > > > > >=20
-> > > > > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > > > > >=20
-> > > > > > We have ioctl() command for setting the mac address.
-> > > > >=20
-> > > > > Really? Is there ioctl for setting permanent mac
-> > > > > address? Can you show me it?
-> > > >=20
-> > > > Now I looked at it again and I did not found any ioctl
-> > > > for it. There is only ioctl cmd for getting address,
-> > > > not setting it.
-> > > >=20
-> > > > #define SIOCETHTOOL 0x8946
-> > > >=20
-> > > > /* Get permanent hardware address */
-> > > > #define ETHTOOL_GPERMADDR 0x00000020
-> > >=20
-> > > Yeah, because it's supposed to be permanent and
-> > > unchanging. Which means if there was an ioctl for it,
-> > > that would be contrary to the purpose of a permanent MAC
-> > > address.
-> > >=20
-> > > I realize the N900 stores the WiFi MAC address completely
-> > > differently than many other systems, and that's why this
-> > > sysfs file was created.  I don't really have a great
-> > > converged solution for that, other than what you've
-> > > currently got, or perhaps adding SPERMADDR to ethtool.=20
-> > > One thing I *would* like though, is a restriction on the
-> > > sysfs file such that if the permanent MAC is already set,
-> > > it cannot be set again.  Otherwise the permanent MAC
-> > > address isn't permanent at all.
-> > >=20
-> > > Dan
-> >=20
-> > Maybe another way could be to use request_firmware to load
-> > address from userspace... Or what do you think?
->=20
-> That sounds like a great idea to try.  A number of devices
-> either need stub firmware to read the MAC from EEPROM, or do
-> use request_firmware() to load firmware before they read the
-> MAC.  You may have to use request_firmware() synchronously
-> though to ensure that the MAC is read before registering with
-> mac80211.
->=20
-> Dan
+> FL_FILE_PVT locks are no longer tied to a particular pid, and are
+> instead inheritable by child processes. Report a l_pid of '-1' for
+> these sorts of locks since the pid is somewhat meaningless for them.
+> 
+> This precedent comes from FreeBSD. There, POSIX and flock() locks can
+> conflict with one another. If fcntl(F_GETLK, ...) returns a lock set
+> with flock() then the l_pid member cannot be a process ID because the
+> lock is not held by a process as such.
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index e163a30..5372ddd 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -1899,7 +1899,7 @@ EXPORT_SYMBOL_GPL(vfs_test_lock);
+>  
+>  static int posix_lock_to_flock(struct flock *flock, struct file_lock *fl)
+>  {
+> -	flock->l_pid = fl->fl_pid;
+> +	flock->l_pid = IS_FILE_PVT(fl) ? -1 : fl->fl_pid;
+>  #if BITS_PER_LONG == 32
+>  	/*
+>  	 * Make sure we can represent the posix lock via
+> @@ -1921,7 +1921,7 @@ static int posix_lock_to_flock(struct flock *flock, struct file_lock *fl)
+>  #if BITS_PER_LONG == 32
+>  static void posix_lock_to_flock64(struct flock64 *flock, struct file_lock *fl)
+>  {
+> -	flock->l_pid = fl->fl_pid;
+> +	flock->l_pid = IS_FILE_PVT(fl) ? -1 : fl->fl_pid;
+>  	flock->l_start = fl->fl_start;
+>  	flock->l_len = fl->fl_end == OFFSET_MAX ? 0 :
+>  		fl->fl_end - fl->fl_start + 1;
 
-So, if you like this idea, can you help me how to write udev rule=20
-which will run my own program (it print mac address) and send mac=20
-address when driver ask for mac address in request_firmware?=20
-Problem is that default udev rule for firmware trying to load data=20
-from /lib/firmware/... but in this case mac address first must be=20
-read from special location and converted to correct format.
+While I think this behavior is reasonable, I do wonder if we ought to
+consider more changes to how F_GETLK works. Currently the F_GETLK code
+won't handle the new l_type values, but maybe it should...
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+For instance, if there is a conflicting lock, and the F_GETLK caller
+specified F_RDLCKP or F_WRLCKP, might it make sense to report the
+l_type on the conflicting lock as F_RDLCKP or F_WRLCKP if that
+conflicting lock is also a *P type?
 
---nextPart2284039.d878SBvJzH
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+...or maybe we should consider a new F_GETLKP cmd value, and a new
+expanded struct flock that gives more info. The pid is already somewhat
+meaningless with this sort of lock. Perhaps we could obfuscate the
+fl_owner value and report that instead? What other sorts of info would
+be useful to programs that intend to use these new interfaces?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlKnbAsACgkQi/DJPQPkQ1KMAwCfZsn5s3EjIltZnqxjpd4lo+9v
-CQEAn1wBPRMrVsWALaU9ItBeBSaB6Iki
-=vT15
------END PGP SIGNATURE-----
-
---nextPart2284039.d878SBvJzH--
+-- 
+Jeff Layton <jlayton@redhat.com>
