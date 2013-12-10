@@ -1,95 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab3LJQwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 11:52:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43554 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab3LJQwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 11:52:04 -0500
-Date: Tue, 10 Dec 2013 10:51:52 -0600
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, eparis@redhat.com,
-        linux-audit@redhat.com, ebiederm@xmission.com, sgrubb@redhat.com
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-Message-ID: <20131210165152.GA6028@sergelap>
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com>
- <529EE877.7030701@cn.fujitsu.com>
- <20131206221241.GD22445@mail.hallyn.com>
- <52A52599.3070502@cn.fujitsu.com>
- <20131209182619.GD6849@sergelap>
- <52A6CDE1.8090404@cn.fujitsu.com>
+	id S1754241Ab3LJQ4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 11:56:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9461 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab3LJQ4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 11:56:16 -0500
+Message-ID: <52A747A8.9030307@redhat.com>
+Date: Tue, 10 Dec 2013 11:56:08 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A6CDE1.8090404@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/18] mm: numa: Defer TLB flush for THP migration as
+ long as possible
+References: <1386690695-27380-1-git-send-email-mgorman@suse.de> <1386690695-27380-13-git-send-email-mgorman@suse.de>
+In-Reply-To: <1386690695-27380-13-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> On 12/10/2013 02:26 AM, Serge Hallyn wrote:
-> > Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
-> >>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
-> >>>> Hi
-> >>>>
-> >>>> On 10/24/2013 03:31 PM, Gao feng wrote:
-> >>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
-> >>>>>
-> >>>>> The main target of this patchset is allowing user in audit
-> >>>>> namespace to generate the USER_MSG type of audit message,
-> >>>>> some userspace tools need to generate audit message, or
-> >>>>> these tools will broken.
-> >>>>>
-> >>>>
-> >>>> I really need this feature, right now,some process such as
-> >>>> logind are broken in container becase we leak of this feature.
-> >>>
-> >>> Your set doesn't address loginuid though right?  How exactly do you
-> >>> expect to do that?  If user violates MAC policy and audit msg is
-> >>> sent to init user ns by mac subsys, you need the loginuid from
-> >>> init_audit_ns.  where will that be stored if you allow updates
-> >>> of loginuid in auditns?
-> >>>
-> >> This patchset doesn't include the loginuid part.
-> >>
-> >> the loginuid is stored in task as before.
-> >> In my opinion, when task creates a new audit namespace, this task's
-> >> loginuid will be reset to zero, so the children tasks can set their
-> >> loginuid. Does this change break the MAC?
-> > 
-> > I think so, yes.  In an LSPP selinux environment, if the task
-> > manages to trigger an selinux deny rule which is audited, then
-> > the loginuid must make sense on the host.  Now presumably it
-> > will get translated to the mapped host uid, and we can figure
-> > out the host uid owning it through /etc/subuid.  But that adds
-> > /etc/subuid as a new part of the TCB without any warning <shrug>
-> > So in that sense, for LSPP, it breaks it.
-> > 
+On 12/10/2013 10:51 AM, Mel Gorman wrote:
+> THP migration can fail for a variety of reasons. Avoid flushing the TLB
+> to deal with THP migration races until the copy is ready to start.
 > 
-> Looks like my opinion is incorrect.
-> 
-> In the audit-next tree, Eric added a new audit feature to allow privileged
-> user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
-> is disabled, the privileged user can reset/set the loginuid of task. I
-> think this way is safe since only privileged user can do the change.
-> 
-> So I will not change the loginuid part.
-> 
-> Thanks for your information Serge :)
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Unfortunately this makes the patchset much less compelling :)  The
-problem I was looking into is that a container running in a user
-namespace cannot (bc he has ns_capable(CAP_AUDIT_*) but not
-capable(CAP_AUDIT_*)) set loginuids at all.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Which from an LSPP pov is correct;  which is why I was hoping you were
-going to have the audit namespaces be hierarchical, with a task in a
-level 2 audit ns having two loginuids - one in his own auditns, and
-one in the initial one.
 
--serge
+-- 
+All rights reversed
