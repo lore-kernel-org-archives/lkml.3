@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab3LJH7g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 02:59:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58415 "EHLO
+	id S1752738Ab3LJH7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 02:59:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58436 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab3LJH7c (ORCPT
+	with ESMTP id S1752710Ab3LJH7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 02:59:32 -0500
+	Tue, 10 Dec 2013 02:59:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Leho Kraav <leho@kraav.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3.4 25/25] drivers/char/i8k.c: add Dell XPLS L421X
-Date: Tue, 10 Dec 2013 00:00:33 -0800
-Message-Id: <20131210075932.570950741@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.4 06/25] SCSI: enclosure: fix WARN_ON in dual path device removing
+Date: Tue, 10 Dec 2013 00:00:14 -0800
+Message-Id: <20131210075931.273322099@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210075930.808460227@linuxfoundation.org>
 References: <20131210075930.808460227@linuxfoundation.org>
@@ -27,36 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 9aa5b0181bdf335f0b731d8502e128a862884bcd upstream.
+commit a1470c7bf3a4676e62e4c0fb204e339399eb5c59 upstream.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=60772
+Bug report from: wenxiong@linux.vnet.ibm.com
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Reported-by: Leho Kraav <leho@kraav.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+The issue is happened in dual controller configuration. We got the
+sysfs warnings when rmmod the ipr module.
+
+enclosure_unregister() in drivers/msic/enclosure.c, call device_unregister()
+for each componment deivce, device_unregister() ->device_del()->kobject_del()
+->sysfs_remove_dir(). In sysfs_remove_dir(), set kobj->sd = NULL.
+
+For each componment device,
+enclosure_component_release()->enclosure_remove_links()->sysfs_remove_link()
+in which checking kobj->sd again, it has been set as NULL when doing
+device_unregister. So we saw all these sysfs WARNING.
+
+Tested-by: wenxiong@linux.vnet.ibm.com
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/i8k.c |    7 +++++++
+ drivers/misc/enclosure.c |    7 +++++++
  1 file changed, 7 insertions(+)
 
---- a/drivers/char/i8k.c
-+++ b/drivers/char/i8k.c
-@@ -664,6 +664,13 @@ static struct dmi_system_id __initdata i
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
- 		},
- 	},
-+	{
-+		.ident = "Dell XPS421",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS L421X"),
-+		},
-+	},
-         { }
- };
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -198,6 +198,13 @@ static void enclosure_remove_links(struc
+ {
+ 	char name[ENCLOSURE_NAME_SIZE];
  
++	/*
++	 * In odd circumstances, like multipath devices, something else may
++	 * already have removed the links, so check for this condition first.
++	 */
++	if (!cdev->dev->kobj.sd)
++		return;
++
+ 	enclosure_link_name(cdev, name);
+ 	sysfs_remove_link(&cdev->dev->kobj, name);
+ 	sysfs_remove_link(&cdev->cdev.kobj, "device");
 
 
