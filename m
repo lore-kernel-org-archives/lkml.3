@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab3LJPYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:24:38 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:59089 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab3LJPYe (ORCPT
+	id S1752754Ab3LJPYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:24:55 -0500
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:48758 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752352Ab3LJPYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:24:34 -0500
-Date: Tue, 10 Dec 2013 16:24:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: rostedt@goodmis.org, henrik@austad.us, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH v4 tip/core/locking 0/4] Memory-barrier documentation
- updates
-Message-ID: <20131210152430.GA1103@gmail.com>
-References: <20131205105928.GA27382@austad.us>
- <20131205122851.GB20562@gmail.com>
- <20131205085146.0370ea2a@gandalf.local.home>
- <20131205.130524.997340443429884333.davem@davemloft.net>
+	Tue, 10 Dec 2013 10:24:54 -0500
+Date: Tue, 10 Dec 2013 15:24:53 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: rcu: Avoid irq disable in rcu_cpu_kthread
+In-Reply-To: <20131210000521.GH4208@linux.vnet.ibm.com>
+Message-ID: <00000142dd1c5d5c-e95b9eb8-e27a-4de7-b301-becee6402c4e-000000@email.amazonses.com>
+References: <00000142c495b75b-c1878909-baf9-42a8-9ba7-62d216d806a7-000000@email.amazonses.com> <20131210000521.GH4208@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131205.130524.997340443429884333.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.10-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 9 Dec 2013, Paul E. McKenney wrote:
 
-* David Miller <davem@davemloft.net> wrote:
+> On Thu, Dec 05, 2013 at 09:06:55PM +0000, Christoph Lameter wrote:
+> > Once we have the per cpu patchset merged we could do the following [it
+> > even works without that patchset but the __this_cpu ops will not do
+> > preemption checks]. Would this work?
+>
+> Looks plausible at first glance.  But are you really seeing performance
+> issues with this code?  It is only compiled into the kernel when you build
+> with CONFIG_RCU_BOOST=y -- are you actually using that for your workloads?
 
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Thu, 5 Dec 2013 08:51:46 -0500
-> 
-> > I wish vger wouldn't do that. I wonder how much spam is really flagged
-> > by this one characteristic alone. That is, spam that would have made it
-> > otherwise, but because of the Cc list, it was rejected.
-> 
-> 10 to 20 spam posts per day are prevented by this rule.
-> 
-> And frankly it's totally rediculous to have such a huge CC: list
-> in the first place, even if the vger spam filter didn't exist.
+I have not done any benchmarking. Just looking for more use cases for the
+this_cpu ops. There is a lot of use of per cpu operations in the rcu code
+which seems to be areas in which these operations can help.
 
-Absolutely agreed - in fact huge Cc: lists are a PITA when committing 
-patches: I have to trim them down to something reasonable, without 
-losing important Cc: entries ...
-
-So vger is doing us a service there, and not just by filtering spam.
-
-Thanks,
-
-	Ingo
