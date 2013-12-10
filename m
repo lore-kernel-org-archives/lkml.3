@@ -1,193 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab3LJMWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:22:24 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:63490 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3LJMWW (ORCPT
+	id S1753147Ab3LJMXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:23:00 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50025 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab3LJMW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:22:22 -0500
-Date: Tue, 10 Dec 2013 09:22:13 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-Message-ID: <20131210122213.GL8098@ghostprotocols.net>
-References: <1386617830-18926-1-git-send-email-acme@infradead.org>
- <20131210111229.GB26659@gmail.com>
- <20131210114421.GI8098@ghostprotocols.net>
- <52A70558.90808@intel.com>
- <20131210121042.GK8098@ghostprotocols.net>
- <52A707A2.5020802@intel.com>
+	Tue, 10 Dec 2013 07:22:58 -0500
+Date: Tue, 10 Dec 2013 12:22:34 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Denis Carikli <denis@eukrea.com>
+Message-ID: <20131210122234.GI29268@sirena.org.uk>
+References: <20131210150201.c99abbdcc7eb1a20d39dafc1@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y+KtxNjwEe4Q3Zyh"
 Content-Disposition: inline
-In-Reply-To: <52A707A2.5020802@intel.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20131210150201.c99abbdcc7eb1a20d39dafc1@canb.auug.org.au>
+X-Cookie: It's clever, but is it art?
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: linux-next: build failure after merge of the final tree
+ (sound-asoc tree related)
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 10, 2013 at 02:22:58PM +0200, Adrian Hunter escreveu:
-> On 10/12/13 14:10, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Dec 10, 2013 at 02:13:12PM +0200, Adrian Hunter escreveu:
-> >> On 10/12/13 13:44, Arnaldo Carvalho de Melo wrote:
-> >>> Em Tue, Dec 10, 2013 at 12:12:29PM +0100, Ingo Molnar escreveu:
-> >>>>
-> >>>> Hm, I've unpulled it because 'perf top' crashes on exit, in 
-> >>>> dso__delete():
-> >>>
-> >>> 495		if (dso->sname_alloc)
-> >>> 496			free((char *)dso->short_name)
-> >>>
-> >>> Yeah, must be that basename() patch from Stephane, I'll work on a fix
-> >>> and resubmit this batch, thanks for the report.
-> >>
-> >> The problem is sname_alloc is not maintained.  Perhaps it should be
-> >> set in dso__set_short_name() e.g.
-> > 
-> > Yeah, sounds better than having all callers manage that thing, quickie,
-> > was this with Stephane's patch applied?
-> 
-> Yes it was at
-> 	e993d10caeb6dca690dbaf86e1981ba240d1414a
-> 	perf symbols: fix bug in usage of the basename() function
 
-Yes, this is the buggy patch, my question was if Ingo did the changes
-that streamlined the dso->sname_alloc management with e993d10caeb6
-applied to his working tree.
+--y+KtxNjwEe4Q3Zyh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- Arnaldo
- 
-> > I think it should be done as a prep, then apply a modified version of
-> > Stephanes, that doesn't deal with the alloc flag (more than using 'true'
-> > to say it is a malloc'ed chunk).
-> > 
-> > - Arnaldo
-> >  
-> >> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-> >> index 9fae484..54ed980 100644
-> >> --- a/tools/perf/util/dso.c
-> >> +++ b/tools/perf/util/dso.c
-> >> @@ -379,7 +379,7 @@ struct dso *dso__kernel_findnew(struct machine *machine,
-> >> const char *name,
-> >>  	 * processing we had no idea this was the kernel dso.
-> >>  	 */
-> >>  	if (dso != NULL) {
-> >> -		dso__set_short_name(dso, short_name);
-> >> +		dso__set_short_name(dso, short_name, false);
-> >>  		dso->kernel = dso_type;
-> >>  	}
-> >>
-> >> @@ -394,10 +394,13 @@ void dso__set_long_name(struct dso *dso, char *name)
-> >>  	dso->long_name_len = strlen(name);
-> >>  }
-> >>
-> >> -void dso__set_short_name(struct dso *dso, const char *name)
-> >> +void dso__set_short_name(struct dso *dso, const char *name, bool sname_alloc)
-> >>  {
-> >>  	if (name == NULL)
-> >>  		return;
-> >> +	if (dso->sname_alloc)
-> >> +		free((char *)dso->short_name);
-> >> +	dso->sname_alloc = sname_alloc;
-> >>  	dso->short_name = name;
-> >>  	dso->short_name_len = strlen(name);
-> >>  }
-> >> @@ -426,12 +429,7 @@ static void dso__set_basename(struct dso *dso)
-> >>  	if (!base)
-> >>  		return;
-> >>
-> >> -	if (dso->sname_alloc)
-> >> -		free((char *)dso->short_name);
-> >> -	else
-> >> -		dso->sname_alloc = 1;
-> >> -
-> >> -	dso__set_short_name(dso, base);
-> >> +	dso__set_short_name(dso, base, true);
-> >>  }
-> >>
-> >>  int dso__name_len(const struct dso *dso)
-> >> @@ -467,7 +465,7 @@ struct dso *dso__new(const char *name)
-> >>  		int i;
-> >>  		strcpy(dso->name, name);
-> >>  		dso__set_long_name(dso, dso->name);
-> >> -		dso__set_short_name(dso, dso->name);
-> >> +		dso__set_short_name(dso, dso->name, false);
-> >>  		for (i = 0; i < MAP__NR_TYPES; ++i)
-> >>  			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
-> >>  		dso->cache = RB_ROOT;
-> >> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-> >> index 384f2d9..166463e 100644
-> >> --- a/tools/perf/util/dso.h
-> >> +++ b/tools/perf/util/dso.h
-> >> @@ -110,7 +110,7 @@ static inline void dso__set_loaded(struct dso *dso, enum
-> >> map_type type)
-> >>  struct dso *dso__new(const char *name);
-> >>  void dso__delete(struct dso *dso);
-> >>
-> >> -void dso__set_short_name(struct dso *dso, const char *name);
-> >> +void dso__set_short_name(struct dso *dso, const char *name, bool sname_alloc);
-> >>  void dso__set_long_name(struct dso *dso, char *name);
-> >>
-> >>  int dso__name_len(const struct dso *dso);
-> >>
-> >>
-> >>>
-> >>> - Arnaldo
-> >>>  
-> >>>> [Thread 0x7ffff70df700 (LWP 29561) exited]
-> >>>> *** Error in `/fast/mingo/tip/tools/perf/perf': munmap_chunk(): invalid pointer: 0x0000000000587371 ***
-> >>>> ======= Backtrace: =========
-> >>>> /lib64/libc.so.6[0x3e5907bbe7]
-> >>>> /fast/mingo/tip/tools/perf/perf(dso__delete+0xd9)[0x46da89]
-> >>>> /fast/mingo/tip/tools/perf/perf(machines__exit+0xad)[0x482e7d]
-> >>>> /fast/mingo/tip/tools/perf/perf(perf_session__delete+0xb6)[0x488c66]
-> >>>> /fast/mingo/tip/tools/perf/perf(cmd_top+0xf44)[0x4345f4]
-> >>>> /fast/mingo/tip/tools/perf/perf[0x419f95]
-> >>>> /fast/mingo/tip/tools/perf/perf(main+0x600)[0x419830]
-> >>>> /lib64/libc.so.6(__libc_start_main+0xf5)[0x3e59021b45]
-> >>>> /fast/mingo/tip/tools/perf/perf[0x4198fd]
-> >>>> ======= Memory map: ========
-> >>>>
-> >>>> Program received signal SIGABRT, Aborted.
-> >>>> 0x0000003e590359e9 in raise () from /lib64/libc.so.6
-> >>>> Missing separate debuginfos, use: debuginfo-install audit-libs-2.3.2-1.fc19.x86_64 bzip2-libs-1.0.6-8.fc19.x86_64 elfutils-libelf-0.156-5.fc19.x86_64 elfutils-libs-0.156-5.fc19.x86_64 glibc-2.17-19.fc19.x86_64 libgcc-4.8.2-1.fc19.x86_64 libunwind-1.1-2.fc19.x86_64 nss-softokn-freebl-3.15.2-2.fc19.x86_64 numactl-libs-2.0.8-4.fc19.x86_64 perl-libs-5.16.3-266.fc19.x86_64 python-libs-2.7.5-9.fc19.x86_64 slang-2.2.4-8.fc19.x86_64 xz-libs-5.1.2-4alpha.fc19.x86_64 zlib-1.2.7-10.fc19.x86_64
-> >>>> (gdb) 
-> >>>> (gdb) bt
-> >>>> #0  0x0000003e590359e9 in raise () from /lib64/libc.so.6
-> >>>> #1  0x0000003e590370f8 in abort () from /lib64/libc.so.6
-> >>>> #2  0x0000003e59075d17 in __libc_message () from /lib64/libc.so.6
-> >>>> #3  0x0000003e5907bbe7 in malloc_printerr () from /lib64/libc.so.6
-> >>>> #4  0x000000000046da89 in dso__delete (dso=0x8e46f0) at util/dso.c:496
-> >>>> #5  0x0000000000482e7d in dsos__delete (dsos=0x8e4490) at util/machine.c:72
-> >>>> #6  machine__exit (machine=<optimized out>) at util/machine.c:103
-> >>>> #7  machines__exit (machines=machines@entry=0x8e4438) at util/machine.c:123
-> >>>> #8  0x0000000000488c66 in perf_session__delete (session=0x8e4360) at util/session.c:155
-> >>>> #9  0x00000000004345f4 in __cmd_top (top=0x7fffffffb140) at builtin-top.c:985
-> >>>> #10 cmd_top (argc=<optimized out>, argv=<optimized out>, prefix=<optimized out>) at builtin-top.c:1210
-> >>>> #11 0x0000000000419f95 in run_builtin (p=p@entry=0x7ece88 <commands+264>, argc=argc@entry=2, argv=argv@entry=0x7fffffffe420) at perf.c:319
-> >>>> #12 0x0000000000419830 in handle_internal_command (argv=0x7fffffffe420, argc=2) at perf.c:376
-> >>>> #13 run_argv (argv=0x7fffffffe220, argcp=0x7fffffffe22c) at perf.c:420
-> >>>> #14 main (argc=2, argv=0x7fffffffe420) at perf.c:529
-> >>>> (gdb) 
-> >>>>
-> >>>> Running it on an up-to-date installation of Fedora 19.
-> >>>>
-> >>>> Thanks,
-> >>>>
-> >>>> 	Ingo
-> >>>
-> >>>
-> > 
-> > 
+On Tue, Dec 10, 2013 at 03:02:01PM +1100, Stephen Rothwell wrote:
+
+> Caused by commit 436aa86f0414 ("ASoC: eukrea-tlv320: Add DT support")
+> from the sound-asoc tree.
+
+Dropped for tomorrow.
+
+--y+KtxNjwEe4Q3Zyh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpweHAAoJELSic+t+oim9mBUQAIz7pH1hz6xF+Erwgv64OLXv
+Gy6df5UI0Slch0Ep0dfabRlfSRhpbSyPeE+euazRkmMfeY0f1cCdPvf2+uIvhVmw
+0fGLj2kkfUvO5oA2SMz4ftAsZDIMR0LyvKAPs9SR49qK0NpN8lrsJY9mc+JlzmFp
+I77o6W1qjqE9IVTFg9iQAvGDxJTPi4Yq1RB6n9aeBZlki6l/fCuuBg3eDdAn08fT
+326W21S74WfAcrdC3tmo7WuNVPZNKrSb4WS+tZZBScKO6RkjgYVeA5YHo/w7wYlm
+Kykjw3YeYiLXB41/LeZh9/63dgR2XmRsC/77oOwFM03/grsuBqggXcsK7TgCpemI
+9yw+8jX/s11qFeaHxDJW5xCVIJi11BcrQRSvNk436EhEUZ6Lc4+kmrGXJ8y9kT0s
+SYcisbouLbiFNyL7Xy1m+HaoARPxGOFkC4Pu8bou4xHBTYV01teZmEzSDsor9t00
+IX8bXZCZMgbxqDER9f0ZVf9hVOe5Gypl+Isaip2tnrsNWkamAIjgqBmGAY8x5fsf
+7vXGOryLnkV52tQZMh2K4qXDt/GhCbVceH7IlkkbUlpfgT0OxdA/zhwBxozBUysX
+jPJjbKHRFTFmrwGJc4dgcE4pC0N+HT0NRDHww/cj5UPnDlAJVhuZroMoxIdBHzFt
+Pl8KkRdpd7/wSSu92pCB
+=b54o
+-----END PGP SIGNATURE-----
+
+--y+KtxNjwEe4Q3Zyh--
