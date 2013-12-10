@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3LJO0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 09:26:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41894 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab3LJO0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 09:26:11 -0500
-Message-ID: <52A72463.9080108@redhat.com>
-Date: Tue, 10 Dec 2013 09:25:39 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 11/18] mm: fix TLB flush race between migration, and change_protection_range
-References: <1386572952-1191-1-git-send-email-mgorman@suse.de> <1386572952-1191-12-git-send-email-mgorman@suse.de>
-In-Reply-To: <1386572952-1191-12-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753539Ab3LJO27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:28:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42644 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622Ab3LJO25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 09:28:57 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Matt Wilson <msw@amazon.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Anthony Liguori <aliguori@amazon.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: [3.5.y.z extended stable] Patch "xen/gnttab: leave lazy MMU mode in the case of a m2p override failure" has been added to staging queue
+Date: Tue, 10 Dec 2013 14:28:49 +0000
+Message-Id: <1386685729-11414-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 02:09 AM, Mel Gorman wrote:
+This is a note to let you know that I have just added a patch titled
 
-After reading the locking thread that Paul McKenney started,
-I wonder if I got the barriers wrong in these functions...
+    xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
 
-> +#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
-> +/*
-> + * Memory barriers to keep this state in sync are graciously provided by
-> + * the page table locks, outside of which no page table modifications happen.
-> + * The barriers below prevent the compiler from re-ordering the instructions
-> + * around the memory barriers that are already present in the code.
-> + */
-> +static inline bool tlb_flush_pending(struct mm_struct *mm)
-> +{
-> +	barrier();
+to the linux-3.5.y-queue branch of the 3.5.y.z extended stable tree 
+which can be found at:
 
-Should this be smp_mb__after_unlock_lock(); ?
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.5.y-queue
 
-> +	return mm->tlb_flush_pending;
-> +}
-> +static inline void set_tlb_flush_pending(struct mm_struct *mm)
-> +{
-> +	mm->tlb_flush_pending = true;
-> +	barrier();
-> +}
-> +/* Clearing is done after a TLB flush, which also provides a barrier. */
-> +static inline void clear_tlb_flush_pending(struct mm_struct *mm)
-> +{
-> +	barrier();
-> +	mm->tlb_flush_pending = false;
-> +}
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
 
-And these smp_mb__before_spinlock() ?
+For more information about the 3.5.y.z tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-Paul? Peter?
+Thanks.
+-Luis
 
--- 
-All rights reversed
+------
+
+>From 91be8ab6879ef63272f00851280766c24675f1c6 Mon Sep 17 00:00:00 2001
+From: Matt Wilson <msw@amazon.com>
+Date: Wed, 20 Nov 2013 12:11:35 -0800
+Subject: xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
+
+commit 14883a75ec76b44759385fb12629f4a0f1aef4e3 upstream.
+
+Commit f62805f1 introduced a bug where lazy MMU mode isn't exited if a
+m2p_add/remove_override call fails.
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Anthony Liguori <aliguori@amazon.com>
+Cc: xen-devel@lists.xenproject.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Matt Wilson <msw@amazon.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/xen/grant-table.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 8a6ecc5..93cb98e 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -867,9 +867,10 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+ 		ret = m2p_add_override(mfn, pages[i], kmap_ops ?
+ 				       &kmap_ops[i] : NULL);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 	}
+
++ out:
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+
+@@ -900,9 +901,10 @@ int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+ 		ret = m2p_remove_override(pages[i], kmap_ops ?
+ 				       &kmap_ops[i] : NULL);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 	}
+
++ out:
+ 	if (lazy)
+ 		arch_leave_lazy_mmu_mode();
+
+--
+1.8.3.2
+
