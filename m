@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab3LJPvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:51:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44379 "EHLO mx2.suse.de"
+	id S1755059Ab3LJPvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:51:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44445 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687Ab3LJPvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:51:38 -0500
+	id S1754910Ab3LJPvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:51:46 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 00/17] NUMA balancing segmentation fault fixes and misc followups v4
-Date: Tue, 10 Dec 2013 15:51:18 +0000
-Message-Id: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 12/18] mm: numa: Defer TLB flush for THP migration as long as possible
+Date: Tue, 10 Dec 2013 15:51:30 +0000
+Message-Id: <1386690695-27380-13-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog since V3
-o Dropped a tracing patch
-o Rebased to 3.13-rc3
-o Removed unnecessary ptl acquisition
+THP migration can fail for a variety of reasons. Avoid flushing the TLB
+to deal with THP migration races until the copy is ready to start.
 
-Alex Thorlton reported segementation faults when NUMA balancing is enabled
-on large machines. There is no obvious explanation from the console what the
-problem but similar problems have been observed by Rik van Riel and myself
-if migration was aggressive enough. Alex, this series is against 3.13-rc2,
-a verification that the fix addresses your problem would be appreciated.
+Cc: stable@vger.kernel.org
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/huge_memory.c | 7 -------
+ mm/migrate.c     | 3 +++
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-This series starts with a range of patches aimed at addressing the
-segmentation fault problem while offsetting some of the cost to avoid badly
-regressing performance in -stable. Those that are cc'd to stable (patches
-1-12) should be merged ASAP. The rest of the series is relatively minor
-stuff that fell out during the course of development that is ok to wait
-for the next merge window but should help with the continued development
-of NUMA balancing.
-
- arch/sparc/include/asm/pgtable_64.h |   4 +-
- arch/x86/include/asm/pgtable.h      |  11 +++-
- arch/x86/mm/gup.c                   |  13 +++++
- include/asm-generic/pgtable.h       |   2 +-
- include/linux/migrate.h             |   9 ++++
- include/linux/mm_types.h            |  44 +++++++++++++++
- include/linux/mmzone.h              |   5 +-
- include/trace/events/migrate.h      |  26 +++++++++
- include/trace/events/sched.h        |  87 ++++++++++++++++++++++++++++++
- kernel/fork.c                       |   1 +
- kernel/sched/core.c                 |   2 +
- kernel/sched/fair.c                 |  24 +++++----
- mm/huge_memory.c                    |  45 ++++++++++++----
- mm/mempolicy.c                      |   6 +--
- mm/migrate.c                        | 103 ++++++++++++++++++++++++++++--------
- mm/mprotect.c                       |  15 ++++--
- mm/pgtable-generic.c                |   8 ++-
- 17 files changed, 347 insertions(+), 58 deletions(-)
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e3a5ee2..e3b6a75 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1377,13 +1377,6 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 
+ 	/*
+-	 * The page_table_lock above provides a memory barrier
+-	 * with change_protection_range.
+-	 */
+-	if (tlb_flush_pending(mm))
+-		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
+-
+-	/*
+ 	 * Migrate the THP to the requested node, returns with page unlocked
+ 	 * and pmd_numa cleared.
+ 	 */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index cfb4190..0c4fbf6 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1759,6 +1759,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 		goto out_fail;
+ 	}
+ 
++	if (tlb_flush_pending(mm))
++		flush_tlb_range(vma, mmun_start, mmun_end);
++
+ 	/* Prepare a page as a migration target */
+ 	__set_page_locked(new_page);
+ 	SetPageSwapBacked(new_page);
 -- 
 1.8.4
 
