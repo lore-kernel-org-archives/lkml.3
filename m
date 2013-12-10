@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab3LJSSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 13:18:18 -0500
-Received: from a9-114.smtp-out.amazonses.com ([54.240.9.114]:34998 "EHLO
-	a9-114.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754188Ab3LJSSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 13:18:13 -0500
-X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Dec 2013 13:18:13 EST
-Date: Tue, 10 Dec 2013 18:11:24 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tejun Heo <tj@kernel.org>
-cc: Ingo Molnar <mingo@kernel.org>, akpm@linuxfoundation.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
-In-Reply-To: <20131210154951.GF4610@htj.dyndns.org>
-Message-ID: <00000142ddb4d14d-76263c67-59fa-474b-97b2-deae3a92cf69-000000@email.amazonses.com>
-References: <20131203233232.928771708@linux.com> <20131203233251.745099192@linux.com> <20131210153445.GE4610@htj.dyndns.org> <20131210154506.GA1884@gmail.com> <20131210154951.GF4610@htj.dyndns.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755476Ab3LJSXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 13:23:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754767Ab3LJSXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 13:23:43 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87fvq1ji19.fsf@rustcorp.com.au>
+References: <87fvq1ji19.fsf@rustcorp.com.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Ignore generated file kernel/x509_certificate_list
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.10-54.240.9.114
+Content-Type: text/plain; charset=utf-8
+Date: Tue, 10 Dec 2013 18:22:41 +0000
+Message-ID: <8265.1386699761@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBAINuYV017971
 
-On Tue, 10 Dec 2013, Tejun Heo wrote:
 
-> > as we don't want to expand percpu ops without doing proper debugging.
->
-> Yeah, trying to figure out which should go through which tree.
-> Christoph, should I also pickup 14?  Or can that go through x86?
+Applied.
 
-If you do that then you need to also pick up the patches in between
-otherwise the debug functions will get quite loud.
-
+KÃ¶szÃ¶nÃ¶m.
+David
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
