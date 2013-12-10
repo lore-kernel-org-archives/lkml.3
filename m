@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab3LJK6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 05:58:39 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45680 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724Ab3LJK6h (ORCPT
+	id S1752310Ab3LJLAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:00:11 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38398 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3LJLAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 05:58:37 -0500
-Date: Tue, 10 Dec 2013 11:58:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        srikar@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:sched/urgent] sched: Check sched_domain before computing
- group power
-Message-ID: <20131210105820.GC12849@twins.programming.kicks-ass.net>
-References: <20131113151718.GN21461@twins.programming.kicks-ass.net>
- <tip-9abf24d465180f5f2eb26a43545348262f16b771@git.kernel.org>
- <CAE9FiQUk2Mr+4WypL41tCp3+54Aa+CT-17ga9+RffscUxwWAAg@mail.gmail.com>
- <20131121150344.GG10022@twins.programming.kicks-ass.net>
- <CAE9FiQUHQ7jQfpxi+s7yeef17-+ApGjU2X1iRnm=azJ0+BFWZw@mail.gmail.com>
- <CAE9FiQUCPvzeiCSan34aV6hfrDHdV=sfHug0tMaAgpOMbum7jw@mail.gmail.com>
- <alpine.DEB.2.02.1311271902230.5120@chino.kir.corp.google.com>
- <CAE9FiQUVLT3PL3ON_VRrNB6p9TxFU_-X_dkcb6dLvzonmmW7ag@mail.gmail.com>
- <CAE9FiQW53FvCUGnax0CVdrWL8wqd4wweEfQVZgJciivAYaD1yw@mail.gmail.com>
+	Tue, 10 Dec 2013 06:00:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQW53FvCUGnax0CVdrWL8wqd4wweEfQVZgJciivAYaD1yw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.DEB.2.02.1312091427370.17848@chino.kir.corp.google.com>
+References: <10123265.xdzIJ6I9nc@hex>
+	<alpine.DEB.2.02.1312091427370.17848@chino.kir.corp.google.com>
+Date: Tue, 10 Dec 2013 22:00:07 +1100
+X-Google-Sender-Auth: UFkpLQXhHbGrFgcxfOidMmI5on8
+Message-ID: <CABqErrFyb++8g6PcFOhoOw22+mTCOrnGPuSMPdfBdP=nNnzW8A@mail.gmail.com>
+Subject: Re: [ANNOUNCE] BFS CPU scheduler v0.444 for linux-3.12
+From: Con Kolivas <kernel@kolivas.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 10:24:25PM -0800, Yinghai Lu wrote:
-> ---
->  kernel/sched/core.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> Index: linux-2.6/kernel/sched/core.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched/core.c
-> +++ linux-2.6/kernel/sched/core.c
-> @@ -5737,6 +5737,9 @@ static int __sdt_alloc(const struct cpum
->  			if (!sgp)
->  				return -ENOMEM;
->  
-> +			/* avoid divide-by-zero in sg_capacity() */
-> +			sgp->power_orig = 1;
-> +
->  			*per_cpu_ptr(sdd->sgp, j) = sgp;
->  		}
->  	}
+On 10 December 2013 09:30, David Rientjes <rientjes@google.com> wrote:
+> Any reason that BFS hardcodes CONFIG_SLUB as the only slab allocator
+> allowed?  I've cc'd Pekka and Christoph and I'm sure they'd be interested
+> in any reasons that CONFIG_SLAB doesn't work correctly with a different
+> drop-in scheduler, or is it just that interactivity has tested better with
+> slub?
 
+Hi David.
 
-Ooh, sg_capacity() is generating the /0.. 
+Thanks, and an interesting question you have there.
 
-Does the below work too?
+To be honest it's been probably over 2 years since I hard coded SLUB
+into the BFS patch and all I can recall is that it caused a crash that
+was purely due to enabling SLAB that went away with SLUB when used
+with BFS. Despite the possibility that BFS exposes an issue in the
+kernel that may be possible with the mainline scheduler (due to BFS
+being extremely good at exposing race conditions), if the problem is
+never reported with mainline, it's probably of no significance to
+mainline. Changes in scheduler initialisation sequence alone may be
+the real reason. The same goes with the offline CPU code which had to
+be drastically reworked to work properly with suspend/hibernate on
+BFS.
 
----
- kernel/sched/core.c | 1 +
- 1 file changed, 1 insertion(+)
+There certainly have been cases that BFS has exposed races that have
+only become apparent in mainline a long time later. Here's one I
+recall reporting as a potential issue a long time ago here:
+http://marc.info/?l=linux-kernel&m=130613435113919&w=2
+It was instantly discounted as not a problem, yet about 6 months later
+a real issue in this code showed up.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 87c3bc47d99d..40b185f5a3ec 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5115,6 +5115,7 @@ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
- 		 * die on a /0 trap.
- 		 */
- 		sg->sgp->power = SCHED_POWER_SCALE * cpumask_weight(sg_span);
-+		sg->sgp->power_orig = sg->sgp->power;
- 
- 		/*
- 		 * Make sure the first group of this domain contains the
+I have no idea if the CONFIG_SLAB problem falls into this category.
+
+Regards,
+Con
