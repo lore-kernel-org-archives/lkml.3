@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3LJILC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:11:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58985 "EHLO
+	id S1753851Ab3LJICU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab3LJICV (ORCPT
+	with ESMTP id S1753773Ab3LJICK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:21 -0500
+	Tue, 10 Dec 2013 03:02:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Kevin B. Smith" <kevin.b.smith@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. J. Lu" <hjl.tools@gmail.com>
-Subject: [PATCH 3.12 48/62] x86-64, build: Always pass in -mno-sse
-Date: Tue, 10 Dec 2013 00:01:19 -0800
-Message-Id: <20131210080100.789539382@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.12 41/62] parisc: fix mmap(MAP_FIXED|MAP_SHARED) to already mmapped address
+Date: Tue, 10 Dec 2013 00:01:12 -0800
+Message-Id: <20131210080100.317975822@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -28,52 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Helge Deller <deller@gmx.de>
 
-commit 5551a34e5aeab868f8d37f70d8754868921b4ee5 upstream.
+commit 0576da2c08e3d332f1b0653030d28ab804585ab6 upstream.
 
-Always pass in the -mno-sse argument, regardless if
--preferred-stack-boundary is supported.  We never want to generate SSE
-instructions in the kernel unless we *really* know what we're doing.
+locale-gen on Debian showed a strange problem on parisc:
+mmap2(NULL, 536870912, PROT_NONE, MAP_SHARED, 3, 0) = 0x42a54000
+mmap2(0x42a54000, 103860, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, 3, 0) = -1 EINVAL (Invalid argument)
 
-According to H. J. Lu, any version of gcc new enough that we support
-it at all should handle the -mno-sse option, so just add it
-unconditionally.
+Basically it was just trying to re-mmap() a file at the same address
+which it was given by a previous mmap() call. But this remapping failed
+with EINVAL.
 
-Reported-by: Kevin B. Smith <kevin.b.smith@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: H. J. Lu <hjl.tools@gmail.com>
-Link: http://lkml.kernel.org/n/tip-j21wzqv790q834n7yc6g80j1@git.kernel.org
+The problem is, that when MAP_FIXED and MAP_SHARED flags were used, we didn't
+included the mapping-based offset when we verified the alignment of the given
+fixed address against the offset which we calculated it in the previous call.
+
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Makefile |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/parisc/kernel/sys_parisc.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -31,6 +31,9 @@ ifeq ($(CONFIG_X86_32),y)
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -61,8 +61,15 @@ static int get_offset(struct address_spa
+ 	return (unsigned long) mapping >> 8;
+ }
  
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
- 
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
+-static unsigned long get_shared_area(struct address_space *mapping,
+-		unsigned long addr, unsigned long len, unsigned long pgoff)
++static unsigned long shared_align_offset(struct file *filp, unsigned long pgoff)
++{
++	struct address_space *mapping = filp ? filp->f_mapping : NULL;
 +
-         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-         # with nonstandard options
-         KBUILD_CFLAGS += -fno-pic
-@@ -57,8 +60,11 @@ else
-         KBUILD_AFLAGS += -m64
-         KBUILD_CFLAGS += -m64
- 
-+        # Don't autogenerate SSE instructions
-+	KBUILD_CFLAGS += -mno-sse
++	return (get_offset(mapping) + pgoff) << PAGE_SHIFT;
++}
 +
- 	# Use -mpreferred-stack-boundary=3 if supported.
--	KBUILD_CFLAGS += $(call cc-option,-mno-sse -mpreferred-stack-boundary=3)
-+	KBUILD_CFLAGS += $(call cc-option,-mpreferred-stack-boundary=3)
++static unsigned long get_shared_area(struct file *filp, unsigned long addr,
++		unsigned long len, unsigned long pgoff)
+ {
+ 	struct vm_unmapped_area_info info;
  
-         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
-         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
+@@ -71,7 +78,7 @@ static unsigned long get_shared_area(str
+ 	info.low_limit = PAGE_ALIGN(addr);
+ 	info.high_limit = TASK_SIZE;
+ 	info.align_mask = PAGE_MASK & (SHMLBA - 1);
+-	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
++	info.align_offset = shared_align_offset(filp, pgoff);
+ 	return vm_unmapped_area(&info);
+ }
+ 
+@@ -82,20 +89,18 @@ unsigned long arch_get_unmapped_area(str
+ 		return -ENOMEM;
+ 	if (flags & MAP_FIXED) {
+ 		if ((flags & MAP_SHARED) &&
+-		    (addr - (pgoff << PAGE_SHIFT)) & (SHMLBA - 1))
++		    (addr - shared_align_offset(filp, pgoff)) & (SHMLBA - 1))
+ 			return -EINVAL;
+ 		return addr;
+ 	}
+ 	if (!addr)
+ 		addr = TASK_UNMAPPED_BASE;
+ 
+-	if (filp) {
+-		addr = get_shared_area(filp->f_mapping, addr, len, pgoff);
+-	} else if(flags & MAP_SHARED) {
+-		addr = get_shared_area(NULL, addr, len, pgoff);
+-	} else {
++	if (filp || (flags & MAP_SHARED))
++		addr = get_shared_area(filp, addr, len, pgoff);
++	else
+ 		addr = get_unshared_area(addr, len);
+-	}
++
+ 	return addr;
+ }
+ 
 
 
