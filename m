@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab3LJLQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 06:16:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:37002 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751672Ab3LJLQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 06:16:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
-   d="scan'208";a="449788832"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH RESEND] mmc: sdhci-acpi: add new ACPI ID
-Date: Tue, 10 Dec 2013 13:15:57 +0200
-Message-Id: <1386674157-29563-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.5.1
+	id S1752503Ab3LJLSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 06:18:01 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55546 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3LJLR5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 06:17:57 -0500
+Date: Tue, 10 Dec 2013 11:17:13 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Richard Weinberger <richard.weinberger@gmail.com>
+Message-ID: <20131210111713.GF29268@sirena.org.uk>
+References: <201312092219.11342.heiko@sntech.de>
+ <201312092220.30894.heiko@sntech.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IHeoZqE8eTKrPZZA"
+Content-Disposition: inline
+In-Reply-To: <201312092220.30894.heiko@sntech.de>
+X-Cookie: It's clever, but is it art?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 1/2] dt-bindings: add hym8563 binding
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Intel PCHs with LPSS have the same SDHCI controller than Haswell but
-ACPI ID is different. Add this ID to the driver list.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Adrian Hunter <adrian.hunter@intel.com>
----
- drivers/mmc/host/sdhci-acpi.c | 2 ++
- 1 file changed, 2 insertions(+)
+--IHeoZqE8eTKrPZZA
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-index ef19874fcd1f..1fa645384242 100644
---- a/drivers/mmc/host/sdhci-acpi.c
-+++ b/drivers/mmc/host/sdhci-acpi.c
-@@ -144,6 +144,7 @@ static const struct sdhci_acpi_uid_slot sdhci_acpi_uids[] = {
- 	{ "80860F14" , "3" , &sdhci_acpi_slot_int_sd   },
- 	{ "INT33BB"  , "2" , &sdhci_acpi_slot_int_sdio },
- 	{ "INT33C6"  , NULL, &sdhci_acpi_slot_int_sdio },
-+	{ "INT3436"  , NULL, &sdhci_acpi_slot_int_sdio },
- 	{ "PNP0D40"  },
- 	{ },
- };
-@@ -152,6 +153,7 @@ static const struct acpi_device_id sdhci_acpi_ids[] = {
- 	{ "80860F14" },
- 	{ "INT33BB"  },
- 	{ "INT33C6"  },
-+	{ "INT3436"  },
- 	{ "PNP0D40"  },
- 	{ },
- };
--- 
-1.8.5.1
+On Mon, Dec 09, 2013 at 10:20:30PM +0100, Heiko St=FCbner wrote:
+> Add binding documentation for the hym8563 rtc chip.
+>=20
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 
+Reviewed-by: Mark Brown <broonie@linaro.org>
+
+--IHeoZqE8eTKrPZZA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSpvg2AAoJELSic+t+oim9OT4P/jksKFNrcA9bM0Cxewsi4Fh/
+f+iwT7hJP9S5t1OrGd2KhGqA5dgXqlnv/NoOfjSekFxhGhkWjlv3AmimUmMa1dsd
+J70F/zBSPLGHIUxc6eiQc3X0saDi5VL/o9J68KcWCspseh9tmFw8a9UYFM1qLXoM
+eBoMw7bu9GVbB6J5HDcEgklYry52wYW14JlPgKgXFQaczlBtq3HeXUQajKIE/tbb
+aFtI8hKcKVDQqil4QRSv4M2ASz+UXlhKxuJKHgvU4Ob217gsokazzbWcpBhKsu+U
+kz2EuoVZP2dBUhgMOyHkWC7hJRnKHSkurErgew5XPM9A5rhshe+Zlsa1sSzL4l9R
+h19ouWgOdjHJip+vkiWn3DuK193WBnw2w4CJ+WuEcQfdl1zEyS9QTGKQua1NTZwc
+cqLhRPHUMkDKyrff39kI7aXfcUUliMzynWjYqRZSmwCgEqH8hKmU4YO8j/w8WPSF
+pEy2FcPOdggyIiEnUPWoUtFOE9EiaGjJEaZy7Gf36CL5xfBtKRhSZjTa8RbuvMmd
+GhiWmr2xBtBmdAj28SqGeuCAmEPXBCBKZ/zfLHvio+oXRSOKk9j2ynWAnnESDmAm
+pHRoHDOIFQ/0ue8cEF2qT3HyEtIxiIeMRtzwmyL1EKeTp1TIXJhzNdXJtShT+AbK
+9hl32tPtI8zD1d0NZOfw
+=LbhQ
+-----END PGP SIGNATURE-----
+
+--IHeoZqE8eTKrPZZA--
