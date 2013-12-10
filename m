@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab3LJICJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:02:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58920 "EHLO
+	id S1753874Ab3LJICX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:02:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3LJICB (ORCPT
+	with ESMTP id S1753801Ab3LJICO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:02:01 -0500
+	Tue, 10 Dec 2013 03:02:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 3.12 37/62] NFSv4: Update list of irrecoverable errors on DELEGRETURN
-Date: Tue, 10 Dec 2013 00:01:08 -0800
-Message-Id: <20131210080100.047952024@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 44/62] cpuidle: Check for dev before deregistering it.
+Date: Tue, 10 Dec 2013 00:01:15 -0800
+Message-Id: <20131210080100.519816217@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.rc3
 In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
 References: <20131210080057.415644748@linuxfoundation.org>
@@ -26,44 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit c97cf606e43b85a6cf158b810375dd77312024db upstream.
+commit 813e8e3d6aaa0b511126cce15c16a931afffe768 upstream.
 
-If the DELEGRETURN errors out with something like NFS4ERR_BAD_STATEID
-then there is no recovery possible. Just quit without returning an error.
+If not, we could end up in the unfortunate situation where
+we dereference a NULL pointer b/c we have cpuidle disabled.
 
-Also, note that the client must not assume that the NFSv4 lease has been
-renewed when it sees an error on DELEGRETURN.
+This is the case when booting under Xen (which uses the
+ACPI P/C states but disables the CPU idle driver) - and can
+be easily reproduced when booting with cpuidle.off=1.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff8156db4a>] cpuidle_unregister_device+0x2a/0x90
+.. snip..
+Call Trace:
+ [<ffffffff813b15b4>] acpi_processor_power_exit+0x3c/0x5c
+ [<ffffffff813af0a9>] acpi_processor_stop+0x61/0xb6
+ [<ffffffff814215bf>] __device_release_driver+0fffff81421653>] device_release_driver+0x23/0x30
+ [<ffffffff81420ed8>] bus_remove_device+0x108/0x180
+ [<ffffffff8141d9d9>] device_del+0x129/0x1c0
+ [<ffffffff813cb4b0>] ? unregister_xenbus_watch+0x1f0/0x1f0
+ [<ffffffff8141da8e>] device_unregister+0x1e/0x60
+ [<ffffffff814243e9>] unregister_cpu+0x39/0x60
+ [<ffffffff81019e03>] arch_unregister_cpu+0x23/0x30
+ [<ffffffff813c3c51>] handle_vcpu_hotplug_event+0xc1/0xe0
+ [<ffffffff813cb4f5>] xenwatch_thread+0x45/0x120
+ [<ffffffff810af010>] ? abort_exclusive_wait+0xb0/0xb0
+ [<ffffffff8108ec42>] kthread+0xd2/0xf0
+ [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
+ [<ffffffff816ce17c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8108eb70>] ? kthread_create_on_node+0x180/0x180
+
+This problem also appears in 3.12 and could be a candidate for backport.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/cpuidle/cpuidle.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4938,11 +4938,17 @@ static void nfs4_delegreturn_done(struct
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -448,7 +448,7 @@ EXPORT_SYMBOL_GPL(cpuidle_register_devic
+  */
+ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ {
+-	if (dev->registered == 0)
++	if (!dev || dev->registered == 0)
+ 		return;
  
- 	trace_nfs4_delegreturn_exit(&data->args, &data->res, task->tk_status);
- 	switch (task->tk_status) {
--	case -NFS4ERR_STALE_STATEID:
--	case -NFS4ERR_EXPIRED:
- 	case 0:
- 		renew_lease(data->res.server, data->timestamp);
- 		break;
-+	case -NFS4ERR_ADMIN_REVOKED:
-+	case -NFS4ERR_DELEG_REVOKED:
-+	case -NFS4ERR_BAD_STATEID:
-+	case -NFS4ERR_OLD_STATEID:
-+	case -NFS4ERR_STALE_STATEID:
-+	case -NFS4ERR_EXPIRED:
-+		task->tk_status = 0;
-+		break;
- 	default:
- 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
- 				-EAGAIN) {
+ 	cpuidle_pause_and_lock();
 
 
