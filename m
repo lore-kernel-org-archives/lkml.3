@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab3LJMHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 07:07:15 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:54353 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab3LJMHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 07:07:12 -0500
-Date: Tue, 10 Dec 2013 13:07:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Ben Cheng <bccheng@google.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL 00/21] perf/core improvements and fixes
-Message-ID: <20131210120707.GB30001@gmail.com>
-References: <1386617830-18926-1-git-send-email-acme@infradead.org>
- <20131210111229.GB26659@gmail.com>
- <20131210114421.GI8098@ghostprotocols.net>
- <20131210114757.GC29875@gmail.com>
- <20131210120143.GJ8098@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210120143.GJ8098@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752759Ab3LJMId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 07:08:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:4224 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab3LJMIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 07:08:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
+   d="scan'208";a="422256310"
+Message-ID: <1386677252.1871.142.camel@smile>
+Subject: Re: [PATCH v2] SFI: fix compilation warnings
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi @ vger . kernel . org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Dec 2013 14:07:32 +0200
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88024969FB@SHSMSX101.ccr.corp.intel.com>
+References: <1386580161-27718-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1AE640813FDE7649BE1B193DEA596E88024969FB@SHSMSX101.ccr.corp.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-12-10 at 01:30 +0000, Zheng, Lv wrote:
+> Hi, Andy
+> 
+> IMO:
+> 1. sfi_acpi.h should include both <linux/acpi.h> and <linux/sfi.h> and it should include <acpi/acpi.h> for !CONFIG_ACPI builds.
+> 2. then we should include sfi_acpi.h instead of <linux/acpi.h>, <linux/sfi.h> and <acpi/acpi.h> for all of its users.
+> 
+> I think the patch in the linux-pm/bleeding-edge queue can fix the issue you've reported:
+> https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=c099eacbcaec4475936fbf73e499507728ce47e1
 
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
+I think so, I'll test this later.
 
-> Em Tue, Dec 10, 2013 at 12:47:57PM +0100, Ingo Molnar escreveu:
-> > * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> > > Em Tue, Dec 10, 2013 at 12:12:29PM +0100, Ingo Molnar escreveu:
-> > > > Hm, I've unpulled it because 'perf top' crashes on exit, in 
-> > > > dso__delete():
+Only one thing I don't like is the FIXME stuff in the sfi_acpi.h.
+Could it be fixed as well?
+
+
 > 
-> > > 495		if (dso->sname_alloc)
-> > > 496			free((char *)dso->short_name)
+> I made it a part of my header cleanup series.
+> The story can be found in this mailing list thread:
+> http://www.spinics.net/lists/linux-acpi/msg47510.html
 > 
-> > Btw., instead of trusting flags I'd argue that using the pointer as a 
-> > flag and clearing the pointer too is a much more robust freeing 
-> > pattern in general:
+> Thanks and best regards
+> -Lv
 > 
-> > 		if (dso->short_name) {
-> > 			free(dso->short_name);
-> > 			dso->short_name = NULL;
-> > 		}
+> 
+> > -----Original Message-----
+> > From: Andy Shevchenko [mailto:andriy.shevchenko@linux.intel.com]
+> > Sent: Monday, December 09, 2013 5:09 PM
+> > To: Wysocki, Rafael J; linux-acpi @ vger . kernel . org; LKML; Zheng, Lv
+> > Cc: Andy Shevchenko
+> > Subject: [PATCH v2] SFI: fix compilation warnings
 > > 
-> > or so ...
+> > When build kernel with make W=1 we get the following compiler error.
+> > 
+> > In file included from drivers/sfi/sfi_acpi.c:66:0:
+> > include/linux/sfi_acpi.h: In function ‘acpi_sfi_table_parse’:
+> > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function ‘acpi_table_parse’ [-Werror=implicit-function-declaration]
+> >   if (!acpi_table_parse(signature, handler))
+> >   ^
+> >   cc1: some warnings being treated as errors
+> > 
+> > The patch add linux/acpi.h to the top of file.
+> > 
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > ---
+> > Changes to v2:
+> > - fix for build when ACPI=n, SFI=y
+> >  drivers/sfi/sfi_acpi.c   | 2 +-
+> >  include/linux/sfi_acpi.h | 4 +++-
+> >  2 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
+> > index 5e753d7..5589ec5 100644
+> > --- a/drivers/sfi/sfi_acpi.c
+> > +++ b/drivers/sfi/sfi_acpi.c
+> > @@ -60,7 +60,7 @@
+> >  #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+> > 
+> >  #include <linux/kernel.h>
+> > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> > +#include <linux/acpi.h>
+> > 
+> >  #include <linux/sfi.h>
+> >  #include "sfi_core.h"
+> > diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
+> > index 2cfcb79..ecc2344 100644
+> > --- a/include/linux/sfi_acpi.h
+> > +++ b/include/linux/sfi_acpi.h
+> > @@ -60,7 +60,9 @@
+> >  #define _LINUX_SFI_ACPI_H
+> > 
+> >  #ifdef CONFIG_SFI
+> > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> > +
+> > +#include <acpi/acpi.h>
+> > +#include <linux/acpi.h>
+> > 
+> >  extern int sfi_acpi_table_parse(char *signature, char *oem_id,
+> >  				char *oem_table_id,
+> > --
+> > 1.8.4.4
 > 
-> This is not an unusual idiom, if you look at 
-> tools/perf/util/ev{list,sel}.c, for instance, you'll see it in many 
-> destructors.
-> 
-> In this case there is a micro optimization where sometimes the 
-> shortname is just a pointer to the tail part of the long name, hence 
-> the flag.
 
-Sounds fair.
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
-[btw., a tiny nit remains: the cast is probably unnecessary, free() 
-will take any pointer.]
-
-Thanks,
-
-	Ingo
