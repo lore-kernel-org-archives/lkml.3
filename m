@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab3LJPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 10:47:16 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55547 "EHLO bear.ext.ti.com"
+	id S1754704Ab3LJPrh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 10:47:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753267Ab3LJPrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 10:47:11 -0500
-Message-ID: <52A744DF.7060005@ti.com>
-Date: Tue, 10 Dec 2013 18:44:15 +0200
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1751929Ab3LJPrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 10:47:33 -0500
+Date: Tue, 10 Dec 2013 10:47:24 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: process 'stuck' at exit.
+Message-ID: <20131210154724.GA30020@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v3 02/23] mm/memblock: debug: don't free reserved array
- if !ARCH_DISCARD_MEMBLOCK
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>	<1386625856-12942-3-git-send-email-santosh.shilimkar@ti.com> <20131209161134.e161ddfedf284f2052cad4a5@linux-foundation.org>
-In-Reply-To: <20131209161134.e161ddfedf284f2052cad4a5@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.75]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+I woke up to find my fuzzer in a curious state.
 
-On 12/10/2013 02:11 AM, Andrew Morton wrote:
-> On Mon, 9 Dec 2013 16:50:35 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
-> 
->> Now the Nobootmem allocator will always try to free memory allocated for
->> reserved memory regions (free_low_memory_core_early()) without taking
->> into to account current memblock debugging configuration
->> (CONFIG_ARCH_DISCARD_MEMBLOCK and CONFIG_DEBUG_FS state).
->> As result if:
->>   - CONFIG_DEBUG_FS defined
->>   - CONFIG_ARCH_DISCARD_MEMBLOCK not defined;
->> -  reserved memory regions array have been resized during boot
->>
->> then:
->> - memory allocated for reserved memory regions array will be freed to
->> buddy allocator;
->> - debug_fs entry "sys/kernel/debug/memblock/reserved" will show garbage
->> instead of state of memory reservations. like:
->>     0: 0x98393bc0..0x9a393bbf
->>     1: 0xff120000..0xff11ffff
->>     2: 0x00000000..0xffffffff
->>
->> Hence, do not free memory allocated for reserved memory regions if
->> defined(CONFIG_DEBUG_FS) && !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
-> 
-> Alternatives:
-> 
-> - disable /proc/sys/kernel/debug/memblock/reserved in this case
-> 
-> - disable defined(CONFIG_DEBUG_FS) &&
->    !defined(CONFIG_ARCH_DISCARD_MEMBLOCK) in Kconfig.
+ 1121 pts/5    SN+    0:00  |       \_ ../trinity -q -l off -N 999999 -C 42
+ 1130 pts/5    SN+    0:01  |           \_ ../trinity -q -l off -N 999999 -C 42
+ 1131 pts/5    SN+    0:17  |           \_ ../trinity -q -l off -N 999999 -C 42
+10818 ?        RNs  21115152:53  |               \_ ../trinity -q -l off -N 999999 -C 42
 
-Yes. But this is debug information and it's useful to have it.
+(ignore the first 3 pids, they're waiting on 10818, which is the interesting one)
 
-> 
-> How much memory are we talking about here?  If it's more than "very
-> little" then I think either of these would be better - most users will
-> value the extra memory over an accurate
-> /proc/sys/kernel/debug/memblock/reserved?
-> 
+It's completed its run of 999999 syscalls, and looking at tmux, it tried to exit.
 
-Sorry, I have no real statistic information and I hit this issue while testing this series
-by simulating huge amount of bootmem allocation during kernel boot.
-The real number of entries i saw on Keystone & OMAP boards is no more than ~20.
+/proc/10818/stack just shows
 
-Few digits below:
-- size of static reserved memory regions array is 2048 bytes
-- the size of array is doubled during each allocation
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-Regards,
--grygorii
+Top reports a core is spinning in the kernel 100%, so I ran perf top -a
+and saw..
+
+  8.63%  [kernel]                [k] trace_hardirqs_off_caller
+  7.68%  [kernel]                [k] __lock_acquire
+  5.35%  [kernel]                [k] gup_huge_pmd
+  5.31%  [kernel]                [k] put_compound_page
+  4.93%  [kernel]                [k] gup_pud_range
+  4.76%  [kernel]                [k] trace_hardirqs_on_caller
+  4.58%  [kernel]                [k] get_user_pages_fast
+  4.00%  [kernel]                [k] debug_smp_processor_id
+  4.00%  [kernel]                [k] lock_is_held
+  3.73%  [kernel]                [k] lock_acquired
+  3.67%  [kernel]                [k] lock_release
+
+
+sysrq-t shows..
+
+trinity-child27 R  running task     5520 10818   1131 0x00080004
+ 0000000000000000 ffff8801b0ef4170 000000000000032c ffff8801b609e108
+ 0000000000000000 ffff880160d21c30 ffffffff810ad895 ffffffff817587a0
+ ffff8801b0ef4170 ffff8801b609e0a8 ffff8801b609e000 ffff880160d21d50
+Call Trace:
+ [<ffffffff817587a0>] ? retint_restore_args+0xe/0xe
+ [<ffffffff8132af0e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8100b184>] ? native_sched_clock+0x24/0x80
+ [<ffffffff8109624f>] ? local_clock+0xf/0x50
+ [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
+ [<ffffffff8103edd0>] ? gup_pud_range+0x170/0x190
+ [<ffffffff8103f0d5>] ? get_user_pages_fast+0x1a5/0x1c0
+ [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+ [<ffffffff810a8a2f>] ? up_read+0x1f/0x40
+ [<ffffffff8103f0d5>] ? get_user_pages_fast+0x1a5/0x1c0
+ [<ffffffff8115f76c>] ? put_page+0x3c/0x50
+ [<ffffffff810dd525>] ? get_futex_key+0xd5/0x2c0
+ [<ffffffff810df18a>] ? futex_requeue+0xfa/0x9c0
+ [<ffffffff810e019e>] ? do_futex+0xae/0xc80
+ [<ffffffff810aa27e>] ? put_lock_stats.isra.28+0xe/0x30
+ [<ffffffff810aa7de>] ? lock_release_holdtime.part.29+0xee/0x170
+ [<ffffffff8114f16e>] ? context_tracking_user_exit+0x4e/0x190
+ [<ffffffff810ad1f5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+ [<ffffffff810e0de1>] ? SyS_futex+0x71/0x150
+ [<ffffffff81010a45>] ? syscall_trace_enter+0x145/0x2a0
+ [<ffffffff81760be4>] ? tracesys+0xdd/0xe2
+
+
+any ideas ?
+
+	Dave
+
