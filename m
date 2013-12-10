@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab3LJAG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:06:56 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44599 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab3LJAGz (ORCPT
+	id S1751082Ab3LJALg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:11:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55073 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab3LJALf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:06:55 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-e4-52a65b1d9540
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 0/2] perf tools: Add --header/--header-only options
-References: <1386583370-1699-1-git-send-email-jolsa@redhat.com>
-Date: Tue, 10 Dec 2013 09:06:53 +0900
-In-Reply-To: <1386583370-1699-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Mon, 9 Dec 2013 11:02:48 +0100")
-Message-ID: <87txehlgbm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 9 Dec 2013 19:11:35 -0500
+Date: Mon, 9 Dec 2013 16:11:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v3 02/23] mm/memblock: debug: don't free reserved array
+ if !ARCH_DISCARD_MEMBLOCK
+Message-Id: <20131209161134.e161ddfedf284f2052cad4a5@linux-foundation.org>
+In-Reply-To: <1386625856-12942-3-git-send-email-santosh.shilimkar@ti.com>
+References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
+	<1386625856-12942-3-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Mon, 9 Dec 2013 16:50:35 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
 
-On Mon,  9 Dec 2013 11:02:48 +0100, Jiri Olsa wrote:
-> Currently the perf.data header is always displayed for stdio
-> output, which is no always useful.
->
-> Disabling header information by default and adding following
-> options to control header output:
+> Now the Nobootmem allocator will always try to free memory allocated for
+> reserved memory regions (free_low_memory_core_early()) without taking
+> into to account current memblock debugging configuration
+> (CONFIG_ARCH_DISCARD_MEMBLOCK and CONFIG_DEBUG_FS state).
+> As result if:
+>  - CONFIG_DEBUG_FS defined
+>  - CONFIG_ARCH_DISCARD_MEMBLOCK not defined;
+> -  reserved memory regions array have been resized during boot
+> 
+> then:
+> - memory allocated for reserved memory regions array will be freed to
+> buddy allocator;
+> - debug_fs entry "sys/kernel/debug/memblock/reserved" will show garbage
+> instead of state of memory reservations. like:
+>    0: 0x98393bc0..0x9a393bbf
+>    1: 0xff120000..0xff11ffff
+>    2: 0x00000000..0xffffffff
+> 
+> Hence, do not free memory allocated for reserved memory regions if
+> defined(CONFIG_DEBUG_FS) && !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
 
-Hmm.. I'm not sure it's OK to change the user-visible default behavior.
-At least we can provide help message for old users?
+Alternatives:
 
-Thanks,
-Namhyung
+- disable /proc/sys/kernel/debug/memblock/reserved in this case
 
+- disable defined(CONFIG_DEBUG_FS) &&
+  !defined(CONFIG_ARCH_DISCARD_MEMBLOCK) in Kconfig.
 
->   --header      - display header information (old default)
->   --header-only - display header information only w/o further
->                   processing.
->
-> thanks,
-> jirka
->
->
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: David Ahern <dsahern@gmail.com>
-> ---
->  tools/perf/Documentation/perf-report.txt |  6 ++++++
->  tools/perf/Documentation/perf-script.txt |  6 ++++++
->  tools/perf/builtin-report.c              | 19 ++++++++++++++++---
->  tools/perf/builtin-script.c              | 13 ++++++++++---
->  4 files changed, 38 insertions(+), 6 deletions(-)
+How much memory are we talking about here?  If it's more than "very
+little" then I think either of these would be better - most users will
+value the extra memory over an accurate
+/proc/sys/kernel/debug/memblock/reserved?
