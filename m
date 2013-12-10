@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab3LJIPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 03:15:35 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55953 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752557Ab3LJIP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 03:15:29 -0500
-X-IronPort-AV: E=Sophos;i="4.93,864,1378828800"; 
-   d="scan'208";a="9229080"
-Message-ID: <52A6CDE1.8090404@cn.fujitsu.com>
-Date: Tue, 10 Dec 2013 16:16:33 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-CC: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        ebiederm@xmission.com, sgrubb@redhat.com
-Subject: Re: [RFC Part1 PATCH 00/20 v2] Add namespace support for audit
-References: <1382599925-25143-1-git-send-email-gaofeng@cn.fujitsu.com> <529EE877.7030701@cn.fujitsu.com> <20131206221241.GD22445@mail.hallyn.com> <52A52599.3070502@cn.fujitsu.com> <20131209182619.GD6849@sergelap>
-In-Reply-To: <20131209182619.GD6849@sergelap>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/10 16:15:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/12/10 16:15:11,
-	Serialize complete at 2013/12/10 16:15:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754753Ab3LJIPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 03:15:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58909 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab3LJIB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 03:01:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Praveen Murali <pmurali@logicube.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.12 34/62] SCSI: libsas: fix usage of ata_tf_to_fis
+Date: Tue, 10 Dec 2013 00:01:05 -0800
+Message-Id: <20131210080059.844093501@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.rc3
+In-Reply-To: <20131210080057.415644748@linuxfoundation.org>
+References: <20131210080057.415644748@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 02:26 AM, Serge Hallyn wrote:
-> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->> On 12/07/2013 06:12 AM, Serge E. Hallyn wrote:
->>> Quoting Gao feng (gaofeng@cn.fujitsu.com):
->>>> Hi
->>>>
->>>> On 10/24/2013 03:31 PM, Gao feng wrote:
->>>>> Here is the v1 patchset: http://lwn.net/Articles/549546/
->>>>>
->>>>> The main target of this patchset is allowing user in audit
->>>>> namespace to generate the USER_MSG type of audit message,
->>>>> some userspace tools need to generate audit message, or
->>>>> these tools will broken.
->>>>>
->>>>
->>>> I really need this feature, right now,some process such as
->>>> logind are broken in container becase we leak of this feature.
->>>
->>> Your set doesn't address loginuid though right?  How exactly do you
->>> expect to do that?  If user violates MAC policy and audit msg is
->>> sent to init user ns by mac subsys, you need the loginuid from
->>> init_audit_ns.  where will that be stored if you allow updates
->>> of loginuid in auditns?
->>>
->> This patchset doesn't include the loginuid part.
->>
->> the loginuid is stored in task as before.
->> In my opinion, when task creates a new audit namespace, this task's
->> loginuid will be reset to zero, so the children tasks can set their
->> loginuid. Does this change break the MAC?
-> 
-> I think so, yes.  In an LSPP selinux environment, if the task
-> manages to trigger an selinux deny rule which is audited, then
-> the loginuid must make sense on the host.  Now presumably it
-> will get translated to the mapped host uid, and we can figure
-> out the host uid owning it through /etc/subuid.  But that adds
-> /etc/subuid as a new part of the TCB without any warning <shrug>
-> So in that sense, for LSPP, it breaks it.
-> 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Looks like my opinion is incorrect.
+------------------
 
-In the audit-next tree, Eric added a new audit feature to allow privileged
-user to disable AUDIT_LOGINUID_IMMUTABLE. after AUDIT_LOGINUID_IMMUTABLE
-is disabled, the privileged user can reset/set the loginuid of task. I
-think this way is safe since only privileged user can do the change.
+From: Dan Williams <dan.j.williams@intel.com>
 
-So I will not change the loginuid part.
+commit ae5fbae0ccd982dfca0ce363036ed92f5b13f150 upstream.
 
-Thanks for your information Serge :)
+Since commit 110dd8f19df5 "[SCSI] libsas: fix scr_read/write users and
+update the libata documentation" we have been passing pmp=1 and is_cmd=0
+to ata_tf_to_fis().  Praveen reports that eSATA attached drives do not
+discover correctly.  His investigation found that the BIOS was passing
+pmp=0 while Linux was passing pmp=1 and failing to discover the drives.
+Update libsas to follow the libata example of pulling the pmp setting
+from the ata_link and correct is_cmd to be 1 since all tf's submitted
+through ->qc_issue are commands.  Presumably libsas lldds do not care
+about is_cmd as they have sideband mechanisms to perform link
+management.
+
+http://marc.info/?l=linux-scsi&m=138179681726990
+
+[jejb: checkpatch fix]
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Reported-by: Praveen Murali <pmurali@logicube.com>
+Tested-by: Praveen Murali <pmurali@logicube.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/libsas/sas_ata.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(str
+ 		qc->tf.nsect = 0;
+ 	}
+ 
+-	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
++	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
+ 	task->uldd_task = qc;
+ 	if (ata_is_atapi(qc->tf.protocol)) {
+ 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
+
+
