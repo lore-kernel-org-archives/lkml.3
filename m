@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab3LJS24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 13:28:56 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:58796 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab3LJS2u (ORCPT
+	id S1755763Ab3LJS3h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 13:29:37 -0500
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:42472 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab3LJS3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 13:28:50 -0500
-Date: Tue, 10 Dec 2013 19:28:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, efault@gmx.de, jeffm@suse.com,
-        torvalds@linux-foundation.org, scott.norton@hp.com, tom.vaden@hp.com,
-        aswin@hp.com, Waiman.Long@hp.com, jason.low2@hp.com
-Subject: Re: [PATCH v2 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20131210182847.GB20770@gmail.com>
-References: <1386063927-6545-1-git-send-email-davidlohr@hp.com>
- <1386063927-6545-5-git-send-email-davidlohr@hp.com>
- <alpine.DEB.2.02.1312061924390.30673@ionos.tec.linutronix.de>
- <1386356686.2797.1.camel@buesod1.americas.hpqcorp.net>
- <20131210153629.GA1397@gmail.com>
- <1386692253.2731.5.camel@buesod1.americas.hpqcorp.net>
+	Tue, 10 Dec 2013 13:29:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386692253.2731.5.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131210123035.D1586C40A27@trevor.secretlab.ca>
+References: <1385656883-4420-1-git-send-email-leif.lindholm@linaro.org>
+	<CAHCPf3s_SXYXLRwvn7tzqTCQ-gB=emRMK_dXkEmw_HWigiD7Mw@mail.gmail.com>
+	<20131210123035.D1586C40A27@trevor.secretlab.ca>
+Date: Tue, 10 Dec 2013 10:29:34 -0800
+Message-ID: <CAFECyb93r5QGWRYDQxzWJ-xtptWBAEiQtAx=woLC5x+3WhbNqQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] Documentation: arm: add UEFI support documentation
+From: Roy Franz <roy.franz@linaro.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Matt Sealey <neko@bakuhatsu.net>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Mark Salter <msalter@redhat.com>, Patch Tracking <patches@linaro.org>,
+        linaro-uefi <linaro-uefi@lists.linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 10, 2013 at 4:30 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Fri, 6 Dec 2013 11:20:45 -0600, Matt Sealey <neko@bakuhatsu.net> wrote:
+>> On Wed, Dec 4, 2013 at 4:44 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > On Wed, Dec 04, 2013 at 03:06:47PM -0600, Matt Sealey wrote:
+>> Grant suggested I should propose some patches; sure, if I'm not otherwise busy.
+>>
+>> Maybe the Linaro guys can recommend a platform (real or emulated) that
+>> would be best to test it on with the available UEFI?
+>
+> Roy Franz (cc'd) has got UEFI running under QEMU. A few modifications
+> were required to both stock UEFI and QEMU. I'm not sure what the status
+> of mainlining those patches is. I think there are still a few things
+> that Roy has to fix, but you should be able to get the current patches
+> from him to get going.
+>
+> g.
+>
 
-* Davidlohr Bueso <davidlohr@hp.com> wrote:
+Hi Grant and Matt,
 
-> On Tue, 2013-12-10 at 16:36 +0100, Ingo Molnar wrote:
-> > * Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > On Fri, 2013-12-06 at 19:26 +0100, Thomas Gleixner wrote:
-> > > > On Tue, 3 Dec 2013, Davidlohr Bueso wrote:
-> > > > > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > > > > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > > > 
-> > > > Who is the author of this? According to the SOB chains its Waiman, who
-> > > > handed it down to Jason and it finally got sumbitted by you. Is that
-> > > > correct?
-> > > 
-> > > This was a group effort for the original patchset -- things did change
-> > > quite a bit for this particular patch in v2. Waiman and Jason helped
-> > > review and test the original atomic ops code.
-> > 
-> > Then please put that into the credits (in the changelog and/or in the 
-> > source code), and/or into copyright notices, etc. - but keep the 
-> > SOB-chain the true route of the patch, where the primary author is the 
-> > first in the SOB and where the person sending the patch is the last 
-> > SOB. (the two are identical normally.)
-> 
-> Ok, I wasn't aware of that primary author rule, sorry. The exact 
-> same thing would go for patch 2 then. Is this something you want me 
-> to correct for this particular series, or to keep in mind for the 
-> future?
+I have put together a quick wiki page describing the current status,
+with git trees for
+UEFI and QEMU, and instructions for running the model.  I just whipped
+this up now, so it
+is pretty basic, but should have all the required information.
 
-Would be nice to fix it, the SOB chain is important for fine print 
-reasons.
+https://wiki.linaro.org/LEG/Engineering/Kernel/UEFI/VersatileExpress/QEMU
+
+Please let me know if you have any questions.
 
 Thanks,
-
-	Ingo
+Roy
