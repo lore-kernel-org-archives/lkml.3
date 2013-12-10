@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab3LJN7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 08:59:39 -0500
-Received: from relay.parallels.com ([195.214.232.42]:49870 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab3LJN7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 08:59:36 -0500
-Message-ID: <52A71E43.9040200@parallels.com>
-Date: Tue, 10 Dec 2013 17:59:31 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	id S1753632Ab3LJOCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 09:02:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42405 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753351Ab3LJOCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 09:02:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,865,1378882800"; 
+   d="scan'208";a="447675239"
+Date: Tue, 10 Dec 2013 16:01:42 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, balbi@ti.com,
+        sarah.a.sharp@linux.intel.com, kgene.kim@samsung.com, kishon@ti.com,
+        jg1.han@samsung.com, jwerner@chromium.org
+Subject: Re: [PATCH RFC 1/4] phy: Add provision for tuning phy.
+Message-ID: <20131210140142.GB28456@xps8300>
+References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
+ <1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Glauber Costa <glommer@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Race in memcg kmem?
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Looking through the per-memcg kmem_cache initialization code, I have a
-bad feeling that it is prone to a race. Before getting to fixing it, I'd
-like to ensure this race is not only in my imagination. Here it goes.
+On Tue, Dec 10, 2013 at 04:25:23PM +0530, Vivek Gautam wrote:
+> Some PHY controllers may need to tune PHY post-initialization,
+> so that the PHY consumers can call phy-tuning at appropriate
+> point of time.
+> 
+> Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>  drivers/phy/phy-core.c  |   20 ++++++++++++++++++++
+>  include/linux/phy/phy.h |    7 +++++++
+>  2 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index 03cf8fb..68dbb90 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -239,6 +239,26 @@ out:
+>  }
+>  EXPORT_SYMBOL_GPL(phy_power_off);
+>  
+> +int phy_tune(struct phy *phy)
+> +{
+> +	int ret = -ENOTSUPP;
+> +
+> +	mutex_lock(&phy->mutex);
+> +	if (phy->ops->tune) {
+> +		ret =  phy->ops->tune(phy);
+> +		if (ret < 0) {
+> +			dev_err(&phy->dev, "phy tuning failed --> %d\n", ret);
+> +			goto out;
+> +		}
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&phy->mutex);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(phy_tune);
 
-We keep per-memcg kmem caches in the memcg_params field of each root
-cache. The memcg_params array is grown dynamically by
-memcg_update_cache_size(). I guess that if this function is executed
-concurrently with memcg_create_kmem_cache() we can get a race resulting
-in a memory leak.
+I think "setup" instead of "tune" is much more clear and reusable.
 
--- memcg_create_kmem_cache(memcg, cachep) --
-creates a new kmem_cache corresponding to a memcg and assigns it to the
-root cache; called in the background - it is OK to have several such
-functions trying to create a cache for the same memcg concurrently, but
-only one of them should succeed.
-@cachep is the root cache
-@memcg is the memcg we want to create a cache for.
+Thanks,
 
-The function:
-
-A1) assures there is no cache corresponding to the memcg (if it is we
-have nothing to do):
-    idx = memcg_cache_id(memcg);
-    if (cachep->memcg_params[idx])
-        goto out;
-
-A2) creates and assigns a new cache:
-    new_cachep = kmem_cache_dup(memcg, cachep);
-    // init new_cachep
-    cachep->memcg_params->memcg_caches[idx] = new_cachep;
-
-
--- memcg_update_cache_size(s, num_groups) --
-grows s->memcg_params to accomodate data for num_groups memcg's
-@s is the root cache whose memcg_params we want to grow
-@num_groups is the new number of kmem-active cgroups (defines the new
-size of memcg_params array).
-
-The function:
-
-B1) allocates and assigns a new cache:
-    cur_params = s->memcg_params;
-    s->memcg_params = kzalloc(size, GFP_KERNEL);
-
-B2) copies per-memcg cache ptrs from the old memcg_params array to the
-new one:
-    for (i = 0; i < memcg_limited_groups_array_size; i++) {
-        if (!cur_params->memcg_caches[i])
-            continue;
-        s->memcg_params->memcg_caches[i] =
-                    cur_params->memcg_caches[i];
-    }
-
-B3) frees the old array:
-    kfree(cur_params);
-
-
-Since these two functions do not share any mutexes, we can get the
-following race:
-
-Assume, by the time Cpu0 gets to memcg_create_kmem_cache(), the memcg
-cache has already been created by another thread, so this function
-should do nothing.
-
-Cpu0    Cpu1
-----    ----
-        B1
-A1              we haven't initialized memcg_params yet so Cpu0 will
-                proceed to A2 to alloc and assign a new cache
-A2
-        B2      Cpu1 rewrites the memcg cache ptr set by Cpu0 at A2
-                - a memory leak?
-        B3
-
-I'd like to add that even if I'm right about the race, this is rather
-not critical, because memcg_update_cache_sizes() is called very rarely.
-
-
-BTW, it seems to me that the way we update memcg_params in
-memcg_update_cache_size() make cache_from_memcg_idx() prone to
-use-after-free:
-
-> static inline struct kmem_cache *
-> cache_from_memcg_idx(struct kmem_cache *s, int idx)
-> {
->     if (!s->memcg_params)
->         return NULL;
->     return s->memcg_params->memcg_caches[idx];
-> }
-
-This is equivalent to
-
-1) struct memcg_cache_params *params = s->memcg_params;
-2) return params->memcg_caches[idx];
-
-If memcg_update_cache_size() is executed between steps 1 and 2 on
-another CPU, at step 2 we will dereference memcg_params that has already
-been freed. This is very unlikely, but still possible. Perhaps, we
-should free old memcg params only after a sync_rcu()?
-
-Thanks.
+-- 
+heikki
