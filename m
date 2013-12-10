@@ -1,262 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3LJJT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 04:19:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44334 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab3LJJTn (ORCPT
+	id S1753958Ab3LJJUP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 04:20:15 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36882 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab3LJJUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 04:19:43 -0500
-Date: Tue, 10 Dec 2013 01:18:54 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-97978b3e30a512beba43720365f53fea8d432c97@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1386076182-14484-11-git-send-email-jolsa@redhat.com>
-References: <1386076182-14484-11-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add trace-event global object for tracepoint interface
-Git-Commit-ID: 97978b3e30a512beba43720365f53fea8d432c97
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 10 Dec 2013 01:19:01 -0800 (PST)
+	Tue, 10 Dec 2013 04:20:02 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v4 10/12] sched/numa: fix record hinting faults check
+Date: Tue, 10 Dec 2013 17:19:33 +0800
+Message-Id: <1386667175-19952-10-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1386667175-19952-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386667175-19952-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121009-5140-0000-0000-00000447CFBE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  97978b3e30a512beba43720365f53fea8d432c97
-Gitweb:     http://git.kernel.org/tip/97978b3e30a512beba43720365f53fea8d432c97
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Tue, 3 Dec 2013 14:09:24 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 4 Dec 2013 15:21:25 -0300
+Adjust numa_scan_period in task_numa_placement, depending on how much useful
+work the numa code can do. The local faults and remote faults should be used
+to check if there is record hinting faults instead of local faults and shared
+faults. This patch fix it.
 
-perf tools: Add trace-event global object for tracepoint interface
-
-In order to get the proper plugins processing we need to use full
-trace-event interface when creating tracepoint events. So far we were
-using shortcut to get the parsed format.
-
-Moving current 'event_format__new' function into trace-event object as
-'trace_event__tp_format'.
-
-This function uses properly initialized global trace-event object,
-ensuring proper plugins processing.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386076182-14484-11-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-trace.c    |  5 ++--
- tools/perf/util/evsel.c       | 44 ++-----------------------------
- tools/perf/util/trace-event.c | 61 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/trace-event.h |  2 ++
- 4 files changed, 68 insertions(+), 44 deletions(-)
+ kernel/sched/fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 9f2a242..56afe33 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -11,6 +11,7 @@
- #include "util/intlist.h"
- #include "util/thread_map.h"
- #include "util/stat.h"
-+#include "trace-event.h"
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 90b9b88..d51b8c3 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1322,7 +1322,7 @@ static void update_task_scan_period(struct task_struct *p,
+ 	 * completely idle or all activity is areas that are not of interest
+ 	 * to automatic numa balancing. Scan slower
+ 	 */
+-	if (local + shared == 0) {
++	if (local + remote == 0) {
+ 		p->numa_scan_period = min(p->numa_scan_period_max,
+ 			p->numa_scan_period << 1);
  
- #include <libaudit.h>
- #include <stdlib.h>
-@@ -1430,11 +1431,11 @@ static int trace__read_syscall_info(struct trace *trace, int id)
- 	sc->fmt  = syscall_fmt__find(sc->name);
- 
- 	snprintf(tp_name, sizeof(tp_name), "sys_enter_%s", sc->name);
--	sc->tp_format = event_format__new("syscalls", tp_name);
-+	sc->tp_format = trace_event__tp_format("syscalls", tp_name);
- 
- 	if (sc->tp_format == NULL && sc->fmt && sc->fmt->alias) {
- 		snprintf(tp_name, sizeof(tp_name), "sys_enter_%s", sc->fmt->alias);
--		sc->tp_format = event_format__new("syscalls", tp_name);
-+		sc->tp_format = trace_event__tp_format("syscalls", tp_name);
- 	}
- 
- 	if (sc->tp_format == NULL)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 6a046ed..7b510fd 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -23,6 +23,7 @@
- #include "target.h"
- #include "perf_regs.h"
- #include "debug.h"
-+#include "trace-event.h"
- 
- static struct {
- 	bool sample_id_all;
-@@ -180,47 +181,6 @@ struct perf_evsel *perf_evsel__new_idx(struct perf_event_attr *attr, int idx)
- 	return evsel;
- }
- 
--struct event_format *event_format__new(const char *sys, const char *name)
--{
--	int fd, n;
--	char *filename;
--	void *bf = NULL, *nbf;
--	size_t size = 0, alloc_size = 0;
--	struct event_format *format = NULL;
--
--	if (asprintf(&filename, "%s/%s/%s/format", tracing_events_path, sys, name) < 0)
--		goto out;
--
--	fd = open(filename, O_RDONLY);
--	if (fd < 0)
--		goto out_free_filename;
--
--	do {
--		if (size == alloc_size) {
--			alloc_size += BUFSIZ;
--			nbf = realloc(bf, alloc_size);
--			if (nbf == NULL)
--				goto out_free_bf;
--			bf = nbf;
--		}
--
--		n = read(fd, bf + size, alloc_size - size);
--		if (n < 0)
--			goto out_free_bf;
--		size += n;
--	} while (n > 0);
--
--	pevent_parse_format(NULL, &format, bf, size, sys);
--
--out_free_bf:
--	free(bf);
--	close(fd);
--out_free_filename:
--	free(filename);
--out:
--	return format;
--}
--
- struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int idx)
- {
- 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
-@@ -235,7 +195,7 @@ struct perf_evsel *perf_evsel__newtp_idx(const char *sys, const char *name, int
- 		if (asprintf(&evsel->name, "%s:%s", sys, name) < 0)
- 			goto out_free;
- 
--		evsel->tp_format = event_format__new(sys, name);
-+		evsel->tp_format = trace_event__tp_format(sys, name);
- 		if (evsel->tp_format == NULL)
- 			goto out_free;
- 
-diff --git a/tools/perf/util/trace-event.c b/tools/perf/util/trace-event.c
-index a155a77..d9f5f61 100644
---- a/tools/perf/util/trace-event.c
-+++ b/tools/perf/util/trace-event.c
-@@ -1,6 +1,24 @@
- 
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <errno.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <linux/kernel.h>
- #include <traceevent/event-parse.h>
- #include "trace-event.h"
-+#include "util.h"
-+
-+/*
-+ * global trace_event object used by trace_event__tp_format
-+ *
-+ * TODO There's no cleanup call for this. Add some sort of
-+ * __exit function support and call trace_event__cleanup
-+ * there.
-+ */
-+static struct trace_event tevent;
- 
- int trace_event__init(struct trace_event *t)
- {
-@@ -19,3 +37,46 @@ void trace_event__cleanup(struct trace_event *t)
- 	pevent_free(t->pevent);
- 	traceevent_unload_plugins(t->plugin_list);
- }
-+
-+static struct event_format*
-+tp_format(const char *sys, const char *name)
-+{
-+	struct pevent *pevent = tevent.pevent;
-+	struct event_format *event = NULL;
-+	char path[PATH_MAX];
-+	size_t size;
-+	char *data;
-+
-+	scnprintf(path, PATH_MAX, "%s/%s/%s/format",
-+		  tracing_events_path, sys, name);
-+
-+	if (filename__read_str(path, &data, &size))
-+		return NULL;
-+
-+	pevent_parse_format(pevent, &event, data, size, sys);
-+
-+	free(data);
-+	return event;
-+}
-+
-+struct event_format*
-+trace_event__tp_format(const char *sys, const char *name)
-+{
-+	static bool initialized;
-+
-+	if (!initialized) {
-+		int be = traceevent_host_bigendian();
-+		struct pevent *pevent;
-+
-+		if (trace_event__init(&tevent))
-+			return NULL;
-+
-+		pevent = tevent.pevent;
-+		pevent_set_flag(pevent, PEVENT_NSEC_OUTPUT);
-+		pevent_set_file_bigendian(pevent, be);
-+		pevent_set_host_bigendian(pevent, be);
-+		initialized = true;
-+	}
-+
-+	return tp_format(sys, name);
-+}
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 75dded3..3a01618 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -18,6 +18,8 @@ struct trace_event {
- 
- int trace_event__init(struct trace_event *t);
- void trace_event__cleanup(struct trace_event *t);
-+struct event_format*
-+trace_event__tp_format(const char *sys, const char *name);
- 
- int bigendian(void);
- 
+-- 
+1.7.7.6
+
