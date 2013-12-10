@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab3LJCNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 21:13:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21045 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750980Ab3LJCNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 21:13:15 -0500
-Date: Tue, 10 Dec 2013 10:12:21 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        x86@kernel.org, mjg59@srcf.ucam.org,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 01/14] x86/mm: sparse warning fix for early_memremap
-Message-ID: <20131210021221.GA3800@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-2-git-send-email-dyoung@redhat.com>
- <20131209150521.GE31650@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131209150521.GE31650@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752099Ab3LJCON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 21:14:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64592 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750858Ab3LJCOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 21:14:12 -0500
+Date: Mon, 9 Dec 2013 21:14:10 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 01/14] tools lib traceevent: Get rid of malloc_or_die()
+ in show_error()
+Message-ID: <20131209211410.01fcaebf@gandalf.local.home>
+In-Reply-To: <87mwk9jwcf.fsf@sejong.aot.lge.com>
+References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
+	<1386567251-22751-2-git-send-email-namhyung@kernel.org>
+	<20131209183009.GC8098@ghostprotocols.net>
+	<20131209140342.5f72298f@gandalf.local.home>
+	<20131209191439.GG8098@ghostprotocols.net>
+	<20131209142350.5d23108c@gandalf.local.home>
+	<87mwk9jwcf.fsf@sejong.aot.lge.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/13 at 04:05pm, Borislav Petkov wrote:
-> On Mon, Dec 09, 2013 at 05:42:14PM +0800, Dave Young wrote:
-> > There's a lot of sparse warnings for code like below:
-> > void *a = early_memremap(phys_addr, size);
-> > 
-> > early_memremap intend to map kernel memory with ioremap facility, the return
-> > pointer should be a kernel ram pointer instead of iomem one.
-> > 
-> > For making the function clearer and supressing sparse warnings this patch
-> > do below two things:
-> > 1. cast to (__force void *) for the return value of early_memremap
+On Tue, 10 Dec 2013 11:03:44 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
+
+
+> What about returning error code rather than string?  This way we won't
+> worry about the allocation of the error string itself.
 > 
-> I'd guess this is to shut up the __iomem thing? And we're getting that
-> because we're using ioremap, ... hohum...
+> But the downside of it is loosing a positional info of the error.
+> Hmm.. what about using a static buffer in pevent for it then?
 
-Yes, IMHO early_memremap really should not return __iomem pointer since it's
-*memremap*... 
+A static buffer may be the solution. Never need to worry about
+allocating it on error, as it will already be allocated. And we can add
+APIs to print it nicely.
 
-Thanks
-Dave
+Perhaps call it
+
+	pevent->filter_error_buffer
+
+?
+
+-- Steve
