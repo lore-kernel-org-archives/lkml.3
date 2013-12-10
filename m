@@ -1,49 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429Ab3LJASI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Dec 2013 19:18:08 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:45520 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab3LJASG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Dec 2013 19:18:06 -0500
-X-Auth-Info: +LWBT2rR8pTquVuy2wI3Y7qeppVv9k0qvCMkoyy/c5A=
-From: Marek Vasut <marex@denx.de>
-To: Stefan Agner <stefan@agner.ch>
-Subject: Re: [PATCH] ARM: dts: stmpe-ts: fix wrong bindings
-Date: Mon, 9 Dec 2013 21:32:29 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: viresh.linux@gmail.com, shiraz.hashim@st.com, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, rob.herring@calxeda.com
-References: <1386620111-1413-1-git-send-email-stefan@agner.ch>
-In-Reply-To: <1386620111-1413-1-git-send-email-stefan@agner.ch>
+	id S1751580Ab3LJASY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Dec 2013 19:18:24 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:56551 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab3LJASU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Dec 2013 19:18:20 -0500
+Date: Mon, 9 Dec 2013 16:16:20 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
+        Eric Biederman <ebiederm@xmission.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org
+Subject: [PATCH v2] kexec: add sysctl to disable kexec
+Message-ID: <20131210001620.GA7938@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201312092132.29575.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 09, 2013 at 09:15:11 PM, Stefan Agner wrote:
-> Fix bindings for STMPE touchscreen device to match the documented
-> bindings and the actual bindings used by the driver.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
-> I don't have any of these hardware, but the error is obvious. The device
-> probably works anyway since the device/driver will use default values.
+For general-purpose (i.e. distro) kernel builds it makes sense to build with
+CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+with kexec. However, in the face of trying to lock down a system with such
+a kernel, there needs to be a way to disable kexec (much like module loading
+can be disabled). Without this, it is too easy for the root user to modify
+kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are set.
 
-Full agreement here.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+v2:
+ - updated sysctl documentation; akpm
+---
+ Documentation/sysctl/kernel.txt |   13 ++++++++++++-
+ include/linux/kexec.h           |    1 +
+ kernel/kexec.c                  |    3 ++-
+ kernel/sysctl.c                 |   13 +++++++++++++
+ 4 files changed, 28 insertions(+), 2 deletions(-)
 
-Reviewed-by: Marek Vasut <marex@denx.de>
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 26b7ee491df8..ca153f958a30 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -33,6 +33,7 @@ show up in /proc/sys/kernel:
+ - domainname
+ - hostname
+ - hotplug
++- kexec_disabled
+ - kptr_restrict
+ - kstack_depth_to_print       [ X86 only ]
+ - l2cr                        [ PPC only ]
+@@ -287,6 +288,16 @@ Default value is "/sbin/hotplug".
+ 
+ ==============================================================
+ 
++kexec_disabled:
++
++A toggle indicating if the kexec_load syscall has been disabled. This
++value defaults to 0 (false: kexec_load enabled), but can be set to 1
++(true: kexec_load disabled). Once true, kexec can no longer be used, and
++the toggle cannot be set back to false. Generally used together with the
++"modules_disabled" sysctl.
++
++==============================================================
++
+ kptr_restrict:
+ 
+ This toggle indicates whether restrictions are placed on
+@@ -331,7 +342,7 @@ A toggle value indicating if modules are allowed to be loaded
+ in an otherwise modular kernel.  This toggle defaults to off
+ (0), but can be set true (1).  Once true, modules can be
+ neither loaded nor unloaded, and the toggle cannot be set back
+-to false.
++to false.  Generally used with the "kexec_disabled" toggle.
+ 
+ ==============================================================
+ 
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index d78d28a733b1..a1503ed4dde5 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -170,6 +170,7 @@ unsigned long paddr_vmcoreinfo_note(void);
+ 
+ extern struct kimage *kexec_image;
+ extern struct kimage *kexec_crash_image;
++extern int kexec_disabled;
+ 
+ #ifndef kexec_flush_icache_page
+ #define kexec_flush_icache_page(page)
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 490afc03627e..9d44ed203ee7 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -929,6 +929,7 @@ static int kimage_load_segment(struct kimage *image,
+  */
+ struct kimage *kexec_image;
+ struct kimage *kexec_crash_image;
++int kexec_disabled;
+ 
+ static DEFINE_MUTEX(kexec_mutex);
+ 
+@@ -939,7 +940,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
+ 	int result;
+ 
+ 	/* We only trust the superuser with rebooting the system. */
+-	if (!capable(CAP_SYS_BOOT))
++	if (!capable(CAP_SYS_BOOT) || kexec_disabled)
+ 		return -EPERM;
+ 
+ 	/*
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 34a604726d0b..07869ce3642d 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -62,6 +62,7 @@
+ #include <linux/capability.h>
+ #include <linux/binfmts.h>
+ #include <linux/sched/sysctl.h>
++#include <linux/kexec.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/processor.h>
+@@ -614,6 +615,18 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++#ifdef CONFIG_KEXEC
++	{
++		.procname	= "kexec_disabled",
++		.data		= &kexec_disabled,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		/* only handle a transition from default "0" to "1" */
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
++		.extra2		= &one,
++	},
++#endif
+ #ifdef CONFIG_MODULES
+ 	{
+ 		.procname	= "modprobe",
+-- 
+1.7.9.5
 
-btw. I plan to rework the STMPE TS as it doesn't work nicely on my device at 
-all. I am seriously lacking time, but I will try! ;-)
 
-Best regards,
-Marek Vasut
+-- 
+Kees Cook
+Chrome OS Security
