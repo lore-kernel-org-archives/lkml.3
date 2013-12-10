@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab3LJXcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 18:32:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41658 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab3LJXcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 18:32:15 -0500
-Date: Wed, 11 Dec 2013 00:32:07 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
-        kexec@lists.infradead.org, greg@kroah.com, matt@console-pimps.org,
-        toshi.kani@hp.com
-Subject: Re: [PATCH v5 00/14] kexec kernel efi runtime support
-Message-ID: <20131210233207.GI31437@pd.tnic>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <20131210152549.7975e3ac25d854e2ada63221@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131210152549.7975e3ac25d854e2ada63221@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751498Ab3LJXfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 18:35:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37857 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab3LJXf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 18:35:27 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/8] mfd: ssbi: Remove platform data structs and hide ssbi type enum
+Date: Tue, 10 Dec 2013 15:35:16 -0800
+Message-Id: <1386718523-2587-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.1.109.g3d252a9
+In-Reply-To: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
+References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:25:49PM -0800, Andrew Morton wrote:
-> On Mon,  9 Dec 2013 17:42:13 +0800 Dave Young <dyoung@redhat.com> wrote:
-> 
-> > Here is the V5 patchset for supporting kexec kernel efi runtime.
-> 
-> It's unclear (to me) who's supposed to merge this lot.  It's a "kexec"
-> patch which actually hits on efi and x86.
-> 
-> I grabbed them for some -next testing but won't be offended if someone
-> else merges them ;)
+The ssbi driver assumes that the device is DT based. Remove the
+platform data structs that will never be used and hide the enum
+in the only C file that uses it.
 
-I was under the impression that this should go through Matt's efi tree.
-Oh, and we need to finish reviewing them so picking them up now would be
-too premature, IMHO.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/mfd/ssbi.c   |  6 ++++++
+ include/linux/ssbi.h | 17 +----------------
+ 2 files changed, 7 insertions(+), 16 deletions(-)
 
+diff --git a/drivers/mfd/ssbi.c b/drivers/mfd/ssbi.c
+index 102a2284..435c6f7 100644
+--- a/drivers/mfd/ssbi.c
++++ b/drivers/mfd/ssbi.c
+@@ -65,6 +65,12 @@
+ 
+ #define SSBI_TIMEOUT_US			100
+ 
++enum ssbi_controller_type {
++	MSM_SBI_CTRL_SSBI = 0,
++	MSM_SBI_CTRL_SSBI2,
++	MSM_SBI_CTRL_PMIC_ARBITER,
++};
++
+ struct ssbi {
+ 	struct device		*slave;
+ 	void __iomem		*base;
+diff --git a/include/linux/ssbi.h b/include/linux/ssbi.h
+index 44ef5da..a92561a 100644
+--- a/include/linux/ssbi.h
++++ b/include/linux/ssbi.h
+@@ -17,22 +17,7 @@
+ 
+ #include <linux/types.h>
+ 
+-struct ssbi_slave_info {
+-	const char	*name;
+-	void		*platform_data;
+-};
+-
+-enum ssbi_controller_type {
+-	MSM_SBI_CTRL_SSBI = 0,
+-	MSM_SBI_CTRL_SSBI2,
+-	MSM_SBI_CTRL_PMIC_ARBITER,
+-};
+-
+-struct ssbi_platform_data {
+-	struct ssbi_slave_info	slave;
+-	enum ssbi_controller_type controller_type;
+-};
+-
+ int ssbi_write(struct device *dev, u16 addr, u8 *buf, int len);
+ int ssbi_read(struct device *dev, u16 addr, u8 *buf, int len);
++
+ #endif
 -- 
-Regards/Gruss,
-    Boris.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Sent from a fat crate under my desk. Formatting is fine.
---
