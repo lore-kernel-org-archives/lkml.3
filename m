@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab3LJWY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 17:24:58 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:54412 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3LJWYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 17:24:53 -0500
+	id S1751935Ab3LJWZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 17:25:34 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:34101 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751257Ab3LJWZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 17:25:31 -0500
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in irq_resume
+Date: Tue, 10 Dec 2013 22:46:54 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <20131210080057.415644748@linuxfoundation.org> <201312101352.53714.heiko@sntech.de> <20131210192702.GC8075@kroah.com>
+In-Reply-To: <20131210192702.GC8075@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D030A9EC63@satlexdag05.amd.com>
-References: <CA+5PVA747A4283Rz-_udrFZqihgYo3_YYKw4n8Qqv5oUNQfz1w@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D030A9EC63@satlexdag05.amd.com>
-Date: Tue, 10 Dec 2013 17:24:53 -0500
-X-Google-Sender-Auth: MgAPvhDjyXnZdP3T_BZBcieR_5g
-Message-ID: <CA+5PVA432hZ4GSxTxBg4zQ9QMqKCSMK95bHbXaZ+XoPE=P_76g@mail.gmail.com>
-Subject: Re: Radeon crash with v3.13-rc3-157-g17b2112
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Dave Airlie <airlied@redhat.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201312102246.54581.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 5:07 PM, Deucher, Alexander
-<Alexander.Deucher@amd.com> wrote:
->> -----Original Message-----
->> From: jwboyer@gmail.com [mailto:jwboyer@gmail.com] On Behalf Of Josh
->> Boyer
->> Sent: Tuesday, December 10, 2013 5:04 PM
->> To: Deucher, Alexander; Guenter Roeck; Dave Airlie
->> Cc: Linux-Kernel@Vger. Kernel. Org; DRI mailing list; Linus Torvalds
->> Subject: Radeon crash with v3.13-rc3-157-g17b2112
->>
->> Hi All,
->>
->> Booting today's rawhide kernel fails on my Dell XPS 8300 machine.  I
->> added nomodeset to the command line because it seemed to glitch out
->> when doing the handoff to the radeon driver and that let me boot far
->> enough to start networking.  I then loaded the radeon driver with:
->> modprobe radeon modeset=1 and was greeted with the backtrace below.
->>
->> I haven't done a bisect yet, but I can if needs be.  I was hoping this
->> would trigger someone's memory.  Plain 3.13-rc3 works, so it's
->> something in the DRM merge that Linus did after -rc3.  Given the
->> backtrace, this one might be suspect:
->>
->> commit ec39f64bba3421c2060fcbd1aeb6eec81fe0a42d
->> Author: Guenter Roeck <linux@roeck-us.net>
->> Date:   Fri Nov 22 21:52:00 2013 -0800
->>
->>     drm/radeon/dpm: Convert to use devm_hwmon_register_with_groups
->>
->
-> Should be fixed by the patch in:
-> https://bugs.freedesktop.org/show_bug.cgi?id=72457
+Am Dienstag, 10. Dezember 2013, 20:27:02 schrieb Greg Kroah-Hartman:
+> On Tue, Dec 10, 2013 at 01:52:53PM +0100, Heiko Stübner wrote:
+> > Am Dienstag, 10. Dezember 2013, 10:08:47 schrieb Greg Kroah-Hartman:
+> > > On Tue, Dec 10, 2013 at 10:01:13AM +0100, Pavel Machek wrote:
+> > > > Hi!
+> > > > 
+> > > > > 3.12-stable review patch.  If anyone has any objections, please let
+> > > > > 
+> > > > >  me know.
+> > > > 
+> > > > Objections... well... I'm not sure if it meets stable criteria. In
+> > > > particular, I don't think it was ever demonstrated as having bad
+> > > > effect on the users.
+> > > 
+> > > Well, I'm guessing someone on the cc: here wanted it in stable@, so
+> > > I'll let them speak up as to why...
+> > 
+> > As for bad effects on users ... any suspend_noirq callback returning an
+> > error and thus aborting the suspend will cause the error fixed by this,
+> > as the early-irqs won't get reenabled in the suspend-rollback [due to
+> > the syscore_ops doing their resume never being run].
+> > 
+> > You could for example lose keys connected thru the gpio-keys driver until
+> > the next reboot.
+> > 
+> > And it seems at least Laxman and myself were affected by it.
+> 
+> So, to be clear, this patch fixes a problem on your machines, right?
 
-OK.  I'll give that a spin soon.  Thanks for the quick reply!
+yes it does fix a problem I ran into on my machines.
 
-josh
+
+Heiko
