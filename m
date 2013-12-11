@@ -1,156 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3LKK2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:28:24 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:40324 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960Ab3LKK2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 05:28:16 -0500
-Message-ID: <1386757607.16289.42.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH 4/4] usb: chipidea: msm: Use USB PHY API to control PHY
- state
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: alexander.shishkin@linux.intel.com, gregkh@linuxfoundation.org,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
-        davidb@codeaurora.org, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 11 Dec 2013 12:26:47 +0200
-In-Reply-To: <20131204133858.GC1573@shlinux1.ap.freescale.net>
-References: <1384176937-1658-1-git-send-email-iivanov@mm-sol.com>
-	 <1384176937-1658-5-git-send-email-iivanov@mm-sol.com>
-	 <20131111135931.GB21746@shlinux1.ap.freescale.net>
-	 <1384180569.23605.21.camel@iivanov-dev.int.mm-sol.com>
-	 <20131204053710.GA29552@shlinux1.ap.freescale.net>
-	 <1386149754.16040.21.camel@iivanov-dev.int.mm-sol.com>
-	 <20131204133858.GC1573@shlinux1.ap.freescale.net>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751482Ab3LKKeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 05:34:23 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:54544 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751116Ab3LKKeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 05:34:21 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Subject: RE: [PATCH 1/1] AX88179_178A: Enable the hardware pseudo header in case of the NET_IP_ALIGN equals 0
+Date: Wed, 11 Dec 2013 10:33:18 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B747B@saturn3.aculab.com>
+In-Reply-To: <52A80397.2080508@asix.com.tw>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/1] AX88179_178A: Enable the hardware pseudo header in case of the NET_IP_ALIGN equals 0
+Thread-Index: Ac72OV02JKGgSD57Rm6h/VeDYElpcwAIc3Pw
+References: <1386323898-2246-1-git-send-email-freddy@asix.com.tw> <20131209.200131.1376169274733452706.davem@davemloft.net> <52A80397.2080508@asix.com.tw>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Freddy Xin" <freddy@asix.com.tw>, "David Miller" <davem@davemloft.net>
+Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <louis@asix.com.tw>, <allan@asix.com.tw>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBBAYXVL024013
 
+> From: Freddy Xin
+> On 2013å¹´12æœˆ10æ—¥ 09:01, David Miller wrote:
+> > From: freddy@asix.com.tw
+> > Date: Fri,  6 Dec 2013 17:58:18 +0800
+> >
+> >> From: Freddy Xin <freddy@asix.com.tw>
+> >>
+> >> The AX88179_178A has a hardware feature that it can insert a 2-bytes pseudo
+> >> header in front of each received frame by setting the AX_RX_CTL_IPE bit.
+> >> This feature is used to let the IP header be aligned on a doubleword-aligned address,
+> >> but the NET_IP_ALIGN may equals to 2 and the __netdev_alloc_skb_ip_align in USBNET will
+> >> reserve 2 bytes also, so in this case the driver shouldn't enable this bit.
+> >>
+> >> This patch modifies the driver to set AX_RX_CTL_IPE just in case of the NET_IP_ALIGN equals 0.
+> >>
+> >> Signed-off-by: Freddy Xin <freddy@asix.com.tw>
+> > Please avoid larger than 80 column lines in your commit messages,
+> > people use text-only tools to viee these.
+> >
+> > Next, it makes no sense to restrict your change to NET_IP_ALIGN==0
+> >
+> > Simply handle any case, by undoing the reservation if it's getting
+> > in the way.  If there isn't an appropriate helper for this, add one.
+> >
+> I think there is no way of undoing the reservation in the driver.
+> Can I add a flag of the driver_info, and use it to determine
+> whether undoing the reservation in rx_submit of usbnet?
 
-Hi,
+You probably want to arrange to have save the appropriate offset in
+one of the structures - so avoiding any conditionals during the allocate.
 
-On Wed, 2013-12-04 at 21:38 +0800, Peter Chen wrote: 
-> On Wed, Dec 04, 2013 at 11:35:54AM +0200, Ivan T. Ivanov wrote:
-> > 
-> > Hi Peter, 
-> > 
-> > On Wed, 2013-12-04 at 13:37 +0800, Peter Chen wrote: 
-> > > On Mon, Nov 11, 2013 at 04:36:09PM +0200, Ivan T. Ivanov wrote:
-> > > > 
-> > > > Hi Peter,
-> > > > 
-> > > > On Mon, 2013-11-11 at 21:59 +0800, Peter Chen wrote: 
-> > > > > On Mon, Nov 11, 2013 at 03:35:37PM +0200, Ivan T. Ivanov wrote:
-> > > > > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > > > > 
-> > > > > > PHY drivers keep track of the current state of the hardware,
-> > > > > > so don't change PHY settings under it.
-> > > > > > 
-> > > > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > > > > ---
-> > > > > >  drivers/usb/chipidea/ci_hdrc_msm.c |    9 ++-------
-> > > > > >  1 file changed, 2 insertions(+), 7 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-> > > > > > index e9624f3..338b209 100644
-> > > > > > --- a/drivers/usb/chipidea/ci_hdrc_msm.c
-> > > > > > +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-> > > > > > @@ -20,13 +20,11 @@
-> > > > > >  static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
-> > > > > >  {
-> > > > > >  	struct device *dev = ci->gadget.dev.parent;
-> > > > > > -	int val;
-> > > > > >  
-> > > > > >  	switch (event) {
-> > > > > >  	case CI_HDRC_CONTROLLER_RESET_EVENT:
-> > > > > >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
-> > > > > > -		writel(0, USB_AHBBURST);
-> > > > > > -		writel(0, USB_AHBMODE);
-> > > > > > +		usb_phy_init(ci->transceiver);
-> > > > > 
-> > > > > It will reset the PHY,  but your comment is "don't change PHY settings under it"
-> > > > 
-> > > > :-). This function is exported by PHY drivers, so they will know how
-> > > > to handle this change.
-> > > > 
-> > > > > 
-> > > > > >  		break;
-> > > > > >  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
-> > > > > >  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
-> > > > > > @@ -34,10 +32,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
-> > > > > >  		 * Put the transceiver in non-driving mode. Otherwise host
-> > > > > >  		 * may not detect soft-disconnection.
-> > > > > >  		 */
-> > > > > > -		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
-> > > > > > -		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
-> > > > > > -		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
-> > > > > > -		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
-> > > > > > +		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
-> > > > > 
-> > > > > Where you have implemented .notify_disconnect?
-> > > > > I have not found it at your phy driver.
-> > > > 
-> > > > Yep, I will post PHY driver changes shortly. Meanwhile this should
-> > > > not break existing board file based platforms, because not of them
-> > > > could be compiled (HTC Dream, Halibut Board) and DT based platforms 
-> > > > are sill work in progress.
-> > > > 
-> > > 
-> > > Hi Ivan, I am going to apply this msm chipidea patchset, but the change
-> > > in this file is different with its original meaning. 
-> > 
-> > What did you mean?
-> > 
-> > CI_HDRC_CONTROLLER_RESET_EVENT -> usb_phy_init()
-> > Take wherever actions are needed to put device in known state. ?
-> 
-> At current code, it only sets two AHB parameters which should be only related
-> to controller but your patch init the whole PHY, look at msm_otg_reset,
-> it does many other things, like phy reset, controller reset, etc.
-> 
-> Does the partial otg fsm at msm_otg_sm_work will be called or not? If it is
-> not called, then, it is OK you just use msm_otg_reset here.
-> 
-> > 
-> > CI_HDRC_CONTROLLER_STOPPED_EVENT -> usb_phy_notify_disconnect() 
-> > Emitted after ci->driver->disconnect(&ci->gadget);
-> 
-> I just see your [PATCH v4 14/15] usb: phy: msm: Handle disconnect events,
-> then, it is ok now. By the way, do I need to wait your phy patches are queued,
-> otherwise, it may not work?
+I've noticed that the RX URB are 20k bytes long.
+Allocating that much physically and virtually contiguous memory for
+every rx frame seems sub-optimal to say the least!
+What does the skb's 'realsize' end up as?
+I don't remember seeing a copy for short frames either.
 
-This driver is not working on MSM platforms more than year now, 
-since "usb: gadget: ci13xxx: convert to platform device"
+ISTR there is code to debatch multiple ethernet frames from a single
+URB. I think that means that an ethernet frame might end up in two URB.
+I'm not sure there is code to handle that either - but I've not looked
+that closely at that part of the code.
 
-Lets postpone this patch after changes to phy-drivers are ready. 
-I will post rest of the patches with fixes for your comments
-shortly.
+	David
 
-> 
-> > 
-> > Probably I am missing something.
-> > 
-> > 
-> > > Have you
-> > > tested at existing platforms?
-> > 
-> > 
-> > I have 8074 based DragonBoard which I used for testing. 
-> > CV Test Suite engine "Chapter 9 tests" are passing except
-> > "Halt Endpoint Test". 
-> 
-> I mean with your patch, the old non-dt platform can work or not?
-
-
-Regards,
-Ivan
-
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
