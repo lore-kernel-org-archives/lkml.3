@@ -1,154 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab3LKLNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:13:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60549 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab3LKLNU (ORCPT
+	id S1751776Ab3LKLO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:14:59 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36242 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3LKLO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:13:20 -0500
-Date: Wed, 11 Dec 2013 03:07:21 -0800
-From: tip-bot for Adrian Hunter <tipbot@zytor.com>
-Message-ID: <tip-58a98c9cc583435784a93f23754128363b4cca94@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, namhyung.kim@lge.com,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        ak@linux.intel.com, dsahern@gmail.com, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, adrian.hunter@intel.com
-Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com, efault@gmx.de,
-        peterz@infradead.org, namhyung.kim@lge.com, jolsa@redhat.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
-        ak@linux.intel.com, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com,
-        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        adrian.hunter@intel.com
-In-Reply-To: <52A707A2.5020802@intel.com>
-References: <52A707A2.5020802@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols:
-  Remove open coded management of  short_name_allocated member
-Git-Commit-ID: 58a98c9cc583435784a93f23754128363b4cca94
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 11 Dec 2013 06:14:58 -0500
+Date: Wed, 11 Dec 2013 11:14:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        andriy.shevchenko@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Message-ID: <20131211111451.GQ11468@sirena.org.uk>
+References: <1385485462-30376-1-git-send-email-swarren@wwwdotorg.org>
+ <20131210122159.GJ29580@intel.com>
+ <52A750AE.6000903@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xYeFQzU4VZLrHqxU"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:07:28 -0800 (PST)
+In-Reply-To: <52A750AE.6000903@wwwdotorg.org>
+X-Cookie: If your bread is stale, make toast.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V4] dma: add channel request API that supports deferred
+ probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  58a98c9cc583435784a93f23754128363b4cca94
-Gitweb:     http://git.kernel.org/tip/58a98c9cc583435784a93f23754128363b4cca94
-Author:     Adrian Hunter <adrian.hunter@intel.com>
-AuthorDate: Tue, 10 Dec 2013 11:11:46 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Dec 2013 16:51:08 -0300
 
-perf symbols: Remove open coded management of  short_name_allocated member
+--xYeFQzU4VZLrHqxU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Instead of expecting callers to set this member accodingly so that later
-at dso destruction it can, if needed, be correctly free()d, make it a
-requirement by passing it as a parameter to dso__set_short_name.
+On Tue, Dec 10, 2013 at 10:34:38AM -0700, Stephen Warren wrote:
 
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Link: http://lkml.kernel.org/r/52A707A2.5020802@intel.com
-[ Renamed the 'allocated' parameter to clearly indicate to which variable it refers to. ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/dso.c     | 17 +++++++++++------
- tools/perf/util/dso.h     |  2 +-
- tools/perf/util/machine.c |  3 +--
- 3 files changed, 13 insertions(+), 9 deletions(-)
+> Could you also create a signed tag for Mark and myself to pull from? If
+> we just pull in random commits from your tree, it's not obvious to
+> anyone looking at the git history that we legitimately co-ordinated this.
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 55c9835..f8c8497 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -379,7 +379,7 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
- 	 * processing we had no idea this was the kernel dso.
- 	 */
- 	if (dso != NULL) {
--		dso__set_short_name(dso, short_name);
-+		dso__set_short_name(dso, short_name, false);
- 		dso->kernel = dso_type;
- 	}
- 
-@@ -394,17 +394,22 @@ void dso__set_long_name(struct dso *dso, char *name)
- 	dso->long_name_len = strlen(name);
- }
- 
--void dso__set_short_name(struct dso *dso, const char *name)
-+void dso__set_short_name(struct dso *dso, const char *name, bool name_allocated)
- {
- 	if (name == NULL)
- 		return;
--	dso->short_name = name;
--	dso->short_name_len = strlen(name);
-+
-+	if (dso->short_name_allocated)
-+		free((char *)dso->short_name);
-+
-+	dso->short_name		  = name;
-+	dso->short_name_len	  = strlen(name);
-+	dso->short_name_allocated = name_allocated;
- }
- 
- static void dso__set_basename(struct dso *dso)
- {
--	dso__set_short_name(dso, basename(dso->long_name));
-+	dso__set_short_name(dso, basename(dso->long_name), false);
- }
- 
- int dso__name_len(const struct dso *dso)
-@@ -440,7 +445,7 @@ struct dso *dso__new(const char *name)
- 		int i;
- 		strcpy(dso->name, name);
- 		dso__set_long_name(dso, dso->name);
--		dso__set_short_name(dso, dso->name);
-+		dso__set_short_name(dso, dso->name, false);
- 		for (i = 0; i < MAP__NR_TYPES; ++i)
- 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
- 		dso->cache = RB_ROOT;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 00a232d..8eceab7 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -110,7 +110,7 @@ static inline void dso__set_loaded(struct dso *dso, enum map_type type)
- struct dso *dso__new(const char *name);
- void dso__delete(struct dso *dso);
- 
--void dso__set_short_name(struct dso *dso, const char *name);
-+void dso__set_short_name(struct dso *dso, const char *name, bool name_allocated);
- void dso__set_long_name(struct dso *dso, char *name);
- 
- int dso__name_len(const struct dso *dso);
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f85da9a..09d5c66 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -935,8 +935,7 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
- 		if (name == NULL)
- 			goto out_problem;
- 
--		dso__set_short_name(map->dso, name);
--		map->dso->short_name_allocated = 1;
-+		dso__set_short_name(map->dso, name, true);
- 		map->end = map->start + event->mmap.len;
- 	} else if (is_kernel_mmap) {
- 		const char *symbol_name = (event->mmap.filename +
+> The same comment goes for the topic/of branch.
+
+I pulled this one anyway but please do create signed tags, as well as
+the bit about coordination one of the big goals with doing the tags is
+to increase the trust that the code going into the kernel really is the
+code we want to go into the kernel.
+
+--xYeFQzU4VZLrHqxU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqEkoAAoJELSic+t+oim9oWoP/jD9ssJc2m+Ad3V5q6fRK0M/
+nE5hyX825UTQWPuLN33O4AUBYYuvT56NnHPuOVz707cBaSjaBIRmXexWYWZAKBvT
+Cfw2PzeKR3lmgN17eunIAlrn8m+SCxz3LlUrO6TDX4eyIdVhi9P1sUSQhUUhFijE
+AwI+uIcHf2gLrwwXJzdyHpccnVCfvOIA8twlYqshEum30LaLWoIUCk4Id8P/OPmH
+8fNAq5BngEWMhEfenqdUDbqhtiJ3EqGm3C4zVVBMa+srjzHz1w7b4amGeQbZeGSS
+4RsrsG9Alg5vrcxi7orgDLgYKX/w/drKFco3KnPvRo1X8J2lMK7l6Z9rgAv3qyNS
+DHk9yzr99TLDBqetY3B8iiZvI+CymgoUo1L4a6U54UgShSStNBSACNmhAXbGiDig
+f+fmHKH2fXWyv0B/I6X9ih3MP/6yS0aPZzOXxEQPj8sk15yDPPpjkG7Pzr4YrR/w
+RdpD3yBAXeFNjGe6nzIbhgKj3Fm0qqb9qD0TVeZ0kusTVo0GNBvUFtFaVlRU2kkQ
+TNARLkUn46/+qEVE9muj364UsKBWTKB5k/2Xty1mOJ1ccGLe5f0rRc+OE2KCMUqJ
+wWH/w2Ne9/9Y4IQY0zGTC+wNYElDdO5Kbkrm4+LhmIftQHlpohBQNBxZzzqxIC6m
+fNWSF3zCFDmfQFxmtyO4
+=F2d3
+-----END PGP SIGNATURE-----
+
+--xYeFQzU4VZLrHqxU--
