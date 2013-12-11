@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab3LKPCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 10:02:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34811 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3LKPCy (ORCPT
+	id S1751950Ab3LKPEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 10:04:50 -0500
+Received: from collab.rosalab.ru ([195.19.76.181]:45791 "EHLO
+	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3LKPEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 10:02:54 -0500
-Date: Wed, 11 Dec 2013 16:02:41 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>, Borislav Petkov <bp@alien8.de>,
-        Len Brown <lenb@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-In-Reply-To: <20131211144238.GA4510@gmail.com>
-Message-ID: <alpine.DEB.2.02.1312111556390.28330@ionos.tec.linutronix.de>
-References: <1386559014.4875.16.camel@marge.simpson.net> <1386652637.5374.72.camel@marge.simpson.net> <alpine.DEB.2.02.1312101458040.28330@ionos.tec.linutronix.de> <alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de> <1386732093.5964.6.camel@marge.simpson.net>
- <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de> <20131211113839.GF21683@pd.tnic> <20131211115239.GA21999@twins.programming.kicks-ass.net> <1386764955.12005.60.camel@marge.simpson.net> <20131211124352.GB21999@twins.programming.kicks-ass.net>
- <20131211144238.GA4510@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 11 Dec 2013 10:04:49 -0500
+Message-ID: <52A87E84.3030804@rosalab.ru>
+Date: Wed, 11 Dec 2013 19:02:28 +0400
+From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Organization: ROSA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: uhci_hcd: Possible corruption of DMA pool uhci->td_pool
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013, Ingo Molnar wrote:
-> 
-> Another thing that is required I think is to issue a write barrier 
-> before CLFLUSH instruction. By my (possibly incorrect ...) reading of 
-> the documentation CLFLUSH does not appear to be ordered (at all), so 
-> it might execute before the modification to the affected memory?
+Hi,
 
-We already have a write barrier in the code which modifies
-current_thread_info()->flags.
- 
-Thanks,
+On ROSA Linux with kernel 3.10.21 with DMA debug options enabled, the 
+kernel sometimes issues a warning about DMA pool corruption (see the log 
+below).
 
-	tglx
+That happens sometimes, when the system boots or resumes from 
+hibernation with Samson C01U USB microphone attached.
+
+The affected DMA pool is 'uhci->td_pool', uhci_alloc_td() from 
+drivers/usb/host/uhci-hcd.c makes the relevant dma_pool_alloc() calls.
+
+Any ideas about how to find what causes this and how to fix it?
+
+Here is the relevant part of the system log:
+----------------------------
+[   22.264332] usb 2-1: new full-speed USB device number 2 using uhci_hcd
+[   22.450609] usb 2-1: New USB device found, idVendor=17a0, idProduct=0001
+[   22.450626] usb 2-1: New USB device strings: Mfr=1, Product=2, 
+SerialNumber=0
+[   22.450639] usb 2-1: Product: Samson C01U
+[   22.450649] usb 2-1: Manufacturer: Samson Technologies
+<...>
+[  280.703483] retire_capture_urb: 4494 callbacks suppressed
+[  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b060 
+(corruped)
+[  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7 
+  ................
+[  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+  ................
+[  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+  ................
+[  284.961087] retire_capture_urb: 4343 callbacks suppressed
+[  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b5d0 
+(corruped)
+[  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7 
+  ................
+[  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+  ................
+[  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+  ................
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+[  284.961087] cannot submit urb (err = -27)
+----------------------------
+
+0xa7 is POOL_POISON_FREED. The memory pages to be allocated from the 
+pool should be filled with such bytes.
+
+Each time I observed this problem, the first 8 bytes of the listed 
+memory area were overwritten, with different data each time.
+
+Regards,
+Eugene
+
+-- 
+Eugene Shatokhin, ROSA Laboratory.
+www.rosalab.com
