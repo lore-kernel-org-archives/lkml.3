@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab3LKVU5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:20:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49665 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3LKVU4 (ORCPT
+	id S1751566Ab3LKVWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:22:38 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:44879 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab3LKVWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:20:56 -0500
-Date: Wed, 11 Dec 2013 13:22:38 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, neilb@suse.de, linus.walleij@linaro.org,
-        ashutosh.dixit@intel.com, kbuild test robot <fengguang.wu@intel.com>
-Subject: Re: [PATCH 1/6] kernfs: s/sysfs_dirent/kernfs_node/ and rename its
- friends accordingly
-Message-ID: <20131211212238.GC20491@kroah.com>
-References: <1386789118-24733-1-git-send-email-tj@kernel.org>
- <1386789118-24733-2-git-send-email-tj@kernel.org>
+	Wed, 11 Dec 2013 16:22:37 -0500
+Date: Wed, 11 Dec 2013 16:22:32 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, kay@vrfy.org
+Subject: Re: [PATCHSET driver-core-next] kernfs: implement kernfs_dir_ops
+Message-ID: <20131211212232.GD7683@mtj.dyndns.org>
+References: <1386795780-23324-1-git-send-email-tj@kernel.org>
+ <20131211211907.GA20491@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386789118-24733-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20131211211907.GA20491@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 02:11:53PM -0500, Tejun Heo wrote:
-> kernfs has just been separated out from sysfs and we're already in
-> full conflict mode.  Nothing can make the situation any worse.  Let's
-> take the chance to name things properly.
-> 
-> This patch performs the following renames.
-> 
-> * s/sysfs_elem_dir/kernfs_elem_dir/
-> * s/sysfs_elem_symlink/kernfs_elem_symlink/
-> * s/sysfs_elem_attr/kernfs_elem_file/
-> * s/sysfs_dirent/kernfs_node/
-> * s/sd/kn/ in kernfs proper
-> * s/parent_sd/parent/
-> * s/target_sd/target/
-> * s/dir_sd/parent/
-> * s/to_sysfs_dirent()/rb_to_kn()/
-> * misc renames of local vars when they conflict with the above
-> 
-> Because md, mic and gpio dig into sysfs details, this patch ends up
-> modifying them.  All are sysfs_dirent renames and trivial.  While we
-> can avoid these by introducing a dummy wrapping struct sysfs_dirent
-> around kernfs_node, given the limited usage outside kernfs and sysfs
-> proper, I don't think such workaround is called for.
+Hey, Greg.
 
-Ugh, why are those drivers digging into sysfs core bits anyway?  I'll
-look and see if they should be fixed up as well, as I really doubt a
-"normal" driver should ever care about this type of thing...
+On Wed, Dec 11, 2013 at 01:19:07PM -0800, Greg KH wrote:
+> Very cool, will this let us move configfs to use kernfs as well?  That's
+> one of the reasons that the two filesystems couldn't be merged in the
+> past from what I remember.
 
-thanks,
+I haven't looked into the details but configfs would need hooks for
+more operations - file creation and all; however, those should be
+trivial.  kernfs doesn't care what those operations do at all.  All it
+needs to do is just routing the invocations through the callbacks.
 
-greg k-h
+Thanks.
+
+-- 
+tejun
