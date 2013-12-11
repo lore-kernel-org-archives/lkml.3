@@ -1,40 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3LKLCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:02:32 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36630 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3LKLC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:02:29 -0500
-Date: Wed, 11 Dec 2013 12:02:25 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-Subject: Re: [PATCH -next] x86, kaslr: clarify RANDOMIZE_BASE_MAX_OFFSET
-Message-ID: <20131211110225.GB25541@gmail.com>
-References: <20131210202745.GA2961@www.outflux.net>
+	id S1751842Ab3LKLCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:02:17 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:48422 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab3LKLCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 06:02:11 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <grygorii.strashko@ti.com>,
+        <gregkh@linuxfoundation.org>, <dwmw2@infradead.org>, <nsekhar@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v3 2/2] memory: ti-aemif: add bindings for AEMIF driver
+Date: Wed, 11 Dec 2013 12:59:30 +0200
+Message-ID: <1386759570-29671-3-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386759570-29671-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1386759570-29671-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210202745.GA2961@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add bindings for TI Async External Memory Interface (AEMIF) controller.
 
-* Kees Cook <keescook@chromium.org> wrote:
+The Async External Memory Interface (EMIF16/AEMIF) controller is intended to
+provide a glue-less interface to a variety of asynchronous memory devices like
+ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
+can be accessed via 4 chip selects with 64M byte access per chip select.
 
-> The help text for RANDOMIZE_BASE_MAX_OFFSET was confusing. This has been
-> clarified, and updated to be an export-only tunable.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+We are not encoding CS number in reg property, it's memory partition number.
+The CS number is encoded for Davinci NAND node using standalone property
+"ti,davinci-chipselect" and we need to provide two memory ranges to it,
+as result we can't encode CS number in "reg" for AEMIF child devices
+(NAND/NOR/etc), as it will break bindings compatibility.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+In this patch, NAND node is used just as an example of child node.
 
-Thanks,
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ .../bindings/memory-controllers/ti-aemif.txt       |  210 ++++++++++++++++++++
+ 1 file changed, 210 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
 
-	Ingo
+diff --git a/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+new file mode 100644
+index 0000000..d1466dc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/memory-controllers/ti-aemif.txt
+@@ -0,0 +1,210 @@
++* Device tree bindings for Texas instruments AEMIF controller
++
++The Async External Memory Interface (EMIF16/AEMIF) controller is intended to
++provide a glue-less interface to a variety of asynchronous memory devices like
++ASRA M, NOR and NAND memory. A total of 256M bytes of any of these memories
++can be accessed at any given time via four chip selects with 64M byte access
++per chip select. Synchronous memories such as DDR1 SD RAM, SDR SDRAM
++and Mobile SDR are not supported.
++
++Documentation:
++Davinci DM646x - http://www.ti.com/lit/ug/sprueq7c/sprueq7c.pdf
++OMAP-L138 (DA850) - http://www.ti.com/lit/ug/spruh77a/spruh77a.pdf
++Kestone - http://www.ti.com/lit/ug/sprugz3a/sprugz3a.pdf
++
++Required properties:
++
++- compatible:		"ti,davinci-aemif"
++			"ti,keystone-aemif"
++			"ti,da850-aemif"
++
++- reg:			contains offset/length value for AEMIF control registers
++			space.
++
++- #address-cells:	Must be 2. The partition number has to be encoded in the
++			first address cell and it may accept values 0..N-1
++			(N - total number of partitions). It's recommended to
++			assign N-1 number for the control partition. The second
++			cell is the offset into the partition.
++
++- #size-cells:		Must be set to 1.
++
++- ranges:		Contains memory regions. There are two types of
++			ranges/partitions:
++			- CS-specific partition/range. If continuous, must be
++			set up to reflect the memory layout for 4 chipselects,
++			if not then additional range/partition can be added and
++			child device can select the proper one.
++			- control partition which is common for all CS
++			interfaces.
++
++- clocks:		the clock feeding the controller clock. Required only
++			if clock tree data present in device tree.
++			See clock-bindings.txt
++
++- clock-names:		clock name. It has to be "aemif". Required only if clock
++			tree data present in device tree, in another case don't
++			use it.
++			See clock-bindings.txt
++
++- clock-ranges:		Empty property indicating that child nodes can inherit
++			named clocks. Required only if clock tree data present
++			in device tree.
++			See clock-bindings.txt
++
++
++Child chip-select (cs) nodes contain the memory devices nodes connected to
++such as NOR (e.g. cfi-flash) and NAND (ti,davinci-nand, see davinci-nand.txt).
++There might be board specific devices like FPGAs.
++
++Required child cs node properties:
++
++- #address-cells:	Must be 2.
++
++- #size-cells:		Must be 1.
++
++- ranges:		Empty property indicating that child nodes can inherit
++			memory layout.
++
++- clock-ranges:		Empty property indicating that child nodes can inherit
++			named clocks. Required only if clock tree data present
++			in device tree.
++
++- ti,cs-chipselect:	number of chipselect. Indicates on the aemif driver
++			which chipselect is used for accessing the memory. For
++			compatibles "ti,davinci-aemif" and "ti,keystone-aemif"
++			it can be in range [0-3]. For compatible
++			"ti,da850-aemif" range is [2-5].
++
++Optional child cs node properties:
++
++- ti,bus-width:			width of the asynchronous device's data bus
++				8 or 16 if not preset 8
++
++- ti,cs-ss:		enable/disable select strobe mode
++				In select strobe mode chip select behaves as
++				the strobe and is active only during the strobe
++				period. If present then enable.
++
++- ti,cs-ew:		enable/disable extended wait mode
++				if set, the controller monitors the EMIFWAIT pin
++				mapped to that chip select to determine if the
++				device wants to extend the strobe period. If
++				present then enable.
++
++- ti,cs-ta:		minimum turn around time, ns
++				Time between the end of one asynchronous memory
++				access and the start of another asynchronous
++				memory access. This delay is not incurred
++				between a read followed by read or a write
++				followed by a write to same chip select.
++
++- ti,cs-rsetup:		read setup width, ns
++				Time between the beginning of a memory cycle
++				and the activation of read strobe.
++				Minimum value is 1 (0 treated as 1).
++
++- ti,cs-rstobe:		read strobe width, ns
++				Time between the activation and deactivation of
++				the read strobe.
++				Minimum value is 1 (0 treated as 1).
++
++- ti,cs-rhold:		read hold width, ns
++				Time between the deactivation of the read
++				strobe and the end of the cycle (which may be
++				either an address change or the deactivation of
++				the chip select signal.
++				Minimum value is 1 (0 treated as 1).
++
++- ti,cs-wsetup:		write setup width, ns
++				Time between the beginning of a memory cycle
++				and the activation of write strobe.
++				Minimum value is 1 (0 treated as 1).
++
++- ti,cs-wstrobe:	write strobe width, ns
++				Time between the activation and deactivation of
++				the write strobe.
++				Minimum value is 1 (0 treated as 1).
++
++- ti,cs-whold:		write hold width, ns
++				Time between the deactivation of the write
++				strobe and the end of the cycle (which may be
++				either an address change or the deactivation of
++				the chip select signal.
++				Minimum value is 1 (0 treated as 1).
++
++If any of the above parameters are absent, current parameter value will be taken
++from the corresponding HW reg.
++
++Example for aemif, davinci nand and nor flash chip select shown below.
++
++memory-controller@21000A00 {
++	compatible = "ti,davinci-aemif";
++	#address-cells = <2>;
++	#size-cells = <1>;
++	clocks = <&clkaemif 0>;
++	clock-names = "aemif";
++	clock-ranges;
++	reg = <0x2100A00 0x00000100>;
++	ranges = <0 0 0x70000000 0x10000000
++		  1 0 0x21000A00 0x0000100>;
++		  /*
++		   * Partition0: CS-specific memory range which is
++		   * implemented as continuous physical memory region
++		   * Partition1: control memory range
++		   */
++
++	nand:cs2 {
++		#address-cells = <2>;
++		#size-cells = <1>;
++		clock-ranges;
++		ranges;
++
++		ti,cs-chipselect = <2>;
++		/* all timings in nanoseconds */
++		ti,cs-ta = <0>;
++		ti,cs-rhold = <7>;
++		ti,cs-rstrobe = <42>;
++		ti,cs-rsetup = <14>;
++		ti,cs-whold = <7>;
++		ti,cs-wstrobe = <42>;
++		ti,cs-wsetup = <14>;
++
++		nand@0,0x8000000 {
++			compatible = "ti,davinci-nand";
++			reg = <0 0x8000000 0x4000000
++			       1 0x0000000 0x0000100>;
++			/*
++			 * Partition0, offset 0x8000000, size 0x4000000
++			 * Partition1, offset 0x0000000, size 0x0000100
++			 */
++
++			.. see davinci-nand.txt
++		};
++	};
++
++	nor:cs0 {
++		#address-cells = <2>;
++		#size-cells = <1>;
++		clock-ranges;
++		ranges;
++
++		ti,cs-chipselect = <0>;
++		/* all timings in nanoseconds */
++		ti,cs-ta = <0>;
++		ti,cs-rhold = <8>;
++		ti,cs-rstrobe = <40>;
++		ti,cs-rsetup = <14>;
++		ti,cs-whold = <7>;
++		ti,cs-wstrobe = <40>;
++		ti,cs-wsetup = <14>;
++		ti,cs-asize = <1>;
++
++		flash@0,0x0000000 {
++			compatible = "cfi-flash";
++			reg = <0 0x0000000 0x4000000>;
++
++			...
++		};
++	};
++};
+-- 
+1.7.9.5
+
