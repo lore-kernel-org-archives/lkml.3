@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab3LKEaW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 23:30:22 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:48432 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab3LKEaV (ORCPT
+	id S1751999Ab3LKEfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 23:35:44 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:39966 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab3LKEfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 23:30:21 -0500
-Message-ID: <1386736215.7152.259.camel@host5.omatika.ru>
-Subject: Re: [PATCH 02/11] arm: pxa27x: support ICP DAS LP-8x4x
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Daniel Mack <zonque@gmail.com>
-Date: Wed, 11 Dec 2013 08:30:15 +0400
-In-Reply-To: <201312102257.33942.arnd@arndb.de>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
-	 <CACRpkdYF-O6Qgjue6x+R6fVuSXSyO4YHw1meusuyQhtSA9PnvQ@mail.gmail.com>
-	 <1386706817.7152.254.camel@host5.omatika.ru>
-	 <201312102257.33942.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Dec 2013 23:35:43 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] perf tool: Fix bug in thread__fork
+Date: Tue, 10 Dec 2013 21:35:38 -0700
+Message-Id: <1386736538-23525-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-10 at 22:57 +0100, Arnd Bergmann wrote:
-> It should be possible to make it a loadable module, with deferred
-> probing etc. You wouldn't use IRQCHIP_DECLARE() for this though,
-> but instead have a platform driver that sets up the irq domain.
+Commit 1902efe7f for the new comm infra added the wrong check for return
+code on thread__set_comm. err == 0 is normal, so don't return at that
+point unless err != 0.
 
-Thanks for explaning.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/perf/util/thread.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> It probably makes sense to have a single driver file for the
-> FPGA device that does this, and only split out the other devices
-> from it that consume the irqs.
-
-Is drivers/irqchip/ the right place this driver?
-
-I am asking because there is no tristate config options in
-drivers/irqchip/Kconfig at the moment.
-
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 49eaf1d7d89d..e3948612543e 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -126,7 +126,7 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ 		if (!comm)
+ 			return -ENOMEM;
+ 		err = thread__set_comm(thread, comm, timestamp);
+-		if (!err)
++		if (err)
+ 			return err;
+ 		thread->comm_set = true;
+ 	}
+-- 
+1.8.3.4 (Apple Git-47)
 
