@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab3LKJio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:38:44 -0500
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:55490 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750945Ab3LKJik (ORCPT
+	id S1751436Ab3LKJkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:40:42 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:42668 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3LKJkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:38:40 -0500
-Message-ID: <52A83258.5070506@st.com>
-Date: Wed, 11 Dec 2013 09:37:28 +0000
-From: Angus Clark <angus.clark@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100312 Lightning/1.0b2pre Shredder/3.0.1
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <dwmw2@infradead.org>, <linus.walleij@linaro.org>,
-        <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH v3 01/36] mtd: st_spi_fsm: Allocate resources and register
- with MTD framework
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-2-git-send-email-lee.jones@linaro.org> <20131210204635.GD27149@ld-irv-0074.broadcom.com> <20131211084856.GF2390@lee--X1>
-In-Reply-To: <20131211084856.GF2390@lee--X1>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.49.178]
+	Wed, 11 Dec 2013 04:40:37 -0500
+X-AuditID: cbfee6a4-b7fb26d000006a49-9c-52a8331279f1
+Date: Wed, 11 Dec 2013 09:40:34 +0000 (GMT)
+From: Anurag Aggarwal <a.anurag@samsung.com>
+Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack
+ overflow
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Naveen Kumar <naveen.sel@samsung.com>,
+        Narendra Meher <narendra.m1@samsung.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
+        "anurag19aggarwal@gmail.com" <anurag19aggarwal@gmail.com>,
+        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
+        Rajat Suri <rajat.suri@samsung.com>,
+        Poorva Srivastava <poorva.s@samsung.com>,
+        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
+Reply-to: a.anurag@samsung.com
+MIME-version: 1.0
+X-MTR: 20131211092524934@a.anurag
+Msgkey: 20131211092524934@a.anurag
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20131211092524934@a.anurag
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: Y
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <2150956.98751386754831696.JavaMail.weblogic@epml23>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t/t6bpCxiuCDI52SVhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Md7vnMxZM4q9Yt8StgfEOXxcjJ4eQgLJE7971bCC2hICJxLKG
+	x0wQtpjEhXsQcSGB+YwSzz6pdTFycLAIqEp86rcECbMJ6EpMvHGFGcQWFgiUOHb/EDtIiYiA
+	usTRfUAlXBzMArtYJaY2vWGFGCMncXfddrB6XgFBiZMzn7BArFKU+NZ0nA0iriRxsX0V1Aly
+	EkumXoayeSVmtD9lgYlP+7qGGcKWljg/awMjzMmLvz+GivNLHLu9gwnkHpDeJ/eDYcbs3vwF
+	6lsBialnDkK1qkncXdvMDmHzSaxZ+JYFZsyuU8uZYXobNv4Gq2EGOnlK90Mo20DiyKI5rOje
+	4hVwkHj5/yLzBEa5WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9AoTveLE3OLSvHS95PzcTYzg
+	CH+2ZAdjwwXrQ4wCHIxKPLwHi5YHCbEmlhVX5h5ilOBgVhLhXcGwIkiINyWxsiq1KD++qDQn
+	tfgQozQHi5I474JbSUFCAumJJanZqakFqUUwWSYOTqkGxtWLXjy6NuHS75Odquvt1J8eb/c4
+	ahN9rsNsU4FvkeIiwS+FrX+upPGWHF8ZGjQpREbttQ3/ZR7+uK/S4se+nM3s+q4efKbB6qZZ
+	berNjym2xutupjQ/dyjd88Ws/YT1hYPLWA8/XhPKL/VowdxlR1xVLj12KXGw0OG+W/Z70uHL
+	Z8QnO137EaXEUpyRaKjFXFScCACpBuDv7AIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBB9emgP023586
 
-Hi Lee and Brian,
+>You could try adding some debug printks to see how the backtrace fails.
+>You could also try adding a few hand-crafted assembler functions
+>with appropriate code and unwind directives to trigger different kinds
+>of backtrace failure.  You might have to add a way to artificially limit
+>sp_high to check the cases where you run out of stack in the middle of
+>popping multiple registers.
 
-I would also like to thank Brian; as always, very sensible comments.
+I added a a printk statement 
++               if (*vsp >= (unsigned long *)ctrl->sp_high) {
++                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
++                               (unsigned long)*vsp);
++                       return -URC_FAILURE;
++               }
 
-I am tied up most of today and off work tomorrow (Christmas shopping!), but I
-will set aside Friday to go through the comments in detail.  I should also have
-some time next week if necessary, subject to any panics that might arise!
+I ran a many test cases to try and get the above print in the dmesg log.
 
-I also intend to respond to Huang's updated 'spi-nor' framework at the same
-time.  At some stage, I would expect some of the device probing code in
-st_spi_fsm, particularly the configuration of read/write/erase operations based
-on capabilities, to be pulled into the 'spi-nor' framework.  I do not see this
-an an obstacle to st_spi_fsm being integrated earlier though; it's presence in
-the kernel would provide another example of a H/W Controller that 'spi-nor'
-needs to accommodate.
+I tried the following things :
 
-Cheers,
+1) Calling unwind_backtrace from diffrenet locations in the kernel, I added the unwind call 
+in some irq, fork, exit and some sysfs entries call.
+2) I limited the value of sp_high in unwind_frame() itself, I tried many values of sp_high, 
+varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
 
-Angus
+When running the above cases I was able to see the above printk quiet a few times in dmesg log.
+
+So, the error condition is being handled.
+
+If you have some test cases for verifying the unwinder, please share the same. They might help 
+in thorough testing of unwinder.
 
 
-On 12/11/2013 08:48 AM, Lee Jones wrote:
-> Hi Brian,
-> 
-> Thank you for taking the time to review, it's very much appreciated.
-> You bought out some interesting points that I'm happy to go away and
-> rectify. Firstly however, as I inherited this code I'd like to give
-> Angus a chance to comment before we go off on our own tangent and
-> rework some of the good code which perhaps should remain unchanged.
-> 
-> Angus, do you have enough time to go through Brian's review comments
-> and perhaps reply to the ones that you feel would benefit from your
-> expert knowledge. To be frank, some of the questions that were asked I
-> wouldn't be able to answer without your guidance in any case.
-> 
-> Thanks both.
-> 
-> Kind regards,
-> Lee
-> 
 
+Regards
+AnuragˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
