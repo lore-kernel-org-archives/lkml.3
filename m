@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab3LKVDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:03:19 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:55861 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab3LKVDK (ORCPT
+	id S1752029Ab3LKVDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:03:50 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:54344 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3LKVDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:03:10 -0500
+	Wed, 11 Dec 2013 16:03:16 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, kay@vrfy.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/6] kernfs: mark static names with KERNFS_STATIC_NAME
-Date: Wed, 11 Dec 2013 16:02:57 -0500
-Message-Id: <1386795780-23324-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 6/6] kernfs: add kernfs_dir_ops
+Date: Wed, 11 Dec 2013 16:03:00 -0500
+Message-Id: <1386795780-23324-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1386795780-23324-1-git-send-email-tj@kernel.org>
 References: <1386795780-23324-1-git-send-email-tj@kernel.org>
@@ -21,213 +21,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because sysfs used struct attribute which are supposed to stay
-constant, sysfs didn't copy names when creating regular files.  The
-specified string for name was supposed to stay constant.  Such
-distinction isn't inherent for kernfs.  kernfs_create_file[_ns]()
-should be able to take the same @name as kernfs_create_dir[_ns]()
+Add support for mkdir(2), rmdir(2) and rename(2) syscalls.  This is
+implemented through optional kernfs_dir_ops callback table which can
+be specified on kernfs_create_root().  An implemented callback is
+invoked when the matching syscall is invoked.
 
-As there can be huge number of sysfs attributes, we still want to be
-able to use static names for sysfs attributes.  This patch renames
-kernfs_create_file_ns_key() to __kernfs_create_file() and adds
-@name_is_static parameter so that the caller can explicitly indicate
-that @name can be used without copying.  kernfs is updated to use
-KERNFS_STATIC_NAME to distinguish static and copied names.
+As kernfs keep dcache syncs with internal representation and
+revalidates dentries on each access, the implementation of these
+methods is extremely simple.  Each just discovers the relevant
+kernfs_node(s) and invokes the requested callback which is allowed to
+do any kernfs operations and the end result doesn't necessarily have
+to match the expected semantics of the syscall.
 
-This patch doesn't introduce any behavior changes.
+This will be used to convert cgroup to use kernfs instead of its own
+filesystem implementation.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c             |  8 ++++----
- fs/kernfs/file.c            | 23 +++++++++++++++--------
- fs/kernfs/kernfs-internal.h |  2 +-
- fs/sysfs/file.c             |  4 ++--
- include/linux/kernfs.h      | 27 ++++++++++++++-------------
- 5 files changed, 36 insertions(+), 28 deletions(-)
+ fs/kernfs/dir.c        | 44 +++++++++++++++++++++++++++++++++++++++++++-
+ fs/sysfs/mount.c       |  2 +-
+ include/linux/kernfs.h | 21 +++++++++++++++++++--
+ 3 files changed, 63 insertions(+), 4 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index ba5f372..e168177 100644
+index 42c5b9f..510b506 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -240,7 +240,7 @@ void kernfs_put(struct kernfs_node *kn)
- 
- 	if (kernfs_type(kn) == KERNFS_LINK)
- 		kernfs_put(kn->symlink.target_kn);
--	if (kernfs_type(kn) & KERNFS_COPY_NAME)
-+	if (!(kn->flags & KERNFS_STATIC_NAME))
- 		kfree(kn->name);
- 	if (kn->iattr) {
- 		if (kn->iattr->ia_secdata)
-@@ -336,13 +336,13 @@ const struct dentry_operations kernfs_dops = {
- };
- 
- struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
--				    umode_t mode, int type)
-+				    umode_t mode, unsigned flags)
- {
- 	char *dup_name = NULL;
- 	struct kernfs_node *kn;
- 	int ret;
- 
--	if (type & KERNFS_COPY_NAME) {
-+	if (!(flags & KERNFS_STATIC_NAME)) {
- 		name = dup_name = kstrdup(name, GFP_KERNEL);
- 		if (!name)
- 			return NULL;
-@@ -362,7 +362,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
- 
- 	kn->name = name;
- 	kn->mode = mode;
--	kn->flags = type | KERNFS_REMOVED;
-+	kn->flags = flags | KERNFS_REMOVED;
- 
- 	return kn;
- 
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index 053cfd9..316604c 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -762,7 +762,7 @@ const struct file_operations kernfs_file_fops = {
- };
+@@ -583,12 +583,13 @@ EXPORT_SYMBOL_GPL(kernfs_find_and_get_ns);
  
  /**
-- * kernfs_create_file_ns_key - create a file
-+ * __kernfs_create_file - kernfs internal function to create a file
-  * @parent: directory to create the file in
-  * @name: name of the file
-  * @mode: mode of the file
-@@ -770,23 +770,30 @@ const struct file_operations kernfs_file_fops = {
-  * @ops: kernfs operations for the file
-  * @priv: private data for the file
-  * @ns: optional namespace tag of the file
-+ * @static_name: don't copy file name
-  * @key: lockdep key for the file's active_ref, %NULL to disable lockdep
+  * kernfs_create_root - create a new kernfs hierarchy
++ * @kdops: optional directory syscall operations for the hierarchy
+  * @priv: opaque data associated with the new directory
   *
-  * Returns the created node on success, ERR_PTR() value on error.
+  * Returns the root of the new hierarchy on success, ERR_PTR() value on
+  * failure.
   */
--struct kernfs_node *kernfs_create_file_ns_key(struct kernfs_node *parent,
--					      const char *name,
--					      umode_t mode, loff_t size,
--					      const struct kernfs_ops *ops,
--					      void *priv, const void *ns,
--					      struct lock_class_key *key)
-+struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
-+					 const char *name,
-+					 umode_t mode, loff_t size,
-+					 const struct kernfs_ops *ops,
-+					 void *priv, const void *ns,
-+					 bool name_is_static,
-+					 struct lock_class_key *key)
+-struct kernfs_root *kernfs_create_root(void *priv)
++struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
  {
- 	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_root *root;
  	struct kernfs_node *kn;
-+	unsigned flags;
- 	int rc;
+@@ -610,6 +611,7 @@ struct kernfs_root *kernfs_create_root(void *priv)
+ 	kn->priv = priv;
+ 	kn->dir.root = root;
  
-+	flags = KERNFS_FILE;
-+	if (name_is_static)
-+		flags |= KERNFS_STATIC_NAME;
-+
- 	kn = kernfs_new_node(kernfs_root(parent), name,
--			     (mode & S_IALLUGO) | S_IFREG, KERNFS_FILE);
-+			     (mode & S_IALLUGO) | S_IFREG, flags);
- 	if (!kn)
- 		return ERR_PTR(-ENOMEM);
++	root->dir_ops = kdops;
+ 	root->kn = kn;
  
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index a4ff491..c6ba5bc 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -105,7 +105,7 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
- 		   struct kernfs_node *parent);
- void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt);
- struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
--				    umode_t mode, int type);
-+				    umode_t mode, unsigned flags);
- 
- /*
-  * file.c
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index fe6388f..810cf6e 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -252,8 +252,8 @@ int sysfs_add_file_mode_ns(struct kernfs_node *parent,
- 	if (!attr->ignore_lockdep)
- 		key = attr->key ?: (struct lock_class_key *)&attr->skey;
- #endif
--	kn = kernfs_create_file_ns_key(parent, attr->name, mode, size,
--				       ops, (void *)attr, ns, key);
-+	kn = __kernfs_create_file(parent, attr->name, mode, size, ops,
-+				  (void *)attr, ns, true, key);
- 	if (IS_ERR(kn)) {
- 		if (PTR_ERR(kn) == -EEXIST)
- 			sysfs_warn_dup(parent, attr->name);
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 0ca2aed..321ed84 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -34,7 +34,6 @@ enum kernfs_node_type {
- };
- 
- #define KERNFS_TYPE_MASK	0x000f
--#define KERNFS_COPY_NAME	(KERNFS_DIR | KERNFS_LINK)
- #define KERNFS_ACTIVE_REF	KERNFS_FILE
- #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
- 
-@@ -44,6 +43,7 @@ enum kernfs_node_flag {
- 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
- 	KERNFS_HAS_MMAP		= 0x0080,
- 	KERNFS_LOCKDEP		= 0x0100,
-+	KERNFS_STATIC_NAME	= 0x0200,
- };
- 
- /* type-specific structures for kernfs_node union members */
-@@ -212,12 +212,13 @@ void kernfs_destroy_root(struct kernfs_root *root);
- struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
- 					 const char *name, umode_t mode,
- 					 void *priv, const void *ns);
--struct kernfs_node *kernfs_create_file_ns_key(struct kernfs_node *parent,
--					      const char *name,
--					      umode_t mode, loff_t size,
--					      const struct kernfs_ops *ops,
--					      void *priv, const void *ns,
--					      struct lock_class_key *key);
-+struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
-+					 const char *name,
-+					 umode_t mode, loff_t size,
-+					 const struct kernfs_ops *ops,
-+					 void *priv, const void *ns,
-+					 bool name_is_static,
-+					 struct lock_class_key *key);
- struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 				       const char *name,
- 				       struct kernfs_node *target);
-@@ -265,10 +266,10 @@ kernfs_create_dir_ns(struct kernfs_node *parent, const char *name,
- { return ERR_PTR(-ENOSYS); }
- 
- static inline struct kernfs_node *
--kernfs_create_file_ns_key(struct kernfs_node *parent, const char *name,
--			  umode_t mode, loff_t size,
--			  const struct kernfs_ops *ops, void *priv,
--			  const void *ns, struct lock_class_key *key)
-+__kernfs_create_file(struct kernfs_node *parent, const char *name,
-+		     umode_t mode, loff_t size, const struct kernfs_ops *ops,
-+		     void *priv, const void *ns, bool name_is_static,
-+		     struct lock_class_key *key)
- { return ERR_PTR(-ENOSYS); }
- 
- static inline struct kernfs_node *
-@@ -330,8 +331,8 @@ kernfs_create_file_ns(struct kernfs_node *parent, const char *name,
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	key = (struct lock_class_key *)&ops->lockdep_key;
- #endif
--	return kernfs_create_file_ns_key(parent, name, mode, size, ops, priv,
--					 ns, key);
-+	return __kernfs_create_file(parent, name, mode, size, ops, priv, ns,
-+				    false, key);
+ 	return root;
+@@ -706,6 +708,42 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
+ 	return ret;
  }
  
- static inline struct kernfs_node *
++static int kernfs_iop_mkdir(struct inode *dir, struct dentry *dentry,
++			    umode_t mode)
++{
++	struct kernfs_node *parent = dir->i_private;
++	struct kernfs_dir_ops *kdops = kernfs_root(parent)->dir_ops;
++
++	if (!kdops || !kdops->mkdir)
++		return -EPERM;
++
++	return kdops->mkdir(parent, dentry->d_name.name, mode);
++}
++
++static int kernfs_iop_rmdir(struct inode *dir, struct dentry *dentry)
++{
++	struct kernfs_node *kn  = dentry->d_fsdata;
++	struct kernfs_dir_ops *kdops = kernfs_root(kn)->dir_ops;
++
++	if (!kdops || !kdops->rmdir)
++		return -EPERM;
++
++	return kdops->rmdir(kn);
++}
++
++static int kernfs_iop_rename(struct inode *old_dir, struct dentry *old_dentry,
++			     struct inode *new_dir, struct dentry *new_dentry)
++{
++	struct kernfs_node *kn  = old_dentry->d_fsdata;
++	struct kernfs_node *new_parent = new_dir->i_private;
++	struct kernfs_dir_ops *kdops = kernfs_root(kn)->dir_ops;
++
++	if (!kdops || !kdops->rename)
++		return -EPERM;
++
++	return kdops->rename(kn, new_parent, new_dentry->d_name.name);
++}
++
+ const struct inode_operations kernfs_dir_iops = {
+ 	.lookup		= kernfs_iop_lookup,
+ 	.permission	= kernfs_iop_permission,
+@@ -715,6 +753,10 @@ const struct inode_operations kernfs_dir_iops = {
+ 	.removexattr	= kernfs_iop_removexattr,
+ 	.getxattr	= kernfs_iop_getxattr,
+ 	.listxattr	= kernfs_iop_listxattr,
++
++	.mkdir		= kernfs_iop_mkdir,
++	.rmdir		= kernfs_iop_rmdir,
++	.rename		= kernfs_iop_rename,
+ };
+ 
+ static struct kernfs_node *kernfs_leftmost_descendant(struct kernfs_node *pos)
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 701a56f..6211230 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -62,7 +62,7 @@ int __init sysfs_init(void)
+ {
+ 	int err;
+ 
+-	sysfs_root = kernfs_create_root(NULL);
++	sysfs_root = kernfs_create_root(NULL, NULL);
+ 	if (IS_ERR(sysfs_root))
+ 		return PTR_ERR(sysfs_root);
+ 
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 321ed84..d2c439d 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -111,12 +111,27 @@ struct kernfs_node {
+ 	struct kernfs_iattrs	*iattr;
+ };
+ 
++/*
++ * kernfs_dir_ops may be specified on kernfs_create_root() to support
++ * directory manipulation syscalls.  These optional callbacks are invoked
++ * on the matching syscalls and can perform any kernfs operations which
++ * don't necessarily have to be the exact operation requested.
++ */
++struct kernfs_dir_ops {
++	int (*mkdir)(struct kernfs_node *parent, const char *name,
++		     umode_t mode);
++	int (*rmdir)(struct kernfs_node *kn);
++	int (*rename)(struct kernfs_node *kn, struct kernfs_node *new_parent,
++		      const char *new_name);
++};
++
+ struct kernfs_root {
+ 	/* published fields */
+ 	struct kernfs_node	*kn;
+ 
+ 	/* private fields, do not use outside kernfs proper */
+ 	struct ida		ino_ida;
++	struct kernfs_dir_ops	*dir_ops;
+ };
+ 
+ struct kernfs_open_file {
+@@ -206,7 +221,8 @@ struct kernfs_node *kernfs_find_and_get_ns(struct kernfs_node *parent,
+ void kernfs_get(struct kernfs_node *kn);
+ void kernfs_put(struct kernfs_node *kn);
+ 
+-struct kernfs_root *kernfs_create_root(void *priv);
++struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops,
++				       void *priv);
+ void kernfs_destroy_root(struct kernfs_root *root);
+ 
+ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+@@ -255,7 +271,8 @@ kernfs_find_and_get_ns(struct kernfs_node *parent, const char *name,
+ static inline void kernfs_get(struct kernfs_node *kn) { }
+ static inline void kernfs_put(struct kernfs_node *kn) { }
+ 
+-static inline struct kernfs_root *kernfs_create_root(void *priv)
++static inline struct kernfs_root *
++kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline void kernfs_destroy_root(struct kernfs_root *root) { }
 -- 
 1.8.4.2
 
