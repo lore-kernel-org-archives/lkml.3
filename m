@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3LKC7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:59:34 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:32828 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab3LKC7d (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Tue, 10 Dec 2013 21:59:33 -0500
-Message-ID: <52A7D512.5050801@symas.com>
-Date: Tue, 10 Dec 2013 18:59:30 -0800
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:27.0) Gecko/20100101 Firefox/27.0 SeaMonkey/2.24a1
+	id S1751834Ab3LKDD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 22:03:29 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:59371 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3LKDD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 22:03:26 -0500
+Message-ID: <52A7D5C3.6010300@huawei.com>
+Date: Wed, 11 Dec 2013 11:02:27 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>
-Subject: sched: RT throttling activated, 3.12.3
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: <sfrench@samba.org>
+CC: <linux-cifs@vger.kernel.org>, <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] fs: cifs: new helper: file_inode(file)
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just upgraded a system from a 3.5 kernel to 3.12.3 and attempted to run some 
-new benchmarks on it. I see my test program ramps up in CPU usage for a few 
-seconds and then it gradually tails off. There's nothing obvious in the user 
-code to trigger this behavior, so I check dmesg, and see this:
 
-[   55.037057] JFS: nTxBlock = 8192, nTxLock = 65536
-[163591.807470] perf samples too long (2758 > 2500), lowering 
-kernel.perf_event_max_sample_rate to 50000
-[164061.362762] perf samples too long (5204 > 5000), lowering 
-kernel.perf_event_max_sample_rate to 25000
-[167969.339513] [sched_delayed] sched: RT throttling activated
-[182741.484637] perf samples too long (294588 > 10000), lowering 
-kernel.perf_event_max_sample_rate to 12500
-[182741.484726] INFO: NMI handler (perf_event_nmi_handler) took too long to 
-run: 36.665 msecs
-[182822.633084] perf samples too long (292359 > 20000), lowering 
-kernel.perf_event_max_sample_rate to 6250
-[182905.606119] perf samples too long (290291 > 40000), lowering 
-kernel.perf_event_max_sample_rate to 3250
-[199384.293514] perf samples too long (288142 > 76923), lowering 
-kernel.perf_event_max_sample_rate to 1750
-[208507.301027] perf samples too long (285964 > 142857), lowering 
-kernel.perf_event_max_sample_rate to 1000
-[208528.976208] perf samples too long (283799 > 250000), lowering 
-kernel.perf_event_max_sample_rate to 500
+Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
+---
+ fs/cifs/ioctl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Why is the kernel throttling my server?
+diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
+index 7749230..45cb59b 100644
+--- a/fs/cifs/ioctl.c
++++ b/fs/cifs/ioctl.c
+@@ -85,7 +85,7 @@ static long cifs_ioctl_clone(unsigned int xid, struct file *dst_file,
+ 		goto out_fput;
+ 	}
 
+-	src_inode = src_file.file->f_dentry->d_inode;
++	src_inode = file_inode(src_file.file);
+
+ 	/*
+ 	 * Note: cifs case is easier than btrfs since server responsible for
 -- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+1.8.2.2
+
