@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab3LKBDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:03:35 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:62203 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751171Ab3LKBDd (ORCPT
+	id S1751791Ab3LKBDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:03:51 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:36130 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3LKBDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:03:33 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AskVAJu4p1J5LHyk/2dsb2JhbABZgwc4gwChcAOPMoVPgR8XdIIlAQEEATocIwULCAMOCgkDIg8FJQMhE4d8BQ7BNxcWjm8HgyGBEwSYE4ExkGODPSg
-Date: Wed, 11 Dec 2013 12:03:27 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        Kees Cook <keescook@google.com>,
-        Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
-        xfs@oss.sgi.com, "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: XFS security fix never sent to -stable?
-Message-ID: <20131211010326.GF10988@dastard>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
- <20131209121534.GE4278@hercules>
- <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
- <20131209235523.GW31386@dastard>
- <CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
+	Tue, 10 Dec 2013 20:03:48 -0500
+Date: Tue, 10 Dec 2013 17:03:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20131210103827.GB20242@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com> <20131127163435.GA3556@cmpxchg.org> <20131202200221.GC5524@dhcp22.suse.cz> <20131202212500.GN22729@cmpxchg.org> <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com> <20131204111318.GE8410@dhcp22.suse.cz> <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com> <20131209124840.GC3597@dhcp22.suse.cz> <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+ <20131210103827.GB20242@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 08:20:07AM -0500, Josh Boyer wrote:
-> On Mon, Dec 9, 2013 at 6:55 PM, Dave Chinner <david@fromorbit.com>
-> wrote:
-> > [cc xfs list, cc stable@vger.kernel.org]
-> >
-> > On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
-> >> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
-> >> <luis.henriques@canonical.com> wrote:
-> >> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
-> >> >> Hi,
-> >> >>
-> >> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c
-> >> >> ("xfs: add capability check to free eofblocks ioctl") is a
-> >> >> security fix that was never sent to -stable? From what I can
-> >> >> see, it was introduced in 3.8 by
-> >> >> 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
-> >> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
-> >> >>
-> >> >> I don't see this in the 3.8.y tree. Should it be added there
-> >> >> and newer?
-> >> >
-> >> > Thanks Kees, I'm queuing it for the 3.11 kernel.
-> >>
-> >> There's also this one:
-> >>
-> >> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
-> >>
-> >> It fixes CVE-2013-6382
-> >
-> > First I've heard about it there being a CVE for that bug. Since
-> > when has it been considered best practice to publish CVEs
-> > without first (or ever) directly contacting the relevant
-> > upstream developers?
+On Tue, 10 Dec 2013, Michal Hocko wrote:
+
+> > What exactly would you like to see?
 > 
-> We got a Fedora bug for it, and there are similar RHEL bugs open.
-> I had assumed you would be informed either via upstream or
-> through those.
+> How often do you see PF_EXITING tasks which haven't been killed causing
+> a pointless notification? Because fatal_signal_pending and TIF_MEMDIE
+> cases are already handled because we bypass charges in those cases (except
+> for user OOM killer killed tasks which don't get TIF_MEMDIE and that
+> should be fixed).
+> 
 
-I've not been cc'd on any of those bugs internally at RH, so I don't
-have visibility of the problems unless someone specifically adds me
-to those bugs.  As it is, raising fedora/RHEL bugs is not informing
-upstream - it is a distro process for tracking the distro issue
-through to closure.
-
-> The CVE request was submitted by Kees here:
-> http://seclists.org/oss-sec/2013/q4/330
-
-Ugh, no, I'm not going to subscribe to a high noise list where the
-only way I might be informed of a CVE being raised is by following
-links to git commit IDs....
-
-Upstream is not magically informed about CVEs, and relying on
-upstream developers to scan or poll *anything* just to find if a
-CVE on their subsystem has been released is not reliable and
-does not scale. If anyone raises a CVE against a kernel subsystem,
-then the relevant list in the MAINTAINERS file for that subsystem
-should be on the cc list of any discussion about the CVE, and on the
-announcement of the CVE.
-
-Security processes are not something that should be hidden away in
-it's own private corner - if there's a problem upstream needs to
-take action on, then direct contact with upstream is necessary. We
-need to know about security issues - even ones that are classified
-post-commit as security issues - so we are operating with full
-knowledge of the issues in our code and the impact of our fixes....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Triggering a pointless notification with PF_EXITING is rare, yet one 
+pointless notification can be avoided with the patch.  Additionally, it 
+also avoids a pointless notification for a racing SIGKILL.
