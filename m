@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab3LKVuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:50:00 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43857 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab3LKVt5 (ORCPT
+	id S1751489Ab3LKVxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:53:36 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60001 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3LKVxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:49:57 -0500
-Message-ID: <52A8DE00.6060007@gmail.com>
-Date: Wed, 11 Dec 2013 14:49:52 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 13/71] perf tools: Add machine__get_thread_pid()
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>	<1386765443-26966-14-git-send-email-alexander.shishkin@linux.intel.com>	<52A8BCCE.9010300@gmail.com> <87fvpzulvl.fsf@tassilo.jf.intel.com>
-In-Reply-To: <87fvpzulvl.fsf@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 11 Dec 2013 16:53:34 -0500
+Date: Wed, 11 Dec 2013 16:53:31 -0500 (EST)
+Message-Id: <20131211.165331.495095016561766264.davem@davemloft.net>
+To: gregkh@linuxfoundation.org
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        nicolas.dichtel@6wind.com, williams@redhat.com,
+        linux-rt-users@vger.kernel.org, lclaudio@uudg.org
+Subject: Re: [BUG] stable v3.10.16+ introduced by "ip6tnl: allow to use
+ rtnl ops on fb tunnel"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131209002531.GB14382@kroah.com>
+References: <20131113211430.1ad3bb7d@gandalf.local.home>
+	<20131209002531.GB14382@kroah.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 13:53:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/13, 2:18 PM, Andi Kleen wrote:
-> David Ahern <dsahern@gmail.com> writes:
->>
->> Are you looking up the current or next task? If the former why not use
->> sample->pid rather than parsing the sched_switch tracepoint?
->
-> The itrace stream doesn't have a pid field, and it needs the exact
-> time stamp of the switch. There may not actually be any samples
-> before decoding.
->
-> -Andi
->
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Sun, 8 Dec 2013 16:25:31 -0800
 
-What I meant is this:
+> On Wed, Nov 13, 2013 at 09:14:30PM -0500, Steven Rostedt wrote:
+>> +++ b/net/ipv6/ip6_tunnel.c
+>> @@ -1731,8 +1731,6 @@ static void __net_exit ip6_tnl_destroy_tunnels(struct ip
+>>                 }
+>>         }
+>>  
+>> -       t = rtnl_dereference(ip6n->tnls_wc[0]);
+>> -       unregister_netdevice_queue(t->dev, &list);
+>>         unregister_netdevice_many(&list);
+>>  }
+>>  
+>> 
+>> Which, when applied to 3.10.18, fixes the bug. Was there a reason that
+>> this part of the commit wasn't backported? or was this just an oversight?
+> 
+> It looks like it was left out to me as well.
+> 
+> David, any objection to me making this fixup in the 3.10-stable tree?
 
-perf record -e sched:sched_switch -a -- sleep 1 | perf script -f 
-comm,tid,pid,event,trace
+The original patch submitted told me to leave this part of the patch
+out of the backport, explaining that it wasn't necessary in older
+kernels.
 
+Can someone please sort this out?
 
-qemu-system-x86  8688/8692  sched:sched_switch: 
-prev_comm=qemu-system-x86 prev_pid=8692 prev_prio=120 prev_state=S ==> 
-next_comm=swapper/15 next_pid=0 next_prio=120
-
-8688/8692 are the pid and tid of the running task. If you are monitoring 
-sched_switch events and looking at running task -- the one getting 
-scheduled out -- you don't need to parse the tracepoint. But, if you 
-want to know next task then you do need to parse it. I was wondering 
-which task is getting looked up.
-
-David
+Nicolas please provide some guidance here, thanks.
