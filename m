@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab3LKWPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:15:43 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:22828 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab3LKWPl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:15:41 -0500
-Message-ID: <1386800135.1516.296.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting
- permanent mac address
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-CC: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Dan Williams <dcbw@redhat.com>, Kalle Valo <kvalo@adurom.com>,
-        Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <freemangordon@abv.bg>,
-        <aaro.koskinen@iki.fi>, <pavel@ucw.cz>, <sre@ring0.de>,
-        <joni.lapilainen@gmail.com>, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Date: Wed, 11 Dec 2013 22:15:35 +0000
-In-Reply-To: <52A8DA9A.50501@gmail.com>
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
-		 <201312101814.35112@pali> <1386697762.30202.6.camel@dcbw.foobar.com>
-		 <201312101852.17030@pali>
-	 <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>
-	 <52A8DA9A.50501@gmail.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1751798Ab3LKWQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:16:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27426 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab3LKWQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:16:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
+   d="scan'208";a="450801145"
+Date: Wed, 11 Dec 2013 14:16:50 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 01/38] perf tools: Use asprintf instead of malloc plus
+ snprintf
+Message-ID: <20131211221650.GP22695@tassilo.jf.intel.com>
+References: <1386187622-2928-1-git-send-email-acme@infradead.org>
+ <1386187622-2928-2-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20352.005
-X-TM-AS-Result: No--25.107800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386187622-2928-2-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-11 at 23:35 +0200, Ivajlo Dimitrov wrote:
-> On 11.12.2013 23:17, Ben Hutchings wrote:
-> > I think that's an even worse idea.  This is not firmware and it already
-> > exists in separate storage.
-> >
-> > I think that rx51_init_wl1251() in
-> > arch/arm/mach-omap2/board-rx51-peripherals.c should either copy the MAC
-> > address out of NVRAM, or if it's too early to do that, then schedule a
-> > function to run later and only then set up wl1251 platform data.
-> >
-> > Ben.
-> >
+On Wed, Dec 04, 2013 at 05:06:25PM -0300, Arnaldo Carvalho de Melo wrote:
+> From: Adrian Hunter <adrian.hunter@intel.com>
 > 
-> And how will that work with DT when board files will be in the history?
+> The asprintf library function is equivalent to malloc plus snprintf so
+> use it because it is simpler.
 
-1. Boot loader reads the MAC address from NVRAM and puts it in the DT
-node.
-or
-2. NVRAM reading is done by a tiny driver that is loaded based on the
-platform name and updates the DT node in memory.  (But I don't know how
-wl1251 should decide to defer probing if it's probed before that other
-driver.)
+I used to be very fond of asprintf too, but apparently there are some 
+really ancient glibc versions that implement it incorrectly.
+I had to remove it from mcelog at some point because of that.
 
-Ben.
+No need to yank it out, but just to let you know.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+-Andi
