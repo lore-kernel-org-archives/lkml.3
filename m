@@ -1,165 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab3LKRw0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:52:26 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:58834 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab3LKRwX (ORCPT
+	id S1752002Ab3LKRwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:52:41 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:47658 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab3LKRwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:52:23 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        linux-gpio@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Subject: [PATCH v7] gpio: davinci: use {readl|writel}_relaxed() instead of __raw_*
-Date: Wed, 11 Dec 2013 23:22:07 +0530
-Message-Id: <1386784327-22164-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 11 Dec 2013 12:52:39 -0500
+Date: Wed, 11 Dec 2013 18:52:35 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
+Message-ID: <20131211175235.GD12431@gmail.com>
+References: <20131203233251.745099192@linux.com>
+ <20131210153445.GE4610@htj.dyndns.org>
+ <20131210154506.GA1884@gmail.com>
+ <20131210154951.GF4610@htj.dyndns.org>
+ <20131210155546.GD1995@gmail.com>
+ <00000142ddb6d07d-f77cfa15-55a5-4806-891e-2d57894fc46b-000000@email.amazonses.com>
+ <20131210183133.GC20770@gmail.com>
+ <00000142de1ac9a3-d2b5b7fb-25c5-4bec-acbe-8be30a951bbc-000000@email.amazonses.com>
+ <20131211151220.GB11048@gmail.com>
+ <00000142e2c64102-07168d96-fb2f-4eeb-9b49-c3298bc81192-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142e2c64102-07168d96-fb2f-4eeb-9b49-c3298bc81192-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch replaces the __raw_readl/writel with
-{readl|writel}_relaxed(), Altough the code runs on ARMv5
-based SOCs, changing this will help copying the code
-for other uses.
+* Christoph Lameter <cl@linux.com> wrote:
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- This patch is part of series [1] rest of the patches
- are Acked/reviewed so posting this patch independently
- and marking it as v7.
- 
- [1] http://www.spinics.net/lists/devicetree/msg13037.html
- 
- drivers/gpio/gpio-davinci.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+> On Wed, 11 Dec 2013, Ingo Molnar wrote:
+> 
+> > > Well this is how the x86 portions came from Peter. [...]
+> >
+> > That's an interesting piece of information, in particular because 
+> > you lost From: PeterZ authorship there, don't do that!
+> 
+> Ok will add that. There is a signoff there. Is that ok with you 
+> Peter?
 
-diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-index 84be701..805552c 100644
---- a/drivers/gpio/gpio-davinci.c
-+++ b/drivers/gpio/gpio-davinci.c
-@@ -82,14 +82,14 @@ static inline int __davinci_direction(struct gpio_chip *chip,
- 	u32 mask = 1 << offset;
- 
- 	spin_lock_irqsave(&d->lock, flags);
--	temp = __raw_readl(&g->dir);
-+	temp = readl_relaxed(&g->dir);
- 	if (out) {
- 		temp &= ~mask;
--		__raw_writel(mask, value ? &g->set_data : &g->clr_data);
-+		writel_relaxed(mask, value ? &g->set_data : &g->clr_data);
- 	} else {
- 		temp |= mask;
- 	}
--	__raw_writel(temp, &g->dir);
-+	writel_relaxed(temp, &g->dir);
- 	spin_unlock_irqrestore(&d->lock, flags);
- 
- 	return 0;
-@@ -118,7 +118,7 @@ static int davinci_gpio_get(struct gpio_chip *chip, unsigned offset)
- 	struct davinci_gpio_controller *d = chip2controller(chip);
- 	struct davinci_gpio_regs __iomem *g = d->regs;
- 
--	return (1 << offset) & __raw_readl(&g->in_data);
-+	return (1 << offset) & readl_relaxed(&g->in_data);
- }
- 
- /*
-@@ -130,7 +130,7 @@ davinci_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
- 	struct davinci_gpio_controller *d = chip2controller(chip);
- 	struct davinci_gpio_regs __iomem *g = d->regs;
- 
--	__raw_writel((1 << offset), value ? &g->set_data : &g->clr_data);
-+	writel_relaxed((1 << offset), value ? &g->set_data : &g->clr_data);
- }
- 
- static int davinci_gpio_probe(struct platform_device *pdev)
-@@ -227,8 +227,8 @@ static void gpio_irq_disable(struct irq_data *d)
- 	struct davinci_gpio_regs __iomem *g = irq2regs(d->irq);
- 	u32 mask = (u32) irq_data_get_irq_handler_data(d);
- 
--	__raw_writel(mask, &g->clr_falling);
--	__raw_writel(mask, &g->clr_rising);
-+	writel_relaxed(mask, &g->clr_falling);
-+	writel_relaxed(mask, &g->clr_rising);
- }
- 
- static void gpio_irq_enable(struct irq_data *d)
-@@ -242,9 +242,9 @@ static void gpio_irq_enable(struct irq_data *d)
- 		status = IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING;
- 
- 	if (status & IRQ_TYPE_EDGE_FALLING)
--		__raw_writel(mask, &g->set_falling);
-+		writel_relaxed(mask, &g->set_falling);
- 	if (status & IRQ_TYPE_EDGE_RISING)
--		__raw_writel(mask, &g->set_rising);
-+		writel_relaxed(mask, &g->set_rising);
- }
- 
- static int gpio_irq_type(struct irq_data *d, unsigned trigger)
-@@ -286,10 +286,10 @@ gpio_irq_handler(unsigned irq, struct irq_desc *desc)
- 		int		res;
- 
- 		/* ack any irqs */
--		status = __raw_readl(&g->intstat) & mask;
-+		status = readl_relaxed(&g->intstat) & mask;
- 		if (!status)
- 			break;
--		__raw_writel(status, &g->intstat);
-+		writel_relaxed(status, &g->intstat);
- 
- 		/* now demux them to the right lowlevel handler */
- 		n = d->irq_base;
-@@ -346,9 +346,9 @@ static int gpio_irq_type_unbanked(struct irq_data *data, unsigned trigger)
- 	if (trigger & ~(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
- 		return -EINVAL;
- 
--	__raw_writel(mask, (trigger & IRQ_TYPE_EDGE_FALLING)
-+	writel_relaxed(mask, (trigger & IRQ_TYPE_EDGE_FALLING)
- 		     ? &g->set_falling : &g->clr_falling);
--	__raw_writel(mask, (trigger & IRQ_TYPE_EDGE_RISING)
-+	writel_relaxed(mask, (trigger & IRQ_TYPE_EDGE_RISING)
- 		     ? &g->set_rising : &g->clr_rising);
- 
- 	return 0;
-@@ -432,8 +432,8 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
- 
- 		/* default trigger: both edges */
- 		g = gpio2regs(0);
--		__raw_writel(~0, &g->set_falling);
--		__raw_writel(~0, &g->set_rising);
-+		writel_relaxed(~0, &g->set_falling);
-+		writel_relaxed(~0, &g->set_rising);
- 
- 		/* set the direct IRQs up to use that irqchip */
- 		for (gpio = 0; gpio < pdata->gpio_unbanked; gpio++, irq++) {
-@@ -456,8 +456,8 @@ static int davinci_gpio_irq_setup(struct platform_device *pdev)
- 
- 		/* disabled by default, enabled only as needed */
- 		g = gpio2regs(gpio);
--		__raw_writel(~0, &g->clr_falling);
--		__raw_writel(~0, &g->clr_rising);
-+		writel_relaxed(~0, &g->clr_falling);
-+		writel_relaxed(~0, &g->clr_rising);
- 
- 		/* set up all irqs in this bank */
- 		irq_set_chained_handler(bank_irq, gpio_irq_handler);
-@@ -485,7 +485,7 @@ done:
- 	 * BINTEN -- per-bank interrupt enable. genirq would also let these
- 	 * bits be set/cleared dynamically.
- 	 */
--	__raw_writel(binten, gpio_base + BINTEN);
-+	writel_relaxed(binten, gpio_base + BINTEN);
- 
- 	printk(KERN_INFO "DaVinci: %d gpio irqs\n", irq - gpio_to_irq(0));
- 
--- 
-1.7.9.5
+Signoff alone does not signal authorship, only a "From: " line does.
 
+> Thinking about this some more: Separating these two issues would 
+> make it impossible to build x86 since the hackery in 
+> x86/include/asm/preempt.h depends on having the right names in 
+> x86/include/asm/percpu.h. Changing the names first would result in 
+> preempt.h not being usable.
+
+The series must be bisectable at every commit, of course.
+
+Thanks,
+
+	Ingo
