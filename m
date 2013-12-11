@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3LKNrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 08:47:17 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59267 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3LKNrP (ORCPT
+	id S1751920Ab3LKNrc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 08:47:32 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:43445 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab3LKNra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 08:47:15 -0500
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] vfs, eventfd: fix the typo
-Date: Wed, 11 Dec 2013 21:47:03 +0800
-Message-Id: <1386769623-14366-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121113-0928-0000-0000-0000048CFE4B
+	Wed, 11 Dec 2013 08:47:30 -0500
+Date: Wed, 11 Dec 2013 14:47:24 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 00/71] perf: Add support for Intel Processor Trace
+Message-ID: <20131211134724.GC3101@gmail.com>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <20131211130448.GA2480@gmail.com>
+ <87r49jttqr.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r49jttqr.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/eventfd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+* Alexander Shishkin <alexander.shishkin@linux.intel.com> wrote:
 
-diff --git a/fs/eventfd.c b/fs/eventfd.c
-index 35470d9..710bf80 100644
---- a/fs/eventfd.c
-+++ b/fs/eventfd.c
-@@ -45,7 +45,7 @@ struct eventfd_ctx {
-  *
-  * This function is supposed to be called by the kernel in paths that do not
-  * allow sleeping. In this function we allow the counter to reach the ULLONG_MAX
-- * value, and we signal this as overflow condition by returining a POLLERR
-+ * value, and we signal this as overflow condition by returning a POLLERR
-  * to poll(2).
-  *
-  * Returns the amount by which the counter was incrememnted.  This will be less
--- 
-1.7.6.5
+> Ingo Molnar <mingo@kernel.org> writes:
+> 
+> > * Alexander Shishkin <alexander.shishkin@linux.intel.com> wrote:
+> >
+> >> Hi,
+> >> 
+> >> This patchset adds support for Intel Processor Trace (PT) extension 
+> >> [1] of Intel Architecture that allows the capture of information 
+> >> about software execution flow, to the perf kernel and userspace 
+> >> infrastructure. We provide an abstraction for it called "itrace" for 
+> >> "instruction trace" ([2]).
+> >
+> > Ok, this feature looks rather interesting.
+> >
+> > On the hardware side this is essentially BTS (Branch Trace Store) 
+> > on steroids (with many extensions), right?
+> 
+> Yes, you get timestamps and all sorts of other useful data in the 
+> trace and the performance intrusion is much less than that of BTS.
 
+So the problem I see here right now that BTS is rarely used and AFAICS 
+close to unmaintained. It has some very minimal support in 'perf 
+script' but that's all I can see.
+
+So one necessary precondition to merging PT support would be to have a 
+convincing case that this kind of stuff is generally useful.
+
+One good approach to do that would be to unify the BTS and PT tooling 
+(the kernel side can be unified as well, to the extent it makes 
+sense), and to prove it via actual functionality that this stuff 
+matters. BTS is available widely, so the tooling can be tested by 
+anyone who's interested.
+
+Allow people to record crashes in core dumps, allow them to look at 
+histograms/spectrograms of BTS/PT traces, zoom in on actual traces, 
+etc. - make it easier to handle this huge amount of data and visualize 
+traces in other ways you find useful, etc.
+
+None of that is done right now via BTS so nobody uses it.
+
+Thanks,
+
+	Ingo
