@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab3LKBPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:15:06 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62661 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab3LKBPC (ORCPT
+	id S1751773Ab3LKBPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:15:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41938 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab3LKBPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:15:02 -0500
-X-AuditID: 9c930179-b7ce4ae000000e86-4c-52a7bc94d636
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 12/17] tracing/probes: Implement 'memory' fetch method for uprobes
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
-	<1386570005-3368-13-git-send-email-namhyung@kernel.org>
-	<52A6F455.4070807@hitachi.com>
-Date: Wed, 11 Dec 2013 10:15:00 +0900
-In-Reply-To: <52A6F455.4070807@hitachi.com> (Masami Hiramatsu's message of
-	"Tue, 10 Dec 2013 20:00:37 +0900")
-Message-ID: <87mwk8i3xn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 10 Dec 2013 20:15:14 -0500
+Date: Tue, 10 Dec 2013 17:16:44 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        ian.campbell@citrix.com, rjw@rjwysocki.net, len.brown@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3.12 46/62] irq: Enable all irqs unconditionally in
+ irq_resume
+Message-ID: <20131211011644.GA5756@kroah.com>
+References: <20131210080057.415644748@linuxfoundation.org>
+ <201312101352.53714.heiko@sntech.de>
+ <20131210192702.GC8075@kroah.com>
+ <201312102246.54581.heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201312102246.54581.heiko@sntech.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 20:00:37 +0900, Masami Hiramatsu wrote:
-> (2013/12/09 15:20), Namhyung Kim wrote:
->> @@ -493,7 +416,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->>  			dprm->offset = offset;
->>  			dprm->fetch = t->fetch[FETCH_MTD_memory];
->>  			dprm->fetch_size = get_fetch_size_function(t,
->> -							dprm->fetch, ttbl);
->> +							dprm->fetch, ftbl);
->
-> What is this change? I guess it should be included in 11/17...
+On Tue, Dec 10, 2013 at 10:46:54PM +0100, Heiko Stübner wrote:
+> Am Dienstag, 10. Dezember 2013, 20:27:02 schrieb Greg Kroah-Hartman:
+> > On Tue, Dec 10, 2013 at 01:52:53PM +0100, Heiko Stübner wrote:
+> > > Am Dienstag, 10. Dezember 2013, 10:08:47 schrieb Greg Kroah-Hartman:
+> > > > On Tue, Dec 10, 2013 at 10:01:13AM +0100, Pavel Machek wrote:
+> > > > > Hi!
+> > > > > 
+> > > > > > 3.12-stable review patch.  If anyone has any objections, please let
+> > > > > > 
+> > > > > >  me know.
+> > > > > 
+> > > > > Objections... well... I'm not sure if it meets stable criteria. In
+> > > > > particular, I don't think it was ever demonstrated as having bad
+> > > > > effect on the users.
+> > > > 
+> > > > Well, I'm guessing someone on the cc: here wanted it in stable@, so
+> > > > I'll let them speak up as to why...
+> > > 
+> > > As for bad effects on users ... any suspend_noirq callback returning an
+> > > error and thus aborting the suspend will cause the error fixed by this,
+> > > as the early-irqs won't get reenabled in the suspend-rollback [due to
+> > > the syscore_ops doing their resume never being run].
+> > > 
+> > > You could for example lose keys connected thru the gpio-keys driver until
+> > > the next reboot.
+> > > 
+> > > And it seems at least Laxman and myself were affected by it.
+> > 
+> > So, to be clear, this patch fixes a problem on your machines, right?
+> 
+> yes it does fix a problem I ran into on my machines.
 
-Argh, right.  It looks like a git rebase artifact, will change.
+Great, thanks for letting me know.
 
-
-> The rest of this patch is good for me.
-
-So can I add you ack then? :)
-
-Thank you!
-Namhyung
+greg k-h
