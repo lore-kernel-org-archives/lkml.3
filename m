@@ -1,111 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab3LKKnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:43:45 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:40721 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3LKKnm (ORCPT
+	id S1751697Ab3LKLAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:00:32 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:43643 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab3LKLAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 05:43:42 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, stable@vger.kernel.org
-Subject: [PATCH] futex: Switch to USER_DS for futex test
-Date: Wed, 11 Dec 2013 11:43:21 +0100
-Message-Id: <1386758601-8520-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 11 Dec 2013 06:00:31 -0500
+Message-ID: <52A845BD.5020801@linaro.org>
+Date: Wed, 11 Dec 2013 19:00:13 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>
+Subject: Re: nohz_full left a periodic tick cpu issue
+References: <52A80627.9020109@linaro.org>
+In-Reply-To: <52A80627.9020109@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit e4f2dfbb5e92be4e46c0625f4f8eb101110f756f ("m68k: implement
-futex.h to support userspace robust futexes and PI mutexes"), the kernel
-crashes during boot up on MC68030:
+On 12/11/2013 02:28 PM, Alex Shi wrote:
+> Hi Frederic,
+> 
+> Sorry for idiot of nohz_full. When we using this feature on my mobile
+> devices, we found this feature keep cpu0 in periodic tick mode. then the
+> timer interrupt on cpu0 is very higher than normal nohz mode.
+> that cause high power consuming cost.
+> 
+> I found you have mention this on commit: a382bf934449
+> nohz: Assign timekeeping duty to a CPU outside the full dynticks range
+> 
+> In fact, if all full dynticks cpu are in idle, cpu0 should be safe to
+> get into idle too. Do you have some plan or idea to implement this?
+> otherwise, power cost is too high to enable nohz_full in mobile platform.
 
-Data read fault at 0x00000000 in Super Data (pc=0x3afec)
-BAD KERNEL BUSERR
-Oops: 00000000
-Modules linked in:
-PC: [<0003afec>] cmpxchg_futex_value_locked+0x14/0x4a
-SR: 2004  SP: 0082fed4  a2: 0082c000
-d0: 00000000    d1: 00000001    d2: 00000018    d3: 00000000
-d4: 00000061    d5: 00001000    a0: 00000000    a1: 0082e000
-Process swapper (pid: 1, task=0082c000)
-Frame format=B ssw=074d isc=4a80 isb=661c daddr=00000000 dobuf=00000001
-baddr=0003aff2 dibuf=00000000 ver=f
-Stack from 0082ff5c:
-        002b8cb8 0082ff70 00000000 00000000 00000000 00000000 00000000 000020ac
-        00000018 00000007 00000061 00001000 00000000 00000000 002cab50 00002008
-        002b3a56 002b8ca4 0082c3f0 00000000 0082c53c 001e316a 00000000 00000000
-        001e3172 001e316a 000025d4 00000000 00000000 00000000 00000000 00000000
-        00000000 00000000 00000000 00000000 00000000 00000000 00000000 20000000
-        00000000
-Call Trace: [<002b8cb8>] futex_init+0x14/0x54
- [<000020ac>] do_one_initcall+0xa4/0x144
- [<00001000>] kernel_pg_dir+0x0/0x1000
- [<00002008>] do_one_initcall+0x0/0x144
- [<002b3a56>] kernel_init_freeable+0xca/0x152
- [<002b8ca4>] futex_init+0x0/0x54
- [<001e316a>] kernel_init+0x0/0xc8
- [<001e3172>] kernel_init+0x8/0xc8
- [<001e316a>] kernel_init+0x0/0xc8
- [<000025d4>] ret_from_kernel_thread+0xc/0x14
+CC to more experts: Paul and zhong.
 
-This happens because the futex test in futex_init() lacks a switch to the
-USER_DS address space, while cmpxchg_futex_value_locked() and
-futex_atomic_cmpxchg_inatomic() operate on userspace pointers (albeit NULL
-for this particular test).
+In fact, I try to figure out a simple solution for this:
+We can use a global variable to store full dyntick cpus number, when the number goes to 0, the cpu0 can be get into nohz mode as normal nohz.
+Then before any cpu get into full dyntick, it can send out a need resched to wake up the cpu0.
 
-Fix this by switching to USER_DS before running the test, and restoring the
-old address space afterwards.
+but I am stalled for a week in making the nr_nohz_busy_cpu balance on a 2 cpus system - pandaboard es. the variable may increases 2 or 3 times continuously without a decrease. so nr_nohz_busy_cpus increased to 28 in 7200 seconds.
 
-Reported-by: Tuxist <tuxist@tuxist.de>
-Reported-by: Patrick McCarthy <patrickjmc@gmail.com>
-Bisected-by: Finn Thain <fthain@telegraphics.com.au>
-Suggested-by: Andreas Schwab <schwab@linux-m68k.org>
-Tested-by: Finn Thain <fthain@telegraphics.com.au>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: stable@vger.kernel.org
+Anyone like point out what I missed in this simple patch?
+
+For more cpus system you can just assign one cpu as full dyntick cpu to debug this patch.
+
+
+>From 14afeca87d8d74cb65c1d0f2bdd270466d4c7083 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@linaro.org>
+Date: Wed, 11 Dec 2013 18:32:52 +0800
+Subject: [PATCH 4/5] nohz_full: tracking the full dynticks cpu number
+
+This patch try to track the full dynticks cpu number with a global
+varible nr_nohz_busy_cpus.
+
+When ts->tick_stopped and !ts->inidle, it is time for full dyntick.
+To achieve this, the ts->inidle = 0 was delayed in tick_nohz_idle_exit
+safely.
+
+But the patch failed, it may increases 2 or 3 times continuously without
+ a decrease. so nr_nohz_busy_cpus increased to 28 in 7200 seconds. :(
+
 ---
- kernel/futex.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/tick.h     |  3 +++
+ kernel/time/tick-sched.c | 19 +++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 80ba086f021d..ffe0c7706b9c 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -63,6 +63,7 @@
- #include <linux/sched/rt.h>
- #include <linux/hugetlb.h>
- #include <linux/freezer.h>
-+#include <linux/uaccess.h>
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 5128d33..3784f9f 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -161,6 +161,7 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
  
- #include <asm/futex.h>
+ #ifdef CONFIG_NO_HZ_FULL
+ extern bool tick_nohz_full_running;
++extern atomic_t nr_nohz_busy_cpus;
+ extern cpumask_var_t tick_nohz_full_mask;
  
-@@ -2732,6 +2733,7 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ static inline bool tick_nohz_full_enabled(void)
+@@ -184,6 +185,7 @@ extern void __tick_nohz_full_check(void);
+ extern void tick_nohz_full_kick(void);
+ extern void tick_nohz_full_kick_all(void);
+ extern void __tick_nohz_task_switch(struct task_struct *tsk);
++extern bool has_nohz_busy_cpus(void);
+ #else
+ static inline void tick_nohz_init(void) { }
+ static inline bool tick_nohz_full_enabled(void) { return false; }
+@@ -192,6 +194,7 @@ static inline void __tick_nohz_full_check(void) { }
+ static inline void tick_nohz_full_kick(void) { }
+ static inline void tick_nohz_full_kick_all(void) { }
+ static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
++static inline bool has_nohz_busy_cpus(void) { return true; }
+ #endif
  
- static int __init futex_init(void)
+ static inline void tick_nohz_full_check(void)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index b55d1c0..37f2784 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -148,9 +148,13 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ 	profile_tick(CPU_PROFILING);
+ }
+ 
++atomic_t nr_nohz_busy_cpus = ATOMIC_INIT(0);
+ #ifdef CONFIG_NO_HZ_FULL
+ cpumask_var_t tick_nohz_full_mask;
+ bool tick_nohz_full_running;
++inline bool has_nohz_busy_cpus(void) {
++	return !!atomic_read(&nr_nohz_busy_cpus);
++}
+ 
+ static bool can_stop_full_tick(void)
  {
-+	mm_segment_t fs;
- 	u32 curval;
- 	int i;
+@@ -642,6 +646,11 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 			trace_tick_stop(1, " ");
++			if (!ts->inidle) {
++				if (atomic_inc_return(&nr_nohz_busy_cpus) != 1) {
++					printk(KERN_ERR "inc cpu %d as %d\n", cpu, test);
++				}
++			}
+ 		}
  
-@@ -2745,8 +2747,11 @@ static int __init futex_init(void)
- 	 * implementation, the non-functional ones will return
- 	 * -ENOSYS.
- 	 */
-+	fs = get_fs();
-+	set_fs(USER_DS);
- 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
- 		futex_cmpxchg_enabled = 1;
-+	set_fs(fs);
+ 		/*
+@@ -881,6 +890,12 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ 	ts->tick_stopped  = 0;
+ 	ts->idle_exittime = now;
  
- 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
- 		plist_head_init(&futex_queues[i].chain);
++	if (!ts->inidle) {
++		if (atomic_dec_return(&nr_nohz_busy_cpus)) {
++			printk(KERN_ERR "dec cpu %d to %d\n",
++				smp_processor_id(), atomic_read(&nr_nohz_busy_cpus));
++		}
++	}
+ 	tick_nohz_restart(ts, now);
+ }
+ 
+@@ -922,8 +937,6 @@ void tick_nohz_idle_exit(void)
+ 
+ 	WARN_ON_ONCE(!ts->inidle);
+ 
+-	ts->inidle = 0;
+-
+ 	if (ts->idle_active || ts->tick_stopped)
+ 		now = ktime_get();
+ 
+@@ -935,6 +948,8 @@ void tick_nohz_idle_exit(void)
+ 		tick_nohz_account_idle_ticks(ts);
+ 	}
+ 
++	ts->inidle = 0;
++
+ 	local_irq_enable();
+ }
+ EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
 -- 
-1.7.9.5
+1.8.1.2
 
+-- 
+Thanks
+    Alex
