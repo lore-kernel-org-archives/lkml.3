@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab3LKKMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:12:47 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:39429 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab3LKKMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 05:12:45 -0500
-Message-ID: <1386756675.16289.37.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v4 01/15] usb: phy: msm: Move mach dependent code to
- platform data
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: davidb@codeaurora.org
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Walker <dwalker@fifo99.com>
-Date: Wed, 11 Dec 2013 12:11:15 +0200
-In-Reply-To: <1384267910-32066-2-git-send-email-iivanov@mm-sol.com>
-References: <1384267910-32066-1-git-send-email-iivanov@mm-sol.com>
-	 <1384267910-32066-2-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751380Ab3LKKNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 05:13:25 -0500
+Received: from [207.46.163.24] ([207.46.163.24]:38348 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751294Ab3LKKM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 05:12:56 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <cooloney@gmail.com>, <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <b47053@freescale.com>
+Subject: [PATCH] leds: leds-pwm: fix duty time overflow.
+Date: Wed, 11 Dec 2013 17:19:42 +0800
+Message-ID: <1386753582-16009-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Overflow maybe occurs when calculates the duty time. For instance,
+the period time is 990000000ns, and the max_brightness is 127, when
+setting the brightness to 12, the duty value will be 25906026ns, but
+it should be 93543307ns.
+---
+ drivers/leds/leds-pwm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-On Tue, 2013-11-12 at 16:51 +0200, Ivan T. Ivanov wrote: 
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> This patch fix compilation error when driver is compiled
-> in multi-platform builds.
-> 
-> drivers/built-in.o: In function `msm_otg_link_clk_reset':
-> ./drivers/usb/phy/phy-msm-usb.c:314: undefined reference to `clk_reset'
-> ./drivers/usb/phy/phy-msm-usb.c:318: undefined reference to `clk_reset'
-> 
-> Use platform data supplied reset handlers and adjust error
-> messages reported when reset sequence fail.
-> 
-> This is an intermediate step before adding support for reset
-> framework and newer targets.
-> 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Acked-by: David Brown <davidb@codeaurora.org>
-
-
-David, could you take this change trough your tree?
-
-Thanks, Ivan
-
-
-> Cc: Daniel Walker <dwalker@fifo99.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++++++++++++++
->  arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++++++++++++++
->  drivers/usb/phy/phy-msm-usb.c     |   35 +++++++++++++++--------------------
->  include/linux/usb/msm_hsusb.h     |    3 +++
->  4 files changed, 88 insertions(+), 20 deletions(-)
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index bb6f948..7cb2cd8 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -66,9 +66,11 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	struct led_pwm_data *led_dat =
+ 		container_of(led_cdev, struct led_pwm_data, cdev);
+ 	unsigned int max = led_dat->cdev.max_brightness;
+-	unsigned int period =  led_dat->period;
++	unsigned long long duty =  led_dat->period;
+ 
+-	led_dat->duty = brightness * period / max;
++	duty *= brightness;
++	do_div(duty, max);
++	led_dat->duty = duty;
+ 
+ 	if (led_dat->can_sleep)
+ 		schedule_work(&led_dat->work);
+-- 
+1.8.4
 
 
