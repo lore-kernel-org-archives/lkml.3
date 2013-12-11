@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab3LKWfz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:35:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50163 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3LKWfu (ORCPT
+	id S1751554Ab3LKWgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:36:32 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:36164 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3LKWg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:35:50 -0500
-Date: Wed, 11 Dec 2013 14:34:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] futex: Switch to USER_DS for futex test
-Message-Id: <20131211143450.329edd5199fd9a4d56abb6bc@linux-foundation.org>
-In-Reply-To: <1386758601-8520-1-git-send-email-geert@linux-m68k.org>
-References: <1386758601-8520-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 11 Dec 2013 17:36:27 -0500
+Message-ID: <52A8F6FC.40201@cogentembedded.com>
+Date: Thu, 12 Dec 2013 02:36:28 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
+CC: linux-sh@vger.kernel.org, benh@kernel.crashing.org,
+        grant.likely@secretlab.ca, horms@verge.net.au, tglx@linutronix.de
+Subject: Re: [PATCH] irqchip: Renesas IRQC driver
+References: <20130227081501.30706.60471.sendpatchset@w520>
+In-Reply-To: <20130227081501.30706.60471.sendpatchset@w520>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013 11:43:21 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+Hello.
 
-> Since commit e4f2dfbb5e92be4e46c0625f4f8eb101110f756f ("m68k: implement
-> futex.h to support userspace robust futexes and PI mutexes"), the kernel
-> crashes during boot up on MC68030:
-> 
-> Data read fault at 0x00000000 in Super Data (pc=0x3afec)
-> BAD KERNEL BUSERR
-> Oops: 00000000
-> Modules linked in:
-> PC: [<0003afec>] cmpxchg_futex_value_locked+0x14/0x4a
-> SR: 2004  SP: 0082fed4  a2: 0082c000
-> d0: 00000000    d1: 00000001    d2: 00000018    d3: 00000000
-> d4: 00000061    d5: 00001000    a0: 00000000    a1: 0082e000
-> Process swapper (pid: 1, task=0082c000)
-> Frame format=B ssw=074d isc=4a80 isb=661c daddr=00000000 dobuf=00000001
-> baddr=0003aff2 dibuf=00000000 ver=f
-> Stack from 0082ff5c:
->         002b8cb8 0082ff70 00000000 00000000 00000000 00000000 00000000 000020ac
->         00000018 00000007 00000061 00001000 00000000 00000000 002cab50 00002008
->         002b3a56 002b8ca4 0082c3f0 00000000 0082c53c 001e316a 00000000 00000000
->         001e3172 001e316a 000025d4 00000000 00000000 00000000 00000000 00000000
->         00000000 00000000 00000000 00000000 00000000 00000000 00000000 20000000
->         00000000
-> Call Trace: [<002b8cb8>] futex_init+0x14/0x54
->  [<000020ac>] do_one_initcall+0xa4/0x144
->  [<00001000>] kernel_pg_dir+0x0/0x1000
->  [<00002008>] do_one_initcall+0x0/0x144
->  [<002b3a56>] kernel_init_freeable+0xca/0x152
->  [<002b8ca4>] futex_init+0x0/0x54
->  [<001e316a>] kernel_init+0x0/0xc8
->  [<001e3172>] kernel_init+0x8/0xc8
->  [<001e316a>] kernel_init+0x0/0xc8
->  [<000025d4>] ret_from_kernel_thread+0xc/0x14
-> 
-> This happens because the futex test in futex_init() lacks a switch to the
-> USER_DS address space, while cmpxchg_futex_value_locked() and
-> futex_atomic_cmpxchg_inatomic() operate on userspace pointers (albeit NULL
-> for this particular test).
-> 
-> Fix this by switching to USER_DS before running the test, and restoring the
-> old address space afterwards.
-> 
-> ...
+On 02/27/2013 11:15 AM, Magnus Damm wrote:
+
+> From: Magnus Damm <damm@opensource.se>
+
+    Magnus, explain me one thing about your driver please.
+
+> This patch adds a driver for external IRQ pins connected
+> to the IRQC hardware block on recent SoCs from Renesas.
 >
->  static int __init futex_init(void)
->  {
-> +	mm_segment_t fs;
->  	u32 curval;
->  	int i;
->  
-> @@ -2745,8 +2747,11 @@ static int __init futex_init(void)
->  	 * implementation, the non-functional ones will return
->  	 * -ENOSYS.
->  	 */
-> +	fs = get_fs();
-> +	set_fs(USER_DS);
->  	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
->  		futex_cmpxchg_enabled = 1;
-> +	set_fs(fs);
+> The IRQC hardware block is used together with more
+> recent ARM based SoCs using the GIC. As usual the GIC
+> requires external IRQ trigger setup somewhere else
+> which in this particular case happens to be IRQC.
+>
+> This driver implements the glue code needed to configure
+> IRQ trigger and also handle mask/unmask and demux of
+> external IRQ pins hooked up from the IRQC to the GIC.
 
-hm.  Are we sure that a reference to NULL will continue to fault on all
-architectures when switched to USER_DS?
+    Judging on the R8A779x manual pictures, IRQn enter the SoC via IRQC, right?
+Why then you call request_irq() on GIC interrupt numbers and expect an 
+interrupt to "enter" from the GIC side, and then only read IRQC's 
+DETECT_STATUS register to make sure the matching IRQn is really active (you 
+call it demux, but I don't really see much of a demultiplexing there). This 
+seems to me fundamentally broken, and is probably why the interrupt from PHY 
+doesn't happen despite I set the interrupt type to active low via a call to 
+irq_set_irq_type()...
+
+> Tested on r8a73a4 but is designed to work with a wide
+> range of SoCs. The driver requires one GIC SPI per
+> external IRQ pin to operate.  Each driver instance
+> will handle up to 32 external IRQ pins.
+
+    Ah, so you've even tested it... I got an impression from your words that 
+the driver hasn't been tested.
+
+> The SoCs using this driver are currently mainly used
+> together with regular platform devices so this driver
+> allows configuration via platform data to support things
+> like static interrupt base address. DT support will
+> be added incrementally in the not so distant future.
+
+> Signed-off-by: Magnus Damm <damm@opensource.se>
+
+WBR, Sergei
 
