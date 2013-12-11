@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086Ab3LKIFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:05:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36735 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3LKIFJ (ORCPT
+	id S1751257Ab3LKIHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 03:07:48 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:53772 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab3LKIHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:05:09 -0500
-Date: Wed, 11 Dec 2013 08:05:04 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next 2/3] batman-adv: Use seq_overflow
-Message-ID: <20131211080504.GT10323@ZenIV.linux.org.uk>
-References: <cover.1386738050.git.joe@perches.com>
- <e7104b35287b1e1ec456734c1b5e1aa98dac99f8.1386738050.git.joe@perches.com>
- <20131211075526.GR10323@ZenIV.linux.org.uk>
+	Wed, 11 Dec 2013 03:07:46 -0500
+Message-ID: <52A81D50.8080805@atmel.com>
+Date: Wed, 11 Dec 2013 09:07:44 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211075526.GR10323@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        "kbuild test robot" <fengguang.wu@intel.com>
+Subject: Re: [PATCH] net: macb: Fix build warning
+References: <1386737877-16531-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1386737877-16531-1-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 07:55:26AM +0000, Al Viro wrote:
+On 11/12/2013 05:57, Soren Brinkmann :
+> When adjusting the link speed, the target frequency is determined by a
+> 'swith (LINK_SPEED)' statement, that assigns the target rate only for
+> valid and expected LINK_SPEED values. This incomplete switch statement
+> leads to the following build warning:
+>       drivers/net/ethernet/cadence/macb.c: In function 'macb_handle_link_change':
+>    >> drivers/net/ethernet/cadence/macb.c:241:14: warning: 'rate' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>          netdev_warn(dev, "unable to generate target frequency: %ld Hz\n",
+>                     ^
+>       drivers/net/ethernet/cadence/macb.c:215:13: note: 'rate' was declared here
+>         long ferr, rate, rate_rounded;
+>
+> Fixing this by bailing out of that function in the switch's default case
+> before the rate variable is used.
+>
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-> This sucker should return 0.  Insufficiently large buffer will be handled
-> by caller, TYVM, if you give that caller a chance to do so.  Returning 1
-> from ->show() is a bug in almost all cases, and definitely so in this one.
-> 
-> Just in case somebody decides that above is worth copying: It Is Not.
-> Original code is buggy, plain and simple.  This one trades the older
-> bug ("fail with -EINVAL whenever the buffer is too small") with just as buggy
-> "silently skip an entry entirely whenever the buffer is too small".
-> 
-> Don't Do That.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Pardon - Joe has made seq_overflow return -1 instead of true.  Correction
-to the above, then - s/This trades.*\./This is just as buggy./
+> ---
+>   drivers/net/ethernet/cadence/macb.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 419529a9309d..3190d38e16fb 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -225,7 +225,7 @@ static void macb_set_tx_clk(struct clk *clk, int speed, struct net_device *dev)
+>   		rate = 125000000;
+>   		break;
+>   	default:
+> -		break;
+> +		return;
+>   	}
+>
+>   	rate_rounded = clk_round_rate(clk, rate);
+>
 
-Conclusion is still the same - Don't Do That.  Returning -1 on insufficiently
-large buffer is a bug, plain and simple.
 
-And this patch series is completely misguided - it doesn't fix any bugs
-*and* it provides a misleading example for everyone.  See the reaction
-right in this thread, proposing to spread the same bug to currently
-working iterators.
+-- 
+Nicolas Ferre
