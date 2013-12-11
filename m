@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab3LKMaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:30:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56805 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab3LKMaH (ORCPT
+	id S1751496Ab3LKMbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:31:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55720 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3LKMbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:30:07 -0500
-Message-ID: <1386764955.12005.60.camel@marge.simpson.net>
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <lenb@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Date: Wed, 11 Dec 2013 13:29:15 +0100
-In-Reply-To: <20131211115239.GA21999@twins.programming.kicks-ass.net>
-References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
-	 <1386478624.4748.19.camel@marge.simpson.net>
-	 <CAJvTdKn_2mihtMLiQVNCOp_zokx8CsSr2c5NhbkbfJ-qvma-8Q@mail.gmail.com>
-	 <1386559014.4875.16.camel@marge.simpson.net>
-	 <1386652637.5374.72.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1312101458040.28330@ionos.tec.linutronix.de>
-	 <alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de>
-	 <1386732093.5964.6.camel@marge.simpson.net>
-	 <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
-	 <20131211113839.GF21683@pd.tnic>
-	 <20131211115239.GA21999@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:Cgb5Nj1ychgZfSQeNzN5wFPSMH44bM/bje2MlSrjFfb
- uFcGH/I73BCQNNRfBvmfG93cNVWXiefVAvXbl5qMBBAh7miyxZ
- NQ0O11N0SM7zUCrB2Fc+K6HxIRHuXokQjFtXzRuBFjgY3fhDCn
- pvKNBLDSbhzRa+jrCCd0lXGulJFeQKFU05YQ+gyRrZihlN0BzM
- q238NEl3ijdLvl+qYtYqneMag/wo8sclMxkZmhqzVgOrSmcp3c
- g1Bp5DIn0s8Yi8v7xqV/HCgsusaQI7w2Z8E5NPrfOLsORob6wv
- mVOLktwKXJfyAA1y0R53UUi24RI96Xt3ROK2slXSSh14MZ3UNj
- OroXsPb25WJqbx8x5HMf5c2jJKGBWMjzB1EswMFZh
+	Wed, 11 Dec 2013 07:31:40 -0500
+Date: Wed, 11 Dec 2013 09:31:17 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/2] tools/: Convert to new topic libraries
+Message-ID: <20131211123117.GQ8098@ghostprotocols.net>
+References: <1386605664-24041-1-git-send-email-bp@alien8.de>
+ <1386605664-24041-2-git-send-email-bp@alien8.de>
+ <87zjo9jxs5.fsf@sejong.aot.lge.com>
+ <20131210112758.GA31437@pd.tnic>
+ <87iouwi3ng.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87iouwi3ng.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-11 at 12:52 +0100, Peter Zijlstra wrote: 
-> On Wed, Dec 11, 2013 at 12:38:39PM +0100, Borislav Petkov wrote:
-> > Right, if it turns out that this is really the case and that this
-> > erratum hasn't been fixed for models later than 29 - we'd need the
-> > additional model numbers to set X86_FEATURE_CLFLUSH_MONITOR correctly.
-> 
-> You also need: https://lkml.org/lkml/2013/11/19/143
-> 
-> Because obviously not all mwait idle loops check that cpu bit.
+Em Wed, Dec 11, 2013 at 10:21:07AM +0900, Namhyung Kim escreveu:
+> On Tue, 10 Dec 2013 12:27:59 +0100, Borislav Petkov wrote:
+> > On Tue, Dec 10, 2013 at 10:32:42AM +0900, Namhyung Kim wrote:
+> >> I'm sorry to raise a naming issue again. But why the lib has 'k' and
+> >> the directory doesn't? Isn't it more natural to prepend 'k' to 'api'
+> >> as the name "api" looks too general?
 
-I had tried that patch, to see if it would magically make the thing
-start working, nope.  I had also tried...
+> >>   - libkapifs.{a,so} /kapi/fs/fs.c
 
----
- drivers/idle/intel_idle.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> >> (Please ignore if it's already discussed..)
 
-Index: linux-2.6/drivers/idle/intel_idle.c
-===================================================================
---- linux-2.6.orig/drivers/idle/intel_idle.c
-+++ linux-2.6/drivers/idle/intel_idle.c
-@@ -376,11 +376,14 @@ static int intel_idle(struct cpuidle_dev
- 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
- 
- 	if (!current_set_polling_and_test()) {
--
-+		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
-+			clflush((void *)&current_thread_info()->flags);
- 		__monitor((void *)&current_thread_info()->flags, 0, 0);
- 		smp_mb();
- 		if (!need_resched())
- 			__mwait(eax, ecx);
-+		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
-+			clflush((void *)&current_thread_info()->flags);
- 	}
- 
- 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+> > Hmm, no, it hasn't been discussed but I assumed tools/lib/api/ being in
+> > the *kernel* repository implicitly says which api functionality we're
+> > collecting there. One of the main reasons to have tools/ in the kernel
+> > AFAIU is to have those tools which are using its API close. Therefore,
+> > tools/lib/api/ should be unambiguous.
 
-..a cflush before _and_ after, among other (shazam!.. darn) guesses, but
-nogo.  Turning that into the tglx one liner indeed did fix the thing, as
-did adding this to your patch.
+> > libkapifs.a (and the .so version even more, for that matter, and if we
+> > decide to do it one day) would probably need more distinction and the
+> > "k" in "kapi" there makes more sense.
 
----
- arch/x86/include/asm/mwait.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> > This is at least how I see it from here.
 
-Index: linux-2.6/arch/x86/include/asm/mwait.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/mwait.h
-+++ linux-2.6/arch/x86/include/asm/mwait.h
-@@ -43,7 +43,7 @@ static inline void __mwait(unsigned long
- static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
- {
- 	if (!current_set_polling_and_test()) {
--		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
-+//		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
- 
- 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+> Yeah I assumed you guys plan to export it to the wild. :)
 
+> I'm OK with tools/lib/api if it lives and used only in the kernel tree.
 
+This is the idea, no commitment to use outside tools/ living code at
+this point.
 
-Grrr.
+Anybody can try and provide comments on his mileage, but we're still at
+a too early stage for any kind of commitments.
 
-flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge
-mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe
-syscall nx rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl
-xtopology nonstop_tsc aperfmperf pni dtes64 monitor ds_cpl vmx est tm2
-ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 x2apic popcnt lahf_lm dtherm
-tpr_shadow vnmi flexpriority ept vpid
+But yeah, everybody, I think, agrees that the ball needs to keep on
+rolling on the direction of avoiding code duplication for tools/ living
+code.
 
--Mike
+Back to Namhyung's suggestion, yeah, tools/lib/kapi/ would consume just
+one more letter and would further disambiguate things.
 
+But this can be done later if Borislav is unconvinced at this point.
+
+- Arnaldo
