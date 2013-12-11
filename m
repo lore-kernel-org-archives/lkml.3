@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab3LKMiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:38:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62177 "EHLO mga11.intel.com"
+	id S1752720Ab3LKM4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:56:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41333 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751550Ab3LKMiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:38:04 -0500
+	id S1751609Ab3LKMiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 07:38:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,871,1378882800"; 
-   d="scan'208";a="448279613"
+   d="scan'208";a="422884972"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v0 03/71] perf: Abstract ring_buffer backing store operations
-Date: Wed, 11 Dec 2013 14:36:15 +0200
-Message-Id: <1386765443-26966-4-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v0 05/71] x86: perf: Intel PT PMU driver
+Date: Wed, 11 Dec 2013 14:36:17 +0200
+Message-Id: <1386765443-26966-6-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -29,339 +29,1423 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends perf's ring_buffer code so that buffers with different
-backing can be allocated simultaneously with rb_alloc(). This allows the reuse
-of ring_buffer code for exporting hardware-written trace buffers (such as
-those of Intel PT) to userspace.
+Add support for Intel Processor Trace (PT) to kernel's perf/itrace events.
+PT is an extension of Intel Architecture that collects information about
+software execuction such as control flow, execution modes and timings and
+formats it into highly compressed binary packets. Even being compressed,
+these packets are generated at hundreds of megabytes per second per core,
+which makes it impractical to decode them on the fly in the kernel. Thus,
+buffers containing this binary stream are zero-copy mapped to the debug
+tools in userspace for subsequent decoding and analysis.
+
+PT trace data can also be used to annotate other perf events by setting
+a corresponding bit in sample_type; it can also be included in process
+core dumps. This relies on itrace infrastructure extension to perf core.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- kernel/events/core.c        |   2 +-
- kernel/events/internal.h    |  14 +++-
- kernel/events/ring_buffer.c | 174 +++++++++++++++++++++++++++-----------------
- 3 files changed, 122 insertions(+), 68 deletions(-)
+ arch/x86/include/uapi/asm/msr-index.h     |   18 +
+ arch/x86/kernel/cpu/Makefile              |    1 +
+ arch/x86/kernel/cpu/intel_pt.h            |  129 ++++
+ arch/x86/kernel/cpu/perf_event.c          |    4 +
+ arch/x86/kernel/cpu/perf_event_intel.c    |   10 +
+ arch/x86/kernel/cpu/perf_event_intel_pt.c | 1167 +++++++++++++++++++++++++++++
+ 6 files changed, 1329 insertions(+)
+ create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d656cd6..7c3faf1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4098,7 +4098,7 @@ again:
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index b93e09a..6dfa422 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -74,6 +74,24 @@
+ #define MSR_IA32_PERF_CAPABILITIES	0x00000345
+ #define MSR_PEBS_LD_LAT_THRESHOLD	0x000003f6
  
- 	rb = rb_alloc(nr_pages, 
- 		event->attr.watermark ? event->attr.wakeup_watermark : 0,
--		event->cpu, flags);
-+		event->cpu, flags, NULL);
- 
- 	if (!rb) {
- 		ret = -ENOMEM;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 569b2187..8835f00 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -6,6 +6,16 @@
- 
- /* Buffer handling */
- 
-+struct ring_buffer;
++#define MSR_IA32_RTIT_CTL		0x00000570
++#define RTIT_CTL_TRACEEN		BIT(0)
++#define RTIT_CTL_OS			BIT(2)
++#define RTIT_CTL_USR			BIT(3)
++#define RTIT_CTL_CR3EN			BIT(7)
++#define RTIT_CTL_TOPA			BIT(8)
++#define RTIT_CTL_TSC_EN			BIT(10)
++#define RTIT_CTL_DISRETC		BIT(11)
++#define RTIT_CTL_BRANCH_EN		BIT(13)
++#define MSR_IA32_RTIT_STATUS		0x00000571
++#define RTIT_STATUS_CONTEXTEN		BIT(1)
++#define RTIT_STATUS_TRIGGEREN		BIT(2)
++#define RTIT_STATUS_ERROR		BIT(4)
++#define RTIT_STATUS_STOPPED		BIT(5)
++#define MSR_IA32_RTIT_CR3_MATCH		0x00000572
++#define MSR_IA32_RTIT_OUTPUT_BASE	0x00000560
++#define MSR_IA32_RTIT_OUTPUT_MASK	0x00000561
 +
-+struct ring_buffer_ops {
-+	unsigned long	(*get_size)(int);
-+	int		(*alloc_user_page)(struct ring_buffer *, int, int);
-+	int		(*alloc_data_page)(struct ring_buffer *, int, int, int);
-+	void		(*free_buffer)(struct ring_buffer *);
-+	struct page	*(*mmap_to_page)(struct ring_buffer *, unsigned long);
+ #define MSR_MTRRfix64K_00000		0x00000250
+ #define MSR_MTRRfix16K_80000		0x00000258
+ #define MSR_MTRRfix16K_A0000		0x00000259
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 6359506..cb69de3 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -37,6 +37,7 @@ endif
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
++obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_pt.o
+ endif
+ 
+ 
+diff --git a/arch/x86/kernel/cpu/intel_pt.h b/arch/x86/kernel/cpu/intel_pt.h
+new file mode 100644
+index 0000000..7fb10db
+--- /dev/null
++++ b/arch/x86/kernel/cpu/intel_pt.h
+@@ -0,0 +1,129 @@
++/*
++ * Intel(R) Processor Trace PMU driver for perf
++ * Copyright (c) 2013, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#ifndef __INTEL_PT_H__
++#define __INTEL_PT_H__
++
++#include <linux/radix-tree.h>
++#include <linux/itrace.h>
++
++/*
++ * Single-entry ToPA: when this close to region boundary, switch
++ * buffers to avoid losing data.
++ */
++#define TOPA_PMI_MARGIN 512
++
++/*
++ * Table of Physical Addresses bits
++ */
++enum topa_sz {
++	TOPA_4K	= 0,
++	TOPA_8K,
++	TOPA_16K,
++	TOPA_32K,
++	TOPA_64K,
++	TOPA_128K,
++	TOPA_256K,
++	TOPA_512K,
++	TOPA_1MB,
++	TOPA_2MB,
++	TOPA_4MB,
++	TOPA_8MB,
++	TOPA_16MB,
++	TOPA_32MB,
++	TOPA_64MB,
++	TOPA_128MB,
++	TOPA_SZ_END,
 +};
 +
- #define RING_BUFFER_WRITABLE		0x01
- 
- struct ring_buffer {
-@@ -15,6 +25,7 @@ struct ring_buffer {
- 	struct work_struct		work;
- 	int				page_order;	/* allocation order  */
- #endif
-+	struct ring_buffer_ops		*ops;
- 	int				nr_pages;	/* nr of data pages  */
- 	int				overwrite;	/* can overwrite itself */
- 
-@@ -41,7 +52,8 @@ struct ring_buffer {
- 
- extern void rb_free(struct ring_buffer *rb);
- extern struct ring_buffer *
--rb_alloc(int nr_pages, long watermark, int cpu, int flags);
-+rb_alloc(int nr_pages, long watermark, int cpu, int flags,
-+	 struct ring_buffer_ops *rb_ops);
- extern void perf_event_wakeup(struct perf_event *event);
- 
- extern void
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index e8b168a..d7ec426 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -238,18 +238,6 @@ ring_buffer_init(struct ring_buffer *rb, long watermark, int flags)
-  * Back perf_mmap() with regular GFP_KERNEL-0 pages.
-  */
- 
--struct page *
--perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
--{
--	if (pgoff > rb->nr_pages)
--		return NULL;
--
--	if (pgoff == 0)
--		return virt_to_page(rb->user_page);
--
--	return virt_to_page(rb->data_pages[pgoff - 1]);
--}
--
- static void *perf_mmap_alloc_page(int cpu)
- {
- 	struct page *page;
-@@ -263,46 +251,31 @@ static void *perf_mmap_alloc_page(int cpu)
- 	return page_address(page);
- }
- 
--struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
-+static int perf_mmap_alloc_user_page(struct ring_buffer *rb, int cpu,
-+				     int flags)
- {
--	struct ring_buffer *rb;
--	unsigned long size;
--	int i;
--
--	size = sizeof(struct ring_buffer);
--	size += nr_pages * sizeof(void *);
--
--	rb = kzalloc(size, GFP_KERNEL);
--	if (!rb)
--		goto fail;
--
- 	rb->user_page = perf_mmap_alloc_page(cpu);
- 	if (!rb->user_page)
--		goto fail_user_page;
--
--	for (i = 0; i < nr_pages; i++) {
--		rb->data_pages[i] = perf_mmap_alloc_page(cpu);
--		if (!rb->data_pages[i])
--			goto fail_data_pages;
--	}
-+		return -ENOMEM;
- 
--	rb->nr_pages = nr_pages;
--
--	ring_buffer_init(rb, watermark, flags);
-+	return 0;
-+}
- 
--	return rb;
-+static int perf_mmap_alloc_data_page(struct ring_buffer *rb, int cpu,
-+				     int nr_pages, int flags)
++static inline unsigned int sizes(enum topa_sz tsz)
 +{
-+	void *data;
++	return 1 << (tsz + 12);
++};
++
++struct topa_entry {
++	u64	end	: 1;
++	u64	rsvd0	: 1;
++	u64	intr	: 1;
++	u64	rsvd1	: 1;
++	u64	stop	: 1;
++	u64	rsvd2	: 1;
++	u64	size	: 4;
++	u64	rsvd3	: 2;
++	u64	base	: 36;
++	u64	rsvd4	: 16;
++};
++
++#define TOPA_SHIFT 12
++#define PT_CPUID_LEAVES 2
++
++enum pt_capabilities {
++	PT_CAP_max_subleaf = 0,
++	PT_CAP_cr3_filtering,
++	PT_CAP_topa_output,
++	PT_CAP_topa_multiple_entries,
++	PT_CAP_payloads_lip,
++};
++
++struct pt_pmu {
++	struct itrace_pmu	itrace;
++	u32			caps[4 * PT_CPUID_LEAVES];
++	char			*capstr;
++	unsigned int		caplen;
++};
++
++/**
++ * struct pt_buffer - buffer configuration; one buffer per task_struct or
++ * cpu, depending on perf event configuration
++ * @tables: list of ToPA tables in this buffer
++ * @first, @last: shorthands for first and last topa tables
++ * @cur: current topa table
++ * @size: total size of all output regions within this buffer
++ * @cur_idx: current output region's index within @cur table
++ * @output_off: offset within the current output region
++ */
++struct pt_buffer {
++	/* hint for allocation */
++	int			cpu;
++	/* list of ToPA tables */
++	struct list_head	tables;
++	/* top-level table */
++	struct topa		*first, *last, *cur;
++	unsigned long		round;
++	unsigned int		cur_idx;
++	size_t			output_off;
++	unsigned long		size;
++	local64_t		head;
++	unsigned long		watermark;
++	bool			snapshot;
++	struct perf_event_mmap_page *user_page;
++	void			**data_pages;
++};
++
++/**
++ * struct pt - per-cpu pt
++ */
++struct pt {
++	raw_spinlock_t		lock;
++	struct perf_event	*event;
++};
++
++void intel_pt_interrupt(void);
++
++#endif /* __INTEL_PT_H__ */
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 8e13293..9125797 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -385,6 +385,10 @@ static inline int precise_br_compat(struct perf_event *event)
  
--fail_data_pages:
--	for (i--; i >= 0; i--)
--		free_page((unsigned long)rb->data_pages[i]);
-+	if (nr_pages != 1)
+ int x86_pmu_hw_config(struct perf_event *event)
+ {
++	if (event->attr.sample_type & PERF_SAMPLE_ITRACE &&
++	    event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK)
 +		return -EINVAL;
++
+ 	if (event->attr.precise_ip) {
+ 		int precise = 0;
  
--	free_page((unsigned long)rb->user_page);
-+	data = perf_mmap_alloc_page(cpu);
-+	if (!data)
-+		return -ENOMEM;
- 
--fail_user_page:
--	kfree(rb);
-+	rb->data_pages[rb->nr_pages] = data;
- 
--fail:
--	return NULL;
-+	return 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 0fa4f24..28b5023 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1312,6 +1312,8 @@ int intel_pmu_save_and_restart(struct perf_event *event)
+ 	return x86_perf_event_set_period(event);
  }
  
- static void perf_mmap_free_page(unsigned long addr)
-@@ -313,24 +286,51 @@ static void perf_mmap_free_page(unsigned long addr)
- 	__free_page(page);
- }
- 
--void rb_free(struct ring_buffer *rb)
-+static void perf_mmap_buddy_free(struct ring_buffer *rb)
++void intel_pt_interrupt(void);
++
+ static void intel_pmu_reset(void)
  {
- 	int i;
+ 	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
+@@ -1393,6 +1395,14 @@ again:
+ 	}
  
--	perf_mmap_free_page((unsigned long)rb->user_page);
-+	if (rb->user_page)
-+		perf_mmap_free_page((unsigned long)rb->user_page);
- 	for (i = 0; i < rb->nr_pages; i++)
- 		perf_mmap_free_page((unsigned long)rb->data_pages[i]);
- 	kfree(rb);
- }
- 
-+struct page *
-+perf_mmap_buddy_to_page(struct ring_buffer *rb, unsigned long pgoff)
-+{
-+	if (pgoff > rb->nr_pages)
-+		return NULL;
-+
-+	if (pgoff == 0)
-+		return virt_to_page(rb->user_page);
-+
-+	return virt_to_page(rb->data_pages[pgoff - 1]);
-+}
-+
-+static unsigned long perf_mmap_buddy_get_size(int nr_pages)
-+{
-+	return sizeof(struct ring_buffer) + sizeof(void *) * nr_pages;
-+}
-+
-+struct ring_buffer_ops perf_rb_ops = {
-+	.get_size		= perf_mmap_buddy_get_size,
-+	.alloc_user_page	= perf_mmap_alloc_user_page,
-+	.alloc_data_page	= perf_mmap_alloc_data_page,
-+	.free_buffer		= perf_mmap_buddy_free,
-+	.mmap_to_page		= perf_mmap_buddy_to_page,
-+};
-+
- #else
-+
- static int data_page_nr(struct ring_buffer *rb)
- {
- 	return rb->nr_pages << page_order(rb);
- }
- 
- struct page *
--perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
-+perf_mmap_vmalloc_to_page(struct ring_buffer *rb, unsigned long pgoff)
- {
- 	/* The '>' counts in the user page. */
- 	if (pgoff > data_page_nr(rb))
-@@ -339,14 +339,14 @@ perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
- 	return vmalloc_to_page((void *)rb->user_page + pgoff * PAGE_SIZE);
- }
- 
--static void perf_mmap_unmark_page(void *addr)
-+static void perf_mmap_vmalloc_unmark_page(void *addr)
- {
- 	struct page *page = vmalloc_to_page(addr);
- 
- 	page->mapping = NULL;
- }
- 
--static void rb_free_work(struct work_struct *work)
-+static void perf_mmap_vmalloc_free_work(struct work_struct *work)
- {
- 	struct ring_buffer *rb;
- 	void *base;
-@@ -358,50 +358,92 @@ static void rb_free_work(struct work_struct *work)
- 	base = rb->user_page;
- 	/* The '<=' counts in the user page. */
- 	for (i = 0; i <= nr; i++)
--		perf_mmap_unmark_page(base + (i * PAGE_SIZE));
-+		perf_mmap_vmalloc_unmark_page(base + (i * PAGE_SIZE));
- 
- 	vfree(base);
- 	kfree(rb);
- }
- 
--void rb_free(struct ring_buffer *rb)
-+static void perf_mmap_vmalloc_free(struct ring_buffer *rb)
- {
- 	schedule_work(&rb->work);
- }
- 
--struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags)
-+static int perf_mmap_vmalloc_data_pages(struct ring_buffer *rb, int cpu,
-+					int nr_pages, int flags)
- {
--	struct ring_buffer *rb;
--	unsigned long size;
- 	void *all_buf;
- 
--	size = sizeof(struct ring_buffer);
--	size += sizeof(void *);
--
--	rb = kzalloc(size, GFP_KERNEL);
--	if (!rb)
--		goto fail;
--
--	INIT_WORK(&rb->work, rb_free_work);
-+	INIT_WORK(&rb->work, perf_mmap_vmalloc_free_work);
- 
- 	all_buf = vmalloc_user((nr_pages + 1) * PAGE_SIZE);
- 	if (!all_buf)
--		goto fail_all_buf;
-+		return -ENOMEM;
- 
- 	rb->user_page = all_buf;
- 	rb->data_pages[0] = all_buf + PAGE_SIZE;
- 	rb->page_order = ilog2(nr_pages);
- 	rb->nr_pages = !!nr_pages;
- 
-+	return 0;
-+}
-+
-+static unsigned long perf_mmap_vmalloc_get_size(int nr_pages)
-+{
-+	return sizeof(struct ring_buffer) + sizeof(void *);
-+}
-+
-+struct ring_buffer_ops perf_rb_ops = {
-+	.get_size		= perf_mmap_vmalloc_get_size,
-+	.alloc_data_page	= perf_mmap_vmalloc_data_pages,
-+	.free_buffer		= perf_mmap_vmalloc_free,
-+	.mmap_to_page		= perf_mmap_vmalloc_to_page,
-+};
-+
-+#endif
-+
-+struct ring_buffer *rb_alloc(int nr_pages, long watermark, int cpu, int flags,
-+			     struct ring_buffer_ops *rb_ops)
-+{
-+	struct ring_buffer *rb;
-+	int i;
-+
-+	if (!rb_ops)
-+		rb_ops = &perf_rb_ops;
-+
-+	rb = kzalloc(rb_ops->get_size(nr_pages), GFP_KERNEL);
-+	if (!rb)
-+		return NULL;
-+
-+	rb->ops = rb_ops;
-+	if (rb->ops->alloc_user_page) {
-+		if (rb->ops->alloc_user_page(rb, cpu, flags))
-+			goto fail;
-+
-+		for (i = 0; i < nr_pages; i++, rb->nr_pages++)
-+			if (rb->ops->alloc_data_page(rb, cpu, 1, flags))
-+				goto fail;
-+	} else {
-+		if (rb->ops->alloc_data_page(rb, cpu, nr_pages, flags))
-+			goto fail;
+ 	/*
++	 * Intel PT
++	 */
++	if (__test_and_clear_bit(55, (unsigned long *)&status)) {
++		handled++;
++		intel_pt_interrupt();
 +	}
 +
- 	ring_buffer_init(rb, watermark, flags);
- 
- 	return rb;
- 
--fail_all_buf:
--	kfree(rb);
--
- fail:
-+	rb->ops->free_buffer(rb);
- 	return NULL;
- }
- 
--#endif
-+void rb_free(struct ring_buffer *rb)
++	/*
+ 	 * Checkpointed counters can lead to 'spurious' PMIs because the
+ 	 * rollback caused by the PMI will have cleared the overflow status
+ 	 * bit. Therefore always force probe these counters.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_pt.c b/arch/x86/kernel/cpu/perf_event_intel_pt.c
+new file mode 100644
+index 0000000..37b4db2
+--- /dev/null
++++ b/arch/x86/kernel/cpu/perf_event_intel_pt.c
+@@ -0,0 +1,1167 @@
++/*
++ * Intel(R) Processor Trace PMU driver for perf
++ * Copyright (c) 2013, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#undef DEBUG
++
++#include <linux/bitops.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/debugfs.h>
++#include <linux/device.h>
++#include <linux/coredump.h>
++
++#include <asm-generic/sizes.h>
++#include <asm/perf_event.h>
++#include <asm/insn.h>
++
++#include "perf_event.h"
++#include "intel_pt.h"
++
++static DEFINE_PER_CPU(struct pt, pt_ctx);
++
++static struct pt_pmu pt_pmu;
++
++enum cpuid_regs {
++	CR_EAX = 0,
++	CR_ECX,
++	CR_EDX,
++	CR_EBX
++};
++
++/*
++ * Capabilities of Intel PT hardware, such as number of address bits or
++ * supported output schemes, are cached and exported to userspace as "caps"
++ * attribute group of pt pmu device
++ * (/sys/bus/event_source/devices/intel_pt/caps/) so that userspace can store
++ * relevant bits together with intel_pt traces.
++ *
++ * Currently, for debugging purposes, these attributes are also writable; this
++ * should be removed in the final version.
++ */
++#define PT_CAP(_n, _l, _r, _m)						\
++	[PT_CAP_ ## _n] = { .name = __stringify(_n), .leaf = _l,	\
++			    .reg = _r, .mask = _m }
++
++static struct pt_cap_desc {
++	const char	*name;
++	u32		leaf;
++	u8		reg;
++	u32		mask;
++} pt_caps[] = {
++	PT_CAP(max_subleaf,		0, CR_EAX, 0xffffffff),
++	PT_CAP(cr3_filtering,		0, CR_EBX, BIT(0)),
++	PT_CAP(topa_output,		0, CR_ECX, BIT(0)),
++	PT_CAP(topa_multiple_entries,	0, CR_ECX, BIT(1)),
++	PT_CAP(payloads_lip,		0, CR_ECX, BIT(31)),
++};
++
++static u32 pt_cap_get(enum pt_capabilities cap)
 +{
-+	rb->ops->free_buffer(rb);
++	struct pt_cap_desc *cd = &pt_caps[cap];
++	u32 c = pt_pmu.caps[cd->leaf * 4 + cd->reg];
++	unsigned int shift = __ffs(cd->mask);
++
++	return (c & cd->mask) >> shift;
 +}
 +
-+struct page *
-+perf_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
++static void pt_cap_set(enum pt_capabilities cap, u32 val)
 +{
-+	return rb->ops->mmap_to_page(rb, pgoff);
++	struct pt_cap_desc *cd = &pt_caps[cap];
++	unsigned int idx = cd->leaf * 4 + cd->reg;
++	unsigned int shift = __ffs(cd->mask);
++
++	pt_pmu.caps[idx] = (val << shift) & cd->mask;
 +}
++
++static void pt_cap_string(void)
++{
++	char *capstr;
++	int pos, i;
++
++	capstr = kzalloc(PAGE_SIZE, GFP_KERNEL);
++	if (!capstr)
++		return;
++
++	for (i = 0, pos = 0; i < ARRAY_SIZE(pt_caps) && pos < PAGE_SIZE; i++) {
++		pos += snprintf(&capstr[pos], PAGE_SIZE - pos, "%s:%x%c",
++				pt_caps[i].name, pt_cap_get(i),
++				i == ARRAY_SIZE(pt_caps) - 1 ? 0 : ',');
++	}
++
++	if (pt_pmu.capstr)
++		kfree(pt_pmu.capstr);
++
++	pt_pmu.capstr = capstr;
++	pt_pmu.caplen = pos;
++}
++
++static ssize_t pt_cap_show(struct device *cdev,
++			   struct device_attribute *attr,
++			   char *buf)
++{
++	struct dev_ext_attribute *ea =
++		container_of(attr, struct dev_ext_attribute, attr);
++	enum pt_capabilities cap = (long)ea->var;
++
++	return snprintf(buf, PAGE_SIZE, "%x\n", pt_cap_get(cap));
++}
++
++static ssize_t pt_cap_store(struct device *cdev,
++			    struct device_attribute *attr,
++			    const char *buf, size_t size)
++{
++	struct dev_ext_attribute *ea =
++		container_of(attr, struct dev_ext_attribute, attr);
++	enum pt_capabilities cap = (long)ea->var;
++	unsigned long new;
++	char *end;
++
++	new = simple_strtoul(buf, &end, 0);
++	if (end == buf)
++		return -EINVAL;
++
++	pt_cap_set(cap, new);
++	pt_cap_string();
++	return size;
++}
++
++static struct attribute_group pt_cap_group = {
++	.name	= "caps",
++};
++
++PMU_FORMAT_ATTR(tsc,		"itrace_config:10"	);
++PMU_FORMAT_ATTR(noretcomp,	"itrace_config:11"	);
++
++static struct attribute *pt_formats_attr[] = {
++	&format_attr_tsc.attr,
++	&format_attr_noretcomp.attr,
++	NULL,
++};
++
++static struct attribute_group pt_format_group = {
++	.name	= "format",
++	.attrs	= pt_formats_attr,
++};
++
++static const struct attribute_group *pt_attr_groups[] = {
++	&pt_cap_group,
++	&pt_format_group,
++	NULL,
++};
++
++static void __init pt_pmu_hw_init(void)
++{
++	struct dev_ext_attribute *de_attrs;
++	struct attribute **attrs;
++	size_t size;
++	long i;
++
++	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
++		for (i = 0; i < PT_CPUID_LEAVES; i++)
++			cpuid_count(20, i,
++				    &pt_pmu.caps[CR_EAX + i * 4],
++				    &pt_pmu.caps[CR_EBX + i * 4],
++				    &pt_pmu.caps[CR_ECX + i * 4],
++				    &pt_pmu.caps[CR_EDX + i * 4]);
++	}
++
++	size = sizeof(struct attribute *) * (ARRAY_SIZE(pt_caps) + 1);
++	attrs = kzalloc(size, GFP_KERNEL);
++	if (!attrs)
++		goto err_attrs;
++
++	size = sizeof(struct dev_ext_attribute) * (ARRAY_SIZE(pt_caps) + 1);
++	de_attrs = kzalloc(size, GFP_KERNEL);
++	if (!de_attrs)
++		goto err_de_attrs;
++
++	for (i = 0; i < ARRAY_SIZE(pt_caps); i++) {
++		de_attrs[i].attr.attr.name = pt_caps[i].name;
++
++		sysfs_attr_init(&de_attrs[i].attr.attr);
++		de_attrs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
++		de_attrs[i].attr.show = pt_cap_show;
++		de_attrs[i].attr.store = pt_cap_store;
++		de_attrs[i].var = (void *)i;
++		attrs[i] = &de_attrs[i].attr.attr;
++	}
++
++	pt_cap_string();
++	pt_cap_group.attrs = attrs;
++	return;
++
++err_de_attrs:
++	kfree(de_attrs);
++err_attrs:
++	kfree(attrs);
++}
++
++#define PT_CONFIG_MASK (RTIT_CTL_TSC_EN | RTIT_CTL_DISRETC)
++
++static bool pt_event_valid(struct perf_event *event)
++{
++	u64 itrace_config = event->attr.itrace_config;
++
++	if ((itrace_config & PT_CONFIG_MASK) != itrace_config)
++		return false;
++
++	return true;
++}
++
++/*
++ * PT configuration helpers
++ * These all are cpu affine and operate on a local PT
++ */
++
++static int pt_config(struct perf_event *event)
++{
++	u64 reg;
++
++	reg = RTIT_CTL_TOPA | RTIT_CTL_BRANCH_EN;
++
++	if (!event->attr.exclude_kernel)
++		reg |= RTIT_CTL_OS;
++	if (!event->attr.exclude_user)
++		reg |= RTIT_CTL_USR;
++
++	reg |= (event->attr.itrace_config & PT_CONFIG_MASK);
++
++	if (wrmsr_safe(MSR_IA32_RTIT_CTL, reg, 0) < 0) {
++		pr_warn("Failed to enable PT on cpu %d\n", event->cpu);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void pt_config_start(bool start)
++{
++	u64 ctl;
++
++	rdmsrl(MSR_IA32_RTIT_CTL, ctl);
++	if (start)
++		ctl |= RTIT_CTL_TRACEEN;
++	else
++		ctl &= ~RTIT_CTL_TRACEEN;
++	wrmsrl(MSR_IA32_RTIT_CTL, ctl);
++}
++
++static void pt_config_buffer(void *buf, unsigned int topa_idx,
++			     unsigned int output_off)
++{
++	u64 reg;
++
++	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, virt_to_phys(buf));
++
++	reg = 0x7f | ((u64)topa_idx << 7) | ((u64)output_off << 32);
++
++	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, reg);
++}
++
++#define TENTS_PER_PAGE (((PAGE_SIZE - 40) / sizeof(struct topa_entry)) - 1)
++
++struct topa {
++	struct topa_entry	table[TENTS_PER_PAGE];
++	struct list_head	list;
++	u64			phys;
++	u64			offset;
++	size_t			size;
++	int			last;
++};
++
++/* make negative table index stand for the last table entry */
++#define TOPA_ENTRY(t, i) ((i) == -1 ? &(t)->table[(t)->last] : &(t)->table[(i)])
++
++/*
++ * allocate page-sized ToPA table
++ */
++static struct topa *topa_alloc(int cpu, gfp_t gfp)
++{
++	int node = cpu_to_node(cpu);
++	struct topa *topa;
++	struct page *p;
++
++	p = alloc_pages_node(node, gfp | __GFP_ZERO, 0);
++	if (!p)
++		return NULL;
++
++	topa = page_address(p);
++	topa->last = 0;
++	topa->phys = page_to_phys(p);
++
++	/*
++	 * In case of singe-entry ToPA, always put the self-referencing END
++	 * link as the 2nd entry in the table
++	 */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		TOPA_ENTRY(topa, 1)->base = topa->phys >> TOPA_SHIFT;
++		TOPA_ENTRY(topa, 1)->end = 1;
++	}
++
++	return topa;
++}
++
++static void topa_free(struct topa *topa)
++{
++	free_page((unsigned long)topa);
++}
++
++static void topa_free_pages(struct pt_buffer *buf, struct topa *topa, int idx)
++{
++	size_t size = sizes(TOPA_ENTRY(topa, idx)->size);
++	void *base = phys_to_virt(TOPA_ENTRY(topa, idx)->base << TOPA_SHIFT);
++	unsigned long pn;
++
++	for (pn = 0; pn < size; pn += PAGE_SIZE) {
++		struct page *page = virt_to_page(base + pn);
++
++		page->mapping = NULL;
++		__free_page(page);
++	}
++}
++
++/**
++ * topa_insert_table - insert a ToPA table into a buffer
++ * @buf - pt buffer that's being extended
++ * @topa - new topa table to be inserted
++ *
++ * If it's the first table in this buffer, set up buffer's pointers
++ * accordingly; otherwise, add a END=1 link entry to @topa to the current
++ * "last" table and adjust the last table pointer to @topa.
++ */
++static void topa_insert_table(struct pt_buffer *buf, struct topa *topa)
++{
++	struct topa *last = buf->last;
++
++	list_add_tail(&topa->list, &buf->tables);
++
++	if (!buf->first) {
++		buf->first = buf->last = buf->cur = topa;
++		return;
++	}
++
++	topa->offset = last->offset + last->size;
++	buf->last = topa;
++
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
++		return;
++
++	BUG_ON(last->last != TENTS_PER_PAGE - 1);
++
++	TOPA_ENTRY(last, -1)->base = topa->phys >> TOPA_SHIFT;
++	TOPA_ENTRY(last, -1)->end = 1;
++}
++
++static bool topa_table_full(struct topa *topa)
++{
++	/* single-entry ToPA is a special case */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
++		return !!topa->last;
++
++	return topa->last == TENTS_PER_PAGE - 1;
++}
++
++static bool pt_buffer_needs_watermark(struct pt_buffer *buf, unsigned long offset)
++{
++	if (buf->snapshot)
++		return false;
++
++	return !(offset % (buf->watermark << PAGE_SHIFT));
++}
++
++static int topa_insert_pages(struct pt_buffer *buf, gfp_t gfp,
++			     enum topa_sz sz)
++{
++	struct topa *topa = buf->last;
++	int node = cpu_to_node(buf->cpu);
++	int order = get_order(sizes(sz));
++	struct page *p;
++	unsigned long pn;
++
++	p = alloc_pages_node(node, gfp | GFP_USER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY, order);
++	if (!p)
++		return -ENOMEM;
++
++	split_page(p, order);
++
++	if (topa_table_full(topa)) {
++		topa = topa_alloc(buf->cpu, gfp);
++
++		if (!topa) {
++			free_pages((unsigned long)page_address(p), order);
++			return -ENOMEM;
++		}
++
++		topa_insert_table(buf, topa);
++	}
++
++	TOPA_ENTRY(topa, -1)->base = page_to_phys(p) >> TOPA_SHIFT;
++	TOPA_ENTRY(topa, -1)->size = sz;
++	if (!buf->snapshot && !pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		TOPA_ENTRY(topa, -1)->intr = 1;
++		TOPA_ENTRY(topa, -1)->stop = 1;
++	}
++	if (pt_buffer_needs_watermark(buf, buf->size))
++		TOPA_ENTRY(topa, -1)->intr = 1;
++
++	topa->last++;
++	topa->size += sizes(sz);
++	for (pn = 0; pn < sizes(sz); pn += PAGE_SIZE, buf->size += PAGE_SIZE)
++		buf->data_pages[buf->size >> PAGE_SHIFT] = page_address(p) + pn;
++
++	return 0;
++}
++
++static void pt_topa_dump(struct pt_buffer *buf)
++{
++	struct topa *topa;
++
++	list_for_each_entry(topa, &buf->tables, list) {
++		int i;
++
++		pr_debug("# table @%p (%p), off %llx size %lx\n", topa->table,
++			 (void *)topa->phys, topa->offset, topa->size);
++		for (i = 0; i < TENTS_PER_PAGE; i++) {
++			pr_debug("# entry @%p (%lx sz %u %c%c%c) raw=%16llx\n",
++				 &topa->table[i],
++				 (unsigned long)topa->table[i].base << TOPA_SHIFT,
++				 sizes(topa->table[i].size),
++				 topa->table[i].end ?  'E' : ' ',
++				 topa->table[i].intr ? 'I' : ' ',
++				 topa->table[i].stop ? 'S' : ' ',
++				 *(u64 *)&topa->table[i]);
++			if ((pt_cap_get(PT_CAP_topa_multiple_entries) && topa->table[i].stop)
++			    || topa->table[i].end)
++				break;
++		}
++	}
++}
++
++/* advance to the next output region */
++static void pt_buffer_advance(struct pt_buffer *buf)
++{
++	buf->output_off = 0;
++	buf->cur_idx++;
++
++	if (buf->cur_idx == buf->cur->last) {
++		if (buf->cur == buf->last)
++			buf->cur = buf->first;
++		else
++			buf->cur = list_entry(buf->cur->list.next, struct topa, list);
++		buf->cur_idx = 0;
++	}
++}
++
++static void pt_update_head(struct pt_buffer *buf)
++{
++	u64 topa_idx, base;
++
++	/* offset of the first region in this table from the beginning of buf */
++	base = buf->cur->offset + buf->output_off;
++
++	/* offset of the current output region within this table */
++	for (topa_idx = 0; topa_idx < buf->cur_idx; topa_idx++)
++		base += sizes(buf->cur->table[topa_idx].size);
++
++	/* data_head always increases when buffer pointer wraps */
++	base += buf->size * buf->round;
++
++	local64_set(&buf->head, base);
++	if (!buf->user_page)
++		return;
++
++	buf->user_page->data_head = base;
++	smp_wmb();
++}
++
++static void *pt_buffer_region(struct pt_buffer *buf)
++{
++	return phys_to_virt(buf->cur->table[buf->cur_idx].base << TOPA_SHIFT);
++}
++
++static size_t pt_buffer_region_size(struct pt_buffer *buf)
++{
++	return sizes(buf->cur->table[buf->cur_idx].size);
++}
++
++/**
++ * pt_handle_status - take care of possible status conditions
++ * @event: currently active PT event
++ */
++static void pt_handle_status(struct perf_event *event)
++{
++	struct pt_buffer *buf = itrace_priv(event);
++	int advance = 0;
++	u64 status;
++
++	rdmsrl(MSR_IA32_RTIT_STATUS, status);
++
++	if (status & RTIT_STATUS_ERROR) {
++		pr_err("ToPA ERROR encountered, trying to recover\n");
++		pt_topa_dump(buf);
++		status &= ~RTIT_STATUS_ERROR;
++		wrmsrl(MSR_IA32_RTIT_STATUS, status);
++	}
++
++	if (status & RTIT_STATUS_STOPPED) {
++		status &= ~RTIT_STATUS_STOPPED;
++		wrmsrl(MSR_IA32_RTIT_STATUS, status);
++
++		/*
++		 * On systems that only do single-entry ToPA, hitting STOP
++		 * means we are already losing data; need to let the decoder
++		 * know.
++		 */
++		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
++		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
++			pt_update_head(buf);
++			itrace_lost_data(event, local64_read(&buf->head));
++			advance++;
++		}
++	}
++
++	/*
++	 * Also on single-entry ToPA implementations, interrupt will come
++	 * before the output reaches its output region's boundary.
++	 */
++	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
++	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
++		void *head = pt_buffer_region(buf);
++
++		/* everything within this margin needs to be zeroed out */
++		memset(head + buf->output_off, 0,
++		       pt_buffer_region_size(buf) -
++		       buf->output_off);
++		advance++;
++	}
++
++	if (advance) {
++		/* check if the pointer has wrapped */
++		if (!buf->snapshot &&
++		    buf->cur == buf->last &&
++		    buf->cur_idx == buf->cur->last - 1)
++			buf->round++;
++		pt_buffer_advance(buf);
++	}
++}
++
++static void pt_read_offset(struct pt_buffer *buf)
++{
++	u64 offset, base_topa;
++
++	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, base_topa);
++	buf->cur = phys_to_virt(base_topa);
++
++	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, offset);
++	/* offset within current output region */
++	buf->output_off = offset >> 32;
++	/* index of current output region within this table */
++	buf->cur_idx = (offset & 0xffffff80) >> 7;
++}
++
++/**
++ * pt_buffer_fini_topa() - deallocate ToPA structure of a buffer
++ * @buf: pt buffer
++ */
++static void pt_buffer_fini_topa(struct pt_buffer *buf)
++{
++	struct topa *topa, *iter;
++
++	list_for_each_entry_safe(topa, iter, &buf->tables, list) {
++		int i;
++
++		for (i = 0; i < topa->last; i++)
++			topa_free_pages(buf, topa, i);
++
++		list_del(&topa->list);
++		topa_free(topa);
++	}
++}
++
++/**
++ * pt_get_topa_region_size - calculate one output region's size
++ * @snapshot: if the counter is a snapshot counter
++ * @size: overall requested allocation size
++ * returns topa region size or error
++ */
++static int pt_get_topa_region_size(bool snapshot, size_t size)
++{
++	unsigned int factor = snapshot ? 1 : 2;
++
++	if (pt_cap_get(PT_CAP_topa_multiple_entries))
++		return TOPA_4K;
++
++	if (size < SZ_4K * factor)
++		return -EINVAL;
++
++	if (!is_power_of_2(size))
++		return -EINVAL;
++
++	if (size >= SZ_128M)
++		return TOPA_128MB;
++
++	return get_order(size / factor);
++}
++
++/**
++ * pt_buffer_init_topa() - initialize ToPA table for pt buffer
++ * @buf: pt buffer
++ * @size: total size of all regions within this ToPA
++ * @gfp: allocation flags
++ */
++static int pt_buffer_init_topa(struct pt_buffer *buf, size_t size, gfp_t gfp)
++{
++	struct topa *topa;
++	int err, region_size;
++
++	topa = topa_alloc(buf->cpu, gfp);
++	if (!topa)
++		return -ENOMEM;
++
++	topa_insert_table(buf, topa);
++
++	region_size = pt_get_topa_region_size(buf->snapshot, size);
++	if (region_size < 0) {
++		pt_buffer_fini_topa(buf);
++		return region_size;
++	}
++
++	while (region_size && get_order(sizes(region_size)) > MAX_ORDER)
++		region_size--;
++
++	/* fixup watermark in case of higher order allocations */
++	if (buf->watermark < (sizes(region_size) >> PAGE_SHIFT))
++		buf->watermark = sizes(region_size) >> PAGE_SHIFT;
++
++	while (buf->size < size) {
++		err = topa_insert_pages(buf, gfp, region_size);
++		if (err) {
++			if (region_size) {
++				region_size--;
++				continue;
++			}
++			pt_buffer_fini_topa(buf);
++			return -ENOMEM;
++		}
++	}
++
++	/* link last table to the first one, unless we're double buffering */
++	if (pt_cap_get(PT_CAP_topa_multiple_entries)) {
++		TOPA_ENTRY(buf->last, -1)->base = buf->first->phys >> TOPA_SHIFT;
++		TOPA_ENTRY(buf->last, -1)->end = 1;
++	}
++
++	pt_topa_dump(buf);
++	return 0;
++}
++
++/**
++ * pt_buffer_alloc() - make a buffer for pt data
++ * @cpu: cpu on which to allocate, -1 means current
++ * @size: desired buffer size, should be multiple of pages
++ * @watermark: place interrupt flags every @watermark pages, 0 == disable
++ * @snapshot: if this is a snapshot counter
++ * @gfp: allocation flags
++ */
++static struct pt_buffer *pt_buffer_alloc(int cpu, size_t size,
++					 unsigned long watermark,
++					 bool snapshot, gfp_t gfp,
++					 void **pages)
++{
++	struct pt_buffer *buf;
++	int node;
++	int ret;
++
++	if (!size || watermark << PAGE_SHIFT > size)
++		return NULL;
++
++	if (cpu == -1)
++		cpu = raw_smp_processor_id();
++	node = cpu_to_node(cpu);
++
++	buf = kzalloc(sizeof(struct pt_buffer), gfp);
++	if (!buf)
++		return NULL;
++
++	buf->cpu = cpu;
++	buf->data_pages = pages;
++	buf->snapshot = snapshot;
++	buf->watermark = watermark;
++	if (!buf->watermark)
++		buf->watermark = (size / 2) >> PAGE_SHIFT;
++
++	INIT_LIST_HEAD(&buf->tables);
++
++	ret = pt_buffer_init_topa(buf, size, gfp);
++	if (ret) {
++		kfree(buf);
++		return NULL;
++	}
++
++	return buf;
++}
++
++/**
++ * pt_buffer_free() - dispose of pt buffer
++ * @buf: pt buffer
++ */
++static void pt_buffer_itrace_free(void *data)
++{
++	struct pt_buffer *buf = data;
++
++	pt_buffer_fini_topa(buf);
++	if (buf->user_page) {
++		struct page *up = virt_to_page(buf->user_page);
++
++		up->mapping = NULL;
++		__free_page(up);
++	}
++
++	kfree(buf);
++}
++
++static void *
++pt_buffer_itrace_alloc(int cpu, int nr_pages, bool overwrite, void **pages,
++		       struct perf_event_mmap_page **user_page)
++{
++	struct pt_buffer *buf;
++	struct page *up = NULL;
++	int node;
++
++	if (user_page) {
++		*user_page = NULL;
++		node = (cpu == -1) ? cpu : cpu_to_node(cpu);
++		up = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
++		if (!up)
++			return NULL;
++	}
++
++	buf = pt_buffer_alloc(cpu, nr_pages << PAGE_SHIFT, 0, overwrite,
++			      GFP_KERNEL, pages);
++	if (user_page && buf) {
++		buf->user_page = page_address(up);
++		*user_page = page_address(up);
++	} else if (up)
++		__free_page(up);
++
++	return buf;
++}
++
++/**
++ * pt_buffer_get_page() - find n'th page in pt buffer
++ * @buf: pt buffer
++ * @idx: page index in the buffer
++ */
++static void *pt_buffer_get_page(struct pt_buffer *buf, unsigned long idx)
++{
++	return buf->data_pages[idx];
++}
++
++typedef unsigned int (*pt_copyfn)(void *data, const void *src,
++				  unsigned int len);
++
++/**
++ * pt_buffer_output - copy part of pt buffer to perf stream
++ * @buf: buffer to copy from
++ * @from: initial offset
++ * @to: final offset
++ * @copyfn: function that copies data out (like perf_output_copy())
++ * @data: data to be passed on to the copy function (like perf_output_handle)
++ */
++static int pt_buffer_output(struct pt_buffer *buf, unsigned long from,
++			    unsigned long to, pt_copyfn copyfn, void *data)
++{
++	unsigned long tocopy;
++	unsigned int len = 0, remainder;
++	void *page;
++
++	do {
++		tocopy = PAGE_SIZE - offset_in_page(from);
++		if (to > from)
++			tocopy = min(tocopy, to - from);
++		if (!tocopy)
++			break;
++
++		page = pt_buffer_get_page(buf, from >> PAGE_SHIFT);
++		if (WARN_ONCE(!page, "no data page for %lx offset\n", from))
++			break;
++
++		page += offset_in_page(from);
++
++		remainder = copyfn(data, page, tocopy);
++		if (remainder)
++			return -EFAULT;
++
++		len += tocopy;
++		from += tocopy;
++		if (from == buf->size)
++			from = 0;
++	} while (to != from);
++	return len;
++}
++
++/**
++ * pt_buffer_is_full - check if the buffer is full
++ * @event: pt event
++ * If the user hasn't read data from the output region that data_head
++ * points to, the buffer is considered full: the user needs to read at
++ * least this region and update data_tail to point past it.
++ */
++static bool pt_buffer_is_full(struct pt_buffer *buf)
++{
++	void *tail, *head;
++	unsigned long tailoff, headoff = local64_read(&buf->head);
++
++	if (buf->snapshot)
++		return false;
++
++	tailoff = ACCESS_ONCE(buf->user_page->data_tail);
++	smp_mb();
++
++	if (headoff < tailoff || headoff - tailoff < buf->size / 2)
++		return false;
++
++	tailoff %= buf->size;
++	headoff %= buf->size;
++
++	if (headoff > tailoff)
++		return false;
++
++	/* check if head and tail are in the same output region */
++	tail = pt_buffer_get_page(buf, tailoff >> PAGE_SHIFT);
++	head = pt_buffer_region(buf);
++
++	if (tail >= head && tail < head + pt_buffer_region_size(buf))
++		return true;
++
++	return false;
++}
++
++static void pt_wake_up(struct perf_event *event)
++{
++	struct pt_buffer *buf = itrace_priv(event);
++
++	if (!buf || buf->snapshot)
++		return;
++	if (pt_buffer_is_full(buf)) {
++		event->pending_disable = 1;
++		event->pending_kill = POLL_IN;
++		event->pending_wakeup = 1;
++		event->hw.state = PERF_HES_STOPPED;
++	}
++
++	if (pt_buffer_needs_watermark(buf, local64_read(&buf->head))) {
++		event->pending_wakeup = 1;
++		event->pending_kill = POLL_IN;
++	}
++
++	if (event->pending_disable || event->pending_kill)
++		itrace_wake_up(event);
++}
++
++void intel_pt_interrupt(void)
++{
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct perf_event *event = pt->event;
++	struct pt_buffer *buf;
++
++	pt_config_start(false);
++
++	if (!event)
++		return;
++
++	buf = itrace_event_get_priv(event);
++	if (!buf)
++		return;
++
++	pt_read_offset(buf);
++
++	pt_handle_status(event);
++
++	pt_update_head(buf);
++
++	pt_wake_up(event);
++
++	if (!event->hw.state) {
++		pt_config(event);
++		pt_config_buffer(buf->cur->table, buf->cur_idx,
++				 buf->output_off);
++		wrmsrl(MSR_IA32_RTIT_STATUS, 0);
++		pt_config_start(true);
++	}
++
++	itrace_event_put(event);
++}
++
++static void pt_event_start(struct perf_event *event, int flags)
++{
++	struct pt_buffer *buf = itrace_priv(event);
++
++	if (!buf || pt_buffer_is_full(buf) || pt_config(event)) {
++		event->hw.state = PERF_HES_STOPPED;
++		return;
++	}
++
++	event->hw.state = 0;
++
++	pt_config_buffer(buf->cur->table, buf->cur_idx,
++			 buf->output_off);
++	wrmsrl(MSR_IA32_RTIT_STATUS, 0);
++	pt_config_start(true);
++}
++
++static void pt_event_stop(struct perf_event *event, int flags)
++{
++	if (event->hw.state == PERF_HES_STOPPED)
++		return;
++
++	event->hw.state = PERF_HES_STOPPED;
++
++	pt_config_start(false);
++
++	if (flags & PERF_EF_UPDATE) {
++		struct pt_buffer *buf = itrace_priv(event);
++
++		if (WARN_ONCE(!buf, "no buffer\n"))
++			return;
++
++		pt_read_offset(buf);
++
++		pt_handle_status(event);
++
++		pt_update_head(buf);
++
++		pt_wake_up(event);
++	}
++}
++
++static void pt_event_del(struct perf_event *event, int flags)
++{
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++
++	pt_event_stop(event, PERF_EF_UPDATE);
++
++	raw_spin_lock(&pt->lock);
++	pt->event = NULL;
++	raw_spin_unlock(&pt->lock);
++
++	itrace_event_put(event);
++}
++
++static int pt_event_add(struct perf_event *event, int flags)
++{
++	struct pt_buffer *buf;
++	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct hw_perf_event *hwc = &event->hw;
++	int ret = 0;
++
++	ret = pt_config(event);
++	if (ret)
++		return ret;
++
++	buf = itrace_event_get_priv(event);
++	if (!buf) {
++		hwc->state = PERF_HES_STOPPED;
++		return -EINVAL;
++	}
++
++	raw_spin_lock(&pt->lock);
++	if (pt->event) {
++		raw_spin_unlock(&pt->lock);
++		itrace_event_put(event);
++		ret = -EBUSY;
++		event->hw.state = PERF_HES_STOPPED;
++		goto out;
++	}
++
++	pt->event = event;
++	raw_spin_unlock(&pt->lock);
++
++	hwc->state = !(flags & PERF_EF_START);
++	if (!hwc->state) {
++		pt_event_start(event, 0);
++		if (hwc->state == PERF_HES_STOPPED) {
++			pt_event_del(event, 0);
++			pt_wake_up(event);
++			ret = -EBUSY;
++		}
++	}
++
++out:
++	return ret;
++}
++
++static void pt_event_read(struct perf_event *event)
++{
++}
++
++static int pt_event_init(struct perf_event *event)
++{
++	if (event->attr.type != pt_pmu.itrace.pmu.type)
++		return -ENOENT;
++
++	/* can't be both */
++	if (event->attr.sample_type & PERF_SAMPLE_ITRACE)
++		return -ENOENT;
++
++	if (!pt_event_valid(event))
++		return -EINVAL;
++
++	return 0;
++}
++
++static unsigned long pt_trace_sampler_trace(struct perf_event *event,
++					    struct perf_sample_data *data)
++{
++	struct pt_buffer *buf;
++
++	pt_event_stop(event, 0);
++
++	buf = itrace_event_get_priv(event);
++	if (!buf) {
++		data->trace.size = 0;
++		goto out;
++	}
++
++	pt_read_offset(buf);
++	pt_update_head(buf);
++
++	data->trace.to = local64_read(&buf->head);
++
++	if (data->trace.to < event->attr.itrace_sample_size)
++		data->trace.from = buf->size + data->trace.to -
++			event->attr.itrace_sample_size;
++	else
++		data->trace.from = data->trace.to -
++			event->attr.itrace_sample_size;
++	data->trace.size = ALIGN(event->attr.itrace_sample_size, sizeof(u64));
++
++	itrace_event_put(event);
++
++out:
++	if (!data->trace.size)
++		pt_event_start(event, 0);
++
++	return data->trace.size;
++}
++
++static void pt_trace_sampler_output(struct perf_event *event,
++				    struct perf_output_handle *handle,
++				    struct perf_sample_data *data)
++{
++	unsigned long padding;
++	struct pt_buffer *buf;
++	int ret;
++
++	buf = itrace_event_get_priv(event);
++	if (!buf)
++		return;
++
++	ret = pt_buffer_output(buf, data->trace.from, data->trace.to,
++			       (pt_copyfn)perf_output_copy, handle);
++	itrace_event_put(event);
++	if (ret < 0) {
++		pr_warn("%s: failed to copy trace data\n", __func__);
++		goto out;
++	}
++
++	padding = data->trace.size - ret;
++	if (padding) {
++		u64 u = 0;
++
++		perf_output_copy(handle, &u, padding);
++	}
++
++out:
++	pt_event_start(event, 0);
++}
++
++static size_t pt_trace_core_size(struct perf_event *event)
++{
++	return pt_pmu.caplen;
++}
++
++static unsigned int pt_core_copy(void *data, const void *src,
++				 unsigned int len)
++{
++	struct coredump_params *cprm = data;
++
++	if (dump_emit(cprm, src, len))
++		return 0;
++
++	return len;
++}
++
++static void pt_trace_core_output(struct coredump_params *cprm,
++				 struct perf_event *event,
++				 unsigned long len)
++{
++	struct pt_buffer *buf;
++	u64 from, to;
++	int ret;
++
++	buf = itrace_priv(event);
++
++	if (!dump_emit(cprm, pt_pmu.capstr, pt_pmu.caplen))
++		return;
++
++	to = local64_read(&buf->head);
++	if (to < len)
++		from = buf->size + to - len;
++	else
++		from = to - len;
++
++	ret = pt_buffer_output(buf, from, to, pt_core_copy, cprm);
++	if (ret < 0)
++		pr_warn("%s: failed to copy trace data\n", __func__);
++}
++
++static __init int pt_init(void)
++{
++	int ret, cpu;
++
++	BUILD_BUG_ON(sizeof(struct topa) > PAGE_SIZE);
++	get_online_cpus();
++	for_each_possible_cpu(cpu) {
++		raw_spin_lock_init(&per_cpu(pt_ctx, cpu).lock);
++	}
++	put_online_cpus();
++
++	pt_pmu_hw_init();
++	pt_pmu.itrace.pmu.attr_groups	= pt_attr_groups;
++	pt_pmu.itrace.pmu.task_ctx_nr	= perf_hw_context;
++	pt_pmu.itrace.pmu.event_init	= pt_event_init;
++	pt_pmu.itrace.pmu.add		= pt_event_add;
++	pt_pmu.itrace.pmu.del		= pt_event_del;
++	pt_pmu.itrace.pmu.start		= pt_event_start;
++	pt_pmu.itrace.pmu.stop		= pt_event_stop;
++	pt_pmu.itrace.pmu.read		= pt_event_read;
++	pt_pmu.itrace.alloc_buffer	= pt_buffer_itrace_alloc;
++	pt_pmu.itrace.free_buffer	= pt_buffer_itrace_free;
++	pt_pmu.itrace.sample_trace	= pt_trace_sampler_trace;
++	pt_pmu.itrace.sample_output	= pt_trace_sampler_output;
++	pt_pmu.itrace.core_size		= pt_trace_core_size;
++	pt_pmu.itrace.core_output	= pt_trace_core_output;
++	pt_pmu.itrace.name		= "intel_pt";
++	ret = itrace_pmu_register(&pt_pmu.itrace);
++
++	return ret;
++}
++
++module_init(pt_init);
 -- 
 1.8.5.1
 
