@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab3LKSjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:39:15 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:64971 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3LKSjM (ORCPT
+	id S1751339Ab3LKSne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:43:34 -0500
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:40392 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab3LKSnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:39:12 -0500
+	Wed, 11 Dec 2013 13:43:31 -0500
+Date: Wed, 11 Dec 2013 11:43:21 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Jason Cooper <jason@lakedaemon.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Mohit Kumar <mohit.kumar@st.com>,
+        Pratyush Anand <pratyush.anand@st.com>
+Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
+ host maintainers
+Message-ID: <20131211184321.GJ4699@google.com>
+References: <20131211183237.GI4699@google.com>
 MIME-Version: 1.0
-In-Reply-To: <871324710.20131211191104@eikelenboom.it>
-References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it>
- <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com>
- <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com>
- <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
- <871324710.20131211191104@eikelenboom.it>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Wed, 11 Dec 2013 19:38:50 +0100
-X-Google-Sender-Auth: _VUber32CnfROtN5cIhL7h4DMUM
-Message-ID: <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: "Berg, Johannes" <johannes.berg@intel.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211183237.GI4699@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 7:11 PM, Sander Eikelenboom
-<linux@eikelenboom.it> wrote:
->
-> Wednesday, December 11, 2013, 6:53:07 PM, you wrote:
->
->> The best way to address all this is by automatic region awareness and
->> doing the right thing on devices, this however requires good
->> architecture / calibration data  / etc and all that needs to be
->> verified by the system integrators, and finally they need to be
->> certified. If you want to hack your firmware and software go at it,
->> just be aware there are reasons for things.
->
-> Well the general problem seems to be "we don't trust the user" so we FORCE him to the lowest
-> common denominator (without a way to overrule that) so he is forced to operate *well* within the law.
+[+cc Mohit]
 
-Its simply stupid to have the user be involved, period, the fact that
-a user would be involved should only be for testing or helping
-compliance for a busted device, development, research and obviously
-hacking. Linux allows all these but by default a device with firmware
-and a custom regdomain that will barf if you try to use a channel that
-is not allowed is a restriction in firmware. Feel free to reverse
-engineer that if you don't like it but it just won't be supported or
-go upstream. Now, the common denominator is generally optimized for
-best performance as well so you shouldn't have to do anything, and for
-APs -- this is typically carefully crafted for a region, also highly
-optimized.
+On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
+> If this looks reasonable, I'll merge it via the PCI tree for v3.13.
 
->>>> It doesn't seem like you are getting your original requests getting
->>>> processed, so I don't think CRDA is passing it. Can you verify running
->>>> from CRDA code:
->>>
->>> They don't get processed unless i remove the return from the code as i indicated.
->>> If i remove that return it processes the request.
->>>
->>>> ./regdbdump /usr/lib/crda/regulatory.bin
->>>
->>> Although it's in a different location on Debian, /lib/crda/regulatory.bin
->>> the dump seems fine.
->
->> OK thanks. Can you send a patch of what exact change you made, it was
->> unclear from the paste you made.
->
->> diff -u file.c.orig file.c
->
-> Well i just did a pull from wireless-next, to try Avinash Patil's patch.
-> net/wireless/reg.c had already changed much so i couldn't apply his patch without.
->
-> With his patch it sets the regulatory domain, although as now expected i still can not use channels 12 and 13 yet,
-> probably due to those firmware restrictions.
+And I see Mohit's patch [1] to update the DesignWare entry:
 
-Its unclear what results you got, and yeah if the device is restricted
-then its just the fw telling the driver its channels and you can't use
-them. That's it. You won't be able to override information then unless
-you hack the firmware.
++PCIE DRIVER FOR SYNOPSIS DESIGNWARE CONTROLLER
++M:	Mohit Kumar <mohit.kumar@st.com>
++M:	Jingoo Han <jg1.han@samsung.com>
++L:	linux-pci@vger.kernel.org
++S:	Maintained
++F:	drivers/pci/host/pcie-designware.c
 
-  Luis
+I can fold in that update too if Jingoo acks it.
+
+[1] http://patchwork.ozlabs.org/patch/299905/
+
+> MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI host maintainers
+> 
+> Add entries for PCI host controller drivers in drivers/pci/host/.
+> 
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  MAINTAINERS |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 8285ed4676b6..826c722d92ba 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6449,16 +6449,47 @@ F:	drivers/pci/
+>  F:	include/linux/pci*
+>  F:	arch/x86/pci/
+>  
+> +PCI DRIVER FOR DESIGNWARE
+> +M:	Jingoo Han <jg1.han@samsung.com>
+> +L:	linux-pci@vger.kernel.org
+> +S:	Maintained
+> +F:	drivers/pci/host/*designware*
+> +
+> +PCI DRIVER FOR IMX6
+> +M:	Shawn Guo <shawn.guo@linaro.org>
+> +L:	linux-pci@vger.kernel.org
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/pci/host/*imx6*
+> +
+> +PCI DRIVER FOR MVEBU (Marvell Armada 370 and Armada XP SOC support)
+> +M:	Jason Cooper <jason@lakedaemon.net>
+> +L:	linux-pci@vger.kernel.org
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/pci/host/*mvebu*
+> +
+>  PCI DRIVER FOR NVIDIA TEGRA
+>  M:	Thierry Reding <thierry.reding@gmail.com>
+>  L:	linux-tegra@vger.kernel.org
+> +L:	linux-pci@vger.kernel.org
+>  S:	Supported
+>  F:	Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
+>  F:	drivers/pci/host/pci-tegra.c
+>  
+> +PCI DRIVER FOR RENESAS R-CAR
+> +M:	Simon Horman <horms@verge.net.au>
+> +M:	Magnus Damm <magnus.damm@gmail.com>
+> +L:	linux-pci@vger.kernel.org
+> +L:	linux-sh@vger.kernel.org
+> +S:	Maintained
+> +F:	drivers/pci/host/*rcar*
+> +
+>  PCI DRIVER FOR SAMSUNG EXYNOS
+>  M:	Jingoo Han <jg1.han@samsung.com>
+>  L:	linux-pci@vger.kernel.org
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
+>  S:	Maintained
+>  F:	drivers/pci/host/pci-exynos.c
+>  
