@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab3LKLG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:06:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60302 "EHLO
+	id S1752503Ab3LKLHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:07:21 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60328 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab3LKLGv (ORCPT
+	with ESMTP id S1751697Ab3LKLHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:06:51 -0500
-Date: Wed, 11 Dec 2013 03:06:33 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-7ef2e813476273ac9c9138f002d8f4cb28e5adad@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de
-In-Reply-To: <1386567251-22751-13-git-send-email-namhyung@kernel.org>
-References: <1386567251-22751-13-git-send-email-namhyung@kernel.org>
+	Wed, 11 Dec 2013 06:07:15 -0500
+Date: Wed, 11 Dec 2013 03:06:43 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-5cfe2c82f3eb6876cf4b55e99decea0bd015d6b8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1386583370-1699-2-git-send-email-jolsa@redhat.com>
+References: <1386583370-1699-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent: Get rid of die()
-  in pevent_filter_clear_trivial()
-Git-Commit-ID: 7ef2e813476273ac9c9138f002d8f4cb28e5adad
+Subject: [tip:perf/core] perf report: Add --header/--header-only options
+Git-Commit-ID: 5cfe2c82f3eb6876cf4b55e99decea0bd015d6b8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,109 +33,128 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:06:40 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:06:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7ef2e813476273ac9c9138f002d8f4cb28e5adad
-Gitweb:     http://git.kernel.org/tip/7ef2e813476273ac9c9138f002d8f4cb28e5adad
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 9 Dec 2013 14:34:09 +0900
+Commit-ID:  5cfe2c82f3eb6876cf4b55e99decea0bd015d6b8
+Gitweb:     http://git.kernel.org/tip/5cfe2c82f3eb6876cf4b55e99decea0bd015d6b8
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Mon, 9 Dec 2013 11:02:49 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 9 Dec 2013 15:39:57 -0300
+CommitDate: Tue, 10 Dec 2013 16:49:02 -0300
 
-tools lib traceevent: Get rid of die() in pevent_filter_clear_trivial()
+perf report: Add --header/--header-only options
 
-Change the function signature to return error code and not call die()
-anymore.
+Currently the perf.data header is always displayed for stdio output,
+which is no always useful.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Disabling header information by default and adding following options to
+control header output:
+
+  --header      - display header information (old default)
+  --header-only - display header information only w/o further
+                  processing, forces stdio output
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386567251-22751-13-git-send-email-namhyung@kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386583370-1699-2-git-send-email-jolsa@redhat.com
+[ Added single line explaining talking about the new --header* options,
+  to address David Ahern comment; better man page entry for the new options,
+  from Namhyung Kim ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h  |  2 +-
- tools/lib/traceevent/parse-filter.c | 21 +++++++++++++++------
- 2 files changed, 16 insertions(+), 7 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  9 +++++++++
+ tools/perf/builtin-report.c              | 22 +++++++++++++++++++---
+ 2 files changed, 28 insertions(+), 3 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 620c27a..6e23f19 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -860,7 +860,7 @@ int pevent_event_filtered(struct event_filter *filter,
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 10a2798..8eab8a4 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -237,6 +237,15 @@ OPTIONS
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
  
- void pevent_filter_reset(struct event_filter *filter);
- 
--void pevent_filter_clear_trivial(struct event_filter *filter,
-+int pevent_filter_clear_trivial(struct event_filter *filter,
- 				 enum filter_trivial_type type);
- 
- void pevent_filter_free(struct event_filter *filter);
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index a4d5bb2..ab402fb 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -1504,8 +1504,10 @@ int pevent_update_trivial(struct event_filter *dest, struct event_filter *source
-  * @type: remove only true, false, or both
-  *
-  * Removes filters that only contain a TRUE or FALES boolean arg.
-+ *
-+ * Returns 0 on success and -1 if there was a problem.
-  */
--void pevent_filter_clear_trivial(struct event_filter *filter,
-+int pevent_filter_clear_trivial(struct event_filter *filter,
- 				 enum filter_trivial_type type)
- {
- 	struct filter_type *filter_type;
-@@ -1514,13 +1516,15 @@ void pevent_filter_clear_trivial(struct event_filter *filter,
- 	int i;
- 
- 	if (!filter->filters)
--		return;
-+		return 0;
- 
- 	/*
- 	 * Two steps, first get all ids with trivial filters.
- 	 *  then remove those ids.
- 	 */
- 	for (i = 0; i < filter->filters; i++) {
-+		int *new_ids;
++--header::
++	Show header information in the perf.data file.  This includes
++	various information like hostname, OS and perf version, cpu/mem
++	info, perf command line, event list and so on.  Currently only
++	--stdio output supports this feature.
 +
- 		filter_type = &filter->event_filters[i];
- 		if (filter_type->filter->type != FILTER_ARG_BOOLEAN)
- 			continue;
-@@ -1535,19 +1539,24 @@ void pevent_filter_clear_trivial(struct event_filter *filter,
- 			break;
- 		}
- 
--		ids = realloc(ids, sizeof(*ids) * (count + 1));
--		if (!ids)
--			die("Can't allocate ids");
-+		new_ids = realloc(ids, sizeof(*ids) * (count + 1));
-+		if (!new_ids) {
-+			free(ids);
-+			return -1;
-+		}
++--header-only::
++	Show only perf.data header (forces --stdio).
 +
-+		ids = new_ids;
- 		ids[count++] = filter_type->event_id;
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-annotate[1]
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8cf8e66..3a14dbe 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -49,6 +49,8 @@ struct perf_report {
+ 	bool			show_threads;
+ 	bool			inverted_callchain;
+ 	bool			mem_mode;
++	bool			header;
++	bool			header_only;
+ 	int			max_stack;
+ 	struct perf_read_values	show_threads_values;
+ 	const char		*pretty_printing_style;
+@@ -514,9 +516,6 @@ static int __cmd_report(struct perf_report *rep)
+ 			return ret;
  	}
  
- 	if (!count)
--		return;
-+		return 0;
+-	if (use_browser <= 0)
+-		perf_session__fprintf_info(session, stdout, rep->show_full_info);
+-
+ 	if (rep->show_threads)
+ 		perf_read_values_init(&rep->show_threads_values);
  
- 	for (i = 0; i < count; i++)
- 		pevent_filter_remove_event(filter, ids[i]);
+@@ -820,6 +819,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "gtk", &report.use_gtk, "Use the GTK2 interface"),
+ 	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
+ 		    "Use the stdio interface"),
++	OPT_BOOLEAN(0, "header", &report.header, "Show data header."),
++	OPT_BOOLEAN(0, "header-only", &report.header_only,
++		    "Show only data header."),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+ 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+@@ -963,6 +965,10 @@ repeat:
+ 			goto error;
+ 	}
  
- 	free(ids);
-+	return 0;
- }
++	/* Force tty output for header output. */
++	if (report.header || report.header_only)
++		use_browser = 0;
++
+ 	if (strcmp(input_name, "-") != 0)
+ 		setup_browser(true);
+ 	else {
+@@ -970,6 +976,16 @@ repeat:
+ 		perf_hpp__init();
+ 	}
  
- /**
++	if (report.header || report.header_only) {
++		perf_session__fprintf_info(session, stdout,
++					   report.show_full_info);
++		if (report.header_only)
++			return 0;
++	} else if (use_browser == 0) {
++		fputs("# To display the perf.data header info, please use --header/--header-only options.\n#\n",
++		      stdout);
++	}
++
+ 	/*
+ 	 * Only in the TUI browser we are doing integrated annotation,
+ 	 * so don't allocate extra space that won't be used in the stdio
