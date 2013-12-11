@@ -1,176 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564Ab3LKCaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:30:46 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9913 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3LKCam (ORCPT
+	id S1751765Ab3LKCbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:31:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42405 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab3LKCbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:30:42 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 10 Dec 2013 18:27:16 -0800
-Message-ID: <52A7CE4E.1030802@nvidia.com>
-Date: Wed, 11 Dec 2013 11:30:38 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 21:31:10 -0500
+Date: Tue, 10 Dec 2013 18:32:38 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lai Siyao <laisiyao@whamcloud.com>,
+        Lai Siyao <lai.siyao@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH 06/13] staging/lustre/llite: remove ll_d_root_ops
+Message-ID: <20131211023238.GA10365@kroah.com>
+References: <1386601025-422-1-git-send-email-bergwolf@gmail.com>
+ <1386601025-422-7-git-send-email-bergwolf@gmail.com>
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] gpiolib: return -ENOENT if no GPIO mapping exists
-References: <1386686247-24592-1-git-send-email-acourbot@nvidia.com> <1386689291.1871.169.camel@smile>
-In-Reply-To: <1386689291.1871.169.camel@smile>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386601025-422-7-git-send-email-bergwolf@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 12:28 AM, Andy Shevchenko wrote:
-> On Tue, 2013-12-10 at 23:37 +0900, Alexandre Courbot wrote:
->> Some devices drivers make use of optional GPIO parameters. For such
->> drivers, it is important to discriminate between the case where no
->> GPIO mapping has been defined for the function they are requesting, and
->> the case where a mapping exists but an error occured while resolving it
->> or when acquiring the GPIO.
->>
->> This patch changes the family of gpiod_get() functions such that they
->> will return -ENOENT if and only if no GPIO mapping is defined for the
->> requested function. Other error codes are used when an actual error
->> occured during the GPIO resolution.
->>
->
-> One minor comment below.
-> Independently on that:
->
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+On Mon, Dec 09, 2013 at 10:56:58PM +0800, Peng Tao wrote:
+> From: Lai Siyao <laisiyao@whamcloud.com>
+> 
+> Mnt root dentry will never be revalidated, but its d_op->d_compare
+> will be called for its children, to simplify code, we use the same
+> ll_d_ops as normal dentries.
+> But its attribute may be invalid before access, this won't cause
+> any issue because it always exists, and the only operation depends
+> on its attribute is .permission, which has revalidated it in lustre
+> code.
+> 
+> So it's okay to remove ll_d_root_ops, and remove unnecessary checks
+> in lookup/revalidate/statahead.
 
-Thanks!
+This breaks the build.
 
->
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->> Changes since v1:
->> - Rebase on top of Linus' devel tree
->> - Fixed error reporting as suggested by Andy
->> ---
->>   Documentation/gpio/consumer.txt |  6 +++++-
->>   drivers/gpio/gpiolib.c          | 33 ++++++++++++++++-----------------
->>   2 files changed, 21 insertions(+), 18 deletions(-)
->>
->> diff --git a/Documentation/gpio/consumer.txt b/Documentation/gpio/consumer.txt
->> index 07c74a3..e42f77d 100644
->> --- a/Documentation/gpio/consumer.txt
->> +++ b/Documentation/gpio/consumer.txt
->> @@ -38,7 +38,11 @@ device that displays digits), an additional index argument can be specified:
->>   					  const char *con_id, unsigned int idx)
->>
->>   Both functions return either a valid GPIO descriptor, or an error code checkable
->> -with IS_ERR(). They will never return a NULL pointer.
->> +with IS_ERR() (they will never return a NULL pointer). -ENOENT will be returned
->> +if and only if no GPIO has been assigned to the device/function/index triplet,
->> +other error codes are used for cases where a GPIO has been assigned but an error
->> +occured while trying to acquire it. This is useful to discriminate between mere
->> +errors and an absence of GPIO for optional GPIO parameters.
->>
->>   Device-managed variants of these functions are also defined:
->>
->> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
->> index 12e47df..32a6e3a 100644
->> --- a/drivers/gpio/gpiolib.c
->> +++ b/drivers/gpio/gpiolib.c
->> @@ -2367,7 +2367,7 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->>   				    unsigned int idx,
->>   				    enum gpio_lookup_flags *flags)
->>   {
->> -	struct gpio_desc *desc = ERR_PTR(-ENODEV);
->> +	struct gpio_desc *desc = ERR_PTR(-ENOENT);
->>   	struct gpiod_lookup_table *table;
->>   	struct gpiod_lookup *p;
->>
->> @@ -2389,19 +2389,21 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->>   		chip = find_chip_by_name(p->chip_label);
->>
->>   		if (!chip) {
->> -			dev_warn(dev, "cannot find GPIO chip %s\n",
->> -				 p->chip_label);
->> -			continue;
->> +			dev_err(dev, "cannot find GPIO chip %s\n",
->> +				p->chip_label);
->> +			return ERR_PTR(-ENODEV);
->>   		}
->>
->>   		if (chip->ngpio <= p->chip_hwnum) {
->> -			dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
->> -				 chip->label, chip->ngpio);
->> -			continue;
->> +			dev_err(dev, "requested GPIO %d is out of range [0..%d]"
->> +			       " for chip %s\n", idx, chip->ngpio, chip->label);
->
-> You may leave string literals over 80 character border. chackpatch.pl
-> will not complain about.
->
-> I might put a) 'dev_warn(dev,', b) '"..."', and c) 'the rest'
-> on three separate lines.
+It's as if you aren't testing this.
 
-Oh right, I didn't know you could do that, thanks.
+I'm really tired of this, I really don't want to take any more patches
+from you for a while, as I dread them every time I see a series sent by
+you for this codebase.
 
-Having the message on a single line is indeed better for grepping. v3 on 
-the way...
-
->
->> +			return ERR_PTR(-EINVAL);
->>   		}
->>
->>   		desc = gpiochip_offset_to_desc(chip, p->chip_hwnum);
->>   		*flags = p->flags;
->> +
->> +		return desc;
->>   	}
->>
->>   	return desc;
->> @@ -2413,7 +2415,8 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
->>    * @con_id:	function within the GPIO consumer
->>    *
->>    * Return the GPIO descriptor corresponding to the function con_id of device
->> - * dev, or an IS_ERR() condition if an error occured.
->> + * dev, -ENOENT if no GPIO has been assigned to the requested function, or
->> + * another IS_ERR() code if an error occured while trying to acquire the GPIO.
->>    */
->>   struct gpio_desc *__must_check gpiod_get(struct device *dev, const char *con_id)
->>   {
->> @@ -2430,7 +2433,9 @@ EXPORT_SYMBOL_GPL(gpiod_get);
->>    * This variant of gpiod_get() allows to access GPIOs other than the first
->>    * defined one for functions that define several GPIOs.
->>    *
->> - * Return a valid GPIO descriptor, or an IS_ERR() condition in case of error.
->> + * Return a valid GPIO descriptor, -ENOENT if no GPIO has been assigned to the
->> + * requested function and/or index, or another IS_ERR() code if an error
->> + * occured while trying to acquire the GPIO.
->>    */
->>   struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
->>   					       const char *con_id,
->> @@ -2455,15 +2460,9 @@ struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
->>   	 * Either we are not using DT or ACPI, or their lookup did not return
->>   	 * a result. In that case, use platform lookup as a fallback.
->>   	 */
->> -	if (!desc || IS_ERR(desc)) {
->> -		struct gpio_desc *pdesc;
->> -
->> +	if (!desc || desc == ERR_PTR(-ENOENT)) {
->>   		dev_dbg(dev, "using lookup tables for GPIO lookup");
->> -		pdesc = gpiod_find(dev, con_id, idx, &flags);
->> -
->> -		/* If used as fallback, do not replace the previous error */
->> -		if (!IS_ERR(pdesc) || !desc)
->> -			desc = pdesc;
->> +		desc = gpiod_find(dev, con_id, idx, &flags);
->>   	}
->>
->>   	if (IS_ERR(desc)) {
->
-
+ugh.
