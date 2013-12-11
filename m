@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab3LKJCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:02:40 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:62862 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab3LKJCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:02:32 -0500
+	id S1751436Ab3LKJDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:03:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39786 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750943Ab3LKJCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 04:02:53 -0500
+Date: Wed, 11 Dec 2013 09:02:49 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v5 6/8] sched/numa: fix period_slot recalculation
+Message-ID: <20131211090249.GT11295@suse.de>
+References: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1386723001-25408-7-git-send-email-liwanp@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CALZtONCW1Gxa-aT25Yf7PP6R=sW_6KBu5XPKoU75pJgvmAknbg@mail.gmail.com>
-References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org>
-	<20131122172916.GB6477@cerebellum.variantweb.net>
-	<20131125180030.GA23396@cerebellum.variantweb.net>
-	<CALZtONCW1Gxa-aT25Yf7PP6R=sW_6KBu5XPKoU75pJgvmAknbg@mail.gmail.com>
-Date: Wed, 11 Dec 2013 17:02:31 +0800
-Message-ID: <CAA_GA1ee1z6FKBj8TqEG64JoZNaPNTyVE918Kv8b1KY2k0CBEg@mail.gmail.com>
-Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
-From: Bob Liu <lliubbo@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Weijie Yang <weijie.yang@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1386723001-25408-7-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan & Seth,
+On Wed, Dec 11, 2013 at 08:49:59AM +0800, Wanpeng Li wrote:
+> Changelog:
+>  v3 -> v4:
+>   * remove period_slot recalculation
+> 
+> The original code is as intended and was meant to scale the difference
+> between the NUMA_PERIOD_THRESHOLD and local/remote ratio when adjusting
+> the scan period. The period_slot recalculation can be dropped.
+> 
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-On Wed, Nov 27, 2013 at 9:28 AM, Dan Streetman <ddstreet@ieee.org> wrote:
-> On Mon, Nov 25, 2013 at 1:00 PM, Seth Jennings <sjennings@variantweb.net> wrote:
->> On Fri, Nov 22, 2013 at 11:29:16AM -0600, Seth Jennings wrote:
->>> On Wed, Nov 20, 2013 at 02:49:33PM -0500, Dan Streetman wrote:
->>> > Currently, zswap is writeback cache; stored pages are not sent
->>> > to swap disk, and when zswap wants to evict old pages it must
->>> > first write them back to swap cache/disk manually.  This avoids
->>> > swap out disk I/O up front, but only moves that disk I/O to
->>> > the writeback case (for pages that are evicted), and adds the
->>> > overhead of having to uncompress the evicted pages, and adds the
->>> > need for an additional free page (to store the uncompressed page)
->>> > at a time of likely high memory pressure.  Additionally, being
->>> > writeback adds complexity to zswap by having to perform the
->>> > writeback on page eviction.
->>> >
->>> > This changes zswap to writethrough cache by enabling
->>> > frontswap_writethrough() before registering, so that any
->>> > successful page store will also be written to swap disk.  All the
->>> > writeback code is removed since it is no longer needed, and the
->>> > only operation during a page eviction is now to remove the entry
->>> > from the tree and free it.
->>>
->>> I like it.  It gets rid of a lot of nasty writeback code in zswap.
->>>
->>> I'll have to test before I ack, hopefully by the end of the day.
->>>
->>> Yes, this will increase writes to the swap device over the delayed
->>> writeback approach.  I think it is a good thing though.  I think it
->>> makes the difference between zswap and zram, both in operation and in
->>> application, more apparent. Zram is the better choice for embedded where
->>> write wear is a concern, and zswap being better if you need more
->>> flexibility to dynamically manage the compressed pool.
->>
->> One thing I realized while doing my testing was that making zswap
->> writethrough also impacts synchronous reclaim.  Zswap, as it is now,
->> makes the swapcache page clean during swap_writepage() which allows
->> shrink_page_list() to immediately reclaim it.  Making zswap writethrough
->> eliminates this advantage and swapcache pages must be scanned again
->> before they can be reclaimed, as is the case with normal swapping.
->
-> Yep, I thought about that as well, and it is true, but only while
-> zswap is not full.  With writeback, once zswap fills up, page stores
-> will frequently have to reclaim pages by writing compressed pages to
-> disk.  With writethrough, the zbud reclaim should be quick, as it only
-> has to evict the pages, not write them to disk.  So I think basically
-> writeback should speed up (compared to no-zswap case) swap_writepage()
-> while zswap is not full, but (theoretically) slow it down (compared to
-> no-zswap case) while zswap is full, while writethrough should slow
-> down swap_writepage() slightly (the time it takes to compress/store
-> the page) but consistently, almost the same amount before it's full vs
-> when it's full.  Theoretically :-)  Definitely something to think
-> about and test for.
->
-
-Have you gotten any further benchmark result?
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-Thanks,
---Bob
+Mel Gorman
+SUSE Labs
