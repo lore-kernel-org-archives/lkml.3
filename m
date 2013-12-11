@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab3LKBVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:21:16 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:53098 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3LKBVL (ORCPT
+	id S1752051Ab3LKBYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:24:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41967 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3LKBYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:21:11 -0500
-X-AuditID: 9c93017e-b7bb9ae000000ec8-aa-52a7be03f2e2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/2] tools/: Convert to new topic libraries
-References: <1386605664-24041-1-git-send-email-bp@alien8.de>
-	<1386605664-24041-2-git-send-email-bp@alien8.de>
-	<87zjo9jxs5.fsf@sejong.aot.lge.com> <20131210112758.GA31437@pd.tnic>
-Date: Wed, 11 Dec 2013 10:21:07 +0900
-In-Reply-To: <20131210112758.GA31437@pd.tnic> (Borislav Petkov's message of
-	"Tue, 10 Dec 2013 12:27:59 +0100")
-Message-ID: <87iouwi3ng.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 10 Dec 2013 20:24:00 -0500
+Date: Tue, 10 Dec 2013 17:25:29 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org
+Subject: Re: Resume regression on MBA2,1 triggered by
+ 2167e2399dc5e69c62db56d933e9c8cbe107620a
+Message-ID: <20131211012529.GA6354@kroah.com>
+References: <20131211010852.09ddf512@neptune.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131211010852.09ddf512@neptune.home>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+On Wed, Dec 11, 2013 at 01:08:52AM +0100, Bruno Prémont wrote:
+> Hi Bjørn, Rafael,
+> 
+> I have bisected failing resume from S3 on my MBA2,1 to be caused by
+> the following patch (introduced between 3.13-rc2 and 3.13-rc3 - rc2
+> resuming as expected, rc3 failing to resume).
+> 
+> Unfortunately I have no trace for the failing resume though CPU seems
+> to not be busy as fan does not start blowing (even when waiting more
+> than 10 minutes for the resume to eventually proceed which it does not).
+> 
+> Kernel config and dmesg are attached (gzip compressed).
+> 
+>   commit 2167e2399dc5e69c62db56d933e9c8cbe107620a
+>   Author: Bjørn Mork <bjorn@mork.no>
+>   Date:   Tue Dec 3 12:14:32 2013 +0100
+>   Subject: cpufreq: fix garbage kobjects on errors during suspend/resume
 
-On Tue, 10 Dec 2013 12:27:59 +0100, Borislav Petkov wrote:
-> On Tue, Dec 10, 2013 at 10:32:42AM +0900, Namhyung Kim wrote:
->> I'm sorry to raise a naming issue again. But why the lib has 'k' and
->> the directory doesn't? Isn't it more natural to prepend 'k' to 'api'
->> as the name "api" looks too general?
->>
->>   - libkapifs.{a,so} /kapi/fs/fs.c
->>
->> (Please ignore if it's already discussed..)
->
-> Hmm, no, it hasn't been discussed but I assumed tools/lib/api/ being in
-> the *kernel* repository implicitly says which api functionality we're
-> collecting there. One of the main reasons to have tools/ in the kernel
-> AFAIU is to have those tools which are using its API close. Therefore,
-> tools/lib/api/ should be unambiguous.
->
-> libkapifs.a (and the .so version even more, for that matter, and if we
-> decide to do it one day) would probably need more distinction and the
-> "k" in "kapi" there makes more sense.
->
-> This is at least how I see it from here.
+This has already been reverted in Linus's tree, see commit
+d4faadd5d5b368a7051fef374ee933ec3606713b for the details.
 
-Yeah I assumed you guys plan to export it to the wild. :)
+Does Linus's tree still have the same problem for you?
 
-I'm OK with tools/lib/api if it lives and used only in the kernel tree.
+thanks,
 
-Thanks,
-Namhyung
+greg k-h
