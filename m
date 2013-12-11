@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535Ab3LKJtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:49:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40999 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048Ab3LKJtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:49:17 -0500
-Date: Wed, 11 Dec 2013 09:49:12 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
- notifications to access reserves
-Message-ID: <20131211094912.GX11295@suse.de>
-References: <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
- <20131204054533.GZ3556@cmpxchg.org>
- <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
- <20131205025026.GA26777@htj.dyndns.org>
- <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
- <20131206190105.GE13373@htj.dyndns.org>
- <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
- <20131210215037.GB9143@htj.dyndns.org>
- <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
+	id S1751348Ab3LKJxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:53:23 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:34141 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3LKJxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 04:53:16 -0500
+Message-ID: <52A83606.40908@redhat.com>
+Date: Wed, 11 Dec 2013 10:53:10 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
+References: <1386394315-48984-1-git-send-email-jinsong.liu@intel.com> <DE8DF0795D48FD4CA783C40EC82923350141B4A7@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350141B4A7@SHSMSX101.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:55:48PM -0800, David Rientjes wrote:
-> > Okay, are you saying that userland OOM handlers will be able to dip
-> > into kernel reserve memory?  Maybe I'm mistaken but you realize that
-> > that reserve is there to make things like task exits work under OOM
-> > conditions, right?  The only way userland OOM handlers as you describe
-> > would work would be creating a separate reserve for them.
-> > 
+Il 11/12/2013 09:31, Liu, Jinsong ha scritto:
+> Paolo, comments for version 2?
+
+I think I commented that it's fine, I'm just waiting for a rebase on top
+of the generic patches.
+
+Paolo
+
+> Thanks,
+> Jinsong
 > 
-> Yes, PF_OOM_HANDLER processes would be able to allocate this amount as 
-> specified by memory.oom_reserve_in_bytes below the per-zone watermarks and 
-> the amount of reserves can already be controlled via min_free_kbytes, 
-> which we already increase internally for thp.
+> Liu, Jinsong wrote:
+>> These patches are version 2 to enalbe Intel MPX for KVM.
+>>
+>> Version 1:
+>>   * Add some Intel MPX definiation
+>>   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features
+>> enable/disable 
+>>   * vmx and msr handle for MPX support at KVM
+>>   * enalbe MPX feature for guest
+>>
+>> Version 2:
+>>   * remove generic MPX definiation, kernel side has add the
+>> definiation 
+>>   * add MSR_IA32_BNDCFGS to msrs_to_save
+>>
+>> Thanks,
+>> Jinsong
+>>
+>> Liu Jinsong (4):
+>>   KVM/X86: Fix xsave cpuid exposing bug
+>>   KVM/X86: Intel MPX vmx and msr handle
+>>   KVM/X86: add MSR_IA32_BNDCFGS to msrs_to_save
+>>   KVM/X86: Enable Intel MPX for guest.
+>>
+>>  arch/x86/include/asm/vmx.h            |    4 ++++
+>>  arch/x86/include/asm/xsave.h          |    2 ++
+>>  arch/x86/include/uapi/asm/msr-index.h |    1 +
+>>  arch/x86/kvm/cpuid.c                  |    8 ++++----
+>>  arch/x86/kvm/vmx.c                    |   18 ++++++++++++++++--
+>>  arch/x86/kvm/x86.c                    |   12 +++++++++---
+>>  arch/x86/kvm/x86.h                    |    3 ++-
+>>  7 files changed, 38 insertions(+), 10 deletions(-)
+> 
 
-THP increased min_free_kbytes for external fragmentation control as
-it reduces the amount of mixing of the different migrate types within
-pageblocks. It was not about reserves, increasing reserves was just the
-most straight forward way of handling the problem.
-
-This dicussion is closer to swap-over-network than to anything
-THP did. Swap-over-network takes care to only allocate memory for
-reserves if it the allocation was required for swapping and reject
-all other allocation requests to the extent they can get throttled in
-throttle_direct_reclaim. Once allocated from reserves for swapping,
-care is taken that the allocations are not leaked to other users (e.g.
-is_obj_pfmemalloc checks in slab).
-
-It does not look like PF_OOM_HANDLER takes the same sort of care. Even
-if it did, it's not quite the same. swap-over-network allocates from the
-zone reserves *only* the memory required to writeback the pages. It can
-be slow but it'll make forward progress. A userspace process with special
-privileges could allocate any amount of memory for any reason so it would
-need a pre-configured and limited reserve on top of the zone reserves or
-run the risk of livelock.
-
--- 
-Mel Gorman
-SUSE Labs
