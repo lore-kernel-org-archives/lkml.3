@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab3LKHSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:18:52 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:41813 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829Ab3LKHSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:18:51 -0500
-Message-ID: <52A811D1.1040908@gmail.com>
-Date: Wed, 11 Dec 2013 15:18:41 +0800
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
+	id S1751236Ab3LKHcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:32:25 -0500
+Received: from smtp01.online.nl ([194.134.41.31]:37895 "EHLO smtp01.online.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750924Ab3LKHcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 02:32:21 -0500
+Message-ID: <52A814D7.1060805@meshcoding.com>
+Date: Wed, 11 Dec 2013 08:31:35 +0100
+From: Antonio Quartulli <antonio@meshcoding.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>, Daniel Mack <zonque@gmail.com>
-CC: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Subject: Re: [PATCH] ARM: pxa: prevent PXA270 occasional reboot freezes
-References: <1386650355-2503-1-git-send-email-ynvich@gmail.com> <52A6D44C.1010504@gmail.com> <52A6F19B.8090309@gmail.com> <201312101931.34108.marex@denx.de>
-In-Reply-To: <201312101931.34108.marex@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Joe Perches <joe@perches.com>, Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
+        b.a.t.m.a.n@lists.open-mesh.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Marek Lindner <mareklindner@neomailbox.ch>
+Subject: Re: [B.A.T.M.A.N.] [PATCH -next 2/3] batman-adv: Use seq_overflow
+References: <cover.1386738050.git.joe@perches.com> <e7104b35287b1e1ec456734c1b5e1aa98dac99f8.1386738050.git.joe@perches.com> <52A813C1.8070404@meshcoding.com>
+In-Reply-To: <52A813C1.8070404@meshcoding.com>
+X-Enigmail-Version: 1.6
+OpenPGP: id=43FD7307
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="bbG9snU5osjWRKo4NB4AAansjRPstJHRd"
+X-Online-Scanned: by Cloudmark authority (on smtp01.online.nl)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 02:31 AM, Marek Vasut wrote:
-> On Tuesday, December 10, 2013 at 11:48:59 AM, Daniel Mack wrote:
->> On 12/10/2013 09:43 AM, Haojian Zhuang wrote:
->>> On 12/10/2013 12:39 PM, Sergei Ianovich wrote:
->>>> Erratum 71 of PXA270M Processor Family Specification Update
->>>> (April 19, 2010) explains that watchdog reset time is just
->>>> 8us insead of 10ms in EMTS.
->>>>
->>>> If SDRAM is not reset, it causes memory bus congestion and
->>>> the device hangs. We put SDRAM in selfresh mode before watchdog
->>>> reset, removing potential freezes.
->>>>
->>>> Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
->>>> reboots. With this patch it has successfully rebooted 500 times.
->>>>
->>>> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
->>>> ---
->>>>
->>>>    arch/arm/mach-pxa/reset.c | 8 +++++++-
->>>>    1 file changed, 7 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
->>>> index 0d5dd64..263b152 100644
->>>> --- a/arch/arm/mach-pxa/reset.c
->>>> +++ b/arch/arm/mach-pxa/reset.c
->>>> @@ -13,6 +13,7 @@
->>>>
->>>>    #include <mach/regs-ost.h>
->>>>    #include <mach/reset.h>
->>>>
->>>> +#include <mach/smemc.h>
->>>>
->>>>    unsigned int reset_status;
->>>>    EXPORT_SYMBOL(reset_status);
->>>>
->>>> @@ -81,6 +82,12 @@ static void do_hw_reset(void)
->>>>
->>>>    	writel_relaxed(OSSR_M3, OSSR);
->>>>    	/* ... in 100 ms */
->>>>    	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
->>>>
->>>> +	/*
->>>> +	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
->>>> +	 * we put SDRAM into self-refresh to prevent that
->>>> +	 */
->>>> +	while (1)
->>>> +		writel_relaxed(MDREFR_SLFRSH, MDREFR);
->>>>
->>>>    }
->>>>
->>>>    void pxa_restart(enum reboot_mode mode, const char *cmd)
->>>>
->>>> @@ -104,4 +111,3 @@ void pxa_restart(enum reboot_mode mode, const char
->>>> *cmd)
->>>>
->>>>    		break;
->>>>    	
->>>>    	}
->>>>
->>>>    }
->>>>
->>>> -
->>>
->>> Hi Daniel/Marek/Igor,
->>>
->>> Could you help to try this patch? I'm lack of PXA27x board.
->>
->> I don't have any either right now ...
->
-> On VPAC270
->
-> Tested-by: Marek Vasut <marex@denx.de>
->
-> Best regards,
-> Marek Vasut
->
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--bbG9snU5osjWRKo4NB4AAansjRPstJHRd
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Applied.
+Joe,
 
-Thanks
-Haojian
+we have other places in the batman-adv code where we use seq_printf, but
+at the moment we don't check the return value and we always return 0 at
+the end of the function.
+
+I think we could use seq_overflow here as well?
+
+
+Thanks,
+
+
+--=20
+Antonio Quartulli
+
+
+--bbG9snU5osjWRKo4NB4AAansjRPstJHRd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSqBTbAAoJEEKTMo6mOh1VQRAQAJ5F+K+L3WKBmDNEm5hDwEqH
+QEkP/hoUahL+awpng34XuxE90ci9GksBZfm6kXADZhtqRH1SeXh89D99sX/BKL0N
+4POYhXv9Z5NVSfEl0FqEcaidSIKfoHuLXl0vHFNLT+UKnZZ1Hx/RIHF74hcSbCTj
+niKhmWEt1OUKmUiQcLz5FKWF6VG1AJL2kT2MISgHHahNEBZDwuOIgjY+unL0MsAS
+ClAuSgym5MDoPRcPzARDq7znt1Ql4aOgjo8n5lCymDW/zJ922UHJSU31N4IRkU6R
+c4Fsx2AWorasM6PMgma+sUPAZTRdsekDHI1hNPNK3cHuaBLBPBOHD1Bljdc69ILy
+rtKcUoW6E8I4P2EzV+p37Eahn+xoNI/mQUV0fIAsRk2fFICKul9urswD33WRBiqs
+CaB7twGviBUCpou+Q4AdxQH+Yz50aXRosz1aEjcWSGniVmI1Vll6m+Z4lxLneHzs
+LDm0WwLZFxZt1tvb/xnLs/VsIFsS22XEr1VsBb5oEDKSaWcTzEwSCZg8MH/3cy1f
+6bE0tGQ8mDiagr/cVizLU6VCSTCt3W9iiOacL8xv8vLI3oR8y/8aWOv/m63EwSbL
+KV0Wg+U4mpXo8E/Cc6v+8/W9+V4h2dAUHmXf9/8q675ZXu99hrJl3HaOSSuxaRPx
+Or7pQuy6CQNhXL9jaNij
+=s7fm
+-----END PGP SIGNATURE-----
+
+--bbG9snU5osjWRKo4NB4AAansjRPstJHRd--
