@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab3LKUCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 15:02:53 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:39880 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3LKUCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 15:02:50 -0500
+	id S1751439Ab3LKUHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 15:07:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:56437 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960Ab3LKUHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 15:07:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,873,1378882800"; 
+   d="scan'208";a="450742440"
+Date: Wed, 11 Dec 2013 12:07:21 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 21/71] perf tools: Add feature test for
+ __sync_val_compare_and_swap
+Message-ID: <20131211200721.GN22695@tassilo.jf.intel.com>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-22-git-send-email-alexander.shishkin@linux.intel.com>
+ <20131211192407.GD1458@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <52A8C05D.9050006@zytor.com>
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
-	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
-	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
-	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>
-	<CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-	<52A63AD4.2030101@zytor.com>
-	<CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
-	<52A63BF3.1000608@zytor.com>
-	<CAMe9rOqF5f2Wktsqf_43hwa_c20+_S+W8N5VDZ6TVqPXDh7puw@mail.gmail.com>
-	<52A63DCF.2060504@zytor.com>
-	<CAMe9rOqAV5_+H97XSnrOHxcruouC=hCjDuEkiiyM8UM0BH5CWw@mail.gmail.com>
-	<alpine.LNX.2.00.1312111435470.1413@pobox.suse.cz>
-	<CAMe9rOoS6aZFCP=NNCcUuOanFcj0Y2Uq4jyC+KGC2qCR8M=s=A@mail.gmail.com>
-	<52A8A5B0.2080206@zytor.com>
-	<CAMe9rOqLwm3JdY6qbY=V3EKMZFku9rQB6Th91PbSvY=yCYaZug@mail.gmail.com>
-	<52A8C05D.9050006@zytor.com>
-Date: Wed, 11 Dec 2013 12:02:50 -0800
-Message-ID: <CAMe9rOqkWoqkiC1dreM37HhO-bRYkY3bz-aPhRyntDxrhXJE+g@mail.gmail.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211192407.GD1458@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 11:43 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/11/2013 10:21 AM, H.J. Lu wrote:
->> On Wed, Dec 11, 2013 at 9:49 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 12/11/2013 05:41 AM, H.J. Lu wrote:
->>>>
->>>> When -Ttext-segment=XXX is used, the program is expected to
->>>> load at XXX, regardless -pie is used or not.
->>>>
->>>
->>> "Expected to" by whom?  I think that is at the very best a matter of
->>> interpretation.
->>
->> # ld --help
->> ...
->>  -Ttext-segment ADDRESS      Set address of text segment
->> ...
->>
->
-> I feel a very circular argument going around here... what do the actual
-> user(s) of this option expect?
+> Can you provide more info about these gcc builtins and what is the
+> minimum system where this test will succeed?
 
-User expects the executable will be loaded at the address
-specified by -Ttext-segment.
+CMPXCHG for x86 is available since the 486 or so, so practically
+everywhere.
 
--- 
-H.J.
+I think that's mainly for other architectures.
+
+it would be reasonable to just use #if defined(__x86_64__) || defined(__i386__)
+instead.
+
+-Andi
