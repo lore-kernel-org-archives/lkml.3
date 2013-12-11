@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab3LKOv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:51:56 -0500
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:29048
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751836Ab3LKOvx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:51:53 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 12
-X-BigFish: VPS12(zz98dI9371I148cI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz177df4h8275eh17326ah1de097h186068ha1495iz2dh839h944hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336hf3eih1155h)
-X-WSS-ID: 0MXND4Z-08-NNT-02
-X-M-MSG: 
-From: Tom Lendacky <thomas.lendacky@amd.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: [PATCH 3.4 01/25] crypto: scatterwalk - Set the chain pointer indication bit
-Date: Wed, 11 Dec 2013 08:51:44 -0600
-Message-ID: <2665532.GYRAgVKg91@tlendack-t1>
-Organization: Advanced Micro Devices, Inc.
-User-Agent: KMail/4.11.2 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20131211020229.GB15638@kroah.com>
-References: <20131210075930.808460227@linuxfoundation.org> <986457BC66A4884EBFFDEFEBEB20F84C0B1EBBAA@satlexdag04.amd.com> <20131211020229.GB15638@kroah.com>
+	id S1751977Ab3LKOxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:53:46 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:35534 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385Ab3LKOxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 09:53:45 -0500
+Message-ID: <52A87C07.1020102@schinagl.nl>
+Date: Wed, 11 Dec 2013 15:51:51 +0100
+From: Olliver Schinagl <oliver@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Tejun Heo <tj@kernel.org>
+CC: Olliver Schinagl <oliver+list@schinagl.nl>, grant.likely@linaro.org,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dev@linux-sunxi.org,
+        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
+        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
+ driver for the Allwinner SUNXi series of SoCs
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-3-git-send-email-oliver@schinagl.nl> <20131204123708.GD3158@htj.dyndns.org> <529F2677.3070208@schinagl.nl> <20131204131402.GG3158@htj.dyndns.org> <529F2B41.8090009@schinagl.nl> <20131204132312.GH3158@htj.dyndns.org>
+In-Reply-To: <20131204132312.GH3158@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey all,
 
-On Tuesday, December 10, 2013 06:02:29 PM Greg Kroah-Hartman wrote:
-> On Tue, Dec 10, 2013 at 02:46:46PM +0000, Lendacky, Thomas wrote:
-> > Hi Greg,
-> > 
-> > This patch is probably not needed in any of the stable branches, but if
-> > you do add it you'll need to also include a patch that changes the use
-> > of an sg_page to an sg_chain_ptr to prevent a BUG_ON when CONFIG_DEBUG_SG
-> > is enabled (http://marc.info/?l=linux-crypto-vger&m=138627061905651&w=2).
-> 
-> You are referring to commit 389a5390583a18e45bc4abd4439291abec5e7a63 in
-> Linus's tree, right?  It's in my queue to apply after 3.13-rc4 comes
+On 04-12-13 14:23, Tejun Heo wrote:
+> Hello,
+>
+> (cc'ing Richard and Shawn, hi!)
+>
+> On Wed, Dec 04, 2013 at 02:16:49PM +0100, Olliver Schinagl wrote:
+>> On 04-12-13 14:14, Tejun Heo wrote:
+>>> Hello,
+>>>
+>>> On Wed, Dec 04, 2013 at 01:56:23PM +0100, Oliver Schinagl wrote:
+>>>> I took the imx driver as example, as I wasn't sure on where to
+>>>> start. But I don't think it's possible yet without improving
+>>>> ahci_platform as I suggested in the cover letter. So if
+>>>> ahci_platform needs to be improved, I guess a separate patch series
+>>>> would be more appropriate?
+>>>>
+>>>> So would it be acceptable to have this as the 2nd (and last?)
+>>>> ahci_platform driver and go from there? Or do you want to block new
+>>>> ahci_XXX drivers until ahci_platform has been improved?
+>>> I don't want to block new drivers unconditionally but at least I want
+>>> to know which direction we're headed in the longer term.  Right now it
+>>> feels like we could be at the beginning of an uncoordinated explosion
+>>> of these drivers which will take a hell lot mpore effort to clean up
+>>> after the fact.  I could be wrong and these could actually be
+>>> different enough to justify separate drivers and there isn't gonna be
+>>> an avalanche of these but again I at least want to know the general
+>>> direction things are headed before making any decisions.
+>> I'd be happy to pour it in any form that's needed. I even do the
+>> modification/rewrite of ahci_platform if I get enough help as it
+>> might be a little over my head initially ;)
+>>
+>> That said, I don't think it's much different at all and I do think
+>> it could be much simpler. In my mind, the sunxi_ahci driver wouldn't
+>> need to be much bigger then a few lines that are specific to the SoC
+>> (hardware init) and registerd to the ahci_platform framework via
+>> platform_ahci_register() instead of platform_device_register().
+>>
+>> But again, point me (for dummies ;) in the right direction and I'll
+>> work on it with some help.
+> Richard and Shawn recently worked on ahci_imx.  Can you guys please
+> talk with each other and figure out what can be done to share as much
+> as possible among these new platform-specific drivers?  I'd really
+> like to see the common things factored out as much as possible with
+> only the actual hardware differences described for each device.
+Working on this and studying the existing ahci_platform/shci_platform 
+drivers the last few days and was figuring out why ahci_platform only 
+supports 1 clock. IMX handles this by having 3 clocks defined in the DT, 
+the first one gets enabled by default via ahci_platform, the other 2 get 
+enabled in IMX's probe function.
 
-Yes, that's the one.
+Is it an idea to extend this to support all clocks that would be 
+required (via a callback)? Or do we prefer having the clocks separated 
+for other technical reasons? Or do we want to handle the clocks via the 
+ahci_platform framework and extend hpriv->clk to an array of clocks?
 
-Thanks,
-Tom
+Oliver
 
-> out, but I guess it's good to add it now as it is known that this is an
-> issue to be resolved.
-> 
-> I'll go do that right now, thanks for letting me know.
-> 
-> greg k-h
+>
+> Thanks a lot!
+>
 
