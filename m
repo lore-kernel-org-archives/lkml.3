@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab3LKT36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:29:58 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:57536 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab3LKT35 (ORCPT
+	id S1751715Ab3LKTaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:30:14 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:62238 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3LKTaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:29:57 -0500
-Date: Wed, 11 Dec 2013 11:29:54 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: HIH-6130: Support I2C bus drivers without
- I2C_FUNC_SMBUS_QUICK
-Message-ID: <20131211192954.GA21751@roeck-us.net>
-References: <1386760273-7703-1-git-send-email-jose.goncalves@inov.pt>
+	Wed, 11 Dec 2013 14:30:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386760273-7703-1-git-send-email-jose.goncalves@inov.pt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131209074933.GA2922@jtriplet-mobl1>
+References: <1386376451-24593-1-git-send-email-sonnyrao@chromium.org>
+	<20131209074933.GA2922@jtriplet-mobl1>
+Date: Wed, 11 Dec 2013 20:30:10 +0100
+Message-ID: <CABPqkBTufgMk=iqXM87+psUeLd865QF9tCEVHT6hwT4=TtetfQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] drivers: char: Add a dynamic clock for the trace clock
+From: Stephane Eranian <eranian@google.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Sonny Rao <sonnyrao@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Pawel Moll <pawell.moll@arm.com>,
+        Olof Johansson <olof@lixom.net>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 11:11:13AM +0000, José Miguel Gonçalves wrote:
-> Some I2C bus drivers do not allow zero-length data transfers which are
-> required to start a measurement with the HIH6130/1 sensor. Nevertheless,
-> we can overcome this limitation by writing a zero dummy byte. This byte
-> is ignored by the sensor and was verified to be working with the OMAP
-> I2C bus driver in a BeagleBone board.
-> 
-> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
+Sonny,
 
-Applied, after simplifying write_length initialization a bit.
+Your patch has a couple of problems for me:
+ - requires CONFIG_TRACING
 
-Should this go to -stable ?
+You should directly invoke getrawmonotonic()
+ and inline the code from trace_clock_getres().
 
-Guenter
+That's how I managed to compile your kernel module on my system.
+
+
+On Mon, Dec 9, 2013 at 8:49 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Fri, Dec 06, 2013 at 04:34:11PM -0800, Sonny Rao wrote:
+>> Based on a suggestion from John Stultz.
+>>
+>> This adds a dynamic clock device which can be used with clock_gettime
+>> to sample the clock source used for time stamping trace events in the
+>> kernel.  The only use for this clock source is to associate user space
+>> events with kernel events on a given kernel.  It is explicitly not
+>> supposed to be used as a generic time source and won't necessarily be
+>> consistent between kernels.
+>>
+>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
