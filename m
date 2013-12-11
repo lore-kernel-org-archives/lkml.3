@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab3LKLJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:09:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60478 "EHLO
+	id S1751965Ab3LKLKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:10:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60469 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab3LKLJU (ORCPT
+	with ESMTP id S1751667Ab3LKLJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:09:20 -0500
-Date: Wed, 11 Dec 2013 03:08:46 -0800
-From: tip-bot for Jean Pihet <tipbot@zytor.com>
-Message-ID: <tip-1448fef40af6079de38380c3a81bcf9994a1037d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, will.deacon@arm.com, jean.pihet@linaro.org,
-        jolsa@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, will.deacon@arm.com, jean.pihet@linaro.org,
-        jolsa@redhat.com, tglx@linutronix.de
-In-Reply-To: <1386678244-13535-3-git-send-email-jean.pihet@linaro.org>
-References: <1386678244-13535-3-git-send-email-jean.pihet@linaro.org>
+	Wed, 11 Dec 2013 06:09:02 -0500
+Date: Wed, 11 Dec 2013 03:08:27 -0800
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-ac5e7f84c0e050fe19146d9bf51f69890beabcef@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        jolsa@redhat.com, bccheng@google.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        jolsa@redhat.com, bccheng@google.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <20131205182642.GA14614@quad>
+References: <20131205182642.GA14614@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf unwinding: Use the per-feature check flags
-Git-Commit-ID: 1448fef40af6079de38380c3a81bcf9994a1037d
+Subject: [tip:perf/core] perf symbols: Fix bug in usage of the basename()
+  function
+Git-Commit-ID: ac5e7f84c0e050fe19146d9bf51f69890beabcef
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,157 +32,83 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:08:53 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:08:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1448fef40af6079de38380c3a81bcf9994a1037d
-Gitweb:     http://git.kernel.org/tip/1448fef40af6079de38380c3a81bcf9994a1037d
-Author:     Jean Pihet <jean.pihet@linaro.org>
-AuthorDate: Tue, 10 Dec 2013 13:24:04 +0100
+Commit-ID:  ac5e7f84c0e050fe19146d9bf51f69890beabcef
+Gitweb:     http://git.kernel.org/tip/ac5e7f84c0e050fe19146d9bf51f69890beabcef
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 5 Dec 2013 19:26:42 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Dec 2013 16:51:12 -0300
+CommitDate: Tue, 10 Dec 2013 16:51:11 -0300
 
-perf unwinding: Use the per-feature check flags
+perf symbols: Fix bug in usage of the basename() function
 
-Use the per-feature check flags for the unwinding feature in order to
-correctly compile the test-all, libunwind and libunwind-debug-frame
-feature checks.
+The basename() implementation varies a lot between systems.
 
-Tested on x86_64, ARMv7 and ARMv8 with and without LIBUNWIND_DIR set in
-'make -C tools/perf'
+The Linux man page says: "basename may modify the content of the path,
+so it may be desirable to pass a copy when calling the function".
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+On some other systems, the returned address may come from an internal
+buffer which can be reused in subsequent calls, thus the results should
+also be copied.
+
+The dso__set_basename() function was not doing this causing problems
+on some systems with wrong library names being shown by perf report,
+such as on Android systems.
+
+This patch fixes the problem.
+The patch is relative to tip.git.
+
+In v2, we clean up the comments based on Ingo's feedback.
+
+Reported-by: Ben Cheng <bccheng@google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Acked-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Ben Cheng <bccheng@google.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linaro-kernel@lists.linaro.org
-Cc: patches@linaro.org
-Link: http://lkml.kernel.org/r/1386678244-13535-3-git-send-email-jean.pihet@linaro.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20131205182642.GA14614@quad
+[ v3: Fixed up wrt allocated flag now being set in dso__set_short_name ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile                | 52 ++++++++++++++++++-------------
- tools/perf/config/feature-checks/Makefile |  8 ++---
- 2 files changed, 34 insertions(+), 26 deletions(-)
+ tools/perf/util/dso.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 2afb132..5a1f4df 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -36,6 +36,30 @@ ifeq ($(ARCH),arm)
-   LIBUNWIND_LIBS = -lunwind -lunwind-arm
- endif
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 582b5d3..436922f 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -413,7 +413,28 @@ void dso__set_short_name(struct dso *dso, const char *name, bool name_allocated)
  
-+ifeq ($(LIBUNWIND_LIBS),)
-+  NO_LIBUNWIND := 1
-+else
-+  #
-+  # For linking with debug library, run like:
-+  #
-+  #   make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
-+  #
-+  ifdef LIBUNWIND_DIR
-+    LIBUNWIND_CFLAGS  = -I$(LIBUNWIND_DIR)/include
-+    LIBUNWIND_LDFLAGS = -L$(LIBUNWIND_DIR)/lib
-+  endif
-+  LIBUNWIND_LDFLAGS += $(LIBUNWIND_LIBS)
+ static void dso__set_basename(struct dso *dso)
+ {
+-	dso__set_short_name(dso, basename((char *)dso->long_name), false);
++       /*
++        * basename() may modify path buffer, so we must pass
++        * a copy.
++        */
++       char *base, *lname = strdup(dso->long_name);
 +
-+  # Set per-feature check compilation flags
-+  FEATURE_CHECK_CFLAGS-libunwind = $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libunwind = $(LIBUNWIND_LDFLAGS)
-+  FEATURE_CHECK_CFLAGS-libunwind-debug-frame = $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libunwind-debug-frame = $(LIBUNWIND_LDFLAGS)
-+  #  and the flags for the test-all case
-+  FEATURE_CHECK_CFLAGS-all += $(LIBUNWIND_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-all += $(LIBUNWIND_LDFLAGS)
-+endif
++       if (!lname)
++               return;
 +
- ifeq ($(NO_PERF_REGS),0)
-   CFLAGS += -DHAVE_PERF_REGS_SUPPORT
- endif
-@@ -102,7 +126,7 @@ endif
++       /*
++        * basename() may return a pointer to internal
++        * storage which is reused in subsequent calls
++        * so copy the result.
++        */
++       base = strdup(basename(lname));
++
++       free(lname);
++
++       if (!base)
++               return;
++
++       dso__set_short_name(dso, base, true);
+ }
  
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
-@@ -305,21 +329,7 @@ ifndef NO_LIBELF
-   endif # NO_DWARF
- endif # NO_LIBELF
- 
--ifeq ($(LIBUNWIND_LIBS),)
--  NO_LIBUNWIND := 1
--endif
--
- ifndef NO_LIBUNWIND
--  #
--  # For linking with debug library, run like:
--  #
--  #   make DEBUG=1 LIBUNWIND_DIR=/opt/libunwind/
--  #
--  ifdef LIBUNWIND_DIR
--    LIBUNWIND_CFLAGS  := -I$(LIBUNWIND_DIR)/include
--    LIBUNWIND_LDFLAGS := -L$(LIBUNWIND_DIR)/lib
--  endif
--
-   ifneq ($(feature-libunwind), 1)
-     msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 1.1);
-     NO_LIBUNWIND := 1
-@@ -334,14 +344,12 @@ ifndef NO_LIBUNWIND
-       # non-ARM has no dwarf_find_debug_frame() function:
-       CFLAGS += -DNO_LIBUNWIND_DEBUG_FRAME
-     endif
--  endif
--endif
- 
--ifndef NO_LIBUNWIND
--  CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
--  EXTLIBS += $(LIBUNWIND_LIBS)
--  CFLAGS += $(LIBUNWIND_CFLAGS)
--  LDFLAGS += $(LIBUNWIND_LDFLAGS)
-+    CFLAGS += -DHAVE_LIBUNWIND_SUPPORT
-+    EXTLIBS += $(LIBUNWIND_LIBS)
-+    CFLAGS += $(LIBUNWIND_CFLAGS)
-+    LDFLAGS += $(LIBUNWIND_LDFLAGS)
-+  endif # ifneq ($(feature-libunwind), 1)
- endif
- 
- ifndef NO_LIBAUDIT
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index b8bb749..bc86462 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -32,12 +32,12 @@ CC := $(CC) -MD
- 
- all: $(FILES)
- 
--BUILD = $(CC) $(CFLAGS) $(LDFLAGS) -o $(OUTPUT)$@ $@.c
-+BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $@.c $(LDFLAGS)
- 
- ###############################
- 
- test-all:
--	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma $(LIBUNWIND_LIBS) -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
- 
- test-hello:
- 	$(BUILD)
-@@ -70,10 +70,10 @@ test-libnuma:
- 	$(BUILD) -lnuma
- 
- test-libunwind:
--	$(BUILD) $(LIBUNWIND_LIBS) -lelf
-+	$(BUILD) -lelf
- 
- test-libunwind-debug-frame:
--	$(BUILD) $(LIBUNWIND_LIBS) -lelf
-+	$(BUILD) -lelf
- 
- test-libaudit:
- 	$(BUILD) -laudit
+ int dso__name_len(const struct dso *dso)
