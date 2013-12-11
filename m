@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3LKUPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 15:15:31 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:42337 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab3LKUP1 (ORCPT
+	id S1750996Ab3LKUS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 15:18:26 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41168 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3LKUSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 15:15:27 -0500
+	Wed, 11 Dec 2013 15:18:25 -0500
+Date: Wed, 11 Dec 2013 21:18:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: perf: hsw model numbers
+Message-ID: <20131211201820.GD2480@laptop.programming.kicks-ass.net>
+References: <20131211103631.GJ13532@twins.programming.kicks-ass.net>
+ <20131211185310.GJ21717@two.firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1386364179-28650-1-git-send-email-delicious.quinoa@gmail.com>
-References: <1386364179-28650-1-git-send-email-delicious.quinoa@gmail.com>
-Date: Wed, 11 Dec 2013 14:15:25 -0600
-Message-ID: <CANk1AXS=CADN53aO5KVN3UorddJ0wZ2PTqwo2XmeRuxYe_DoLg@mail.gmail.com>
-Subject: Re: [PATCH v9] gpio: add a driver for Synopsys DesignWare APB GPIO
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        delicious quinoa <delicious.quinoa@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211185310.GJ21717@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 6, 2013 at 3:09 PM, Alan Tull <delicious.quinoa@gmail.com> wrote:
-> From: Alan Tull <atull@altera.com>
->
-> Hi Linus,
->
-> If you don't have any further comments, can you take this patch?
->
-> Alan
+On Wed, Dec 11, 2013 at 07:53:10PM +0100, Andi Kleen wrote:
+> > Can you add comments with each model number describing what actual part
+> > it is?
+> 
+> It would probably be confusing, they have lots of different marketing
+> names :/ Just think of them as some flavour of Haswell.
 
-Basically, this is a driver that Jamie wrote and was upstreaming a few
-years ago.  For some reason it never quite made it into the kernel.  I
-picked it up, updated the interrupt support, posted it to the list and
-went through some reviews with it.
+So they're all 'client' chips? Why do they have different model numbers
+then?
 
-This driver has been reviewed, I hope it can make it into the kernel.
+> > 
+> > Also, we seem to lack snb/ivb EX part numbers, are those already known?
+> 
+> They are the same as respective EP (and there is no SNB-EX)
 
-Alan
+Urgh, so we cannot differentiate between EP/EX anymore? Does that mean
+that the EP chips can be used in 4-8 socket systems?
 
->
-> Jamie Iles (1):
->   gpio: add a driver for the Synopsys DesignWare APB GPIO block
->
->  .../devicetree/bindings/gpio/snps-dwapb-gpio.txt   |   59 +++
->  drivers/gpio/Kconfig                               |    9 +
->  drivers/gpio/Makefile                              |    1 +
->  drivers/gpio/gpio-dwapb.c                          |  415 ++++++++++++++++++++
->  4 files changed, 484 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpio/snps-dwapb-gpio.txt
->  create mode 100644 drivers/gpio/gpio-dwapb.c
->
-> --
-> 1.7.9.5
->
->
