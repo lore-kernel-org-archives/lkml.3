@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab3LKJkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:40:42 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:42668 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3LKJkh (ORCPT
+	id S1751304Ab3LKJou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:44:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54484 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab3LKJos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:40:37 -0500
-X-AuditID: cbfee6a4-b7fb26d000006a49-9c-52a8331279f1
-Date: Wed, 11 Dec 2013 09:40:34 +0000 (GMT)
-From: Anurag Aggarwal <a.anurag@samsung.com>
-Subject: Re: [PATCH V6] ARM : unwinder : Prevent data abort due to stack
- overflow
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Naveen Kumar <naveen.sel@samsung.com>,
-        Narendra Meher <narendra.m1@samsung.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ashish Kalra <ashish.kalra@samsung.com>, "cpgs ." <cpgs@samsung.com>,
-        "anurag19aggarwal@gmail.com" <anurag19aggarwal@gmail.com>,
-        "naveenkrishna.ch@gmail.com" <naveenkrishna.ch@gmail.com>,
-        Rajat Suri <rajat.suri@samsung.com>,
-        Poorva Srivastava <poorva.s@samsung.com>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>
-Reply-to: a.anurag@samsung.com
-MIME-version: 1.0
-X-MTR: 20131211092524934@a.anurag
-Msgkey: 20131211092524934@a.anurag
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20131211092524934@a.anurag
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: Y
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <2150956.98751386754831696.JavaMail.weblogic@epml23>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t/t6bpCxiuCDI52SVhc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Md7vnMxZM4q9Yt8StgfEOXxcjJ4eQgLJE7971bCC2hICJxLKG
-	x0wQtpjEhXsQcSGB+YwSzz6pdTFycLAIqEp86rcECbMJ6EpMvHGFGcQWFgiUOHb/EDtIiYiA
-	usTRfUAlXBzMArtYJaY2vWGFGCMncXfddrB6XgFBiZMzn7BArFKU+NZ0nA0iriRxsX0V1Aly
-	EkumXoayeSVmtD9lgYlP+7qGGcKWljg/awMjzMmLvz+GivNLHLu9gwnkHpDeJ/eDYcbs3vwF
-	6lsBialnDkK1qkncXdvMDmHzSaxZ+JYFZsyuU8uZYXobNv4Gq2EGOnlK90Mo20DiyKI5rOje
-	4hVwkHj5/yLzBEa5WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9AoTveLE3OLSvHS95PzcTYzg
-	CH+2ZAdjwwXrQ4wCHIxKPLwHi5YHCbEmlhVX5h5ilOBgVhLhXcGwIkiINyWxsiq1KD++qDQn
-	tfgQozQHi5I474JbSUFCAumJJanZqakFqUUwWSYOTqkGxtWLXjy6NuHS75Odquvt1J8eb/c4
-	ahN9rsNsU4FvkeIiwS+FrX+upPGWHF8ZGjQpREbttQ3/ZR7+uK/S4se+nM3s+q4efKbB6qZZ
-	berNjym2xutupjQ/dyjd88Ws/YT1hYPLWA8/XhPKL/VowdxlR1xVLj12KXGw0OG+W/Z70uHL
-	Z8QnO137EaXEUpyRaKjFXFScCACpBuDv7AIAAA==
+	Wed, 11 Dec 2013 04:44:48 -0500
+Date: Wed, 11 Dec 2013 10:44:40 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        sameo@linux.intel.com, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lee.jones@linaro.org,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 01/15] mfd: menelaus: Drop __exit section annotation
+Message-ID: <20131211094440.GG18888@pengutronix.de>
+References: <1386042188-12246-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386042188-12246-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBB9emgP023586
 
->You could try adding some debug printks to see how the backtrace fails.
->You could also try adding a few hand-crafted assembler functions
->with appropriate code and unwind directives to trigger different kinds
->of backtrace failure.  You might have to add a way to artificially limit
->sp_high to check the cases where you run out of stack in the middle of
->popping multiple registers.
+On Mon, Dec 02, 2013 at 09:42:54PM -0600, Felipe Balbi wrote:
+> we could build that as a driver.
+What is "that". How can it not be a driver? Do you mean modular? In that
+case there is no problem, the only thing that doesn't work is unloading
+the module.
 
-I added a a printk statement 
-+               if (*vsp >= (unsigned long *)ctrl->sp_high) {
-+                       printk(KERN_ERR "Stack Overflow Detected, vsp = %lx",
-+                               (unsigned long)*vsp);
-+                       return -URC_FAILURE;
-+               }
+Best regards
+Uwe
+ 
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/mfd/menelaus.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+> index ad25bfa..975ff9e 100644
+> --- a/drivers/mfd/menelaus.c
+> +++ b/drivers/mfd/menelaus.c
+> @@ -1262,7 +1262,7 @@ fail:
+>  	return err;
+>  }
+>  
+> -static int __exit menelaus_remove(struct i2c_client *client)
+> +static int menelaus_remove(struct i2c_client *client)
+>  {
+>  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
+>  
+> @@ -1283,7 +1283,7 @@ static struct i2c_driver menelaus_i2c_driver = {
+>  		.name		= DRIVER_NAME,
+>  	},
+>  	.probe		= menelaus_probe,
+> -	.remove		= __exit_p(menelaus_remove),
+> +	.remove		= menelaus_remove,
+>  	.id_table	= menelaus_id,
+>  };
+>  
 
-I ran a many test cases to try and get the above print in the dmesg log.
-
-I tried the following things :
-
-1) Calling unwind_backtrace from diffrenet locations in the kernel, I added the unwind call 
-in some irq, fork, exit and some sysfs entries call.
-2) I limited the value of sp_high in unwind_frame() itself, I tried many values of sp_high, 
-varrying from (low + sizeof(ctrl.vrs)/4) to (low + 4*sizeof(ctrl.vrs)).
-
-When running the above cases I was able to see the above printk quiet a few times in dmesg log.
-
-So, the error condition is being handled.
-
-If you have some test cases for verifying the unwinder, please share the same. They might help 
-in thorough testing of unwinder.
-
-
-
-Regards
-AnuragˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+Pengutronix e.K.                           | Uwe Kleine-Kˆnig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
