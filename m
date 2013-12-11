@@ -1,145 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab3LKWtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:49:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41137 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab3LKWtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:49:19 -0500
-Date: Wed, 11 Dec 2013 23:49:17 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of
- empty numa node
-Message-ID: <20131211224917.GF1163@quack.suse.cz>
-References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org>
- <529EE811.5050306@linux.vnet.ibm.com>
- <20131204004125.a06f7dfc.akpm@linux-foundation.org>
- <529EF0FB.2050808@linux.vnet.ibm.com>
- <20131204134838.a048880a1db9e9acd14a39e4@linux-foundation.org>
+	id S1751450Ab3LKWv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:51:28 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39109 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3LKWv1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:51:27 -0500
+Date: Wed, 11 Dec 2013 22:51:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-ID: <20131211225116.GC11044@sirena.org.uk>
+References: <1386666583-3280-1-git-send-email-k.kozlowski@samsung.com>
+ <1386666583-3280-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B4IIlcmfBL/1gGOG"
 Content-Disposition: inline
-In-Reply-To: <20131204134838.a048880a1db9e9acd14a39e4@linux-foundation.org>
+In-Reply-To: <1386666583-3280-2-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: You will be successful in love.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regulator: s5m8767: Fix driver probe fail on BUCK7/8
+ regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-12-13 13:48:38, Andrew Morton wrote:
-> On Wed, 04 Dec 2013 14:38:11 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
-> 
-> > On 12/04/2013 02:11 PM, Andrew Morton wrote:
-> > > On Wed, 04 Dec 2013 14:00:09 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
-> > >
-> > >> Unfaortunately, from my search, I saw that the code belonged to pre git
-> > >> time, so could not get much information on that.
-> > >
-> > > Here: https://lkml.org/lkml/2004/8/20/242
-> > >
-> > > It seems it was done as a rather thoughtless performance optimisation.
-> > > I'd say it's time to reimplement max_sane_readahead() from scratch.
-> > >
-> > 
-> > Ok. Thanks for the link. I think after that,
-> > Here it was changed to pernode:
-> > https://lkml.org/lkml/2004/8/21/9 to avoid iteration all over.
-> > 
-> > do you think above patch (+comments) with some sanitized nr (thus
-> > avoiding iteration over nodes in remote numa readahead case) does look
-> > better?
-> > or should we iterate all memory.
-> 
-> I dunno, the whole thing smells of arbitrary woolly thinking to me. 
-> Going back further in time..
-> 
-> : commit f76d03dc9fcff7ac88e2d23c5814fd0f50c59bb6
-> : Author:     akpm <akpm>
-> : AuthorDate: Sun Dec 15 03:18:58 2002 +0000
-> : Commit:     akpm <akpm>
-> : CommitDate: Sun Dec 15 03:18:58 2002 +0000
-> : 
-> :     [PATCH] madvise_willneed() maximum readahead checking
-> :     
-> :     madvise_willneed() currently has a very strange check on how much readahead
-> :     it is prepared to do.
-> :     
-> :       It is based on the user's rss limit.  But this is usually enormous, and
-> :       the user isn't necessarily going to map all that memory at the same time
-> :       anyway.
-> :     
-> :       And the logic is wrong - it is comparing rss (which is in bytes) with
-> :       `end - start', which is in pages.
-> :     
-> :       And it returns -EIO on error, which is not mentioned in the Open Group
-> :       spec and doesn't make sense.
-> :     
-> :     
-> :     This patch takes it all out and applies the same upper limit as is used in
-> :     sys_readahead() - half the inactive list.
-> : 
-> : +/*
-> : + * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
-> : + * sensible upper limit.
-> : + */
-> : +unsigned long max_sane_readahead(unsigned long nr)
-> : +{
-> : +       unsigned long active;
-> : +       unsigned long inactive;
-> : +
-> : +       get_zone_counts(&active, &inactive);
-> : +       return min(nr, inactive / 2);
-> : +}
-> 
-> And one would need to go back further still to understand the rationale
-> for the sys_readahead() decision and that even predates the BK repo.
-> 
-> iirc the thinking was that we need _some_ limit on readahead size so
-> the user can't go and do ridiculously large amounts of readahead via
-> sys_readahead().  But that doesn't make a lot of sense because the user
-> could do the same thing with plain old read().
-> 
-> So for argument's sake I'm thinking we just kill it altogether and
-> permit arbitrarily large readahead:
-> 
-> --- a/mm/readahead.c~a
-> +++ a/mm/readahead.c
-> @@ -238,13 +238,12 @@ int force_page_cache_readahead(struct ad
->  }
->  
->  /*
-> - * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
-> - * sensible upper limit.
-> + * max_sane_readahead() is disabled.  It can later be removed altogether, but
-> + * let's keep a skeleton in place for now, in case disabling was the wrong call.
->   */
->  unsigned long max_sane_readahead(unsigned long nr)
->  {
-> -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-> -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-> +	return nr;
->  }
->  
->  /*
-> 
-> Can anyone see a problem with this?
-  Well, the downside seems to be that if userspace previously issued
-MADV/FADV_WILLNEED on a huge file, we trimmed the request to a sensible
-size. Now we try to read the whole huge file which is pretty much
-guaranteed to be useless (as we'll be pushing out of cache data we just
-read a while ago). And guessing the right readahead size from userspace
-isn't trivial so it would make WILLNEED advice less useful. What do you
-think?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--B4IIlcmfBL/1gGOG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Dec 10, 2013 at 10:09:43AM +0100, Krzysztof Kozlowski wrote:
+> The BUCK7 and BUCK8 were not supported by s5m8767 driver. If they were
+> configured in DTS then the driver probing would fail with EINVAL:
+> [    0.288474] VCC_SUB_1.35V: failed to apply 1350000uV constraint
+> [    0.288671] s5m8767-pmic s5m8767-pmic: regulator init failed for 35
+> [    0.294931] s5m8767-pmic: probe of s5m8767-pmic failed with error -22
+
+> This patch adds support for BUCK7 and BUCK8 regulators using standard
+> regmap get/set voltage sel functions.
+
+I've applied these but this changelog doesn't entirely add up so I
+rewrote it a bit.  The patch is implementing the get and set voltage
+operations, the regulators were actually supported.  The errors were
+being caused by the DT attempting to set the voltage for a fixed voltage
+regulator which obviously won't work - I suspect that the DTs might not
+be ideal, it seems common to overspecify voltages in DTs for some
+reason.
+
+--B4IIlcmfBL/1gGOG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqOxhAAoJELSic+t+oim9RtIP/i84T5ZEXsQjPnsFpeslVmfI
+vSY5mpTOlGl8LJIwOp0ntcmtpDOwmaOk2pEM4+f8mip/UEZElMYqRWPEhP2f9oAg
+Bv/BXUk5SEON+za5lkjFPKZbp3Wc3cwmeSdWrEDZgQ/uG0gjttdYutcA6j89e9uG
+xgyh/W7lLHufOKZvjYFjmM7egUqmg7PEEwbj42I3F19s8viruLIIjQRcuZqqAp/f
+uKg1qrT5Ph6rEnQaXdi0qD3pOCakD6C9uebUYLxEyOvuOFrbxXP0R3wwRdGhRkhq
+aZTpeKricaSHwYD6ot10KRwlAIxJ36d6UGiI76kxnBl8kNkhEfIoTYYa6mCkgmtE
+D6LmTN3Fi6bgWD5jA2ANKdehRPriQVCC9q/Wpr/PCvcummhuptk1WFp0vT1AtsHg
+8//0VI2TSTVafzOKkUZPz46jKHhLiKTCA0rC7NbSUL9YEIiWo3c79VOkm67+SHuJ
+deUErV2IOZBWX4fKHNi8g8XYNVR6TTvAtNdoOPSy5XAcoXFyM7mPIPtu8GrCxKaq
+snni/y1oRPFGpGG10dLlsk18/C+GAtUYFpxvABCvUJVSYE5ERWE0jEsYkQWQ4MDB
+ZQ+APw9HXykpnFbHjDtT8nbj+7iNz7DcHG4TRV8Q0aM6ZS6mmS6ALszGxYCS+Gh2
+aV1t+0A6+r8rqnaPyhhH
+=i6dt
+-----END PGP SIGNATURE-----
+
+--B4IIlcmfBL/1gGOG--
