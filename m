@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377Ab3LKIzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:55:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37566 "EHLO mga09.intel.com"
+	id S1751065Ab3LKJBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:01:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39686 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab3LKIzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:55:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,870,1378882800"; 
-   d="scan'208";a="442268653"
-Date: Wed, 11 Dec 2013 10:54:52 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, kishon <kishon@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, Julius Werner <jwerner@chromium.org>
-Subject: Re: [PATCH RFC 1/4] phy: Add provision for tuning phy.
-Message-ID: <20131211085452.GE28456@xps8300>
-References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
- <1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>
- <20131210140142.GB28456@xps8300>
- <CAFp+6iENkrSUT=_iv+uZnVpDSGDQGOzF_oyZ6Dmzr8VcQfjztw@mail.gmail.com>
- <20131211080906.GC28456@xps8300>
- <CAFp+6iFHO6Nr1KRzNqsZpY29czmvTXqPaVbUz9JRdc8QmPziYQ@mail.gmail.com>
+	id S1750736Ab3LKJB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 04:01:29 -0500
+Date: Wed, 11 Dec 2013 09:01:24 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v5 4/8] sched/numa: fix set cpupid on page migration
+ twice against normal page
+Message-ID: <20131211090124.GR11295@suse.de>
+References: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1386723001-25408-5-git-send-email-liwanp@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAFp+6iFHO6Nr1KRzNqsZpY29czmvTXqPaVbUz9JRdc8QmPziYQ@mail.gmail.com>
+In-Reply-To: <1386723001-25408-5-git-send-email-liwanp@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again,
-
-On Wed, Dec 11, 2013 at 02:02:43PM +0530, Vivek Gautam wrote:
-> On Wed, Dec 11, 2013 at 1:39 PM, Heikki Krogerus
-> <heikki.krogerus@linux.intel.com> wrote:
-> > On Wed, Dec 11, 2013 at 12:08:04PM +0530, Vivek Gautam wrote:
-> >> On Tue, Dec 10, 2013 at 7:31 PM, Heikki Krogerus
-> >> > I think "setup" instead of "tune" is much more clear and reusable.
-> >>
-> >> I think "setup" will look more like first time setting up the phy,
-> >> which is rather served by "init" callback.
-> >> This i thought would serve the purpose of over-riding certain PHY
-> >> parameters, which would not have been
-> >> possible at "init" time.
-> >> Please correct my thinking if i am unable to understand your point here.
-> >
-> > OK, sorry I was not clear on this. I'm thinking the same, that this is
-> > something that is called later, for example when the controller is
-> > ready. Some ULPI phys need to be initialized, but since the controller
-> > provides the interface, it's usually not possible during init time.
-> > This hook could be used in that case as well.
-> >
-> > All I'm saying is that "tune" is a poor expression. You will need to
-> > add a comment explaining what the hook does in any case, so you'll
-> > have something like "this is something that is called when the
-> > controller is ready" or something similar. That will make it clear
-> > what it's meant for.
+On Wed, Dec 11, 2013 at 08:49:57AM +0800, Wanpeng Li wrote:
+> commit 7851a45cd3 (mm: numa: Copy cpupid on page migration) copy over
+> the cpupid at page migration time, there is unnecessary to set it again
+> in function alloc_misplaced_dst_page, this patch fix it.
 > 
-> Ok, i think i should have kept a comment atleast :-(
-> I will add proper comments above, and as suggested in the mail by
-> Kishon, may be name it calibrate ?
-> What do you think ?
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-Sure, I'm fine with that.
+migratepages aops is not necessarily required to go through migrate_page_copy
+but in practice all of them do and it's hard to imagine one that didn't
+so.
 
-Thanks,
+Acked-by: Mel Gorman <mgorman@suse.de>
 
 -- 
-heikki
+Mel Gorman
+SUSE Labs
