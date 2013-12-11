@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab3LKWgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:36:32 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:36164 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab3LKWg1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:36:27 -0500
-Message-ID: <52A8F6FC.40201@cogentembedded.com>
-Date: Thu, 12 Dec 2013 02:36:28 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
-CC: linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca, horms@verge.net.au, tglx@linutronix.de
-Subject: Re: [PATCH] irqchip: Renesas IRQC driver
-References: <20130227081501.30706.60471.sendpatchset@w520>
-In-Reply-To: <20130227081501.30706.60471.sendpatchset@w520>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751686Ab3LKWgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:36:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27862 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626Ab3LKWgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:36:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
+   d="scan'208";a="423195687"
+Subject: [PATCH 2/2] mm: blk-mq: uses page->list incorrectly
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, cl@gentwo.org, kirill.shutemov@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>, akpm@linux-foundation.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Wed, 11 Dec 2013 14:36:32 -0800
+References: <20131211223631.51094A3D@viggo.jf.intel.com>
+In-Reply-To: <20131211223631.51094A3D@viggo.jf.intel.com>
+Message-Id: <20131211223632.8B2DFD41@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 02/27/2013 11:15 AM, Magnus Damm wrote:
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-> From: Magnus Damm <damm@opensource.se>
+'struct page' has two list_head fields: 'lru' and 'list'.
+Conveniently, they are unioned together.  This means that code
+can use them interchangably, which gets horribly confusing.
 
-    Magnus, explain me one thing about your driver please.
+The blk-mq made the logical decision to try to use page->list.
+But, that field was actually introduced just for the slub code.
+->lru is the right field to use outside of slab/slub.
 
-> This patch adds a driver for external IRQ pins connected
-> to the IRQC hardware block on recent SoCs from Renesas.
->
-> The IRQC hardware block is used together with more
-> recent ARM based SoCs using the GIC. As usual the GIC
-> requires external IRQ trigger setup somewhere else
-> which in this particular case happens to be IRQC.
->
-> This driver implements the glue code needed to configure
-> IRQ trigger and also handle mask/unmask and demux of
-> external IRQ pins hooked up from the IRQC to the GIC.
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
-    Judging on the R8A779x manual pictures, IRQn enter the SoC via IRQC, right?
-Why then you call request_irq() on GIC interrupt numbers and expect an 
-interrupt to "enter" from the GIC side, and then only read IRQC's 
-DETECT_STATUS register to make sure the matching IRQn is really active (you 
-call it demux, but I don't really see much of a demultiplexing there). This 
-seems to me fundamentally broken, and is probably why the interrupt from PHY 
-doesn't happen despite I set the interrupt type to active low via a call to 
-irq_set_irq_type()...
+ linux.git-davehans/block/blk-mq.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> Tested on r8a73a4 but is designed to work with a wide
-> range of SoCs. The driver requires one GIC SPI per
-> external IRQ pin to operate.  Each driver instance
-> will handle up to 32 external IRQ pins.
-
-    Ah, so you've even tested it... I got an impression from your words that 
-the driver hasn't been tested.
-
-> The SoCs using this driver are currently mainly used
-> together with regular platform devices so this driver
-> allows configuration via platform data to support things
-> like static interrupt base address. DT support will
-> be added incrementally in the not so distant future.
-
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-
-WBR, Sergei
-
+diff -puN block/blk-mq.c~blk-mq-uses-page-list-incorrectly block/blk-mq.c
+--- linux.git/block/blk-mq.c~blk-mq-uses-page-list-incorrectly	2013-12-11 14:34:51.735196799 -0800
++++ linux.git-davehans/block/blk-mq.c	2013-12-11 14:34:51.739196977 -0800
+@@ -1087,8 +1087,8 @@ static void blk_mq_free_rq_map(struct bl
+ 	struct page *page;
+ 
+ 	while (!list_empty(&hctx->page_list)) {
+-		page = list_first_entry(&hctx->page_list, struct page, list);
+-		list_del_init(&page->list);
++		page = list_first_entry(&hctx->page_list, struct page, lru);
++		list_del_init(&page->lru);
+ 		__free_pages(page, page->private);
+ 	}
+ 
+@@ -1152,7 +1152,7 @@ static int blk_mq_init_rq_map(struct blk
+ 			break;
+ 
+ 		page->private = this_order;
+-		list_add_tail(&page->list, &hctx->page_list);
++		list_add_tail(&page->lru, &hctx->page_list);
+ 
+ 		p = page_address(page);
+ 		entries_per_page = order_to_size(this_order) / rq_size;
+_
