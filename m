@@ -1,1521 +1,966 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751145Ab3LKTQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:16:13 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:30891 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab3LKTOV (ORCPT
+	id S1752367Ab3LKTRC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:17:02 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:62327 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3LKTMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:14:21 -0500
-X-IronPort-AV: E=Sophos;i="4.93,873,1378882800"; 
-   d="scan'208";a="1870496"
-From: Sherman Yin <syin@broadcom.com>
-To: Rob Herring <rob.herring@calxeda.com>,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Sherman Yin <syin@broadcom.com>
-Subject: [PATCH v3 5/6] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-Date: Wed, 11 Dec 2013 10:37:20 -0800
-Message-ID: <1386787041-6035-6-git-send-email-syin@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386787041-6035-1-git-send-email-syin@broadcom.com>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
- <1386787041-6035-1-git-send-email-syin@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 11 Dec 2013 14:12:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, neilb@suse.de, linus.walleij@linaro.org,
+        ashutosh.dixit@intel.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/6] kernfs: s/sysfs/kernfs/ in various data structures
+Date: Wed, 11 Dec 2013 14:11:55 -0500
+Message-Id: <1386789118-24733-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1386789118-24733-1-git-send-email-tj@kernel.org>
+References: <1386789118-24733-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
+kernfs has just been separated out from sysfs and we're already in
+full conflict mode.  Nothing can make the situation any worse.  Let's
+take the chance to name things properly.
 
-Signed-off-by: Sherman Yin <syin@broadcom.com>
-Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
----
-v3: Re-work driver to be based on generic pin config. Moved config selection
-    from Kconfig to bcm_defconfig.
-v2: Use hyphens instead of underscore in DT property names.
----
- arch/arm/configs/bcm_defconfig  |    5 +
- drivers/pinctrl/Kconfig         |   11 +
- drivers/pinctrl/Makefile        |    1 +
- drivers/pinctrl/pinctrl-capri.c | 1408 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 1425 insertions(+)
- create mode 100644 drivers/pinctrl/pinctrl-capri.c
+This patch performs the following renames.
 
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index 287ac1d..6b94987 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -126,3 +126,8 @@ CONFIG_CRC_ITU_T=y
- CONFIG_CRC7=y
- CONFIG_XZ_DEC=y
- CONFIG_AVERAGE=y
-+CONFIG_PINCTRL=y
-+CONFIG_PINMUX=y
-+CONFIG_PINCONF=y
-+CONFIG_GENERIC_PINCONF=y
-+CONFIG_PINCTRL_CAPRI=y
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index a921ff1..664c8e6 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -104,6 +104,17 @@ config PINCTRL_BCM2835
- 	select PINMUX
- 	select PINCONF
+* s/sysfs_open_dirent/kernfs_open_node/
+* s/sysfs_open_file/kernfs_open_file/
+* s/sysfs_inode_attrs/kernfs_iattrs/
+* s/sysfs_addrm_cxt/kernfs_addrm_cxt/
+* s/sysfs_super_info/kernfs_super_info/
+* s/sysfs_info()/kernfs_info()/
+* s/sysfs_open_dirent_lock/kernfs_open_node_lock/
+* s/sysfs_open_file_mutex/kernfs_open_file_mutex/
+* s/sysfs_of()/kernfs_of()/
+
+This patch is strictly rename only and doesn't introduce any
+functional difference.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/kernfs/dir.c             |  28 ++++----
+ fs/kernfs/file.c            | 172 ++++++++++++++++++++++----------------------
+ fs/kernfs/inode.c           |  30 ++++----
+ fs/kernfs/kernfs-internal.h |  20 +++---
+ fs/kernfs/mount.c           |  14 ++--
+ fs/kernfs/symlink.c         |   2 +-
+ fs/sysfs/file.c             |  10 +--
+ include/linux/kernfs.h      |  18 ++---
+ 8 files changed, 147 insertions(+), 147 deletions(-)
+
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 51fff9d..d038bb2 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -295,7 +295,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, unsigned int flags)
  
-+config PINCTRL_CAPRI
-+	bool "Broadcom Capri pinctrl driver"
-+	select PINMUX
-+	select PINCONF
-+	select GENERIC_PINCONF
-+	help
-+	  Say Y here to support Broadcom Capri pinctrl driver, which is used for
-+	  the BCM281xx SoC family, including BCM11130, BCM11140, BCM11351,
-+	  BCM28145, and BCM28155 SoCs.  This driver requires the pinctrl
-+	  framework.  GPIO is provided by a separate GPIO driver.
-+
- config PINCTRL_IMX
- 	bool
- 	select PINMUX
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 4f7be29..86cac40 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_PINCTRL_BF60x)	+= pinctrl-adi2-bf60x.o
- obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
- obj-$(CONFIG_PINCTRL_BCM2835)	+= pinctrl-bcm2835.o
- obj-$(CONFIG_PINCTRL_BAYTRAIL)	+= pinctrl-baytrail.o
-+obj-$(CONFIG_PINCTRL_CAPRI)	+= pinctrl-capri.o
- obj-$(CONFIG_PINCTRL_IMX)	+= pinctrl-imx.o
- obj-$(CONFIG_PINCTRL_IMX1_CORE)	+= pinctrl-imx1-core.o
- obj-$(CONFIG_PINCTRL_IMX27)	+= pinctrl-imx27.o
-diff --git a/drivers/pinctrl/pinctrl-capri.c b/drivers/pinctrl/pinctrl-capri.c
-new file mode 100644
-index 0000000..d468de6
---- /dev/null
-+++ b/drivers/pinctrl/pinctrl-capri.c
-@@ -0,0 +1,1408 @@
-+/*
-+ * Copyright (C) 2013 Broadcom Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+#include <linux/pinctrl/pinconf.h>
-+#include <linux/pinctrl/pinconf-generic.h>
-+#include <linux/slab.h>
-+#include "core.h"
-+#include "pinctrl-utils.h"
-+
-+/* Capri Pin Control Registers Definitions */
-+
-+/* Function Select bits are the same for all pin control registers */
-+#define CAPRI_PIN_REG_F_SEL_MASK		0x0700
-+#define CAPRI_PIN_REG_F_SEL_SHIFT		8
-+
-+/* Standard pin register */
-+#define CAPRI_STD_PIN_REG_DRV_STR_MASK		0x0007
-+#define CAPRI_STD_PIN_REG_DRV_STR_SHIFT		0
-+#define CAPRI_STD_PIN_REG_INPUT_DIS_MASK	0x0008
-+#define CAPRI_STD_PIN_REG_INPUT_DIS_SHIFT	3
-+#define CAPRI_STD_PIN_REG_SLEW_MASK		0x0010
-+#define CAPRI_STD_PIN_REG_SLEW_SHIFT		4
-+#define CAPRI_STD_PIN_REG_PULL_UP_MASK		0x0020
-+#define CAPRI_STD_PIN_REG_PULL_UP_SHIFT		5
-+#define CAPRI_STD_PIN_REG_PULL_DN_MASK		0x0040
-+#define CAPRI_STD_PIN_REG_PULL_DN_SHIFT		6
-+#define CAPRI_STD_PIN_REG_HYST_MASK		0x0080
-+#define CAPRI_STD_PIN_REG_HYST_SHIFT		7
-+
-+/* I2C pin register */
-+#define CAPRI_I2C_PIN_REG_INPUT_DIS_MASK	0x0004
-+#define CAPRI_I2C_PIN_REG_INPUT_DIS_SHIFT	2
-+#define CAPRI_I2C_PIN_REG_SLEW_MASK		0x0008
-+#define CAPRI_I2C_PIN_REG_SLEW_SHIFT		3
-+#define CAPRI_I2C_PIN_REG_PULL_UP_STR_MASK	0x0070
-+#define CAPRI_I2C_PIN_REG_PULL_UP_STR_SHIFT	4
-+
-+/* HDMI pin register */
-+#define CAPRI_HDMI_PIN_REG_INPUT_DIS_MASK	0x0008
-+#define CAPRI_HDMI_PIN_REG_INPUT_DIS_SHIFT	3
-+#define CAPRI_HDMI_PIN_REG_MODE_MASK		0x0010
-+#define CAPRI_HDMI_PIN_REG_MODE_SHIFT		4
-+
-+/**
-+ * capri_pin_type - types of pin register
-+ */
-+enum capri_pin_type {
-+	CAPRI_PIN_TYPE_UNKNOWN = 0,
-+	CAPRI_PIN_TYPE_STD,
-+	CAPRI_PIN_TYPE_I2C,
-+	CAPRI_PIN_TYPE_HDMI,
-+};
-+
-+static enum capri_pin_type std_pin = CAPRI_PIN_TYPE_STD;
-+static enum capri_pin_type i2c_pin = CAPRI_PIN_TYPE_I2C;
-+static enum capri_pin_type hdmi_pin = CAPRI_PIN_TYPE_HDMI;
-+
-+/**
-+ * capri_pin_function- define pin function
-+ */
-+struct capri_pin_function {
-+	const char *name;
-+	const char * const *groups;
-+	const unsigned ngroups;
-+};
-+
-+/**
-+ * capri_pinctrl_data - Broadcom-specific pinctrl data
-+ * @reg_base - base of pinctrl registers
-+ */
-+struct capri_pinctrl_data {
-+	void __iomem *reg_base;
-+
-+	/* List of all pins */
-+	const struct pinctrl_pin_desc *pins;
-+	const unsigned npins;
-+
-+	const struct capri_pin_function *functions;
-+	const unsigned nfunctions;
-+};
-+
-+/*
-+ * Pin number definition.  The order here must be the same as defined in the
-+ * PADCTRLREG block in the RDB.
-+ */
-+#define CAPRI_PIN_ADCSYNC		0
-+#define CAPRI_PIN_BAT_RM		1
-+#define CAPRI_PIN_BSC1_SCL		2
-+#define CAPRI_PIN_BSC1_SDA		3
-+#define CAPRI_PIN_BSC2_SCL		4
-+#define CAPRI_PIN_BSC2_SDA		5
-+#define CAPRI_PIN_CLASSGPWR		6
-+#define CAPRI_PIN_CLK_CX8		7
-+#define CAPRI_PIN_CLKOUT_0		8
-+#define CAPRI_PIN_CLKOUT_1		9
-+#define CAPRI_PIN_CLKOUT_2		10
-+#define CAPRI_PIN_CLKOUT_3		11
-+#define CAPRI_PIN_CLKREQ_IN_0		12
-+#define CAPRI_PIN_CLKREQ_IN_1		13
-+#define CAPRI_PIN_CWS_SYS_REQ1		14
-+#define CAPRI_PIN_CWS_SYS_REQ2		15
-+#define CAPRI_PIN_CWS_SYS_REQ3		16
-+#define CAPRI_PIN_DIGMIC1_CLK		17
-+#define CAPRI_PIN_DIGMIC1_DQ		18
-+#define CAPRI_PIN_DIGMIC2_CLK		19
-+#define CAPRI_PIN_DIGMIC2_DQ		20
-+#define CAPRI_PIN_GPEN13		21
-+#define CAPRI_PIN_GPEN14		22
-+#define CAPRI_PIN_GPEN15		23
-+#define CAPRI_PIN_GPIO00		24
-+#define CAPRI_PIN_GPIO01		25
-+#define CAPRI_PIN_GPIO02		26
-+#define CAPRI_PIN_GPIO03		27
-+#define CAPRI_PIN_GPIO04		28
-+#define CAPRI_PIN_GPIO05		29
-+#define CAPRI_PIN_GPIO06		30
-+#define CAPRI_PIN_GPIO07		31
-+#define CAPRI_PIN_GPIO08		32
-+#define CAPRI_PIN_GPIO09		33
-+#define CAPRI_PIN_GPIO10		34
-+#define CAPRI_PIN_GPIO11		35
-+#define CAPRI_PIN_GPIO12		36
-+#define CAPRI_PIN_GPIO13		37
-+#define CAPRI_PIN_GPIO14		38
-+#define CAPRI_PIN_GPS_PABLANK		39
-+#define CAPRI_PIN_GPS_TMARK		40
-+#define CAPRI_PIN_HDMI_SCL		41
-+#define CAPRI_PIN_HDMI_SDA		42
-+#define CAPRI_PIN_IC_DM			43
-+#define CAPRI_PIN_IC_DP			44
-+#define CAPRI_PIN_KP_COL_IP_0		45
-+#define CAPRI_PIN_KP_COL_IP_1		46
-+#define CAPRI_PIN_KP_COL_IP_2		47
-+#define CAPRI_PIN_KP_COL_IP_3		48
-+#define CAPRI_PIN_KP_ROW_OP_0		49
-+#define CAPRI_PIN_KP_ROW_OP_1		50
-+#define CAPRI_PIN_KP_ROW_OP_2		51
-+#define CAPRI_PIN_KP_ROW_OP_3		52
-+#define CAPRI_PIN_LCD_B_0		53
-+#define CAPRI_PIN_LCD_B_1		54
-+#define CAPRI_PIN_LCD_B_2		55
-+#define CAPRI_PIN_LCD_B_3		56
-+#define CAPRI_PIN_LCD_B_4		57
-+#define CAPRI_PIN_LCD_B_5		58
-+#define CAPRI_PIN_LCD_B_6		59
-+#define CAPRI_PIN_LCD_B_7		60
-+#define CAPRI_PIN_LCD_G_0		61
-+#define CAPRI_PIN_LCD_G_1		62
-+#define CAPRI_PIN_LCD_G_2		63
-+#define CAPRI_PIN_LCD_G_3		64
-+#define CAPRI_PIN_LCD_G_4		65
-+#define CAPRI_PIN_LCD_G_5		66
-+#define CAPRI_PIN_LCD_G_6		67
-+#define CAPRI_PIN_LCD_G_7		68
-+#define CAPRI_PIN_LCD_HSYNC		69
-+#define CAPRI_PIN_LCD_OE		70
-+#define CAPRI_PIN_LCD_PCLK		71
-+#define CAPRI_PIN_LCD_R_0		72
-+#define CAPRI_PIN_LCD_R_1		73
-+#define CAPRI_PIN_LCD_R_2		74
-+#define CAPRI_PIN_LCD_R_3		75
-+#define CAPRI_PIN_LCD_R_4		76
-+#define CAPRI_PIN_LCD_R_5		77
-+#define CAPRI_PIN_LCD_R_6		78
-+#define CAPRI_PIN_LCD_R_7		79
-+#define CAPRI_PIN_LCD_VSYNC		80
-+#define CAPRI_PIN_MDMGPIO0		81
-+#define CAPRI_PIN_MDMGPIO1		82
-+#define CAPRI_PIN_MDMGPIO2		83
-+#define CAPRI_PIN_MDMGPIO3		84
-+#define CAPRI_PIN_MDMGPIO4		85
-+#define CAPRI_PIN_MDMGPIO5		86
-+#define CAPRI_PIN_MDMGPIO6		87
-+#define CAPRI_PIN_MDMGPIO7		88
-+#define CAPRI_PIN_MDMGPIO8		89
-+#define CAPRI_PIN_MPHI_DATA_0		90
-+#define CAPRI_PIN_MPHI_DATA_1		91
-+#define CAPRI_PIN_MPHI_DATA_2		92
-+#define CAPRI_PIN_MPHI_DATA_3		93
-+#define CAPRI_PIN_MPHI_DATA_4		94
-+#define CAPRI_PIN_MPHI_DATA_5		95
-+#define CAPRI_PIN_MPHI_DATA_6		96
-+#define CAPRI_PIN_MPHI_DATA_7		97
-+#define CAPRI_PIN_MPHI_DATA_8		98
-+#define CAPRI_PIN_MPHI_DATA_9		99
-+#define CAPRI_PIN_MPHI_DATA_10		100
-+#define CAPRI_PIN_MPHI_DATA_11		101
-+#define CAPRI_PIN_MPHI_DATA_12		102
-+#define CAPRI_PIN_MPHI_DATA_13		103
-+#define CAPRI_PIN_MPHI_DATA_14		104
-+#define CAPRI_PIN_MPHI_DATA_15		105
-+#define CAPRI_PIN_MPHI_HA0		106
-+#define CAPRI_PIN_MPHI_HAT0		107
-+#define CAPRI_PIN_MPHI_HAT1		108
-+#define CAPRI_PIN_MPHI_HCE0_N		109
-+#define CAPRI_PIN_MPHI_HCE1_N		110
-+#define CAPRI_PIN_MPHI_HRD_N		111
-+#define CAPRI_PIN_MPHI_HWR_N		112
-+#define CAPRI_PIN_MPHI_RUN0		113
-+#define CAPRI_PIN_MPHI_RUN1		114
-+#define CAPRI_PIN_MTX_SCAN_CLK		115
-+#define CAPRI_PIN_MTX_SCAN_DATA		116
-+#define CAPRI_PIN_NAND_AD_0		117
-+#define CAPRI_PIN_NAND_AD_1		118
-+#define CAPRI_PIN_NAND_AD_2		119
-+#define CAPRI_PIN_NAND_AD_3		120
-+#define CAPRI_PIN_NAND_AD_4		121
-+#define CAPRI_PIN_NAND_AD_5		122
-+#define CAPRI_PIN_NAND_AD_6		123
-+#define CAPRI_PIN_NAND_AD_7		124
-+#define CAPRI_PIN_NAND_ALE		125
-+#define CAPRI_PIN_NAND_CEN_0		126
-+#define CAPRI_PIN_NAND_CEN_1		127
-+#define CAPRI_PIN_NAND_CLE		128
-+#define CAPRI_PIN_NAND_OEN		129
-+#define CAPRI_PIN_NAND_RDY_0		130
-+#define CAPRI_PIN_NAND_RDY_1		131
-+#define CAPRI_PIN_NAND_WEN		132
-+#define CAPRI_PIN_NAND_WP		133
-+#define CAPRI_PIN_PC1			134
-+#define CAPRI_PIN_PC2			135
-+#define CAPRI_PIN_PMU_INT		136
-+#define CAPRI_PIN_PMU_SCL		137
-+#define CAPRI_PIN_PMU_SDA		138
-+#define CAPRI_PIN_RFST2G_MTSLOTEN3G	139
-+#define CAPRI_PIN_RGMII_0_RX_CTL	140
-+#define CAPRI_PIN_RGMII_0_RXC		141
-+#define CAPRI_PIN_RGMII_0_RXD_0		142
-+#define CAPRI_PIN_RGMII_0_RXD_1		143
-+#define CAPRI_PIN_RGMII_0_RXD_2		144
-+#define CAPRI_PIN_RGMII_0_RXD_3		145
-+#define CAPRI_PIN_RGMII_0_TX_CTL	146
-+#define CAPRI_PIN_RGMII_0_TXC		147
-+#define CAPRI_PIN_RGMII_0_TXD_0		148
-+#define CAPRI_PIN_RGMII_0_TXD_1		149
-+#define CAPRI_PIN_RGMII_0_TXD_2		150
-+#define CAPRI_PIN_RGMII_0_TXD_3		151
-+#define CAPRI_PIN_RGMII_1_RX_CTL	152
-+#define CAPRI_PIN_RGMII_1_RXC		153
-+#define CAPRI_PIN_RGMII_1_RXD_0		154
-+#define CAPRI_PIN_RGMII_1_RXD_1		155
-+#define CAPRI_PIN_RGMII_1_RXD_2		156
-+#define CAPRI_PIN_RGMII_1_RXD_3		157
-+#define CAPRI_PIN_RGMII_1_TX_CTL	158
-+#define CAPRI_PIN_RGMII_1_TXC		159
-+#define CAPRI_PIN_RGMII_1_TXD_0		160
-+#define CAPRI_PIN_RGMII_1_TXD_1		161
-+#define CAPRI_PIN_RGMII_1_TXD_2		162
-+#define CAPRI_PIN_RGMII_1_TXD_3		163
-+#define CAPRI_PIN_RGMII_GPIO_0		164
-+#define CAPRI_PIN_RGMII_GPIO_1		165
-+#define CAPRI_PIN_RGMII_GPIO_2		166
-+#define CAPRI_PIN_RGMII_GPIO_3		167
-+#define CAPRI_PIN_RTXDATA2G_TXDATA3G1	168
-+#define CAPRI_PIN_RTXEN2G_TXDATA3G2	169
-+#define CAPRI_PIN_RXDATA3G0		170
-+#define CAPRI_PIN_RXDATA3G1		171
-+#define CAPRI_PIN_RXDATA3G2		172
-+#define CAPRI_PIN_SDIO1_CLK		173
-+#define CAPRI_PIN_SDIO1_CMD		174
-+#define CAPRI_PIN_SDIO1_DATA_0		175
-+#define CAPRI_PIN_SDIO1_DATA_1		176
-+#define CAPRI_PIN_SDIO1_DATA_2		177
-+#define CAPRI_PIN_SDIO1_DATA_3		178
-+#define CAPRI_PIN_SDIO4_CLK		179
-+#define CAPRI_PIN_SDIO4_CMD		180
-+#define CAPRI_PIN_SDIO4_DATA_0		181
-+#define CAPRI_PIN_SDIO4_DATA_1		182
-+#define CAPRI_PIN_SDIO4_DATA_2		183
-+#define CAPRI_PIN_SDIO4_DATA_3		184
-+#define CAPRI_PIN_SIM_CLK		185
-+#define CAPRI_PIN_SIM_DATA		186
-+#define CAPRI_PIN_SIM_DET		187
-+#define CAPRI_PIN_SIM_RESETN		188
-+#define CAPRI_PIN_SIM2_CLK		189
-+#define CAPRI_PIN_SIM2_DATA		190
-+#define CAPRI_PIN_SIM2_DET		191
-+#define CAPRI_PIN_SIM2_RESETN		192
-+#define CAPRI_PIN_SRI_C			193
-+#define CAPRI_PIN_SRI_D			194
-+#define CAPRI_PIN_SRI_E			195
-+#define CAPRI_PIN_SSP_EXTCLK		196
-+#define CAPRI_PIN_SSP0_CLK		197
-+#define CAPRI_PIN_SSP0_FS		198
-+#define CAPRI_PIN_SSP0_RXD		199
-+#define CAPRI_PIN_SSP0_TXD		200
-+#define CAPRI_PIN_SSP2_CLK		201
-+#define CAPRI_PIN_SSP2_FS_0		202
-+#define CAPRI_PIN_SSP2_FS_1		203
-+#define CAPRI_PIN_SSP2_FS_2		204
-+#define CAPRI_PIN_SSP2_FS_3		205
-+#define CAPRI_PIN_SSP2_RXD_0		206
-+#define CAPRI_PIN_SSP2_RXD_1		207
-+#define CAPRI_PIN_SSP2_TXD_0		208
-+#define CAPRI_PIN_SSP2_TXD_1		209
-+#define CAPRI_PIN_SSP3_CLK		210
-+#define CAPRI_PIN_SSP3_FS		211
-+#define CAPRI_PIN_SSP3_RXD		212
-+#define CAPRI_PIN_SSP3_TXD		213
-+#define CAPRI_PIN_SSP4_CLK		214
-+#define CAPRI_PIN_SSP4_FS		215
-+#define CAPRI_PIN_SSP4_RXD		216
-+#define CAPRI_PIN_SSP4_TXD		217
-+#define CAPRI_PIN_SSP5_CLK		218
-+#define CAPRI_PIN_SSP5_FS		219
-+#define CAPRI_PIN_SSP5_RXD		220
-+#define CAPRI_PIN_SSP5_TXD		221
-+#define CAPRI_PIN_SSP6_CLK		222
-+#define CAPRI_PIN_SSP6_FS		223
-+#define CAPRI_PIN_SSP6_RXD		224
-+#define CAPRI_PIN_SSP6_TXD		225
-+#define CAPRI_PIN_STAT_1		226
-+#define CAPRI_PIN_STAT_2		227
-+#define CAPRI_PIN_SYSCLKEN		228
-+#define CAPRI_PIN_TRACECLK		229
-+#define CAPRI_PIN_TRACEDT00		230
-+#define CAPRI_PIN_TRACEDT01		231
-+#define CAPRI_PIN_TRACEDT02		232
-+#define CAPRI_PIN_TRACEDT03		233
-+#define CAPRI_PIN_TRACEDT04		234
-+#define CAPRI_PIN_TRACEDT05		235
-+#define CAPRI_PIN_TRACEDT06		236
-+#define CAPRI_PIN_TRACEDT07		237
-+#define CAPRI_PIN_TRACEDT08		238
-+#define CAPRI_PIN_TRACEDT09		239
-+#define CAPRI_PIN_TRACEDT10		240
-+#define CAPRI_PIN_TRACEDT11		241
-+#define CAPRI_PIN_TRACEDT12		242
-+#define CAPRI_PIN_TRACEDT13		243
-+#define CAPRI_PIN_TRACEDT14		244
-+#define CAPRI_PIN_TRACEDT15		245
-+#define CAPRI_PIN_TXDATA3G0		246
-+#define CAPRI_PIN_TXPWRIND		247
-+#define CAPRI_PIN_UARTB1_UCTS		248
-+#define CAPRI_PIN_UARTB1_URTS		249
-+#define CAPRI_PIN_UARTB1_URXD		250
-+#define CAPRI_PIN_UARTB1_UTXD		251
-+#define CAPRI_PIN_UARTB2_URXD		252
-+#define CAPRI_PIN_UARTB2_UTXD		253
-+#define CAPRI_PIN_UARTB3_UCTS		254
-+#define CAPRI_PIN_UARTB3_URTS		255
-+#define CAPRI_PIN_UARTB3_URXD		256
-+#define CAPRI_PIN_UARTB3_UTXD		257
-+#define CAPRI_PIN_UARTB4_UCTS		258
-+#define CAPRI_PIN_UARTB4_URTS		259
-+#define CAPRI_PIN_UARTB4_URXD		260
-+#define CAPRI_PIN_UARTB4_UTXD		261
-+#define CAPRI_PIN_VC_CAM1_SCL		262
-+#define CAPRI_PIN_VC_CAM1_SDA		263
-+#define CAPRI_PIN_VC_CAM2_SCL		264
-+#define CAPRI_PIN_VC_CAM2_SDA		265
-+#define CAPRI_PIN_VC_CAM3_SCL		266
-+#define CAPRI_PIN_VC_CAM3_SDA		267
-+
-+#define CAPRI_PIN_DESC(a, b, c) \
-+	{ .number = a, .name = b, .drv_data = &c##_pin }
-+
-+/*
-+ * Pin description definition.  The order here must be the same as defined in
-+ * the PADCTRLREG block in the RDB, since the pin number is used as an index
-+ * into this array.
-+ */
-+static const struct pinctrl_pin_desc capri_pinctrl_pins[] = {
-+	CAPRI_PIN_DESC(CAPRI_PIN_ADCSYNC, "adcsync", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_BAT_RM, "bat_rm", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_BSC1_SCL, "bsc1_scl", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_BSC1_SDA, "bsc1_sda", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_BSC2_SCL, "bsc2_scl", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_BSC2_SDA, "bsc2_sda", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLASSGPWR, "classgpwr", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLK_CX8, "clk_cx8", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLKOUT_0, "clkout_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLKOUT_1, "clkout_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLKOUT_2, "clkout_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLKOUT_3, "clkout_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLKREQ_IN_0, "clkreq_in_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CLKREQ_IN_1, "clkreq_in_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CWS_SYS_REQ1, "cws_sys_req1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CWS_SYS_REQ2, "cws_sys_req2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_CWS_SYS_REQ3, "cws_sys_req3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_DIGMIC1_CLK, "digmic1_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_DIGMIC1_DQ, "digmic1_dq", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_DIGMIC2_CLK, "digmic2_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_DIGMIC2_DQ, "digmic2_dq", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPEN13, "gpen13", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPEN14, "gpen14", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPEN15, "gpen15", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO00, "gpio00", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO01, "gpio01", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO02, "gpio02", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO03, "gpio03", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO04, "gpio04", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO05, "gpio05", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO06, "gpio06", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO07, "gpio07", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO08, "gpio08", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO09, "gpio09", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO10, "gpio10", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO11, "gpio11", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO12, "gpio12", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO13, "gpio13", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPIO14, "gpio14", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPS_PABLANK, "gps_pablank", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_GPS_TMARK, "gps_tmark", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_HDMI_SCL, "hdmi_scl", hdmi),
-+	CAPRI_PIN_DESC(CAPRI_PIN_HDMI_SDA, "hdmi_sda", hdmi),
-+	CAPRI_PIN_DESC(CAPRI_PIN_IC_DM, "ic_dm", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_IC_DP, "ic_dp", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_COL_IP_0, "kp_col_ip_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_COL_IP_1, "kp_col_ip_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_COL_IP_2, "kp_col_ip_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_COL_IP_3, "kp_col_ip_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_ROW_OP_0, "kp_row_op_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_ROW_OP_1, "kp_row_op_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_ROW_OP_2, "kp_row_op_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_KP_ROW_OP_3, "kp_row_op_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_0, "lcd_b_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_1, "lcd_b_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_2, "lcd_b_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_3, "lcd_b_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_4, "lcd_b_4", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_5, "lcd_b_5", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_6, "lcd_b_6", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_B_7, "lcd_b_7", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_0, "lcd_g_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_1, "lcd_g_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_2, "lcd_g_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_3, "lcd_g_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_4, "lcd_g_4", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_5, "lcd_g_5", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_6, "lcd_g_6", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_G_7, "lcd_g_7", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_HSYNC, "lcd_hsync", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_OE, "lcd_oe", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_PCLK, "lcd_pclk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_0, "lcd_r_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_1, "lcd_r_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_2, "lcd_r_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_3, "lcd_r_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_4, "lcd_r_4", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_5, "lcd_r_5", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_6, "lcd_r_6", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_R_7, "lcd_r_7", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_LCD_VSYNC, "lcd_vsync", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO0, "mdmgpio0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO1, "mdmgpio1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO2, "mdmgpio2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO3, "mdmgpio3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO4, "mdmgpio4", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO5, "mdmgpio5", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO6, "mdmgpio6", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO7, "mdmgpio7", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MDMGPIO8, "mdmgpio8", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_0, "mphi_data_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_1, "mphi_data_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_2, "mphi_data_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_3, "mphi_data_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_4, "mphi_data_4", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_5, "mphi_data_5", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_6, "mphi_data_6", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_7, "mphi_data_7", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_8, "mphi_data_8", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_9, "mphi_data_9", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_10, "mphi_data_10", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_11, "mphi_data_11", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_12, "mphi_data_12", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_13, "mphi_data_13", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_14, "mphi_data_14", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_DATA_15, "mphi_data_15", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HA0, "mphi_ha0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HAT0, "mphi_hat0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HAT1, "mphi_hat1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HCE0_N, "mphi_hce0_n", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HCE1_N, "mphi_hce1_n", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HRD_N, "mphi_hrd_n", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_HWR_N, "mphi_hwr_n", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_RUN0, "mphi_run0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MPHI_RUN1, "mphi_run1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MTX_SCAN_CLK, "mtx_scan_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_MTX_SCAN_DATA, "mtx_scan_data", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_0, "nand_ad_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_1, "nand_ad_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_2, "nand_ad_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_3, "nand_ad_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_4, "nand_ad_4", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_5, "nand_ad_5", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_6, "nand_ad_6", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_AD_7, "nand_ad_7", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_ALE, "nand_ale", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_CEN_0, "nand_cen_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_CEN_1, "nand_cen_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_CLE, "nand_cle", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_OEN, "nand_oen", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_RDY_0, "nand_rdy_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_RDY_1, "nand_rdy_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_WEN, "nand_wen", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_NAND_WP, "nand_wp", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_PC1, "pc1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_PC2, "pc2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_PMU_INT, "pmu_int", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_PMU_SCL, "pmu_scl", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_PMU_SDA, "pmu_sda", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RFST2G_MTSLOTEN3G, "rfst2g_mtsloten3g", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_RX_CTL, "rgmii_0_rx_ctl", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_RXC, "rgmii_0_rxc", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_RXD_0, "rgmii_0_rxd_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_RXD_1, "rgmii_0_rxd_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_RXD_2, "rgmii_0_rxd_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_RXD_3, "rgmii_0_rxd_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_TX_CTL, "rgmii_0_tx_ctl", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_TXC, "rgmii_0_txc", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_TXD_0, "rgmii_0_txd_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_TXD_1, "rgmii_0_txd_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_TXD_2, "rgmii_0_txd_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_0_TXD_3, "rgmii_0_txd_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_RX_CTL, "rgmii_1_rx_ctl", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_RXC, "rgmii_1_rxc", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_RXD_0, "rgmii_1_rxd_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_RXD_1, "rgmii_1_rxd_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_RXD_2, "rgmii_1_rxd_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_RXD_3, "rgmii_1_rxd_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_TX_CTL, "rgmii_1_tx_ctl", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_TXC, "rgmii_1_txc", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_TXD_0, "rgmii_1_txd_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_TXD_1, "rgmii_1_txd_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_TXD_2, "rgmii_1_txd_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_1_TXD_3, "rgmii_1_txd_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_GPIO_0, "rgmii_gpio_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_GPIO_1, "rgmii_gpio_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_GPIO_2, "rgmii_gpio_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RGMII_GPIO_3, "rgmii_gpio_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RTXDATA2G_TXDATA3G1, "rtxdata2g_txdata3g1",
-+		std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RTXEN2G_TXDATA3G2, "rtxen2g_txdata3g2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RXDATA3G0, "rxdata3g0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RXDATA3G1, "rxdata3g1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_RXDATA3G2, "rxdata3g2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO1_CLK, "sdio1_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO1_CMD, "sdio1_cmd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO1_DATA_0, "sdio1_data_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO1_DATA_1, "sdio1_data_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO1_DATA_2, "sdio1_data_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO1_DATA_3, "sdio1_data_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO4_CLK, "sdio4_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO4_CMD, "sdio4_cmd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO4_DATA_0, "sdio4_data_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO4_DATA_1, "sdio4_data_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO4_DATA_2, "sdio4_data_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SDIO4_DATA_3, "sdio4_data_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM_CLK, "sim_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM_DATA, "sim_data", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM_DET, "sim_det", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM_RESETN, "sim_resetn", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM2_CLK, "sim2_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM2_DATA, "sim2_data", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM2_DET, "sim2_det", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SIM2_RESETN, "sim2_resetn", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SRI_C, "sri_c", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SRI_D, "sri_d", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SRI_E, "sri_e", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP_EXTCLK, "ssp_extclk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP0_CLK, "ssp0_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP0_FS, "ssp0_fs", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP0_RXD, "ssp0_rxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP0_TXD, "ssp0_txd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_CLK, "ssp2_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_FS_0, "ssp2_fs_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_FS_1, "ssp2_fs_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_FS_2, "ssp2_fs_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_FS_3, "ssp2_fs_3", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_RXD_0, "ssp2_rxd_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_RXD_1, "ssp2_rxd_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_TXD_0, "ssp2_txd_0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP2_TXD_1, "ssp2_txd_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP3_CLK, "ssp3_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP3_FS, "ssp3_fs", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP3_RXD, "ssp3_rxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP3_TXD, "ssp3_txd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP4_CLK, "ssp4_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP4_FS, "ssp4_fs", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP4_RXD, "ssp4_rxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP4_TXD, "ssp4_txd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP5_CLK, "ssp5_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP5_FS, "ssp5_fs", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP5_RXD, "ssp5_rxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP5_TXD, "ssp5_txd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP6_CLK, "ssp6_clk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP6_FS, "ssp6_fs", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP6_RXD, "ssp6_rxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SSP6_TXD, "ssp6_txd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_STAT_1, "stat_1", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_STAT_2, "stat_2", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_SYSCLKEN, "sysclken", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACECLK, "traceclk", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT00, "tracedt00", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT01, "tracedt01", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT02, "tracedt02", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT03, "tracedt03", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT04, "tracedt04", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT05, "tracedt05", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT06, "tracedt06", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT07, "tracedt07", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT08, "tracedt08", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT09, "tracedt09", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT10, "tracedt10", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT11, "tracedt11", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT12, "tracedt12", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT13, "tracedt13", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT14, "tracedt14", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TRACEDT15, "tracedt15", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TXDATA3G0, "txdata3g0", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_TXPWRIND, "txpwrind", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB1_UCTS, "uartb1_ucts", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB1_URTS, "uartb1_urts", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB1_URXD, "uartb1_urxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB1_UTXD, "uartb1_utxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB2_URXD, "uartb2_urxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB2_UTXD, "uartb2_utxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB3_UCTS, "uartb3_ucts", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB3_URTS, "uartb3_urts", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB3_URXD, "uartb3_urxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB3_UTXD, "uartb3_utxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB4_UCTS, "uartb4_ucts", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB4_URTS, "uartb4_urts", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB4_URXD, "uartb4_urxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_UARTB4_UTXD, "uartb4_utxd", std),
-+	CAPRI_PIN_DESC(CAPRI_PIN_VC_CAM1_SCL, "vc_cam1_scl", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_VC_CAM1_SDA, "vc_cam1_sda", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_VC_CAM2_SCL, "vc_cam2_scl", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_VC_CAM2_SDA, "vc_cam2_sda", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_VC_CAM3_SCL, "vc_cam3_scl", i2c),
-+	CAPRI_PIN_DESC(CAPRI_PIN_VC_CAM3_SDA, "vc_cam3_sda", i2c),
-+};
-+
-+static const char * const capri_alt_groups[] = {
-+	"adcsync",
-+	"bat_rm",
-+	"bsc1_scl",
-+	"bsc1_sda",
-+	"bsc2_scl",
-+	"bsc2_sda",
-+	"classgpwr",
-+	"clk_cx8",
-+	"clkout_0",
-+	"clkout_1",
-+	"clkout_2",
-+	"clkout_3",
-+	"clkreq_in_0",
-+	"clkreq_in_1",
-+	"cws_sys_req1",
-+	"cws_sys_req2",
-+	"cws_sys_req3",
-+	"digmic1_clk",
-+	"digmic1_dq",
-+	"digmic2_clk",
-+	"digmic2_dq",
-+	"gpen13",
-+	"gpen14",
-+	"gpen15",
-+	"gpio00",
-+	"gpio01",
-+	"gpio02",
-+	"gpio03",
-+	"gpio04",
-+	"gpio05",
-+	"gpio06",
-+	"gpio07",
-+	"gpio08",
-+	"gpio09",
-+	"gpio10",
-+	"gpio11",
-+	"gpio12",
-+	"gpio13",
-+	"gpio14",
-+	"gps_pablank",
-+	"gps_tmark",
-+	"hdmi_scl",
-+	"hdmi_sda",
-+	"ic_dm",
-+	"ic_dp",
-+	"kp_col_ip_0",
-+	"kp_col_ip_1",
-+	"kp_col_ip_2",
-+	"kp_col_ip_3",
-+	"kp_row_op_0",
-+	"kp_row_op_1",
-+	"kp_row_op_2",
-+	"kp_row_op_3",
-+	"lcd_b_0",
-+	"lcd_b_1",
-+	"lcd_b_2",
-+	"lcd_b_3",
-+	"lcd_b_4",
-+	"lcd_b_5",
-+	"lcd_b_6",
-+	"lcd_b_7",
-+	"lcd_g_0",
-+	"lcd_g_1",
-+	"lcd_g_2",
-+	"lcd_g_3",
-+	"lcd_g_4",
-+	"lcd_g_5",
-+	"lcd_g_6",
-+	"lcd_g_7",
-+	"lcd_hsync",
-+	"lcd_oe",
-+	"lcd_pclk",
-+	"lcd_r_0",
-+	"lcd_r_1",
-+	"lcd_r_2",
-+	"lcd_r_3",
-+	"lcd_r_4",
-+	"lcd_r_5",
-+	"lcd_r_6",
-+	"lcd_r_7",
-+	"lcd_vsync",
-+	"mdmgpio0",
-+	"mdmgpio1",
-+	"mdmgpio2",
-+	"mdmgpio3",
-+	"mdmgpio4",
-+	"mdmgpio5",
-+	"mdmgpio6",
-+	"mdmgpio7",
-+	"mdmgpio8",
-+	"mphi_data_0",
-+	"mphi_data_1",
-+	"mphi_data_2",
-+	"mphi_data_3",
-+	"mphi_data_4",
-+	"mphi_data_5",
-+	"mphi_data_6",
-+	"mphi_data_7",
-+	"mphi_data_8",
-+	"mphi_data_9",
-+	"mphi_data_10",
-+	"mphi_data_11",
-+	"mphi_data_12",
-+	"mphi_data_13",
-+	"mphi_data_14",
-+	"mphi_data_15",
-+	"mphi_ha0",
-+	"mphi_hat0",
-+	"mphi_hat1",
-+	"mphi_hce0_n",
-+	"mphi_hce1_n",
-+	"mphi_hrd_n",
-+	"mphi_hwr_n",
-+	"mphi_run0",
-+	"mphi_run1",
-+	"mtx_scan_clk",
-+	"mtx_scan_data",
-+	"nand_ad_0",
-+	"nand_ad_1",
-+	"nand_ad_2",
-+	"nand_ad_3",
-+	"nand_ad_4",
-+	"nand_ad_5",
-+	"nand_ad_6",
-+	"nand_ad_7",
-+	"nand_ale",
-+	"nand_cen_0",
-+	"nand_cen_1",
-+	"nand_cle",
-+	"nand_oen",
-+	"nand_rdy_0",
-+	"nand_rdy_1",
-+	"nand_wen",
-+	"nand_wp",
-+	"pc1",
-+	"pc2",
-+	"pmu_int",
-+	"pmu_scl",
-+	"pmu_sda",
-+	"rfst2g_mtsloten3g",
-+	"rgmii_0_rx_ctl",
-+	"rgmii_0_rxc",
-+	"rgmii_0_rxd_0",
-+	"rgmii_0_rxd_1",
-+	"rgmii_0_rxd_2",
-+	"rgmii_0_rxd_3",
-+	"rgmii_0_tx_ctl",
-+	"rgmii_0_txc",
-+	"rgmii_0_txd_0",
-+	"rgmii_0_txd_1",
-+	"rgmii_0_txd_2",
-+	"rgmii_0_txd_3",
-+	"rgmii_1_rx_ctl",
-+	"rgmii_1_rxc",
-+	"rgmii_1_rxd_0",
-+	"rgmii_1_rxd_1",
-+	"rgmii_1_rxd_2",
-+	"rgmii_1_rxd_3",
-+	"rgmii_1_tx_ctl",
-+	"rgmii_1_txc",
-+	"rgmii_1_txd_0",
-+	"rgmii_1_txd_1",
-+	"rgmii_1_txd_2",
-+	"rgmii_1_txd_3",
-+	"rgmii_gpio_0",
-+	"rgmii_gpio_1",
-+	"rgmii_gpio_2",
-+	"rgmii_gpio_3",
-+	"rtxdata2g_txdata3g1",
-+	"rtxen2g_txdata3g2",
-+	"rxdata3g0",
-+	"rxdata3g1",
-+	"rxdata3g2",
-+	"sdio1_clk",
-+	"sdio1_cmd",
-+	"sdio1_data_0",
-+	"sdio1_data_1",
-+	"sdio1_data_2",
-+	"sdio1_data_3",
-+	"sdio4_clk",
-+	"sdio4_cmd",
-+	"sdio4_data_0",
-+	"sdio4_data_1",
-+	"sdio4_data_2",
-+	"sdio4_data_3",
-+	"sim_clk",
-+	"sim_data",
-+	"sim_det",
-+	"sim_resetn",
-+	"sim2_clk",
-+	"sim2_data",
-+	"sim2_det",
-+	"sim2_resetn",
-+	"sri_c",
-+	"sri_d",
-+	"sri_e",
-+	"ssp_extclk",
-+	"ssp0_clk",
-+	"ssp0_fs",
-+	"ssp0_rxd",
-+	"ssp0_txd",
-+	"ssp2_clk",
-+	"ssp2_fs_0",
-+	"ssp2_fs_1",
-+	"ssp2_fs_2",
-+	"ssp2_fs_3",
-+	"ssp2_rxd_0",
-+	"ssp2_rxd_1",
-+	"ssp2_txd_0",
-+	"ssp2_txd_1",
-+	"ssp3_clk",
-+	"ssp3_fs",
-+	"ssp3_rxd",
-+	"ssp3_txd",
-+	"ssp4_clk",
-+	"ssp4_fs",
-+	"ssp4_rxd",
-+	"ssp4_txd",
-+	"ssp5_clk",
-+	"ssp5_fs",
-+	"ssp5_rxd",
-+	"ssp5_txd",
-+	"ssp6_clk",
-+	"ssp6_fs",
-+	"ssp6_rxd",
-+	"ssp6_txd",
-+	"stat_1",
-+	"stat_2",
-+	"sysclken",
-+	"traceclk",
-+	"tracedt00",
-+	"tracedt01",
-+	"tracedt02",
-+	"tracedt03",
-+	"tracedt04",
-+	"tracedt05",
-+	"tracedt06",
-+	"tracedt07",
-+	"tracedt08",
-+	"tracedt09",
-+	"tracedt10",
-+	"tracedt11",
-+	"tracedt12",
-+	"tracedt13",
-+	"tracedt14",
-+	"tracedt15",
-+	"txdata3g0",
-+	"txpwrind",
-+	"uartb1_ucts",
-+	"uartb1_urts",
-+	"uartb1_urxd",
-+	"uartb1_utxd",
-+	"uartb2_urxd",
-+	"uartb2_utxd",
-+	"uartb3_ucts",
-+	"uartb3_urts",
-+	"uartb3_urxd",
-+	"uartb3_utxd",
-+	"uartb4_ucts",
-+	"uartb4_urts",
-+	"uartb4_urxd",
-+	"uartb4_utxd",
-+	"vc_cam1_scl",
-+	"vc_cam1_sda",
-+	"vc_cam2_scl",
-+	"vc_cam2_sda",
-+	"vc_cam3_scl",
-+	"vc_cam3_sda",
-+};
-+
-+/* Every pin can implement all ALT1-ALT4 functions */
-+#define CAPRI_PIN_FUNCTION(fcn_name)			\
-+{							\
-+	.name = #fcn_name,				\
-+	.groups = capri_alt_groups,			\
-+	.ngroups = ARRAY_SIZE(capri_alt_groups),	\
-+}
-+
-+static const struct capri_pin_function capri_functions[] = {
-+	CAPRI_PIN_FUNCTION(alt1),
-+	CAPRI_PIN_FUNCTION(alt2),
-+	CAPRI_PIN_FUNCTION(alt3),
-+	CAPRI_PIN_FUNCTION(alt4),
-+};
-+
-+static struct capri_pinctrl_data capri_pinctrl = {
-+	.pins = capri_pinctrl_pins,
-+	.npins = ARRAY_SIZE(capri_pinctrl_pins),
-+	.functions = capri_functions,
-+	.nfunctions = ARRAY_SIZE(capri_functions),
-+};
-+
-+static inline enum capri_pin_type pin_type_get(struct pinctrl_dev *pctldev,
-+					       unsigned pin)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	if (pin >= pdata->npins)
-+		return CAPRI_PIN_TYPE_UNKNOWN;
-+
-+	return *(enum capri_pin_type *)(pdata->pins[pin].drv_data);
-+}
-+
-+#define CAPRI_PIN_SHIFT(type, param) \
-+	(CAPRI_ ## type ## _PIN_REG_ ## param ## _SHIFT)
-+
-+#define CAPRI_PIN_MASK(type, param) \
-+	(CAPRI_ ## type ## _PIN_REG_ ## param ## _MASK)
-+
-+/* Macro to update reg with new pin config param */
-+#define CAPRI_PIN_UPDATE(reg, type, param, val)				\
-+	(((reg) & ~CAPRI_PIN_MASK(type, param)) |			\
-+	(((val) << CAPRI_PIN_SHIFT(type, param)) & CAPRI_PIN_MASK(type, param)))
-+
-+/*
-+ * Write to the register using the value and mask if current value is different
-+ */
-+static void capri_reg_write(struct pinctrl_dev *pctldev,
-+			    void __iomem *reg,
-+			    u32 val,
-+			    u32 mask)
-+{
-+	u32 old_val;
-+	u32 new_val;
-+
-+	old_val = readl(reg);
-+	new_val = (old_val & ~mask) | (val & mask);
-+
-+	if (new_val == old_val) {
-+		dev_dbg(pctldev->dev,
-+			"Reg 0x%p=0x%x (no change)\n",
-+			reg, old_val);
-+		return;
-+	}
-+
-+	dev_dbg(pctldev->dev,
-+		"Reg 0x%p change from 0x%x to 0x%x\n",
-+		reg, old_val, new_val);
-+	writel(new_val, reg);
-+}
-+
-+static int capri_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return pdata->npins;
-+}
-+
-+static const char *capri_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
-+						unsigned group)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return pdata->pins[group].name;
-+}
-+
-+static int capri_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
-+					unsigned group,
-+					const unsigned **pins,
-+					unsigned *num_pins)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	*pins = &pdata->pins[group].number;
-+	*num_pins = 1;
-+
-+	return 0;
-+}
-+
-+static void capri_pinctrl_pin_dbg_show(struct pinctrl_dev *pctldev,
-+				       struct seq_file *s,
-+				       unsigned offset)
-+{
-+	seq_printf(s, " %s", dev_name(pctldev->dev));
-+}
-+
-+static struct pinctrl_ops capri_pinctrl_ops = {
-+	.get_groups_count = capri_pinctrl_get_groups_count,
-+	.get_group_name = capri_pinctrl_get_group_name,
-+	.get_group_pins = capri_pinctrl_get_group_pins,
-+	.pin_dbg_show = capri_pinctrl_pin_dbg_show,
-+	.dt_node_to_map = pinconf_generic_dt_node_to_map_pin,
-+	.dt_free_map = pinctrl_utils_dt_free_map,
-+};
-+
-+static int capri_pinctrl_get_fcns_count(struct pinctrl_dev *pctldev)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return pdata->nfunctions;
-+}
-+
-+static const char *capri_pinctrl_get_fcn_name(struct pinctrl_dev *pctldev,
-+					      unsigned function)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	return pdata->functions[function].name;
-+}
-+
-+static int capri_pinctrl_get_fcn_groups(struct pinctrl_dev *pctldev,
-+					unsigned function,
-+					const char * const **groups,
-+					unsigned * const num_groups)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+
-+	*groups = pdata->functions[function].groups;
-+	*num_groups = pdata->functions[function].ngroups;
-+
-+	return 0;
-+}
-+
-+static int capri_pinmux_enable(struct pinctrl_dev *pctldev,
-+			       unsigned function,
-+			       unsigned group)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+	const struct capri_pin_function *f = &pdata->functions[function];
-+	void __iomem *reg = pdata->reg_base + (4 * pdata->pins[group].number);
-+
-+	dev_dbg(pctldev->dev,
-+		"%s(): Enable function %s (%d) of pin %s (%d) @reg 0x%p.\n",
-+		__func__, f->name, function, pdata->pins[group].name,
-+		pdata->pins[group].number, reg);
-+
-+	capri_reg_write(pctldev, reg, function << CAPRI_PIN_REG_F_SEL_SHIFT,
-+		CAPRI_PIN_REG_F_SEL_MASK);
-+
-+	return 0;
-+}
-+
-+static struct pinmux_ops capri_pinctrl_pinmux_ops = {
-+	.get_functions_count = capri_pinctrl_get_fcns_count,
-+	.get_function_name = capri_pinctrl_get_fcn_name,
-+	.get_function_groups = capri_pinctrl_get_fcn_groups,
-+	.enable = capri_pinmux_enable,
-+};
-+
-+static int capri_pinctrl_pin_config_get(struct pinctrl_dev *pctldev,
-+					unsigned pin,
-+					unsigned long *config)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+
-+/* Goes through the configs and update register val/mask */
-+static int capri_std_pin_update(struct pinctrl_dev *pctldev,
-+				unsigned pin,
-+				unsigned long *configs,
-+				unsigned num_configs,
-+				u32 *val,
-+				u32 *mask)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+	int i;
-+	enum pin_config_param param;
-+	u16 arg;
-+
-+	for (i = 0; i < num_configs; i++) {
-+		param = pinconf_to_config_param(configs[i]);
-+		arg = pinconf_to_config_argument(configs[i]);
-+
-+		switch (param) {
-+		case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
-+			arg = (arg >= 1 ? 1 : 0);
-+			*val = CAPRI_PIN_UPDATE(*val, STD, HYST, arg);
-+			*mask |= CAPRI_STD_PIN_REG_HYST_MASK;
-+			break;
-+		/*
-+		 * The pin bias can only be one of pull-up, pull-down, or
-+		 * disable.  The user does not need to specify a value for the
-+		 * property, and the default value from pinconf-generic is
-+		 * ignored.
-+		 */
-+		case PIN_CONFIG_BIAS_DISABLE:
-+			*val = CAPRI_PIN_UPDATE(*val, STD, PULL_UP, 0);
-+			*val = CAPRI_PIN_UPDATE(*val, STD, PULL_DN, 0);
-+			*mask |= CAPRI_STD_PIN_REG_PULL_UP_MASK;
-+			*mask |= CAPRI_STD_PIN_REG_PULL_DN_MASK;
-+			break;
-+
-+		case PIN_CONFIG_BIAS_PULL_UP:
-+			*val = CAPRI_PIN_UPDATE(*val, STD, PULL_UP, 1);
-+			*val = CAPRI_PIN_UPDATE(*val, STD, PULL_DN, 0);
-+			*mask |= CAPRI_STD_PIN_REG_PULL_UP_MASK;
-+			*mask |= CAPRI_STD_PIN_REG_PULL_DN_MASK;
-+			break;
-+
-+		case PIN_CONFIG_BIAS_PULL_DOWN:
-+			*val = CAPRI_PIN_UPDATE(*val, STD, PULL_UP, 0);
-+			*val = CAPRI_PIN_UPDATE(*val, STD, PULL_DN, 1);
-+			*mask |= CAPRI_STD_PIN_REG_PULL_UP_MASK;
-+			*mask |= CAPRI_STD_PIN_REG_PULL_DN_MASK;
-+			break;
-+
-+		case PIN_CONFIG_SLEW_RATE:
-+			arg = (arg >= 1 ? 1 : 0);
-+			*val = CAPRI_PIN_UPDATE(*val, STD, SLEW, arg);
-+			*mask |= CAPRI_STD_PIN_REG_SLEW_MASK;
-+			break;
-+
-+		case PIN_CONFIG_INPUT_ENABLE:
-+			/* inversed since register is for input _disable_ */
-+			arg = (arg >= 1 ? 0 : 1);
-+			*val = CAPRI_PIN_UPDATE(*val, STD, INPUT_DIS, arg);
-+			*mask |= CAPRI_STD_PIN_REG_INPUT_DIS_MASK;
-+			break;
-+
-+		case PIN_CONFIG_DRIVE_STRENGTH:
-+			/* Valid range is 2-16 mA, even numbers only */
-+			if ((arg < 2) || (arg > 16) || (arg % 2)) {
-+				dev_err(pctldev->dev,
-+					"Invalid Drive Strength value (%d) for "
-+					"pin %s (%d). Valid values are "
-+					"(2..16) mA, even numbers only.\n",
-+					arg, pdata->pins[pin].name, pin);
-+				return -EINVAL;
-+			}
-+			*val = CAPRI_PIN_UPDATE(*val, STD, DRV_STR, (arg/2)-1);
-+			*mask |= CAPRI_STD_PIN_REG_DRV_STR_MASK;
-+			break;
-+
-+		default:
-+			dev_err(pctldev->dev,
-+				"Unrecognized pin config %d for pin %s (%d).\n",
-+				param, pdata->pins[pin].name, pin);
-+			return -EINVAL;
-+
-+		} /* switch config */
-+	} /* for each config */
-+
-+	return 0;
-+}
-+
-+/* Goes through the configs and update register val/mask */
-+static int capri_i2c_pin_update(struct pinctrl_dev *pctldev,
-+				unsigned pin,
-+				unsigned long *configs,
-+				unsigned num_configs,
-+				u32 *val,
-+				u32 *mask)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+	int i;
-+	enum pin_config_param param;
-+	u16 arg;
-+
-+	for (i = 0; i < num_configs; i++) {
-+		param = pinconf_to_config_param(configs[i]);
-+		arg = pinconf_to_config_argument(configs[i]);
-+
-+		switch (param) {
-+		case PIN_CONFIG_BIAS_PULL_UP:
-+			if ((arg < 1) || (arg > 7)) {
-+				dev_err(pctldev->dev,
-+					"Invalid Pull Up value (%d) for pin %s "
-+					"(%d). Valid values are (1..7).\n",
-+					arg, pdata->pins[pin].name, pin);
-+				return -EINVAL;
-+			}
-+			*val = CAPRI_PIN_UPDATE(*val, I2C, PULL_UP_STR, arg);
-+			*mask |= CAPRI_I2C_PIN_REG_PULL_UP_STR_MASK;
-+			break;
-+
-+		case PIN_CONFIG_BIAS_DISABLE:
-+			*val = CAPRI_PIN_UPDATE(*val, I2C, PULL_UP_STR, 0);
-+			*mask |= CAPRI_I2C_PIN_REG_PULL_UP_STR_MASK;
-+			break;
-+
-+		case PIN_CONFIG_SLEW_RATE:
-+			arg = (arg >= 1 ? 1 : 0);
-+			*val = CAPRI_PIN_UPDATE(*val, I2C, SLEW, arg);
-+			*mask |= CAPRI_I2C_PIN_REG_SLEW_MASK;
-+			break;
-+
-+		case PIN_CONFIG_INPUT_ENABLE:
-+			/* inversed since register is for input _disable_ */
-+			arg = (arg >= 1 ? 0 : 1);
-+			*val = CAPRI_PIN_UPDATE(*val, I2C, INPUT_DIS, arg);
-+			*mask |= CAPRI_I2C_PIN_REG_INPUT_DIS_MASK;
-+			break;
-+
-+		default:
-+			dev_err(pctldev->dev,
-+				"Unrecognized pin config %d for pin %s (%d).\n",
-+				param, pdata->pins[pin].name, pin);
-+			return -EINVAL;
-+
-+		} /* switch config */
-+	} /* for each config */
-+
-+	return 0;
-+}
-+
-+/* Goes through the configs and update register val/mask */
-+static int capri_hdmi_pin_update(struct pinctrl_dev *pctldev,
-+				 unsigned pin,
-+				 unsigned long *configs,
-+				 unsigned num_configs,
-+				 u32 *val,
-+				 u32 *mask)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+	int i;
-+	enum pin_config_param param;
-+	u16 arg;
-+
-+	for (i = 0; i < num_configs; i++) {
-+		param = pinconf_to_config_param(configs[i]);
-+		arg = pinconf_to_config_argument(configs[i]);
-+
-+		switch (param) {
-+		case PIN_CONFIG_SLEW_RATE:
-+			arg = (arg >= 1 ? 1 : 0);
-+			*val = CAPRI_PIN_UPDATE(*val, HDMI, MODE, arg);
-+			*mask |= CAPRI_HDMI_PIN_REG_MODE_MASK;
-+			break;
-+
-+		case PIN_CONFIG_INPUT_ENABLE:
-+			/* inversed since register is for input _disable_ */
-+			arg = (arg >= 1 ? 0 : 1);
-+			*val = CAPRI_PIN_UPDATE(*val, HDMI, INPUT_DIS, arg);
-+			*mask |= CAPRI_HDMI_PIN_REG_INPUT_DIS_MASK;
-+			break;
-+
-+		default:
-+			dev_err(pctldev->dev,
-+				"Unrecognized pin config %d for pin %s (%d).\n",
-+				param, pdata->pins[pin].name, pin);
-+			return -EINVAL;
-+
-+		} /* switch config */
-+	} /* for each config */
-+
-+	return 0;
-+}
-+
-+static int capri_pinctrl_pin_config_set(struct pinctrl_dev *pctldev,
-+					unsigned pin,
-+					unsigned long *configs,
-+					unsigned num_configs)
-+{
-+	struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-+	enum capri_pin_type pin_type;
-+	void __iomem *reg = pdata->reg_base + (4 * pin);
-+	u32 cfg_val, cfg_mask;
-+	int rc;
-+
-+	cfg_val = 0;
-+	cfg_mask = 0;
-+	pin_type = pin_type_get(pctldev, pin);
-+
-+	/* Different pins have different configuration options */
-+	switch (pin_type) {
-+	case CAPRI_PIN_TYPE_STD:
-+		rc = capri_std_pin_update(pctldev, pin, configs, num_configs,
-+			&cfg_val, &cfg_mask);
-+		break;
-+
-+	case CAPRI_PIN_TYPE_I2C:
-+		rc = capri_i2c_pin_update(pctldev, pin, configs, num_configs,
-+			&cfg_val, &cfg_mask);
-+		break;
-+
-+	case CAPRI_PIN_TYPE_HDMI:
-+		rc = capri_hdmi_pin_update(pctldev, pin, configs, num_configs,
-+			&cfg_val, &cfg_mask);
-+		break;
-+
-+	default:
-+		dev_err(pctldev->dev, "Unknown pin type.\n");
-+		return -EINVAL;
-+
-+	} /* switch pin type */
-+
-+	if (rc)
-+		return rc;
-+
-+	dev_dbg(pctldev->dev,
-+		"%s(): Set pin %s (%d) with config 0x%x, mask 0x%x\n",
-+		__func__, pdata->pins[pin].name, pin, cfg_val, cfg_mask);
-+
-+	capri_reg_write(pctldev, reg, cfg_val, cfg_mask);
-+
-+	return 0;
-+}
-+
-+static struct pinconf_ops capri_pinctrl_pinconf_ops = {
-+	.pin_config_get = capri_pinctrl_pin_config_get,
-+	.pin_config_set = capri_pinctrl_pin_config_set,
-+};
-+
-+static struct pinctrl_desc capri_pinctrl_desc = {
-+	/* name, pins, npins members initialized in probe function */
-+	.pctlops = &capri_pinctrl_ops,
-+	.pmxops = &capri_pinctrl_pinmux_ops,
-+	.confops = &capri_pinctrl_pinconf_ops,
-+	.owner = THIS_MODULE,
-+};
-+
-+int __init capri_pinctrl_probe(struct platform_device *pdev)
-+{
-+	struct capri_pinctrl_data *pdata = &capri_pinctrl;
-+	struct resource *res;
-+	struct pinctrl_dev *pctl;
-+
-+	/* So far We can assume there is only 1 bank of registers */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Missing MEM resource\n");
-+		return -ENODEV;
-+	}
-+
-+	pdata->reg_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(pdata->reg_base)) {
-+		dev_err(&pdev->dev, "Failed to ioremap MEM resource\n");
-+		return -ENODEV;
-+	}
-+
-+	/* Initialize the dynamic part of pinctrl_desc */
-+	capri_pinctrl_desc.name = dev_name(&pdev->dev);
-+	capri_pinctrl_desc.pins = capri_pinctrl.pins;
-+	capri_pinctrl_desc.npins = capri_pinctrl.npins;
-+
-+	pctl = pinctrl_register(&capri_pinctrl_desc,
-+				&pdev->dev,
-+				pdata);
-+	if (!pctl) {
-+		dev_err(&pdev->dev, "Failed to register pinctrl\n");
-+		return -ENODEV;
-+	}
-+
-+	platform_set_drvdata(pdev, pdata);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id capri_pinctrl_of_match[] = {
-+	{ .compatible = "brcm,capri-pinctrl", },
-+	{ },
-+};
-+
-+static struct platform_driver capri_pinctrl_driver = {
-+	.driver = {
-+		.name = "bcm-capri-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = capri_pinctrl_of_match,
-+	},
-+};
-+
-+module_platform_driver_probe(capri_pinctrl_driver, capri_pinctrl_probe);
-+
-+MODULE_AUTHOR("Sherman Yin <syin@broadcom.com>");
-+MODULE_DESCRIPTION("Broadcom Capri pinctrl driver");
-+MODULE_LICENSE("GPL v2");
+ 	/* The sysfs dirent has been moved to a different namespace */
+ 	if (kn->parent && kernfs_ns_enabled(kn->parent) &&
+-	    sysfs_info(dentry->d_sb)->ns != kn->ns)
++	    kernfs_info(dentry->d_sb)->ns != kn->ns)
+ 		goto out_bad;
+ 
+ 	mutex_unlock(&sysfs_mutex);
+@@ -375,7 +375,7 @@ struct kernfs_node *sysfs_new_dirent(struct kernfs_root *root,
+ 
+ /**
+  *	sysfs_addrm_start - prepare for kernfs_node add/remove
+- *	@acxt: pointer to sysfs_addrm_cxt to be used
++ *	@acxt: pointer to kernfs_addrm_cxt to be used
+  *
+  *	This function is called when the caller is about to add or remove
+  *	kernfs_node.  This function acquires sysfs_mutex.  @acxt is used to
+@@ -385,7 +385,7 @@ struct kernfs_node *sysfs_new_dirent(struct kernfs_root *root,
+  *	Kernel thread context (may sleep).  sysfs_mutex is locked on
+  *	return.
+  */
+-void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
++void sysfs_addrm_start(struct kernfs_addrm_cxt *acxt)
+ 	__acquires(sysfs_mutex)
+ {
+ 	memset(acxt, 0, sizeof(*acxt));
+@@ -414,11 +414,11 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt)
+  *	0 on success, -EEXIST if entry with the given name already
+  *	exists.
+  */
+-int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct kernfs_node *kn,
++int sysfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+ 		  struct kernfs_node *parent)
+ {
+ 	bool has_ns = kernfs_ns_enabled(parent);
+-	struct sysfs_inode_attrs *ps_iattr;
++	struct kernfs_iattrs *ps_iattr;
+ 	int ret;
+ 
+ 	if (has_ns != (bool)kn->ns) {
+@@ -466,10 +466,10 @@ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct kernfs_node *kn,
+  *	LOCKING:
+  *	Determined by sysfs_addrm_start().
+  */
+-static void sysfs_remove_one(struct sysfs_addrm_cxt *acxt,
++static void sysfs_remove_one(struct kernfs_addrm_cxt *acxt,
+ 			     struct kernfs_node *kn)
+ {
+-	struct sysfs_inode_attrs *ps_iattr;
++	struct kernfs_iattrs *ps_iattr;
+ 
+ 	/*
+ 	 * Removal can be called multiple times on the same node.  Only the
+@@ -505,7 +505,7 @@ static void sysfs_remove_one(struct sysfs_addrm_cxt *acxt,
+  *	LOCKING:
+  *	sysfs_mutex is released.
+  */
+-void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt)
++void sysfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
+ 	__releases(sysfs_mutex)
+ {
+ 	/* release resources acquired by sysfs_addrm_start() */
+@@ -649,7 +649,7 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+ 					 const void *ns)
+ {
+ 	umode_t mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
+-	struct sysfs_addrm_cxt acxt;
++	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 	int rc;
+ 
+@@ -686,7 +686,7 @@ static struct dentry *sysfs_lookup(struct inode *dir, struct dentry *dentry,
+ 	mutex_lock(&sysfs_mutex);
+ 
+ 	if (kernfs_ns_enabled(parent))
+-		ns = sysfs_info(dir->i_sb)->ns;
++		ns = kernfs_info(dir->i_sb)->ns;
+ 
+ 	kn = kernfs_find_ns(parent, dentry->d_name.name, ns);
+ 
+@@ -778,7 +778,7 @@ static struct kernfs_node *sysfs_next_descendant_post(struct kernfs_node *pos,
+ 	return pos->parent;
+ }
+ 
+-static void __kernfs_remove(struct sysfs_addrm_cxt *acxt,
++static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+ 			    struct kernfs_node *kn)
+ {
+ 	struct kernfs_node *pos, *next;
+@@ -805,7 +805,7 @@ static void __kernfs_remove(struct sysfs_addrm_cxt *acxt,
+  */
+ void kernfs_remove(struct kernfs_node *kn)
+ {
+-	struct sysfs_addrm_cxt acxt;
++	struct kernfs_addrm_cxt acxt;
+ 
+ 	sysfs_addrm_start(&acxt);
+ 	__kernfs_remove(&acxt, kn);
+@@ -824,7 +824,7 @@ void kernfs_remove(struct kernfs_node *kn)
+ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 			     const void *ns)
+ {
+-	struct sysfs_addrm_cxt acxt;
++	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 
+ 	if (!parent) {
+@@ -971,7 +971,7 @@ static int sysfs_readdir(struct file *file, struct dir_context *ctx)
+ 	mutex_lock(&sysfs_mutex);
+ 
+ 	if (kernfs_ns_enabled(parent))
+-		ns = sysfs_info(dentry->d_sb)->ns;
++		ns = kernfs_info(dentry->d_sb)->ns;
+ 
+ 	for (pos = sysfs_dir_pos(ns, parent, ctx->pos, pos);
+ 	     pos;
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index 5277021..2714a39 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -18,27 +18,27 @@
+ #include "kernfs-internal.h"
+ 
+ /*
+- * There's one sysfs_open_file for each open file and one sysfs_open_dirent
++ * There's one kernfs_open_file for each open file and one kernfs_open_node
+  * for each kernfs_node with one or more open files.
+  *
+- * kernfs_node->attr.open points to sysfs_open_dirent.  attr.open is
+- * protected by sysfs_open_dirent_lock.
++ * kernfs_node->attr.open points to kernfs_open_node.  attr.open is
++ * protected by kernfs_open_node_lock.
+  *
+  * filp->private_data points to seq_file whose ->private points to
+- * sysfs_open_file.  sysfs_open_files are chained at
+- * sysfs_open_dirent->files, which is protected by sysfs_open_file_mutex.
++ * kernfs_open_file.  kernfs_open_files are chained at
++ * kernfs_open_node->files, which is protected by kernfs_open_file_mutex.
+  */
+-static DEFINE_SPINLOCK(sysfs_open_dirent_lock);
+-static DEFINE_MUTEX(sysfs_open_file_mutex);
++static DEFINE_SPINLOCK(kernfs_open_node_lock);
++static DEFINE_MUTEX(kernfs_open_file_mutex);
+ 
+-struct sysfs_open_dirent {
++struct kernfs_open_node {
+ 	atomic_t		refcnt;
+ 	atomic_t		event;
+ 	wait_queue_head_t	poll;
+-	struct list_head	files; /* goes through sysfs_open_file.list */
++	struct list_head	files; /* goes through kernfs_open_file.list */
+ };
+ 
+-static struct sysfs_open_file *sysfs_of(struct file *file)
++static struct kernfs_open_file *kernfs_of(struct file *file)
+ {
+ 	return ((struct seq_file *)file->private_data)->private;
+ }
+@@ -56,7 +56,7 @@ static const struct kernfs_ops *kernfs_ops(struct kernfs_node *kn)
+ 
+ static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
+ {
+-	struct sysfs_open_file *of = sf->private;
++	struct kernfs_open_file *of = sf->private;
+ 	const struct kernfs_ops *ops;
+ 
+ 	/*
+@@ -81,7 +81,7 @@ static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
+ 
+ static void *kernfs_seq_next(struct seq_file *sf, void *v, loff_t *ppos)
+ {
+-	struct sysfs_open_file *of = sf->private;
++	struct kernfs_open_file *of = sf->private;
+ 	const struct kernfs_ops *ops = kernfs_ops(of->kn);
+ 
+ 	if (ops->seq_next) {
+@@ -98,7 +98,7 @@ static void *kernfs_seq_next(struct seq_file *sf, void *v, loff_t *ppos)
+ 
+ static void kernfs_seq_stop(struct seq_file *sf, void *v)
+ {
+-	struct sysfs_open_file *of = sf->private;
++	struct kernfs_open_file *of = sf->private;
+ 	const struct kernfs_ops *ops = kernfs_ops(of->kn);
+ 
+ 	if (ops->seq_stop)
+@@ -110,7 +110,7 @@ static void kernfs_seq_stop(struct seq_file *sf, void *v)
+ 
+ static int kernfs_seq_show(struct seq_file *sf, void *v)
+ {
+-	struct sysfs_open_file *of = sf->private;
++	struct kernfs_open_file *of = sf->private;
+ 
+ 	of->event = atomic_read(&of->kn->attr.open->event);
+ 
+@@ -130,7 +130,7 @@ static const struct seq_operations kernfs_seq_ops = {
+  * it difficult to use seq_file.  Implement simplistic custom buffering for
+  * bin files.
+  */
+-static ssize_t kernfs_file_direct_read(struct sysfs_open_file *of,
++static ssize_t kernfs_file_direct_read(struct kernfs_open_file *of,
+ 				       char __user *user_buf, size_t count,
+ 				       loff_t *ppos)
+ {
+@@ -187,7 +187,7 @@ static ssize_t kernfs_file_direct_read(struct sysfs_open_file *of,
+ static ssize_t kernfs_file_read(struct file *file, char __user *user_buf,
+ 				size_t count, loff_t *ppos)
+ {
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 
+ 	if (of->kn->flags & SYSFS_FLAG_HAS_SEQ_SHOW)
+ 		return seq_read(file, user_buf, count, ppos);
+@@ -214,7 +214,7 @@ static ssize_t kernfs_file_read(struct file *file, char __user *user_buf,
+ static ssize_t kernfs_file_write(struct file *file, const char __user *user_buf,
+ 				 size_t count, loff_t *ppos)
+ {
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	ssize_t len = min_t(size_t, count, PAGE_SIZE);
+ 	const struct kernfs_ops *ops;
+ 	char *buf;
+@@ -259,7 +259,7 @@ out_free:
+ static void kernfs_vma_open(struct vm_area_struct *vma)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 
+ 	if (!of->vm_ops)
+ 		return;
+@@ -276,7 +276,7 @@ static void kernfs_vma_open(struct vm_area_struct *vma)
+ static int kernfs_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	int ret;
+ 
+ 	if (!of->vm_ops)
+@@ -297,7 +297,7 @@ static int kernfs_vma_page_mkwrite(struct vm_area_struct *vma,
+ 				   struct vm_fault *vmf)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	int ret;
+ 
+ 	if (!of->vm_ops)
+@@ -320,7 +320,7 @@ static int kernfs_vma_access(struct vm_area_struct *vma, unsigned long addr,
+ 			     void *buf, int len, int write)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	int ret;
+ 
+ 	if (!of->vm_ops)
+@@ -342,7 +342,7 @@ static int kernfs_vma_set_policy(struct vm_area_struct *vma,
+ 				 struct mempolicy *new)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	int ret;
+ 
+ 	if (!of->vm_ops)
+@@ -363,7 +363,7 @@ static struct mempolicy *kernfs_vma_get_policy(struct vm_area_struct *vma,
+ 					       unsigned long addr)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	struct mempolicy *pol;
+ 
+ 	if (!of->vm_ops)
+@@ -385,7 +385,7 @@ static int kernfs_vma_migrate(struct vm_area_struct *vma,
+ 			      unsigned long flags)
+ {
+ 	struct file *file = vma->vm_file;
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	int ret;
+ 
+ 	if (!of->vm_ops)
+@@ -417,7 +417,7 @@ static const struct vm_operations_struct kernfs_vm_ops = {
+ 
+ static int kernfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+-	struct sysfs_open_file *of = sysfs_of(file);
++	struct kernfs_open_file *of = kernfs_of(file);
+ 	const struct kernfs_ops *ops;
+ 	int rc;
+ 
+@@ -473,9 +473,9 @@ out_unlock:
+ }
+ 
+ /**
+- *	sysfs_get_open_dirent - get or create sysfs_open_dirent
++ *	sysfs_get_open_dirent - get or create kernfs_open_node
+  *	@kn: target kernfs_node
+- *	@of: sysfs_open_file for this instance of open
++ *	@of: kernfs_open_file for this instance of open
+  *
+  *	If @kn->attr.open exists, increment its reference count; otherwise,
+  *	create one.  @of is chained to the files list.
+@@ -487,49 +487,49 @@ out_unlock:
+  *	0 on success, -errno on failure.
+  */
+ static int sysfs_get_open_dirent(struct kernfs_node *kn,
+-				 struct sysfs_open_file *of)
++				 struct kernfs_open_file *of)
+ {
+-	struct sysfs_open_dirent *od, *new_od = NULL;
++	struct kernfs_open_node *on, *new_on = NULL;
+ 
+  retry:
+-	mutex_lock(&sysfs_open_file_mutex);
+-	spin_lock_irq(&sysfs_open_dirent_lock);
++	mutex_lock(&kernfs_open_file_mutex);
++	spin_lock_irq(&kernfs_open_node_lock);
+ 
+-	if (!kn->attr.open && new_od) {
+-		kn->attr.open = new_od;
+-		new_od = NULL;
++	if (!kn->attr.open && new_on) {
++		kn->attr.open = new_on;
++		new_on = NULL;
+ 	}
+ 
+-	od = kn->attr.open;
+-	if (od) {
+-		atomic_inc(&od->refcnt);
+-		list_add_tail(&of->list, &od->files);
++	on = kn->attr.open;
++	if (on) {
++		atomic_inc(&on->refcnt);
++		list_add_tail(&of->list, &on->files);
+ 	}
+ 
+-	spin_unlock_irq(&sysfs_open_dirent_lock);
+-	mutex_unlock(&sysfs_open_file_mutex);
++	spin_unlock_irq(&kernfs_open_node_lock);
++	mutex_unlock(&kernfs_open_file_mutex);
+ 
+-	if (od) {
+-		kfree(new_od);
++	if (on) {
++		kfree(new_on);
+ 		return 0;
+ 	}
+ 
+ 	/* not there, initialize a new one and retry */
+-	new_od = kmalloc(sizeof(*new_od), GFP_KERNEL);
+-	if (!new_od)
++	new_on = kmalloc(sizeof(*new_on), GFP_KERNEL);
++	if (!new_on)
+ 		return -ENOMEM;
+ 
+-	atomic_set(&new_od->refcnt, 0);
+-	atomic_set(&new_od->event, 1);
+-	init_waitqueue_head(&new_od->poll);
+-	INIT_LIST_HEAD(&new_od->files);
++	atomic_set(&new_on->refcnt, 0);
++	atomic_set(&new_on->event, 1);
++	init_waitqueue_head(&new_on->poll);
++	INIT_LIST_HEAD(&new_on->files);
+ 	goto retry;
+ }
+ 
+ /**
+- *	sysfs_put_open_dirent - put sysfs_open_dirent
++ *	sysfs_put_open_dirent - put kernfs_open_node
+  *	@kn: target kernfs_nodet
+- *	@of: associated sysfs_open_file
++ *	@of: associated kernfs_open_file
+  *
+  *	Put @kn->attr.open and unlink @of from the files list.  If
+  *	reference count reaches zero, disassociate and free it.
+@@ -538,33 +538,33 @@ static int sysfs_get_open_dirent(struct kernfs_node *kn,
+  *	None.
+  */
+ static void sysfs_put_open_dirent(struct kernfs_node *kn,
+-				  struct sysfs_open_file *of)
++				  struct kernfs_open_file *of)
+ {
+-	struct sysfs_open_dirent *od = kn->attr.open;
++	struct kernfs_open_node *on = kn->attr.open;
+ 	unsigned long flags;
+ 
+-	mutex_lock(&sysfs_open_file_mutex);
+-	spin_lock_irqsave(&sysfs_open_dirent_lock, flags);
++	mutex_lock(&kernfs_open_file_mutex);
++	spin_lock_irqsave(&kernfs_open_node_lock, flags);
+ 
+ 	if (of)
+ 		list_del(&of->list);
+ 
+-	if (atomic_dec_and_test(&od->refcnt))
++	if (atomic_dec_and_test(&on->refcnt))
+ 		kn->attr.open = NULL;
+ 	else
+-		od = NULL;
++		on = NULL;
+ 
+-	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
+-	mutex_unlock(&sysfs_open_file_mutex);
++	spin_unlock_irqrestore(&kernfs_open_node_lock, flags);
++	mutex_unlock(&kernfs_open_file_mutex);
+ 
+-	kfree(od);
++	kfree(on);
+ }
+ 
+ static int kernfs_file_open(struct inode *inode, struct file *file)
+ {
+ 	struct kernfs_node *kn = file->f_path.dentry->d_fsdata;
+ 	const struct kernfs_ops *ops;
+-	struct sysfs_open_file *of;
++	struct kernfs_open_file *of;
+ 	bool has_read, has_write, has_mmap;
+ 	int error = -EACCES;
+ 
+@@ -586,9 +586,9 @@ static int kernfs_file_open(struct inode *inode, struct file *file)
+ 	    (!(inode->i_mode & S_IRUGO) || !has_read))
+ 		goto err_out;
+ 
+-	/* allocate a sysfs_open_file for the file */
++	/* allocate a kernfs_open_file for the file */
+ 	error = -ENOMEM;
+-	of = kzalloc(sizeof(struct sysfs_open_file), GFP_KERNEL);
++	of = kzalloc(sizeof(struct kernfs_open_file), GFP_KERNEL);
+ 	if (!of)
+ 		goto err_out;
+ 
+@@ -654,7 +654,7 @@ err_out:
+ static int kernfs_file_release(struct inode *inode, struct file *filp)
+ {
+ 	struct kernfs_node *kn = filp->f_path.dentry->d_fsdata;
+-	struct sysfs_open_file *of = sysfs_of(filp);
++	struct kernfs_open_file *of = kernfs_of(filp);
+ 
+ 	sysfs_put_open_dirent(kn, of);
+ 	seq_release(inode, filp);
+@@ -665,26 +665,26 @@ static int kernfs_file_release(struct inode *inode, struct file *filp)
+ 
+ void sysfs_unmap_bin_file(struct kernfs_node *kn)
+ {
+-	struct sysfs_open_dirent *od;
+-	struct sysfs_open_file *of;
++	struct kernfs_open_node *on;
++	struct kernfs_open_file *of;
+ 
+ 	if (!(kn->flags & SYSFS_FLAG_HAS_MMAP))
+ 		return;
+ 
+-	spin_lock_irq(&sysfs_open_dirent_lock);
+-	od = kn->attr.open;
+-	if (od)
+-		atomic_inc(&od->refcnt);
+-	spin_unlock_irq(&sysfs_open_dirent_lock);
+-	if (!od)
++	spin_lock_irq(&kernfs_open_node_lock);
++	on = kn->attr.open;
++	if (on)
++		atomic_inc(&on->refcnt);
++	spin_unlock_irq(&kernfs_open_node_lock);
++	if (!on)
+ 		return;
+ 
+-	mutex_lock(&sysfs_open_file_mutex);
+-	list_for_each_entry(of, &od->files, list) {
++	mutex_lock(&kernfs_open_file_mutex);
++	list_for_each_entry(of, &on->files, list) {
+ 		struct inode *inode = file_inode(of->file);
+ 		unmap_mapping_range(inode->i_mapping, 0, 0, 1);
+ 	}
+-	mutex_unlock(&sysfs_open_file_mutex);
++	mutex_unlock(&kernfs_open_file_mutex);
+ 
+ 	sysfs_put_open_dirent(kn, NULL);
+ }
+@@ -704,19 +704,19 @@ void sysfs_unmap_bin_file(struct kernfs_node *kn)
+  */
+ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+ {
+-	struct sysfs_open_file *of = sysfs_of(filp);
++	struct kernfs_open_file *of = kernfs_of(filp);
+ 	struct kernfs_node *kn = filp->f_path.dentry->d_fsdata;
+-	struct sysfs_open_dirent *od = kn->attr.open;
++	struct kernfs_open_node *on = kn->attr.open;
+ 
+ 	/* need parent for the kobj, grab both */
+ 	if (!sysfs_get_active(kn))
+ 		goto trigger;
+ 
+-	poll_wait(filp, &od->poll, wait);
++	poll_wait(filp, &on->poll, wait);
+ 
+ 	sysfs_put_active(kn);
+ 
+-	if (of->event != atomic_read(&od->event))
++	if (of->event != atomic_read(&on->event))
+ 		goto trigger;
+ 
+ 	return DEFAULT_POLLMASK;
+@@ -733,20 +733,20 @@ static unsigned int kernfs_file_poll(struct file *filp, poll_table *wait)
+  */
+ void kernfs_notify(struct kernfs_node *kn)
+ {
+-	struct sysfs_open_dirent *od;
++	struct kernfs_open_node *on;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysfs_open_dirent_lock, flags);
++	spin_lock_irqsave(&kernfs_open_node_lock, flags);
+ 
+ 	if (!WARN_ON(sysfs_type(kn) != SYSFS_KOBJ_ATTR)) {
+-		od = kn->attr.open;
+-		if (od) {
+-			atomic_inc(&od->event);
+-			wake_up_interruptible(&od->poll);
++		on = kn->attr.open;
++		if (on) {
++			atomic_inc(&on->event);
++			wake_up_interruptible(&on->poll);
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&sysfs_open_dirent_lock, flags);
++	spin_unlock_irqrestore(&kernfs_open_node_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(kernfs_notify);
+ 
+@@ -780,7 +780,7 @@ struct kernfs_node *kernfs_create_file_ns_key(struct kernfs_node *parent,
+ 					      void *priv, const void *ns,
+ 					      struct lock_class_key *key)
+ {
+-	struct sysfs_addrm_cxt acxt;
++	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 	int rc;
+ 
+diff --git a/fs/kernfs/inode.c b/fs/kernfs/inode.c
+index f6c0aae..a0e0038 100644
+--- a/fs/kernfs/inode.c
++++ b/fs/kernfs/inode.c
+@@ -46,14 +46,14 @@ void __init sysfs_inode_init(void)
+ 		panic("failed to init sysfs_backing_dev_info");
+ }
+ 
+-static struct sysfs_inode_attrs *sysfs_inode_attrs(struct kernfs_node *kn)
++static struct kernfs_iattrs *kernfs_iattrs(struct kernfs_node *kn)
+ {
+ 	struct iattr *iattrs;
+ 
+ 	if (kn->iattr)
+ 		return kn->iattr;
+ 
+-	kn->iattr = kzalloc(sizeof(struct sysfs_inode_attrs), GFP_KERNEL);
++	kn->iattr = kzalloc(sizeof(struct kernfs_iattrs), GFP_KERNEL);
+ 	if (!kn->iattr)
+ 		return NULL;
+ 	iattrs = &kn->iattr->ia_iattr;
+@@ -71,11 +71,11 @@ static struct sysfs_inode_attrs *sysfs_inode_attrs(struct kernfs_node *kn)
+ 
+ static int __kernfs_setattr(struct kernfs_node *kn, const struct iattr *iattr)
+ {
+-	struct sysfs_inode_attrs *attrs;
++	struct kernfs_iattrs *attrs;
+ 	struct iattr *iattrs;
+ 	unsigned int ia_valid = iattr->ia_valid;
+ 
+-	attrs = sysfs_inode_attrs(kn);
++	attrs = kernfs_iattrs(kn);
+ 	if (!attrs)
+ 		return -ENOMEM;
+ 
+@@ -144,11 +144,11 @@ out:
+ static int sysfs_sd_setsecdata(struct kernfs_node *kn, void **secdata,
+ 			       u32 *secdata_len)
+ {
+-	struct sysfs_inode_attrs *attrs;
++	struct kernfs_iattrs *attrs;
+ 	void *old_secdata;
+ 	size_t old_secdata_len;
+ 
+-	attrs = sysfs_inode_attrs(kn);
++	attrs = kernfs_iattrs(kn);
+ 	if (!attrs)
+ 		return -ENOMEM;
+ 
+@@ -167,12 +167,12 @@ int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
+ 		size_t size, int flags)
+ {
+ 	struct kernfs_node *kn = dentry->d_fsdata;
+-	struct sysfs_inode_attrs *attrs;
++	struct kernfs_iattrs *attrs;
+ 	void *secdata;
+ 	int error;
+ 	u32 secdata_len = 0;
+ 
+-	attrs = sysfs_inode_attrs(kn);
++	attrs = kernfs_iattrs(kn);
+ 	if (!attrs)
+ 		return -ENOMEM;
+ 
+@@ -205,9 +205,9 @@ int sysfs_setxattr(struct dentry *dentry, const char *name, const void *value,
+ int sysfs_removexattr(struct dentry *dentry, const char *name)
+ {
+ 	struct kernfs_node *kn = dentry->d_fsdata;
+-	struct sysfs_inode_attrs *attrs;
++	struct kernfs_iattrs *attrs;
+ 
+-	attrs = sysfs_inode_attrs(kn);
++	attrs = kernfs_iattrs(kn);
+ 	if (!attrs)
+ 		return -ENOMEM;
+ 
+@@ -218,9 +218,9 @@ ssize_t sysfs_getxattr(struct dentry *dentry, const char *name, void *buf,
+ 		       size_t size)
+ {
+ 	struct kernfs_node *kn = dentry->d_fsdata;
+-	struct sysfs_inode_attrs *attrs;
++	struct kernfs_iattrs *attrs;
+ 
+-	attrs = sysfs_inode_attrs(kn);
++	attrs = kernfs_iattrs(kn);
+ 	if (!attrs)
+ 		return -ENOMEM;
+ 
+@@ -230,9 +230,9 @@ ssize_t sysfs_getxattr(struct dentry *dentry, const char *name, void *buf,
+ ssize_t sysfs_listxattr(struct dentry *dentry, char *buf, size_t size)
+ {
+ 	struct kernfs_node *kn = dentry->d_fsdata;
+-	struct sysfs_inode_attrs *attrs;
++	struct kernfs_iattrs *attrs;
+ 
+-	attrs = sysfs_inode_attrs(kn);
++	attrs = kernfs_iattrs(kn);
+ 	if (!attrs)
+ 		return -ENOMEM;
+ 
+@@ -256,7 +256,7 @@ static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
+ 
+ static void sysfs_refresh_inode(struct kernfs_node *kn, struct inode *inode)
+ {
+-	struct sysfs_inode_attrs *attrs = kn->iattr;
++	struct kernfs_iattrs *attrs = kn->iattr;
+ 
+ 	inode->i_mode = kn->mode;
+ 	if (attrs) {
+diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
+index 2dbb1cb..573f669 100644
+--- a/fs/kernfs/kernfs-internal.h
++++ b/fs/kernfs/kernfs-internal.h
+@@ -18,7 +18,7 @@
+ 
+ #include <linux/kernfs.h>
+ 
+-struct sysfs_inode_attrs {
++struct kernfs_iattrs {
+ 	struct iattr		ia_iattr;
+ 	void			*ia_secdata;
+ 	u32			ia_secdata_len;
+@@ -47,14 +47,14 @@ static inline struct kernfs_root *kernfs_root(struct kernfs_node *kn)
+ /*
+  * Context structure to be used while adding/removing nodes.
+  */
+-struct sysfs_addrm_cxt {
++struct kernfs_addrm_cxt {
+ 	struct kernfs_node	*removed;
+ };
+ 
+ /*
+  * mount.c
+  */
+-struct sysfs_super_info {
++struct kernfs_super_info {
+ 	/*
+ 	 * The root associated with this super_block.  Each super_block is
+ 	 * identified by the root and ns it's associated with.
+@@ -63,13 +63,13 @@ struct sysfs_super_info {
+ 
+ 	/*
+ 	 * Each sb is associated with one namespace tag, currently the
+-	 * network namespace of the task which mounted this sysfs instance.
+-	 * If multiple tags become necessary, make the following an array
+-	 * and compare kernfs_node tag against every entry.
++	 * network namespace of the task which mounted this kernfs
++	 * instance.  If multiple tags become necessary, make the following
++	 * an array and compare kernfs_node tag against every entry.
+ 	 */
+ 	const void		*ns;
+ };
+-#define sysfs_info(SB) ((struct sysfs_super_info *)(SB->s_fs_info))
++#define kernfs_info(SB) ((struct kernfs_super_info *)(SB->s_fs_info))
+ 
+ extern struct kmem_cache *sysfs_dir_cachep;
+ 
+@@ -100,10 +100,10 @@ extern const struct inode_operations sysfs_dir_inode_operations;
+ 
+ struct kernfs_node *sysfs_get_active(struct kernfs_node *kn);
+ void sysfs_put_active(struct kernfs_node *kn);
+-void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt);
+-int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct kernfs_node *kn,
++void sysfs_addrm_start(struct kernfs_addrm_cxt *acxt);
++int sysfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+ 		  struct kernfs_node *parent);
+-void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
++void sysfs_addrm_finish(struct kernfs_addrm_cxt *acxt);
+ struct kernfs_node *sysfs_new_dirent(struct kernfs_root *root,
+ 				     const char *name, umode_t mode, int type);
+ 
+diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
+index 9dbbf37..e0796dc 100644
+--- a/fs/kernfs/mount.c
++++ b/fs/kernfs/mount.c
+@@ -27,7 +27,7 @@ static const struct super_operations sysfs_ops = {
+ 
+ static int sysfs_fill_super(struct super_block *sb)
+ {
+-	struct sysfs_super_info *info = sysfs_info(sb);
++	struct kernfs_super_info *info = kernfs_info(sb);
+ 	struct inode *inode;
+ 	struct dentry *root;
+ 
+@@ -61,8 +61,8 @@ static int sysfs_fill_super(struct super_block *sb)
+ 
+ static int sysfs_test_super(struct super_block *sb, void *data)
+ {
+-	struct sysfs_super_info *sb_info = sysfs_info(sb);
+-	struct sysfs_super_info *info = data;
++	struct kernfs_super_info *sb_info = kernfs_info(sb);
++	struct kernfs_super_info *info = data;
+ 
+ 	return sb_info->root == info->root && sb_info->ns == info->ns;
+ }
+@@ -84,7 +84,7 @@ static int sysfs_set_super(struct super_block *sb, void *data)
+  */
+ const void *kernfs_super_ns(struct super_block *sb)
+ {
+-	struct sysfs_super_info *info = sysfs_info(sb);
++	struct kernfs_super_info *info = kernfs_info(sb);
+ 
+ 	return info->ns;
+ }
+@@ -107,7 +107,7 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+ 			       struct kernfs_root *root, const void *ns)
+ {
+ 	struct super_block *sb;
+-	struct sysfs_super_info *info;
++	struct kernfs_super_info *info;
+ 	int error;
+ 
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+@@ -144,12 +144,12 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
+  */
+ void kernfs_kill_sb(struct super_block *sb)
+ {
+-	struct sysfs_super_info *info = sysfs_info(sb);
++	struct kernfs_super_info *info = kernfs_info(sb);
+ 	struct kernfs_node *root_kn = sb->s_root->d_fsdata;
+ 
+ 	/*
+ 	 * Remove the superblock from fs_supers/s_instances
+-	 * so we can't find it, before freeing sysfs_super_info.
++	 * so we can't find it, before freeing kernfs_super_info.
+ 	 */
+ 	kill_anon_super(sb);
+ 	kfree(info);
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+index 5ac1a57..f36e3f1 100644
+--- a/fs/kernfs/symlink.c
++++ b/fs/kernfs/symlink.c
+@@ -27,7 +27,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       struct kernfs_node *target)
+ {
+ 	struct kernfs_node *kn;
+-	struct sysfs_addrm_cxt acxt;
++	struct kernfs_addrm_cxt acxt;
+ 	int error;
+ 
+ 	kn = sysfs_new_dirent(kernfs_root(parent), name, S_IFLNK|S_IRWXUGO,
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 887703a..fd104b2 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -41,7 +41,7 @@ static const struct sysfs_ops *sysfs_file_ops(struct kernfs_node *kn)
+  */
+ static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
+ {
+-	struct sysfs_open_file *of = sf->private;
++	struct kernfs_open_file *of = sf->private;
+ 	struct kobject *kobj = of->kn->parent->priv;
+ 	const struct sysfs_ops *ops = sysfs_file_ops(of->kn);
+ 	ssize_t count;
+@@ -78,7 +78,7 @@ static int sysfs_kf_seq_show(struct seq_file *sf, void *v)
+ 	return 0;
+ }
+ 
+-static ssize_t sysfs_kf_bin_read(struct sysfs_open_file *of, char *buf,
++static ssize_t sysfs_kf_bin_read(struct kernfs_open_file *of, char *buf,
+ 				 size_t count, loff_t pos)
+ {
+ 	struct bin_attribute *battr = of->kn->priv;
+@@ -102,7 +102,7 @@ static ssize_t sysfs_kf_bin_read(struct sysfs_open_file *of, char *buf,
+ }
+ 
+ /* kernfs write callback for regular sysfs files */
+-static ssize_t sysfs_kf_write(struct sysfs_open_file *of, char *buf,
++static ssize_t sysfs_kf_write(struct kernfs_open_file *of, char *buf,
+ 			      size_t count, loff_t pos)
+ {
+ 	const struct sysfs_ops *ops = sysfs_file_ops(of->kn);
+@@ -115,7 +115,7 @@ static ssize_t sysfs_kf_write(struct sysfs_open_file *of, char *buf,
+ }
+ 
+ /* kernfs write callback for bin sysfs files */
+-static ssize_t sysfs_kf_bin_write(struct sysfs_open_file *of, char *buf,
++static ssize_t sysfs_kf_bin_write(struct kernfs_open_file *of, char *buf,
+ 				  size_t count, loff_t pos)
+ {
+ 	struct bin_attribute *battr = of->kn->priv;
+@@ -136,7 +136,7 @@ static ssize_t sysfs_kf_bin_write(struct sysfs_open_file *of, char *buf,
+ 	return battr->write(of->file, kobj, battr, buf, pos, count);
+ }
+ 
+-static int sysfs_kf_bin_mmap(struct sysfs_open_file *of,
++static int sysfs_kf_bin_mmap(struct kernfs_open_file *of,
+ 			     struct vm_area_struct *vma)
+ {
+ 	struct bin_attribute *battr = of->kn->priv;
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 092469f..757647c 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -24,8 +24,8 @@ struct vm_area_struct;
+ struct super_block;
+ struct file_system_type;
+ 
+-struct sysfs_open_dirent;
+-struct sysfs_inode_attrs;
++struct kernfs_open_node;
++struct kernfs_iattrs;
+ 
+ enum kernfs_node_type {
+ 	SYSFS_DIR		= 0x0001,
+@@ -65,7 +65,7 @@ struct kernfs_elem_symlink {
+ 
+ struct kernfs_elem_attr {
+ 	const struct kernfs_ops	*ops;
+-	struct sysfs_open_dirent *open;
++	struct kernfs_open_node	*open;
+ 	loff_t			size;
+ };
+ 
+@@ -108,7 +108,7 @@ struct kernfs_node {
+ 	unsigned short		flags;
+ 	umode_t			mode;
+ 	unsigned int		ino;
+-	struct sysfs_inode_attrs *iattr;
++	struct kernfs_iattrs	*iattr;
+ };
+ 
+ struct kernfs_root {
+@@ -119,7 +119,7 @@ struct kernfs_root {
+ 	struct ida		ino_ida;
+ };
+ 
+-struct sysfs_open_file {
++struct kernfs_open_file {
+ 	/* published fields */
+ 	struct kernfs_node	*kn;
+ 	struct file		*file;
+@@ -140,7 +140,7 @@ struct kernfs_ops {
+ 	 * If seq_show() is present, seq_file path is active.  Other seq
+ 	 * operations are optional and if not implemented, the behavior is
+ 	 * equivalent to single_open().  @sf->private points to the
+-	 * associated sysfs_open_file.
++	 * associated kernfs_open_file.
+ 	 *
+ 	 * read() is bounced through kernel buffer and a read larger than
+ 	 * PAGE_SIZE results in partial operation of PAGE_SIZE.
+@@ -151,17 +151,17 @@ struct kernfs_ops {
+ 	void *(*seq_next)(struct seq_file *sf, void *v, loff_t *ppos);
+ 	void (*seq_stop)(struct seq_file *sf, void *v);
+ 
+-	ssize_t (*read)(struct sysfs_open_file *of, char *buf, size_t bytes,
++	ssize_t (*read)(struct kernfs_open_file *of, char *buf, size_t bytes,
+ 			loff_t off);
+ 
+ 	/*
+ 	 * write() is bounced through kernel buffer and a write larger than
+ 	 * PAGE_SIZE results in partial operation of PAGE_SIZE.
+ 	 */
+-	ssize_t (*write)(struct sysfs_open_file *of, char *buf, size_t bytes,
++	ssize_t (*write)(struct kernfs_open_file *of, char *buf, size_t bytes,
+ 			 loff_t off);
+ 
+-	int (*mmap)(struct sysfs_open_file *of, struct vm_area_struct *vma);
++	int (*mmap)(struct kernfs_open_file *of, struct vm_area_struct *vma);
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lock_class_key	lockdep_key;
 -- 
-1.7.9.5
+1.8.4.2
 
