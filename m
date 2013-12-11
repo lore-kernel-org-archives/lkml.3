@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173Ab3LKGEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 01:04:25 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39630 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab3LKGEW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 01:04:22 -0500
-Message-ID: <52A8004F.4090705@huawei.com>
-Date: Wed, 11 Dec 2013 14:03:59 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751265Ab3LKGGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 01:06:24 -0500
+Received: from zill.ext.symas.net ([69.43.206.106]:33767 "EHLO
+	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab3LKGGX (ORCPT
+	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
+	Wed, 11 Dec 2013 01:06:23 -0500
+Message-ID: <52A800DD.3070201@symas.com>
+Date: Tue, 10 Dec 2013 22:06:21 -0800
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:27.0) Gecko/20100101 Firefox/27.0 SeaMonkey/2.24a1
 MIME-Version: 1.0
-To: <clm@fb.com>, <jbacik@fb.com>, <chris.mason@fusionio.com>,
-        <jbacik@fusionio.com>
-CC: <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <mfasheh@suse.de>, <hch@lst.de>, <viro@zeniv.linux.org.uk>,
-        <miaox@cn.fujitsu.com>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH RESEND] fs: btrfs: new helper: file_inode(file)
-References: <52A7FEA4.80208@huawei.com>
-In-Reply-To: <52A7FEA4.80208@huawei.com>
-X-Forwarded-Message-Id: <52A7FEA4.80208@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Li Zefan <lizefan@huawei.com>
+CC: Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>
+Subject: Re: sched: RT throttling activated, 3.12.3
+References: <52A7D512.5050801@symas.com> <52A7D5E5.3070704@huawei.com> <52A7D74D.7000804@symas.com> <52A7F0C6.7060405@symas.com>
+In-Reply-To: <52A7F0C6.7060405@symas.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Howard Chu wrote:
+> Howard Chu wrote:
+>> Li Zefan wrote:
+>>> On 2013/12/11 10:59, Howard Chu wrote:
+>>>> I just upgraded a system from a 3.5 kernel to 3.12.3 and attempted to run some new benchmarks on it. I see my test program ramps up in CPU usage for a few seconds and then it gradually tails off. There's nothing obvious in the user code to trigger this behavior, so I check dmesg, and see this:
+>>>>
+>>>> [   55.037057] JFS: nTxBlock = 8192, nTxLock = 65536
+>>>> [163591.807470] perf samples too long (2758 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+>>>> [164061.362762] perf samples too long (5204 > 5000), lowering kernel.perf_event_max_sample_rate to 25000
+>>>> [167969.339513] [sched_delayed] sched: RT throttling activated
+>>>> [182741.484637] perf samples too long (294588 > 10000), lowering kernel.perf_event_max_sample_rate to 12500
+>>>> [182741.484726] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 36.665 msecs
+>>>> [182822.633084] perf samples too long (292359 > 20000), lowering kernel.perf_event_max_sample_rate to 6250
+>>>> [182905.606119] perf samples too long (290291 > 40000), lowering kernel.perf_event_max_sample_rate to 3250
+>>>> [199384.293514] perf samples too long (288142 > 76923), lowering kernel.perf_event_max_sample_rate to 1750
+>>>> [208507.301027] perf samples too long (285964 > 142857), lowering kernel.perf_event_max_sample_rate to 1000
+>>>> [208528.976208] perf samples too long (283799 > 250000), lowering kernel.perf_event_max_sample_rate to 500
+>>>>
+>>>> Why is the kernel throttling my server?
+>>>>
+>>>
+>>> Because that is the default setting of the kernel.
+>>
+>> Apparently a "new" default that didn't exist in 3.5? The code in question is
+>> not a realtime process. This behavior also wasn't seen in 3.10 or any older
+>> kernels.
+>
+> I just downgraded to 3.10.23 to doublecheck - everything is running normally
+> there, although a few percent slower than I expected. (Last time I tried 3.10
+> it was 3.10.11.)
+>
+For comparison, here's a "normally" behaving benchmark run:
+http://highlandsun.com/hyc/linux3.10/
 
-Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
----
- fs/btrfs/ioctl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The result is a fairly steady 15,000 ops/sec and CPU usage is around 190% 
+(this is a quadcore machine).
 
- - just change style
+On the 3.12.3 kernel:
+http://highlandsun.com/hyc/linux3.12/
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index a111622..fdfc0d7 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2690,7 +2690,7 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
- 	struct btrfs_ioctl_same_args tmp;
- 	struct btrfs_ioctl_same_args *same;
- 	struct btrfs_ioctl_same_extent_info *info;
--	struct inode *src = file->f_dentry->d_inode;
-+	struct inode *src = file_inode(file);
- 	struct file *dst_file = NULL;
- 	struct inode *dst;
- 	u64 off;
-@@ -2779,7 +2779,7 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
- 		if (file->f_path.mnt != dst_file->f_path.mnt)
- 			goto next;
-
--		dst = dst_file->f_dentry->d_inode;
-+		dst = file_inode(dst_file);
- 		if (src->i_sb != dst->i_sb)
- 			goto next;
+The CPU usage is initially around 180% but quickly plummets to about 7% and 
+stays there. This is a pretty major regression for a "default" kernel setting. 
+And given that the target process isn't running with realtime scheduling 
+priority, this can only be considered a bug. (Btw, setting both 
+sched_rt_period_us and sched_rt_runtime_us to -1 has no effect on this behavior.)
 
 -- 
-1.8.2.2
-
-
-
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
