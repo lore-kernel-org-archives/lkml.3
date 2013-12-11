@@ -1,38 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3LKD1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 22:27:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58614 "EHLO mx1.redhat.com"
+	id S1752030Ab3LKD2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 22:28:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab3LKD1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 22:27:37 -0500
-Message-ID: <52A7DB8E.9080101@redhat.com>
-Date: Wed, 11 Dec 2013 11:27:10 +0800
+	id S1751962Ab3LKD2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 22:28:36 -0500
+Message-ID: <52A7DBCD.3070104@redhat.com>
+Date: Wed, 11 Dec 2013 11:28:13 +0800
 From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wuzhy@linux.vnet.ibm.com, mst@redhat.com, vyasevich@gmail.com
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Vlad Yasevich <vyasevich@gmail.com>
 Subject: Re: [PATCH net V2 1/2] tun: unbreak truncated packet signalling
-References: <1386654586-18151-1-git-send-email-jasowang@redhat.com> <20131210.221144.1520834419856689475.davem@davemloft.net>
-In-Reply-To: <20131210.221144.1520834419856689475.davem@davemloft.net>
+References: <1386654586-18151-1-git-send-email-jasowang@redhat.com> <20131210153256.GF25293@redhat.com>
+In-Reply-To: <20131210153256.GF25293@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 11:11 AM, David Miller wrote:
-> You and Michael are still discussing these changes it seems.
+On 12/10/2013 11:32 PM, Michael S. Tsirkin wrote:
+> On Tue, Dec 10, 2013 at 01:49:45PM +0800, Jason Wang wrote:
+>> > Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
+>> > (tuntap: hardware vlan tx support) breaks the truncated packet signal by nev
+>> > return a length greater than iov length in tun_put_user(). This patch fixes
+>> > by always return the length of packet plus possible vlan header. Caller can
+>> > detect the truncated packet by comparing the return value and the size of io
+>> > length.
+>> > 
+>> > Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> > Cc: Michael S. Tsirkin <mst@redhat.com>
+>> > Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+>> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> > ---
+>> > Changes from v1:
+>> > - increase total unconditionally
+>> > - do not move veth structure out of the vlan handing block
+>> > ---
+>> >  drivers/net/tun.c | 16 +++++++++-------
+>> >  1 file changed, 9 insertions(+), 7 deletions(-)
+>> > 
+>> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+>> > index e26cbea..cd142134 100644
+>> > --- a/drivers/net/tun.c
+>> > +++ b/drivers/net/tun.c
+>> > @@ -1184,7 +1184,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+>> >  {
+>> >  	struct tun_pi pi = { 0, skb->protocol };
+>> >  	ssize_t total = 0;
+>> > -	int vlan_offset = 0;
+>> > +	int vlan_offset = 0, offset;
+>> >  
+>> >  	if (!(tun->flags & TUN_NO_PI)) {
+>> >  		if ((len -= sizeof(pi)) < 0)
+>> > @@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+>> >  		total += tun->vnet_hdr_sz;
+>> >  	}
+>> >  
+>> > +	offset = total;
+>> > +	total += skb->len;
+>> >  	if (!vlan_tx_tag_present(skb)) {
+>> >  		len = min_t(int, skb->len, len);
+>> >  	} else {
+>> > @@ -1262,24 +1264,24 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+>> >  
+>> >  		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+>> >  		len = min_t(int, skb->len + VLAN_HLEN, len);
+>> > +		total += VLAN_HLEN;
+>> >  
+>> >  		copy = min_t(int, vlan_offset, len);
+>> > -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
+>> > +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, offset, copy);
+>> >  		len -= copy;
+>> > -		total += copy;
+>> > +		offset += copy;
+>> >  		if (ret || !len)
+>> >  			goto done;
+>> >  
+>> >  		copy = min_t(int, sizeof(veth), len);
+>> > -		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
+>> > +		ret = memcpy_toiovecend(iv, (void *)&veth, offset, copy);
+>> >  		len -= copy;
+>> > -		total += copy;
+>> > +		offset += copy;
+>> >  		if (ret || !len)
+>> >  			goto done;
+>> >  	}
+>> >  
+>> > -	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
+>> > -	total += len;
+>> > +	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, offset, len);
+>> >  
+>> >  done:
+>> >  	tun->dev->stats.tx_packets++;
+> offset is not descriptive. I would call new variable "copied",
+> and change all code to use that, do
+> total = copied + skb->len, total is then the total length.
 >
-> I accidently commited the first version of these patches, but then
-> immediately reverted that after I saw the followups.
->
-> Let me know when you have something both of you are happy with.
->
-> Thanks.
 
-Sure, I will post v3 which should address all comments from Michael.
-
-Thanks
+Ok, will do it in v3.
