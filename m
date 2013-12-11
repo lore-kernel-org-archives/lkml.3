@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab3LKSne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:43:34 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:40392 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3LKSnb (ORCPT
+	id S1751439Ab3LKSoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:44:19 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:42065 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab3LKSoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:43:31 -0500
-Date: Wed, 11 Dec 2013 11:43:21 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Jason Cooper <jason@lakedaemon.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Valentine Barshak <valentine.barshak@cogentembedded.com>,
-        Wei Yongjun <weiyj.lk@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mohit Kumar <mohit.kumar@st.com>,
-        Pratyush Anand <pratyush.anand@st.com>
-Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
- host maintainers
-Message-ID: <20131211184321.GJ4699@google.com>
-References: <20131211183237.GI4699@google.com>
-MIME-Version: 1.0
+	Wed, 11 Dec 2013 13:44:15 -0500
+Date: Wed, 11 Dec 2013 12:44:13 -0600
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "James E. J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>, thenzl@redhat.com
+Subject: [PATCH 1/2] hpsa: add 4 new PCI ID's for HP Gen9 servers
+Message-ID: <20131211184413.GA11427@beardog.cce.hp.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131211183237.GI4699@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Mohit]
+From: Mike Miller <mike.miller@hp.com>
 
-On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
-> If this looks reasonable, I'll merge it via the PCI tree for v3.13.
+This patch adds 4 more PCI ID's for HP Gen9 servers. These new ID's were
+just made known this week.
 
-And I see Mohit's patch [1] to update the DesignWare entry:
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+---
+ drivers/scsi/hpsa.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-+PCIE DRIVER FOR SYNOPSIS DESIGNWARE CONTROLLER
-+M:	Mohit Kumar <mohit.kumar@st.com>
-+M:	Jingoo Han <jg1.han@samsung.com>
-+L:	linux-pci@vger.kernel.org
-+S:	Maintained
-+F:	drivers/pci/host/pcie-designware.c
-
-I can fold in that update too if Jingoo acks it.
-
-[1] http://patchwork.ozlabs.org/patch/299905/
-
-> MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI host maintainers
-> 
-> Add entries for PCI host controller drivers in drivers/pci/host/.
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  MAINTAINERS |   31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 8285ed4676b6..826c722d92ba 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6449,16 +6449,47 @@ F:	drivers/pci/
->  F:	include/linux/pci*
->  F:	arch/x86/pci/
->  
-> +PCI DRIVER FOR DESIGNWARE
-> +M:	Jingoo Han <jg1.han@samsung.com>
-> +L:	linux-pci@vger.kernel.org
-> +S:	Maintained
-> +F:	drivers/pci/host/*designware*
-> +
-> +PCI DRIVER FOR IMX6
-> +M:	Shawn Guo <shawn.guo@linaro.org>
-> +L:	linux-pci@vger.kernel.org
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/pci/host/*imx6*
-> +
-> +PCI DRIVER FOR MVEBU (Marvell Armada 370 and Armada XP SOC support)
-> +M:	Jason Cooper <jason@lakedaemon.net>
-> +L:	linux-pci@vger.kernel.org
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/pci/host/*mvebu*
-> +
->  PCI DRIVER FOR NVIDIA TEGRA
->  M:	Thierry Reding <thierry.reding@gmail.com>
->  L:	linux-tegra@vger.kernel.org
-> +L:	linux-pci@vger.kernel.org
->  S:	Supported
->  F:	Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
->  F:	drivers/pci/host/pci-tegra.c
->  
-> +PCI DRIVER FOR RENESAS R-CAR
-> +M:	Simon Horman <horms@verge.net.au>
-> +M:	Magnus Damm <magnus.damm@gmail.com>
-> +L:	linux-pci@vger.kernel.org
-> +L:	linux-sh@vger.kernel.org
-> +S:	Maintained
-> +F:	drivers/pci/host/*rcar*
-> +
->  PCI DRIVER FOR SAMSUNG EXYNOS
->  M:	Jingoo Han <jg1.han@samsung.com>
->  L:	linux-pci@vger.kernel.org
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +L:	linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
->  S:	Maintained
->  F:	drivers/pci/host/pci-exynos.c
->  
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 67112a8..4af97d6 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -117,6 +117,10 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C7},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C8},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21C9},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CA},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CC},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CD},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSI,     0x103C, 0x21CE},
+ 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+@@ -162,6 +166,10 @@ static struct board_type products[] = {
+ 	{0x21C7103C, "Smart Array", &SA5_access},
+ 	{0x21C8103C, "Smart Array", &SA5_access},
+ 	{0x21C9103C, "Smart Array", &SA5_access},
++	{0x21CA103C, "Smart Array", &SA5_access},
++	{0x21CC103C, "Smart Array", &SA5_access},
++	{0x21CD103C, "Smart Array", &SA5_access},
++	{0x21CE103C, "Smart Array", &SA5_access},
+ 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
+ };
+ 
