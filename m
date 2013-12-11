@@ -1,111 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab3LKIR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:17:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:37725 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab3LKIR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:17:26 -0500
-Message-ID: <52A81F89.4010603@ti.com>
-Date: Wed, 11 Dec 2013 13:47:13 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751252Ab3LKIR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 03:17:56 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36838 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058Ab3LKIRy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 03:17:54 -0500
+Date: Wed, 11 Dec 2013 08:17:17 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Kees Cook <keescook@chromium.org>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next 3/3] netfilter: Use seq_overflow
+Message-ID: <20131211081717.GU10323@ZenIV.linux.org.uk>
+References: <cover.1386738050.git.joe@perches.com>
+ <81323bd2acdabcd7ab7d62e05032e6529b8dfbf0.1386738050.git.joe@perches.com>
 MIME-Version: 1.0
-To: Vivek Gautam <gautamvivek1987@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Julius Werner <jwerner@chromium.org>
-Subject: Re: [PATCH RFC 1/4] phy: Add provision for tuning phy.
-References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>	<1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>	<20131210140142.GB28456@xps8300> <CAFp+6iENkrSUT=_iv+uZnVpDSGDQGOzF_oyZ6Dmzr8VcQfjztw@mail.gmail.com>
-In-Reply-To: <CAFp+6iENkrSUT=_iv+uZnVpDSGDQGOzF_oyZ6Dmzr8VcQfjztw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <81323bd2acdabcd7ab7d62e05032e6529b8dfbf0.1386738050.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 December 2013 12:08 PM, Vivek Gautam wrote:
-> Hi,
-> 
-> 
-> On Tue, Dec 10, 2013 at 7:31 PM, Heikki Krogerus
-> <heikki.krogerus@linux.intel.com> wrote:
->> Hi,
-> 
-> Thanks for reviewing this.
-> 
->>
->> On Tue, Dec 10, 2013 at 04:25:23PM +0530, Vivek Gautam wrote:
->>> Some PHY controllers may need to tune PHY post-initialization,
->>> so that the PHY consumers can call phy-tuning at appropriate
->>> point of time.
->>>
->>> Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
->>> ---
->>>  drivers/phy/phy-core.c  |   20 ++++++++++++++++++++
->>>  include/linux/phy/phy.h |    7 +++++++
->>>  2 files changed, 27 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
->>> index 03cf8fb..68dbb90 100644
->>> --- a/drivers/phy/phy-core.c
->>> +++ b/drivers/phy/phy-core.c
->>> @@ -239,6 +239,26 @@ out:
->>>  }
->>>  EXPORT_SYMBOL_GPL(phy_power_off);
->>>
->>> +int phy_tune(struct phy *phy)
->>> +{
->>> +     int ret = -ENOTSUPP;
->>> +
->>> +     mutex_lock(&phy->mutex);
->>> +     if (phy->ops->tune) {
->>> +             ret =  phy->ops->tune(phy);
->>> +             if (ret < 0) {
->>> +                     dev_err(&phy->dev, "phy tuning failed --> %d\n", ret);
->>> +                     goto out;
->>> +             }
->>> +     }
->>> +
->>> +out:
->>> +     mutex_unlock(&phy->mutex);
->>> +
->>> +     return ret;
->>> +}
->>> +EXPORT_SYMBOL_GPL(phy_tune);
->>
->> I think "setup" instead of "tune" is much more clear and reusable.
-> 
-> I think "setup" will look more like first time setting up the phy,
-> which is rather served by "init" callback.
-> This i thought would serve the purpose of over-riding certain PHY
-> parameters, which would not have been
-> possible at "init" time.
-> Please correct my thinking if i am unable to understand your point here.
+On Tue, Dec 10, 2013 at 09:12:44PM -0800, Joe Perches wrote:
+> --- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+> +++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+> @@ -59,8 +59,10 @@ static bool ipv4_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  static int ipv4_print_tuple(struct seq_file *s,
+>  			    const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "src=%pI4 dst=%pI4 ",
+> -			  &tuple->src.u3.ip, &tuple->dst.u3.ip);
+> +	seq_printf(s, "src=%pI4 dst=%pI4 ",
+> +		   &tuple->src.u3.ip, &tuple->dst.u3.ip);
+> +
+> +	return seq_overflow(s);
+>  }
 
-how about 'calibrate'?
+I'm not at all sure we want ->print_tuple() to return anything;
+if we *really* want to check overflow and skip some expensive
+output, we can bloody well do that in callers of print_tuple().
 
-Thanks
-Kishon
-> 
->>
->> Thanks,
->>
->> --
->> heikki
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> 
+> @@ -104,10 +104,10 @@ static int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
+>  	if (ret)
+>  		return 0;
+>  
+> -	ret = seq_printf(s, "secctx=%s ", secctx);
+> +	seq_printf(s, "secctx=%s ", secctx);
+>  
+>  	security_release_secctx(secctx, len);
+> -	return ret;
+> +	return seq_overflow(s);
+>  }
 
+Definitely broken.
+
+>  static inline int ct_show_secctx(struct seq_file *s, const struct nf_conn *ct)
+> @@ -141,10 +141,11 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  	NF_CT_ASSERT(l4proto);
+>  
+>  	ret = -ENOSPC;
+> -	if (seq_printf(s, "%-8s %u %ld ",
+> -		      l4proto->name, nf_ct_protonum(ct),
+> -		      timer_pending(&ct->timeout)
+> -		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+> +	seq_printf(s, "%-8s %u %ld ",
+> +		   l4proto->name, nf_ct_protonum(ct),
+> +		   timer_pending(&ct->timeout)
+> +		   ? (long)(ct->timeout.expires - jiffies)/HZ : 0);
+> +	if (seq_overflow(s))
+>  		goto release;
+>  
+>  	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+> @@ -154,35 +155,44 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  			l3proto, l4proto))
+>  		goto release;
+>  
+> -	if (seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL))
+> +	seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL);
+> +	if (seq_overflow(s))
+>  		goto release;
+>  
+> -	if (!(test_bit(IPS_SEEN_REPLY_BIT, &ct->status)))
+> -		if (seq_printf(s, "[UNREPLIED] "))
+> +	if (!(test_bit(IPS_SEEN_REPLY_BIT, &ct->status))) {
+> +		seq_printf(s, "[UNREPLIED] ");
+> +		if (seq_overflow(s))
+>  			goto release;
+> +	}
+>  
+>  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
+>  			l3proto, l4proto))
+>  		goto release;
+>  
+> -	if (seq_print_acct(s, ct, IP_CT_DIR_REPLY))
+> +	seq_print_acct(s, ct, IP_CT_DIR_REPLY);
+> +	if (seq_overflow(s))
+>  		goto release;
+>  
+> -	if (test_bit(IPS_ASSURED_BIT, &ct->status))
+> -		if (seq_printf(s, "[ASSURED] "))
+> +	if (test_bit(IPS_ASSURED_BIT, &ct->status)) {
+> +		seq_printf(s, "[ASSURED] ");
+> +		if (seq_overflow(s))
+>  			goto release;
+> +	}
+>  
+>  #ifdef CONFIG_NF_CONNTRACK_MARK
+> -	if (seq_printf(s, "mark=%u ", ct->mark))
+> +	seq_printf(s, "mark=%u ", ct->mark);
+> +	if (seq_overflow(s))
+>  		goto release;
+>  #endif
+>  
+>  	if (ct_show_secctx(s, ct))
+>  		goto release;
+>  
+> -	if (seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use)))
+> +	seq_printf(s, "use=%u\n", atomic_read(&ct->ct_general.use));
+> +	if (seq_overflow(s))
+>  		goto release;
+>  	ret = 0;
+> +
+>  release:
+>  	nf_ct_put(ct);
+>  	return ret;
+
+All this "goto release on overflow" business here is pointless, AFAICS.
+In any case, returning non-zero in those cases is a bug.
+
+> @@ -297,7 +307,9 @@ static int exp_seq_show(struct seq_file *s, void *v)
+>  		    __nf_ct_l3proto_find(exp->tuple.src.l3num),
+>  		    __nf_ct_l4proto_find(exp->tuple.src.l3num,
+>  					 exp->tuple.dst.protonum));
+> -	return seq_putc(s, '\n');
+> +	seq_putc(s, '\n');
+> +
+> +	return seq_overflow(s);
+>  }
+
+Broken.
+
+The rest is no better, AFAICS.  Joe, you are doing it from the wrong end;
+the right approach would be something like "make ->print_tuple() return
+void", etc.  As it is, you are just providing a lousy pattern to anybody
+reading that.  The last thing we want is people blindly copying these
+bugs just because they'd seen a "proper" way of producing that kind of
+broken behaviour.  Monkey see, monkey do and all such...
