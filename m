@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3LKAvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:51:16 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34435 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab3LKAvM (ORCPT
+	id S1752124Ab3LKAvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:51:05 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:27741 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751352Ab3LKAu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:51:12 -0500
-Date: Wed, 11 Dec 2013 00:51:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20131211005106.GL11468@sirena.org.uk>
-References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
- <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
- <20131210235000.GK11468@sirena.org.uk>
- <52A7AE1B.3040201@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Jl+DbTnyraiZ/loT"
-Content-Disposition: inline
-In-Reply-To: <52A7AE1B.3040201@codeaurora.org>
-X-Cookie: If your bread is stale, make toast.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/8] regmap: Add support for using regmap over ssbi
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Tue, 10 Dec 2013 19:50:59 -0500
+Message-Id: <20131211005058.415159126@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 10 Dec 2013 19:50:48 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 2/5] a few open coded completions
+References: <20131211005046.115564491@goodmis.org>
+Content-Disposition: inline; filename=0002-a-few-open-coded-completions.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4.72-rt90-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
---Jl+DbTnyraiZ/loT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Tue, Dec 10, 2013 at 04:13:15PM -0800, Stephen Boyd wrote:
-> On 12/10/13 15:50, Mark Brown wrote:
-> > On Tue, Dec 10, 2013 at 03:35:18PM -0800, Stephen Boyd wrote:
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-> >> +		reg += sizeof(u16);
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/net/wireless/orinoco/orinoco_usb.c | 2 +-
+ drivers/usb/gadget/f_fs.c                  | 2 +-
+ drivers/usb/gadget/inode.c                 | 4 ++--
+ include/linux/netdevice.h                  | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-> > I'd expect this to generate out of bounds accesses and bad interactions
-> > on the bus if we go through the loop more than once since it appears to
-> > incrementing the address of reg for every register.  I'm also having a
+diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+index f634d45..8152c94 100644
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -714,7 +714,7 @@ static void ezusb_req_ctx_wait(struct ezusb_priv *upriv,
+ 			while (!ctx->done.done && msecs--)
+ 				udelay(1000);
+ 		} else {
+-			wait_event_interruptible(ctx->done.wait,
++			swait_event_interruptible(ctx->done.wait,
+ 						 ctx->done.done);
+ 		}
+ 		break;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index f52cb1a..54ea4e9 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1255,7 +1255,7 @@ static void ffs_data_put(struct ffs_data *ffs)
+ 		pr_info("%s(): freeing\n", __func__);
+ 		ffs_data_clear(ffs);
+ 		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
+-		       waitqueue_active(&ffs->ep0req_completion.wait));
++		       swaitqueue_active(&ffs->ep0req_completion.wait));
+ 		kfree(ffs);
+ 	}
+ }
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index e58b164..2dfd196 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -339,7 +339,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 	spin_unlock_irq (&epdata->dev->lock);
+ 
+ 	if (likely (value == 0)) {
+-		value = wait_event_interruptible (done.wait, done.done);
++		value = swait_event_interruptible (done.wait, done.done);
+ 		if (value != 0) {
+ 			spin_lock_irq (&epdata->dev->lock);
+ 			if (likely (epdata->ep != NULL)) {
+@@ -348,7 +348,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 				usb_ep_dequeue (epdata->ep, epdata->req);
+ 				spin_unlock_irq (&epdata->dev->lock);
+ 
+-				wait_event (done.wait, done.done);
++				swait_event (done.wait, done.done);
+ 				if (epdata->status == -ECONNRESET)
+ 					epdata->status = -EINTR;
+ 			} else {
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 40940f5..65d8385 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1109,7 +1109,7 @@ struct net_device {
+ 	unsigned char		perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
+ 	unsigned char		addr_assign_type; /* hw address assignment type */
+ 	unsigned char		addr_len;	/* hardware address length	*/
+-	unsigned char		neigh_priv_len;
++	unsigned short		neigh_priv_len;
+ 	unsigned short          dev_id;		/* for shared network cards */
+ 
+ 	spinlock_t		addr_list_lock;
+-- 
+1.8.4.3
 
-> ssbi_read() just reads the same register x number of times and doesn't
-> do any sort of incrementing of address. My understanding was that
-> regmap_bulk_read() will read incrementing addresses and then call down
-> into this code with the sequential addresses formatted into the reg
-> buffer. That was the flaw. Instead we need to take reg and then
 
-That's possibly not the ideal decision for the underlying API, if
-nothing else it's confusing naming given what a read function would
-normally do.
-
-> increment reg by 1 every time through this loop. Or should we just have
-> use_single_rw == true?
-
-No, it doesn't - it increments the address of reg by the size of a
-register value each time.  Using use_single_rw might make sense, or if
-you can't do bulk I/O at all then hooking in via reg_read() and
-reg_write() in the config rather than trying to parse out the buffers
-might be even better (you can still make helpers to set that up).
-
---Jl+DbTnyraiZ/loT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSp7b3AAoJELSic+t+oim9GC8P/RxuI3ZsWVHXYUItu5mCw7Hv
-vUFuVxuGwZrTCEZ+jfGZERhrrxIepV6NpCyZnndSvqRF5woY98Pj50lOEl0asOkA
-k0pgY35l476I5MDtIGZmNS2nI6xE2cGq55szkBjFrEiXnzlBNZ7Y8zF/OxGIdPaD
-sBkNs1pUt4eGcO46x7GSJVIrxLJiX3NBCJekrBZ9wMWXf5lI7yyhsECD3gt4AaBH
-weBXkG3IFiXUx01yNRvhg3SjWSOD4s5UtxtM8MaoR/lkjpF/qrvaaBke9MSgPr+k
-IQdO/HhX8nxIKdupUAVyykxqbSdHVE24CzTZmrEtcr6Z09h/SzBI8dfYLkTxW16A
-g8MkAykXl2FIhhQ5xKb/HcfHVm+8h3D7UhvcQfPpdT+HmvMVwOKrHkTZ7mXJiK5W
-bbHmzAL3lFaSH/GnUUh6gycE9iPfE/iiUr/BIU+hLhk5/Sf0T4/tKVJlmlw/skdt
-Yax7YZeJkDRwsN1y46BaACrJQofoq9MZchgCybwb44oEj3QpCgc1s98u2CApwD3U
-dW8KEcOLupuXOZRxDJyYfvrubO3stGea3edRUIqIrJ85eWT9D7uaoBgi2fjnZmjJ
-Lc16POuaZEabnAIUy5G7f3MJhX4ws2AnzjMVLmCy7jNlcJGqHq6E3xNDGqKnkisY
-dAd7QQj0acl9t3H4W51s
-=w2JS
------END PGP SIGNATURE-----
-
---Jl+DbTnyraiZ/loT--
