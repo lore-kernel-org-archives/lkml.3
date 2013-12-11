@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751164Ab3LKJ04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:26:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40375 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab3LKJ0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:26:52 -0500
-Date: Wed, 11 Dec 2013 09:26:48 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, page_alloc: allow __GFP_NOFAIL to allocate below
- watermarks after reclaim
-Message-ID: <20131211092648.GW11295@suse.de>
-References: <alpine.DEB.2.02.1312091402580.11026@chino.kir.corp.google.com>
- <20131210075059.GA11295@suse.de>
- <alpine.DEB.2.02.1312101453020.22701@chino.kir.corp.google.com>
+	id S1751346Ab3LKJ1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:27:33 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:43668 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3LKJ13 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 04:27:29 -0500
+Date: Wed, 11 Dec 2013 09:27:24 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/8] mfd: ssbi: Remove platform data structs and hide
+ ssbi type enum
+Message-ID: <20131211092724.GD16780@lee--X1>
+References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
+ <1386718523-2587-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312101453020.22701@chino.kir.corp.google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386718523-2587-2-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:03:39PM -0800, David Rientjes wrote:
-> On Tue, 10 Dec 2013, Mel Gorman wrote:
-> 
-> > > If direct reclaim has failed to free memory, __GFP_NOFAIL allocations
-> > > can potentially loop forever in the page allocator.  In this case, it's
-> > > better to give them the ability to access below watermarks so that they
-> > > may allocate similar to the same privilege given to GFP_ATOMIC
-> > > allocations.
-> > > 
-> > > We're careful to ensure this is only done after direct reclaim has had
-> > > the chance to free memory, however.
-> > > 
-> > > Signed-off-by: David Rientjes <rientjes@google.com>
-> > 
-> > The main problem with doing something like this is that it just smacks
-> > into the adjusted watermark if there are a number of __GFP_NOFAIL. Who
-> > was the user of __GFP_NOFAIL that was fixed by this patch?
-> > 
-> 
-> Nobody, it comes out of a memcg discussion where __GFP_NOFAIL were 
-> recently given the ability to bypass charges to the root memcg when the 
-> memcg has hit its limit since we disallow the oom killer to kill a process 
-> (for the same reason that the vast majority of __GFP_NOFAIL users, those 
-> that do GFP_NOFS | __GFP_NOFAIL, disallow the oom killer in the page 
-> allocator).
-> 
-> Without some other thread freeing memory, these allocations simply loop 
-> forever.  We probably don't want to reconsider the choice that prevents 
-> calling the oom killer in !__GFP_FS contexts since it will allow 
-> unnecessary oom killing when memory can actually be freed by another 
-> thread.
-> 
-> Since there are comments in both gfp.h and page_alloc.c that say no new 
-> users will be added, it seems legitimate to ensure that the allocation 
-> will at least have a chance of succeeding, but not the point of depleting 
-> memory reserves entirely.
-> 
+On Tue, 10 Dec 2013, Stephen Boyd wrote:
 
-Which __GFP_NOFAIL on its own does not guarantee if they just smack into
-that barrier and cannot do anything. It changes the timing, not fixes
-the problem.
-
-> > There are enough bad users of __GFP_NOFAIL that I really question how
-> > good an idea it is to allow emergency reserves to be used when they are
-> > potentially leaked to other !__GFP_NOFAIL users via the slab allocator
-> > shortly afterwards.
-> > 
+> The ssbi driver assumes that the device is DT based. Remove the
+> platform data structs that will never be used and hide the enum
+> in the only C file that uses it.
 > 
-> You could make the same argument for GFP_ATOMIC which can also allow 
-> access to memory reserves.
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/mfd/ssbi.c   |  6 ++++++
+>  include/linux/ssbi.h | 17 +----------------
+>  2 files changed, 7 insertions(+), 16 deletions(-)
 
-The critical difference being that GFP_ATOMIC callers typically can handle
-NULL being returned to them. GFP_ATOMIC storms may starve !GFP_ATOMIC
-requests but it does not cause the same types of problems that
-__GFP_NOFAIL using reserves would.
+I don't see any uses of the aforementioned struct.
+
+Patch applied, thanks.
 
 -- 
-Mel Gorman
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
