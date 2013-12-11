@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750873Ab3LKFh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 00:37:58 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:34357 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750759Ab3LKFh4 (ORCPT
+	id S1751053Ab3LKFlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 00:41:36 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:61979 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab3LKFlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 00:37:56 -0500
-X-Sasl-enc: DVwlTHqiyfh89dmjOVswEw7zNhUGRcnGoG83SZLy6Aqy 1386740275
-Date: Tue, 10 Dec 2013 21:39:31 -0800
-From: Greg KH <greg@kroah.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH driver-core-next] sysfs: bail early from
- kernfs_file_mmap() to avoid spurious lockdep warning
-Message-ID: <20131211053931.GA31896@kroah.com>
-References: <20131209144712.57a50d7ed468ae8a4d57a0bf@canb.auug.org.au>
- <20131209082152.GA26809@kroah.com>
- <20131210145004.GA4610@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210145004.GA4610@htj.dyndns.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 11 Dec 2013 00:41:35 -0500
+Message-ID: <1386740489.7152.288.camel@host5.omatika.ru>
+Subject: Re: [PATCH 02/11] arm: pxa27x: support ICP DAS LP-8x4x
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Daniel Mack <zonque@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Eric Miao <eric.y.miao@gmail.com>
+Date: Wed, 11 Dec 2013 09:41:29 +0400
+In-Reply-To: <201312110611.46443.arnd@arndb.de>
+References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
+	 <201312102257.33942.arnd@arndb.de>
+	 <1386736215.7152.259.camel@host5.omatika.ru>
+	 <201312110611.46443.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 09:50:04AM -0500, Tejun Heo wrote:
-> Hello,
-> 
-> Yeap, I was planning to send this out earlier but was completely
-> passed out yesterday after the first snowboarding in over a decade. :)
-> 
-> The offending commit a8b14744429f isn't applicable to
-> driver-core-next.  This was done this way because no matter what we
-> do, conflict is inevitable and keeping things minimal is the least
-> painful.  The following git branch pulls driver-core-linus into
-> driver-core-next, resolves the conflict by ignoring the offending
-> commit and applies this patch on top of it to implement the equivalent
-> fix.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git driver-core-fix-lockdep-class
+On Wed, 2013-12-11 at 06:11 +0100, Arnd Bergmann wrote:
+> It depends: if the driver is for the entire FPGA and does
+> the irqchip stuff in addition, it should probably live
+> in drivers/mfd. If it's a pure irqchip driver, drivers/irqchip
+> is better. You have to be careful in the second case though
+> because devices pointing to this irqchip in DT won't get
+> an IRQ resource assigned automatically but have to use
+> irq_of_parse_and_map instead. This may have been fixed since
+> I last looked though, I would consider that behavior a
+> bug in the of_platform handling.
 
-I've pulled from this and pushed it out as my driver-next branch, thanks
-for doing this (note, I --ammend the patch and added my signed-off-by,
-so you can't just pull and not get a conflict.)
+Thanks again for explaining.
 
-thanks,
+Although FPGA is a MFD, its irq are used mostly by 8250 serial ports. It
+will be enough to embed irqchip into serial driver for now.
 
-greg k-h
+If there is a need to use the chip in another driver, it will be
+possible to introduce an artificial dependency there for the serial
+driver to ensure the serial driver is loaded before the other one.
+
+Is this plan acceptable?
+
