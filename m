@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab3LKW51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:57:27 -0500
-Received: from fieldses.org ([174.143.236.118]:39029 "EHLO fieldses.org"
+	id S1751621Ab3LKW7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:59:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41316 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab3LKW5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:57:25 -0500
-Date: Wed, 11 Dec 2013 17:57:24 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20131211225724.GB3483@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
- <1386703055-22308-2-git-send-email-jlayton@redhat.com>
- <20131210212253.GC20831@fieldses.org>
- <20131210232204.GD20831@fieldses.org>
- <20131211061856.615c39ba@tlielax.poochiereds.net>
- <20131211143724.GA29300@fieldses.org>
- <20131211151931.GC29300@fieldses.org>
- <20131211140741.292028e8@tlielax.poochiereds.net>
- <20131211225616.GA3483@fieldses.org>
+	id S1750997Ab3LKW7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:59:12 -0500
+Message-ID: <52A8EE38.2060004@suse.cz>
+Date: Wed, 11 Dec 2013 23:59:04 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211225616.GA3483@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
+        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: kernel BUG in munlock_vma_pages_range
+References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz> <52A6275F.4040007@oracle.com>
+In-Reply-To: <52A6275F.4040007@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 05:56:16PM -0500, J. Bruce Fields wrote:
-> On Wed, Dec 11, 2013 at 02:07:41PM -0500, Jeff Layton wrote:
-> > On Wed, 11 Dec 2013 10:19:31 -0500
-> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> ...
-> > > +	if (l->l_len > 0)
-> > > +		fl->fl_end = fl->fl_start + l->l_len - 1;
-> > > +	else if (l->l_len < 0) {
-> > > +		fl->fl_end = start - 1;
-> > 
-> > Erm... I think this is not quite right...
-> > 
-> > "start" is uninitialized here. I think this should be:
-> > 
-> >     fl->fl_end = fl->fl_start - 1
-> > 
-> > With that too, we can get rid of the local "start" variable. I think
-> > this may explain why I'm tripping over the BUG() in locks_remove_file.
+On 12/09/2013 09:26 PM, Sasha Levin wrote:
+> On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
+>> On 12/09/2013 06:05 PM, Sasha Levin wrote:
+>>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
+>>>> Hello, I will look at it, thanks.
+>>>> Do you have specific reproduction instructions?
+>>>
+>>> Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
+>>> the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
+>>> up testing on that part.
+>>
+>> Thanks. Do you have trinity log and the .config file? I'm currently unable to even boot linux-next
+>> with my config/setup due to a GPF.
+>> Looking at code I wouldn't expect that it could encounter a tail page, without first encountering a
+>> head page and skipping the whole huge page. At least in THP case, as TLB pages should be split when
+>> a vma is split. As for hugetlbfs, it should be skipped for mlock/munlock operations completely. One
+>> of these assumptions is probably failing here...
 > 
-> Yep.
+> If it helps, I've added a dump_page() in case we hit a tail page there and got:
 > 
-> One other bug: I think l_start < 0 is actually fine in the
-> SEEK_CUR/SEEK_END cases.
+> [  980.172299] page:ffffea003e5e8040 count:0 mapcount:1 mapping:          (null) index:0
+> x0
+> [  980.173412] page flags: 0x2fffff80008000(tail)
 > 
-> With that fixed and another comment (though I don't know how much it
-> helps), it looks like the below.
+> I can also add anything else in there to get other debug output if you think of something else useful.
 
-Alternatively, maybe we could simplify?  (On top of the previous):
+Please try the following. Thanks in advance.
 
-commit d4bf5cb021a3ac1ec07530ebda904e262cc89d11
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Wed Dec 11 17:42:32 2013 -0500
-
-    locks: simplify overflow checking
-    
-    Or maybe we don't actually care about indicating overflow in the 32-bit
-    case: sure we could fail if e.g. f_pos+start or f_pos+start+len would
-    exceed 32-bits, but do we really need to?
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 39f2ca9..efbf577 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -344,8 +344,8 @@ static int assign_type(struct file_lock *fl, long type)
- 	return 0;
- }
- 
--static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
--					struct flock64 *l, loff_t offset_max)
-+static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
-+				 struct flock64 *l)
+------8<------
+diff --git a/mm/mlock.c b/mm/mlock.c
+index d480cd6..c81b7c3 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -436,11 +436,14 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
+ void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 			     unsigned long start, unsigned long end)
  {
- 	switch (l->l_whence) {
- 	case SEEK_SET:
-@@ -360,12 +360,12 @@ static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
- 	default:
- 		return -EINVAL;
- 	}
--	if (l->l_start > offset_max - fl->fl_start)
-+	if (l->l_start > OFFSET_MAX - fl->fl_start)
- 		return -EOVERFLOW;
- 	fl->fl_start += l->l_start;
- 	if (fl->fl_start < 0)
- 		return -EINVAL;
--	if (l->l_len > offset_max - fl->fl_start)
-+	if (l->l_len > OFFSET_MAX - fl->fl_start)
- 		return -EOVERFLOW;
- 	if (fl->fl_start + l->l_len < 0)
- 		return -EINVAL;
-@@ -403,22 +403,9 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
- 		.l_len = l->l_len,
- 	};
- 
--	/*
--	 * The use of OFFT_OFFSET_MAX here ensures we return -EOVERFLOW
--	 * if the start or end of the lock could not be represented as
--	 * an off_t, following SUSv3.
--	 */
--	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
-+	return flock64_to_posix_lock(filp, fl, &ll);
- }
- 
--#if BITS_PER_LONG == 32
--static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
--				 struct flock64 *l)
--{
--	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
--}
--#endif
--
- /* default lease lock manager operations */
- static void lease_break_callback(struct file_lock *fl)
- {
++	unsigned long orig_start = start;
++	unsigned int page_increm = 0;
++
+ 	vma->vm_flags &= ~VM_LOCKED;
+
+ 	while (start < end) {
+ 		struct page *page = NULL;
+-		unsigned int page_mask, page_increm;
++		unsigned int page_mask;
+ 		struct pagevec pvec;
+ 		struct zone *zone;
+ 		int zoneid;
+@@ -457,6 +460,22 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 				&page_mask);
+
+ 		if (page && !IS_ERR(page)) {
++			if (PageTail(page)) {
++				struct page *first_page;
++				dump_page(page);
++				printk("start=%lu pfn=%lu orig_start=%lu "
++				       "page_increm=%d "
++				       "vm_start=%lu vm_end=%lu vm_flags=%lu\n",
++					start, page_to_pfn(page), orig_start,
++					page_increm,
++					vma->vm_start, vma->vm_end,
++					vma->vm_flags);
++				first_page = page->first_page;
++				printk("first_page pfn=%lu\n",
++						page_to_pfn(first_page));
++				dump_page(first_page);
++				VM_BUG_ON(true);
++			}
+ 			if (PageTransHuge(page)) {
+ 				lock_page(page);
+ 				/*
+
+
