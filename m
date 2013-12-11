@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab3LKWAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:00:16 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47567 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab3LKV7Y (ORCPT
+	id S1751653Ab3LKWAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:00:06 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:45885 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3LKV7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:59:24 -0500
+	Wed, 11 Dec 2013 16:59:25 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -16,246 +16,212 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: [PATCH v6 tip/core/locking 3/8] Documentation/memory-barriers.txt: Prohibit speculative writes
-Date: Wed, 11 Dec 2013 13:59:06 -0800
-Message-Id: <1386799151-2219-3-git-send-email-paulmck@linux.vnet.ibm.com>
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH v6 tip/core/locking 6/8] Documentation/memory-barriers.txt: Downgrade UNLOCK+LOCK
+Date: Wed, 11 Dec 2013 13:59:09 -0800
+Message-Id: <1386799151-2219-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1386799151-2219-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20131211215850.GA810@linux.vnet.ibm.com>
  <1386799151-2219-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121121-0928-0000-0000-000004922254
+x-cbid: 13121121-7164-0000-0000-000004261797
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-No SMP architecture currently supporting Linux allows speculative writes,
-so this commit updates Documentation/memory-barriers.txt to prohibit
-them in Linux core code.  It also records restrictions on their use.
+Historically, an UNLOCK+LOCK pair executed by one CPU, by one task,
+or on a given lock variable has implied a full memory barrier.  In a
+recent LKML thread, the wisdom of this historical approach was called
+into question: http://www.spinics.net/lists/linux-mm/msg65653.html,
+in part due to the memory-order complexities of low-handoff-overhead
+queued locks on x86 systems.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+This patch therefore removes this guarantee from the documentation, and
+further documents how to restore it via a new smp_mb__after_unlock_lock()
+primitive.
+
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Waiman Long <waiman.long@hp.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- Documentation/memory-barriers.txt | 183 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 175 insertions(+), 8 deletions(-)
+ Documentation/memory-barriers.txt | 84 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 69 insertions(+), 15 deletions(-)
 
 diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 2d22da095a60..deafa36aeea1 100644
+index 8d4e34239d8d..033e7d67806a 100644
 --- a/Documentation/memory-barriers.txt
 +++ b/Documentation/memory-barriers.txt
-@@ -571,11 +571,10 @@ dependency barrier to make it work correctly.  Consider the following bit of
- code:
+@@ -402,12 +402,18 @@ And a couple of implicit varieties:
+      Memory operations that occur after an UNLOCK operation may appear to
+      happen before it completes.
  
- 	q = ACCESS_ONCE(a);
--	if (p) {
--		<data dependency barrier>
--		q = ACCESS_ONCE(b);
-+	if (q) {
-+		<data dependency barrier>  /* BUG: No data dependency!!! */
-+		p = ACCESS_ONCE(b);
- 	}
--	x = *q;
- 
- This will not have the desired effect because there is no actual data
- dependency, but rather a control dependency that the CPU may short-circuit
-@@ -584,11 +583,176 @@ the load from b as having happened before the load from a.  In such a
- case what's actually required is:
- 
- 	q = ACCESS_ONCE(a);
--	if (p) {
-+	if (q) {
- 		<read barrier>
--		q = ACCESS_ONCE(b);
-+		p = ACCESS_ONCE(b);
- 	}
--	x = *q;
+-     LOCK and UNLOCK operations are guaranteed to appear with respect to each
+-     other strictly in the order specified.
+-
+      The use of LOCK and UNLOCK operations generally precludes the need for
+      other sorts of memory barrier (but note the exceptions mentioned in the
+-     subsection "MMIO write barrier").
++     subsection "MMIO write barrier").  In addition, an UNLOCK+LOCK pair
++     is -not- guaranteed to act as a full memory barrier.  However,
++     after a LOCK on a given lock variable, all memory accesses preceding any
++     prior UNLOCK on that same variable are guaranteed to be visible.
++     In other words, within a given lock variable's critical section,
++     all accesses of all previous critical sections for that lock variable
++     are guaranteed to have completed.
 +
-+However, stores are not speculated.  This means that ordering -is- provided
-+in the following example:
-+
-+	q = ACCESS_ONCE(a);
-+	if (ACCESS_ONCE(q)) {
-+		ACCESS_ONCE(b) = p;
-+	}
-+
-+Please note that ACCESS_ONCE() is not optional!  Without the ACCESS_ONCE(),
-+the compiler is within its rights to transform this example:
-+
-+	q = a;
-+	if (q) {
-+		b = p;  /* BUG: Compiler can reorder!!! */
-+		do_something();
-+	} else {
-+		b = p;  /* BUG: Compiler can reorder!!! */
-+		do_something_else();
-+	}
-+
-+into this, which of course defeats the ordering:
-+
-+	b = p;
-+	q = a;
-+	if (q)
-+		do_something();
-+	else
-+		do_something_else();
-+
-+Worse yet, if the compiler is able to prove (say) that the value of
-+variable 'a' is always non-zero, it would be well within its rights
-+to optimize the original example by eliminating the "if" statement
-+as follows:
-+
-+	q = a;
-+	b = p;  /* BUG: Compiler can reorder!!! */
-+	do_something();
-+
-+The solution is again ACCESS_ONCE(), which preserves the ordering between
-+the load from variable 'a' and the store to variable 'b':
-+
-+	q = ACCESS_ONCE(a);
-+	if (q) {
-+		ACCESS_ONCE(b) = p;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = p;
-+		do_something_else();
-+	}
-+
-+You could also use barrier() to prevent the compiler from moving
-+the stores to variable 'b', but barrier() would not prevent the
-+compiler from proving to itself that a==1 always, so ACCESS_ONCE()
-+is also needed.
-+
-+It is important to note that control dependencies absolutely require a
-+a conditional.  For example, the following "optimized" version of
-+the above example breaks ordering:
-+
-+	q = ACCESS_ONCE(a);
-+	ACCESS_ONCE(b) = p;  /* BUG: No ordering vs. load from a!!! */
-+	if (q) {
-+		/* ACCESS_ONCE(b) = p; -- moved up, BUG!!! */
-+		do_something();
-+	} else {
-+		/* ACCESS_ONCE(b) = p; -- moved up, BUG!!! */
-+		do_something_else();
-+	}
-+
-+It is of course legal for the prior load to be part of the conditional,
-+for example, as follows:
-+
-+	if (ACCESS_ONCE(a) > 0) {
-+		ACCESS_ONCE(b) = q / 2;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = q / 3;
-+		do_something_else();
-+	}
-+
-+This will again ensure that the load from variable 'a' is ordered before the
-+stores to variable 'b'.
-+
-+In addition, you need to be careful what you do with the local variable 'q',
-+otherwise the compiler might be able to guess the value and again remove
-+the needed conditional.  For example:
-+
-+	q = ACCESS_ONCE(a);
-+	if (q % MAX) {
-+		ACCESS_ONCE(b) = p;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = p;
-+		do_something_else();
-+	}
-+
-+If MAX is defined to be 1, then the compiler knows that (q % MAX) is
-+equal to zero, in which case the compiler is within its rights to
-+transform the above code into the following:
-+
-+	q = ACCESS_ONCE(a);
-+	ACCESS_ONCE(b) = p;
-+	do_something_else();
-+
-+This transformation loses the ordering between the load from variable 'a'
-+and the store to variable 'b'.  If you are relying on this ordering, you
-+should do something like the following:
-+
-+	q = ACCESS_ONCE(a);
-+	BUILD_BUG_ON(MAX <= 1); /* Order load from a with store to b. */
-+	if (q % MAX) {
-+		ACCESS_ONCE(b) = p;
-+		do_something();
-+	} else {
-+		ACCESS_ONCE(b) = p;
-+		do_something_else();
-+	}
-+
-+Finally, control dependencies do -not- provide transitivity.  This is
-+demonstrated by two related examples:
-+
-+	CPU 0                     CPU 1
-+	=====================     =====================
-+	r1 = ACCESS_ONCE(x);      r2 = ACCESS_ONCE(y);
-+	if (r1 >= 0)              if (r2 >= 0)
-+	  ACCESS_ONCE(y) = 1;       ACCESS_ONCE(x) = 1;
-+
-+	assert(!(r1 == 1 && r2 == 1));
-+
-+The above two-CPU example will never trigger the assert().  However,
-+if control dependencies guaranteed transitivity (which they do not),
-+then adding the following two CPUs would guarantee a related assertion:
-+
-+	CPU 2                     CPU 3
-+	=====================     =====================
-+	ACCESS_ONCE(x) = 2;       ACCESS_ONCE(y) = 2;
-+
-+	assert(!(r1 == 2 && r2 == 2 && x == 1 && y == 1)); /* FAILS!!! */
-+
-+But because control dependencies do -not- provide transitivity, the
-+above assertion can fail after the combined four-CPU example completes.
-+If you need the four-CPU example to provide ordering, you will need
-+smp_mb() between the loads and stores in the CPU 0 and CPU 1 code fragments.
-+
-+In summary:
-+
-+  (*) Control dependencies can order prior loads against later stores.
-+      However, they do -not- guarantee any other sort of ordering:
-+      Not prior loads against later loads, nor prior stores against
-+      later anything.  If you need these other forms of ordering,
-+      use smb_rmb(), smp_wmb(), or, in the case of prior stores and
-+      later loads, smp_mb().
-+
-+  (*) Control dependencies require at least one run-time conditional
-+      between the prior load and the subsequent store.  If the compiler
-+      is able to optimize the conditional away, it will have also
-+      optimized away the ordering.  Careful use of ACCESS_ONCE() can
-+      help to preserve the needed conditional.
-+
-+  (*) Control dependencies require that the compiler avoid reordering the
-+      dependency into nonexistence.  Careful use of ACCESS_ONCE() or
-+      barrier() can help to preserve your control dependency.
-+
-+  (*) Control dependencies do -not- provide transitivity.  If you
-+      need transitivity, use smp_mb().
++     This means that LOCK acts as a minimal "acquire" operation and
++     UNLOCK acts as a minimal "release" operation.
  
  
- SMP BARRIER PAIRING
-@@ -1083,7 +1247,10 @@ compiler from moving the memory accesses either side of it to the other side:
+ Memory barriers are only required where there's a possibility of interaction
+@@ -1633,8 +1639,12 @@ for each construct.  These operations all imply certain barriers:
+      Memory operations issued after the LOCK will be completed after the LOCK
+      operation has completed.
  
- 	barrier();
+-     Memory operations issued before the LOCK may be completed after the LOCK
+-     operation has completed.
++     Memory operations issued before the LOCK may be completed after the
++     LOCK operation has completed.  An smp_mb__before_spinlock(), combined
++     with a following LOCK, orders prior loads against subsequent stores
++     and stores and prior stores against subsequent stores.  Note that
++     this is weaker than smp_mb()!  The smp_mb__before_spinlock()
++     primitive is free on many architectures.
  
--This is a general barrier - lesser varieties of compiler barrier do not exist.
-+This is a general barrier -- there are no read-read or write-write variants
-+of barrier().  Howevever, ACCESS_ONCE() can be thought of as a weak form
-+for barrier() that affects only the specific accesses flagged by the
-+ACCESS_ONCE().
+  (2) UNLOCK operation implication:
  
- The compiler barrier has no direct effect on the CPU, which may then reorder
- things however it wishes.
+@@ -1654,9 +1664,6 @@ for each construct.  These operations all imply certain barriers:
+      All LOCK operations issued before an UNLOCK operation will be completed
+      before the UNLOCK operation.
+ 
+-     All UNLOCK operations issued before a LOCK operation will be completed
+-     before the LOCK operation.
+-
+  (5) Failed conditional LOCK implication:
+ 
+      Certain variants of the LOCK operation may fail, either due to being
+@@ -1664,9 +1671,6 @@ for each construct.  These operations all imply certain barriers:
+      signal whilst asleep waiting for the lock to become available.  Failed
+      locks do not imply any sort of barrier.
+ 
+-Therefore, from (1), (2) and (4) an UNLOCK followed by an unconditional LOCK is
+-equivalent to a full barrier, but a LOCK followed by an UNLOCK is not.
+-
+ [!] Note: one of the consequences of LOCKs and UNLOCKs being only one-way
+     barriers is that the effects of instructions outside of a critical section
+     may seep into the inside of the critical section.
+@@ -1677,13 +1681,57 @@ LOCK, and an access following the UNLOCK to happen before the UNLOCK, and the
+ two accesses can themselves then cross:
+ 
+ 	*A = a;
+-	LOCK
+-	UNLOCK
++	LOCK M
++	UNLOCK M
+ 	*B = b;
+ 
+ may occur as:
+ 
+-	LOCK, STORE *B, STORE *A, UNLOCK
++	LOCK M, STORE *B, STORE *A, UNLOCK M
++
++This same reordering can of course occur if the LOCK and UNLOCK are
++to the same lock variable, but only from the perspective of another
++CPU not holding that lock.
++
++In short, an UNLOCK followed by a LOCK may -not- be assumed to be a full
++memory barrier because it is possible for a preceding UNLOCK to pass a
++later LOCK from the viewpoint of the CPU, but not from the viewpoint
++of the compiler.  Note that deadlocks cannot be introduced by this
++interchange because if such a deadlock threatened, the UNLOCK would
++simply complete.
++
++If it is necessary for an UNLOCK-LOCK pair to produce a full barrier,
++the LOCK can be followed by an smp_mb__after_unlock_lock() invocation.
++This will produce a full barrier if either (a) the UNLOCK and the LOCK
++are executed by the same CPU or task, or (b) the UNLOCK and LOCK act
++on the same lock variable.  The smp_mb__after_unlock_lock() primitive
++is free on many architectures.  Without smp_mb__after_unlock_lock(),
++the critical sections corresponding to the UNLOCK and the LOCK can cross:
++
++	*A = a;
++	UNLOCK M
++	LOCK N
++	*B = b;
++
++could occur as:
++
++	LOCK N, STORE *B, STORE *A, UNLOCK M
++
++With smp_mb__after_unlock_lock(), they cannot, so that:
++
++	*A = a;
++	UNLOCK M
++	LOCK N
++	smp_mb__after_unlock_lock();
++	*B = b;
++
++will always occur as either of the following:
++
++	STORE *A, UNLOCK, LOCK, STORE *B
++	STORE *A, LOCK, UNLOCK, STORE *B
++
++If the UNLOCK and LOCK were instead both operating on the same lock
++variable, only the first of these two alternatives can occur.
+ 
+ Locks and semaphores may not provide any guarantee of ordering on UP compiled
+ systems, and so cannot be counted on in such a situation to actually achieve
+@@ -1911,6 +1959,7 @@ However, if the following occurs:
+ 	UNLOCK M	     [1]
+ 	ACCESS_ONCE(*D) = d;		ACCESS_ONCE(*E) = e;
+ 					LOCK M		     [2]
++					smp_mb__after_unlock_lock();
+ 					ACCESS_ONCE(*F) = f;
+ 					ACCESS_ONCE(*G) = g;
+ 					UNLOCK M	     [2]
+@@ -1928,6 +1977,11 @@ But assuming CPU 1 gets the lock first, CPU 3 won't see any of:
+ 	*F, *G or *H preceding LOCK M [2]
+ 	*A, *B, *C, *E, *F or *G following UNLOCK M [2]
+ 
++Note that the smp_mb__after_unlock_lock() is critically important
++here: Without it CPU 3 might see some of the above orderings.
++Without smp_mb__after_unlock_lock(), the accesses are not guaranteed
++to be seen in order unless CPU 3 holds lock M.
++
+ 
+ LOCKS VS I/O ACCESSES
+ ---------------------
 -- 
 1.8.1.5
 
