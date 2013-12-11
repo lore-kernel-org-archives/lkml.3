@@ -1,49 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3LKWgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:36:52 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:39455 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab3LKWgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:36:47 -0500
-Message-ID: <52A8E8EE.7050001@gmail.com>
-Date: Thu, 12 Dec 2013 00:36:30 +0200
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Dan Williams <dcbw@redhat.com>, Kalle Valo <kvalo@adurom.com>,
-        Luciano Coelho <luca@coelho.fi>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
-        aaro.koskinen@iki.fi, pavel@ucw.cz, sre@ring0.de,
-        joni.lapilainen@gmail.com, Johannes Berg <johannes@sipsolutions.net>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting permanent
- mac address
-References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>		 <201312101814.35112@pali> <1386697762.30202.6.camel@dcbw.foobar.com>		 <201312101852.17030@pali>	 <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>	 <52A8DA9A.50501@gmail.com> <1386800135.1516.296.camel@bwh-desktop.uk.level5networks.com>
-In-Reply-To: <1386800135.1516.296.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751629Ab3LKWgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:36:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27862 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab3LKWgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:36:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
+   d="scan'208";a="450809096"
+Subject: [PATCH 1/2] mm: slab/slub: use page->list consistently instead of page->lru
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, cl@gentwo.org, kirill.shutemov@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>, akpm@linux-foundation.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Wed, 11 Dec 2013 14:36:31 -0800
+Message-Id: <20131211223631.51094A3D@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 12.12.2013 00:15, Ben Hutchings wrote:
-> 2. NVRAM reading is done by a tiny driver that is loaded based on the
-> platform name and updates the DT node in memory.  (But I don't know how
-> wl1251 should decide to defer probing if it's probed before that other
-> driver.)
->
-> Ben.
->
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Maybe a "hwmac" property with a value of XX:XX:XX:XX:XX:XX (or some 
-other invalid value) set in DT could be used to tell the driver to defer 
-until that value changes to something sane?
+'struct page' has two list_head fields: 'lru' and 'list'.
+Conveniently, they are unioned together.  This means that code
+can use them interchangably, which gets horribly confusing like
+with this nugget from slab.c:
 
-Ivo
+>	list_del(&page->lru);
+>	if (page->active == cachep->num)
+>		list_add(&page->list, &n->slabs_full);
+
+This patch makes the slab and slub code use page->list
+universally instead of mixing ->list and ->lru.
+
+It also adds some comments to attempt to keep new users from
+picking up uses of ->list.
+
+So, the new rule is: page->list is what the slabs use.  page->lru
+is for everybody else.  This is a pretty arbitrary rule, but we
+need _something_.  Maybe we should just axe the ->list one and
+make the sl?bs use ->lru.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
+
+ linux.git-davehans/include/linux/mm_types.h |    5 ++
+ linux.git-davehans/mm/slab.c                |   50 ++++++++++++++--------------
+ 2 files changed, 29 insertions(+), 26 deletions(-)
+
+diff -puN include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently include/linux/mm_types.h
+--- linux.git/include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently	2013-12-11 14:34:51.438183588 -0800
++++ linux.git-davehans/include/linux/mm_types.h	2013-12-11 14:34:51.445183899 -0800
+@@ -123,6 +123,8 @@ struct page {
+ 	union {
+ 		struct list_head lru;	/* Pageout list, eg. active_list
+ 					 * protected by zone->lru_lock !
++					 * Can be used as a generic list
++					 * by the page owner.
+ 					 */
+ 		struct {		/* slub per cpu partial pages */
+ 			struct page *next;	/* Next partial slab */
+@@ -135,7 +137,8 @@ struct page {
+ #endif
+ 		};
+ 
+-		struct list_head list;	/* slobs list of pages */
++		struct list_head list;	/* sl[aou]bs list of pages.
++					 * do not use outside of slabs */
+ 		struct slab *slab_page; /* slab fields */
+ 		struct rcu_head rcu_head;	/* Used by SLAB
+ 						 * when destroying via RCU
+diff -puN mm/slab.c~make-slab-use-page-lru-vs-list-consistently mm/slab.c
+--- linux.git/mm/slab.c~make-slab-use-page-lru-vs-list-consistently	2013-12-11 14:34:51.440183677 -0800
++++ linux.git-davehans/mm/slab.c	2013-12-11 14:34:51.444183855 -0800
+@@ -765,15 +765,15 @@ static void recheck_pfmemalloc_active(st
+ 		return;
+ 
+ 	spin_lock_irqsave(&n->list_lock, flags);
+-	list_for_each_entry(page, &n->slabs_full, lru)
++	list_for_each_entry(page, &n->slabs_full, list)
+ 		if (is_slab_pfmemalloc(page))
+ 			goto out;
+ 
+-	list_for_each_entry(page, &n->slabs_partial, lru)
++	list_for_each_entry(page, &n->slabs_partial, list)
+ 		if (is_slab_pfmemalloc(page))
+ 			goto out;
+ 
+-	list_for_each_entry(page, &n->slabs_free, lru)
++	list_for_each_entry(page, &n->slabs_free, list)
+ 		if (is_slab_pfmemalloc(page))
+ 			goto out;
+ 
+@@ -1428,7 +1428,7 @@ void __init kmem_cache_init(void)
+ {
+ 	int i;
+ 
+-	BUILD_BUG_ON(sizeof(((struct page *)NULL)->lru) <
++	BUILD_BUG_ON(sizeof(((struct page *)NULL)->list) <
+ 					sizeof(struct rcu_head));
+ 	kmem_cache = &kmem_cache_boot;
+ 	setup_node_pointer(kmem_cache);
+@@ -1624,15 +1624,15 @@ slab_out_of_memory(struct kmem_cache *ca
+ 			continue;
+ 
+ 		spin_lock_irqsave(&n->list_lock, flags);
+-		list_for_each_entry(page, &n->slabs_full, lru) {
++		list_for_each_entry(page, &n->slabs_full, list) {
+ 			active_objs += cachep->num;
+ 			active_slabs++;
+ 		}
+-		list_for_each_entry(page, &n->slabs_partial, lru) {
++		list_for_each_entry(page, &n->slabs_partial, list) {
+ 			active_objs += page->active;
+ 			active_slabs++;
+ 		}
+-		list_for_each_entry(page, &n->slabs_free, lru)
++		list_for_each_entry(page, &n->slabs_free, list)
+ 			num_slabs++;
+ 
+ 		free_objects += n->free_objects;
+@@ -2424,11 +2424,11 @@ static int drain_freelist(struct kmem_ca
+ 			goto out;
+ 		}
+ 
+-		page = list_entry(p, struct page, lru);
++		page = list_entry(p, struct page, list);
+ #if DEBUG
+ 		BUG_ON(page->active);
+ #endif
+-		list_del(&page->lru);
++		list_del(&page->list);
+ 		/*
+ 		 * Safe to drop the lock. The slab is no longer linked
+ 		 * to the cache.
+@@ -2721,7 +2721,7 @@ static int cache_grow(struct kmem_cache
+ 	spin_lock(&n->list_lock);
+ 
+ 	/* Make slab active. */
+-	list_add_tail(&page->lru, &(n->slabs_free));
++	list_add_tail(&page->list, &(n->slabs_free));
+ 	STATS_INC_GROWN(cachep);
+ 	n->free_objects += cachep->num;
+ 	spin_unlock(&n->list_lock);
+@@ -2864,7 +2864,7 @@ retry:
+ 				goto must_grow;
+ 		}
+ 
+-		page = list_entry(entry, struct page, lru);
++		page = list_entry(entry, struct page, list);
+ 		check_spinlock_acquired(cachep);
+ 
+ 		/*
+@@ -2884,7 +2884,7 @@ retry:
+ 		}
+ 
+ 		/* move slabp to correct slabp list: */
+-		list_del(&page->lru);
++		list_del(&page->list);
+ 		if (page->active == cachep->num)
+ 			list_add(&page->list, &n->slabs_full);
+ 		else
+@@ -3163,7 +3163,7 @@ retry:
+ 			goto must_grow;
+ 	}
+ 
+-	page = list_entry(entry, struct page, lru);
++	page = list_entry(entry, struct page, list);
+ 	check_spinlock_acquired_node(cachep, nodeid);
+ 
+ 	STATS_INC_NODEALLOCS(cachep);
+@@ -3175,12 +3175,12 @@ retry:
+ 	obj = slab_get_obj(cachep, page, nodeid);
+ 	n->free_objects--;
+ 	/* move slabp to correct slabp list: */
+-	list_del(&page->lru);
++	list_del(&page->list);
+ 
+ 	if (page->active == cachep->num)
+-		list_add(&page->lru, &n->slabs_full);
++		list_add(&page->list, &n->slabs_full);
+ 	else
+-		list_add(&page->lru, &n->slabs_partial);
++		list_add(&page->list, &n->slabs_partial);
+ 
+ 	spin_unlock(&n->list_lock);
+ 	goto done;
+@@ -3337,7 +3337,7 @@ static void free_block(struct kmem_cache
+ 
+ 		page = virt_to_head_page(objp);
+ 		n = cachep->node[node];
+-		list_del(&page->lru);
++		list_del(&page->list);
+ 		check_spinlock_acquired_node(cachep, node);
+ 		slab_put_obj(cachep, page, objp, node);
+ 		STATS_DEC_ACTIVE(cachep);
+@@ -3355,14 +3355,14 @@ static void free_block(struct kmem_cache
+ 				 */
+ 				slab_destroy(cachep, page);
+ 			} else {
+-				list_add(&page->lru, &n->slabs_free);
++				list_add(&page->list, &n->slabs_free);
+ 			}
+ 		} else {
+ 			/* Unconditionally move a slab to the end of the
+ 			 * partial list on free - maximum time for the
+ 			 * other objects to be freed, too.
+ 			 */
+-			list_add_tail(&page->lru, &n->slabs_partial);
++			list_add_tail(&page->list, &n->slabs_partial);
+ 		}
+ 	}
+ }
+@@ -3404,7 +3404,7 @@ free_done:
+ 		while (p != &(n->slabs_free)) {
+ 			struct page *page;
+ 
+-			page = list_entry(p, struct page, lru);
++			page = list_entry(p, struct page, list);
+ 			BUG_ON(page->active);
+ 
+ 			i++;
+@@ -4029,13 +4029,13 @@ void get_slabinfo(struct kmem_cache *cac
+ 		check_irq_on();
+ 		spin_lock_irq(&n->list_lock);
+ 
+-		list_for_each_entry(page, &n->slabs_full, lru) {
++		list_for_each_entry(page, &n->slabs_full, list) {
+ 			if (page->active != cachep->num && !error)
+ 				error = "slabs_full accounting error";
+ 			active_objs += cachep->num;
+ 			active_slabs++;
+ 		}
+-		list_for_each_entry(page, &n->slabs_partial, lru) {
++		list_for_each_entry(page, &n->slabs_partial, list) {
+ 			if (page->active == cachep->num && !error)
+ 				error = "slabs_partial accounting error";
+ 			if (!page->active && !error)
+@@ -4043,7 +4043,7 @@ void get_slabinfo(struct kmem_cache *cac
+ 			active_objs += page->active;
+ 			active_slabs++;
+ 		}
+-		list_for_each_entry(page, &n->slabs_free, lru) {
++		list_for_each_entry(page, &n->slabs_free, list) {
+ 			if (page->active && !error)
+ 				error = "slabs_free accounting error";
+ 			num_slabs++;
+@@ -4266,9 +4266,9 @@ static int leaks_show(struct seq_file *m
+ 		check_irq_on();
+ 		spin_lock_irq(&n->list_lock);
+ 
+-		list_for_each_entry(page, &n->slabs_full, lru)
++		list_for_each_entry(page, &n->slabs_full, list)
+ 			handle_slab(x, cachep, page);
+-		list_for_each_entry(page, &n->slabs_partial, lru)
++		list_for_each_entry(page, &n->slabs_partial, list)
+ 			handle_slab(x, cachep, page);
+ 		spin_unlock_irq(&n->list_lock);
+ 	}
+_
