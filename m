@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab3LKLEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:04:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60083 "EHLO
+	id S1752043Ab3LKLEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:04:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60090 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab3LKLD6 (ORCPT
+	with ESMTP id S1751451Ab3LKLEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:03:58 -0500
-Date: Wed, 11 Dec 2013 03:03:40 -0800
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-3160565f0e005d2ec736ae25cf0a79988c0cbe71@git.kernel.org>
+	Wed, 11 Dec 2013 06:04:09 -0500
+Date: Wed, 11 Dec 2013 03:03:50 -0800
+From: tip-bot for Steven Rostedt <tipbot@zytor.com>
+Message-ID: <tip-a4c34w62vl0diitvxb7bt3er@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de
+        mingo@kernel.org, rostedt@goodmis.org, tglx@linutronix.de,
+        jolsa@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1386211302-31303-4-git-send-email-dsahern@gmail.com>
-References: <1386211302-31303-4-git-send-email-dsahern@gmail.com>
+        acme@redhat.com, rostedt@goodmis.org, tglx@linutronix.de,
+        jolsa@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace:
-  Fix summary percentage when processing files
-Git-Commit-ID: 3160565f0e005d2ec736ae25cf0a79988c0cbe71
+Subject: [tip:perf/core] tools lib traceevent:
+  Report better error message on bad function args
+Git-Commit-ID: 3a3ffa2e82205921d1189f1055c22dae4c72819a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,53 +28,103 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:03:47 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:03:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3160565f0e005d2ec736ae25cf0a79988c0cbe71
-Gitweb:     http://git.kernel.org/tip/3160565f0e005d2ec736ae25cf0a79988c0cbe71
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Wed, 4 Dec 2013 19:41:41 -0700
+Commit-ID:  3a3ffa2e82205921d1189f1055c22dae4c72819a
+Gitweb:     http://git.kernel.org/tip/3a3ffa2e82205921d1189f1055c22dae4c72819a
+Author:     Steven Rostedt <rostedt@goodmis.org>
+AuthorDate: Mon, 18 Nov 2013 21:38:20 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 5 Dec 2013 10:09:58 -0300
+CommitDate: Fri, 6 Dec 2013 10:39:54 -0300
 
-perf trace: Fix summary percentage when processing files
+tools lib traceevent: Report better error message on bad function args
 
-Getting a divide by 0 when events are processed from a file:
+When Jiri Olsa was writing a function callback for
+scsi_trace_parse_cdb(), he thought that the traceevent library had a
+bug in it because he was getting this error:
 
-   perf trace -i perf.data -s
-   ...
-   dnsmasq (1684), 10 events, inf%, 0.000 msec
+  Error: expected ')' but read ','
+  Error: expected ')' but read ','
+  Error: expected ')' but read ','
+  Error: expected ')' but read ','
 
-The problem is that the event count is not incremented as events are
-processed. With this patch:
+But in truth, he didn't have the write number of arguments for the
+function callback, and the error was the library detecting the
+discrepancy. A better error message would have prevented the confusion:
 
-   perf trace -i perf.data -s
-   ...
-   dnsmasq (1684), 10 events, 8.9%, 0.000 msec
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_timeout has more
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_start has more
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_error has more
+  Error: function 'scsi_trace_parse_cdb()' only expects 2 arguments but event scsi_dispatch_cmd_done has more
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1386211302-31303-4-git-send-email-dsahern@gmail.com
+Or
+
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_timeout only uses 3
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_start only uses 3
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_error only uses 3
+  Error: function 'scsi_trace_parse_cdb()' expects 4 arguments but event scsi_dispatch_cmd_done only uses 3
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/n/tip-a4c34w62vl0diitvxb7bt3er@git.kernel.org
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ tools/lib/traceevent/event-parse.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index a7aa771..56bbca5 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1770,8 +1770,10 @@ static int trace__process_sample(struct perf_tool *tool,
- 	if (!trace->full_time && trace->base_time == 0)
- 		trace->base_time = sample->time;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 9849873..22566c2 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2710,7 +2710,6 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 	struct print_arg *farg;
+ 	enum event_type type;
+ 	char *token;
+-	const char *test;
+ 	int i;
  
--	if (handler)
-+	if (handler) {
-+		++trace->nr_events;
- 		handler(trace, evsel, sample);
-+	}
+ 	arg->type = PRINT_FUNC;
+@@ -2727,15 +2726,19 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 		}
  
- 	return err;
+ 		type = process_arg(event, farg, &token);
+-		if (i < (func->nr_args - 1))
+-			test = ",";
+-		else
+-			test = ")";
+-
+-		if (test_type_token(type, token, EVENT_DELIM, test)) {
+-			free_arg(farg);
+-			free_token(token);
+-			return EVENT_ERROR;
++		if (i < (func->nr_args - 1)) {
++			if (type != EVENT_DELIM || strcmp(token, ",") != 0) {
++				warning("Error: function '%s()' expects %d arguments but event %s only uses %d",
++					func->name, func->nr_args,
++					event->name, i + 1);
++				goto err;
++			}
++		} else {
++			if (type != EVENT_DELIM || strcmp(token, ")") != 0) {
++				warning("Error: function '%s()' only expects %d arguments but event %s has more",
++					func->name, func->nr_args, event->name);
++				goto err;
++			}
+ 		}
+ 
+ 		*next_arg = farg;
+@@ -2747,6 +2750,11 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
+ 	*tok = token;
+ 
+ 	return type;
++
++err:
++	free_arg(farg);
++	free_token(token);
++	return EVENT_ERROR;
  }
+ 
+ static enum event_type
