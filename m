@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab3LKBHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:07:05 -0500
-Received: from lmv.inov.pt ([146.193.64.2]:53830 "EHLO lmv.inov.pt"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab3LKBHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:07:01 -0500
-X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Dec 2013 20:07:01 EST
-From: =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-To: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-Subject: [PATCH] hwmon: HIH-6130: Support I2C bus drivers without I2C_FUNC_SMBUS_QUICK
-Date: Wed, 11 Dec 2013 00:57:42 +0000
-Message-Id: <1386723462-21388-1-git-send-email-jose.goncalves@inov.pt>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751909Ab3LKBHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:07:23 -0500
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:44296 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379Ab3LKBHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 20:07:22 -0500
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Dec 2013 20:07:21 EST
+Date: Tue, 10 Dec 2013 20:00:27 -0500
+From: Wakko Warner <wakko@animx.eu.org>
+To: linux-kernel@vger.kernel.org
+Subject: Help with mpt2sas kernel message
+Message-ID: <20131211010027.GA30462@animx.eu.org>
+Reply-To: Wakko Warner <wakko@animx.eu.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0.1 (lmv.inov.pt [146.193.64.2]); Wed, 11 Dec 2013 00:58:13 +0000 (WET)
-X-INOV-EmailServer-Information: Please contact the Email service provider for more information
-X-INOV-EmailServer: Found to be clean
-X-INOV-EmailServer-From: jose.goncalves@inov.pt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some I2C bus drivers do not allow zero-lenght data transfers which are
-required to start a mesurement with the HIH6130/1 sensor. Nevertheless,
-we can overcome this limitation by writing a zero dummy byte. This byte
-is ignored by the sensor and was verified to be working with the OMAP
-I2C bus driver in a BeagleBone board.
+Kernel: vanilla 3.7.2.
 
-Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
----
- drivers/hwmon/hih6130.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+I have 2 mpt2sas controllers.  I'm running a md check on the 2 arrays that I
+have (one per card).  I'm seeing this in my kernel log (last 4 lines):
+2013-12-10 19:52:10 kame kernel:[1558186.193904] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
+2013-12-10 19:52:35 kame kernel:[1558211.606908] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
+2013-12-10 19:53:02 kame kernel:[1558237.954502] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
+2013-12-10 19:53:50 kame kernel:[1558286.227318] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
 
-diff --git a/drivers/hwmon/hih6130.c b/drivers/hwmon/hih6130.c
-index 2dc37c7..a860cc4 100644
---- a/drivers/hwmon/hih6130.c
-+++ b/drivers/hwmon/hih6130.c
-@@ -121,8 +121,20 @@ static int hih6130_update_measurements(struct i2c_client *client)
- 	 */
- 	if (time_after(jiffies, hih6130->last_update + HZ) || !hih6130->valid) {
- 
--		/* write to slave address, no data, to request a measurement */
--		ret = i2c_master_send(client, tmp, 0);
-+		/*
-+		 * Write to slave address, to request a measurement.
-+		 * According with the datasheet it should be with no data, but
-+		 * for systems with I2C bus drivers that do not allow zero
-+		 * length packets we write one dummy byte to allow sensor
-+		 * measurements on them.
-+		 */
-+		if (i2c_get_functionality(client->adapter) &
-+		    I2C_FUNC_SMBUS_QUICK) {
-+			ret = i2c_master_send(client, tmp, 0);
-+		} else {
-+			tmp[0] = 0;
-+			ret = i2c_master_send(client, tmp, 1);
-+		}
- 		if (ret < 0)
- 			goto out;
- 
+Can someone tell me if there is a problem here?
+
+I'd also like to know which card mpt2sas0 is.  Is it the one that has the
+lower numbered pci bus?  I was unable to figure that out from
+/sys/bus/pci/drivers/mpt2sas.
+
+The contents are:
+lrwxrwxrwx 1 root root    0 Dec 10 19:49 0000:03:00.0 -> ../../../../devices/pci0000:00/0000:00:05.0/0000:03:00.0/
+lrwxrwxrwx 1 root root    0 Dec 10 19:49 0000:04:00.0 -> ../../../../devices/pci0000:00/0000:00:07.0/0000:04:00.0/
+
+lspci for those:
+03:00.0 Serial Attached SCSI controller: LSI Logic / Symbios Logic SAS2008 PCI-Express Fusion-MPT SAS-2 [Falcon] (rev 03)
+04:00.0 Serial Attached SCSI controller: LSI Logic / Symbios Logic SAS2008 PCI-Express Fusion-MPT SAS-2 [Falcon] (rev 02)
+
+I am able to figure out which drives are on which of these controllers from
+/sys/block
+
+So far, I'm not seeing any data errors.  Although drives on 03:00.0 appear
+to be running slower than the ones on 04:00.0 according to /proc/mdstat.  No
+drives are actually in use other than the check that is running.
+
 -- 
-1.7.10.4
-
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
