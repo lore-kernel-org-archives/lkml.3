@@ -1,149 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3LKLSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:18:00 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9731 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3LKLRz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:17:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 11 Dec 2013 03:10:56 -0800
-Message-ID: <52A849E8.30107@nvidia.com>
-Date: Wed, 11 Dec 2013 19:18:00 +0800
-From: bilhuang <bilhuang@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] cpufreq: tegra: Re-model Tegra cpufreq driver
-References: <1386229462-3474-1-git-send-email-bilhuang@nvidia.com> <1386229462-3474-3-git-send-email-bilhuang@nvidia.com> <52A10681.4050906@wwwdotorg.org> <52A58305.3070902@nvidia.com> <52A5FEAF.4050001@wwwdotorg.org>
-In-Reply-To: <52A5FEAF.4050001@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1751996Ab3LKLTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:19:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650Ab3LKLTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 06:19:12 -0500
+Date: Wed, 11 Dec 2013 06:18:56 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
+ flock_to_posix_lock routines
+Message-ID: <20131211061856.615c39ba@tlielax.poochiereds.net>
+In-Reply-To: <20131210232204.GD20831@fieldses.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-2-git-send-email-jlayton@redhat.com>
+	<20131210212253.GC20831@fieldses.org>
+	<20131210232204.GD20831@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 01:32 AM, Stephen Warren wrote:
-> On 12/09/2013 01:44 AM, bilhuang wrote:
->> On 12/06/2013 07:04 AM, Stephen Warren wrote:
->>> On 12/05/2013 12:44 AM, Bill Huang wrote:
->>>> Re-model Tegra cpufreq driver to support all Tegra series of SoCs.
->>>>
->>>> * Make tegra-cpufreq.c a generic Tegra cpufreq driver.
->>>> * Move Tegra20 specific codes into tegra20-cpufreq.c.
->>>> * Bind Tegra cpufreq dirver with a fake device so defer probe would work
->>>>     when we're going to get regulator in the driver to support voltage
->>>>     scaling (DVFS).
->>>
->>>> diff --git a/drivers/cpufreq/tegra-cpufreq.c
->>>> b/drivers/cpufreq/tegra-cpufreq.c
->>>
->>>> @@ -91,14 +40,10 @@ static int tegra_update_cpu_speed(struct
->>>> cpufreq_policy *policy,
->>> ...
->>>> +    if (soc_config->vote_emc_on_cpu_rate)
->>>> +        soc_config->vote_emc_on_cpu_rate(rate);
->>>> +
->>>> +    ret = soc_config->cpu_clk_set_rate(rate * 1000);
->>>>        if (ret)
->>>>            pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
->>>>                rate);
->>>
->>> Is there any/much shared code left in this file after this patch? It
->>> seems like all this file does now is make each cpufreq callback function
->>> call soc_config->the_same_function_name(). If so, wouldn't it be better
->>> to simply implement completely separate tegar20-cpufreq and
->>> tegra30-cpufreq drivers, and register them each directly with the
->>> cpufreq core, to avoid this file doing all the indirection?
->>
->> I think this file is needed since we can shared the registration and
->> probe logic for different SoCs.
->
-> But there's basically nothing in probe() already, and if we have a
-> separate driver for each SoC, then there's even less code; just a call
-> to devm_kzalloc() for the device-specific data (which will be
-> SoC-specific in size anyway), and a call to cpufreq_register_driver(). I
-> don't think it's worth sharing that if it means that every other
-> function needs to be an indirect function call.
-OK that makes sense.
->
->>>> -int __init tegra_cpufreq_init(void)
->>>> +static struct {
->>>> +    char *compat;
->>>> +    int (*init)(struct tegra_cpufreq_data *,
->>>> +            const struct tegra_cpufreq_config **);
->>>> +} tegra_init_funcs[] = {
->>>> +    { "nvidia,tegra20", tegra20_cpufreq_init },
->>>> +};
->>>> +
->>>> +static int tegra_cpufreq_probe(struct platform_device *pdev)
->>> ...
->>>> +    for (i = 0; i < ARRAY_SIZE(tegra_init_funcs); i++) {
->>>> +        if (of_machine_is_compatible(tegra_init_funcs[i].compat)) {
->>>> +            ret = tegra_init_funcs[i].init(tegra_data, &soc_config);
->>>> +            if (!ret)
->>>> +                break;
->>>> +            else
->>>> +                goto out;
->>>> +        }
->>>>        }
->>>> +    if (i == ARRAY_SIZE(tegra_init_funcs))
->>>> +        goto out;
->>>
->>> I think there are better ways of doing this than open-coding it. Perhaps
->>> of_match_device() or the platform-driver equivalent could be made to
->>> work?
->>
->> Open coding is everywhere in OF helper functions actually. I doubt if we
->> can use of_match_device() if we're not adding node in DT.
->> If we're matching the platform device then we might need open coding, no?
->
-> For platform devices, you can set up the id_table of struct
-> platform_driver, and then simply call platform_get_device_id(pdev)
-> inside probe() to find the matching entry. drivers/i2c/busses/i2c-at91.c
-> is an example of how this works (just some random driver I found using
-> grep).
-If we're going to have separate driver for each SoC, then we don't need 
-platform_get_device_id(pdev) stuffs...
+On Tue, 10 Dec 2013 18:22:04 -0500
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-What I would like to do is creating platform cpufreq device with name 
-"${root_compatible}-cpufreq" then each SoC cpufreq driver can bind to 
-it, but the question is, which file is the best place to do this? Create 
-a new file for this or use existing file like arch/arm/mach-tegra/tegra.c?
->
->>>> +int __init tegra_cpufreq_init(void)
->>>> +{
->>>> +    struct platform_device_info devinfo = { .name = "tegra-cpufreq", };
->>>> +
->>>> +    platform_device_register_full(&devinfo);
->>>> +
->>>> +    return 0;
->>>>    }
->>>>    EXPORT_SYMBOL(tegra_cpufreq_init);
->>>
->>> Perhaps instead of hard-coding the name "tegra-cpufreq" here, you could
->>> dynamically construct the device name based on the DT's root compatible
->>> value, register "${root_compatible}-cpufreq", e.g.
->>> "nvidia,tegra20-cpufreq" or "nvidia,tegra30-cpufreq". That would allow
->>> the kernel's standard device/driver matching mechanism to pick the
->>> correct driver to instantiate. Perhaps you could even dynamically
->>> register an OF device so that you can use of_match_device() in probe, if
->>
->> I guess what you meant dynamically register an OF device is registering
->> an fake OF device by calling of_device_add(), no? If yes then what
->> of_node should we give?
->
-> Yes. Good question about which node. I guess the root node would be the
-> only one that made any sense at all, and admittedly it doesn't make a
-> huge amount of sense. Perhaps registers a platform device rather than an
-> OF device would make more sense. See platform_device_register() I think.
->
+> On Tue, Dec 10, 2013 at 04:22:53PM -0500, bfields wrote:
+> > On Tue, Dec 10, 2013 at 02:17:30PM -0500, Jeff Layton wrote:
+> > > Currently, there's a lot of copy and paste between the two.  Add some
+> > > functions to do the initialization of the file_lock from values
+> > > passed in, and turn the flock/flock64 variants of those functions into
+> > > wrappers around them.
+> > > 
+> > > Unfortunately it's harder to consolidate the fl_start/fl_end
+> > > calculations due to the differently sized types involved so I've left
+> > > them separate for now.
+> > 
+> > I'd think you could assign everything to the flock64 type and do the
+> > common work there or something.
+> > 
+> > But I'm confused about what the current code is actually trying to do:
+> > if I'm chasing down the definitions right, these quantities are all
+> > signed, and when start is defined as an off_t it can overflow in the
+> > SEEK_CUR and SEEK_END cases.  And
+> > 
+> > 	if (fl->fl_end < fl->fl_start)
+> > 		return -EOVERFLOW
+> > 
+> > is counting on overlow wrapping around, which I thought wasn't
+> > guaranteed in the case of signed arithmetic?
+> 
+> E.g. the following (untested) removes the duplication and should return
+> -EOVERFLOW in the cases we currently do a random conversion from 64- to
+> 32-bit and back.  Susv3 says:
+> 
+> 	[EOVERFLOW]
+> 	The cmd argument is F_GETLK, F_SETLK, or F_SETLKW and the
+> 	smallest or, if l_len is non-zero, the largest offset of any
+> 	byte in the requested segment cannot be represented correctly in
+> 	an object of type off_t.
+> 
+> so that's what I tried to do.
+> 
+> --b.
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 92a0f0a..47832f5 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -344,48 +344,41 @@ static int assign_type(struct file_lock *fl, long type)
+>  	return 0;
+>  }
+>  
+> -/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> - * style lock.
+> - */
+> -static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+> -			       struct flock *l)
+> +static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
+> +					struct flock64 *l, loff_t offset_max)
+>  {
+> -	off_t start, end;
+> +	loff_t start;
+>  
+>  	switch (l->l_whence) {
+>  	case SEEK_SET:
+> -		start = 0;
+> -		break;
+> +		fl->fl_start = 0;
+>  	case SEEK_CUR:
+> -		start = filp->f_pos;
+> -		break;
+> +		fl->fl_start = filp->f_pos;
+>  	case SEEK_END:
+> -		start = i_size_read(file_inode(filp));
+> -		break;
+> +		fl->fl_start = i_size_read(file_inode(filp));
+>  	default:
+>  		return -EINVAL;
+>  	}
+> +	if (l->l_start < 0)
+> +		return -EINVAL;
+> +	if (l->l_start > offset_max - fl->fl_start)
+> +		return -EOVERFLOW;
+> +	fl->fl_start += l->l_start;
+> +	if (l->l_len > offset_max - fl->fl_start)
+> +		return -EOVERFLOW;
+> +	if (fl->fl_start + l->l_len < 0)
+> +		return -EINVAL;
+>  
+>  	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
+>  	   POSIX-2001 defines it. */
+> -	start += l->l_start;
+> -	if (start < 0)
+> -		return -EINVAL;
+> -	fl->fl_end = OFFSET_MAX;
+> -	if (l->l_len > 0) {
+> -		end = start + l->l_len - 1;
+> -		fl->fl_end = end;
+> -	} else if (l->l_len < 0) {
+> -		end = start - 1;
+> -		fl->fl_end = end;
+> -		start += l->l_len;
+> -		if (start < 0)
+> -			return -EINVAL;
+> -	}
+> -	fl->fl_start = start;	/* we record the absolute position */
+> -	if (fl->fl_end < fl->fl_start)
+> -		return -EOVERFLOW;
+> -	
+> +	if (l->l_len > 0)
+> +		fl->fl_end = fl->fl_start + l->l_len - 1;
+> +	else if (l->l_len < 0) {
+> +		fl->fl_end = start - 1;
+> +		fl->fl_start += l->l_len;
+> +	} else
+> +		fl->fl_end = OFFSET_MAX;
+> +
+>  	fl->fl_owner = current->files;
+>  	fl->fl_pid = current->tgid;
+>  	fl->fl_file = filp;
+> @@ -396,50 +389,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  	return assign_type(fl, l->l_type);
+>  }
+>  
+> +/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> + * style lock.
+> + */
+> +static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+> +			       struct flock *l)
+> +{
+> +	struct flock64 ll = {
+> +		.l_type = l->l_type,
+> +		.l_whence = l->l_whence,
+> +		.l_start = l->l_start,
+> +		.l_len = l->l_len,
+> +	};
+> +	
+> +	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
+> +}
+> +
+>  #if BITS_PER_LONG == 32
+>  static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  				 struct flock64 *l)
+>  {
+> -	loff_t start;
+> -
+> -	switch (l->l_whence) {
+> -	case SEEK_SET:
+> -		start = 0;
+> -		break;
+> -	case SEEK_CUR:
+> -		start = filp->f_pos;
+> -		break;
+> -	case SEEK_END:
+> -		start = i_size_read(file_inode(filp));
+> -		break;
+> -	default:
+> -		return -EINVAL;
+> -	}
+> -
+> -	start += l->l_start;
+> -	if (start < 0)
+> -		return -EINVAL;
+> -	fl->fl_end = OFFSET_MAX;
+> -	if (l->l_len > 0) {
+> -		fl->fl_end = start + l->l_len - 1;
+> -	} else if (l->l_len < 0) {
+> -		fl->fl_end = start - 1;
+> -		start += l->l_len;
+> -		if (start < 0)
+> -			return -EINVAL;
+> -	}
+> -	fl->fl_start = start;	/* we record the absolute position */
+> -	if (fl->fl_end < fl->fl_start)
+> -		return -EOVERFLOW;
+> -	
+> -	fl->fl_owner = current->files;
+> -	fl->fl_pid = current->tgid;
+> -	fl->fl_file = filp;
+> -	fl->fl_flags = FL_POSIX;
+> -	fl->fl_ops = NULL;
+> -	fl->fl_lmops = NULL;
+> -
+> -	return assign_type(fl, l->l_type);
+> +	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
+>  }
+>  #endif
+>  
+> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+> index 95e46c8..36025f7 100644
+> --- a/include/uapi/asm-generic/fcntl.h
+> +++ b/include/uapi/asm-generic/fcntl.h
+> @@ -186,8 +186,6 @@ struct flock {
+>  };
+>  #endif
+>  
+> -#ifndef CONFIG_64BIT
+> -
+>  #ifndef HAVE_ARCH_STRUCT_FLOCK64
+>  #ifndef __ARCH_FLOCK64_PAD
+>  #define __ARCH_FLOCK64_PAD
+> @@ -202,6 +200,5 @@ struct flock64 {
+>  	__ARCH_FLOCK64_PAD
+>  };
+>  #endif
+> -#endif /* !CONFIG_64BIT */
+>  
+>  #endif /* _ASM_GENERIC_FCNTL_H */
 
+Nice. I had started to consolidate them, but then figured out that
+there are so many edge cases and I didn't have a good way to test them
+all.
+
+As far as I can tell though, this looks correct. I'll plan to drop my
+patch and base the rest of the set on top of yours.
+
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
