@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3LKMlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:41:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35759 "EHLO mga01.intel.com"
+	id S1752651Ab3LKMla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:41:30 -0500
+Received: from mga09.intel.com ([134.134.136.24]:59750 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab3LKMlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:41:18 -0500
+	id S1752618Ab3LKMlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 07:41:24 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,871,1378882800"; 
-   d="scan'208";a="442369321"
+   d="scan'208";a="422886751"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v0 43/71] perf record: Add basic Instruction Tracing support
-Date: Wed, 11 Dec 2013 14:36:55 +0200
-Message-Id: <1386765443-26966-44-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v0 44/71] perf record: Extend -m option for Instruction Tracing mmap pages
+Date: Wed, 11 Dec 2013 14:36:56 +0200
+Message-Id: <1386765443-26966-45-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -31,219 +31,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Amend the perf record tool to read the
-Instruction Tracing mmap and synthesize
-Instruction Tracing events.
+Extend the -m option so that the number
+of mmap pages for Instruction Tracing
+can be specified.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-record.c | 103 +++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 87 insertions(+), 16 deletions(-)
+ tools/perf/Documentation/perf-record.txt |  2 ++
+ tools/perf/builtin-record.c              | 49 ++++++++++++++++++++++++++++++--
+ tools/perf/util/evlist.c                 | 16 +++++++----
+ tools/perf/util/evlist.h                 |  2 ++
+ 4 files changed, 60 insertions(+), 9 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index c407897..bb01df7 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -92,6 +92,8 @@ OPTIONS
+ 	Number of mmap data pages (must be a power of two) or size
+ 	specification with appended unit character - B/K/M/G. The
+ 	size is rounded up to have nearest pages power of two value.
++	Also, by adding a comma, the number of mmap pages for Instruction
++	Tracing can be specified.
+ 
+ -g::
+ 	Enables call-graph (stack chain/backtrace) recording.
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index d93e2ee..4613f55 100644
+index 4613f55..344603f 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -25,6 +25,7 @@
- #include "util/cpumap.h"
- #include "util/thread_map.h"
- #include "util/data.h"
-+#include "util/itrace.h"
- 
- #include <unistd.h>
- #include <sched.h>
-@@ -67,6 +68,7 @@ struct perf_record {
- 	struct perf_record_opts	opts;
- 	u64			bytes_written;
- 	struct perf_data_file	file;
-+	struct itrace_record	*itr;
- 	struct perf_evlist	*evlist;
- 	struct perf_session	*session;
- 	const char		*progname;
-@@ -150,6 +152,42 @@ out:
- 	return rc;
+@@ -828,6 +828,49 @@ int record_callchain_opt(const struct option *opt,
+ 	return 0;
  }
  
-+static int perf_record__process_itrace(struct perf_tool *tool,
-+				       union perf_event *event, void *data1,
-+				       size_t len1, void *data2, size_t len2)
++static int perf_record__parse_mmap_pages(const struct option *opt,
++					 const char *str,
++					 int unset __maybe_unused)
 +{
-+	struct perf_record *rec = container_of(tool, struct perf_record, tool);
-+	size_t padding;
-+	u8 pad[8] = {0};
-+
-+	padding = (len1 + len2) & 7;
-+	if (padding)
-+		padding = 8 - padding;
-+
-+	perf_record__write(rec, event, event->header.size);
-+	perf_record__write(rec, data1, len1);
-+	perf_record__write(rec, data2, len2);
-+	perf_record__write(rec, &pad, padding);
-+
-+	return 0;
-+}
-+
-+static int perf_record__itrace_mmap_read(struct perf_record *rec,
-+					 struct itrace_mmap *mm)
-+{
++	struct perf_record_opts	*opts = opt->value;
++	char *s, *p;
++	unsigned int mmap_pages;
 +	int ret;
 +
-+	ret = itrace_mmap__read(mm, rec->itr, &rec->tool,
-+				perf_record__process_itrace);
-+	if (ret < 0)
-+		return ret;
++	if (!str)
++		return -EINVAL;
 +
++	s = strdup(str);
++	if (!s)
++		return -ENOMEM;
++
++	p = strchr(s, ',');
++	if (p)
++		*p = '\0';
++
++	if (*s) {
++		ret = __perf_evlist__parse_mmap_pages(&mmap_pages, s, true);
++		if (ret)
++			goto out_free;
++		opts->mmap_pages = mmap_pages;
++	}
++
++	if (!p) {
++		ret = 0;
++		goto out_free;
++	}
++
++	ret = __perf_evlist__parse_mmap_pages(&mmap_pages, p + 1, false);
 +	if (ret)
-+		rec->samples++;
++		goto out_free;
 +
-+	return 0;
++	opts->itrace_mmap_pages = mmap_pages;
++
++out_free:
++	free(s);
++	return ret;
 +}
 +
- static volatile int done = 0;
- static volatile int signr = -1;
- static volatile int child_finished = 0;
-@@ -218,13 +256,16 @@ try_again:
- 		goto out;
- 	}
- 
--	if (perf_evlist__mmap(evlist, opts->mmap_pages, false) < 0) {
-+	if (perf_evlist__mmap_ex(evlist, opts->mmap_pages, false,
-+				 opts->itrace_mmap_pages,
-+				 false) < 0) {
- 		if (errno == EPERM) {
- 			pr_err("Permission error mapping pages.\n"
- 			       "Consider increasing "
- 			       "/proc/sys/kernel/perf_event_mlock_kb,\n"
- 			       "or try again with a smaller value of -m/--mmap_pages.\n"
--			       "(current value: %d)\n", opts->mmap_pages);
-+			       "(current value: %u,%u)\n",
-+			       opts->mmap_pages, opts->itrace_mmap_pages);
- 			rc = -errno;
- 		} else {
- 			pr_err("failed to mmap with %d (%s)\n", errno, strerror(errno));
-@@ -318,12 +359,20 @@ static int perf_record__mmap_read_all(struct perf_record *rec)
- 	int rc = 0;
- 
- 	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
-+		struct itrace_mmap *mm = &rec->evlist->mmap[i].itrace_mmap;
-+
- 		if (rec->evlist->mmap[i].base) {
- 			if (perf_record__mmap_read(rec, &rec->evlist->mmap[i]) != 0) {
- 				rc = -1;
- 				goto out;
- 			}
- 		}
-+
-+		if (mm->base &&
-+		    perf_record__itrace_mmap_read(rec, mm) != 0) {
-+			rc = -1;
-+			goto out;
-+		}
- 	}
- 
- 	if (perf_header__has_feat(&rec->session->header, HEADER_TRACING_DATA))
-@@ -351,6 +400,9 @@ static void perf_record__init_features(struct perf_record *rec)
- 
- 	if (!rec->opts.branch_stack)
- 		perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
-+
-+	if (!rec->opts.full_itrace)
-+		perf_header__clear_feat(&session->header, HEADER_ITRACE);
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -899,9 +942,9 @@ const struct option record_options[] = {
+ 			&record.opts.no_inherit_set,
+ 			"child tasks do not inherit counters"),
+ 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
+-	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
+-		     "number of mmap data pages",
+-		     perf_evlist__parse_mmap_pages),
++	OPT_CALLBACK('m', "mmap-pages", &record.opts, "pages[,pages]",
++		     "number of mmap data pages and instruction tracing mmap pages",
++		     perf_record__parse_mmap_pages),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &record.opts,
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index c720c6c..dbb1898 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -843,7 +843,7 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
  }
  
- static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
-@@ -455,6 +507,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		}
- 	}
- 
-+	if (rec->opts.full_itrace) {
-+		err = perf_event__synthesize_itrace_info(rec->itr, tool,
-+					session, process_synthesized_event);
-+		if (err)
-+			goto out_delete_session;
-+	}
-+
- 	err = perf_event__synthesize_kernel_mmap(tool, process_synthesized_event,
- 						 machine, "_text");
- 	if (err < 0)
-@@ -536,16 +595,17 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (quiet || signr == SIGUSR1)
- 		return 0;
- 
--	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
--
--	/*
--	 * Approximate RIP event size: 24 bytes.
--	 */
--	fprintf(stderr,
--		"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
--		(double)rec->bytes_written / 1024.0 / 1024.0,
--		file->path,
--		rec->bytes_written / 24);
-+	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n",
-+		waking);
-+	fprintf(stderr, "[ perf record: Captured and wrote %.3f MB %s",
-+		(double)rec->bytes_written / 1024.0 / 1024.0, file->path);
-+	if (rec->opts.full_itrace) {
-+		fprintf(stderr, " ]\n");
-+	} else {
-+		/* Approximate RIP event size: 24 bytes */
-+		fprintf(stderr, " (~%" PRIu64 " samples) ]\n",
-+			rec->bytes_written / 24);
-+	}
- 
- 	return 0;
- 
-@@ -889,14 +949,19 @@ const struct option record_options[] = {
- 
- int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ static long parse_pages_arg(const char *str, unsigned long min,
+-			    unsigned long max)
++			    unsigned long max, bool po2)
  {
--	int err = -ENOMEM;
-+	int err;
- 	struct perf_evlist *evsel_list;
- 	struct perf_record *rec = &record;
- 	char errbuf[BUFSIZ];
+ 	unsigned long pages, val;
+ 	static struct parse_tag tags[] = {
+@@ -871,7 +871,7 @@ static long parse_pages_arg(const char *str, unsigned long min,
  
-+	rec->itr = itrace_record__init(&err);
-+	if (err)
-+		return err;
-+
-+	err = -ENOMEM;
- 	evsel_list = perf_evlist__new();
- 	if (evsel_list == NULL)
--		return -ENOMEM;
-+		goto out_itrace_free;
- 
- 	rec->evlist = evsel_list;
- 
-@@ -956,18 +1021,24 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
- 		usage_with_options(record_usage, record_options);
- 
-+	err = itrace_record__options(rec->itr, evsel_list, &rec->opts);
-+	if (err)
-+		goto out_symbol_exit;
-+
- 	if (perf_record_opts__config(&rec->opts)) {
- 		err = -EINVAL;
--		goto out_free_fd;
-+		goto out_delete_maps;
- 	}
- 
- 	err = __cmd_record(&record, argc, argv);
- 
- 	perf_evlist__munmap(evsel_list);
- 	perf_evlist__close(evsel_list);
--out_free_fd:
-+out_delete_maps:
- 	perf_evlist__delete_maps(evsel_list);
- out_symbol_exit:
- 	symbol__exit();
-+out_itrace_free:
-+	itrace_record__free(rec->itr);
- 	return err;
+ 	if ((pages == 0) && (min == 0)) {
+ 		/* leave number of pages at 0 */
+-	} else if (pages < (1UL << 31) && !is_power_of_2(pages)) {
++	} else if (po2 && pages < (1UL << 31) && !is_power_of_2(pages)) {
+ 		/* round pages up to next power of 2 */
+ 		pages = next_pow2(pages);
+ 		pr_info("rounding mmap pages size to %lu bytes (%lu pages)\n",
+@@ -884,17 +884,15 @@ static long parse_pages_arg(const char *str, unsigned long min,
+ 	return pages;
  }
+ 
+-int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+-				  int unset __maybe_unused)
++int __perf_evlist__parse_mmap_pages(unsigned int *mmap_pages, const char *str, bool po2)
+ {
+-	unsigned int *mmap_pages = opt->value;
+ 	unsigned long max = UINT_MAX;
+ 	long pages;
+ 
+ 	if (max < SIZE_MAX / page_size)
+ 		max = SIZE_MAX / page_size;
+ 
+-	pages = parse_pages_arg(str, 1, max);
++	pages = parse_pages_arg(str, 1, max, po2);
+ 	if (pages < 0) {
+ 		pr_err("Invalid argument for --mmap_pages/-m\n");
+ 		return -1;
+@@ -904,6 +902,12 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 	return 0;
+ }
+ 
++int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
++				  int unset __maybe_unused)
++{
++	return __perf_evlist__parse_mmap_pages(opt->value, str, true);
++}
++
+ /**
+  * perf_evlist__mmap_ex - Create mmaps to receive events.
+  * @evlist: list of events
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 7f56fdc..c5ef575 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -109,6 +109,8 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
+ 				  bool want_signal);
+ int perf_evlist__start_workload(struct perf_evlist *evlist);
+ 
++int __perf_evlist__parse_mmap_pages(unsigned int *mmap_pages, const char *str,
++				    bool po2);
+ int perf_evlist__parse_mmap_pages(const struct option *opt,
+ 				  const char *str,
+ 				  int unset);
 -- 
 1.8.5.1
 
