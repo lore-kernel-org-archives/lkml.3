@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab3LKVn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:43:27 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:37798 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab3LKVnX (ORCPT
+	id S1751400Ab3LKVuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:50:00 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43857 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3LKVt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:43:23 -0500
+	Wed, 11 Dec 2013 16:49:57 -0500
+Message-ID: <52A8DE00.6060007@gmail.com>
+Date: Wed, 11 Dec 2013 14:49:52 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20131211115239.GA21999@twins.programming.kicks-ass.net>
-References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
-	<1386478624.4748.19.camel@marge.simpson.net>
-	<CAJvTdKn_2mihtMLiQVNCOp_zokx8CsSr2c5NhbkbfJ-qvma-8Q@mail.gmail.com>
-	<1386559014.4875.16.camel@marge.simpson.net>
-	<1386652637.5374.72.camel@marge.simpson.net>
-	<alpine.DEB.2.02.1312101458040.28330@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de>
-	<1386732093.5964.6.camel@marge.simpson.net>
-	<alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
-	<20131211113839.GF21683@pd.tnic>
-	<20131211115239.GA21999@twins.programming.kicks-ass.net>
-Date: Wed, 11 Dec 2013 16:43:22 -0500
-X-Google-Sender-Auth: xjkAI5llww8lXnbh-gIdU93oF4A
-Message-ID: <CAJvTdKm5sdT8R-DNGNWyebTKYDqP49dQMds9++TkF=aF8O=V7Q@mail.gmail.com>
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-From: Len Brown <lenb@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 13/71] perf tools: Add machine__get_thread_pid()
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>	<1386765443-26966-14-git-send-email-alexander.shishkin@linux.intel.com>	<52A8BCCE.9010300@gmail.com> <87fvpzulvl.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87fvpzulvl.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the record...
+On 12/11/13, 2:18 PM, Andi Kleen wrote:
+> David Ahern <dsahern@gmail.com> writes:
+>>
+>> Are you looking up the current or next task? If the former why not use
+>> sample->pid rather than parsing the sched_switch tracepoint?
+>
+> The itrace stream doesn't have a pid field, and it needs the exact
+> time stamp of the switch. There may not actually be any samples
+> before decoding.
+>
+> -Andi
+>
 
-intel_idle doesn't check that bit because it doesn't run on model 29 --
-the Xeon 7400 was the "Dunnington" 4-socket generation based on Core2.
-Until now, i was not aware that this issue might apply to models other
-than that one.
+What I meant is this:
 
-Checking w/ the HW guys...
+perf record -e sched:sched_switch -a -- sleep 1 | perf script -f 
+comm,tid,pid,event,trace
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+
+qemu-system-x86  8688/8692  sched:sched_switch: 
+prev_comm=qemu-system-x86 prev_pid=8692 prev_prio=120 prev_state=S ==> 
+next_comm=swapper/15 next_pid=0 next_prio=120
+
+8688/8692 are the pid and tid of the running task. If you are monitoring 
+sched_switch events and looking at running task -- the one getting 
+scheduled out -- you don't need to parse the tracepoint. But, if you 
+want to know next task then you do need to parse it. I was wondering 
+which task is getting looked up.
+
+David
