@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3LKMjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:39:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:17698 "EHLO mga09.intel.com"
+	id S1752034Ab3LKMjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:39:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64824 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751955Ab3LKMi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:38:56 -0500
+	id S1751530Ab3LKMjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 07:39:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,871,1378882800"; 
-   d="scan'208";a="450497408"
+   d="scan'208";a="450497541"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v0 14/71] perf tools: Add cpu to struct thread
-Date: Wed, 11 Dec 2013 14:36:26 +0200
-Message-Id: <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v0 17/71] perf tools: Add perf_evlist__can_select_event()
+Date: Wed, 11 Dec 2013 14:36:29 +0200
+Message-Id: <1386765443-26966-18-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -31,93 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Tools may wish to track on which cpu a thread
-is running.  Add 'cpu' to struct thread for
-that purpose.  Also add machine functions to
-get / set the cpu for a tid.
+Add a function to determine whether an event can be
+selected.
 
-This will be used to determine the cpu when
-decoding a per-thread Instruction Trace.
+This function is needed to allow a tool to automatically
+select additional events, but only if they are available.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c | 26 ++++++++++++++++++++++++++
- tools/perf/util/machine.h |  3 +++
- tools/perf/util/thread.c  |  1 +
- tools/perf/util/thread.h  |  1 +
- 4 files changed, 31 insertions(+)
+ tools/perf/util/evlist.h |  2 ++
+ tools/perf/util/record.c | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 55f3608..52fbfb6 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
- 
- 	return thread->pid_;
- }
-+
-+int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
-+{
-+	struct thread *thread = machine__find_thread(machine, tid);
-+
-+	if (!thread)
-+		return -1;
-+
-+	if (pid)
-+		*pid = thread->pid_;
-+
-+	return thread->cpu;
-+}
-+
-+int machine__set_thread_cpu(struct machine *machine, pid_t pid, pid_t tid,
-+			    int cpu)
-+{
-+	struct thread *thread = machine__findnew_thread(machine, pid, tid);
-+
-+	if (!thread)
-+		return -ENOMEM;
-+
-+	thread->cpu = cpu;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index b800a5a..27486af 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -191,5 +191,8 @@ int machine__synthesize_threads(struct machine *machine, struct target *target,
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 649d6ea..8a04aae 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -193,4 +193,6 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
+ 	pc->data_tail = tail;
  }
  
- pid_t machine__get_thread_pid(struct machine *machine, pid_t tid);
-+int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid);
-+int machine__set_thread_cpu(struct machine *machine, pid_t pid, pid_t tid,
-+			    int cpu);
- 
- #endif /* __PERF_MACHINE_H */
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 49eaf1d..a120af3 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -19,6 +19,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		thread->pid_ = pid;
- 		thread->tid = tid;
- 		thread->ppid = -1;
-+		thread->cpu = -1;
- 		INIT_LIST_HEAD(&thread->comm_list);
- 
- 		comm_str = malloc(32);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 5b856bf..7914050 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -17,6 +17,7 @@ struct thread {
- 	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
-+	int			cpu;
- 	char			shortname[3];
- 	bool			comm_set;
- 	bool			dead; /* if set thread has exited */
++bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str);
++
+ #endif /* __PERF_EVLIST_H */
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index c8845b1..e510453 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -177,3 +177,40 @@ int perf_record_opts__config(struct perf_record_opts *opts)
+ {
+ 	return perf_record_opts__config_freq(opts);
+ }
++
++bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
++{
++	struct perf_evlist *temp_evlist;
++	struct perf_evsel *evsel;
++	int err, fd, cpu;
++	bool ret = false;
++
++	temp_evlist = perf_evlist__new();
++	if (!temp_evlist)
++		return false;
++
++	err = parse_events(temp_evlist, str);
++	if (err)
++		goto out_delete;
++
++	evsel = perf_evlist__last(temp_evlist);
++
++	if (!evlist || cpu_map__empty(evlist->cpus)) {
++		struct cpu_map *cpus = cpu_map__new(NULL);
++
++		cpu =  cpus ? cpus->map[0] : 0;
++		cpu_map__delete(cpus);
++	} else {
++		cpu = evlist->cpus->map[0];
++	}
++
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	if (fd >= 0) {
++		close(fd);
++		ret = true;
++	}
++
++out_delete:
++	perf_evlist__delete(temp_evlist);
++	return ret;
++}
 -- 
 1.8.5.1
 
