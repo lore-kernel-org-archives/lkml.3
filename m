@@ -1,108 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab3LKD3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 22:29:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54007 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab3LKD3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 22:29:46 -0500
-Message-ID: <52A7DC12.80408@redhat.com>
-Date: Wed, 11 Dec 2013 11:29:22 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH net V2 2/2] macvtap: signal truncated packets
-References: <1386654586-18151-1-git-send-email-jasowang@redhat.com> <1386654586-18151-2-git-send-email-jasowang@redhat.com> <20131210152951.GE25293@redhat.com>
-In-Reply-To: <20131210152951.GE25293@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751673Ab3LKDcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 22:32:39 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:27677 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921Ab3LKDcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 22:32:36 -0500
+X-IronPort-AV: E=Sophos;i="4.93,869,1378828800"; 
+   d="scan'208";a="9234377"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH V3] perf tools: Change the default filenames for perf kvm diff to perf.data.xxx and perf.data.xxx.old
+Date: Wed, 11 Dec 2013 11:30:44 -0500
+Message-Id: <1386779444-29624-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1386778882-27906-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+References: <1386778882-27906-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/11 11:32:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/11 11:32:17,
+	Serialize complete at 2013/12/11 11:32:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 11:29 PM, Michael S. Tsirkin wrote:
-> On Tue, Dec 10, 2013 at 01:49:46PM +0800, Jason Wang wrote:
->> > macvtap_put_user() never return a value grater than iov length, this in fact
->> > bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
->> > returning the size of packet plus the possible vlan header to let the trunca
->> > checking work.
->> > 
->> > Cc: Vlad Yasevich <vyasevich@gmail.com>
->> > Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> > Cc: Michael S. Tsirkin <mst@redhat.com>
->> > Signed-off-by: Jason Wang <jasowang@redhat.com>
->> > ---
->> > Changes from v1:
->> > - increase total unconditionally
->> > - do not move the structure veth out of the vlan handling block
->> > ---
->> >  drivers/net/macvtap.c | 19 ++++++++++---------
->> >  1 file changed, 10 insertions(+), 9 deletions(-)
->> > 
->> > diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> > index 957cc5c..ded4b2c 100644
->> > --- a/drivers/net/macvtap.c
->> > +++ b/drivers/net/macvtap.c
->> > @@ -770,7 +770,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
->> >  	int ret;
->> >  	int vnet_hdr_len = 0;
->> >  	int vlan_offset = 0;
->> > -	int copied;
->> > +	int copied, offset;
->> >  
->> >  	if (q->flags & IFF_VNET_HDR) {
->> >  		struct virtio_net_hdr vnet_hdr;
->> > @@ -785,7 +785,8 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
->> >  		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
->> >  			return -EFAULT;
->> >  	}
->> > -	copied = vnet_hdr_len;
->> > +	offset = copied = vnet_hdr_len;
->> > +	copied += skb->len;
->> >  
->> >  	if (!vlan_tx_tag_present(skb))
->> >  		len = min_t(int, skb->len, len);
->> > @@ -800,24 +801,24 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
->> >  
->> >  		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
->> >  		len = min_t(int, skb->len + VLAN_HLEN, len);
->> > +		copied += VLAN_HLEN;
->> >  
->> >  		copy = min_t(int, vlan_offset, len);
->> > -		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
->> > +		ret = skb_copy_datagram_const_iovec(skb, 0, iv, offset, copy);
->> >  		len -= copy;
->> > -		copied += copy;
->> > +		offset += copy;
->> >  		if (ret || !len)
->> >  			goto done;
->> >  
->> >  		copy = min_t(int, sizeof(veth), len);
->> > -		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
->> > +		ret = memcpy_toiovecend(iv, (void *)&veth, offset, copy);
->> >  		len -= copy;
->> > -		copied += copy;
->> > +		offset += copy;
->> >  		if (ret || !len)
->> >  			goto done;
->> >  	}
->> >  
->> > -	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
->> > -	copied += len;
->> > +	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, offset, len);
->> >  
->> >  done:
->> >  	return ret ? ret : copied;
-> I commented on this already. copied is how much we copied,
-> so its value is correct.
-> You want to name the new one total_len or something along
-> these lines and return it.
->
+Command perf kvm diff is used to diff perf.data.host and
+perf.data.guest by default currently. But it is not a good
+default behavior.
 
-Ok, to be same with tun, I will use "total" in V3.
+Example:
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules diff
+	failed to open perf.data.host: No such file or directory
+	Failed to open perf.data.host
 
-Thanks
+We are more frequently using it to diff the perf data files with
+the same type but captured in different times, such as
+perf.data.guest and perf.data.guest.old.
+
+This patch remove the hard coding of default filenames in builtin-diff.c,
+and generate the suitable filename from current options in perf kvm diff
+command. It makes the default behavior of perf kvm diff be more valuable.
+
+Verification:
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	  [ perf record: Woken up 1 times to write data ]
+	  [ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	  [ perf record: Woken up 1 times to write data ]
+	  [ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules diff
+	  # Event 'cycles'
+	  #
+	  # Baseline    Delta            Shared Object                                   Symbol
+	  # ........  .......  .......................  .......................................
+	  #
+	    92.00%           [guest.kernel.kallsyms]  [g] rb_insert_color
+	     7.51%           [guest.kernel.kallsyms]  [g] smp_apic_timer_interrupt
+	     0.48%   +0.60%  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+		    +16.35%  [guest.kernel.kallsyms]  [g] kvm_clock_get_cycles
+		    +82.56%  [guest.kernel.kallsyms]  [g] irqtime_account_process_tick.isra.2
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+Changelog:
+	changes for v3:
+		*fix a copy-past bug.
+	changes for v2:
+		*Add more commit message.
+
+ tools/perf/builtin-diff.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 2a85cc9..8d1b666 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -17,6 +17,7 @@
+ #include "util/symbol.h"
+ #include "util/util.h"
+ #include "util/data.h"
++#include "linux/string.h"
+ 
+ #include <stdlib.h>
+ #include <math.h>
+@@ -1001,8 +1002,28 @@ static int data_init(int argc, const char **argv)
+ 			use_default = false;
+ 		}
+ 	} else if (perf_guest) {
+-		defaults[0] = "perf.data.host";
+-		defaults[1] = "perf.data.guest";
++		char *file_name;
++		int len, ret;
++
++		file_name = (char *)get_filename_for_perf_kvm();
++		if (!file_name) {
++			pr_err("Failed to allocate memory for filename\n");
++			return -ENOMEM;
++		}
++
++		defaults[0] = strdup(file_name);
++		if (!defaults[0]) {
++			pr_err("Failed to allocate memory for defaults[0]\n");
++			return -ENOMEM;
++		}
++
++		len = strlen(file_name);
++		ret = str_append(&file_name, &len, ".old");
++		if (ret) {
++			pr_err("Failed to allocate memory for defaults[1]\n");
++			return -ENOMEM;
++		}
++		defaults[1] = file_name;
+ 	}
+ 
+ 	if (sort_compute >= (unsigned int) data__files_cnt) {
+-- 
+1.8.2.1
+
