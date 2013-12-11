@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3LKPf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 10:35:28 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:54526 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3LKPf0 (ORCPT
+	id S1751831Ab3LKPhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 10:37:46 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:44950 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab3LKPhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 10:35:26 -0500
+	Wed, 11 Dec 2013 10:37:45 -0500
+Message-ID: <52A87EA4.1020101@hp.com>
+Date: Wed, 11 Dec 2013 10:03:00 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-X-Originating-IP: [46.107.34.132]
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01BB245D@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A01BB245D@SHSMSX101.ccr.corp.intel.com>
-Date: Wed, 11 Dec 2013 16:35:25 +0100
-Message-ID: <CAJfpeguywUhetMDHJyQp0faAf8h4Ht4f1aNpCss1yF9OndToWg@mail.gmail.com>
-Subject: Re: [fuse-devel] fuse try to freeze with lock held
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Simon Kirby <sim@hostway.ca>, Peter Zijlstra <peterz@infradead.org>,
+        Ian Applegate <ia@cloudflare.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Lameter <cl@gentwo.org>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] mutexes: Add CONFIG_DEBUG_MUTEX_FASTPATH=y debug variant
+ to debug SMP races
+References: <CA+55aFyez7uZ6LeXrBRCqJzgJ=w4Xv+CV6QSYp5NkOJ2R9Xang@mail.gmail.com> <CA+55aFyhzvJrCiJOqUgL-98=MVutWePToQXaVfS2j6e5eetJSw@mail.gmail.com> <20131203085233.GA20179@gmail.com>
+In-Reply-To: <20131203085233.GA20179@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 27, 2013 at 3:19 AM, Liu, Chuansheng
-<chuansheng.liu@intel.com> wrote:
-> Hit the below warning when enabling the CONFIG_DEBUG_LOCK_ALLOC,
-> __fuse_request_send == >
-> request_wait_answer == >
-> wait_event_freezable == >
-> try_to_freeze()
+On 12/03/2013 03:52 AM, Ingo Molnar wrote:
+> *
+> I think we try that, to make mutexes safer in general.
 >
-> But here the inode->i_mutex is hold yet in vfs_readdir().
+> Can you see a way to do that fairly cheaply?
 >
-> Could anyone give some help? Thanks.
+> I can see two approaches, both rather radical:
+>
+> 1)
+>
+> Eliminate mutex->count and (ab-)use mutex->wait_lock as 'the' mutex
+> lock: with TICKET_SLOWPATH_FLAG used to denote waiters or so and care
+> taken to not use it as a 'real' spinlock but use the raw accessors.
+>
+> This would still allow a good mutex_lock() fastpath, as it would
+> essentially become spin_trylock() with an asm goto slow path helper
+> perhaps.
+>
+> Doing this would have various advantages:
+>
+>   - we'd eliminate much (all?) of per arch mutex code
+>   - we'd share spinlock and mutex low level implementations
+>   - we'd reduce struct mutex size by 4 bytes
+>
+> It's still early in the morning so I might be missing something
+> trivial though - this sounds suspiciously too easy ;-) Having a proper
+> mutex slowpath might not be so easy without changing the spinlock
+> code.
+>
+> 2)
+>
+> Another method would be to do the opposite: eliminate mutex->wait_lock
+> [for the non-debug case] and do everything via mutex->count and
+> mutex->owner.
+>
+> This saves even more space and potentially enables a tighter slowpath.
+>
+> It probably won't hurt the massively parallel case, as we already do
+> smart MCS locking via mutex->spin_mlock.
+>
+> So I'd argue for #2. (Assuming it addresses the problem)
+>
+> Thanks,
+>
+> 	Ingo
+>
 >
 
-Mainline doesn't have wait_event_freezable() in fuse.  What kernel
-variant is this?
+I also think that #2 is safer as messing with spinlock code can be 
+risky. However, #2 probably won't work for architectures that use the 
+generic mutex-xchg.h fastpath. Currently the following architectures use 
+mutex-xchg.h - unicore32, arc, arm and hexagon. Is there a reason why 
+they cannot be converted to use mutex-dec.h instead?
 
-Thanks,
-Miklos
+-Longman
 
 
-
->
-> [ 3148.552435] Freezing user space processes ... [ 3148.557781]
-> [ 3148.559505] =====================================
-> [ 3148.564803] [ BUG: du/21716 still has locks held! ]
-> [ 3148.570319] 3.10.16-261493-g1308ae2 #8 Tainted: G        W  O
->
-> [ 3148.586082]  #0:  (&type->i_mutex_dir_key#3){......}, at: [<c1341dc6>] vfs_readdir+0x66/0xd0
-> [ 3148.595967]
-> [ 3148.595967] stack backtrace:
-> [ 3148.600875] CPU: 2 PID: 21716 Comm: du Tainted: G        W  O 3.10.16-261493-g1308ae2 #8
-> [ 3148.609973]  d7e494e0 d7e494e0 cca6be78 c1b0fccb cca6be90 c12913f1 c1db2cc5 d7e497e4
-> [ 3148.618872]  000054d4 cca6beac cca6becc c1440d8b d7e494e0 f2557800 f12acedc 00000000
-> [ 3148.627747]  00000000 00000000 d7e494e0 c125f100 cca6beb8 cca6beb8 f12ace40 f2557800
-> [ 3148.636614] Call Trace:
-> [ 3148.639395]  [<c1b0fccb>] dump_stack+0x16/0x18
-> [ 3148.644375]  [<c12913f1>] debug_check_no_locks_held+0x91/0xa0
-> [ 3148.650862]  [<c1440d8b>] __fuse_request_send+0x14b/0x320
-> [ 3148.656961]  [<c125f100>] ? wake_up_bit+0x30/0x30
-> [ 3148.662242]  [<c1440f71>] fuse_request_send+0x11/0x20
-> [ 3148.667941]  [<c14455a9>] fuse_readdir+0x109/0x690
-> [ 3148.673327]  [<c1341dc6>] ? vfs_readdir+0x66/0xd0
-> [ 3148.678636]  [<c1b1bec5>] ? sub_preempt_count+0x45/0x60
-> [ 3148.684503]  [<c1b15694>] ? mutex_lock_killable_nested+0x214/0x300
-> [ 3148.691457]  [<c1341b60>] ? SyS_ioctl+0x90/0x90
-> [ 3148.696553]  [<c1341dc6>] ? vfs_readdir+0x66/0xd0
-> [ 3148.701857]  [<c1341b60>] ? SyS_ioctl+0x90/0x90
->
->
-> ------------------------------------------------------------------------------
-> Rapidly troubleshoot problems before they affect your business. Most IT
-> organizations don't have a clear picture of how application performance
-> affects their revenue. With AppDynamics, you get 100% visibility into your
-> Java,.NET, & PHP application. Start your 15-day FREE TRIAL of AppDynamics Pro!
-> http://pubads.g.doubleclick.net/gampad/clk?id=84349351&iu=/4140/ostg.clktrk
-> _______________________________________________
-> fuse-devel mailing list
-> fuse-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/fuse-devel
