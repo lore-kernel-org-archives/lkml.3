@@ -1,160 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab3LKOvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:51:45 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:33320 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab3LKOvm (ORCPT
+	id S1751933Ab3LKOv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:51:56 -0500
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:29048
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751836Ab3LKOvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:51:42 -0500
+	Wed, 11 Dec 2013 09:51:53 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.222;KIP:(null);UIP:(null);IPV:NLI;H:atltwp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 12
+X-BigFish: VPS12(zz98dI9371I148cI1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz177df4h8275eh17326ah1de097h186068ha1495iz2dh839h944hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h22d0h2336hf3eih1155h)
+X-WSS-ID: 0MXND4Z-08-NNT-02
+X-M-MSG: 
+From: Tom Lendacky <thomas.lendacky@amd.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH 3.4 01/25] crypto: scatterwalk - Set the chain pointer indication bit
+Date: Wed, 11 Dec 2013 08:51:44 -0600
+Message-ID: <2665532.GYRAgVKg91@tlendack-t1>
+Organization: Advanced Micro Devices, Inc.
+User-Agent: KMail/4.11.2 (Linux/3.11.0-13-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20131211020229.GB15638@kroah.com>
+References: <20131210075930.808460227@linuxfoundation.org> <986457BC66A4884EBFFDEFEBEB20F84C0B1EBBAA@satlexdag04.amd.com> <20131211020229.GB15638@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1386684833-24112-2-git-send-email-panto@antoniou-consulting.com>
-References: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com> <1386684833-24112-2-git-send-email-panto@antoniou-consulting.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 11 Dec 2013 14:51:19 +0000
-X-Google-Sender-Auth: api_fLygMMghj9HAv9Yt_I11xTg
-Message-ID: <CACxGe6vYKUCFboQ0iZqQAHcHahzA+AiRfv5nzkQhMzV=-C6UxQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] of: Fix early OF builtup on kobj-ification
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 2:13 PM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-> When booting platforms that do very early OF initialization before
-> core_initcalls are performed of_init is called too late.
->
-> This results in a hard-hard without getting a chance to output anything.
->
-> Fixed by adding a flag that marks when init has been done, and
-> performing the per-node init at that time.
->
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> ---
->  drivers/of/base.c | 28 +++++++++++++++++++++++-----
->  1 file changed, 23 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 734689b..a4f3dda 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -98,7 +98,7 @@ int __weak of_node_to_nid(struct device_node *np)
->   */
->  struct device_node *of_node_get(struct device_node *node)
->  {
-> -       if (node)
-> +       if (node && of_kset)
->                 kobject_get(&node->kobj);
->         return node;
->  }
-> @@ -156,7 +156,7 @@ static void of_node_release(struct kobject *kobj)
->   */
->  void of_node_put(struct device_node *node)
->  {
-> -       if (node)
-> +       if (node && of_kset)
->                 kobject_put(&node->kobj);
->  }
 
-As discussed on IRC, I don't think this is required.
+On Tuesday, December 10, 2013 06:02:29 PM Greg Kroah-Hartman wrote:
+> On Tue, Dec 10, 2013 at 02:46:46PM +0000, Lendacky, Thomas wrote:
+> > Hi Greg,
+> > 
+> > This patch is probably not needed in any of the stable branches, but if
+> > you do add it you'll need to also include a patch that changes the use
+> > of an sg_page to an sg_chain_ptr to prevent a BUG_ON when CONFIG_DEBUG_SG
+> > is enabled (http://marc.info/?l=linux-crypto-vger&m=138627061905651&w=2).
+> 
+> You are referring to commit 389a5390583a18e45bc4abd4439291abec5e7a63 in
+> Linus's tree, right?  It's in my queue to apply after 3.13-rc4 comes
 
->  EXPORT_SYMBOL(of_node_put);
-> @@ -202,9 +202,16 @@ static const char *safe_name(struct kobject *kobj, const char *orig_name)
->  static int __of_add_property(struct device_node *np, struct property *pp)
->  {
->         int rc;
-> +       bool secure;
-> +
-> +       /* note that we don't take a lock here */
-> +
-> +       /* fake the return while of_init is not yet called */
-> +       if (!of_kset)
-> +               return 0;
+Yes, that's the one.
 
-__of_add_property is called from three functions; __of_node_add(),
-of_add_property() and of_modify_property(). __of_node_add is never
-called on an unattached node. If the other two are getting called
-early, then I think they should make the check. I'll modify my patch
-to reflect that.
+Thanks,
+Tom
 
->
->         /* Important: Don't leak passwords */
-> -       bool secure = strncmp(pp->name, "security-", 9) == 0;
-> +       secure = strncmp(pp->name, "security-", 9) == 0;
->
->         pp->attr.attr.name = safe_name(&np->kobj, pp->name);
->         pp->attr.attr.mode = secure ? S_IRUSR : S_IRUGO;
-> @@ -222,6 +229,12 @@ static int __of_node_add(struct device_node *np)
->         struct property *pp;
->         int rc;
->
-> +       /* note that we don't take a lock here */
-> +
-> +       /* fake the return while of_init is not yet called */
-> +       if (!of_kset)
-> +               return 0;
-> +
+> out, but I guess it's good to add it now as it is known that this is an
+> issue to be resolved.
+> 
+> I'll go do that right now, thanks for letting me know.
+> 
+> greg k-h
 
-__of_node_add() never gets called before of_kset is initialized.
-
->         np->kobj.kset = of_kset;
->         if (!np->parent) {
->                 /* Nodes without parents are new top level trees */
-> @@ -245,11 +258,14 @@ static int __of_node_add(struct device_node *np)
->  int of_node_add(struct device_node *np)
->  {
->         int rc = 0;
-> -       kobject_init(&np->kobj, &of_node_ktype);
-> +
-> +       /* fake the return while of_init is not yet called */
->         mutex_lock(&of_aliases_mutex);
-> +       kobject_init(&np->kobj, &of_node_ktype);
-
-Why the kobject_init() move?
-
->         if (of_kset)
->                 rc = __of_node_add(np);
->         mutex_unlock(&of_aliases_mutex);
-> +
->         return rc;
->  }
->
-> @@ -275,14 +291,16 @@ static int __init of_init(void)
->
->         /* Make sure all nodes added before this time get added to sysfs */
->         mutex_lock(&of_aliases_mutex);
-> +
->         for_each_of_allnodes(np)
->                 __of_node_add(np);
-> -       mutex_unlock(&of_aliases_mutex);
->
->         /* Symlink in /proc as required by userspace ABI */
->         if (of_allnodes)
->                 proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
->
-> +       mutex_unlock(&of_aliases_mutex);
-> +
->         return 0;
->  }
->  core_initcall(of_init);
-> --
-> 1.7.12
->
