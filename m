@@ -1,368 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab3LKW2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:28:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51752 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab3LKW2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:28:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
-   d="scan'208";a="450805831"
-Subject: [PATCH 2/2] crypto: Added speed tests for AEAD crypto alogrithms
- in tcrypt test suite
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        "David S.Miller" <davem@davemloft.net>
-Cc: Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Huang Ying <ying.huang@intel.com>,
-        Alessandro Salvatori <sandr8@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org
-In-Reply-To: <a9c60c786b1b0d32664547342550ed3ddfe92364.1386772173.git.tim.c.chen@linux.intel.com>
-References: <a9c60c786b1b0d32664547342550ed3ddfe92364.1386772173.git.tim.c.chen@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Dec 2013 14:28:47 -0800
-Message-ID: <1386800927.2624.10.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1751498Ab3LKW3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:29:55 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:39658 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab3LKW3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:29:52 -0500
+Message-ID: <52A8E755.4080600@samsung.com>
+Date: Thu, 12 Dec 2013 07:29:41 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+CC: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        nicolas.pitre@linaro.org, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Heiko Stuebner <heiko@sntech.de>, linux-doc@vger.kernel.org,
+        tomasz.figa@gmail.com, Naour Romain <romain.naour@openwide.fr>,
+        Tarek Dakhran <t.dakhran@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, Dave.Martin@arm.com,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-samsung-soc@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v5 0/3] Exynos 5410 support
+References: <1386685599-31536-1-git-send-email-v.tyrtov@samsung.com>
+In-Reply-To: <1386685599-31536-1-git-send-email-v.tyrtov@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding simple speed tests for a range of block sizes for AEAD crypto
-algorithms.
+On 12/10/13 23:26, Vyacheslav Tyrtov wrote:
+> The series of patches represent support of Exynos 5410 SoC
+>
+> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
+>
+> Patches add new platform description, support of clock controller and device
+> tree for Exynos 5410.
+>
+> Dual cluster support for Exynos 5410 (EDCS) has been removed from this series
+> This patches is activating only the big cluster (all A15 cores)
+>
+> EDCS patch, which allows all 8 CPU cores (4 x A7 and 4 x A15)
+> to run at the same time, will be released separately
+>
+> Has been build on v3.13-rc3
+> Has been tested on Exynos 5410 reference board (exynos_defconfig)
+>
+> Thanks for all your comments to Tomasz Figa, Dave Martin and Nicolas Pitre.
+> I hope, this is enough clean and hasn't any dependencies to go through
+> Samsung tree. Kukjin, what do you think about it?
+>
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- crypto/tcrypt.c | 270 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- crypto/tcrypt.h |  10 +++
- 2 files changed, 280 insertions(+)
+OK, looks good and I've applied.
 
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index 001f07c..0d9003a 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -137,7 +137,272 @@ out:
- 	return ret;
- }
- 
-+static int test_aead_jiffies(struct aead_request *req, int enc,
-+				int blen, int sec)
-+{
-+	unsigned long start, end;
-+	int bcount;
-+	int ret;
-+
-+	for (start = jiffies, end = start + sec * HZ, bcount = 0;
-+	     time_before(jiffies, end); bcount++) {
-+		if (enc)
-+			ret = crypto_aead_encrypt(req);
-+		else
-+			ret = crypto_aead_decrypt(req);
-+
-+		if (ret)
-+			return ret;
-+	}
-+
-+	printk("%d operations in %d seconds (%ld bytes)\n",
-+	       bcount, sec, (long)bcount * blen);
-+	return 0;
-+}
-+
-+static int test_aead_cycles(struct aead_request *req, int enc, int blen)
-+{
-+	unsigned long cycles = 0;
-+	int ret = 0;
-+	int i;
-+
-+	local_irq_disable();
-+
-+	/* Warm-up run. */
-+	for (i = 0; i < 4; i++) {
-+		if (enc)
-+			ret = crypto_aead_encrypt(req);
-+		else
-+			ret = crypto_aead_decrypt(req);
-+
-+		if (ret)
-+			goto out;
-+	}
-+
-+	/* The real thing. */
-+	for (i = 0; i < 8; i++) {
-+		cycles_t start, end;
-+
-+		start = get_cycles();
-+		if (enc)
-+			ret = crypto_aead_encrypt(req);
-+		else
-+			ret = crypto_aead_decrypt(req);
-+		end = get_cycles();
-+
-+		if (ret)
-+			goto out;
-+
-+		cycles += end - start;
-+	}
-+
-+out:
-+	local_irq_enable();
-+
-+	if (ret == 0)
-+		printk("1 operation in %lu cycles (%d bytes)\n",
-+		       (cycles + 4) / 8, blen);
-+
-+	return ret;
-+}
-+
- static u32 block_sizes[] = { 16, 64, 256, 1024, 8192, 0 };
-+static u32 aead_sizes[] = { 16, 64, 256, 512, 1024, 2048, 4096, 8192, 0 };
-+
-+#define XBUFSIZE 8
-+#define MAX_IVLEN 32
-+
-+static int testmgr_alloc_buf(char *buf[XBUFSIZE])
-+{
-+	int i;
-+
-+	for (i = 0; i < XBUFSIZE; i++) {
-+		buf[i] = (void *)__get_free_page(GFP_KERNEL);
-+		if (!buf[i])
-+			goto err_free_buf;
-+	}
-+
-+	return 0;
-+
-+err_free_buf:
-+	while (i-- > 0)
-+		free_page((unsigned long)buf[i]);
-+
-+	return -ENOMEM;
-+}
-+
-+static void testmgr_free_buf(char *buf[XBUFSIZE])
-+{
-+	int i;
-+
-+	for (i = 0; i < XBUFSIZE; i++)
-+		free_page((unsigned long)buf[i]);
-+}
-+
-+static void sg_init_aead(struct scatterlist *sg, char *xbuf[XBUFSIZE],
-+			unsigned int buflen)
-+{
-+	int np = (buflen + PAGE_SIZE - 1)/PAGE_SIZE;
-+	int k, rem;
-+
-+	np = (np > XBUFSIZE) ? XBUFSIZE : np;
-+	rem = buflen % PAGE_SIZE;
-+	if (np > XBUFSIZE) {
-+		rem = PAGE_SIZE;
-+		np = XBUFSIZE;
-+	}
-+	sg_init_table(sg, np);
-+	for (k = 0; k < np; ++k) {
-+		if (k == (np-1))
-+			sg_set_buf(&sg[k], xbuf[k], rem);
-+		else
-+			sg_set_buf(&sg[k], xbuf[k], PAGE_SIZE);
-+	}
-+}
-+
-+static void test_aead_speed(const char *algo, int enc, unsigned int sec,
-+			    struct aead_speed_template *template,
-+			    unsigned int tcount, u8 authsize,
-+			    unsigned int aad_size, u8 *keysize)
-+{
-+	unsigned int i, j;
-+	struct crypto_aead *tfm;
-+	int ret = -ENOMEM;
-+	const char *key;
-+	struct aead_request *req;
-+	struct scatterlist *sg;
-+	struct scatterlist *asg;
-+	struct scatterlist *sgout;
-+	const char *e;
-+	void *assoc;
-+	char iv[MAX_IVLEN];
-+	char *xbuf[XBUFSIZE];
-+	char *xoutbuf[XBUFSIZE];
-+	char *axbuf[XBUFSIZE];
-+	unsigned int *b_size;
-+	unsigned int iv_len;
-+
-+	if (enc == ENCRYPT)
-+		e = "encryption";
-+	else
-+		e = "decryption";
-+
-+	if (testmgr_alloc_buf(xbuf))
-+		goto out_noxbuf;
-+	if (testmgr_alloc_buf(axbuf))
-+		goto out_noaxbuf;
-+	if (testmgr_alloc_buf(xoutbuf))
-+		goto out_nooutbuf;
-+
-+	sg = kmalloc(sizeof(*sg) * 8 * 3, GFP_KERNEL);
-+	if (!sg)
-+		goto out_nosg;
-+	asg = &sg[8];
-+	sgout = &asg[8];
-+
-+
-+	printk(KERN_INFO "\ntesting speed of %s %s\n", algo, e);
-+
-+	tfm = crypto_alloc_aead(algo, 0, 0);
-+
-+	if (IS_ERR(tfm)) {
-+		pr_err("alg: aead: Failed to load transform for %s: %ld\n", algo,
-+		       PTR_ERR(tfm));
-+		return;
-+	}
-+
-+	req = aead_request_alloc(tfm, GFP_KERNEL);
-+	if (!req) {
-+		pr_err("alg: aead: Failed to allocate request for %s\n",
-+		       algo);
-+		goto out;
-+	}
-+
-+	i = 0;
-+	do {
-+		b_size = aead_sizes;
-+		do {
-+			assoc = axbuf[0];
-+
-+			if (aad_size < PAGE_SIZE)
-+				memset(assoc, 0xff, aad_size);
-+			else {
-+				pr_err("associate data length (%u) too big\n",
-+					aad_size);
-+				goto out_nosg;
-+			}
-+			sg_init_one(&asg[0], assoc, aad_size);
-+
-+			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
-+				pr_err("template (%u) too big for tvmem (%lu)\n",
-+				       *keysize + *b_size,
-+					TVMEMSIZE * PAGE_SIZE);
-+				goto out;
-+			}
-+
-+			key = tvmem[0];
-+			for (j = 0; j < tcount; j++) {
-+				if (template[j].klen == *keysize) {
-+					key = template[j].key;
-+					break;
-+				}
-+			}
-+			ret = crypto_aead_setkey(tfm, key, *keysize);
-+			ret = crypto_aead_setauthsize(tfm, authsize);
-+
-+			iv_len = crypto_aead_ivsize(tfm);
-+			if (iv_len)
-+				memset(&iv, 0xff, iv_len);
-+
-+			crypto_aead_clear_flags(tfm, ~0);
-+			printk(KERN_INFO "test %u (%d bit key, %d byte blocks): ",
-+					i, *keysize * 8, *b_size);
-+
-+
-+			memset(tvmem[0], 0xff, PAGE_SIZE);
-+
-+			if (ret) {
-+				pr_err("setkey() failed flags=%x\n",
-+						crypto_aead_get_flags(tfm));
-+				goto out;
-+			}
-+
-+			sg_init_aead(&sg[0], xbuf,
-+				    *b_size + (enc ? authsize : 0));
-+
-+			sg_init_aead(&sgout[0], xoutbuf,
-+				    *b_size + (enc ? authsize : 0));
-+
-+			aead_request_set_crypt(req, sg, sgout, *b_size, iv);
-+			aead_request_set_assoc(req, asg, aad_size);
-+
-+			if (sec)
-+				ret = test_aead_jiffies(req, enc, *b_size, sec);
-+			else
-+				ret = test_aead_cycles(req, enc, *b_size);
-+
-+			if (ret) {
-+				pr_err("%s() failed return code=%d\n", e, ret);
-+				break;
-+			}
-+			b_size++;
-+			i++;
-+		} while (*b_size);
-+		keysize++;
-+	} while (*keysize);
-+
-+out:
-+	crypto_free_aead(tfm);
-+	kfree(sg);
-+out_nosg:
-+	testmgr_free_buf(xoutbuf);
-+out_nooutbuf:
-+	testmgr_free_buf(axbuf);
-+out_noaxbuf:
-+	testmgr_free_buf(xbuf);
-+out_noxbuf:
-+	return;
-+}
- 
- static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
- 			      struct cipher_speed_template *template,
-@@ -1427,6 +1692,11 @@ static int do_test(int m)
- 				  speed_template_32_64);
- 		break;
- 
-+	case 211:
-+		test_aead_speed("rfc4106(gcm(aes))", ENCRYPT, sec,
-+				NULL, 0, 16, 8, aead_speed_template_20);
-+		break;
-+
- 	case 300:
- 		/* fall through */
- 
-diff --git a/crypto/tcrypt.h b/crypto/tcrypt.h
-index ecdeeb1..6c7e21a 100644
---- a/crypto/tcrypt.h
-+++ b/crypto/tcrypt.h
-@@ -22,6 +22,11 @@ struct cipher_speed_template {
- 	unsigned int klen;
- };
- 
-+struct aead_speed_template {
-+	const char *key;
-+	unsigned int klen;
-+};
-+
- struct hash_speed {
- 	unsigned int blen;	/* buffer length */
- 	unsigned int plen;	/* per-update length */
-@@ -58,6 +63,11 @@ static u8 speed_template_32_48_64[] = {32, 48, 64, 0};
- static u8 speed_template_32_64[] = {32, 64, 0};
- 
- /*
-+ * AEAD speed tests
-+ */
-+static u8 aead_speed_template_20[] = {20, 0};
-+
-+/*
-  * Digest speed tests
-  */
- static struct hash_speed generic_hash_speed_template[] = {
--- 
-1.7.11.7
+Thanks,
+Kukjin
 
 
+> Vyacheslav.
+>
+>
+> Changelog:
+>
+> v5:
+> 	EDCS removed to separate patch.
+>
+> 	In arch/arm/mach-exynos/Kconfig
+> 1. Removed select ARM_CCI and MCPM.
+> 	In arch/arm/mach-exynos/platsmp.c
+> 1. Added correct boot_reg for exynos5410.
+> 	In arch/arm/boot/dts/exynos5410.dtsi
+> 1. Removed cortex-a7 cpu nodes and cci node.
+>
+> v4:
+> 	In arch/arm/mach-exynos/edcs.c
+> 1. Renamed all exynos_ prefixes to edcs_.
+> 2. Reworked edcs_core_power_up/down functions.
+> 3. Removed exynos_core_power_control function.
+> 4. Added this_core_to_pcpu function.
+> 5. Added core_power_state function which detects if cpu is being reset.
+> 6. Replaced cache flush sequences with v7_exit_coherency_flush().
+> 7. exynos_core_power_down moved to lock protected area.
+> 8. edcs_power_down_finish implemented.
+> 	In Documentation/devicetree/bindings/clock/exynos5410-clock.txt
+> 1. External clocks documented.
+> 	In arch/arm/boot/dts/exynos5410-smdk5410.dts
+> 1. oscclk node corrected according to ePAPR recommendation.
+> 	In arch/arm/boot/dts/exynos5410.dtsi
+> 1. mct@101C0000 node renamed to timer@101C0000.
+> 2. "interrupt-controller" line removed from mct node.
+> 3. mct_map renamed to interrupt_map.
+> 	In arch/arm/mach-exynos/Kconfig
+> 1. some cosmetic corrections.
+> 	In include/dt-bindings/clock/exynos5410.h
+> 1. Unnecessary defines removed.
+>
+> v3:
+> 	In drivers/clk/samsung/clk-exynos5410.c
+> 1. Fixed rate clock "samsung,clock-oscclk" removed.
+> 	In arch/arm/boot/dts/exynos5410.dtsi
+> 1. In mct node clock CLK_FIN_PLL replaced with generic fixed rate oscclk.
+> 	In arch/arm/boot/dts/exynos5410-smdk5410.dts
+> 1. Fixed rate oscclk clock added.
+> 	In arch/arm/mach-exynos/edcs.c
+> 1. Added write memory barrier in exynos_core_power_control function.
+> 2. __raw_readl/__raw_writel replaced with readl_relaxed/writel_relaxed.
+> 3. #define added for some magic constants.
+> 4. Disabled the GIC CPU interface in exynos_power_down function.
+>
+> v2:
+> 	In drivers/clk/samsung/clk-exynos5410.c
+> 1. Clock driver converted to use preprocessor macros instead of enums.
+>     Clock IDs now defined in include/dt-bindings/clock/exynos5410.h.
+> 2. Unused spinlock removed.
+> 3. Function exynos5410_clk_init defined as static.
+>     Struct exynos5410_fixed_rate_ext_clks defined as static.
+>     Struct exynos5410_mux_clks defined as static.
+>     Struct exynos5410_div_clks defined as static.
+>     Struct exynos5410_gate_clks defined as static.
+> 4. Removed aliases.
+> 5. Pll's magic register offsets defined as preprocessor macros.
+> 6. Redundant check of device_node pointer removed.
+> 	
+> 	In arch/arm/boot/dts/exynos5410.dtsi
+> 1. dwmmcX nodes renamed to mmc.
+>     dwmmc_X renamed to mmc_X.
+>     dwmmc status="disabled" field added.
+>     fifo-depth field moved from arch/arm/boot/dts/exynos5410-smdk5410.dts
+> 2. Blank lines added where necessary.
+> 3. cpu@ suffixes corrected.
+> 4. edcs node removed.
+> 5. Hexadecimal characters case corrected.
+> 6. Clock IDs replaced with preprocessor macros.
+> 	
+> 	In arch/arm/boot/dts/exynos5410-smdk5410.dts
+> 1. status = "okay" field added to mmc nodes.
+> 	
+> 	In arch/arm/mach-exynos/edcs.c
+> 1. "kfs_" prefix replaced with "edcs_"
+> 2. EDCS_CPUS_PER_CLUSTER and EDCS_CLUSTERS defined instead of MCPM's values.
+> 3. Cache handling sequence borrowed from arch/arm/mach-vexpress/tc2_pm.c
+> 4. mcpm_sync_init() call added.
+> 5. power management functions reworked.
+> 	
+> 	Other
+> 1. Documentation/devicetree/bindings/clock/exynos5410-clock.txt corrected.
+> 2. Removed smdk5410_defconfig. Instead SOC_EXYNOS5410 now selects MCPM and
+>     ARM_CCI in arch/arm/mach-exynos/Kconfig.
+> 3. edcs_status driver removed.
+>
+> Tarek Dakhran (3):
+>    ARM: EXYNOS: Add support for EXYNOS5410 SoC
+>    clk: exynos5410: register clocks using common clock framework
+>    ARM: dts: Add initial device tree support for EXYNOS5410
+>
+>   .../devicetree/bindings/clock/exynos5410-clock.txt |  54 +++++
+>   arch/arm/boot/dts/Makefile                         |   1 +
+>   arch/arm/boot/dts/exynos5410-smdk5410.dts          |  72 +++++++
+>   arch/arm/boot/dts/exynos5410.dtsi                  | 145 +++++++++++++
+>   arch/arm/mach-exynos/Kconfig                       |  10 +
+>   arch/arm/mach-exynos/common.c                      |  18 ++
+>   arch/arm/mach-exynos/include/mach/map.h            |   1 +
+>   arch/arm/mach-exynos/mach-exynos5-dt.c             |   1 +
+>   arch/arm/mach-exynos/platsmp.c                     |   2 +
+>   arch/arm/plat-samsung/include/plat/cpu.h           |   8 +
+>   arch/arm/plat-samsung/include/plat/map-s5p.h       |   3 +
+>   drivers/clk/samsung/Makefile                       |   1 +
+>   drivers/clk/samsung/clk-exynos5410.c               | 239 +++++++++++++++++++++
+>   include/dt-bindings/clock/exynos5410.h             |  32 +++
+>   14 files changed, 587 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/clock/exynos5410-clock.txt
+>   create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
+>   create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
+>   create mode 100644 drivers/clk/samsung/clk-exynos5410.c
+>   create mode 100644 include/dt-bindings/clock/exynos5410.h
+>
