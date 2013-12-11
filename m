@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab3LKPeY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 10:34:24 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:17306 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750971Ab3LKPeX (ORCPT
+	id S1751745Ab3LKPf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 10:35:28 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:54526 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab3LKPf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 10:34:23 -0500
-Date: Wed, 11 Dec 2013 10:34:20 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Corey Minyard <cminyard@mvista.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH RT 2/5] a few open coded completions
-Message-ID: <20131211103420.291aa61c@gandalf.local.home>
-In-Reply-To: <52A875D9.6090609@mvista.com>
-References: <20131211003732.351606520@goodmis.org>
-	<20131211003801.836995968@goodmis.org>
-	<52A875D9.6090609@mvista.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 11 Dec 2013 10:35:26 -0500
+MIME-Version: 1.0
+X-Originating-IP: [46.107.34.132]
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01BB245D@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A01BB245D@SHSMSX101.ccr.corp.intel.com>
+Date: Wed, 11 Dec 2013 16:35:25 +0100
+Message-ID: <CAJfpeguywUhetMDHJyQp0faAf8h4Ht4f1aNpCss1yF9OndToWg@mail.gmail.com>
+Subject: Re: [fuse-devel] fuse try to freeze with lock held
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013 08:25:29 -0600
-Corey Minyard <cminyard@mvista.com> wrote:
+On Wed, Nov 27, 2013 at 3:19 AM, Liu, Chuansheng
+<chuansheng.liu@intel.com> wrote:
+> Hit the below warning when enabling the CONFIG_DEBUG_LOCK_ALLOC,
+> __fuse_request_send == >
+> request_wait_answer == >
+> wait_event_freezable == >
+> try_to_freeze()
+>
+> But here the inode->i_mutex is hold yet in vfs_readdir().
+>
+> Could anyone give some help? Thanks.
+>
 
-> This chunk doesn't seem to belong in this patch...
-
-You're right!
-
-I noticed this after I sent these out.
-
-This even caused a conflict, where I fixed it up.
-
-As this chunck doesn't need to be in the stable branch, I'm just going
-to nuke it.
-
-I'll even fix up the change log too.
+Mainline doesn't have wait_event_freezable() in fuse.  What kernel
+variant is this?
 
 Thanks,
+Miklos
 
--- Steve
 
-> 
-> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> index 819923f..ba78526 100644
-> --- a/include/linux/netdevice.h
-> +++ b/include/linux/netdevice.h
-> @@ -1139,7 +1139,7 @@ struct net_device {
->  	unsigned char		perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
->  	unsigned char		addr_assign_type; /* hw address assignment type */
->  	unsigned char		addr_len;	/* hardware address length	*/
-> -	unsigned char		neigh_priv_len;
-> +	unsigned short		neigh_priv_len;
->  	unsigned short          dev_id;		/* for shared network cards */
->  
->  	spinlock_t		addr_list_lock;
 
+>
+> [ 3148.552435] Freezing user space processes ... [ 3148.557781]
+> [ 3148.559505] =====================================
+> [ 3148.564803] [ BUG: du/21716 still has locks held! ]
+> [ 3148.570319] 3.10.16-261493-g1308ae2 #8 Tainted: G        W  O
+>
+> [ 3148.586082]  #0:  (&type->i_mutex_dir_key#3){......}, at: [<c1341dc6>] vfs_readdir+0x66/0xd0
+> [ 3148.595967]
+> [ 3148.595967] stack backtrace:
+> [ 3148.600875] CPU: 2 PID: 21716 Comm: du Tainted: G        W  O 3.10.16-261493-g1308ae2 #8
+> [ 3148.609973]  d7e494e0 d7e494e0 cca6be78 c1b0fccb cca6be90 c12913f1 c1db2cc5 d7e497e4
+> [ 3148.618872]  000054d4 cca6beac cca6becc c1440d8b d7e494e0 f2557800 f12acedc 00000000
+> [ 3148.627747]  00000000 00000000 d7e494e0 c125f100 cca6beb8 cca6beb8 f12ace40 f2557800
+> [ 3148.636614] Call Trace:
+> [ 3148.639395]  [<c1b0fccb>] dump_stack+0x16/0x18
+> [ 3148.644375]  [<c12913f1>] debug_check_no_locks_held+0x91/0xa0
+> [ 3148.650862]  [<c1440d8b>] __fuse_request_send+0x14b/0x320
+> [ 3148.656961]  [<c125f100>] ? wake_up_bit+0x30/0x30
+> [ 3148.662242]  [<c1440f71>] fuse_request_send+0x11/0x20
+> [ 3148.667941]  [<c14455a9>] fuse_readdir+0x109/0x690
+> [ 3148.673327]  [<c1341dc6>] ? vfs_readdir+0x66/0xd0
+> [ 3148.678636]  [<c1b1bec5>] ? sub_preempt_count+0x45/0x60
+> [ 3148.684503]  [<c1b15694>] ? mutex_lock_killable_nested+0x214/0x300
+> [ 3148.691457]  [<c1341b60>] ? SyS_ioctl+0x90/0x90
+> [ 3148.696553]  [<c1341dc6>] ? vfs_readdir+0x66/0xd0
+> [ 3148.701857]  [<c1341b60>] ? SyS_ioctl+0x90/0x90
+>
+>
+> ------------------------------------------------------------------------------
+> Rapidly troubleshoot problems before they affect your business. Most IT
+> organizations don't have a clear picture of how application performance
+> affects their revenue. With AppDynamics, you get 100% visibility into your
+> Java,.NET, & PHP application. Start your 15-day FREE TRIAL of AppDynamics Pro!
+> http://pubads.g.doubleclick.net/gampad/clk?id=84349351&iu=/4140/ostg.clktrk
+> _______________________________________________
+> fuse-devel mailing list
+> fuse-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/fuse-devel
