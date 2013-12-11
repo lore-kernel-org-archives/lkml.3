@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab3LKDYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 22:24:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54013 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab3LKDYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 22:24:30 -0500
-Date: Tue, 10 Dec 2013 22:24:29 -0500 (EST)
-Message-Id: <20131210.222429.1538443980618684288.davem@davemloft.net>
-To: ydroneaud@opteya.com
-Cc: viro@ZenIV.linux.org.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] net: handle error more gracefully in socketpair()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386625340-8490-1-git-send-email-ydroneaud@opteya.com>
-References: <20131206104805.GM10323@ZenIV.linux.org.uk>
-	<20131206.121411.2205219888474731457.davem@davemloft.net>
-	<1386625340-8490-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751865Ab3LKD1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 22:27:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942Ab3LKD1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 22:27:37 -0500
+Message-ID: <52A7DB8E.9080101@redhat.com>
+Date: Wed, 11 Dec 2013 11:27:10 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wuzhy@linux.vnet.ibm.com, mst@redhat.com, vyasevich@gmail.com
+Subject: Re: [PATCH net V2 1/2] tun: unbreak truncated packet signalling
+References: <1386654586-18151-1-git-send-email-jasowang@redhat.com> <20131210.221144.1520834419856689475.davem@davemloft.net>
+In-Reply-To: <20131210.221144.1520834419856689475.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 10 Dec 2013 19:24:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yann Droneaud <ydroneaud@opteya.com>
-Date: Mon,  9 Dec 2013 22:42:20 +0100
+On 12/11/2013 11:11 AM, David Miller wrote:
+> You and Michael are still discussing these changes it seems.
+>
+> I accidently commited the first version of these patches, but then
+> immediately reverted that after I saw the followups.
+>
+> Let me know when you have something both of you are happy with.
+>
+> Thanks.
 
-> This patch makes socketpair() use error paths which do not
-> rely on heavy-weight call to sys_close(): it's better to try
-> to push the file descriptor to userspace before installing
-> the socket file to the file descriptor, so that errors are
-> catched earlier and being easier to handle.
-> 
-> Using sys_close() seems to be the exception, while writing the
-> file descriptor before installing it look like it's more or less
-> the norm: eg. except for code used in init/, error handling
-> involve fput() and put_unused_fd(), but not sys_close().
-> 
-> This make socketpair() usage of sys_close() quite unusual.
-> So it deserves to be replaced by the common pattern relying on
-> fput() and put_unused_fd() just like, for example, the one used
-> in pipe(2) or recvmsg(2).
-> 
-> Three distinct error paths are still needed since calling
-> fput() on file structure returned by sock_alloc_file() will
-> implicitly call sock_release() on the associated socket
-> structure.
-> 
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-> Link: http://marc.info/?i=1385979146-13825-1-git-send-email-ydroneaud@opteya.com
+Sure, I will post v3 which should address all comments from Michael.
 
-Applied to net-next, thanks.
+Thanks
