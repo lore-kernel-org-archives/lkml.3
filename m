@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab3LKORw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:17:52 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:39544 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3LKORt (ORCPT
+	id S1751643Ab3LKOTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:19:18 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:34839 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3LKOTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:17:49 -0500
-Message-ID: <52A87401.5030001@monstr.eu>
-Date: Wed, 11 Dec 2013 15:17:37 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 11 Dec 2013 09:19:17 -0500
+Date: Wed, 11 Dec 2013 11:19:08 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
+Message-ID: <20131211141908.GC1458@ghostprotocols.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 4/5] dt/bindings: remove device_type "network" references
-References: <1386760555-22732-1-git-send-email-grant.likely@linaro.org> <1386760555-22732-5-git-send-email-grant.likely@linaro.org>
-In-Reply-To: <1386760555-22732-5-git-send-email-grant.likely@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="vBl60LhE47qPLUR5oJjopaVBpEPhUQkau"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---vBl60LhE47qPLUR5oJjopaVBpEPhUQkau
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Em Wed, Dec 11, 2013 at 02:36:26PM +0200, Alexander Shishkin escreveu:
+> From: Adrian Hunter <adrian.hunter@intel.com>
+> 
+> Tools may wish to track on which cpu a thread
+> is running.  Add 'cpu' to struct thread for
+> that purpose.  Also add machine functions to
+> get / set the cpu for a tid.
+> 
+> This will be used to determine the cpu when
+> decoding a per-thread Instruction Trace.
+> 
+> 
+> +++ b/tools/perf/util/machine.c
+> @@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
+>  
+>  	return thread->pid_;
+>  }
+> +
+> +int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
+> +{
+> +	struct thread *thread = machine__find_thread(machine, tid);
+> +
+> +	if (!thread)
+> +		return -1;
+> +
+> +	if (pid)
+> +		*pid = thread->pid_;
+> +
+> +	return thread->cpu;
+> +}
 
-On 12/11/2013 12:15 PM, Grant Likely wrote:
-> device_type is deprecated and the kernel doesn't require it in most
-> cases. The only exceptions for flat tree users are the "gianfar",
-> "ucc_geth" and "ibm,emac" bindings, and arguably that requirement could=
+What is the problem with:
 
-> be relaxed for ucc_geth and ibm,emac (that is a task for separate
-> patches though).
->=20
-> This patch removes references to device_type=3D"network" from the bindi=
-ng
-> documentation where possible and removes the properties from ARM and
-> microblaze dts files. This patch does not modify the powerpc .dts files=
+	struct thread *thread = machine__find_thread(machine, tid);
+	pid_t pid = thread->pid_;
+	int cpu = thread->cpu;
 
-> since there are a much larger number of them affected and I think the
-> ucc_geth, ibm,emac and gianfar users should be addressed before clearin=
-g
-> out the references to reduce the chance of breakage.
->=20
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Michal Simek <monstr@monstr.eu>
-> ---
->  Documentation/devicetree/bindings/marvell.txt                    | 2 -=
--
->  Documentation/devicetree/bindings/net/marvell-orion-net.txt      | 2 -=
--
->  Documentation/devicetree/bindings/powerpc/fsl/cpm_qe/network.txt | 1 -=
+In your case you'll have:
 
->  arch/arm/boot/dts/dove.dtsi                                      | 1 -=
+	int pid;
+	int cpu = machine__get_thread_cpu(machine, tid, &pid);
 
->  arch/arm/boot/dts/kirkwood.dtsi                                  | 2 -=
--
->  arch/arm/boot/dts/orion5x.dtsi                                   | 1 -=
+Which is slightly more compact, but then we end up with a function that
+from its name should just get a 'cpu' but also asks for the pid.
 
->  arch/microblaze/platform/generic/system.dts                      | 1 -=
+I think it is better to just use what we have (machine__find_thread),
+have a 'thread' variable and then use any of its members, directly.
 
->  7 files changed, 10 deletions(-)
-
-Acked-by: Michal Simek <monstr@monstr.eu>
-
-btw: what device types can be used?
-I am having them for serial, watchdog, pci, memory, cpu, ethernet-phy
-(will remove network from our generator).
-
-when I grep kernel there are others types like soc, ipmi and a lot for po=
-werpc.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---vBl60LhE47qPLUR5oJjopaVBpEPhUQkau
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKodAEACgkQykllyylKDCE3oQCfYWDcIe6YGTjoGRRX5ZJq78Y0
-zpwAnjr3Xmip47sdCv2q3ZOSjW6w/eIT
-=8Abu
------END PGP SIGNATURE-----
-
---vBl60LhE47qPLUR5oJjopaVBpEPhUQkau--
+- ARnaldo
