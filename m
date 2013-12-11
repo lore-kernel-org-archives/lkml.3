@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab3LKLGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:06:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60233 "EHLO
+	id S1752326Ab3LKLGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:06:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60238 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab3LKLGE (ORCPT
+	with ESMTP id S1752280Ab3LKLGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:06:04 -0500
-Date: Wed, 11 Dec 2013 03:05:37 -0800
+	Wed, 11 Dec 2013 06:06:08 -0500
+Date: Wed, 11 Dec 2013 03:05:47 -0800
 From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-e1a2b174dbbe08dce12bde9f05f64dbbae652bed@git.kernel.org>
+Message-ID: <tip-d8d9608fdd19f85a524db0a41bc2def5c88cbdd0@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
-In-Reply-To: <5e09a5c47e8a495e888cbdc65a6fafb2c950f529.1386368672.git.yangds.fnst@cn.fujitsu.com>
-References: <5e09a5c47e8a495e888cbdc65a6fafb2c950f529.1386368672.git.yangds.fnst@cn.fujitsu.com>
+In-Reply-To: <72857ed89642e0633f5e88f7e7abbc9645359e8e.1386368672.git.yangds.fnst@cn.fujitsu.com>
+References: <72857ed89642e0633f5e88f7e7abbc9645359e8e.1386368672.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf kvm:
-  Move code to generate filename for perf-kvm to function.
-Git-Commit-ID: e1a2b174dbbe08dce12bde9f05f64dbbae652bed
+  Make perf kvm diff support --guestmount.
+Git-Commit-ID: d8d9608fdd19f85a524db0a41bc2def5c88cbdd0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,83 +28,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:05:43 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:05:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e1a2b174dbbe08dce12bde9f05f64dbbae652bed
-Gitweb:     http://git.kernel.org/tip/e1a2b174dbbe08dce12bde9f05f64dbbae652bed
+Commit-ID:  d8d9608fdd19f85a524db0a41bc2def5c88cbdd0
+Gitweb:     http://git.kernel.org/tip/d8d9608fdd19f85a524db0a41bc2def5c88cbdd0
 Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Fri, 6 Dec 2013 17:25:51 -0500
+AuthorDate: Fri, 6 Dec 2013 17:25:52 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 9 Dec 2013 15:23:56 -0300
+CommitDate: Mon, 9 Dec 2013 15:24:25 -0300
 
-perf kvm: Move code to generate filename for perf-kvm to function.
+perf kvm: Make perf kvm diff support --guestmount.
 
-The code in builtin-kvm.c to generate filename for perf-kvm is useful to
-other command such as builtin-diff.
+In manpage of perf-kvm, --guestmount is supported by diff command, but
+it does not work well.
 
-This patch move the related code form builtin-kvm.c to util/util.c and
-wrap them in a function named get_filename_for_perf_kvm.
+This patch change the extend the checking in buildid-diff from
+guestkallsyms or guestmodules to perf_guest. Then this checking can
+cover the all cases perf kvm is used for.
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/5e09a5c47e8a495e888cbdc65a6fafb2c950f529.1386368672.git.yangds.fnst@cn.fujitsu.com
+Link: http://lkml.kernel.org/r/72857ed89642e0633f5e88f7e7abbc9645359e8e.1386368672.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c |  7 +------
- tools/perf/util/util.c   | 14 ++++++++++++++
- tools/perf/util/util.h   |  2 ++
- 3 files changed, 17 insertions(+), 6 deletions(-)
+ tools/perf/builtin-diff.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index c2e5d56..c6fa3cb 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1713,12 +1713,7 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 		perf_guest = 1;
- 
- 	if (!file_name) {
--		if (perf_host && !perf_guest)
--			file_name = strdup("perf.data.host");
--		else if (!perf_host && perf_guest)
--			file_name = strdup("perf.data.guest");
--		else
--			file_name = strdup("perf.data.kvm");
-+		file_name = get_filename_for_perf_kvm();
- 
- 		if (!file_name) {
- 			pr_err("Failed to allocate memory for filename\n");
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index bae8756..4a57609 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -482,3 +482,17 @@ int filename__read_str(const char *filename, char **buf, size_t *sizep)
- 	close(fd);
- 	return err;
- }
-+
-+const char *get_filename_for_perf_kvm(void)
-+{
-+	const char *filename;
-+
-+	if (perf_host && !perf_guest)
-+		filename = strdup("perf.data.host");
-+	else if (!perf_host && perf_guest)
-+		filename = strdup("perf.data.guest");
-+	else
-+		filename = strdup("perf.data.kvm");
-+
-+	return filename;
-+}
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 659abf3..0171213 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -321,4 +321,6 @@ void free_srcline(char *srcline);
- 
- int filename__read_int(const char *filename, int *value);
- int filename__read_str(const char *filename, char **buf, size_t *sizep);
-+
-+const char *get_filename_for_perf_kvm(void);
- #endif /* GIT_COMPAT_UTIL_H */
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 3b67ea2..2a85cc9 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -1000,8 +1000,7 @@ static int data_init(int argc, const char **argv)
+ 			data__files_cnt = argc;
+ 			use_default = false;
+ 		}
+-	} else if (symbol_conf.default_guest_vmlinux_name ||
+-		   symbol_conf.default_guest_kallsyms) {
++	} else if (perf_guest) {
+ 		defaults[0] = "perf.data.host";
+ 		defaults[1] = "perf.data.guest";
+ 	}
