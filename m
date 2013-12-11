@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3LKVDO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:03:14 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:45810 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab3LKVDH (ORCPT
+	id S1752002Ab3LKVDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:03:21 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:64156 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3LKVDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:03:07 -0500
+	Wed, 11 Dec 2013 16:03:14 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, kay@vrfy.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/6] kernfs: add @mode to kernfs_create_dir[_ns]()
-Date: Wed, 11 Dec 2013 16:02:55 -0500
-Message-Id: <1386795780-23324-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/6] kernfs: allow negative dentries
+Date: Wed, 11 Dec 2013 16:02:59 -0500
+Message-Id: <1386795780-23324-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1386795780-23324-1-git-send-email-tj@kernel.org>
 References: <1386795780-23324-1-git-send-email-tj@kernel.org>
@@ -21,122 +21,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs assumed 0755 for all newly created directories and kernfs
-inherited it.  This assumption is unnecessarily restrictive and
-inconsistent with kernfs_create_file[_ns]().  This patch adds @mode
-parameter to kernfs_create_dir[_ns]() and update uses in sysfs
-accordingly.  Among others, this will be useful for implementations of
-the planned ->mkdir() method.
+kernfs doesn't allow negative dentries - kernfs_iop_lookup() returns
+ERR_PTR(-ENOENT) instead of NULL which short-circuits negative dentry
+creation and kernfs's d_delete() callback, kernfs_dop_delete(),
+returns 1 for all removed nodes.  This in turn allows
+kernfs_dop_revalidate() to assume that there's no negative dentry for
+kernfs.
 
-This patch doesn't introduce any behavior differences.
+This worked fine for sysfs but kernfs is scheduled to grow mkdir(2)
+support which depend on negative dentries.  This patch updates so that
+kernfs allows negative dentries.  The required changes are almost
+trivial - kernfs_iop_lookup() now returns NULL instead of
+ERR_PTR(-ENOENT) when the target kernfs_node doesn't exist,
+kernfs_dop_delete() is removed and kernfs_dop_revalidate() is updated
+to check whether the target dentry is negative and request fresh
+lookup if so.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c        |  9 +++++----
- fs/sysfs/dir.c         |  3 ++-
- fs/sysfs/group.c       |  3 ++-
- include/linux/kernfs.h | 13 +++++++------
- 4 files changed, 16 insertions(+), 12 deletions(-)
+ fs/kernfs/dir.c | 37 +++++++++++++------------------------
+ 1 file changed, 13 insertions(+), 24 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 6520066..e55bb02 100644
+index d33af95..42c5b9f 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -639,22 +639,23 @@ void kernfs_destroy_root(struct kernfs_root *root)
-  * kernfs_create_dir_ns - create a directory
-  * @parent: parent in which to create a new directory
-  * @name: name of the new directory
-+ * @mode: mode of the new directory
-  * @priv: opaque data associated with the new directory
-  * @ns: optional namespace tag of the directory
-  *
-  * Returns the created node on success, ERR_PTR() value on failure.
-  */
- struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
--					 const char *name, void *priv,
--					 const void *ns)
-+					 const char *name, umode_t mode,
-+					 void *priv, const void *ns)
+@@ -264,12 +264,6 @@ void kernfs_put(struct kernfs_node *kn)
+ }
+ EXPORT_SYMBOL_GPL(kernfs_put);
+ 
+-static int kernfs_dop_delete(const struct dentry *dentry)
+-{
+-	struct kernfs_node *kn = dentry->d_fsdata;
+-	return !(kn && !(kn->flags & KERNFS_REMOVED));
+-}
+-
+ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
  {
--	umode_t mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
- 	struct kernfs_addrm_cxt acxt;
  	struct kernfs_node *kn;
- 	int rc;
+@@ -277,6 +271,10 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
+ 	if (flags & LOOKUP_RCU)
+ 		return -ECHILD;
  
- 	/* allocate */
--	kn = kernfs_new_node(kernfs_root(parent), name, mode, KERNFS_DIR);
-+	kn = kernfs_new_node(kernfs_root(parent), name, mode | S_IFDIR,
-+			     KERNFS_DIR);
- 	if (!kn)
- 		return ERR_PTR(-ENOMEM);
++	/* Always perform fresh lookup for negatives */
++	if (!dentry->d_inode)
++		goto out_bad_unlocked;
++
+ 	kn = dentry->d_fsdata;
+ 	mutex_lock(&kernfs_mutex);
  
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index aa00740..ee0d761 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -73,7 +73,8 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
- 	if (!parent)
- 		return -ENOENT;
+@@ -301,22 +299,14 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
+ out_valid:
+ 	return 1;
+ out_bad:
+-	/*
+-	 * Remove the dentry from the dcache hashes.
+-	 * If this is a deleted dentry we use d_drop instead of d_delete
+-	 * so kernfs doesn't need to cope with negative dentries.
+-	 *
+-	 * If this is a dentry that has simply been renamed we
+-	 * use d_drop to remove it from the dcache lookup on its
+-	 * old parent.  If this dentry persists later when a lookup
+-	 * is performed at its new name the dentry will be readded
+-	 * to the dcache hashes.
+-	 */
+ 	mutex_unlock(&kernfs_mutex);
+-
+-	/* If we have submounts we must allow the vfs caches
+-	 * to lie about the state of the filesystem to prevent
+-	 * leaks and other nasty things.
++out_bad_unlocked:
++	/*
++	 * @dentry doesn't match the underlying kernfs node, drop the
++	 * dentry and force lookup.  If we have submounts we must allow the
++	 * vfs caches to lie about the state of the filesystem to prevent
++	 * leaks and other nasty things, so use check_submounts_and_drop()
++	 * instead of d_drop().
+ 	 */
+ 	if (check_submounts_and_drop(dentry) != 0)
+ 		goto out_valid;
+@@ -331,7 +321,6 @@ static void kernfs_dop_release(struct dentry *dentry)
  
--	kn = kernfs_create_dir_ns(parent, kobject_name(kobj), kobj, ns);
-+	kn = kernfs_create_dir_ns(parent, kobject_name(kobj),
-+				  S_IRWXU | S_IRUGO | S_IXUGO, kobj, ns);
- 	if (IS_ERR(kn)) {
- 		if (PTR_ERR(kn) == -EEXIST)
- 			sysfs_warn_dup(parent, kobject_name(kobj));
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index 4d00d399..6b57938 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -100,7 +100,8 @@ static int internal_create_group(struct kobject *kobj, int update,
- 		return -EINVAL;
- 	}
- 	if (grp->name) {
--		kn = kernfs_create_dir(kobj->sd, grp->name, kobj);
-+		kn = kernfs_create_dir(kobj->sd, grp->name,
-+				       S_IRWXU | S_IRUGO | S_IXUGO, kobj);
- 		if (IS_ERR(kn)) {
- 			if (PTR_ERR(kn) == -EEXIST)
- 				sysfs_warn_dup(kobj->sd, grp->name);
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index e9c4e3a..0ca2aed 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -210,8 +210,8 @@ struct kernfs_root *kernfs_create_root(void *priv);
- void kernfs_destroy_root(struct kernfs_root *root);
+ const struct dentry_operations kernfs_dops = {
+ 	.d_revalidate	= kernfs_dop_revalidate,
+-	.d_delete	= kernfs_dop_delete,
+ 	.d_release	= kernfs_dop_release,
+ };
  
- struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
--					 const char *name, void *priv,
--					 const void *ns);
-+					 const char *name, umode_t mode,
-+					 void *priv, const void *ns);
- struct kernfs_node *kernfs_create_file_ns_key(struct kernfs_node *parent,
- 					      const char *name,
- 					      umode_t mode, loff_t size,
-@@ -260,8 +260,8 @@ static inline struct kernfs_root *kernfs_create_root(void *priv)
- static inline void kernfs_destroy_root(struct kernfs_root *root) { }
- 
- static inline struct kernfs_node *
--kernfs_create_dir_ns(struct kernfs_node *parent, const char *name, void *priv,
--		     const void *ns)
-+kernfs_create_dir_ns(struct kernfs_node *parent, const char *name,
-+		     umode_t mode, void *priv, const void *ns)
- { return ERR_PTR(-ENOSYS); }
- 
- static inline struct kernfs_node *
-@@ -314,9 +314,10 @@ kernfs_find_and_get(struct kernfs_node *kn, const char *name)
- }
- 
- static inline struct kernfs_node *
--kernfs_create_dir(struct kernfs_node *parent, const char *name, void *priv)
-+kernfs_create_dir(struct kernfs_node *parent, const char *name, umode_t mode,
-+		  void *priv)
+@@ -682,7 +671,7 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
+ 					struct dentry *dentry,
+ 					unsigned int flags)
  {
--	return kernfs_create_dir_ns(parent, name, priv, NULL);
-+	return kernfs_create_dir_ns(parent, name, mode, priv, NULL);
- }
+-	struct dentry *ret = NULL;
++	struct dentry *ret;
+ 	struct kernfs_node *parent = dentry->d_parent->d_fsdata;
+ 	struct kernfs_node *kn;
+ 	struct inode *inode;
+@@ -697,7 +686,7 @@ static struct dentry *kernfs_iop_lookup(struct inode *dir,
  
- static inline struct kernfs_node *
+ 	/* no such entry */
+ 	if (!kn) {
+-		ret = ERR_PTR(-ENOENT);
++		ret = NULL;
+ 		goto out_unlock;
+ 	}
+ 	kernfs_get(kn);
 -- 
 1.8.4.2
 
