@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab3LKKUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:20:38 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:36403 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750960Ab3LKKUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 05:20:32 -0500
-Date: Wed, 11 Dec 2013 10:20:25 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v5 01/14] x86/mm: sparse warning fix for early_memremap
-Message-ID: <20131211102025.GB19196@console-pimps.org>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-2-git-send-email-dyoung@redhat.com>
- <20131209150521.GE31650@pd.tnic>
- <20131210021221.GA3800@dhcp-16-126.nay.redhat.com>
+	id S1751618Ab3LKKWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 05:22:18 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47120 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab3LKKWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 05:22:11 -0500
+From: Nishanth Menon <nm@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 2/2] ARM: dts: omap2430-sdp: add flags for ethernet functionality
+Date: Wed, 11 Dec 2013 04:21:45 -0600
+Message-ID: <1386757305-12545-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386757305-12545-1-git-send-email-nm@ti.com>
+References: <1386757305-12545-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210021221.GA3800@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec, at 10:12:21AM, Dave Young wrote:
-> On 12/09/13 at 04:05pm, Borislav Petkov wrote:
-> > On Mon, Dec 09, 2013 at 05:42:14PM +0800, Dave Young wrote:
-> > > There's a lot of sparse warnings for code like below:
-> > > void *a = early_memremap(phys_addr, size);
-> > > 
-> > > early_memremap intend to map kernel memory with ioremap facility, the return
-> > > pointer should be a kernel ram pointer instead of iomem one.
-> > > 
-> > > For making the function clearer and supressing sparse warnings this patch
-> > > do below two things:
-> > > 1. cast to (__force void *) for the return value of early_memremap
-> > 
-> > I'd guess this is to shut up the __iomem thing? And we're getting that
-> > because we're using ioremap, ... hohum...
-> 
-> Yes, IMHO early_memremap really should not return __iomem pointer since it's
-> *memremap*... 
+Ethernet transition from board file to dts missed the required pdata
+conversion. So fix the same.
 
-This needs reviewing by at least one of the x86 folks, but it certainly
-makes sense to me.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/boot/dts/omap2430-sdp.dts |    5 +++++
+ 1 file changed, 5 insertions(+)
 
+diff --git a/arch/arm/boot/dts/omap2430-sdp.dts b/arch/arm/boot/dts/omap2430-sdp.dts
+index 2c90d29..ec9263a 100644
+--- a/arch/arm/boot/dts/omap2430-sdp.dts
++++ b/arch/arm/boot/dts/omap2430-sdp.dts
+@@ -39,6 +39,11 @@
+ 	ranges = <5 0 0x08000000 0x01000000>;
+ 	ethernet@gpmc {
+ 		compatible = "smsc,lan91c94";
++		reg-io-width = <2>;
++		smsc,nowait;
++		smsc,leda = "100_10";
++		smsc,ledb = "TX_RX";
++
+ 		interrupt-parent = <&gpio5>;
+ 		interrupts = <21 IRQ_TYPE_LEVEL_LOW>;	/* gpio149 */
+ 		reg = <5 0x300 0xf>;
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.9.5
+
