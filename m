@@ -1,63 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab3LKDXU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 22:23:20 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54003 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab3LKDXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752026Ab3LKDXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 22:23:17 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4016 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552Ab3LKDXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Dec 2013 22:23:15 -0500
-Date: Tue, 10 Dec 2013 22:23:13 -0500 (EST)
-Message-Id: <20131210.222313.694303616856894486.davem@davemloft.net>
-To: mchan@broadcom.com
-Cc: sergei.shtylyov@cogentembedded.com, natg@google.com, nsujir@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net-tg3: Initialize REG_BASE_ADDR at PCI config offset
- 120 to 0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386701379.1752.26.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-References: <1386658724.1752.19.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<20131210.134340.114603867817512238.davem@davemloft.net>
-	<1386701379.1752.26.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 10 Dec 2013 19:23:14 -0800 (PST)
+X-IronPort-AV: E=Sophos;i="4.93,869,1378828800"; 
+   d="scan'208";a="9234283"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH V2] perf tools: Change the default filenames for perf kvm diff to perf.data.xxx and perf.data.xxx.old
+Date: Wed, 11 Dec 2013 11:21:22 -0500
+Message-Id: <1386778882-27906-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <2cb684452df6a8eb1a55b450e4f5328e28e34495.1386368672.git.yangds.fnst@cn.fujitsu.com>
+References: <2cb684452df6a8eb1a55b450e4f5328e28e34495.1386368672.git.yangds.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/11 11:22:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/12/11 11:22:55,
+	Serialize complete at 2013/12/11 11:22:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Chan <mchan@broadcom.com>
-Date: Tue, 10 Dec 2013 10:49:39 -0800
+Command perf kvm diff is used to diff perf.data.host and
+perf.data.guest by default currently. But it is not a good
+default behavior.
 
-> On Tue, 2013-12-10 at 13:43 -0500, David Miller wrote:
-> 
->> What if the kernel is booted via kexec, and the driver in the kernel
->> we are kexec'ing from left indirect access enabled in MISC_HOST_CTRL?
-> 
-> That should be ok.  The driver will only use valid register offsets in
-> indirect mode during run time, so register 0x78 should point to a valid
-> register.  If indirect mode is never used by the driver, it will point
-> to zero with this patch.  So register 0x78 will be valid (or zero) in
-> the kexec'ed kernel.
+Example:
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules diff
+	failed to open perf.data.host: No such file or directory
+	Failed to open perf.data.host
 
-Ok, that may be true, but I'd like to consider the much larger issue
-at hand.
+We should keep the style of 'perf kvm diff' same with 'perf diff'.
+It is used to diff files with same type but captured in different
+times, perf.data and perf.data.old. So we need to make perf kvm diff
+to diff perf.data.guest and perf.data.guest.old as a default behavior.
 
-If the indirect mechanism is enabled, some of the offsets that may be
-in there might be value, but would be entirely undesirable to be read
-because the read has side effects.
+What's worse, as we have changed the behaviors of perf kvm record,
+we can not get a perf.data.host easily. We have to use a --no-guest
+to get a perf.data.host, it means we use perf.data.host as a default
+input in 'perf kvm diff' is an odd design.
 
-What if the interrupt status register is what gets read if the user
-scans config space at just the wrong moment, and therefore an
-interrupt gets lost?
+This patch remove the hard coding of default filenames in builtin-diff.c,
+and generate the suitable filename from current options in perf kvm diff
+command. It makes the default behavior of perf kvm diff be more valuable.
 
-I understand that the patch we are discussing is a serious improvement
-from the current situation, so I will apply it and queue it up for
--stable.
+Verification:
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	  [ perf record: Woken up 1 times to write data ]
+	  [ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
+	  [ perf record: Woken up 1 times to write data ]
+	  [ perf record: Captured and wrote 0.669 MB perf.data.guest (~29207 samples) ]
+	# perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules diff
+	  # Event 'cycles'
+	  #
+	  # Baseline    Delta            Shared Object                                   Symbol
+	  # ........  .......  .......................  .......................................
+	  #
+	    92.00%           [guest.kernel.kallsyms]  [g] rb_insert_color
+	     7.51%           [guest.kernel.kallsyms]  [g] smp_apic_timer_interrupt
+	     0.48%   +0.60%  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+		    +16.35%  [guest.kernel.kallsyms]  [g] kvm_clock_get_cycles
+		    +82.56%  [guest.kernel.kallsyms]  [g] irqtime_account_process_tick.isra.2
 
-However I think we need to do something reasonable to prevent the
-kinds of situations I described above.
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+    Change since v1:
+	Add more commit message.
 
-Thanks.
+ tools/perf/builtin-diff.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 2a85cc9..6a32213 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -17,6 +17,7 @@
+ #include "util/symbol.h"
+ #include "util/util.h"
+ #include "util/data.h"
++#include "linux/string.h"
+ 
+ #include <stdlib.h>
+ #include <math.h>
+@@ -1001,8 +1002,28 @@ static int data_init(int argc, const char **argv)
+ 			use_default = false;
+ 		}
+ 	} else if (perf_guest) {
+-		defaults[0] = "perf.data.host";
+-		defaults[1] = "perf.data.guest";
++		char *file_name;
++		int len, ret;
++
++		file_name = (char *)get_filename_for_perf_kvm();
++		if (!file_name) {
++			pr_err("Failed to allocate memory for filename\n");
++			return -ENOMEM;
++		}
++
++		defaults[0] = strdup(file_name);
++		if (!file_name) {
++			pr_err("Failed to allocate memory for defaults[0]\n");
++			return -ENOMEM;
++		}
++
++		len = strlen(file_name);
++		ret = str_append(&file_name, &len, ".old");
++		if (ret) {
++			pr_err("Failed to allocate memory for defaults[1]\n");
++			return -ENOMEM;
++		}
++		defaults[1] = file_name;
+ 	}
+ 
+ 	if (sort_compute >= (unsigned int) data__files_cnt) {
+-- 
+1.8.2.1
+
