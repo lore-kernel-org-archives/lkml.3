@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab3LKBKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:10:55 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:46960 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab3LKBKw (ORCPT
+	id S1751562Ab3LKBPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:15:06 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62661 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab3LKBPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:10:52 -0500
+	Tue, 10 Dec 2013 20:15:02 -0500
+X-AuditID: 9c930179-b7ce4ae000000e86-4c-52a7bc94d636
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 12/17] tracing/probes: Implement 'memory' fetch method for uprobes
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
+	<1386570005-3368-13-git-send-email-namhyung@kernel.org>
+	<52A6F455.4070807@hitachi.com>
+Date: Wed, 11 Dec 2013 10:15:00 +0900
+In-Reply-To: <52A6F455.4070807@hitachi.com> (Masami Hiramatsu's message of
+	"Tue, 10 Dec 2013 20:00:37 +0900")
+Message-ID: <87mwk8i3xn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20131211010326.GF10988@dastard>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
-	<20131209121534.GE4278@hercules>
-	<CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
-	<20131209235523.GW31386@dastard>
-	<CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
-	<20131211010326.GF10988@dastard>
-Date: Tue, 10 Dec 2013 20:10:51 -0500
-X-Google-Sender-Auth: cjExY568jQRrOXICAQGEYhsQcdQ
-Message-ID: <CA+5PVA7wso5fo11xX9kCUdbrqBQMzUnYwTOB_Qe3K7LDY4z_Cw@mail.gmail.com>
-Subject: Re: XFS security fix never sent to -stable?
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Luis Henriques <luis.henriques@canonical.com>,
-        Kees Cook <keescook@google.com>,
-        Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
-        xfs@oss.sgi.com, "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 8:03 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Dec 10, 2013 at 08:20:07AM -0500, Josh Boyer wrote:
->> On Mon, Dec 9, 2013 at 6:55 PM, Dave Chinner <david@fromorbit.com>
->> wrote:
->> > [cc xfs list, cc stable@vger.kernel.org]
->> >
->> > On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
->> >> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
->> >> <luis.henriques@canonical.com> wrote:
->> >> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
->> >> >> Hi,
->> >> >>
->> >> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c
->> >> >> ("xfs: add capability check to free eofblocks ioctl") is a
->> >> >> security fix that was never sent to -stable? From what I can
->> >> >> see, it was introduced in 3.8 by
->> >> >> 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
->> >> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
->> >> >>
->> >> >> I don't see this in the 3.8.y tree. Should it be added there
->> >> >> and newer?
->> >> >
->> >> > Thanks Kees, I'm queuing it for the 3.11 kernel.
->> >>
->> >> There's also this one:
->> >>
->> >> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
->> >>
->> >> It fixes CVE-2013-6382
->> >
->> > First I've heard about it there being a CVE for that bug. Since
->> > when has it been considered best practice to publish CVEs
->> > without first (or ever) directly contacting the relevant
->> > upstream developers?
->>
->> We got a Fedora bug for it, and there are similar RHEL bugs open.
->> I had assumed you would be informed either via upstream or
->> through those.
+On Tue, 10 Dec 2013 20:00:37 +0900, Masami Hiramatsu wrote:
+> (2013/12/09 15:20), Namhyung Kim wrote:
+>> @@ -493,7 +416,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>>  			dprm->offset = offset;
+>>  			dprm->fetch = t->fetch[FETCH_MTD_memory];
+>>  			dprm->fetch_size = get_fetch_size_function(t,
+>> -							dprm->fetch, ttbl);
+>> +							dprm->fetch, ftbl);
 >
-> I've not been cc'd on any of those bugs internally at RH, so I don't
-> have visibility of the problems unless someone specifically adds me
-> to those bugs.  As it is, raising fedora/RHEL bugs is not informing
-> upstream - it is a distro process for tracking the distro issue
-> through to closure.
+> What is this change? I guess it should be included in 11/17...
 
-Agreed.  We should probably fix the bug thing anyway though.
+Argh, right.  It looks like a git rebase artifact, will change.
 
->> The CVE request was submitted by Kees here:
->> http://seclists.org/oss-sec/2013/q4/330
->
-> Ugh, no, I'm not going to subscribe to a high noise list where the
-> only way I might be informed of a CVE being raised is by following
-> links to git commit IDs....
->
-> Upstream is not magically informed about CVEs, and relying on
-> upstream developers to scan or poll *anything* just to find if a
-> CVE on their subsystem has been released is not reliable and
-> does not scale. If anyone raises a CVE against a kernel subsystem,
-> then the relevant list in the MAINTAINERS file for that subsystem
-> should be on the cc list of any discussion about the CVE, and on the
-> announcement of the CVE.
->
-> Security processes are not something that should be hidden away in
-> it's own private corner - if there's a problem upstream needs to
-> take action on, then direct contact with upstream is necessary. We
-> need to know about security issues - even ones that are classified
-> post-commit as security issues - so we are operating with full
-> knowledge of the issues in our code and the impact of our fixes....
 
-Agreed.  I'm going to interpret your comments at being directed to the
-general audience because otherwise you're just shooting the messenger
-:).
+> The rest of this patch is good for me.
 
-josh
+So can I add you ack then? :)
+
+Thank you!
+Namhyung
