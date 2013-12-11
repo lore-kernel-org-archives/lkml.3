@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab3LKCTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:19:41 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:63796 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab3LKCTk (ORCPT
+	id S1751352Ab3LKCZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:25:31 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:51652 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3LKCZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:19:40 -0500
-Date: Tue, 10 Dec 2013 18:19:36 -0800
+	Tue, 10 Dec 2013 21:25:30 -0500
+Date: Tue, 10 Dec 2013 18:25:26 -0800
 From: Brian Norris <computersforpeace@gmail.com>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dwmw2@infradead.org, angus.clark@st.com, linus.walleij@linaro.org,
         linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v3 30/36] mtd: st_spi_fsm: Erase partly or as a whole a
- Serial Flash device
-Message-ID: <20131211021936.GN27149@ld-irv-0074.broadcom.com>
+Subject: Re: [PATCH v3 33/36] mtd: st_spi_fsm: Supply the MX25xxx chip
+ specific configuration call-back
+Message-ID: <20131211022526.GO27149@ld-irv-0074.broadcom.com>
 References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
- <1385727565-25794-31-git-send-email-lee.jones@linaro.org>
+ <1385727565-25794-34-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1385727565-25794-31-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1385727565-25794-34-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 12:19:19PM +0000, Lee Jones wrote:
-> When an erase is requested by userspace the MFD framework calls back
-
-s/MFD/MTD/
-
-;)
-
-> into the driver to conduct the actual command issue. Here we provide the
-> routines which do exactly that. We can choose to either do an entire chip
-> erase or by sector.
-> 
+On Fri, Nov 29, 2013 at 12:19:22PM +0000, Lee Jones wrote:
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  drivers/mtd/devices/st_spi_fsm.c | 118 ++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 117 insertions(+), 1 deletion(-)
+>  drivers/mtd/devices/st_spi_fsm.c | 84 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/mtd/devices/st_spi_fsm.h |  4 +-
+>  2 files changed, 87 insertions(+), 1 deletion(-)
 > 
 > diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-> index 9b35e15..ecb001d 100644
+> index f1276e5..be66a49 100644
 > --- a/drivers/mtd/devices/st_spi_fsm.c
 > +++ b/drivers/mtd/devices/st_spi_fsm.c
-> @@ -861,6 +923,60 @@ out1:
->  	return ret;
+> @@ -620,6 +645,65 @@ static int stfsm_prepare_rwe_seqs_default(struct stfsm *fsm)
+>  	return 0;
 >  }
 >  
-> +/*
-> + * Erase an address range on the flash chip. The address range may extend
-> + * one or more erase sectors.  Return an error is there is a problem erasing.
-> + */
-> +static int stfsm_mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
+> +static int stfsm_mx25_config(struct stfsm *fsm)
 > +{
-> +	struct stfsm *fsm = dev_get_drvdata(mtd->dev.parent);
-> +	u32 addr, len;
+> +	uint32_t flags = fsm->info->flags;
+> +	uint32_t data_pads;
+> +	uint8_t sta;
 > +	int ret;
+> +	bool soc_reset;
 > +
-> +	dev_dbg(fsm->dev, "%s at 0x%llx, len %lld\n", __func__,
-> +		(long long)instr->addr, (long long)instr->len);
-> +
-> +	if (instr->addr + instr->len > mtd->size)
-> +		return -EINVAL;
+> +	/* Disable support for 'WRITE_1_4_4' (limited to 20MHz which is of
+> +	 * marginal benefit on our hardware and doesn't justify implementing
+> +	 * different READ/WRITE frequencies).
+> +	 */
+> +	flags &= ~FLASH_FLAG_WRITE_1_4_4;
 
-Duplicated from mtd_read(). Kill this.
+Huh? flags is a local variable, and you only use it for checking 32-bit
+addressing mode in this function. So this flags modification is
+effectively thrown away. Perhaps you meant
 
-> +
-> +	if (instr->len & (mtd->erasesize - 1))
-> +		return -EINVAL;
+	fsm->info->flags &= ~FLASH_FLAG_WRITE_1_4_4;
 
-...
-
-> @@ -1131,7 +1247,7 @@ static int stfsm_probe(struct platform_device *pdev)
->  
->  	fsm->mtd._read  = stfsm_mtd_read;
->  	fsm->mtd._write = stfsm_mtd_write;
-> -
-> +	fsm->mtd._erase = stfsm_mtd_erase;
-
-Can you leave the blank line between assigning fsm->mtd.xxx callbacks
-and the dev_err()?
-
->  	dev_err(&pdev->dev,
->  		"Found serial flash device: %s\n"
->  		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
-
-(BTW, why is this dev_err()?? It's just information, so you want
-dev_info().)
+? But then you're back to modifying static data (the device table)
+through a per-instance reference. That's not good behavior. Rather,
+couldn't you just remove this flag from the table entry in the first
+place?
 
 Brian
