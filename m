@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3LKMkv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:40:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10658 "EHLO mga09.intel.com"
+	id S1752539Ab3LKMk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:40:59 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44423 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab3LKMkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:40:47 -0500
+	id S1752453Ab3LKMkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 07:40:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,871,1378882800"; 
-   d="scan'208";a="450498235"
+   d="scan'208";a="422886515"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v0 37/71] perf tools: Add support for PERF_RECORD_ITRACE_LOST
-Date: Wed, 11 Dec 2013 14:36:49 +0200
-Message-Id: <1386765443-26966-38-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v0 38/71] perf tools: Add itrace sample parsing
+Date: Wed, 11 Dec 2013 14:36:50 +0200
+Message-Id: <1386765443-26966-39-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -31,208 +31,217 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Instruction Tracing may lose data, for example when buffers
-are full.  In that case, an event of type PERF_RECORD_ITRACE_LOST
-is created to inform of the loss.  Add support for that event type.
+Add supoprt for parsing samples containing
+Instruction Traces i.e. PERF_SAMPLE_ITRACE.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c |  1 +
- tools/perf/util/event.c     | 17 +++++++++++++++++
- tools/perf/util/event.h     | 11 +++++++++++
- tools/perf/util/machine.c   | 10 ++++++++++
- tools/perf/util/machine.h   |  2 ++
- tools/perf/util/session.c   |  5 +++++
- tools/perf/util/tool.h      |  1 +
- 7 files changed, 47 insertions(+)
+ tools/perf/tests/sample-parsing.c |  7 ++++++-
+ tools/perf/util/event.h           |  6 ++++++
+ tools/perf/util/evlist.c          | 12 ++++++++++++
+ tools/perf/util/evlist.h          |  4 ++++
+ tools/perf/util/evsel.c           | 33 +++++++++++++++++++++++++++++++--
+ tools/perf/util/evsel.h           | 13 +++++++++++--
+ tools/perf/util/session.c         |  3 ++-
+ 7 files changed, 72 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 8400d29..78911a3 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -417,6 +417,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.fork		= perf_event__repipe,
- 			.exit		= perf_event__repipe,
- 			.lost		= perf_event__repipe,
-+			.itrace_lost	= perf_event__repipe,
- 			.read		= perf_event__repipe_sample,
- 			.throttle	= perf_event__repipe,
- 			.unthrottle	= perf_event__repipe,
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 30f91d7..4d001d9 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -20,6 +20,7 @@ static const char *perf_event__names[] = {
- 	[PERF_RECORD_FORK]			= "FORK",
- 	[PERF_RECORD_READ]			= "READ",
- 	[PERF_RECORD_SAMPLE]			= "SAMPLE",
-+	[PERF_RECORD_ITRACE_LOST]		= "ITRACE_LOST",
- 	[PERF_RECORD_HEADER_ATTR]		= "ATTR",
- 	[PERF_RECORD_HEADER_EVENT_TYPE]		= "EVENT_TYPE",
- 	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
-@@ -536,6 +537,14 @@ int perf_event__process_lost(struct perf_tool *tool __maybe_unused,
- 	return machine__process_lost_event(machine, event, sample);
- }
- 
-+int perf_event__process_itrace_lost(struct perf_tool *tool __maybe_unused,
-+				    union perf_event *event,
-+				    struct perf_sample *sample __maybe_unused,
-+				    struct machine *machine)
-+{
-+	return machine__process_itrace_lost_event(machine, event);
-+}
-+
- size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
- {
- 	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64 "]: %c %s\n",
-@@ -596,6 +605,11 @@ int perf_event__process_exit(struct perf_tool *tool __maybe_unused,
- 	return machine__process_exit_event(machine, event, sample);
- }
- 
-+size_t perf_event__fprintf_itrace_lost(union perf_event *event, FILE *fp)
-+{
-+	return fprintf(fp, " offset: %#"PRIx64"\n", event->itrace_lost.offset);
-+}
-+
- size_t perf_event__fprintf(union perf_event *event, FILE *fp)
- {
- 	size_t ret = fprintf(fp, "PERF_RECORD_%s",
-@@ -615,6 +629,9 @@ size_t perf_event__fprintf(union perf_event *event, FILE *fp)
- 	case PERF_RECORD_MMAP2:
- 		ret += perf_event__fprintf_mmap2(event, fp);
- 		break;
-+	case PERF_RECORD_ITRACE_LOST:
-+		ret += perf_event__fprintf_itrace_lost(event, fp);
-+		break;
- 	default:
- 		ret += fprintf(fp, "\n");
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index 1b67720..acc8132 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -155,6 +155,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 	u64 user_regs[64];
+ 	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
+ 	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
++	const u64 itrace_data[] = {0xa55a, 0, 0xeeddee, 0x0282028202820282};
+ 	struct perf_sample sample = {
+ 		.ip		= 101,
+ 		.pid		= 102,
+@@ -184,6 +185,10 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
+ 			.time_enabled = 0x030a59d664fca7deULL,
+ 			.time_running = 0x011b6ae553eb98edULL,
+ 		},
++		.itrace_sample	= {
++			.size	= sizeof(itrace_data),
++			.data	= (void *)itrace_data,
++		},
+ 	};
+ 	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
+ 	struct perf_sample sample_out;
+@@ -280,7 +285,7 @@ int test__sample_parsing(void)
+ 	 * were added.  Please actually update the test rather than just change
+ 	 * the condition below.
+ 	 */
+-	if (PERF_SAMPLE_MAX > PERF_SAMPLE_TRANSACTION << 1) {
++	if (PERF_SAMPLE_MAX > PERF_SAMPLE_ITRACE << 1) {
+ 		pr_debug("sample format has changed, some new PERF_SAMPLE_ bit was introduced - test needs updating\n");
+ 		return -1;
  	}
 diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 88e27cb..b684398 100644
+index b684398..cc49148 100644
 --- a/tools/perf/util/event.h
 +++ b/tools/perf/util/event.h
-@@ -193,6 +193,11 @@ struct id_index_event {
- 	struct id_index_entry entries[0];
+@@ -111,6 +111,11 @@ struct sample_read {
+ 	};
  };
  
-+struct itrace_lost_event {
-+	struct perf_event_header header;
-+	u64 offset;
++struct itrace_sample {
++	u64 size;
++	void *data;
 +};
 +
- union perf_event {
- 	struct perf_event_header	header;
- 	struct mmap_event		mmap;
-@@ -208,6 +213,7 @@ union perf_event {
- 	struct tracing_data_event	tracing_data;
- 	struct build_id_event		build_id;
- 	struct id_index_event		id_index;
-+	struct itrace_lost_event	itrace_lost;
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+@@ -130,6 +135,7 @@ struct perf_sample {
+ 	struct regs_dump  user_regs;
+ 	struct stack_dump user_stack;
+ 	struct sample_read read;
++	struct itrace_sample itrace_sample;
  };
  
- void perf_event__print_totals(void);
-@@ -244,6 +250,10 @@ int perf_event__process_lost(struct perf_tool *tool,
- 			     union perf_event *event,
- 			     struct perf_sample *sample,
- 			     struct machine *machine);
-+int perf_event__process_itrace_lost(struct perf_tool *tool,
-+				    union perf_event *event,
-+				    struct perf_sample *sample,
-+				    struct machine *machine);
- int perf_event__process_mmap(struct perf_tool *tool,
- 			     union perf_event *event,
- 			     struct perf_sample *sample,
-@@ -285,6 +295,7 @@ size_t perf_event__fprintf_comm(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf_task(union perf_event *event, FILE *fp);
-+size_t perf_event__fprintf_itrace_lost(union perf_event *event, FILE *fp);
- size_t perf_event__fprintf(union perf_event *event, FILE *fp);
+ #define PERF_MEM_DATA_SRC_NONE \
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index e750a21..490af37 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1238,6 +1238,18 @@ int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *even
+ 	return perf_evsel__parse_sample(evsel, event, sample);
+ }
  
- #endif /* __PERF_RECORD_H */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a04210d..a224cf7 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -361,6 +361,14 @@ int machine__process_lost_event(struct machine *machine __maybe_unused,
++int __perf_evlist__parse_sample(struct perf_evlist *evlist,
++				union perf_event *event,
++				struct perf_sample *sample,
++				bool fix_swap)
++{
++	struct perf_evsel *evsel = perf_evlist__event2evsel(evlist, event);
++
++	if (!evsel)
++		return -EFAULT;
++	return __perf_evsel__parse_sample(evsel, event, sample, fix_swap);
++}
++
+ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
+ {
+ 	struct perf_evsel *evsel;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index f0ce3bf..6f3166e 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -151,6 +151,10 @@ u16 perf_evlist__id_hdr_size(struct perf_evlist *evlist);
+ 
+ int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *event,
+ 			      struct perf_sample *sample);
++int __perf_evlist__parse_sample(struct perf_evlist *evlist,
++				union perf_event *event,
++				struct perf_sample *sample,
++				bool fix_swap);
+ 
+ bool perf_evlist__valid_sample_type(struct perf_evlist *evlist);
+ bool perf_evlist__valid_sample_id_all(struct perf_evlist *evlist);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index da2116c..88b7edd 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1233,8 +1233,10 @@ static inline bool overflow(const void *endp, u16 max_size, const void *offset,
+ #define OVERFLOW_CHECK_u64(offset) \
+ 	OVERFLOW_CHECK(offset, sizeof(u64), sizeof(u64))
+ 
+-int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+-			     struct perf_sample *data)
++int __perf_evsel__parse_sample(struct perf_evsel *evsel,
++			       union perf_event *event,
++			       struct perf_sample *data,
++			       bool fix_swap)
+ {
+ 	u64 type = evsel->attr.sample_type;
+ 	bool swapped = evsel->needs_swap;
+@@ -1479,6 +1481,19 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		array++;
+ 	}
+ 
++	if (type & PERF_SAMPLE_ITRACE) {
++		OVERFLOW_CHECK_u64(array);
++		sz = *array++;
++
++		OVERFLOW_CHECK(array, sz, max_size);
++		/* Undo swap of data */
++		if (fix_swap && swapped)
++			mem_bswap_64((char *)array, sz);
++		data->itrace_sample.size = sz;
++		data->itrace_sample.data = (char *)array;
++		array = (void *)array + sz;
++	}
++
  	return 0;
  }
  
-+int machine__process_itrace_lost_event(struct machine *machine __maybe_unused,
-+				       union perf_event *event)
-+{
-+	if (dump_trace)
-+		perf_event__fprintf_itrace_lost(event, stdout);
-+	return 0;
-+}
+@@ -1574,6 +1589,11 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
+ 	if (type & PERF_SAMPLE_TRANSACTION)
+ 		result += sizeof(u64);
+ 
++	if (type & PERF_SAMPLE_ITRACE) {
++		result += sizeof(u64);
++		result += sample->itrace_sample.size;
++	}
 +
- struct map *machine__new_module(struct machine *machine, u64 start,
- 				const char *filename)
+ 	return result;
+ }
+ 
+@@ -1752,6 +1772,15 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 		array++;
+ 	}
+ 
++	if (type & PERF_SAMPLE_ITRACE) {
++		sz = sample->itrace_sample.size;
++		*array++ = sz;
++		memcpy(array, sample->itrace_sample.data, sz);
++		if (swapped)
++			mem_bswap_64((char *)array, sz);
++		array = (void *)array + sz;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3e25e23..b0433fd 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -280,8 +280,17 @@ static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
+ 
+ void hists__init(struct hists *hists);
+ 
+-int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+-			     struct perf_sample *sample);
++int __perf_evsel__parse_sample(struct perf_evsel *evsel,
++			       union perf_event *event,
++			       struct perf_sample *data,
++			       bool fix_swap);
++
++static inline int perf_evsel__parse_sample(struct perf_evsel *evsel,
++					   union perf_event *event,
++					   struct perf_sample *data)
++{
++	return __perf_evsel__parse_sample(evsel, event, data, false);
++}
+ 
+ static inline struct perf_evsel *perf_evsel__next(struct perf_evsel *evsel)
  {
-@@ -1149,6 +1157,8 @@ int machine__process_event(struct machine *machine, union perf_event *event,
- 		ret = machine__process_exit_event(machine, event, sample); break;
- 	case PERF_RECORD_LOST:
- 		ret = machine__process_lost_event(machine, event, sample); break;
-+	case PERF_RECORD_ITRACE_LOST:
-+		ret = machine__process_itrace_lost_event(machine, event); break;
- 	default:
- 		ret = -1;
- 		break;
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index aaad99a..fee1f89 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -50,6 +50,8 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
- 				struct perf_sample *sample);
- int machine__process_lost_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample);
-+int machine__process_itrace_lost_event(struct machine *machine,
-+				       union perf_event *event);
- int machine__process_mmap_event(struct machine *machine, union perf_event *event,
- 				struct perf_sample *sample);
- int machine__process_mmap2_event(struct machine *machine, union perf_event *event,
 diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 7847096..de09c2e 100644
+index de09c2e..fbf9024 100644
 --- a/tools/perf/util/session.c
 +++ b/tools/perf/util/session.c
-@@ -236,6 +236,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
- 		tool->exit = process_event_stub;
- 	if (tool->lost == NULL)
- 		tool->lost = perf_event__process_lost;
-+	if (tool->itrace_lost == NULL)
-+		tool->itrace_lost = perf_event__process_itrace_lost;
- 	if (tool->read == NULL)
- 		tool->read = process_event_sample_stub;
- 	if (tool->throttle == NULL)
-@@ -454,6 +456,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
- 	[PERF_RECORD_THROTTLE]		  = perf_event__throttle_swap,
- 	[PERF_RECORD_UNTHROTTLE]	  = perf_event__throttle_swap,
- 	[PERF_RECORD_SAMPLE]		  = perf_event__all64_swap,
-+	[PERF_RECORD_ITRACE_LOST]	  = perf_event__all64_swap,
- 	[PERF_RECORD_HEADER_ATTR]	  = perf_event__hdr_attr_swap,
- 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
- 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
-@@ -998,6 +1001,8 @@ static int perf_session_deliver_event(struct perf_session *session,
- 		return tool->throttle(tool, event, sample, machine);
- 	case PERF_RECORD_UNTHROTTLE:
- 		return tool->unthrottle(tool, event, sample, machine);
-+	case PERF_RECORD_ITRACE_LOST:
-+		return tool->itrace_lost(tool, event, sample, machine);
- 	default:
- 		++session->stats.nr_unknown_events;
- 		return -1;
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index f07d6fe..18afd13 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -34,6 +34,7 @@ struct perf_tool {
- 			fork,
- 			exit,
- 			lost,
-+			itrace_lost,
- 			throttle,
- 			unthrottle;
- 	event_attr_op	attr;
+@@ -1086,7 +1086,8 @@ static s64 perf_session__process_event(struct perf_session *session,
+ 	/*
+ 	 * For all kernel events we get the sample data
+ 	 */
+-	ret = perf_evlist__parse_sample(session->evlist, event, &sample);
++	ret = __perf_evlist__parse_sample(session->evlist, event, &sample,
++					  true);
+ 	if (ret)
+ 		return ret;
+ 
 -- 
 1.8.5.1
 
