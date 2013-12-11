@@ -1,75 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3LKRT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:19:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751933Ab3LKRTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:19:54 -0500
-Date: Wed, 11 Dec 2013 12:19:12 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 03/12] pid: get ppid pid_t of task in init_pid_ns safely
-Message-ID: <20131211171912.GA10002@madcap2.tricolour.ca>
-References: <cover.1377032086.git.rgb@redhat.com>
- <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com>
- <20130827172155.GC29147@redhat.com>
- <20130830195646.GJ21110@madcap2.tricolour.ca>
- <52210275.8040601@canonical.com>
- <20130903183159.GA28517@madcap2.tricolour.ca>
- <20131211144758.GA1160@madcap2.tricolour.ca>
- <52A8966A.9080306@canonical.com>
+	id S1751510Ab3LKR2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:28:15 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:41016 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3LKR2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 12:28:14 -0500
+Date: Wed, 11 Dec 2013 18:28:04 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1342235583.20131211182804@eikelenboom.it>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+In-Reply-To: <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com>
+References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it> <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com> <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A8966A.9080306@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/11, John Johansen wrote:
-> On 12/11/2013 06:47 AM, Richard Guy Briggs wrote:
-> > On Tue, Sep 03, 2013 at 02:31:59PM -0400, Richard Guy Briggs wrote:
-> >> On Fri, Aug 30, 2013 at 01:37:09PM -0700, John Johansen wrote:
-> >>> On 08/30/2013 12:56 PM, Richard Guy Briggs wrote:
-> >>>> On Tue, Aug 27, 2013 at 07:21:55PM +0200, Oleg Nesterov wrote:
-> >>>>> On 08/20, Richard Guy Briggs wrote:
-> >>>> Most of the instances are current, but the one called from apparmour is
-> >>>> stored.  I've just learned that this is bad and someone else just chimed
-> >>>> in that they have a patch to remove it...
-> >>>
-> >>> the apparmor case isn't actually stored long term. The stored task will be
-> >>> a parameter that was passed into an lsm hook and the buffer that it is
-> >>> stored in dies before the hook is done. Its temporarily stored in the
-> >>> struct so that it can be passed into the lsm_audit fn, and printed into an
-> >>> allocated audit buffer. The text version in the audit buffer is what will
-> >>> exist beyond the hook.
-> >>>
-> >>> There are three patches, I'll reply them below once I have finished rebasing
-> >>> them to apply to the current tree instead of my dev tree.
-> >>
-> >> John, thanks for this context and fix.  That helps simplify things.
-> > 
-> > John, What's the status of this set of 3 patches?  I don't see them
-> > upstream.
-> > 
-> they are part of the security tree merge in 3.13
-> 
-> 51775fe apparmor: remove the "task" arg from may_change_ptraced_domain()
-> 4a7fc30 apparmor: remove parent task info from audit logging
-> 61e3fb8 apparmor: remove tsk field from the apparmor_audit_struct
-> dd0c6e8 apparmor: fix capability to not use the current task, during reporting
 
-Ok, cool, so they will be upstream by the time I'll need them.  Thanks!
+Wednesday, December 11, 2013, 6:14:16 PM, you wrote:
 
-- RGB
+> On Wed, Dec 11, 2013 at 5:53 PM, Sander Eikelenboom
+> <linux@eikelenboom.it> wrote:
+>>
+>> Wednesday, December 11, 2013, 4:38:13 PM, you wrote:
+>>
+>>> On Wed, Dec 11, 2013 at 4:17 PM, Sander Eikelenboom
+>>> <linux@eikelenboom.it> wrote:
+>>>> Since i haven't got a response to this yet and after having the troubled machine back:
+>>>> The problem is still present in linux 3.13-rc3
+>>
+>>> Keep in mind regulatory hints for Intel or Atheros cards do nothing
+>>> other than help compliance further given that the cards already have
+>>> their own regulatory data, the user input / hint is only going to
+>>> reduce the card's channels further.
+>>
+>> So in essence what you are saying is that the firmware/eeprom already dictates the limited channels available based on .. errr .. yeah based on what ...
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> Whatever the device was programmed with but in practice my
+> understanding is Intel only sells hardware for a few regions so they
+> have only a few custom world regulatory domains, so that is used upon
+> initialization. Having the capability to actually work properly on a
+> different set of regions with optimal power and performance without
+> violating regulatory is a challenge and this is why cards are either
+> region specific or built / optimized for a few regions or a general
+> world roaming card. Channels is just one thing to consider, there are
+> tons of other things to consider and this will be very card and
+> hardware specific.
+
+>> And setting the regulatory domain yourself only limits this list of limited channels available only further ?
+
+> Yeap, that's the case for Intel Atheros, and I think nowadays new
+> broadcom upstream drivers too. Users should not have to be involved on
+> setting the regulatory domain, everything should just work
+> automatically.
+
+Erhmm yes that works, under the assumption that the device is not leaving the country it was programmed for at the factory.
+(Or you like to be limited in your abilities, channel 12 and 13 are legal here)
+That there is a restriction on boot or on first use, i can understand. Crippling a device for it's life time though.
+
+
+>> I now spotted this from the dmesg:
+>> [    4.818467] cfg80211: Ignoring regulatory request set by core since the driver uses its own custom regulatory domain
+
+> Yeap, that's by design, if a card sets a flag that its has a custom
+> world regulatory domain the first hint from CRDA / internel regdb that
+> updates the world regulatory domain will bet set on cfg80211 but for
+> the wiphy data structure for the drivers that have the custom flag set
+> we'll skip using the regulatory domain for that card as it has its own
+> custom regulatory domain.
+
+>> Joy o joy who ever came up with that great idea ..
+
+> Understand the architecture before making conclusions.
+
+>> Would be nice it that error came up again when you would try to set the domain, instead of silently ignoring it.
+
+> That is not an error message, its a head up and that would only apply
+> for the first update of the world regulatory domain. The regulatory
+> domain settings that a user would do next would be applied but like I
+> said you'd be restricting the device further.
+
+>> So now the only thing left is to try to find out if some one has hacked these bloody cards, what a mess.
+
+> Feel free to hack the living hell out of things, go wild.
+
+>> Do other cards like broadcom or whatever have the same issue ?
+
+> This is a non-issue in so far as hardware is concerned, this is a
+> regulatory thing, if you're unhappy you can lobby for ability to use
+> the spectrum as you wish all over the world. That won't go well, but
+> what may work well is if you can sign off on your responsibility for
+> causing issues. This is important -- consider weather radar channels
+> which are used on 5 GHz and are used to help with airplanes, you can't
+> just take any hardware and go crazy anywhere. There are reasons for
+> this. Upstream ships compliant solutions, what you do in your basement
+> is up to you.
+
+>>>  That said the fact that you are
+>>> not seeing a regulatory domain being set is an issue provided you have
+>>> CRDA installed or use CONFIG_CFG80211_INTERNAL_REGDB. Keep in mind
+>>> that the latest version of wireless-regdb had a signature issue
+>>> reported by users and not sure if that is cleared yet, so that would
+>>> also prevent the wireless-regdb being read even if CRDA was present.
+>>> To rule that out try putting the db.txt into net/wireless/db.txt and
+>>> compile with CONFIG_CFG80211_INTERNAL_REGDB for now.
+>>
+>> I did have CRDA installed (debian).
+>> And also compiled the db.txt in.
+
+> Can you verify that CRDA gets called? You should see something like this:
+
+> [   71.133856] cfg80211: Calling CRDA to update world regulatory domain
+> [   71.139098] cfg80211: World regulatory domain updated:
+> [   71.139102] cfg80211:  DFS Master region: unset
+> [   71.139104] cfg80211:   (start_freq - end_freq @ bandwidth),
+> (max_antenna_gain, max_eirp)
+> [   71.139106] cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz),
+> (N/A, 2000 mBm)
+> [   71.139108] cfg80211:   (2457000 KHz - 2482000 KHz @ 40000 KHz),
+> (N/A, 2000 mBm)
+> [   71.139110] cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz),
+> (N/A, 2000 mBm)
+> [   71.139112] cfg80211:   (5170000 KHz - 5250000 KHz @ 80000 KHz),
+> (N/A, 2000 mBm)
+> [   71.139114] cfg80211:   (5735000 KHz - 5835000 KHz @ 80000 KHz),
+> (N/A, 2000 mBm)
+> [   71.139115] cfg80211:   (57240000 KHz - 63720000 KHz @ 2160000
+> KHz), (N/A, 0 mBm)
+
+
+>>> Then send the dmesg output, no need for all that fluffy intel debug
+>>> log as its not useful in this case.
+>>
+>> Compiled with db.txt in:
+>>
+>> ~# iw reg set US
+>> ~# iw reg get
+>> country 00:
+>>         (2402 - 2472 @ 40), (6, 20)
+>>         (2457 - 2482 @ 40), (6, 20), PASSIVE-SCAN, NO-IBSS
+>>         (2474 - 2494 @ 20), (6, 20), NO-OFDM, PASSIVE-SCAN, NO-IBSS
+>>         (5170 - 5250 @ 160), (6, 20), PASSIVE-SCAN, NO-IBSS
+>>         (5250 - 5330 @ 160), (6, 20), DFS, PASSIVE-SCAN, NO-IBSS
+>>         (5490 - 5730 @ 160), (6, 20), DFS, PASSIVE-SCAN, NO-IBSS
+
+> This can be from the static world regulatory domain in the kernel, it
+> doesn't mean it came from CRDA.
+
+>> [    3.862108] cfg80211: Calling CRDA to update world regulatory domain
+
+> <-- snip -->
+
+>> [    4.818467] cfg80211: Ignoring regulatory request set by core since the driver uses its own custom regulatory domain
+
+> <-- snip -->
+
+>> [   20.502235] cfg80211: Pending regulatory request, waiting for it to be processed...
+
+> <-- snip -->
+
+>> [  126.454516] cfg80211: Pending regulatory request, waiting for it to be processed...
+
+> It doesn't seem like you are getting your original requests getting
+> processed, so I don't think CRDA is passing it. Can you verify running
+> from CRDA code:
+
+They don't get processed unless i remove the return from the code as i indicated.
+If i remove that return it processes the request.
+
+> ./regdbdump /usr/lib/crda/regulatory.bin
+
+Although it's in a different location on Debian, /lib/crda/regulatory.bin
+the dump seems fine.
+
+
+>   Luis
+
+
