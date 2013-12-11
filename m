@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab3LKTLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:11:45 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:45055 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab3LKTLn (ORCPT
+	id S1751861Ab3LKTLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:11:48 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:57010 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab3LKTLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:11:43 -0500
+	Wed, 11 Dec 2013 14:11:45 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
         Prarit Bhargava <prarit@redhat.com>,
         Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [RFC][PATCH 0/5] Timekeeping fixes v2
-Date: Wed, 11 Dec 2013 11:11:33 -0800
-Message-Id: <1386789098-17391-1-git-send-email-john.stultz@linaro.org>
+        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
+Subject: [RFC][PATCH 1/5] timekeeping: Fix lost updates to tai adjustment
+Date: Wed, 11 Dec 2013 11:11:34 -0800
+Message-Id: <1386789098-17391-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386789098-17391-1-git-send-email-john.stultz@linaro.org>
+References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In looking into the lockdep splat reported by Sasha this week,
-and came across a number of issues in the timekeeping code
-(some related and some not).
+Since 48cdc135d4840 (Implement a shadow timekeeper), we have to
+call timekeeping_update() after any adjustment to the timekeeping
+structure in order to make sure that any adjustments to the structure
+persist.
 
-Since I sent out v1, I came across another problem, as well as
-a fix for the lockdep issue, so I wanted to resend the patches
-for comment.
+Unfortunately, the updates to the tai offset via adjtimex do not
+trigger this update, causing adjustments to the tai offset to be
+made and then over-written by the previous value at the next
+update_wall_time() call.
 
-My current thought is that the first three patches are probably
-urgent 3.13 items, where as the last two can probably be deferred
-to 3.14.
-
-The TAI timer delay thinko is particularly embarrassing, but sine
-CLOCK_TAI was introduced in 3.10, its not exactly a regression, and
-probably doesn't yet have any users outside of my tests.
-
-Ingo/Thomas: Let me know if you agree with the first three patches
-as urgent. I'd probably skip the second, but it provides the
-infrastructure for the lockdep solution.
-
-Sigh. Back-porting that lockdep fix to 3.10 will be a bit of a
-pain, and I'll have to look to see if we need it even further back
-or not.
-
-thanks
--john
+This patch resovles the issue by calling timekeeping_update()
+right after setting the tai offset.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Prarit Bhargava <prarit@redhat.com>
 Cc: Richard Cochran <richardcochran@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: stable <stable@vger.kernel.org> #3.10+
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ kernel/time/timekeeping.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-John Stultz (5):
-  timekeeping: Fix lost updates to tai adjustment
-  timekeeping: Fix potential lost pv notification of time change
-  timekeeping: Avoid possible deadlock from clock_was_set_delayed
-  timekeeping: Fix CLOCK_TAI timer/nanosleep delays
-  timekeeping: Fix missing timekeeping_update in suspend path
-
- kernel/time/timekeeping.c | 37 +++++++++++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 10 deletions(-)
-
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 87b4f00..6bad3d9 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -610,6 +610,7 @@ void timekeeping_set_tai_offset(s32 tai_offset)
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+ 	write_seqcount_begin(&timekeeper_seq);
+ 	__timekeeping_set_tai_offset(tk, tai_offset);
++	timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
+ 	write_seqcount_end(&timekeeper_seq);
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 	clock_was_set();
+@@ -1698,7 +1699,7 @@ int do_adjtimex(struct timex *txc)
+ 
+ 	if (tai != orig_tai) {
+ 		__timekeeping_set_tai_offset(tk, tai);
+-		update_pvclock_gtod(tk, true);
++		timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
+ 		clock_was_set_delayed();
+ 	}
+ 	write_seqcount_end(&timekeeper_seq);
 -- 
 1.8.3.2
 
