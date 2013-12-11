@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3LKWkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:40:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2182 "EHLO mga02.intel.com"
+	id S1751776Ab3LKWk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:40:58 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51631 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab3LKWk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:40:29 -0500
+	id S1751450Ab3LKWkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:40:41 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
-   d="scan'208";a="423198030"
-Subject: [RFC][PATCH 0/3] re-shrink 'struct page' when SLUB is on.
+   d="scan'208";a="442703834"
+Subject: [RFC][PATCH 3/3] mm: slabs: reset page at free
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, cl@gentwo.org, kirill.shutemov@linux.intel.com,
         Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Wed, 11 Dec 2013 14:40:22 -0800
-Message-Id: <20131211224022.AA8CF0B9@viggo.jf.intel.com>
+Date: Wed, 11 Dec 2013 14:40:28 -0800
+References: <20131211224022.AA8CF0B9@viggo.jf.intel.com>
+In-Reply-To: <20131211224022.AA8CF0B9@viggo.jf.intel.com>
+Message-Id: <20131211224028.9D7AD2B7@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, here's the real reason I was digging around for exactly which
-fields in 'struct page' slub uses.
 
-SLUB depends on a 16-byte cmpxchg for an optimization.  For the
-purposes of this series, I'm assuming that it is a very important
-optimization that we desperately need to keep around.
+We now have slub's ->freelist usage impinging on page->mapping's
+storage space.  The buddy allocator wants ->mapping to be NULL
+when a page is handed back, so we have to make sure that it is
+cleared.
 
-In order to get guaranteed 16-byte alignment (required by the
-hardware on x86), 'struct page' is padded out from 56 to 64
-bytes.
+Note that slab already doeds this, so just create a common helper
+and have all the slabs do it this way.  ->mapping is right next
+to ->flags, so it's virtually guaranteed to be in the L1 at this
+point, so this shouldn't cost very much to do in practice.
 
-Those 8-bytes matter.  We've gone to great lengths to keep
-'struct page' small in the past.  It's a shame that we bloat it
-now just for alignment reasons when we have extra space.  These
-patches attempt _internal_ alignment instead of external
-alignment for slub.
+---
 
-I also got a bug report from some folks running a large database
-benchmark.  Their old kernel uses slab and their new one uses
-slub.  They were swapping and couldn't figure out why.  It turned
-out to be the 2GB of RAM that the slub padding wastes on their
-system.
+ linux.git-davehans/mm/slab.c |    3 +--
+ linux.git-davehans/mm/slab.h |   11 +++++++++++
+ linux.git-davehans/mm/slob.c |    2 +-
+ linux.git-davehans/mm/slub.c |    2 +-
+ 4 files changed, 14 insertions(+), 4 deletions(-)
 
-On my box, that 2GB cost about $200 to populate back when we
-bought it.  I want my $200 back.
-
-This is compile tested and lightly runtime tested.  I'm curious
-what people think of it before we push it futher.  This is on top
-of my previous patch to create a 'struct slab_page', but doesn't
-really rely on it.  It could easily be done independently.
+diff -puN mm/slab.c~slub-reset-page-at-free mm/slab.c
+--- linux.git/mm/slab.c~slub-reset-page-at-free	2013-12-11 13:19:55.026994096 -0800
++++ linux.git-davehans/mm/slab.c	2013-12-11 13:19:55.036994538 -0800
+@@ -1725,8 +1725,7 @@ static void kmem_freepages(struct kmem_c
+ 	BUG_ON(!PageSlab(page));
+ 	__ClearPageSlabPfmemalloc(page);
+ 	__ClearPageSlab(page);
+-	page_mapcount_reset(page);
+-	page->mapping = NULL;
++	slab_reset_page(page);
+ 
+ 	memcg_release_pages(cachep, cachep->gfporder);
+ 	if (current->reclaim_state)
+diff -puN mm/slab.h~slub-reset-page-at-free mm/slab.h
+--- linux.git/mm/slab.h~slub-reset-page-at-free	2013-12-11 13:19:55.028994185 -0800
++++ linux.git-davehans/mm/slab.h	2013-12-11 13:19:55.036994538 -0800
+@@ -279,3 +279,14 @@ struct kmem_cache_node {
+ void *slab_next(struct seq_file *m, void *p, loff_t *pos);
+ void slab_stop(struct seq_file *m, void *p);
+ 
++/*
++ * The slab allocators use 'struct page' fields for all kinds of
++ * things.  This resets the page so that the buddy allocator will
++ * be happy with it.
++ */
++static inline void slab_reset_page(struct page *page)
++{
++	page->mapping = NULL;
++	page_mapcount_reset(page);
++}
++
+diff -puN mm/slob.c~slub-reset-page-at-free mm/slob.c
+--- linux.git/mm/slob.c~slub-reset-page-at-free	2013-12-11 13:19:55.029994229 -0800
++++ linux.git-davehans/mm/slob.c	2013-12-11 13:19:55.036994538 -0800
+@@ -371,7 +371,7 @@ static void slob_free(void *block, int s
+ 			clear_slob_page_free(sp);
+ 		spin_unlock_irqrestore(&slob_lock, flags);
+ 		__ClearPageSlab((struct page *)sp);
+-		page_mapcount_reset((struct page *)sp);
++		slab_reset_page((struct page *)sp);
+ 		slob_free_pages(b, 0);
+ 		return;
+ 	}
+diff -puN mm/slub.c~slub-reset-page-at-free mm/slub.c
+--- linux.git/mm/slub.c~slub-reset-page-at-free	2013-12-11 13:19:55.031994317 -0800
++++ linux.git-davehans/mm/slub.c	2013-12-11 13:19:55.039994671 -0800
+@@ -1530,7 +1530,7 @@ static void __free_slab(struct kmem_cach
+ 	__ClearPageSlab(page);
+ 
+ 	memcg_release_pages(s, order);
+-	page_mapcount_reset(page);
++	slab_reset_page(page);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+ 	__free_memcg_kmem_pages(page, order);
+_
