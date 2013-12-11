@@ -1,99 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab3LKHJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:09:12 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:22196 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3LKHJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:09:07 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee691-b7fd26d000003f7b-b4-52a80f8c830f
-Content-transfer-encoding: 8BIT
-Message-id: <1386745678.2101.152.camel@kjgkr>
-Subject: Re: [PATCH 2/2] f2fs: fix the location of tracepoint
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Date: Wed, 11 Dec 2013 16:07:58 +0900
-In-reply-to: <1386741927-6007-2-git-send-email-jaegeuk.kim@samsung.com>
-References: <1386741927-6007-1-git-send-email-jaegeuk.kim@samsung.com>
- <1386741927-6007-2-git-send-email-jaegeuk.kim@samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI90e/hVBBs3LZS0uLXK32LP3JIvF
-	5V1z2ByYPXYv+Mzk8XmTXABTFJdNSmpOZllqkb5dAlfG2o+zWQreclRsnDuXuYGxkb2LkZND
-	QsBE4tz7Y0wQtpjEhXvr2boYuTiEBJYxSvxrvM8CU7T1xR12iMQiRokdS36AJXgFBCV+TL4H
-	ZHNwMAvISxy5lA0SZhZQl5g0bxEzRP0rRokVK78xQtTrSjxedg1sm7CArcTDnnZ2kF42AW2J
-	zfsNQMJCAooSb/ffZQUJiwDZl987QUz3kNh1rBTEZBFQlXj13hGkmFPAXaJ7znUWiMZmRomt
-	k1VBbH4BUYnDC7czQxyvJLG7vRPseAmBTewSN9pusYEkWAQEJL5NPgR2vISArMSmA1D1khIH
-	V9xgmcAoMQvJi7MQXpyF5MUFjMyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MUKiauIOxvsH
-	rA8xJgNtnMgsJZqcD4zKvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJpCeWpGanphakFsUX
-	leakFh9iZOLglGpgdEp6vum170772XFnZF5fruOWsWotmclvwn9xe2HupreqHFURX3e8uOUe
-	KJfPpr9OZNuDRJFLBkmih5kO6V44qP28b/9S6ZhjG3tf8vGtu8bOyD1djmvX8tpLMU8Zfr5L
-	XPPDwkdp5+MeSfc/i2pe/qg86bKZ42zUrmYRcQ/WeI1dv5nUny6pVmIpzkg01GIuKk4EAOXv
-	q6HAAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgG4P/4ogg+O3JS0uLXK32LP3JIvF
-	5V1z2ByYPXYv+Mzk8XmTXABTVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmS
-	Ql5ibqqtkotPgK5bZg7QDiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1j
-	xtqPs1kK3nJUbJw7l7mBsZG9i5GTQ0LARGLriztQtpjEhXvr2boYuTiEBBYxSuxY8oMFJMEr
-	ICjxY/I9IJuDg1lAXuLIpWyQMLOAusSkeYuYIepfMUqsWPmNEaJeV+LxsmtMILawgK3Ew552
-	dpBeNgFtic37DUDCQgKKEm/332UFCYsA2ZffO0FM95DYdawUxGQRUJV49d4RpJhTwF2ie851
-	FojGZkaJrZNVQWx+AVGJwwu3M0McrySxu72TfQKj0CwkJ89COHkWkpMXMDKvYhRNLUguKE5K
-	zzXUK07MLS7NS9dLzs/dxAiO2WdSOxhXNlgcYhTgYFTi4T1QtDxIiDWxrLgy9xCjBAezkgjv
-	CoYVQUK8KYmVValF+fFFpTmpxYcYk4HunsgsJZqcD0wneSXxhsYmZkaWRmYWRibm5qQJK4nz
-	Hmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAeHTKFAVlza8XtASay5dEvTD7Mi1x+29lAxGbq20V
-	cks6urbIe8rOFvGL21p9+n30hSu31zpMvP1n/5Mmd96MyfWzFDzOf9ylbCQev/H55Y1OjbFe
-	ifNfaEzy3pt2aleR8d/6JmOew68OtG1Olr+7+0nlnLjQwru2PKrt9reWJ75SCn1hJOJgqsRS
-	nJFoqMVcVJwIAOCCj0IdAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751408Ab3LKHLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:11:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43724 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759Ab3LKHLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 02:11:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,870,1378882800"; 
+   d="scan'208";a="450352416"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 01/15] perf, x86: Reduce lbr_sel_map size
+Date: Wed, 11 Dec 2013 15:10:46 +0800
+Message-Id: <1386745860-21143-2-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
+References: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops,
-Please ignore the second patch.
-Sorry for the noise.
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-2013-12-11 (수), 15:05 +0900, Jaegeuk Kim:
-> We need to get a trace before submit_bio, since its bi_sector is remapped during
-> the submit_bio.
-> 
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  fs/f2fs/data.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> index ebc9177..969df55 100644
-> --- a/fs/f2fs/data.c
-> +++ b/fs/f2fs/data.c
-> @@ -103,9 +103,10 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
->  
->  	rw = fio->rw | fio->rw_flag;
->  
-> +	trace_f2fs_submit_write_bio(io->sbi->sb, rw, fio->type, io->bio);
-> +
->  	if (is_read_io(rw)) {
->  		submit_bio(rw, io->bio);
-> -		trace_f2fs_submit_read_bio(io->sbi->sb, rw, fio->type, io->bio);
->  		io->bio = NULL;
->  		return;
->  	}
-> @@ -122,7 +123,6 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
->  	} else {
->  		submit_bio(rw, io->bio);
->  	}
-> -	trace_f2fs_submit_write_bio(io->sbi->sb, rw, fio->type, io->bio);
->  	io->bio = NULL;
->  }
->  
+The index of lbr_sel_map is bit value of perf branch_sample_type.
+PERF_SAMPLE_BRANCH_MAX is 1024 at present, so each lbr_sel_map
+uses 4096 bytes. If we use bit shift as index, each lbr_sel_map
+only uses 40 bytes.
 
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.h           |  4 +++
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 50 ++++++++++++++----------------
+ include/uapi/linux/perf_event.h            | 42 +++++++++++++++++--------
+ 3 files changed, 56 insertions(+), 40 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fd00bb2..745f6fb 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -459,6 +459,10 @@ struct x86_pmu {
+ 	struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
+ };
+ 
++enum {
++	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++};
++
+ #define x86_add_quirk(func_)						\
+ do {									\
+ 	static struct x86_pmu_quirk __quirk __initdata = {		\
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d82d155..1ae2ec5 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -69,10 +69,6 @@ static enum {
+ #define LBR_FROM_FLAG_IN_TX    (1ULL << 62)
+ #define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+ 
+-#define for_each_branch_sample_type(x) \
+-	for ((x) = PERF_SAMPLE_BRANCH_USER; \
+-	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
+-
+ /*
+  * x86control flow change classification
+  * x86control flow changes include branches, interrupts, traps, faults
+@@ -400,14 +396,14 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+ {
+ 	struct hw_perf_event_extra *reg;
+ 	u64 br_type = event->attr.branch_sample_type;
+-	u64 mask = 0, m;
+-	u64 v;
++	u64 mask = 0, v;
++	int i;
+ 
+-	for_each_branch_sample_type(m) {
+-		if (!(br_type & m))
++	for (i = 0; i < PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE; i++) {
++		if (!(br_type & (1ULL << i)))
+ 			continue;
+ 
+-		v = x86_pmu.lbr_sel_map[m];
++		v = x86_pmu.lbr_sel_map[i];
+ 		if (v == LBR_NOT_SUPP)
+ 			return -EOPNOTSUPP;
+ 
+@@ -662,33 +658,33 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+ /*
+  * Map interface branch filters onto LBR filters
+  */
+-static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+-	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
+-	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
+-	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
+-	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
+-	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_REL_JMP
+-					| LBR_IND_JMP | LBR_FAR,
++static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_REL_JMP
++						| LBR_IND_JMP | LBR_FAR,
+ 	/*
+ 	 * NHM/WSM erratum: must include REL_JMP+IND_JMP to get CALL branches
+ 	 */
+-	[PERF_SAMPLE_BRANCH_ANY_CALL] =
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT] =
+ 	 LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
+ 	/*
+ 	 * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
+ 	 */
+-	[PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT] = LBR_IND_CALL | LBR_IND_JMP,
+ };
+ 
+-static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+-	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
+-	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
+-	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
+-	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
+-	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_FAR,
+-	[PERF_SAMPLE_BRANCH_ANY_CALL]	= LBR_REL_CALL | LBR_IND_CALL
+-					| LBR_FAR,
+-	[PERF_SAMPLE_BRANCH_IND_CALL]	= LBR_IND_CALL,
++static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_FAR,
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
++						| LBR_FAR,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]	= LBR_IND_CALL,
+ };
+ 
+ /* core */
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index e1802d6..4d8c438 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -151,20 +151,36 @@ enum perf_event_sample_format {
+  * The branch types can be combined, however BRANCH_ANY covers all types
+  * of branches and therefore it supersedes all the other types.
+  */
++enum perf_branch_sample_type_shift {
++	PERF_SAMPLE_BRANCH_USER_SHIFT		= 0, /* user branches */
++	PERF_SAMPLE_BRANCH_KERNEL_SHIFT		= 1, /* kernel branches */
++	PERF_SAMPLE_BRANCH_HV_SHIFT		= 2, /* hypervisor branches */
++
++	PERF_SAMPLE_BRANCH_ANY_SHIFT		= 3, /* any branch types */
++	PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT	= 4, /* any call branch */
++	PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT	= 5, /* any return branch */
++	PERF_SAMPLE_BRANCH_IND_CALL_SHIFT	= 6, /* indirect calls */
++	PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT	= 7, /* transaction aborts */
++	PERF_SAMPLE_BRANCH_IN_TX_SHIFT		= 8, /* in transaction */
++	PERF_SAMPLE_BRANCH_NO_TX_SHIFT		= 9, /* not in transaction */
++
++	PERF_SAMPLE_BRANCH_MAX_SHIFT		/* non-ABI */
++};
++
+ enum perf_branch_sample_type {
+-	PERF_SAMPLE_BRANCH_USER		= 1U << 0, /* user branches */
+-	PERF_SAMPLE_BRANCH_KERNEL	= 1U << 1, /* kernel branches */
+-	PERF_SAMPLE_BRANCH_HV		= 1U << 2, /* hypervisor branches */
+-
+-	PERF_SAMPLE_BRANCH_ANY		= 1U << 3, /* any branch types */
+-	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
+-	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
+-	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
+-	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+-	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+-	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+-
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
++	PERF_SAMPLE_BRANCH_USER         = 1U << PERF_SAMPLE_BRANCH_USER_SHIFT,
++	PERF_SAMPLE_BRANCH_KERNEL       = 1U << PERF_SAMPLE_BRANCH_KERNEL_SHIFT,
++	PERF_SAMPLE_BRANCH_HV           = 1U << PERF_SAMPLE_BRANCH_HV_SHIFT,
++
++	PERF_SAMPLE_BRANCH_ANY          = 1U << PERF_SAMPLE_BRANCH_ANY_SHIFT,
++	PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
++	PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
++	PERF_SAMPLE_BRANCH_IND_CALL     = 1U << PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
++	PERF_SAMPLE_BRANCH_ABORT_TX     = 1U << PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_IN_TX        = 1U << PERF_SAMPLE_BRANCH_IN_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_NO_TX        = 1U << PERF_SAMPLE_BRANCH_NO_TX_SHIFT,
++
++	PERF_SAMPLE_BRANCH_MAX          = 1U << PERF_SAMPLE_BRANCH_MAX_SHIFT,
+ };
+ 
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
-Jaegeuk Kim
-Samsung
+1.8.1.4
 
