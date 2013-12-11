@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3LKM4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:56:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:41333 "EHLO mga02.intel.com"
+	id S1752797Ab3LKM5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:57:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11300 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab3LKMiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:38:08 -0500
+	id S1751030Ab3LKMiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 07:38:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,871,1378882800"; 
-   d="scan'208";a="422884972"
+   d="scan'208";a="448279622"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v0 05/71] x86: perf: Intel PT PMU driver
-Date: Wed, 11 Dec 2013 14:36:17 +0200
-Message-Id: <1386765443-26966-6-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+Date: Wed, 11 Dec 2013 14:36:16 +0200
+Message-Id: <1386765443-26966-5-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -29,80 +29,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Intel Processor Trace (PT) to kernel's perf/itrace events.
-PT is an extension of Intel Architecture that collects information about
-software execuction such as control flow, execution modes and timings and
-formats it into highly compressed binary packets. Even being compressed,
-these packets are generated at hundreds of megabytes per second per core,
-which makes it impractical to decode them on the fly in the kernel. Thus,
-buffers containing this binary stream are zero-copy mapped to the debug
-tools in userspace for subsequent decoding and analysis.
+Instruction tracing PMUs are capable of recording a log of instruction
+execution flow on a cpu core, which can be useful for profiling and crash
+analysis. This patch adds itrace infrastructure for perf events and the
+rest of the kernel to use.
 
-PT trace data can also be used to annotate other perf events by setting
-a corresponding bit in sample_type; it can also be included in process
-core dumps. This relies on itrace infrastructure extension to perf core.
+Since such PMUs can produce copious amounts of trace data, it may be
+impractical to process it inside the kernel in real time, but instead export
+raw trace streams to userspace for subsequent analysis. Thus, itrace PMUs
+may export their trace buffers, which can be mmap()ed to userspace from a
+perf event fd with a PERF_EVENT_ITRACE_OFFSET offset. To that end, perf
+is extended to work with multiple ring buffers per event, reusing the
+ring_buffer code in an attempt to reduce complexity.
+
+Also, trace data from such PMUs can be used to annotate other perf events
+by including it in sample records when PERF_SAMPLE_ITRACE flag is set. In
+this case, a PT kernel counter is created for each such event and trace data
+is retrieved from it and stored in the perf data stream.
+
+Finally, such per thread trace data can be included in process core dumps,
+which is controlled via a new rlimit parameter RLIMIT_ITRACE. This again
+is done by a per-thread kernel counter that is created when this RLIMIT_ITRACE
+is set.
+
+This infrastructure should also be useful for ARM ETM/PTM and other program
+flow tracing units that can potentially generate a lot of trace data very
+fast.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- arch/x86/include/uapi/asm/msr-index.h     |   18 +
- arch/x86/kernel/cpu/Makefile              |    1 +
- arch/x86/kernel/cpu/intel_pt.h            |  129 ++++
- arch/x86/kernel/cpu/perf_event.c          |    4 +
- arch/x86/kernel/cpu/perf_event_intel.c    |   10 +
- arch/x86/kernel/cpu/perf_event_intel_pt.c | 1167 +++++++++++++++++++++++++++++
- 6 files changed, 1329 insertions(+)
- create mode 100644 arch/x86/kernel/cpu/intel_pt.h
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
+ fs/binfmt_elf.c                     |   6 +
+ fs/proc/base.c                      |   1 +
+ include/asm-generic/resource.h      |   1 +
+ include/linux/itrace.h              | 147 +++++++++
+ include/linux/perf_event.h          |  33 +-
+ include/uapi/asm-generic/resource.h |   3 +-
+ include/uapi/linux/elf.h            |   1 +
+ include/uapi/linux/perf_event.h     |  25 +-
+ kernel/events/Makefile              |   2 +-
+ kernel/events/core.c                | 299 ++++++++++++------
+ kernel/events/internal.h            |   7 +
+ kernel/events/itrace.c              | 589 ++++++++++++++++++++++++++++++++++++
+ kernel/events/ring_buffer.c         |   2 +-
+ kernel/exit.c                       |   3 +
+ kernel/sys.c                        |   5 +
+ 15 files changed, 1020 insertions(+), 104 deletions(-)
+ create mode 100644 include/linux/itrace.h
+ create mode 100644 kernel/events/itrace.c
 
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index b93e09a..6dfa422 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -74,6 +74,24 @@
- #define MSR_IA32_PERF_CAPABILITIES	0x00000345
- #define MSR_PEBS_LD_LAT_THRESHOLD	0x000003f6
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 571a423..c7fcd49 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -34,6 +34,7 @@
+ #include <linux/utsname.h>
+ #include <linux/coredump.h>
+ #include <linux/sched.h>
++#include <linux/itrace.h>
+ #include <asm/uaccess.h>
+ #include <asm/param.h>
+ #include <asm/page.h>
+@@ -1576,6 +1577,8 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
+ 		}
+ 	}
  
-+#define MSR_IA32_RTIT_CTL		0x00000570
-+#define RTIT_CTL_TRACEEN		BIT(0)
-+#define RTIT_CTL_OS			BIT(2)
-+#define RTIT_CTL_USR			BIT(3)
-+#define RTIT_CTL_CR3EN			BIT(7)
-+#define RTIT_CTL_TOPA			BIT(8)
-+#define RTIT_CTL_TSC_EN			BIT(10)
-+#define RTIT_CTL_DISRETC		BIT(11)
-+#define RTIT_CTL_BRANCH_EN		BIT(13)
-+#define MSR_IA32_RTIT_STATUS		0x00000571
-+#define RTIT_STATUS_CONTEXTEN		BIT(1)
-+#define RTIT_STATUS_TRIGGEREN		BIT(2)
-+#define RTIT_STATUS_ERROR		BIT(4)
-+#define RTIT_STATUS_STOPPED		BIT(5)
-+#define MSR_IA32_RTIT_CR3_MATCH		0x00000572
-+#define MSR_IA32_RTIT_OUTPUT_BASE	0x00000560
-+#define MSR_IA32_RTIT_OUTPUT_MASK	0x00000561
++	*total += itrace_elf_note_size(t->task);
 +
- #define MSR_MTRRfix64K_00000		0x00000250
- #define MSR_MTRRfix16K_80000		0x00000258
- #define MSR_MTRRfix16K_A0000		0x00000259
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6359506..cb69de3 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -37,6 +37,7 @@ endif
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
- obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
-+obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_pt.o
- endif
+ 	return 1;
+ }
  
+@@ -1608,6 +1611,7 @@ static int fill_note_info(struct elfhdr *elf, int phdrs,
+ 	for (i = 0; i < view->n; ++i)
+ 		if (view->regsets[i].core_note_type != 0)
+ 			++info->thread_notes;
++	info->thread_notes++; /* ITRACE */
  
-diff --git a/arch/x86/kernel/cpu/intel_pt.h b/arch/x86/kernel/cpu/intel_pt.h
+ 	/*
+ 	 * Sanity check.  We rely on regset 0 being in NT_PRSTATUS,
+@@ -1710,6 +1714,8 @@ static int write_note_info(struct elf_note_info *info,
+ 			    !writenote(&t->notes[i], cprm))
+ 				return 0;
+ 
++		itrace_elf_note_write(cprm, t->task);
++
+ 		first = 0;
+ 		t = t->next;
+ 	} while (t);
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 1485e38..41785ec 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -471,6 +471,7 @@ static const struct limit_names lnames[RLIM_NLIMITS] = {
+ 	[RLIMIT_NICE] = {"Max nice priority", NULL},
+ 	[RLIMIT_RTPRIO] = {"Max realtime priority", NULL},
+ 	[RLIMIT_RTTIME] = {"Max realtime timeout", "us"},
++	[RLIMIT_ITRACE] = {"Max ITRACE buffer size", "bytes"},
+ };
+ 
+ /* Display limits for a process */
+diff --git a/include/asm-generic/resource.h b/include/asm-generic/resource.h
+index b4ea8f5..e6e5657 100644
+--- a/include/asm-generic/resource.h
++++ b/include/asm-generic/resource.h
+@@ -25,6 +25,7 @@
+ 	[RLIMIT_NICE]		= { 0, 0 },				\
+ 	[RLIMIT_RTPRIO]		= { 0, 0 },				\
+ 	[RLIMIT_RTTIME]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
++	[RLIMIT_ITRACE]		= {              0,  RLIM_INFINITY },	\
+ }
+ 
+ #endif
+diff --git a/include/linux/itrace.h b/include/linux/itrace.h
 new file mode 100644
-index 0000000..7fb10db
+index 0000000..c4175b3
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/intel_pt.h
-@@ -0,0 +1,129 @@
++++ b/include/linux/itrace.h
+@@ -0,0 +1,147 @@
 +/*
-+ * Intel(R) Processor Trace PMU driver for perf
++ * Instruction flow trace unit infrastructure
 + * Copyright (c) 2013, Intel Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -120,167 +164,1037 @@ index 0000000..7fb10db
 + *
 + */
 +
-+#ifndef __INTEL_PT_H__
-+#define __INTEL_PT_H__
++#ifndef _LINUX_ITRACE_H
++#define _LINUX_ITRACE_H
 +
-+#include <linux/radix-tree.h>
-+#include <linux/itrace.h>
++#include <linux/perf_event.h>
++#include <linux/coredump.h>
 +
-+/*
-+ * Single-entry ToPA: when this close to region boundary, switch
-+ * buffers to avoid losing data.
-+ */
-+#define TOPA_PMI_MARGIN 512
++extern struct ring_buffer_ops itrace_rb_ops;
 +
-+/*
-+ * Table of Physical Addresses bits
-+ */
-+enum topa_sz {
-+	TOPA_4K	= 0,
-+	TOPA_8K,
-+	TOPA_16K,
-+	TOPA_32K,
-+	TOPA_64K,
-+	TOPA_128K,
-+	TOPA_256K,
-+	TOPA_512K,
-+	TOPA_1MB,
-+	TOPA_2MB,
-+	TOPA_4MB,
-+	TOPA_8MB,
-+	TOPA_16MB,
-+	TOPA_32MB,
-+	TOPA_64MB,
-+	TOPA_128MB,
-+	TOPA_SZ_END,
-+};
++#define PERF_EVENT_ITRACE_PGOFF (PERF_EVENT_ITRACE_OFFSET >> PAGE_SHIFT)
 +
-+static inline unsigned int sizes(enum topa_sz tsz)
++static inline bool is_itrace_vma(struct vm_area_struct *vma)
 +{
-+	return 1 << (tsz + 12);
-+};
++	return vma->vm_pgoff == PERF_EVENT_ITRACE_PGOFF;
++}
 +
-+struct topa_entry {
-+	u64	end	: 1;
-+	u64	rsvd0	: 1;
-+	u64	intr	: 1;
-+	u64	rsvd1	: 1;
-+	u64	stop	: 1;
-+	u64	rsvd2	: 1;
-+	u64	size	: 4;
-+	u64	rsvd3	: 2;
-+	u64	base	: 36;
-+	u64	rsvd4	: 16;
-+};
++void *itrace_priv(struct perf_event *event);
 +
-+#define TOPA_SHIFT 12
-+#define PT_CPUID_LEAVES 2
++void *itrace_event_get_priv(struct perf_event *event);
++void itrace_event_put(struct perf_event *event);
 +
-+enum pt_capabilities {
-+	PT_CAP_max_subleaf = 0,
-+	PT_CAP_cr3_filtering,
-+	PT_CAP_topa_output,
-+	PT_CAP_topa_multiple_entries,
-+	PT_CAP_payloads_lip,
-+};
-+
-+struct pt_pmu {
-+	struct itrace_pmu	itrace;
-+	u32			caps[4 * PT_CPUID_LEAVES];
-+	char			*capstr;
-+	unsigned int		caplen;
-+};
-+
-+/**
-+ * struct pt_buffer - buffer configuration; one buffer per task_struct or
-+ * cpu, depending on perf event configuration
-+ * @tables: list of ToPA tables in this buffer
-+ * @first, @last: shorthands for first and last topa tables
-+ * @cur: current topa table
-+ * @size: total size of all output regions within this buffer
-+ * @cur_idx: current output region's index within @cur table
-+ * @output_off: offset within the current output region
-+ */
-+struct pt_buffer {
-+	/* hint for allocation */
-+	int			cpu;
-+	/* list of ToPA tables */
-+	struct list_head	tables;
-+	/* top-level table */
-+	struct topa		*first, *last, *cur;
-+	unsigned long		round;
-+	unsigned int		cur_idx;
-+	size_t			output_off;
-+	unsigned long		size;
-+	local64_t		head;
-+	unsigned long		watermark;
-+	bool			snapshot;
-+	struct perf_event_mmap_page *user_page;
-+	void			**data_pages;
-+};
-+
-+/**
-+ * struct pt - per-cpu pt
-+ */
-+struct pt {
-+	raw_spinlock_t		lock;
-+	struct perf_event	*event;
-+};
-+
-+void intel_pt_interrupt(void);
-+
-+#endif /* __INTEL_PT_H__ */
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 8e13293..9125797 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -385,6 +385,10 @@ static inline int precise_br_compat(struct perf_event *event)
- 
- int x86_pmu_hw_config(struct perf_event *event)
- {
-+	if (event->attr.sample_type & PERF_SAMPLE_ITRACE &&
-+	    event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK)
-+		return -EINVAL;
-+
- 	if (event->attr.precise_ip) {
- 		int precise = 0;
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0fa4f24..28b5023 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1312,6 +1312,8 @@ int intel_pmu_save_and_restart(struct perf_event *event)
- 	return x86_perf_event_set_period(event);
- }
- 
-+void intel_pt_interrupt(void);
-+
- static void intel_pmu_reset(void)
- {
- 	struct debug_store *ds = __this_cpu_read(cpu_hw_events.ds);
-@@ -1393,6 +1395,14 @@ again:
- 	}
- 
- 	/*
-+	 * Intel PT
++struct itrace_pmu {
++	struct pmu		pmu;
++	/*
++	 * Allocate/free ring_buffer backing store
 +	 */
-+	if (__test_and_clear_bit(55, (unsigned long *)&status)) {
-+		handled++;
-+		intel_pt_interrupt();
-+	}
++	void			*(*alloc_buffer)(int cpu, int nr_pages, bool overwrite,
++						 void **pages,
++						 struct perf_event_mmap_page **user_page);
++	void			(*free_buffer)(void *buffer);
++
++	int			(*event_init)(struct perf_event *event);
 +
 +	/*
- 	 * Checkpointed counters can lead to 'spurious' PMIs because the
- 	 * rollback caused by the PMI will have cleared the overflow status
- 	 * bit. Therefore always force probe these counters.
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_pt.c b/arch/x86/kernel/cpu/perf_event_intel_pt.c
++	 * Calculate the size of a sample to be written out
++	 */
++	unsigned long		(*sample_trace)(struct perf_event *event,
++						struct perf_sample_data *data);
++
++	/*
++	 * Write out a trace sample to the given output handle
++	 */
++	void			(*sample_output)(struct perf_event *event,
++						 struct perf_output_handle *handle,
++						 struct perf_sample_data *data);
++
++	/*
++	 * Get the PMU-specific part of a core dump note
++	 */
++	size_t			(*core_size)(struct perf_event *event);
++
++	/*
++	 * Write out the core dump note
++	 */
++	void			(*core_output)(struct coredump_params *cprm,
++					       struct perf_event *event,
++					       unsigned long len);
++	char			*name;
++};
++
++#define to_itrace_pmu(x) container_of((x), struct itrace_pmu, pmu)
++
++#ifdef CONFIG_PERF_EVENTS
++
++extern void itrace_lost_data(struct perf_event *event, u64 offset);
++extern int itrace_pmu_register(struct itrace_pmu *ipmu);
++
++extern int itrace_event_installable(struct perf_event *event,
++				    struct perf_event_context *ctx);
++
++extern void itrace_wake_up(struct perf_event *event);
++
++extern bool is_itrace_event(struct perf_event *event);
++
++extern int itrace_sampler_init(struct perf_event *event,
++			       struct task_struct *task);
++extern void itrace_sampler_fini(struct perf_event *event);
++extern unsigned long itrace_sampler_trace(struct perf_event *event,
++					  struct perf_sample_data *data);
++extern void itrace_sampler_output(struct perf_event *event,
++				  struct perf_output_handle *handle,
++				  struct perf_sample_data *data);
++
++extern int update_itrace_rlimit(struct task_struct *, unsigned long);
++extern void exit_itrace(struct task_struct *);
++
++struct itrace_note {
++	u64	itrace_config;
++};
++
++extern size_t itrace_elf_note_size(struct task_struct *tsk);
++extern void itrace_elf_note_write(struct coredump_params *cprm,
++				  struct task_struct *task);
++#else
++static inline void
++itrace_lost_data(struct perf_event *event, u64 offset)		{}
++static inline int itrace_pmu_register(struct itrace_pmu *ipmu)	{ return -EINVAL; }
++
++static inline int
++itrace_event_installable(struct perf_event *event,
++			 struct perf_event_context *ctx)	{ return -EINVAL; }
++static inline void itrace_wake_up(struct perf_event *event)	{}
++static inline bool is_itrace_event(struct perf_event *event)	{ return false; }
++
++static inline int itrace_sampler_init(struct perf_event *event,
++				      struct task_struct *task)	{}
++static inline void
++itrace_sampler_fini(struct perf_event *event)			{}
++static inline unsigned long
++itrace_sampler_trace(struct perf_event *event,
++		     struct perf_sample_data *data)		{ return 0; }
++static inline void
++itrace_sampler_output(struct perf_event *event,
++		      struct perf_output_handle *handle,
++		      struct perf_sample_data *data)		{}
++
++static inline int
++update_itrace_rlimit(struct task_struct *, unsigned long)	{ return -EINVAL; }
++static inline void exit_itrace(struct task_struct *)		{}
++
++static inline size_t
++itrace_elf_note_size(struct task_struct *tsk)			{ return 0; }
++static inline void
++itrace_elf_note_write(struct coredump_params *cprm,
++		      struct task_struct *task)			{}
++
++#endif
++
++#endif /* _LINUX_PERF_EVENT_H */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 8f4a70f..b27cfc7 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -83,6 +83,12 @@ struct perf_regs_user {
+ 	struct pt_regs	*regs;
+ };
+ 
++struct perf_trace_record {
++	u64		size;
++	unsigned long	from;
++	unsigned long	to;
++};
++
+ struct task_struct;
+ 
+ /*
+@@ -97,6 +103,14 @@ struct hw_perf_event_extra {
+ 
+ struct event_constraint;
+ 
++enum perf_itrace_counter_type {
++	PERF_ITRACE_USER	= BIT(1),
++	PERF_ITRACE_SAMPLING	= BIT(2),
++	PERF_ITRACE_COREDUMP	= BIT(3),
++	PERF_ITRACE_KERNEL	= (PERF_ITRACE_SAMPLING | PERF_ITRACE_COREDUMP),
++	PERF_ITRACE_ANY		= (PERF_ITRACE_KERNEL | PERF_ITRACE_USER),
++};
++
+ /**
+  * struct hw_perf_event - performance event hardware details:
+  */
+@@ -126,6 +140,10 @@ struct hw_perf_event {
+ 			/* for tp_event->class */
+ 			struct list_head	tp_list;
+ 		};
++		struct { /* itrace */
++			struct task_struct	*itrace_target;
++			unsigned int		counter_type;
++		};
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 		struct { /* breakpoint */
+ 			/*
+@@ -289,6 +307,12 @@ struct swevent_hlist {
+ struct perf_cgroup;
+ struct ring_buffer;
+ 
++enum perf_event_rb {
++	PERF_RB_MAIN = 0,
++	PERF_RB_ITRACE,
++	PERF_NR_RB,
++};
++
+ /**
+  * struct perf_event - performance event kernel representation:
+  */
+@@ -400,10 +424,10 @@ struct perf_event {
+ 
+ 	/* mmap bits */
+ 	struct mutex			mmap_mutex;
+-	atomic_t			mmap_count;
++	atomic_t			mmap_count[PERF_NR_RB];
+ 
+-	struct ring_buffer		*rb;
+-	struct list_head		rb_entry;
++	struct ring_buffer		*rb[PERF_NR_RB];
++	struct list_head		rb_entry[PERF_NR_RB];
+ 
+ 	/* poll related */
+ 	wait_queue_head_t		waitq;
+@@ -426,6 +450,7 @@ struct perf_event {
+ 	perf_overflow_handler_t		overflow_handler;
+ 	void				*overflow_handler_context;
+ 
++	struct perf_event		*trace_event;
+ #ifdef CONFIG_EVENT_TRACING
+ 	struct ftrace_event_call	*tp_event;
+ 	struct event_filter		*filter;
+@@ -583,6 +608,7 @@ struct perf_sample_data {
+ 	union  perf_mem_data_src	data_src;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
++	struct perf_trace_record	trace;
+ 	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
+@@ -603,6 +629,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->period = period;
+ 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 	data->regs_user.regs = NULL;
++	data->trace.from = data->trace.to = data->trace.size = 0;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
+ 	data->data_src.val = 0;
+diff --git a/include/uapi/asm-generic/resource.h b/include/uapi/asm-generic/resource.h
+index f863428..073f413 100644
+--- a/include/uapi/asm-generic/resource.h
++++ b/include/uapi/asm-generic/resource.h
+@@ -45,7 +45,8 @@
+ 					   0-39 for nice level 19 .. -20 */
+ #define RLIMIT_RTPRIO		14	/* maximum realtime priority */
+ #define RLIMIT_RTTIME		15	/* timeout for RT tasks in us */
+-#define RLIM_NLIMITS		16
++#define RLIMIT_ITRACE		16	/* max itrace size */
++#define RLIM_NLIMITS		17
+ 
+ /*
+  * SuS says limits have to be unsigned.
+diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+index ef6103b..4bfbf66 100644
+--- a/include/uapi/linux/elf.h
++++ b/include/uapi/linux/elf.h
+@@ -369,6 +369,7 @@ typedef struct elf64_shdr {
+ #define NT_PRPSINFO	3
+ #define NT_TASKSTRUCT	4
+ #define NT_AUXV		6
++#define NT_ITRACE	7
+ /*
+  * Note to userspace developers: size of NT_SIGINFO note may increase
+  * in the future to accomodate more fields, don't assume it is fixed!
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index e1802d6..9e3a890 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -137,8 +137,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
+ 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+ 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
++	PERF_SAMPLE_ITRACE			= 1U << 18,
+ 
+-	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
+ };
+ 
+ /*
+@@ -237,6 +238,10 @@ enum perf_event_read_format {
+ #define PERF_ATTR_SIZE_VER2	80	/* add: branch_sample_type */
+ #define PERF_ATTR_SIZE_VER3	96	/* add: sample_regs_user */
+ 					/* add: sample_stack_user */
++#define PERF_ATTR_SIZE_VER4	120	/* add: itrace_config */
++					/* add: itrace_watermark */
++					/* add: itrace_sample_type */
++					/* add: itrace_sample_size */
+ 
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+@@ -333,6 +338,11 @@ struct perf_event_attr {
+ 
+ 	/* Align to u64. */
+ 	__u32	__reserved_2;
++
++	__u64	itrace_config;
++	__u32	itrace_watermark;	/* wakeup every n pages */
++	__u32	itrace_sample_type;	/* pmu->type of the itrace PMU */
++	__u64	itrace_sample_size;
+ };
+ 
+ #define perf_flags(attr)	(*(&(attr)->read_format + 1))
+@@ -679,6 +689,8 @@ enum perf_event_type {
+ 	 *
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
++	 *	{ u64			size;
++	 *	  char			data[size]; } && PERF_SAMPLE_ITRACE
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -704,9 +716,20 @@ enum perf_event_type {
+ 	 */
+ 	PERF_RECORD_MMAP2			= 10,
+ 
++	/*
++	 * struct {
++	 *   u64 offset;
++	 * }
++	 */
++	PERF_RECORD_ITRACE_LOST			= 11,
++
+ 	PERF_RECORD_MAX,			/* non-ABI */
+ };
+ 
++/* Architecture-specific data */
++
++#define PERF_EVENT_ITRACE_OFFSET	0x40000000
++
+ #define PERF_MAX_STACK_DEPTH		127
+ 
+ enum perf_callchain_context {
+diff --git a/kernel/events/Makefile b/kernel/events/Makefile
+index 103f5d1..46a3770 100644
+--- a/kernel/events/Makefile
++++ b/kernel/events/Makefile
+@@ -2,7 +2,7 @@ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_core.o = -pg
+ endif
+ 
+-obj-y := core.o ring_buffer.o callchain.o
++obj-y := core.o ring_buffer.o callchain.o itrace.o
+ 
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_UPROBES) += uprobes.o
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 7c3faf1..ca8a130 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -39,6 +39,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
++#include <linux/itrace.h>
+ 
+ #include "internal.h"
+ 
+@@ -1575,6 +1576,9 @@ void perf_event_disable(struct perf_event *event)
+ 	struct perf_event_context *ctx = event->ctx;
+ 	struct task_struct *task = ctx->task;
+ 
++	if (event->trace_event)
++		perf_event_disable(event->trace_event);
++
+ 	if (!task) {
+ 		/*
+ 		 * Disable the event on the cpu that it's on
+@@ -2071,6 +2075,8 @@ void perf_event_enable(struct perf_event *event)
+ 	struct perf_event_context *ctx = event->ctx;
+ 	struct task_struct *task = ctx->task;
+ 
++	if (event->trace_event)
++		perf_event_enable(event->trace_event);
+ 	if (!task) {
+ 		/*
+ 		 * Enable the event on the cpu that it's on
+@@ -3180,9 +3186,6 @@ static void free_event_rcu(struct rcu_head *head)
+ 	kfree(event);
+ }
+ 
+-static void ring_buffer_put(struct ring_buffer *rb);
+-static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
+-
+ static void unaccount_event_cpu(struct perf_event *event, int cpu)
+ {
+ 	if (event->parent)
+@@ -3215,6 +3218,8 @@ static void unaccount_event(struct perf_event *event)
+ 		static_key_slow_dec_deferred(&perf_sched_events);
+ 	if (has_branch_stack(event))
+ 		static_key_slow_dec_deferred(&perf_sched_events);
++	if ((event->attr.sample_type & PERF_SAMPLE_ITRACE) && event->trace_event)
++		itrace_sampler_fini(event);
+ 
+ 	unaccount_event_cpu(event, event->cpu);
+ }
+@@ -3236,28 +3241,31 @@ static void __free_event(struct perf_event *event)
+ }
+ static void free_event(struct perf_event *event)
+ {
++	int rbx;
++
+ 	irq_work_sync(&event->pending);
+ 
+ 	unaccount_event(event);
+ 
+-	if (event->rb) {
+-		struct ring_buffer *rb;
++	for (rbx = PERF_RB_MAIN; rbx < PERF_NR_RB; rbx++)
++		if (event->rb[rbx]) {
++			struct ring_buffer *rb;
+ 
+-		/*
+-		 * Can happen when we close an event with re-directed output.
+-		 *
+-		 * Since we have a 0 refcount, perf_mmap_close() will skip
+-		 * over us; possibly making our ring_buffer_put() the last.
+-		 */
+-		mutex_lock(&event->mmap_mutex);
+-		rb = event->rb;
+-		if (rb) {
+-			rcu_assign_pointer(event->rb, NULL);
+-			ring_buffer_detach(event, rb);
+-			ring_buffer_put(rb); /* could be last */
++			/*
++			 * Can happen when we close an event with re-directed output.
++			 *
++			 * Since we have a 0 refcount, perf_mmap_close() will skip
++			 * over us; possibly making our ring_buffer_put() the last.
++			 */
++			mutex_lock(&event->mmap_mutex);
++			rb = event->rb[rbx];
++			if (rb) {
++				rcu_assign_pointer(event->rb[rbx], NULL);
++				ring_buffer_detach(event, rb);
++				ring_buffer_put(rb); /* could be last */
++			}
++			mutex_unlock(&event->mmap_mutex);
+ 		}
+-		mutex_unlock(&event->mmap_mutex);
+-	}
+ 
+ 	if (is_cgroup_event(event))
+ 		perf_detach_cgroup(event);
+@@ -3486,21 +3494,24 @@ static unsigned int perf_poll(struct file *file, poll_table *wait)
+ {
+ 	struct perf_event *event = file->private_data;
+ 	struct ring_buffer *rb;
+-	unsigned int events = POLL_HUP;
++	unsigned int events = 0;
++	int i;
+ 
+ 	/*
+ 	 * Pin the event->rb by taking event->mmap_mutex; otherwise
+ 	 * perf_event_set_output() can swizzle our rb and make us miss wakeups.
+ 	 */
+ 	mutex_lock(&event->mmap_mutex);
+-	rb = event->rb;
+-	if (rb)
+-		events = atomic_xchg(&rb->poll, 0);
++	for (i = PERF_RB_MAIN; i < PERF_NR_RB; i++) {
++		rb = event->rb[i];
++		if (rb)
++			events |= atomic_xchg(&rb->poll, 0);
++	}
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+ 	poll_wait(file, &event->waitq, wait);
+ 
+-	return events;
++	return events ? events : POLL_HUP;
+ }
+ 
+ static void perf_event_reset(struct perf_event *event)
+@@ -3717,7 +3728,7 @@ static void perf_event_init_userpage(struct perf_event *event)
+ 	struct ring_buffer *rb;
+ 
+ 	rcu_read_lock();
+-	rb = rcu_dereference(event->rb);
++	rb = rcu_dereference(event->rb[PERF_RB_MAIN]);
+ 	if (!rb)
+ 		goto unlock;
+ 
+@@ -3747,7 +3758,7 @@ void perf_event_update_userpage(struct perf_event *event)
+ 	u64 enabled, running, now;
+ 
+ 	rcu_read_lock();
+-	rb = rcu_dereference(event->rb);
++	rb = rcu_dereference(event->rb[PERF_RB_MAIN]);
+ 	if (!rb)
+ 		goto unlock;
+ 
+@@ -3794,23 +3805,29 @@ static int perf_mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct perf_event *event = vma->vm_file->private_data;
+ 	struct ring_buffer *rb;
+-	int ret = VM_FAULT_SIGBUS;
++	unsigned long pgoff = vmf->pgoff;
++	int ret = VM_FAULT_SIGBUS, rbx = PERF_RB_MAIN;
++
++	if (is_itrace_event(event) && is_itrace_vma(vma)) {
++		rbx = PERF_RB_ITRACE;
++		pgoff -= PERF_EVENT_ITRACE_PGOFF;
++	}
+ 
+ 	if (vmf->flags & FAULT_FLAG_MKWRITE) {
+-		if (vmf->pgoff == 0)
++		if (pgoff == 0)
+ 			ret = 0;
+ 		return ret;
+ 	}
+ 
+ 	rcu_read_lock();
+-	rb = rcu_dereference(event->rb);
++	rb = rcu_dereference(event->rb[rbx]);
+ 	if (!rb)
+ 		goto unlock;
+ 
+-	if (vmf->pgoff && (vmf->flags & FAULT_FLAG_WRITE))
++	if (pgoff && (vmf->flags & FAULT_FLAG_WRITE))
+ 		goto unlock;
+ 
+-	vmf->page = perf_mmap_to_page(rb, vmf->pgoff);
++	vmf->page = perf_mmap_to_page(rb, pgoff);
+ 	if (!vmf->page)
+ 		goto unlock;
+ 
+@@ -3825,29 +3842,33 @@ unlock:
+ 	return ret;
+ }
+ 
+-static void ring_buffer_attach(struct perf_event *event,
+-			       struct ring_buffer *rb)
++void ring_buffer_attach(struct perf_event *event,
++			struct ring_buffer *rb)
+ {
++	int rbx = rb->priv ? PERF_RB_ITRACE : PERF_RB_MAIN;
++	struct list_head *head = &event->rb_entry[rbx];
+ 	unsigned long flags;
+ 
+-	if (!list_empty(&event->rb_entry))
++	if (!list_empty(head))
+ 		return;
+ 
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+-	if (list_empty(&event->rb_entry))
+-		list_add(&event->rb_entry, &rb->event_list);
++	if (list_empty(head))
++		list_add(head, &rb->event_list);
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
+ }
+ 
+-static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
++void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
+ {
++	int rbx = rb->priv ? PERF_RB_ITRACE : PERF_RB_MAIN;
++	struct list_head *head = &event->rb_entry[rbx];
+ 	unsigned long flags;
+ 
+-	if (list_empty(&event->rb_entry))
++	if (list_empty(head))
+ 		return;
+ 
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+-	list_del_init(&event->rb_entry);
++	list_del_init(head);
+ 	wake_up_all(&event->waitq);
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
+ }
+@@ -3855,12 +3876,16 @@ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
+ static void ring_buffer_wakeup(struct perf_event *event)
+ {
+ 	struct ring_buffer *rb;
++	struct perf_event *iter;
++	int rbx;
+ 
+ 	rcu_read_lock();
+-	rb = rcu_dereference(event->rb);
+-	if (rb) {
+-		list_for_each_entry_rcu(event, &rb->event_list, rb_entry)
+-			wake_up_all(&event->waitq);
++	for (rbx = PERF_RB_MAIN; rbx < PERF_NR_RB; rbx++) {
++		rb = rcu_dereference(event->rb[rbx]);
++		if (rb) {
++			list_for_each_entry_rcu(iter, &rb->event_list, rb_entry[rbx])
++				wake_up_all(&iter->waitq);
++		}
+ 	}
+ 	rcu_read_unlock();
+ }
+@@ -3873,12 +3898,12 @@ static void rb_free_rcu(struct rcu_head *rcu_head)
+ 	rb_free(rb);
+ }
+ 
+-static struct ring_buffer *ring_buffer_get(struct perf_event *event)
++struct ring_buffer *ring_buffer_get(struct perf_event *event, int rbx)
+ {
+ 	struct ring_buffer *rb;
+ 
+ 	rcu_read_lock();
+-	rb = rcu_dereference(event->rb);
++	rb = rcu_dereference(event->rb[rbx]);
+ 	if (rb) {
+ 		if (!atomic_inc_not_zero(&rb->refcount))
+ 			rb = NULL;
+@@ -3888,7 +3913,7 @@ static struct ring_buffer *ring_buffer_get(struct perf_event *event)
+ 	return rb;
+ }
+ 
+-static void ring_buffer_put(struct ring_buffer *rb)
++void ring_buffer_put(struct ring_buffer *rb)
+ {
+ 	if (!atomic_dec_and_test(&rb->refcount))
+ 		return;
+@@ -3901,9 +3926,10 @@ static void ring_buffer_put(struct ring_buffer *rb)
+ static void perf_mmap_open(struct vm_area_struct *vma)
+ {
+ 	struct perf_event *event = vma->vm_file->private_data;
++	int rbx = is_itrace_vma(vma) ? PERF_RB_ITRACE : PERF_RB_MAIN;
+ 
+-	atomic_inc(&event->mmap_count);
+-	atomic_inc(&event->rb->mmap_count);
++	atomic_inc(&event->mmap_count[rbx]);
++	atomic_inc(&event->rb[rbx]->mmap_count);
+ }
+ 
+ /*
+@@ -3917,19 +3943,19 @@ static void perf_mmap_open(struct vm_area_struct *vma)
+ static void perf_mmap_close(struct vm_area_struct *vma)
+ {
+ 	struct perf_event *event = vma->vm_file->private_data;
+-
+-	struct ring_buffer *rb = event->rb;
++	int rbx = is_itrace_vma(vma) ? PERF_RB_ITRACE : PERF_RB_MAIN;
++	struct ring_buffer *rb = event->rb[rbx];
+ 	struct user_struct *mmap_user = rb->mmap_user;
+ 	int mmap_locked = rb->mmap_locked;
+ 	unsigned long size = perf_data_size(rb);
+ 
+ 	atomic_dec(&rb->mmap_count);
+ 
+-	if (!atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex))
++	if (!atomic_dec_and_mutex_lock(&event->mmap_count[rbx], &event->mmap_mutex))
+ 		return;
+ 
+ 	/* Detach current event from the buffer. */
+-	rcu_assign_pointer(event->rb, NULL);
++	rcu_assign_pointer(event->rb[rbx], NULL);
+ 	ring_buffer_detach(event, rb);
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+@@ -3946,7 +3972,7 @@ static void perf_mmap_close(struct vm_area_struct *vma)
+ 	 */
+ again:
+ 	rcu_read_lock();
+-	list_for_each_entry_rcu(event, &rb->event_list, rb_entry) {
++	list_for_each_entry_rcu(event, &rb->event_list, rb_entry[rbx]) {
+ 		if (!atomic_long_inc_not_zero(&event->refcount)) {
+ 			/*
+ 			 * This event is en-route to free_event() which will
+@@ -3967,8 +3993,8 @@ again:
+ 		 * still restart the iteration to make sure we're not now
+ 		 * iterating the wrong list.
+ 		 */
+-		if (event->rb == rb) {
+-			rcu_assign_pointer(event->rb, NULL);
++		if (event->rb[rbx] == rb) {
++			rcu_assign_pointer(event->rb[rbx], NULL);
+ 			ring_buffer_detach(event, rb);
+ 			ring_buffer_put(rb); /* can't be last, we still have one */
+ 		}
+@@ -4017,6 +4043,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 	unsigned long nr_pages;
+ 	long user_extra, extra;
+ 	int ret = 0, flags = 0;
++	int rbx = PERF_RB_MAIN;
+ 
+ 	/*
+ 	 * Don't allow mmap() of inherited per-task counters. This would
+@@ -4030,31 +4057,39 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 		return -EINVAL;
+ 
+ 	vma_size = vma->vm_end - vma->vm_start;
++
++	if (is_itrace_event(event) && is_itrace_vma(vma))
++		rbx = PERF_RB_ITRACE;
++
+ 	nr_pages = (vma_size / PAGE_SIZE) - 1;
+ 
+ 	/*
+ 	 * If we have rb pages ensure they're a power-of-two number, so we
+ 	 * can do bitmasks instead of modulo.
+ 	 */
+-	if (nr_pages != 0 && !is_power_of_2(nr_pages))
+-		return -EINVAL;
++	if (!rbx) {
++		if (nr_pages != 0 && !is_power_of_2(nr_pages))
++			return -EINVAL;
++
++		if (vma->vm_pgoff != 0)
++			return -EINVAL;
++	}
+ 
+ 	if (vma_size != PAGE_SIZE * (1 + nr_pages))
+ 		return -EINVAL;
+ 
+-	if (vma->vm_pgoff != 0)
+-		return -EINVAL;
+ 
+ 	WARN_ON_ONCE(event->ctx->parent_ctx);
+ again:
+ 	mutex_lock(&event->mmap_mutex);
+-	if (event->rb) {
+-		if (event->rb->nr_pages != nr_pages) {
++	rb = event->rb[rbx];
++	if (rb) {
++		if (rb->nr_pages != nr_pages) {
+ 			ret = -EINVAL;
+ 			goto unlock;
+ 		}
+ 
+-		if (!atomic_inc_not_zero(&event->rb->mmap_count)) {
++		if (!atomic_inc_not_zero(&rb->mmap_count)) {
+ 			/*
+ 			 * Raced against perf_mmap_close() through
+ 			 * perf_event_set_output(). Try again, hope for better
+@@ -4091,14 +4126,14 @@ again:
+ 		goto unlock;
+ 	}
+ 
+-	WARN_ON(event->rb);
++	WARN_ON(event->rb[rbx]);
+ 
+ 	if (vma->vm_flags & VM_WRITE)
+ 		flags |= RING_BUFFER_WRITABLE;
+ 
+ 	rb = rb_alloc(nr_pages, 
+ 		event->attr.watermark ? event->attr.wakeup_watermark : 0,
+-		event->cpu, flags, NULL);
++		event->cpu, flags, rbx ? &itrace_rb_ops : NULL);
+ 
+ 	if (!rb) {
+ 		ret = -ENOMEM;
+@@ -4113,14 +4148,14 @@ again:
+ 	vma->vm_mm->pinned_vm += extra;
+ 
+ 	ring_buffer_attach(event, rb);
+-	rcu_assign_pointer(event->rb, rb);
++	rcu_assign_pointer(event->rb[rbx], rb);
+ 
+ 	perf_event_init_userpage(event);
+ 	perf_event_update_userpage(event);
+ 
+ unlock:
+ 	if (!ret)
+-		atomic_inc(&event->mmap_count);
++		atomic_inc(&event->mmap_count[rbx]);
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+ 	/*
+@@ -4626,6 +4661,13 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_TRANSACTION)
+ 		perf_output_put(handle, data->txn);
+ 
++	if (sample_type & PERF_SAMPLE_ITRACE) {
++		perf_output_put(handle, data->trace.size);
++
++		if (data->trace.size)
++			itrace_sampler_output(event, handle, data);
++	}
++
+ 	if (!event->attr.watermark) {
+ 		int wakeup_events = event->attr.wakeup_events;
+ 
+@@ -4733,6 +4775,14 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		data->stack_user_size = stack_size;
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_ITRACE) {
++		u64 size = sizeof(u64);
++
++		size += itrace_sampler_trace(event, data);
++
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -6652,6 +6702,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	struct perf_event *event;
+ 	struct hw_perf_event *hwc;
+ 	long err = -EINVAL;
++	int rbx;
+ 
+ 	if ((unsigned)cpu >= nr_cpu_ids) {
+ 		if (!task || cpu != -1)
+@@ -6675,7 +6726,8 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	INIT_LIST_HEAD(&event->group_entry);
+ 	INIT_LIST_HEAD(&event->event_entry);
+ 	INIT_LIST_HEAD(&event->sibling_list);
+-	INIT_LIST_HEAD(&event->rb_entry);
++	for (rbx = PERF_RB_MAIN; rbx < PERF_NR_RB; rbx++)
++		INIT_LIST_HEAD(&event->rb_entry[rbx]);
+ 	INIT_LIST_HEAD(&event->active_entry);
+ 
+ 	init_waitqueue_head(&event->waitq);
+@@ -6702,6 +6754,8 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 
+ 		if (attr->type == PERF_TYPE_TRACEPOINT)
+ 			event->hw.tp_target = task;
++		else if (is_itrace_event(event))
++			event->hw.itrace_target = task;
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 		/*
+ 		 * hw_breakpoint is a bit difficult here..
+@@ -6751,6 +6805,15 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 			if (err)
+ 				goto err_pmu;
+ 		}
++
++		if (event->attr.sample_type & PERF_SAMPLE_ITRACE) {
++			err = itrace_sampler_init(event, task);
++			if (err) {
++				/* XXX: either clean up callchain buffers too
++				   or forbid them to go together */
++				goto err_pmu;
++			}
++		}
+ 	}
+ 
+ 	return event;
+@@ -6901,8 +6964,7 @@ err_size:
+ static int
+ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
+ {
+-	struct ring_buffer *rb = NULL, *old_rb = NULL;
+-	int ret = -EINVAL;
++	int ret = -EINVAL, rbx;
+ 
+ 	if (!output_event)
+ 		goto set;
+@@ -6922,42 +6984,60 @@ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
+ 	 */
+ 	if (output_event->cpu == -1 && output_event->ctx != event->ctx)
+ 		goto out;
++	/*
++	 * XXX^2: that's all bollocks
++	 *   + for sampling events, both get to keep their ->trace_event
++	 *   + for normal itrace events, the rules:
++	 *      * no cross-cpu buffers (as any other event);
++	 *      * both must be itrace events
++	 */
++	if (is_itrace_event(event)) {
++		if (!is_itrace_event(output_event))
++			goto out;
++
++		if (event->attr.type != output_event->attr.type)
++			goto out;
++	}
+ 
+ set:
+ 	mutex_lock(&event->mmap_mutex);
+-	/* Can't redirect output if we've got an active mmap() */
+-	if (atomic_read(&event->mmap_count))
+-		goto unlock;
+ 
+-	old_rb = event->rb;
++	for (rbx = PERF_RB_MAIN; rbx < PERF_NR_RB; rbx++) {
++		struct ring_buffer *rb = NULL, *old_rb = NULL;
+ 
+-	if (output_event) {
+-		/* get the rb we want to redirect to */
+-		rb = ring_buffer_get(output_event);
+-		if (!rb)
+-			goto unlock;
+-	}
++		/* Can't redirect output if we've got an active mmap() */
++		if (atomic_read(&event->mmap_count[rbx]))
++			continue;
+ 
+-	if (old_rb)
+-		ring_buffer_detach(event, old_rb);
++		old_rb = event->rb[rbx];
+ 
+-	if (rb)
+-		ring_buffer_attach(event, rb);
++		if (output_event) {
++			/* get the rb we want to redirect to */
++			rb = ring_buffer_get(output_event, rbx);
++			if (!rb)
++				continue;
++		}
+ 
+-	rcu_assign_pointer(event->rb, rb);
++		if (old_rb)
++			ring_buffer_detach(event, old_rb);
+ 
+-	if (old_rb) {
+-		ring_buffer_put(old_rb);
+-		/*
+-		 * Since we detached before setting the new rb, so that we
+-		 * could attach the new rb, we could have missed a wakeup.
+-		 * Provide it now.
+-		 */
+-		wake_up_all(&event->waitq);
++		if (rb)
++			ring_buffer_attach(event, rb);
++
++		rcu_assign_pointer(event->rb[rbx], rb);
++
++		if (old_rb) {
++			ring_buffer_put(old_rb);
++			/*
++			 * Since we detached before setting the new rb, so that we
++			 * could attach the new rb, we could have missed a wakeup.
++			 * Provide it now.
++			 */
++			wake_up_all(&event->waitq);
++		}
+ 	}
+ 
+ 	ret = 0;
+-unlock:
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+ out:
+@@ -7095,6 +7175,10 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		goto err_alloc;
+ 	}
+ 
++	err = itrace_event_installable(event, ctx);
++	if (err)
++		goto err_alloc;
++
+ 	if (task) {
+ 		put_task_struct(task);
+ 		task = NULL;
+@@ -7223,6 +7307,9 @@ err_fd:
+ 	return err;
+ }
+ 
++/* XXX */
++int itrace_kernel_event(struct perf_event *event, struct task_struct *task);
++
+ /**
+  * perf_event_create_kernel_counter
+  *
+@@ -7253,12 +7340,20 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
+ 
+ 	account_event(event);
+ 
++	err = itrace_kernel_event(event, task);
++	if (err)
++		goto err_free;
++
+ 	ctx = find_get_context(event->pmu, task, cpu);
+ 	if (IS_ERR(ctx)) {
+ 		err = PTR_ERR(ctx);
+ 		goto err_free;
+ 	}
+ 
++	err = itrace_event_installable(event, ctx);
++	if (err)
++		goto err_free;
++
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
+ 	perf_install_in_context(ctx, event, cpu);
+@@ -7536,6 +7631,8 @@ void perf_event_delayed_put(struct task_struct *task)
+ 		WARN_ON_ONCE(task->perf_event_ctxp[ctxn]);
+ }
+ 
++int itrace_inherit_event(struct perf_event *event, struct task_struct *task);
++
+ /*
+  * inherit a event from parent task to child task:
+  */
+@@ -7549,6 +7646,7 @@ inherit_event(struct perf_event *parent_event,
+ {
+ 	struct perf_event *child_event;
+ 	unsigned long flags;
++	int err;
+ 
+ 	/*
+ 	 * Instead of creating recursive hierarchies of events,
+@@ -7567,10 +7665,12 @@ inherit_event(struct perf_event *parent_event,
+ 	if (IS_ERR(child_event))
+ 		return child_event;
+ 
+-	if (!atomic_long_inc_not_zero(&parent_event->refcount)) {
+-		free_event(child_event);
+-		return NULL;
+-	}
++	err = itrace_inherit_event(child_event, child);
++	if (err)
++		goto err_alloc;
++
++	if (!atomic_long_inc_not_zero(&parent_event->refcount))
++		goto err_alloc;
+ 
+ 	get_ctx(child_ctx);
+ 
+@@ -7621,6 +7721,11 @@ inherit_event(struct perf_event *parent_event,
+ 	mutex_unlock(&parent_event->child_mutex);
+ 
+ 	return child_event;
++
++err_alloc:
++	free_event(child_event);
++
++	return NULL;
+ }
+ 
+ static int inherit_group(struct perf_event *parent_event,
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index 8835f00..f183efe 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -45,6 +45,7 @@ struct ring_buffer {
+ 	atomic_t			mmap_count;
+ 	unsigned long			mmap_locked;
+ 	struct user_struct		*mmap_user;
++	void				*priv;
+ 
+ 	struct perf_event_mmap_page	*user_page;
+ 	void				*data_pages[0];
+@@ -55,6 +56,12 @@ extern struct ring_buffer *
+ rb_alloc(int nr_pages, long watermark, int cpu, int flags,
+ 	 struct ring_buffer_ops *rb_ops);
+ extern void perf_event_wakeup(struct perf_event *event);
++extern struct ring_buffer *ring_buffer_get(struct perf_event *event, int rbx);
++extern void ring_buffer_put(struct ring_buffer *rb);
++extern void ring_buffer_attach(struct perf_event *event,
++			       struct ring_buffer *rb);
++extern void ring_buffer_detach(struct perf_event *event,
++			       struct ring_buffer *rb);
+ 
+ extern void
+ perf_event_header__init_id(struct perf_event_header *header,
+diff --git a/kernel/events/itrace.c b/kernel/events/itrace.c
 new file mode 100644
-index 0000000..37b4db2
+index 0000000..3adba62
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/perf_event_intel_pt.c
-@@ -0,0 +1,1167 @@
++++ b/kernel/events/itrace.c
+@@ -0,0 +1,589 @@
 +/*
-+ * Intel(R) Processor Trace PMU driver for perf
++ * Instruction flow trace unit infrastructure
 + * Copyright (c) 2013, Intel Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -300,1152 +1214,631 @@ index 0000000..37b4db2
 +
 +#undef DEBUG
 +
-+#include <linux/bitops.h>
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/perf_event.h>
++#include <linux/itrace.h>
++#include <linux/sizes.h>
++#include <linux/elf.h>
 +#include <linux/coredump.h>
++#include <linux/slab.h>
 +
-+#include <asm-generic/sizes.h>
-+#include <asm/perf_event.h>
-+#include <asm/insn.h>
++#include "internal.h"
 +
-+#include "perf_event.h"
-+#include "intel_pt.h"
++#define CORE_OWNER "ITRACE"
 +
-+static DEFINE_PER_CPU(struct pt, pt_ctx);
++/*
++ * for the sake of simplicity, we assume that for now we can
++ * only have one type of an itrace pmu in a system
++ */
++static struct itrace_pmu *itrace_pmu;
 +
-+static struct pt_pmu pt_pmu;
++struct static_key_deferred itrace_core_events __read_mostly;
 +
-+enum cpuid_regs {
-+	CR_EAX = 0,
-+	CR_ECX,
-+	CR_EDX,
-+	CR_EBX
++struct itrace_lost_record {
++	struct perf_event_header	header;
++	u64				offset;
 +};
 +
 +/*
-+ * Capabilities of Intel PT hardware, such as number of address bits or
-+ * supported output schemes, are cached and exported to userspace as "caps"
-+ * attribute group of pt pmu device
-+ * (/sys/bus/event_source/devices/intel_pt/caps/) so that userspace can store
-+ * relevant bits together with intel_pt traces.
-+ *
-+ * Currently, for debugging purposes, these attributes are also writable; this
-+ * should be removed in the final version.
++ * In the worst case, perf buffer might be full and we're not able to output
++ * this record, so the decoder won't know that the data was lost. However,
++ * it will still see inconsistency in the trace IP.
 + */
-+#define PT_CAP(_n, _l, _r, _m)						\
-+	[PT_CAP_ ## _n] = { .name = __stringify(_n), .leaf = _l,	\
-+			    .reg = _r, .mask = _m }
-+
-+static struct pt_cap_desc {
-+	const char	*name;
-+	u32		leaf;
-+	u8		reg;
-+	u32		mask;
-+} pt_caps[] = {
-+	PT_CAP(max_subleaf,		0, CR_EAX, 0xffffffff),
-+	PT_CAP(cr3_filtering,		0, CR_EBX, BIT(0)),
-+	PT_CAP(topa_output,		0, CR_ECX, BIT(0)),
-+	PT_CAP(topa_multiple_entries,	0, CR_ECX, BIT(1)),
-+	PT_CAP(payloads_lip,		0, CR_ECX, BIT(31)),
-+};
-+
-+static u32 pt_cap_get(enum pt_capabilities cap)
++void itrace_lost_data(struct perf_event *event, u64 offset)
 +{
-+	struct pt_cap_desc *cd = &pt_caps[cap];
-+	u32 c = pt_pmu.caps[cd->leaf * 4 + cd->reg];
-+	unsigned int shift = __ffs(cd->mask);
-+
-+	return (c & cd->mask) >> shift;
-+}
-+
-+static void pt_cap_set(enum pt_capabilities cap, u32 val)
-+{
-+	struct pt_cap_desc *cd = &pt_caps[cap];
-+	unsigned int idx = cd->leaf * 4 + cd->reg;
-+	unsigned int shift = __ffs(cd->mask);
-+
-+	pt_pmu.caps[idx] = (val << shift) & cd->mask;
-+}
-+
-+static void pt_cap_string(void)
-+{
-+	char *capstr;
-+	int pos, i;
-+
-+	capstr = kzalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!capstr)
-+		return;
-+
-+	for (i = 0, pos = 0; i < ARRAY_SIZE(pt_caps) && pos < PAGE_SIZE; i++) {
-+		pos += snprintf(&capstr[pos], PAGE_SIZE - pos, "%s:%x%c",
-+				pt_caps[i].name, pt_cap_get(i),
-+				i == ARRAY_SIZE(pt_caps) - 1 ? 0 : ',');
-+	}
-+
-+	if (pt_pmu.capstr)
-+		kfree(pt_pmu.capstr);
-+
-+	pt_pmu.capstr = capstr;
-+	pt_pmu.caplen = pos;
-+}
-+
-+static ssize_t pt_cap_show(struct device *cdev,
-+			   struct device_attribute *attr,
-+			   char *buf)
-+{
-+	struct dev_ext_attribute *ea =
-+		container_of(attr, struct dev_ext_attribute, attr);
-+	enum pt_capabilities cap = (long)ea->var;
-+
-+	return snprintf(buf, PAGE_SIZE, "%x\n", pt_cap_get(cap));
-+}
-+
-+static ssize_t pt_cap_store(struct device *cdev,
-+			    struct device_attribute *attr,
-+			    const char *buf, size_t size)
-+{
-+	struct dev_ext_attribute *ea =
-+		container_of(attr, struct dev_ext_attribute, attr);
-+	enum pt_capabilities cap = (long)ea->var;
-+	unsigned long new;
-+	char *end;
-+
-+	new = simple_strtoul(buf, &end, 0);
-+	if (end == buf)
-+		return -EINVAL;
-+
-+	pt_cap_set(cap, new);
-+	pt_cap_string();
-+	return size;
-+}
-+
-+static struct attribute_group pt_cap_group = {
-+	.name	= "caps",
-+};
-+
-+PMU_FORMAT_ATTR(tsc,		"itrace_config:10"	);
-+PMU_FORMAT_ATTR(noretcomp,	"itrace_config:11"	);
-+
-+static struct attribute *pt_formats_attr[] = {
-+	&format_attr_tsc.attr,
-+	&format_attr_noretcomp.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group pt_format_group = {
-+	.name	= "format",
-+	.attrs	= pt_formats_attr,
-+};
-+
-+static const struct attribute_group *pt_attr_groups[] = {
-+	&pt_cap_group,
-+	&pt_format_group,
-+	NULL,
-+};
-+
-+static void __init pt_pmu_hw_init(void)
-+{
-+	struct dev_ext_attribute *de_attrs;
-+	struct attribute **attrs;
-+	size_t size;
-+	long i;
-+
-+	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_INTEL_PT)) {
-+		for (i = 0; i < PT_CPUID_LEAVES; i++)
-+			cpuid_count(20, i,
-+				    &pt_pmu.caps[CR_EAX + i * 4],
-+				    &pt_pmu.caps[CR_EBX + i * 4],
-+				    &pt_pmu.caps[CR_ECX + i * 4],
-+				    &pt_pmu.caps[CR_EDX + i * 4]);
-+	}
-+
-+	size = sizeof(struct attribute *) * (ARRAY_SIZE(pt_caps) + 1);
-+	attrs = kzalloc(size, GFP_KERNEL);
-+	if (!attrs)
-+		goto err_attrs;
-+
-+	size = sizeof(struct dev_ext_attribute) * (ARRAY_SIZE(pt_caps) + 1);
-+	de_attrs = kzalloc(size, GFP_KERNEL);
-+	if (!de_attrs)
-+		goto err_de_attrs;
-+
-+	for (i = 0; i < ARRAY_SIZE(pt_caps); i++) {
-+		de_attrs[i].attr.attr.name = pt_caps[i].name;
-+
-+		sysfs_attr_init(&de_attrs[i].attr.attr);
-+		de_attrs[i].attr.attr.mode = S_IRUGO | S_IWUSR;
-+		de_attrs[i].attr.show = pt_cap_show;
-+		de_attrs[i].attr.store = pt_cap_store;
-+		de_attrs[i].var = (void *)i;
-+		attrs[i] = &de_attrs[i].attr.attr;
-+	}
-+
-+	pt_cap_string();
-+	pt_cap_group.attrs = attrs;
-+	return;
-+
-+err_de_attrs:
-+	kfree(de_attrs);
-+err_attrs:
-+	kfree(attrs);
-+}
-+
-+#define PT_CONFIG_MASK (RTIT_CTL_TSC_EN | RTIT_CTL_DISRETC)
-+
-+static bool pt_event_valid(struct perf_event *event)
-+{
-+	u64 itrace_config = event->attr.itrace_config;
-+
-+	if ((itrace_config & PT_CONFIG_MASK) != itrace_config)
-+		return false;
-+
-+	return true;
-+}
-+
-+/*
-+ * PT configuration helpers
-+ * These all are cpu affine and operate on a local PT
-+ */
-+
-+static int pt_config(struct perf_event *event)
-+{
-+	u64 reg;
-+
-+	reg = RTIT_CTL_TOPA | RTIT_CTL_BRANCH_EN;
-+
-+	if (!event->attr.exclude_kernel)
-+		reg |= RTIT_CTL_OS;
-+	if (!event->attr.exclude_user)
-+		reg |= RTIT_CTL_USR;
-+
-+	reg |= (event->attr.itrace_config & PT_CONFIG_MASK);
-+
-+	if (wrmsr_safe(MSR_IA32_RTIT_CTL, reg, 0) < 0) {
-+		pr_warn("Failed to enable PT on cpu %d\n", event->cpu);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static void pt_config_start(bool start)
-+{
-+	u64 ctl;
-+
-+	rdmsrl(MSR_IA32_RTIT_CTL, ctl);
-+	if (start)
-+		ctl |= RTIT_CTL_TRACEEN;
-+	else
-+		ctl &= ~RTIT_CTL_TRACEEN;
-+	wrmsrl(MSR_IA32_RTIT_CTL, ctl);
-+}
-+
-+static void pt_config_buffer(void *buf, unsigned int topa_idx,
-+			     unsigned int output_off)
-+{
-+	u64 reg;
-+
-+	wrmsrl(MSR_IA32_RTIT_OUTPUT_BASE, virt_to_phys(buf));
-+
-+	reg = 0x7f | ((u64)topa_idx << 7) | ((u64)output_off << 32);
-+
-+	wrmsrl(MSR_IA32_RTIT_OUTPUT_MASK, reg);
-+}
-+
-+#define TENTS_PER_PAGE (((PAGE_SIZE - 40) / sizeof(struct topa_entry)) - 1)
-+
-+struct topa {
-+	struct topa_entry	table[TENTS_PER_PAGE];
-+	struct list_head	list;
-+	u64			phys;
-+	u64			offset;
-+	size_t			size;
-+	int			last;
-+};
-+
-+/* make negative table index stand for the last table entry */
-+#define TOPA_ENTRY(t, i) ((i) == -1 ? &(t)->table[(t)->last] : &(t)->table[(i)])
-+
-+/*
-+ * allocate page-sized ToPA table
-+ */
-+static struct topa *topa_alloc(int cpu, gfp_t gfp)
-+{
-+	int node = cpu_to_node(cpu);
-+	struct topa *topa;
-+	struct page *p;
-+
-+	p = alloc_pages_node(node, gfp | __GFP_ZERO, 0);
-+	if (!p)
-+		return NULL;
-+
-+	topa = page_address(p);
-+	topa->last = 0;
-+	topa->phys = page_to_phys(p);
-+
-+	/*
-+	 * In case of singe-entry ToPA, always put the self-referencing END
-+	 * link as the 2nd entry in the table
-+	 */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		TOPA_ENTRY(topa, 1)->base = topa->phys >> TOPA_SHIFT;
-+		TOPA_ENTRY(topa, 1)->end = 1;
-+	}
-+
-+	return topa;
-+}
-+
-+static void topa_free(struct topa *topa)
-+{
-+	free_page((unsigned long)topa);
-+}
-+
-+static void topa_free_pages(struct pt_buffer *buf, struct topa *topa, int idx)
-+{
-+	size_t size = sizes(TOPA_ENTRY(topa, idx)->size);
-+	void *base = phys_to_virt(TOPA_ENTRY(topa, idx)->base << TOPA_SHIFT);
-+	unsigned long pn;
-+
-+	for (pn = 0; pn < size; pn += PAGE_SIZE) {
-+		struct page *page = virt_to_page(base + pn);
-+
-+		page->mapping = NULL;
-+		__free_page(page);
-+	}
-+}
-+
-+/**
-+ * topa_insert_table - insert a ToPA table into a buffer
-+ * @buf - pt buffer that's being extended
-+ * @topa - new topa table to be inserted
-+ *
-+ * If it's the first table in this buffer, set up buffer's pointers
-+ * accordingly; otherwise, add a END=1 link entry to @topa to the current
-+ * "last" table and adjust the last table pointer to @topa.
-+ */
-+static void topa_insert_table(struct pt_buffer *buf, struct topa *topa)
-+{
-+	struct topa *last = buf->last;
-+
-+	list_add_tail(&topa->list, &buf->tables);
-+
-+	if (!buf->first) {
-+		buf->first = buf->last = buf->cur = topa;
-+		return;
-+	}
-+
-+	topa->offset = last->offset + last->size;
-+	buf->last = topa;
-+
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
-+		return;
-+
-+	BUG_ON(last->last != TENTS_PER_PAGE - 1);
-+
-+	TOPA_ENTRY(last, -1)->base = topa->phys >> TOPA_SHIFT;
-+	TOPA_ENTRY(last, -1)->end = 1;
-+}
-+
-+static bool topa_table_full(struct topa *topa)
-+{
-+	/* single-entry ToPA is a special case */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries))
-+		return !!topa->last;
-+
-+	return topa->last == TENTS_PER_PAGE - 1;
-+}
-+
-+static bool pt_buffer_needs_watermark(struct pt_buffer *buf, unsigned long offset)
-+{
-+	if (buf->snapshot)
-+		return false;
-+
-+	return !(offset % (buf->watermark << PAGE_SHIFT));
-+}
-+
-+static int topa_insert_pages(struct pt_buffer *buf, gfp_t gfp,
-+			     enum topa_sz sz)
-+{
-+	struct topa *topa = buf->last;
-+	int node = cpu_to_node(buf->cpu);
-+	int order = get_order(sizes(sz));
-+	struct page *p;
-+	unsigned long pn;
-+
-+	p = alloc_pages_node(node, gfp | GFP_USER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY, order);
-+	if (!p)
-+		return -ENOMEM;
-+
-+	split_page(p, order);
-+
-+	if (topa_table_full(topa)) {
-+		topa = topa_alloc(buf->cpu, gfp);
-+
-+		if (!topa) {
-+			free_pages((unsigned long)page_address(p), order);
-+			return -ENOMEM;
-+		}
-+
-+		topa_insert_table(buf, topa);
-+	}
-+
-+	TOPA_ENTRY(topa, -1)->base = page_to_phys(p) >> TOPA_SHIFT;
-+	TOPA_ENTRY(topa, -1)->size = sz;
-+	if (!buf->snapshot && !pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		TOPA_ENTRY(topa, -1)->intr = 1;
-+		TOPA_ENTRY(topa, -1)->stop = 1;
-+	}
-+	if (pt_buffer_needs_watermark(buf, buf->size))
-+		TOPA_ENTRY(topa, -1)->intr = 1;
-+
-+	topa->last++;
-+	topa->size += sizes(sz);
-+	for (pn = 0; pn < sizes(sz); pn += PAGE_SIZE, buf->size += PAGE_SIZE)
-+		buf->data_pages[buf->size >> PAGE_SHIFT] = page_address(p) + pn;
-+
-+	return 0;
-+}
-+
-+static void pt_topa_dump(struct pt_buffer *buf)
-+{
-+	struct topa *topa;
-+
-+	list_for_each_entry(topa, &buf->tables, list) {
-+		int i;
-+
-+		pr_debug("# table @%p (%p), off %llx size %lx\n", topa->table,
-+			 (void *)topa->phys, topa->offset, topa->size);
-+		for (i = 0; i < TENTS_PER_PAGE; i++) {
-+			pr_debug("# entry @%p (%lx sz %u %c%c%c) raw=%16llx\n",
-+				 &topa->table[i],
-+				 (unsigned long)topa->table[i].base << TOPA_SHIFT,
-+				 sizes(topa->table[i].size),
-+				 topa->table[i].end ?  'E' : ' ',
-+				 topa->table[i].intr ? 'I' : ' ',
-+				 topa->table[i].stop ? 'S' : ' ',
-+				 *(u64 *)&topa->table[i]);
-+			if ((pt_cap_get(PT_CAP_topa_multiple_entries) && topa->table[i].stop)
-+			    || topa->table[i].end)
-+				break;
-+		}
-+	}
-+}
-+
-+/* advance to the next output region */
-+static void pt_buffer_advance(struct pt_buffer *buf)
-+{
-+	buf->output_off = 0;
-+	buf->cur_idx++;
-+
-+	if (buf->cur_idx == buf->cur->last) {
-+		if (buf->cur == buf->last)
-+			buf->cur = buf->first;
-+		else
-+			buf->cur = list_entry(buf->cur->list.next, struct topa, list);
-+		buf->cur_idx = 0;
-+	}
-+}
-+
-+static void pt_update_head(struct pt_buffer *buf)
-+{
-+	u64 topa_idx, base;
-+
-+	/* offset of the first region in this table from the beginning of buf */
-+	base = buf->cur->offset + buf->output_off;
-+
-+	/* offset of the current output region within this table */
-+	for (topa_idx = 0; topa_idx < buf->cur_idx; topa_idx++)
-+		base += sizes(buf->cur->table[topa_idx].size);
-+
-+	/* data_head always increases when buffer pointer wraps */
-+	base += buf->size * buf->round;
-+
-+	local64_set(&buf->head, base);
-+	if (!buf->user_page)
-+		return;
-+
-+	buf->user_page->data_head = base;
-+	smp_wmb();
-+}
-+
-+static void *pt_buffer_region(struct pt_buffer *buf)
-+{
-+	return phys_to_virt(buf->cur->table[buf->cur_idx].base << TOPA_SHIFT);
-+}
-+
-+static size_t pt_buffer_region_size(struct pt_buffer *buf)
-+{
-+	return sizes(buf->cur->table[buf->cur_idx].size);
-+}
-+
-+/**
-+ * pt_handle_status - take care of possible status conditions
-+ * @event: currently active PT event
-+ */
-+static void pt_handle_status(struct perf_event *event)
-+{
-+	struct pt_buffer *buf = itrace_priv(event);
-+	int advance = 0;
-+	u64 status;
-+
-+	rdmsrl(MSR_IA32_RTIT_STATUS, status);
-+
-+	if (status & RTIT_STATUS_ERROR) {
-+		pr_err("ToPA ERROR encountered, trying to recover\n");
-+		pt_topa_dump(buf);
-+		status &= ~RTIT_STATUS_ERROR;
-+		wrmsrl(MSR_IA32_RTIT_STATUS, status);
-+	}
-+
-+	if (status & RTIT_STATUS_STOPPED) {
-+		status &= ~RTIT_STATUS_STOPPED;
-+		wrmsrl(MSR_IA32_RTIT_STATUS, status);
-+
-+		/*
-+		 * On systems that only do single-entry ToPA, hitting STOP
-+		 * means we are already losing data; need to let the decoder
-+		 * know.
-+		 */
-+		if (!pt_cap_get(PT_CAP_topa_multiple_entries) ||
-+		    buf->output_off == sizes(TOPA_ENTRY(buf->cur, buf->cur_idx)->size)) {
-+			pt_update_head(buf);
-+			itrace_lost_data(event, local64_read(&buf->head));
-+			advance++;
-+		}
-+	}
-+
-+	/*
-+	 * Also on single-entry ToPA implementations, interrupt will come
-+	 * before the output reaches its output region's boundary.
-+	 */
-+	if (!pt_cap_get(PT_CAP_topa_multiple_entries) && !buf->snapshot &&
-+	    pt_buffer_region_size(buf) - buf->output_off <= TOPA_PMI_MARGIN) {
-+		void *head = pt_buffer_region(buf);
-+
-+		/* everything within this margin needs to be zeroed out */
-+		memset(head + buf->output_off, 0,
-+		       pt_buffer_region_size(buf) -
-+		       buf->output_off);
-+		advance++;
-+	}
-+
-+	if (advance) {
-+		/* check if the pointer has wrapped */
-+		if (!buf->snapshot &&
-+		    buf->cur == buf->last &&
-+		    buf->cur_idx == buf->cur->last - 1)
-+			buf->round++;
-+		pt_buffer_advance(buf);
-+	}
-+}
-+
-+static void pt_read_offset(struct pt_buffer *buf)
-+{
-+	u64 offset, base_topa;
-+
-+	rdmsrl(MSR_IA32_RTIT_OUTPUT_BASE, base_topa);
-+	buf->cur = phys_to_virt(base_topa);
-+
-+	rdmsrl(MSR_IA32_RTIT_OUTPUT_MASK, offset);
-+	/* offset within current output region */
-+	buf->output_off = offset >> 32;
-+	/* index of current output region within this table */
-+	buf->cur_idx = (offset & 0xffffff80) >> 7;
-+}
-+
-+/**
-+ * pt_buffer_fini_topa() - deallocate ToPA structure of a buffer
-+ * @buf: pt buffer
-+ */
-+static void pt_buffer_fini_topa(struct pt_buffer *buf)
-+{
-+	struct topa *topa, *iter;
-+
-+	list_for_each_entry_safe(topa, iter, &buf->tables, list) {
-+		int i;
-+
-+		for (i = 0; i < topa->last; i++)
-+			topa_free_pages(buf, topa, i);
-+
-+		list_del(&topa->list);
-+		topa_free(topa);
-+	}
-+}
-+
-+/**
-+ * pt_get_topa_region_size - calculate one output region's size
-+ * @snapshot: if the counter is a snapshot counter
-+ * @size: overall requested allocation size
-+ * returns topa region size or error
-+ */
-+static int pt_get_topa_region_size(bool snapshot, size_t size)
-+{
-+	unsigned int factor = snapshot ? 1 : 2;
-+
-+	if (pt_cap_get(PT_CAP_topa_multiple_entries))
-+		return TOPA_4K;
-+
-+	if (size < SZ_4K * factor)
-+		return -EINVAL;
-+
-+	if (!is_power_of_2(size))
-+		return -EINVAL;
-+
-+	if (size >= SZ_128M)
-+		return TOPA_128MB;
-+
-+	return get_order(size / factor);
-+}
-+
-+/**
-+ * pt_buffer_init_topa() - initialize ToPA table for pt buffer
-+ * @buf: pt buffer
-+ * @size: total size of all regions within this ToPA
-+ * @gfp: allocation flags
-+ */
-+static int pt_buffer_init_topa(struct pt_buffer *buf, size_t size, gfp_t gfp)
-+{
-+	struct topa *topa;
-+	int err, region_size;
-+
-+	topa = topa_alloc(buf->cpu, gfp);
-+	if (!topa)
-+		return -ENOMEM;
-+
-+	topa_insert_table(buf, topa);
-+
-+	region_size = pt_get_topa_region_size(buf->snapshot, size);
-+	if (region_size < 0) {
-+		pt_buffer_fini_topa(buf);
-+		return region_size;
-+	}
-+
-+	while (region_size && get_order(sizes(region_size)) > MAX_ORDER)
-+		region_size--;
-+
-+	/* fixup watermark in case of higher order allocations */
-+	if (buf->watermark < (sizes(region_size) >> PAGE_SHIFT))
-+		buf->watermark = sizes(region_size) >> PAGE_SHIFT;
-+
-+	while (buf->size < size) {
-+		err = topa_insert_pages(buf, gfp, region_size);
-+		if (err) {
-+			if (region_size) {
-+				region_size--;
-+				continue;
-+			}
-+			pt_buffer_fini_topa(buf);
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	/* link last table to the first one, unless we're double buffering */
-+	if (pt_cap_get(PT_CAP_topa_multiple_entries)) {
-+		TOPA_ENTRY(buf->last, -1)->base = buf->first->phys >> TOPA_SHIFT;
-+		TOPA_ENTRY(buf->last, -1)->end = 1;
-+	}
-+
-+	pt_topa_dump(buf);
-+	return 0;
-+}
-+
-+/**
-+ * pt_buffer_alloc() - make a buffer for pt data
-+ * @cpu: cpu on which to allocate, -1 means current
-+ * @size: desired buffer size, should be multiple of pages
-+ * @watermark: place interrupt flags every @watermark pages, 0 == disable
-+ * @snapshot: if this is a snapshot counter
-+ * @gfp: allocation flags
-+ */
-+static struct pt_buffer *pt_buffer_alloc(int cpu, size_t size,
-+					 unsigned long watermark,
-+					 bool snapshot, gfp_t gfp,
-+					 void **pages)
-+{
-+	struct pt_buffer *buf;
-+	int node;
++	struct perf_output_handle handle;
++	struct perf_sample_data sample;
++	struct itrace_lost_record rec = {
++		.header = {
++			.type = PERF_RECORD_ITRACE_LOST,
++			.misc = 0,
++			.size = sizeof(rec),
++		},
++		.offset = offset
++	};
 +	int ret;
 +
-+	if (!size || watermark << PAGE_SHIFT > size)
-+		return NULL;
++	perf_event_header__init_id(&rec.header, &sample, event);
++	ret = perf_output_begin(&handle, event, rec.header.size);
 +
-+	if (cpu == -1)
-+		cpu = raw_smp_processor_id();
-+	node = cpu_to_node(cpu);
-+
-+	buf = kzalloc(sizeof(struct pt_buffer), gfp);
-+	if (!buf)
-+		return NULL;
-+
-+	buf->cpu = cpu;
-+	buf->data_pages = pages;
-+	buf->snapshot = snapshot;
-+	buf->watermark = watermark;
-+	if (!buf->watermark)
-+		buf->watermark = (size / 2) >> PAGE_SHIFT;
-+
-+	INIT_LIST_HEAD(&buf->tables);
-+
-+	ret = pt_buffer_init_topa(buf, size, gfp);
-+	if (ret) {
-+		kfree(buf);
-+		return NULL;
-+	}
-+
-+	return buf;
-+}
-+
-+/**
-+ * pt_buffer_free() - dispose of pt buffer
-+ * @buf: pt buffer
-+ */
-+static void pt_buffer_itrace_free(void *data)
-+{
-+	struct pt_buffer *buf = data;
-+
-+	pt_buffer_fini_topa(buf);
-+	if (buf->user_page) {
-+		struct page *up = virt_to_page(buf->user_page);
-+
-+		up->mapping = NULL;
-+		__free_page(up);
-+	}
-+
-+	kfree(buf);
-+}
-+
-+static void *
-+pt_buffer_itrace_alloc(int cpu, int nr_pages, bool overwrite, void **pages,
-+		       struct perf_event_mmap_page **user_page)
-+{
-+	struct pt_buffer *buf;
-+	struct page *up = NULL;
-+	int node;
-+
-+	if (user_page) {
-+		*user_page = NULL;
-+		node = (cpu == -1) ? cpu : cpu_to_node(cpu);
-+		up = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
-+		if (!up)
-+			return NULL;
-+	}
-+
-+	buf = pt_buffer_alloc(cpu, nr_pages << PAGE_SHIFT, 0, overwrite,
-+			      GFP_KERNEL, pages);
-+	if (user_page && buf) {
-+		buf->user_page = page_address(up);
-+		*user_page = page_address(up);
-+	} else if (up)
-+		__free_page(up);
-+
-+	return buf;
-+}
-+
-+/**
-+ * pt_buffer_get_page() - find n'th page in pt buffer
-+ * @buf: pt buffer
-+ * @idx: page index in the buffer
-+ */
-+static void *pt_buffer_get_page(struct pt_buffer *buf, unsigned long idx)
-+{
-+	return buf->data_pages[idx];
-+}
-+
-+typedef unsigned int (*pt_copyfn)(void *data, const void *src,
-+				  unsigned int len);
-+
-+/**
-+ * pt_buffer_output - copy part of pt buffer to perf stream
-+ * @buf: buffer to copy from
-+ * @from: initial offset
-+ * @to: final offset
-+ * @copyfn: function that copies data out (like perf_output_copy())
-+ * @data: data to be passed on to the copy function (like perf_output_handle)
-+ */
-+static int pt_buffer_output(struct pt_buffer *buf, unsigned long from,
-+			    unsigned long to, pt_copyfn copyfn, void *data)
-+{
-+	unsigned long tocopy;
-+	unsigned int len = 0, remainder;
-+	void *page;
-+
-+	do {
-+		tocopy = PAGE_SIZE - offset_in_page(from);
-+		if (to > from)
-+			tocopy = min(tocopy, to - from);
-+		if (!tocopy)
-+			break;
-+
-+		page = pt_buffer_get_page(buf, from >> PAGE_SHIFT);
-+		if (WARN_ONCE(!page, "no data page for %lx offset\n", from))
-+			break;
-+
-+		page += offset_in_page(from);
-+
-+		remainder = copyfn(data, page, tocopy);
-+		if (remainder)
-+			return -EFAULT;
-+
-+		len += tocopy;
-+		from += tocopy;
-+		if (from == buf->size)
-+			from = 0;
-+	} while (to != from);
-+	return len;
-+}
-+
-+/**
-+ * pt_buffer_is_full - check if the buffer is full
-+ * @event: pt event
-+ * If the user hasn't read data from the output region that data_head
-+ * points to, the buffer is considered full: the user needs to read at
-+ * least this region and update data_tail to point past it.
-+ */
-+static bool pt_buffer_is_full(struct pt_buffer *buf)
-+{
-+	void *tail, *head;
-+	unsigned long tailoff, headoff = local64_read(&buf->head);
-+
-+	if (buf->snapshot)
-+		return false;
-+
-+	tailoff = ACCESS_ONCE(buf->user_page->data_tail);
-+	smp_mb();
-+
-+	if (headoff < tailoff || headoff - tailoff < buf->size / 2)
-+		return false;
-+
-+	tailoff %= buf->size;
-+	headoff %= buf->size;
-+
-+	if (headoff > tailoff)
-+		return false;
-+
-+	/* check if head and tail are in the same output region */
-+	tail = pt_buffer_get_page(buf, tailoff >> PAGE_SHIFT);
-+	head = pt_buffer_region(buf);
-+
-+	if (tail >= head && tail < head + pt_buffer_region_size(buf))
-+		return true;
-+
-+	return false;
-+}
-+
-+static void pt_wake_up(struct perf_event *event)
-+{
-+	struct pt_buffer *buf = itrace_priv(event);
-+
-+	if (!buf || buf->snapshot)
-+		return;
-+	if (pt_buffer_is_full(buf)) {
-+		event->pending_disable = 1;
-+		event->pending_kill = POLL_IN;
-+		event->pending_wakeup = 1;
-+		event->hw.state = PERF_HES_STOPPED;
-+	}
-+
-+	if (pt_buffer_needs_watermark(buf, local64_read(&buf->head))) {
-+		event->pending_wakeup = 1;
-+		event->pending_kill = POLL_IN;
-+	}
-+
-+	if (event->pending_disable || event->pending_kill)
-+		itrace_wake_up(event);
-+}
-+
-+void intel_pt_interrupt(void)
-+{
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
-+	struct perf_event *event = pt->event;
-+	struct pt_buffer *buf;
-+
-+	pt_config_start(false);
-+
-+	if (!event)
++	if (ret)
 +		return;
 +
-+	buf = itrace_event_get_priv(event);
-+	if (!buf)
-+		return;
-+
-+	pt_read_offset(buf);
-+
-+	pt_handle_status(event);
-+
-+	pt_update_head(buf);
-+
-+	pt_wake_up(event);
-+
-+	if (!event->hw.state) {
-+		pt_config(event);
-+		pt_config_buffer(buf->cur->table, buf->cur_idx,
-+				 buf->output_off);
-+		wrmsrl(MSR_IA32_RTIT_STATUS, 0);
-+		pt_config_start(true);
-+	}
-+
-+	itrace_event_put(event);
++	perf_output_put(&handle, rec);
++	perf_event__output_id_sample(event, &handle, &sample);
++	perf_output_end(&handle);
 +}
 +
-+static void pt_event_start(struct perf_event *event, int flags)
++static struct itrace_pmu *itrace_pmu_find(int type)
 +{
-+	struct pt_buffer *buf = itrace_priv(event);
++	if (itrace_pmu && itrace_pmu->pmu.type == type)
++		return itrace_pmu;
 +
-+	if (!buf || pt_buffer_is_full(buf) || pt_config(event)) {
-+		event->hw.state = PERF_HES_STOPPED;
-+		return;
-+	}
-+
-+	event->hw.state = 0;
-+
-+	pt_config_buffer(buf->cur->table, buf->cur_idx,
-+			 buf->output_off);
-+	wrmsrl(MSR_IA32_RTIT_STATUS, 0);
-+	pt_config_start(true);
++	return NULL;
 +}
 +
-+static void pt_event_stop(struct perf_event *event, int flags)
++bool is_itrace_event(struct perf_event *event)
 +{
-+	if (event->hw.state == PERF_HES_STOPPED)
++	return !!itrace_pmu_find(event->attr.type);
++}
++
++static void itrace_event_destroy(struct perf_event *event)
++{
++	struct task_struct *task = event->hw.itrace_target;
++	struct ring_buffer *rb = event->rb[PERF_RB_ITRACE];
++
++	if (task && event->hw.counter_type == PERF_ITRACE_COREDUMP)
++		static_key_slow_dec_deferred(&itrace_core_events);
++
++	if (!rb)
 +		return;
 +
-+	event->hw.state = PERF_HES_STOPPED;
-+
-+	pt_config_start(false);
-+
-+	if (flags & PERF_EF_UPDATE) {
-+		struct pt_buffer *buf = itrace_priv(event);
-+
-+		if (WARN_ONCE(!buf, "no buffer\n"))
-+			return;
-+
-+		pt_read_offset(buf);
-+
-+		pt_handle_status(event);
-+
-+		pt_update_head(buf);
-+
-+		pt_wake_up(event);
++	if (event->hw.counter_type != PERF_ITRACE_USER) {
++		atomic_dec(&rb->mmap_count);
++		atomic_dec(&event->mmap_count[PERF_RB_ITRACE]);
++		ring_buffer_detach(event, rb);
++		rcu_assign_pointer(event->rb[PERF_RB_ITRACE], NULL);
++		ring_buffer_put(rb); /* should be last */
 +	}
 +}
 +
-+static void pt_event_del(struct perf_event *event, int flags)
++int itrace_event_installable(struct perf_event *event,
++			     struct perf_event_context *ctx)
 +{
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
++	struct perf_event *iter_event;
 +
-+	pt_event_stop(event, PERF_EF_UPDATE);
++	if (!is_itrace_event(event))
++		return 0;
 +
-+	raw_spin_lock(&pt->lock);
-+	pt->event = NULL;
-+	raw_spin_unlock(&pt->lock);
++	/*
++	 * the context is locked and pinned and won't change under us,
++	 * also we don't care if it's a cpu or task context at this point
++	 */
++	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
++		if (is_itrace_event(iter_event) &&
++		    (iter_event->cpu == event->cpu ||
++		     iter_event->cpu == -1 ||
++		     event->cpu == -1))
++			return -EEXIST;
++	}
 +
-+	itrace_event_put(event);
++	return 0;
 +}
 +
-+static int pt_event_add(struct perf_event *event, int flags)
++static int itrace_event_init(struct perf_event *event)
 +{
-+	struct pt_buffer *buf;
-+	struct pt *pt = this_cpu_ptr(&pt_ctx);
-+	struct hw_perf_event *hwc = &event->hw;
-+	int ret = 0;
++	struct itrace_pmu *ipmu = to_itrace_pmu(event->pmu);
++	int ret;
 +
-+	ret = pt_config(event);
++	ret = ipmu->event_init(event);
 +	if (ret)
 +		return ret;
 +
-+	buf = itrace_event_get_priv(event);
-+	if (!buf) {
-+		hwc->state = PERF_HES_STOPPED;
-+		return -EINVAL;
-+	}
-+
-+	raw_spin_lock(&pt->lock);
-+	if (pt->event) {
-+		raw_spin_unlock(&pt->lock);
-+		itrace_event_put(event);
-+		ret = -EBUSY;
-+		event->hw.state = PERF_HES_STOPPED;
-+		goto out;
-+	}
-+
-+	pt->event = event;
-+	raw_spin_unlock(&pt->lock);
-+
-+	hwc->state = !(flags & PERF_EF_START);
-+	if (!hwc->state) {
-+		pt_event_start(event, 0);
-+		if (hwc->state == PERF_HES_STOPPED) {
-+			pt_event_del(event, 0);
-+			pt_wake_up(event);
-+			ret = -EBUSY;
-+		}
-+	}
-+
-+out:
-+	return ret;
-+}
-+
-+static void pt_event_read(struct perf_event *event)
-+{
-+}
-+
-+static int pt_event_init(struct perf_event *event)
-+{
-+	if (event->attr.type != pt_pmu.itrace.pmu.type)
-+		return -ENOENT;
-+
-+	/* can't be both */
-+	if (event->attr.sample_type & PERF_SAMPLE_ITRACE)
-+		return -ENOENT;
-+
-+	if (!pt_event_valid(event))
-+		return -EINVAL;
++	event->destroy = itrace_event_destroy;
++	event->hw.counter_type = PERF_ITRACE_USER;
 +
 +	return 0;
 +}
 +
-+static unsigned long pt_trace_sampler_trace(struct perf_event *event,
-+					    struct perf_sample_data *data)
++static unsigned long itrace_rb_get_size(int nr_pages)
 +{
-+	struct pt_buffer *buf;
++	return sizeof(struct ring_buffer) + sizeof(void *) * nr_pages;
++}
 +
-+	pt_event_stop(event, 0);
++static int itrace_alloc_data_pages(struct ring_buffer *rb, int cpu,
++				   int nr_pages, int flags)
++{
++	struct itrace_pmu *ipmu = itrace_pmu;
++	bool overwrite = !(flags & RING_BUFFER_WRITABLE);
 +
-+	buf = itrace_event_get_priv(event);
-+	if (!buf) {
-+		data->trace.size = 0;
++	rb->priv = ipmu->alloc_buffer(cpu, nr_pages, overwrite,
++				      rb->data_pages, &rb->user_page);
++	if (!rb->priv)
++		return -ENOMEM;
++	rb->nr_pages = nr_pages;
++
++	return 0;
++}
++
++static void itrace_free(struct ring_buffer *rb)
++{
++	struct itrace_pmu *ipmu = itrace_pmu;
++
++	if (rb->priv)
++		ipmu->free_buffer(rb->priv);
++}
++
++struct page *
++itrace_mmap_to_page(struct ring_buffer *rb, unsigned long pgoff)
++{
++	if (pgoff > rb->nr_pages)
++		return NULL;
++
++	if (pgoff == 0)
++		return virt_to_page(rb->user_page);
++
++	return virt_to_page(rb->data_pages[pgoff - 1]);
++}
++
++struct ring_buffer_ops itrace_rb_ops = {
++	.get_size		= itrace_rb_get_size,
++	.alloc_data_page	= itrace_alloc_data_pages,
++	.free_buffer		= itrace_free,
++	.mmap_to_page		= itrace_mmap_to_page,
++};
++
++void *itrace_priv(struct perf_event *event)
++{
++	if (!event->rb[PERF_RB_ITRACE])
++		return NULL;
++
++	return event->rb[PERF_RB_ITRACE]->priv;
++}
++
++void *itrace_event_get_priv(struct perf_event *event)
++{
++	struct ring_buffer *rb = ring_buffer_get(event, PERF_RB_ITRACE);
++
++	return rb ? rb->priv : NULL;
++}
++
++void itrace_event_put(struct perf_event *event)
++{
++	struct ring_buffer *rb;
++
++	rcu_read_lock();
++	rb = rcu_dereference(event->rb[PERF_RB_ITRACE]);
++	if (rb)
++		ring_buffer_put(rb);
++	rcu_read_unlock();
++}
++
++static void itrace_set_output(struct perf_event *event,
++			      struct perf_event *output_event)
++{
++	struct ring_buffer *rb;
++
++	mutex_lock(&event->mmap_mutex);
++
++	if (atomic_read(&event->mmap_count[PERF_RB_ITRACE]) ||
++	    event->rb[PERF_RB_ITRACE])
 +		goto out;
-+	}
 +
-+	pt_read_offset(buf);
-+	pt_update_head(buf);
++	rb = ring_buffer_get(output_event, PERF_RB_ITRACE);
++	if (!rb)
++		goto out;
 +
-+	data->trace.to = local64_read(&buf->head);
-+
-+	if (data->trace.to < event->attr.itrace_sample_size)
-+		data->trace.from = buf->size + data->trace.to -
-+			event->attr.itrace_sample_size;
-+	else
-+		data->trace.from = data->trace.to -
-+			event->attr.itrace_sample_size;
-+	data->trace.size = ALIGN(event->attr.itrace_sample_size, sizeof(u64));
-+
-+	itrace_event_put(event);
++	ring_buffer_attach(event, rb);
++	rcu_assign_pointer(event->rb[PERF_RB_ITRACE], rb);
 +
 +out:
-+	if (!data->trace.size)
-+		pt_event_start(event, 0);
-+
-+	return data->trace.size;
++	mutex_unlock(&event->mmap_mutex);
 +}
 +
-+static void pt_trace_sampler_output(struct perf_event *event,
-+				    struct perf_output_handle *handle,
-+				    struct perf_sample_data *data)
++static size_t roundup_buffer_size(u64 size)
 +{
-+	unsigned long padding;
-+	struct pt_buffer *buf;
-+	int ret;
-+
-+	buf = itrace_event_get_priv(event);
-+	if (!buf)
-+		return;
-+
-+	ret = pt_buffer_output(buf, data->trace.from, data->trace.to,
-+			       (pt_copyfn)perf_output_copy, handle);
-+	itrace_event_put(event);
-+	if (ret < 0) {
-+		pr_warn("%s: failed to copy trace data\n", __func__);
-+		goto out;
-+	}
-+
-+	padding = data->trace.size - ret;
-+	if (padding) {
-+		u64 u = 0;
-+
-+		perf_output_copy(handle, &u, padding);
-+	}
-+
-+out:
-+	pt_event_start(event, 0);
++	return 1ul << (__get_order(size) + PAGE_SHIFT);
 +}
 +
-+static size_t pt_trace_core_size(struct perf_event *event)
++int itrace_inherit_event(struct perf_event *event, struct task_struct *task)
 +{
-+	return pt_pmu.caplen;
-+}
++	size_t size = event->attr.itrace_sample_size;
++	struct perf_event *parent = event->parent;
++	struct ring_buffer *rb;
++	struct itrace_pmu *ipmu;
 +
-+static unsigned int pt_core_copy(void *data, const void *src,
-+				 unsigned int len)
-+{
-+	struct coredump_params *cprm = data;
-+
-+	if (dump_emit(cprm, src, len))
++	if (!is_itrace_event(event))
 +		return 0;
 +
-+	return len;
++	ipmu = to_itrace_pmu(event->pmu);
++
++	if (parent->hw.counter_type == PERF_ITRACE_USER) {
++		/*
++		 * inherited user's counters should inherit buffers IF
++		 * they aren't cpu==-1
++		 */
++		if (parent->cpu == -1)
++			return -EINVAL;
++
++		itrace_set_output(event, parent);
++		return 0;
++	}
++
++	event->hw.counter_type = parent->hw.counter_type;
++	if (event->hw.counter_type == PERF_ITRACE_COREDUMP) {
++		static_key_slow_inc(&itrace_core_events.key);
++		size = task_rlimit(task, RLIMIT_ITRACE);
++	}
++
++	size = roundup_buffer_size(size);
++	rb = rb_alloc(size >> PAGE_SHIFT, 0, event->cpu, 0, &itrace_rb_ops);
++	if (!rb)
++		return -ENOMEM;
++
++	ring_buffer_attach(event, rb);
++	rcu_assign_pointer(event->rb[PERF_RB_ITRACE], rb);
++	atomic_set(&rb->mmap_count, 1);
++	atomic_set(&event->mmap_count[PERF_RB_ITRACE], 1);
++
++	return 0;
 +}
 +
-+static void pt_trace_core_output(struct coredump_params *cprm,
-+				 struct perf_event *event,
-+				 unsigned long len)
++int itrace_kernel_event(struct perf_event *event, struct task_struct *task)
 +{
-+	struct pt_buffer *buf;
-+	u64 from, to;
++	struct itrace_pmu *ipmu;
++	struct ring_buffer *rb;
++	size_t size;
++
++	if (!is_itrace_event(event))
++		return 0;
++
++	ipmu = to_itrace_pmu(event->pmu);
++
++	if (event->attr.itrace_sample_size)
++		size = roundup_buffer_size(event->attr.itrace_sample_size);
++	else
++		size = task_rlimit(task, RLIMIT_ITRACE);
++
++	rb = rb_alloc(size >> PAGE_SHIFT, 0, event->cpu, 0, &itrace_rb_ops);
++	if (!rb)
++		return -ENOMEM;
++
++	ring_buffer_attach(event, rb);
++	rcu_assign_pointer(event->rb[PERF_RB_ITRACE], rb);
++	atomic_set(&rb->mmap_count, 1);
++	atomic_set(&event->mmap_count[PERF_RB_ITRACE], 1);
++
++	return 0;
++}
++
++void itrace_wake_up(struct perf_event *event)
++{
++	struct ring_buffer *rb;
++
++	rcu_read_lock();
++	rb = rcu_dereference(event->rb[PERF_RB_ITRACE]);
++	if (rb) {
++		atomic_set(&rb->poll, POLL_IN);
++		irq_work_queue(&event->pending);
++	}
++	rcu_read_unlock();
++}
++
++int itrace_pmu_register(struct itrace_pmu *ipmu)
++{
 +	int ret;
 +
-+	buf = itrace_priv(event);
++	if (itrace_pmu)
++		return -EBUSY;
 +
-+	if (!dump_emit(cprm, pt_pmu.capstr, pt_pmu.caplen))
-+		return;
++	if (!ipmu->sample_trace    ||
++	    !ipmu->sample_output   ||
++	    !ipmu->core_size       ||
++	    !ipmu->core_output)
++		return -EINVAL;
 +
-+	to = local64_read(&buf->head);
-+	if (to < len)
-+		from = buf->size + to - len;
-+	else
-+		from = to - len;
++	ipmu->event_init = ipmu->pmu.event_init;
++	ipmu->pmu.event_init = itrace_event_init;
 +
-+	ret = pt_buffer_output(buf, from, to, pt_core_copy, cprm);
-+	if (ret < 0)
-+		pr_warn("%s: failed to copy trace data\n", __func__);
-+}
-+
-+static __init int pt_init(void)
-+{
-+	int ret, cpu;
-+
-+	BUILD_BUG_ON(sizeof(struct topa) > PAGE_SIZE);
-+	get_online_cpus();
-+	for_each_possible_cpu(cpu) {
-+		raw_spin_lock_init(&per_cpu(pt_ctx, cpu).lock);
-+	}
-+	put_online_cpus();
-+
-+	pt_pmu_hw_init();
-+	pt_pmu.itrace.pmu.attr_groups	= pt_attr_groups;
-+	pt_pmu.itrace.pmu.task_ctx_nr	= perf_hw_context;
-+	pt_pmu.itrace.pmu.event_init	= pt_event_init;
-+	pt_pmu.itrace.pmu.add		= pt_event_add;
-+	pt_pmu.itrace.pmu.del		= pt_event_del;
-+	pt_pmu.itrace.pmu.start		= pt_event_start;
-+	pt_pmu.itrace.pmu.stop		= pt_event_stop;
-+	pt_pmu.itrace.pmu.read		= pt_event_read;
-+	pt_pmu.itrace.alloc_buffer	= pt_buffer_itrace_alloc;
-+	pt_pmu.itrace.free_buffer	= pt_buffer_itrace_free;
-+	pt_pmu.itrace.sample_trace	= pt_trace_sampler_trace;
-+	pt_pmu.itrace.sample_output	= pt_trace_sampler_output;
-+	pt_pmu.itrace.core_size		= pt_trace_core_size;
-+	pt_pmu.itrace.core_output	= pt_trace_core_output;
-+	pt_pmu.itrace.name		= "intel_pt";
-+	ret = itrace_pmu_register(&pt_pmu.itrace);
++	ret = perf_pmu_register(&ipmu->pmu, ipmu->name, -1);
++	if (!ret)
++		itrace_pmu = ipmu;
 +
 +	return ret;
 +}
 +
-+module_init(pt_init);
++/*
++ * Trace sample annotation
++ * For events that have attr.sample_type & PERF_SAMPLE_ITRACE, perf calls here
++ * to configure and obtain itrace samples.
++ */
++
++int itrace_sampler_init(struct perf_event *event, struct task_struct *task)
++{
++	struct perf_event_attr attr;
++	struct perf_event *tevt;
++	struct itrace_pmu *ipmu;
++
++	ipmu = itrace_pmu_find(event->attr.itrace_sample_type);
++	if (!ipmu)
++		return -ENOTSUPP;
++
++	memset(&attr, 0, sizeof(attr));
++	attr.type = ipmu->pmu.type;
++	attr.config = 0;
++	attr.sample_type = 0;
++	attr.exclude_user = event->attr.exclude_user;
++	attr.exclude_kernel = event->attr.exclude_kernel;
++	attr.itrace_sample_size = event->attr.itrace_sample_size;
++	attr.itrace_config = event->attr.itrace_config;
++
++	tevt = perf_event_create_kernel_counter(&attr, event->cpu, task, NULL, NULL);
++	if (IS_ERR(tevt))
++		return PTR_ERR(tevt);
++
++	if (!itrace_priv(tevt)) {
++		perf_event_release_kernel(tevt);
++		return -EINVAL;
++	}
++
++	event->trace_event = tevt;
++	tevt->hw.counter_type = PERF_ITRACE_SAMPLING;
++	if (event->state != PERF_EVENT_STATE_OFF)
++		perf_event_enable(event->trace_event);
++
++	return 0;
++}
++
++void itrace_sampler_fini(struct perf_event *event)
++{
++	struct perf_event *tevt = event->trace_event;
++
++	perf_event_release_kernel(tevt);
++	event->trace_event = NULL;
++}
++
++unsigned long itrace_sampler_trace(struct perf_event *event,
++				   struct perf_sample_data *data)
++{
++	struct perf_event *tevt = event->trace_event;
++	struct itrace_pmu *ipmu;
++
++	if (!tevt)
++		return 0;
++
++	ipmu = to_itrace_pmu(tevt->pmu);
++	return ipmu->sample_trace(tevt, data);
++}
++
++void itrace_sampler_output(struct perf_event *event,
++			   struct perf_output_handle *handle,
++			   struct perf_sample_data *data)
++{
++	struct perf_event *tevt = event->trace_event;
++	struct itrace_pmu *ipmu;
++
++	if (!tevt || !data->trace.size)
++		return;
++
++	ipmu = to_itrace_pmu(tevt->pmu);
++	ipmu->sample_output(tevt, handle, data);
++}
++
++/*
++ * Core dump bits
++ *
++ * Various parts of the kernel will call here:
++ *   + do_prlimit(): to tell us that the user is trying to set RLIMIT_ITRACE
++ *   + various places in bitfmt_elf.c: to write out itrace notes
++ *   + do_exit(): to destroy the first core dump counter
++ *   + the rest (copy_process()/do_exit()) is taken care of by perf for us
++ */
++
++static struct perf_event *
++itrace_find_task_event(struct task_struct *task, unsigned type)
++{
++	struct perf_event_context *ctx;
++	struct perf_event *event = NULL;
++
++	rcu_read_lock();
++	ctx = rcu_dereference(task->perf_event_ctxp[perf_hw_context]);
++	if (!ctx)
++		goto out;
++
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++		if (is_itrace_event(event) &&
++		    event->cpu == -1 &&
++		    !!(event->hw.counter_type & type))
++			goto out;
++	}
++
++	event = NULL;
++out:
++	rcu_read_unlock();
++
++	return event;
++}
++
++int update_itrace_rlimit(struct task_struct *task, unsigned long rlim)
++{
++	struct itrace_pmu *ipmu = itrace_pmu;
++	struct perf_event_attr attr;
++	struct perf_event *event;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_ANY);
++	if (event) {
++		if (event->hw.counter_type != PERF_ITRACE_COREDUMP)
++			return -EINVAL;
++
++		perf_event_release_kernel(event);
++		static_key_slow_dec_deferred(&itrace_core_events);
++	}
++
++	if (!rlim)
++		return 0;
++
++	memset(&attr, 0, sizeof(attr));
++	attr.type = ipmu->pmu.type;
++	attr.config = 0;
++	attr.sample_type = 0;
++	attr.exclude_kernel = 1;
++	attr.inherit = 1;
++
++	event = perf_event_create_kernel_counter(&attr, -1, task, NULL, NULL);
++	if (IS_ERR(event))
++		return PTR_ERR(event);
++
++	static_key_slow_inc(&itrace_core_events.key);
++
++	event->hw.counter_type = PERF_ITRACE_COREDUMP;
++	perf_event_enable(event);
++
++	return 0;
++}
++
++static void itrace_pmu_exit_task(struct task_struct *task)
++{
++	struct perf_event *event;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_COREDUMP);
++
++	/*
++	 * here we are only interested in kernel counters created by
++	 * update_itrace_rlimit(), inherited ones should be taken care of by
++	 * perf_event_exit_task(), sampling ones are taken care of by
++	 * itrace_sampler_fini().
++	 */
++	if (!event)
++		return;
++
++	if (!event->parent)
++		perf_event_release_kernel(event);
++}
++
++void exit_itrace(struct task_struct *task)
++{
++	if (static_key_false(&itrace_core_events.key))
++		itrace_pmu_exit_task(task);
++}
++
++size_t itrace_elf_note_size(struct task_struct *task)
++{
++	struct itrace_pmu *ipmu;
++	struct perf_event *event = NULL;
++	size_t size = 0;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_COREDUMP);
++	if (event) {
++		perf_event_disable(event);
++
++		ipmu = to_itrace_pmu(event->pmu);
++		size = ipmu->core_size(event);
++		size += task_rlimit(task, RLIMIT_ITRACE);
++		size = roundup(size + strlen(ipmu->name) + 1, 4);
++		size += sizeof(struct itrace_note) + sizeof(struct elf_note);
++		size += roundup(sizeof(CORE_OWNER), 4);
++	}
++
++	return size;
++}
++
++void itrace_elf_note_write(struct coredump_params *cprm,
++			   struct task_struct *task)
++{
++	struct perf_event *event;
++	struct itrace_note note;
++	struct itrace_pmu *ipmu;
++	struct elf_note en;
++	unsigned long rlim;
++	size_t pmu_len;
++
++	event = itrace_find_task_event(task, PERF_ITRACE_COREDUMP);
++	if (!event)
++		return;
++
++	ipmu = to_itrace_pmu(event->pmu);
++	pmu_len = strlen(ipmu->name) + 1;
++
++	rlim = task_rlimit(task, RLIMIT_ITRACE);
++
++	/* Elf note with name */
++	en.n_namesz = strlen(CORE_OWNER);
++	en.n_descsz = roundup(ipmu->core_size(event) + rlim + sizeof(note) +
++			      pmu_len, 4);
++	en.n_type = NT_ITRACE;
++	dump_emit(cprm, &en, sizeof(en));
++	dump_align(cprm, 4);
++	dump_emit(cprm, CORE_OWNER, sizeof(CORE_OWNER));
++	dump_align(cprm, 4);
++
++	/* ITRACE header */
++	note.itrace_config = event->attr.itrace_config;
++	dump_emit(cprm, &note, sizeof(note));
++	dump_emit(cprm, ipmu->name, pmu_len);
++
++	/* ITRACE PMU header + payload */
++	ipmu->core_output(cprm, event, rlim);
++	dump_align(cprm, 4);
++}
++
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index d7ec426..0bee352 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -119,7 +119,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	if (event->parent)
+ 		event = event->parent;
+ 
+-	rb = rcu_dereference(event->rb);
++	rb = rcu_dereference(event->rb[PERF_RB_MAIN]);
+ 	if (unlikely(!rb))
+ 		goto out;
+ 
+diff --git a/kernel/exit.c b/kernel/exit.c
+index a949819..28138ef 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -48,6 +48,7 @@
+ #include <linux/fs_struct.h>
+ #include <linux/init_task.h>
+ #include <linux/perf_event.h>
++#include <linux/itrace.h>
+ #include <trace/events/sched.h>
+ #include <linux/hw_breakpoint.h>
+ #include <linux/oom.h>
+@@ -788,6 +789,8 @@ void do_exit(long code)
+ 	check_stack_usage();
+ 	exit_thread();
+ 
++	exit_itrace(tsk);
++
+ 	/*
+ 	 * Flush inherited counters to the parent - before the parent
+ 	 * gets woken up by child-exit notifications.
+diff --git a/kernel/sys.c b/kernel/sys.c
+index c723113..7651d6f 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -14,6 +14,7 @@
+ #include <linux/fs.h>
+ #include <linux/kmod.h>
+ #include <linux/perf_event.h>
++#include <linux/itrace.h>
+ #include <linux/resource.h>
+ #include <linux/kernel.h>
+ #include <linux/workqueue.h>
+@@ -1402,6 +1403,10 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
+ 		update_rlimit_cpu(tsk, new_rlim->rlim_cur);
+ out:
+ 	read_unlock(&tasklist_lock);
++
++	if (!retval && new_rlim && resource == RLIMIT_ITRACE)
++		retval = update_itrace_rlimit(tsk, new_rlim->rlim_cur);
++
+ 	return retval;
+ }
+ 
 -- 
 1.8.5.1
 
