@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab3LKTaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:30:14 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:62238 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab3LKTaL (ORCPT
+	id S1751800Ab3LKTap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:30:45 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:56678 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab3LKTao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:30:11 -0500
+	Wed, 11 Dec 2013 14:30:44 -0500
+Message-ID: <52A8BD60.80300@gmail.com>
+Date: Wed, 11 Dec 2013 12:30:40 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20131209074933.GA2922@jtriplet-mobl1>
-References: <1386376451-24593-1-git-send-email-sonnyrao@chromium.org>
-	<20131209074933.GA2922@jtriplet-mobl1>
-Date: Wed, 11 Dec 2013 20:30:10 +0100
-Message-ID: <CABPqkBTufgMk=iqXM87+psUeLd865QF9tCEVHT6hwT4=TtetfQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] drivers: char: Add a dynamic clock for the trace clock
-From: Stephane Eranian <eranian@google.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Pawel Moll <pawell.moll@arm.com>,
-        Olof Johansson <olof@lixom.net>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com>
+In-Reply-To: <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sonny,
+On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
 
-Your patch has a couple of problems for me:
- - requires CONFIG_TRACING
-
-You should directly invoke getrawmonotonic()
- and inline the code from trace_clock_getres().
-
-That's how I managed to compile your kernel module on my system.
-
-
-On Mon, Dec 9, 2013 at 8:49 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> On Fri, Dec 06, 2013 at 04:34:11PM -0800, Sonny Rao wrote:
->> Based on a suggestion from John Stultz.
->>
->> This adds a dynamic clock device which can be used with clock_gettime
->> to sample the clock source used for time stamping trace events in the
->> kernel.  The only use for this clock source is to associate user space
->> events with kernel events on a given kernel.  It is explicitly not
->> supposed to be used as a generic time source and won't necessarily be
->> consistent between kernels.
->>
->> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index 55f3608..52fbfb6 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
 >
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>   	return thread->pid_;
+>   }
+> +
+> +int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
+> +{
+> +	struct thread *thread = machine__find_thread(machine, tid);
+> +
+> +	if (!thread)
+> +		return -1;
+> +
+> +	if (pid)
+> +		*pid = thread->pid_;
+
+Why is a 'get' function modifying the thread data?
+
+David
