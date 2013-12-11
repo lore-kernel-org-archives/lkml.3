@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab3LKB1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:27:50 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:59242 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646Ab3LKB1r (ORCPT
+	id S1752184Ab3LKB1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:27:55 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:55009 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab3LKB1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:27:47 -0500
-Message-ID: <52A7BF8C.1030601@hitachi.com>
-Date: Wed, 11 Dec 2013 10:27:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 10 Dec 2013 20:27:52 -0500
+Date: Tue, 10 Dec 2013 17:27:48 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, angus.clark@st.com, linus.walleij@linaro.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v3 15/36] mtd: st_spi_fsm: Fetch boot-device from mode
+ pins
+Message-ID: <20131211012748.GI27149@ld-irv-0074.broadcom.com>
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
+ <1385727565-25794-16-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 12/17] tracing/probes: Implement 'memory' fetch method
- for uprobes
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-13-git-send-email-namhyung@kernel.org> <52A6F455.4070807@hitachi.com> <87mwk8i3xn.fsf@sejong.aot.lge.com>
-In-Reply-To: <87mwk8i3xn.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385727565-25794-16-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/11 10:15), Namhyung Kim wrote:
-> On Tue, 10 Dec 2013 20:00:37 +0900, Masami Hiramatsu wrote:
->> (2013/12/09 15:20), Namhyung Kim wrote:
->>> @@ -493,7 +416,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->>>  			dprm->offset = offset;
->>>  			dprm->fetch = t->fetch[FETCH_MTD_memory];
->>>  			dprm->fetch_size = get_fetch_size_function(t,
->>> -							dprm->fetch, ttbl);
->>> +							dprm->fetch, ftbl);
->>
->> What is this change? I guess it should be included in 11/17...
-> 
-> Argh, right.  It looks like a git rebase artifact, will change.
-> 
-> 
->> The rest of this patch is good for me.
-> 
-> So can I add you ack then? :)
+On Fri, Nov 29, 2013 at 12:19:04PM +0000, Lee Jones wrote:
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+> @@ -346,9 +348,48 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+...
+> +	/* Use device size to determine address width */
 
-Yes, you can add it! :)
+Since you're splitting this patch series up so much, shouldn't this
+comment go in when you add the two lines below?
 
-Thank you,
+>  	if (info->sector_size * info->n_sectors > 0xFFFFFF)
+>  		info->flags |= FLASH_FLAG_32BIT_ADDR;
+...
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+BTW, even though it doesn't exactly make for the best (runtime)
+bisectability (since your driver is not functional yet), this approach
+to splitting your driver introduction into logical chunks does make it a
+little easier to review. So thanks.
 
-
+Brian
