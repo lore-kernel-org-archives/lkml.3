@@ -1,95 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab3LKAZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:25:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62815 "EHLO mx1.redhat.com"
+	id S1751476Ab3LKAZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:25:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20026 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856Ab3LKAZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:25:15 -0500
-Date: Tue, 10 Dec 2013 19:23:30 -0500
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131211002330.GA12924@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Darren Hart <dvhart@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-References: <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com>
- <20131210213431.GA6342@redhat.com>
- <20131210214143.GG27373@redhat.com>
- <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
- <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
- <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
- <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
- <20131210230009.GF5050@redhat.com>
- <20131211000504.GA13710@home.goodmis.org>
+	id S1750980Ab3LKAZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 19:25:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,867,1378882800"; 
+   d="scan'208";a="442060252"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-acpi @ vger . kernel . org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] SFI: fix compilation warnings
+Thread-Topic: [PATCH v2] SFI: fix compilation warnings
+Thread-Index: AQHO9L54/JL6fa5i6Eyqhkbdmc6PdJpMpBHQgAAtJACAAU2T4A==
+Date: Wed, 11 Dec 2013 00:22:32 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802496E89@SHSMSX101.ccr.corp.intel.com>
+References: <1386580161-27718-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1AE640813FDE7649BE1B193DEA596E88024969FB@SHSMSX101.ccr.corp.intel.com>
+ <1386677252.1871.142.camel@smile>
+In-Reply-To: <1386677252.1871.142.camel@smile>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211000504.GA13710@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBB0Q20v020570
 
-On Tue, Dec 10, 2013 at 07:05:04PM -0500, Steven Rostedt wrote:
- > On Tue, Dec 10, 2013 at 06:00:09PM -0500, Dave Jones wrote:
- > > 
- > > The only thing I'm still unclear on, is how that pid allegedly wasn't doing
- > > a futex call as part of its run. The only thing I can think of is that
- > > the other pid that _did_ do a futex call did it on a page that was MAP_SHARED
- > > between all the other children, and this 'spin forever' thing only
- > > happens when the last process with a reference on that page exits ?
- > 
- > Which thread did not do the futex call? The one that was spinning? No, that one
- > most definitely was, at least according to the stack trace trace you posted:
- > 
- >  trinity-child27-10818 [001] 89790.703547: kernel_stack:         <stack trace>
- > => futex_requeue (ffffffff810df18a)
- > => do_futex (ffffffff810e019e)
- > => SyS_futex (ffffffff810e0de1)
- > => tracesys (ffffffff81760be4)  
- > 
- > It did a futex() system call.
- > 
- > Or are you talking about another thread?
+Hi,
 
-It's the same thread. but here's what it says the last thing it did was..
+> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Andy Shevchenko
+> Sent: Tuesday, December 10, 2013 8:08 PM
+> 
+> On Tue, 2013-12-10 at 01:30 +0000, Zheng, Lv wrote:
+> > Hi, Andy
+> >
+> > IMO:
+> > 1. sfi_acpi.h should include both <linux/acpi.h> and <linux/sfi.h> and it should include <acpi/acpi.h> for !CONFIG_ACPI builds.
+> > 2. then we should include sfi_acpi.h instead of <linux/acpi.h>, <linux/sfi.h> and <acpi/acpi.h> for all of its users.
+> >
+> > I think the patch in the linux-pm/bleeding-edge queue can fix the issue you've reported:
+> > https://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-
+> edge&id=c099eacbcaec4475936fbf73e499507728ce47e1
+> 
+> I think so, I'll test this later.
+> 
+> Only one thing I don't like is the FIXME stuff in the sfi_acpi.h.
+> Could it be fixed as well?
 
-(gdb) print shm->previous_syscallno[27]
-$1 = 288
+It is just a reminder to tell people <acpi/acpi.h> inclusion here cannot be a reference for those who want to include it directly.
 
-accept4.
+I have offered 2 solutions to remove this FIXME:
+1. Implementing stubs for <acpi/acpi.h>, then we can move <acpi/acpi.h> inclusion out of the "#ifdef CONFIG_ACPI" block.  To achieve this, I drafted more than 10 commits.  Someone might think it was too complicated to address such an issue, but we might utilize this to kill more "#ifdef CONFIG_ACPI" blocks in the entire kernel source tree.
+2. Re-defining necessary table structures for !CONFIG_ACPI builds. 1 commit was ready for this.  But having things defined twice looks ugly.
+They are still under discussion.
 
-Just to verify I'm looking at the right array member..
+If the decision was determined, you might see further patches sent from me to the above mentioned thread or during the ACPICA release process to remove it.
 
-(gdb) print shm->pids[27]
-$2 = 10818
+Thanks and best regards
+-Lv
 
-Oh, hmm. Wait, I'm an idiot.
-I only update ->previous when we come back from the syscall.
-It's _still_ doing this syscall.  
-
-(gdb) print shm->syscallno[27]
-$4 = 202
-
-I was distracted by seeing all the other threads exiting, so I was only looking at
-what this one had already done.
-
-ok, mystery solved. derp.
-
-	Dave
-
+> 
+> 
+> >
+> > I made it a part of my header cleanup series.
+> > The story can be found in this mailing list thread:
+> > http://www.spinics.net/lists/linux-acpi/msg47510.html
+> >
+> > Thanks and best regards
+> > -Lv
+> >
+> >
+> > > -----Original Message-----
+> > > From: Andy Shevchenko [mailto:andriy.shevchenko@linux.intel.com]
+> > > Sent: Monday, December 09, 2013 5:09 PM
+> > > To: Wysocki, Rafael J; linux-acpi @ vger . kernel . org; LKML; Zheng, Lv
+> > > Cc: Andy Shevchenko
+> > > Subject: [PATCH v2] SFI: fix compilation warnings
+> > >
+> > > When build kernel with make W=1 we get the following compiler error.
+> > >
+> > > In file included from drivers/sfi/sfi_acpi.c:66:0:
+> > > include/linux/sfi_acpi.h: In function â€˜acpi_sfi_table_parseâ€™:
+> > > include/linux/sfi_acpi.h:72:2: error: implicit declaration of function â€˜acpi_table_parseâ€™ [-Werror=implicit-function-declaration]
+> > >   if (!acpi_table_parse(signature, handler))
+> > >   ^
+> > >   cc1: some warnings being treated as errors
+> > >
+> > > The patch add linux/acpi.h to the top of file.
+> > >
+> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > > ---
+> > > Changes to v2:
+> > > - fix for build when ACPI=n, SFI=y
+> > >  drivers/sfi/sfi_acpi.c   | 2 +-
+> > >  include/linux/sfi_acpi.h | 4 +++-
+> > >  2 files changed, 4 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/drivers/sfi/sfi_acpi.c b/drivers/sfi/sfi_acpi.c
+> > > index 5e753d7..5589ec5 100644
+> > > --- a/drivers/sfi/sfi_acpi.c
+> > > +++ b/drivers/sfi/sfi_acpi.c
+> > > @@ -60,7 +60,7 @@
+> > >  #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+> > >
+> > >  #include <linux/kernel.h>
+> > > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> > > +#include <linux/acpi.h>
+> > >
+> > >  #include <linux/sfi.h>
+> > >  #include "sfi_core.h"
+> > > diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
+> > > index 2cfcb79..ecc2344 100644
+> > > --- a/include/linux/sfi_acpi.h
+> > > +++ b/include/linux/sfi_acpi.h
+> > > @@ -60,7 +60,9 @@
+> > >  #define _LINUX_SFI_ACPI_H
+> > >
+> > >  #ifdef CONFIG_SFI
+> > > -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> > > +
+> > > +#include <acpi/acpi.h>
+> > > +#include <linux/acpi.h>
+> > >
+> > >  extern int sfi_acpi_table_parse(char *signature, char *oem_id,
+> > >  				char *oem_table_id,
+> > > --
+> > > 1.8.4.4
+> >
+> 
+> --
+> Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Intel Finland Oy
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
