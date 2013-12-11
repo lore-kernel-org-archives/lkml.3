@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab3LKBHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:07:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54858 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513Ab3LKBH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:07:26 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQVf+vAbW1v_VL5XSseQg06S6AX8RrE4vvJwPbLOeRcr=A@mail.gmail.com>
-References: <52A6D9B0.7040506@huawei.com> <CAE9FiQUd+sU4GEq0687u8+26jXJiJVboN90+L7svyosmm+V1Rg@mail.gmail.com> <52A787D0.2070400@zytor.com> <CAE9FiQU8Y_thGxZamz0Uwt4FGXh7KJu7jGP8ED3dbjQuyq7vcQ@mail.gmail.com> <52A79B0D.4090303@zytor.com> <CAE9FiQVf+vAbW1v_VL5XSseQg06S6AX8RrE4vvJwPbLOeRcr=A@mail.gmail.com>
+	id S1751646Ab3LKBKz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:10:55 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:46960 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab3LKBKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 20:10:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] mm,x86: fix span coverage in e820_all_mapped()
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 10 Dec 2013 17:06:36 -0800
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Xishi Qiu <qiuxishi@huawei.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Linn Crosetto <linn@hp.com>,
-        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux MM <linux-mm@kvack.org>
-Message-ID: <b2e6fc81-a956-46f7-9a44-a707064c24a2@email.android.com>
+In-Reply-To: <20131211010326.GF10988@dastard>
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+	<20131209121534.GE4278@hercules>
+	<CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
+	<20131209235523.GW31386@dastard>
+	<CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
+	<20131211010326.GF10988@dastard>
+Date: Tue, 10 Dec 2013 20:10:51 -0500
+X-Google-Sender-Auth: cjExY568jQRrOXICAQGEYhsQcdQ
+Message-ID: <CA+5PVA7wso5fo11xX9kCUdbrqBQMzUnYwTOB_Qe3K7LDY4z_Cw@mail.gmail.com>
+Subject: Re: XFS security fix never sent to -stable?
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        Kees Cook <keescook@google.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        xfs@oss.sgi.com, "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, the issue I thought we were discussing was actually [A,B) [B,C) [C,D) ...
-
-Yinghai Lu <yinghai@kernel.org> wrote:
->On Tue, Dec 10, 2013 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/10/2013 01:52 PM, Yinghai Lu wrote:
->>>>
->>>> What happens if it spans more than two regions?
->>>
->>> [A, B), [B+1, C), [C+1, D) ?
->>> start in [A, B), and end in [C+1, D).
->>>
->>> old code:
->>> first with [A, B), start set to B.
->>> then with [B+1, C), start still keep as B.
->>> then with [C+1, D), start still keep as B.
->>> at last still return 0...aka not_all_mapped.
->>>
->>> old code is still right.
->>>
+On Tue, Dec 10, 2013 at 8:03 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Tue, Dec 10, 2013 at 08:20:07AM -0500, Josh Boyer wrote:
+>> On Mon, Dec 9, 2013 at 6:55 PM, Dave Chinner <david@fromorbit.com>
+>> wrote:
+>> > [cc xfs list, cc stable@vger.kernel.org]
+>> >
+>> > On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
+>> >> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
+>> >> <luis.henriques@canonical.com> wrote:
+>> >> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
+>> >> >> Hi,
+>> >> >>
+>> >> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c
+>> >> >> ("xfs: add capability check to free eofblocks ioctl") is a
+>> >> >> security fix that was never sent to -stable? From what I can
+>> >> >> see, it was introduced in 3.8 by
+>> >> >> 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+>> >> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
+>> >> >>
+>> >> >> I don't see this in the 3.8.y tree. Should it be added there
+>> >> >> and newer?
+>> >> >
+>> >> > Thanks Kees, I'm queuing it for the 3.11 kernel.
+>> >>
+>> >> There's also this one:
+>> >>
+>> >> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
+>> >>
+>> >> It fixes CVE-2013-6382
+>> >
+>> > First I've heard about it there being a CVE for that bug. Since
+>> > when has it been considered best practice to publish CVEs
+>> > without first (or ever) directly contacting the relevant
+>> > upstream developers?
 >>
->> Why not_all_mapped?
+>> We got a Fedora bug for it, and there are similar RHEL bugs open.
+>> I had assumed you would be informed either via upstream or
+>> through those.
 >
->[B, B+1), and [C, C+1) are not there.
+> I've not been cc'd on any of those bugs internally at RH, so I don't
+> have visibility of the problems unless someone specifically adds me
+> to those bugs.  As it is, raising fedora/RHEL bugs is not informing
+> upstream - it is a distro process for tracking the distro issue
+> through to closure.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Agreed.  We should probably fix the bug thing anyway though.
+
+>> The CVE request was submitted by Kees here:
+>> http://seclists.org/oss-sec/2013/q4/330
+>
+> Ugh, no, I'm not going to subscribe to a high noise list where the
+> only way I might be informed of a CVE being raised is by following
+> links to git commit IDs....
+>
+> Upstream is not magically informed about CVEs, and relying on
+> upstream developers to scan or poll *anything* just to find if a
+> CVE on their subsystem has been released is not reliable and
+> does not scale. If anyone raises a CVE against a kernel subsystem,
+> then the relevant list in the MAINTAINERS file for that subsystem
+> should be on the cc list of any discussion about the CVE, and on the
+> announcement of the CVE.
+>
+> Security processes are not something that should be hidden away in
+> it's own private corner - if there's a problem upstream needs to
+> take action on, then direct contact with upstream is necessary. We
+> need to know about security issues - even ones that are classified
+> post-commit as security issues - so we are operating with full
+> knowledge of the issues in our code and the impact of our fixes....
+
+Agreed.  I'm going to interpret your comments at being directed to the
+general audience because otherwise you're just shooting the messenger
+:).
+
+josh
