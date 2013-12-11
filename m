@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414Ab3LKADy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:03:54 -0500
-Received: from ozlabs.org ([203.10.76.45]:38211 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab3LKADb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:03:31 -0500
-Date: Wed, 11 Dec 2013 11:03:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH driver-core-next] sysfs: bail early from
- kernfs_file_mmap() to avoid spurious lockdep warning
-Message-Id: <20131211110319.33065ea7642d1fd5775531be@canb.auug.org.au>
-In-Reply-To: <20131210145004.GA4610@htj.dyndns.org>
-References: <20131209144712.57a50d7ed468ae8a4d57a0bf@canb.auug.org.au>
-	<20131209082152.GA26809@kroah.com>
-	<20131210145004.GA4610@htj.dyndns.org>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__11_Dec_2013_11_03_19_+1100_sO5u4vgXIuT7Qx9i"
+	id S1751467Ab3LKAFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:05:10 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:50414 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751036Ab3LKAFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 19:05:07 -0500
+Date: Tue, 10 Dec 2013 19:05:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131211000504.GA13710@home.goodmis.org>
+References: <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+ <20131210203559.GA1209@redhat.com>
+ <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
+ <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
+ <20131210230009.GF5050@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210230009.GF5050@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Dec_2013_11_03_19_+1100_sO5u4vgXIuT7Qx9i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 10, 2013 at 06:00:09PM -0500, Dave Jones wrote:
+> 
+> The only thing I'm still unclear on, is how that pid allegedly wasn't doing
+> a futex call as part of its run. The only thing I can think of is that
+> the other pid that _did_ do a futex call did it on a page that was MAP_SHARED
+> between all the other children, and this 'spin forever' thing only
+> happens when the last process with a reference on that page exits ?
 
-Hi Tejun,
+Which thread did not do the futex call? The one that was spinning? No, that one
+most definitely was, at least according to the stack trace trace you posted:
 
-On Tue, 10 Dec 2013 09:50:04 -0500 Tejun Heo <tj@kernel.org> wrote:
->
-> Greg, given that there will be more patches in driver-core-next, I
-> think it'll be best to pull driver-core-linus into driver-core-next to
-> avoid conflicts from the same commit.  You can pull my commit or if
-> you pull it yourself, just take all the chunks from driver-core-next
-> so that the resulting fs/sysfs/file.c is unchanged compared to
-> driver-core-next before pull, and then apply this patch.
->=20
-> ------ 8< ------
-> From 5cb9f29a28c87cbf62f74ff6bde3d9da2a565b1d Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Tue, 10 Dec 2013 09:29:17 -0500
->=20
-> This is v3.14 fix for the same issue that a8b14744429f ("sysfs: give
+ trinity-child27-10818 [001] 89790.703547: kernel_stack:         <stack trace>
+=> futex_requeue (ffffffff810df18a)
+=> do_futex (ffffffff810e019e)
+=> SyS_futex (ffffffff810e0de1)
+=> tracesys (ffffffff81760be4)  
 
-I have added the patch as a merge fix patch for the merge of the
-driver-core tree today.  I will throw it away if/when Greg applies it.
+It did a futex() system call.
 
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
+Or are you talking about another thread?
 
---Signature=_Wed__11_Dec_2013_11_03_19_+1100_sO5u4vgXIuT7Qx9i
-Content-Type: application/pgp-signature
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSp6vMAAoJEMDTa8Ir7ZwVPoMP/1iSkD7vVtUeRxEz/DQJ9NNx
-mgMNzzwDUQ658bK9orKq8uRMOYJQDE38r70FZEtpxSxrzzgcpRFKNIFNSc2HO2FS
-HV4uhE+oo6DXJolkbl1x7mdkwFOZp0MZe7kji/hj9dtjFRKA9WbEGsJJxNFs38Qj
-9eVFE2jF20248crBq7GIcxgW26jswJGVPvGhKZcravNtZ3INF+hHjhHV/irwHBXl
-PeibpEpFM8DYkyLxZL38+T+LmaNtkrqG38345XzpIHQqtD9sDYAwdsSK3NvXSNrK
-jHePPU2fcu9PTJtb5ZGf9zOwebK8tQH6ciCp8S+SkxPdJRmpw05HeScBNj3raDxT
-80TWuWZ5C9/eL9/88GLlO3MVQL0ZRFLEov1/6X8HcA4mjV2NqqbfMulpJ+AVwTY3
-//Zkj63raub6XY17TTUOb8PrbKdqgdlz7E6dXW6nw0MMfYkCEKbXNVz9XojzCcJI
-vR3fQbP8PTo3OjP/y/QxsUFxQsJ9BKMDCfWzi3QFkwVQmPPpG6ia6bIq7T6iTilf
-E0vEXA9KDUPddQBYT/oiXnK8MAZfCN+NUGUHB6r6uPO/44W0cwqwp7IqGD2XzHW3
-LRfr3dKcM09jG07CZQb5cjIIPy1V3hlM4X4hcxrWiq0EpsZmMqYbePQr096vPHfu
-eAKGE6NEU4xbgGRXKqWg
-=BX7C
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_Dec_2013_11_03_19_+1100_sO5u4vgXIuT7Qx9i--
