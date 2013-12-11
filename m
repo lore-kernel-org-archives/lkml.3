@@ -1,151 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3LKCch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:32:37 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15698 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3LKCce (ORCPT
+	id S1751954Ab3LKCcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:32:50 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:55365 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab3LKCct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:32:34 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 10 Dec 2013 18:29:09 -0800
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v3] gpiolib: return -ENOENT if no GPIO mapping exists
-Date: Wed, 11 Dec 2013 11:32:28 +0900
-Message-ID: <1386729148-16262-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.8.5.1
-X-NVConfidentiality: public
+	Tue, 10 Dec 2013 21:32:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131210154748.GA1950@gmail.com>
+References: <1386044930-15149-1-git-send-email-ast@plumgrid.com>
+	<87fvq9cwlk.fsf@tassilo.jf.intel.com>
+	<CAMEtUuzweYxqwoaYH+J5a2uRM+PFcBH+Pb8Z_ALPUMp+QFz1tQ@mail.gmail.com>
+	<CAMEtUuzWLcTOeQSrhEQHVn7DbuoJn7bNek9-toQ9xZYzya3-ag@mail.gmail.com>
+	<20131205104113.GB20283@gmail.com>
+	<20131205084657.09b6a2ce@gandalf.local.home>
+	<CAMEtUuyp0q9YSMq7OchEeWLz9oPYd3qQ+0SDV5Pt8F10KLbFpg@mail.gmail.com>
+	<20131205183735.5f9c8bae@gandalf.local.home>
+	<CAMEtUuzkGNbh_ZOd5SbWEdNMz3NEpDZzzAKP=Ov10DKD5hVaKQ@mail.gmail.com>
+	<20131210154748.GA1950@gmail.com>
+Date: Tue, 10 Dec 2013 18:32:47 -0800
+Message-ID: <CAMEtUuzaCMa6gSgoKvuzXPwo5d+2oFg9URiakKECh2nYSD8o9g@mail.gmail.com>
+Subject: Re: [RFC PATCH tip 0/5] tracing filters with BPF
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices drivers make use of optional GPIO parameters. For such
-drivers, it is important to discriminate between the case where no
-GPIO mapping has been defined for the function they are requesting, and
-the case where a mapping exists but an error occured while resolving it
-or when acquiring the GPIO.
+On Tue, Dec 10, 2013 at 7:47 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Alexei Starovoitov <ast@plumgrid.com> wrote:
+>
+>> > I'm fine if it becomes a requirement to have a vmlinux built with
+>> > DEBUG_INFO to use BPF and have a tool like perf to translate the
+>> > filters. But it that must not replace what the current filters do
+>> > now. That is, it can be an add on, but not a replacement.
+>>
+>> Of course. tracing filters via bpf is an additional tool for kernel
+>> debugging. bpf by itself has use cases beyond tracing.
+>
+> Well, Steve has a point: forcing DEBUG_INFO is a big showstopper for
+> most people.
 
-This patch changes the family of gpiod_get() functions such that they
-will return -ENOENT if and only if no GPIO mapping is defined for the
-requested function. Other error codes are used when an actual error
-occured during the GPIO resolution.
+there is a misunderstanding here.
+I was saying 'of course' to 'not replace current filter infra'.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
-Changes since v2:
-- Put string on a single line (thanks Andy!)
-- Added Andy's reviewed-by
----
- Documentation/gpio/consumer.txt |  6 +++++-
- drivers/gpio/gpiolib.c          | 34 +++++++++++++++++-----------------
- 2 files changed, 22 insertions(+), 18 deletions(-)
+bpf does not depend on debug info.
+That's the key difference between 'perf probe' approach and bpf filters.
 
-diff --git a/Documentation/gpio/consumer.txt b/Documentation/gpio/consumer.txt
-index 07c74a3765a0..e42f77d8d4ca 100644
---- a/Documentation/gpio/consumer.txt
-+++ b/Documentation/gpio/consumer.txt
-@@ -38,7 +38,11 @@ device that displays digits), an additional index argument can be specified:
- 					  const char *con_id, unsigned int idx)
- 
- Both functions return either a valid GPIO descriptor, or an error code checkable
--with IS_ERR(). They will never return a NULL pointer.
-+with IS_ERR() (they will never return a NULL pointer). -ENOENT will be returned
-+if and only if no GPIO has been assigned to the device/function/index triplet,
-+other error codes are used for cases where a GPIO has been assigned but an error
-+occured while trying to acquire it. This is useful to discriminate between mere
-+errors and an absence of GPIO for optional GPIO parameters.
- 
- Device-managed variants of these functions are also defined:
- 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 12e47dfabd8d..c0b06a9adad9 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -2367,7 +2367,7 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
- 				    unsigned int idx,
- 				    enum gpio_lookup_flags *flags)
- {
--	struct gpio_desc *desc = ERR_PTR(-ENODEV);
-+	struct gpio_desc *desc = ERR_PTR(-ENOENT);
- 	struct gpiod_lookup_table *table;
- 	struct gpiod_lookup *p;
- 
-@@ -2389,19 +2389,22 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
- 		chip = find_chip_by_name(p->chip_label);
- 
- 		if (!chip) {
--			dev_warn(dev, "cannot find GPIO chip %s\n",
--				 p->chip_label);
--			continue;
-+			dev_err(dev, "cannot find GPIO chip %s\n",
-+				p->chip_label);
-+			return ERR_PTR(-ENODEV);
- 		}
- 
- 		if (chip->ngpio <= p->chip_hwnum) {
--			dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
--				 chip->label, chip->ngpio);
--			continue;
-+			dev_err(dev,
-+				"requested GPIO %d is out of range [0..%d] for chip %s\n",
-+				idx, chip->ngpio, chip->label);
-+			return ERR_PTR(-EINVAL);
- 		}
- 
- 		desc = gpiochip_offset_to_desc(chip, p->chip_hwnum);
- 		*flags = p->flags;
-+
-+		return desc;
- 	}
- 
- 	return desc;
-@@ -2413,7 +2416,8 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
-  * @con_id:	function within the GPIO consumer
-  *
-  * Return the GPIO descriptor corresponding to the function con_id of device
-- * dev, or an IS_ERR() condition if an error occured.
-+ * dev, -ENOENT if no GPIO has been assigned to the requested function, or
-+ * another IS_ERR() code if an error occured while trying to acquire the GPIO.
-  */
- struct gpio_desc *__must_check gpiod_get(struct device *dev, const char *con_id)
- {
-@@ -2430,7 +2434,9 @@ EXPORT_SYMBOL_GPL(gpiod_get);
-  * This variant of gpiod_get() allows to access GPIOs other than the first
-  * defined one for functions that define several GPIOs.
-  *
-- * Return a valid GPIO descriptor, or an IS_ERR() condition in case of error.
-+ * Return a valid GPIO descriptor, -ENOENT if no GPIO has been assigned to the
-+ * requested function and/or index, or another IS_ERR() code if an error
-+ * occured while trying to acquire the GPIO.
-  */
- struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
- 					       const char *con_id,
-@@ -2455,15 +2461,9 @@ struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
- 	 * Either we are not using DT or ACPI, or their lookup did not return
- 	 * a result. In that case, use platform lookup as a fallback.
- 	 */
--	if (!desc || IS_ERR(desc)) {
--		struct gpio_desc *pdesc;
--
-+	if (!desc || desc == ERR_PTR(-ENOENT)) {
- 		dev_dbg(dev, "using lookup tables for GPIO lookup");
--		pdesc = gpiod_find(dev, con_id, idx, &flags);
--
--		/* If used as fallback, do not replace the previous error */
--		if (!IS_ERR(pdesc) || !desc)
--			desc = pdesc;
-+		desc = gpiod_find(dev, con_id, idx, &flags);
- 	}
- 
- 	if (IS_ERR(desc)) {
--- 
-1.8.5.1
+Masami is right that what I was trying to achieve with bpf filters
+is similar to 'perf probe': insert a dynamic probe anywhere
+in the kernel, walk pointers, data structures, print interesting stuff.
 
+'perf probe' does it via scanning vmlinux with debug info.
+bpf filters don't need it.
+tools/bpf/trace/*_orig.c examples only depend on linux headers
+in /lib/modules/../build/include/
+Today bpf compiler struct layout is the same as x86_64.
+
+Tomorrow bpf compiler will have flags to adjust endianness, pointer size, etc
+of the front-end. Similar to -m32/-m64 and -m*-endian flags.
+Neat part is that I don't need to do any work, just enable it properly in
+the bpf backend. From gcc/llvm point of view, bpf is yet another 'hw'
+architecture that compiler is emitting code for.
+So when C code of filter_ex1_orig.c does 'skb->dev', compiler determines
+field offset by looking at /lib/modules/.../include/skbuff.h
+whereas for 'perf probe' 'skb->dev' means walk debug info.
+
+Something like: cc1 -mlayout_x86_64 filter.c will produce bpf code that
+walks all data structures in the same way x86_64 does it.
+Even if the user makes a mistake and uses -mlayout_aarch64, it won't crash.
+Note that all -m* flags will be in one compiler. It won't grow any bigger
+because of that. All of it already supported by C front-ends.
+It may sound complex, but really very little code for the bpf backend.
+
+I didn't look inside systemtap/ktap enough to say how much they're
+relying on presence of debug info to make a comparison.
+
+I see two main use cases for bpf tracing filters: debugging live kernel
+and collecting stats. Same tricks that [sk]tap do with their maps.
+Or may be some of the stats that 'perf record' collects in userspace
+can be collected by bpf filter in kernel and stored into generic bpf table?
+
+> Would it be possible to make BFP filters recognize exposed details
+> like the current filters do, without depending on the vmlinux?
+
+Well, if you say that presence of linux headers is also too much to ask,
+I can hook bpf after probes stored all the args.
+
+This way current simple filter syntax can move to userspace.
+'arg1==x || arg2!=y' can be parsed by userspace, bpf code
+generated and fed into kernel. It will be faster than walk_pred_tree(),
+but if we cannot remove 2k lines from trace_events_filter.c
+because of backward compatibility, extra performance becomes
+the only reason to have two different implementations.
+
+Another use case is to optimize fetch sequences of dynamic probes
+as Masami suggested, but backward compatibility requirement
+would preserve to ways of doing it as well.
+
+imo the current hook of bpf into tracing is more compelling, but let me
+think more about reusing data stored in the ring buffer.
+
+Thanks
+Alexei
