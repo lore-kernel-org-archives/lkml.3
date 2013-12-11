@@ -1,130 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476Ab3LKMOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:14:00 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:51997 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751245Ab3LKMN6 (ORCPT
+	id S1751498Ab3LKMR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:17:29 -0500
+Received: from [216.32.180.187] ([216.32.180.187]:37379 "EHLO
+	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751164Ab3LKMR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:13:58 -0500
-Date: Wed, 11 Dec 2013 12:13:52 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        bp@alien8.de, greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v5 09/14] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131211121352.GB29980@console-pimps.org>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-10-git-send-email-dyoung@redhat.com>
+	Wed, 11 Dec 2013 07:17:28 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz1458Kzz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzd2iz1de098h8275bh1de097hz2dh839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+X-WSS-ID: 0MXN5VJ-07-4VS-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <fweisbec@gmail.com>, <mingo@kernel.org>, <mingo@redhat.com>,
+        <jacob.w.shin@gmail.com>
+CC: <oleg@redhat.com>, <a.p.zijlstra@chello.nl>, <acme@ghostprotocols.net>,
+        <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <sherry.hurwitz@amd.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: [PATCH V6 0/4] perf/x86/amd: AMD Family 16h Data Breakpoint Extensions
+Date: Wed, 11 Dec 2013 06:28:22 -0600
+Message-ID: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386582147-9802-10-git-send-email-dyoung@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Dec, at 05:42:22PM, Dave Young wrote:
-> Add a new setup_data type SETUP_EFI for kexec use.
-> Passing the saved fw_vendor, runtime, config tables and efi runtime mappings.
-> 
-> When entering virtual mode, directly mapping the efi runtime ragions which
-> we passed in previously. And skip the step to call SetVirtualAddressMap.
-> 
-> Specially for HP z420 workstation we need save the smbios physical address.
-> The kernel boot sequence proceeds in the following order.  Step 2
-> requires efi.smbios to be the physical address.  However, I found that on
-> HP z420 EFI system table has a virtual address of SMBIOS in step 1.  Hence,
-> we need set it back to the physical address with the smbios in
-> efi_setup_data.  (When it is still the physical address, it simply sets
-> the same value.)
-> 
-> 1. efi_init() - Set efi.smbios from EFI system table
-> 2. dmi_scan_machine() - Temporary map efi.smbios to access SMBIOS table
-> 3. efi_enter_virtual_mode() - Map EFI ranges
-> 
-> Tested on ovmf+qemu, lenovo thinkpad, a dell laptop and an
-> HP z420 workstation.
-> 
-> v2: refresh based on previous patch changes, code cleanup.
-> v3: use ioremap instead of phys_to_virt for efi_setup
-> v5: improve some code structure per comments from Matt
->     Boris: improve code structure, spell fix, etc.
->     Improve changelog from Toshi.
->     change the variable efi_setup to the physical address of efi setup_data
->     instead of the ioremapped virt address
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/include/asm/efi.h            |  11 ++
->  arch/x86/include/uapi/asm/bootparam.h |   1 +
->  arch/x86/kernel/setup.c               |   3 +
->  arch/x86/platform/efi/efi.c           | 195 ++++++++++++++++++++++++++++++----
->  4 files changed, 187 insertions(+), 23 deletions(-)
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-[...]
+The following patchset enables hardware breakpoint bp_len greater than
+HW_BREAKPOINT_LEN_8 on AMD Family 16h and later.
 
-> @@ -115,6 +116,25 @@ static int __init setup_storage_paranoia(char *arg)
->  }
->  early_param("efi_no_storage_paranoia", setup_storage_paranoia);
->  
-> +void __init parse_efi_setup(u64 phys_addr)
-> +{
-> +	struct setup_data *sd;
-> +
-> +	if (!efi_enabled(EFI_64BIT)) {
-> +		pr_warn("SETUP_EFI not supported on 32-bit\n");
-> +		return;
-> +	}
-> +
-> +	sd = early_memremap(phys_addr, sizeof(struct setup_data));
-> +	if (!sd) {
-> +		pr_warn("efi: early_memremap setup_data failed\n");
+  $ perf stat -e mem:0x1000/16:w a.out
+                            ^^
+                            bp_len
 
-You shouldn't need the "efi:" prefix in the message.
+This will count writes to [0x1000 ~ 0x1010)
 
-> @@ -676,6 +766,8 @@ void __init efi_init(void)
->  		efi.systab->hdr.revision >> 16,
->  		efi.systab->hdr.revision & 0xffff, vendor);
->  
-> +	efi_reuse_config(efi.systab->tables, efi.systab->nr_tables);
-> +
+V6:
+* Minor clean up in patch 1 and 2 based on comment from Frederic and Oleg.
+* Split out changes in patch1 into patch4 per Frederic request.
 
-Please check the return value.
+V5:
+* Rebase onto 3.12.0-rc3.
+* Modify the tools/perf/util/parse-events.y due to change in
+  parse_events_add_breakpoint().
 
->  	if (efi_config_init(arch_tables))
->  		return;
->  
-> @@ -886,6 +978,50 @@ out_krealloc:
->  }
->  
->  /*
-> + * Map efi regions which was passed via setup_data. The virt_addr is a fixed
-> + * addr which was used in first kernel in case kexec boot.
-> + */
-> +static int __init map_regions_fixed(void)
-> +{
-> +	int i, s, ret = 0;
-> +	u64 end, systab;
-> +	unsigned long size;
-> +	efi_memory_desc_t *md;
-> +	struct efi_setup_data *data;
-> +
-> +	s = sizeof(*data) + nr_efi_runtime_map * sizeof(data->map[0]);
-> +	data = early_memremap(efi_setup, s);
-> +	if (!data) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +	for (i = 0, md = data->map; i < nr_efi_runtime_map; i++, md++) {
-> +		efi_map_region_fixed(md); /* FIXME: add error handling */
+V4:
+Even more per Oleg's suggestion:
+* Further simplify info->len and info->mask setting switch statement
 
-Oops. Please fix this ;-)
+V3:
+More per Oleg's suggestion:
+* Use already existing bp_len instead of changing userland API and
+  in kernel turn bp_len into proper AMD hardware breakpoint address
+  mask.
+
+V2:
+Per Oleg's suggestions:
+* Moved testing of bp_addr_mask to validate_hw_breakpoint()
+* Changed perf tool syntax to mem:<addr>[/addr_mask][:access]
+
+Jacob Shin (4):
+  perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
+  perf tools: allow user to specify hardware breakpoint bp_len
+  perf tools: add hardware breakpoint bp_len test cases
+  perf/x86: Remove get_hbp_len and replace with bp_len
+
+ arch/x86/include/asm/cpufeature.h        |  2 ++
+ arch/x86/include/asm/debugreg.h          |  5 +++
+ arch/x86/include/asm/hw_breakpoint.h     |  1 +
+ arch/x86/include/uapi/asm/msr-index.h    |  4 +++
+ arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
+ arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++----------------
+ tools/perf/Documentation/perf-record.txt |  7 ++--
+ tools/perf/tests/parse-events.c          | 55 ++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.c           | 21 ++++++------
+ tools/perf/util/parse-events.h           |  2 +-
+ tools/perf/util/parse-events.l           |  1 +
+ tools/perf/util/parse-events.y           | 26 +++++++++++++--
+ 12 files changed, 145 insertions(+), 43 deletions(-)
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.8.1.2
+
+
