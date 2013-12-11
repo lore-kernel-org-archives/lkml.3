@@ -1,268 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab3LKSgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:36:09 -0500
-Received: from a9-114.smtp-out.amazonses.com ([54.240.9.114]:50461 "EHLO
-	a9-114.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750791Ab3LKSgF (ORCPT
+	id S1751370Ab3LKSjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:39:15 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:64971 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3LKSjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:36:05 -0500
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Dec 2013 13:36:05 EST
-Date: Wed, 11 Dec 2013 18:30:10 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
-In-Reply-To: <20131211175235.GD12431@gmail.com>
-Message-ID: <00000142e2ec5e62-25b6aaaf-494c-44ff-987f-2935aed1bb9c-000000@email.amazonses.com>
-References: <20131203233251.745099192@linux.com> <20131210153445.GE4610@htj.dyndns.org> <20131210154506.GA1884@gmail.com> <20131210154951.GF4610@htj.dyndns.org> <20131210155546.GD1995@gmail.com> <00000142ddb6d07d-f77cfa15-55a5-4806-891e-2d57894fc46b-000000@email.amazonses.com>
- <20131210183133.GC20770@gmail.com> <00000142de1ac9a3-d2b5b7fb-25c5-4bec-acbe-8be30a951bbc-000000@email.amazonses.com> <20131211151220.GB11048@gmail.com> <00000142e2c64102-07168d96-fb2f-4eeb-9b49-c3298bc81192-000000@email.amazonses.com>
- <20131211175235.GD12431@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 11 Dec 2013 13:39:12 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.11-54.240.9.114
+In-Reply-To: <871324710.20131211191104@eikelenboom.it>
+References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it>
+ <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com>
+ <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com>
+ <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
+ <871324710.20131211191104@eikelenboom.it>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 11 Dec 2013 19:38:50 +0100
+X-Google-Sender-Auth: _VUber32CnfROtN5cIhL7h4DMUM
+Message-ID: <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013, Ingo Molnar wrote:
-
-> > Thinking about this some more: Separating these two issues would
-> > make it impossible to build x86 since the hackery in
-> > x86/include/asm/preempt.h depends on having the right names in
-> > x86/include/asm/percpu.h. Changing the names first would result in
-> > preempt.h not being usable.
+On Wed, Dec 11, 2013 at 7:11 PM, Sander Eikelenboom
+<linux@eikelenboom.it> wrote:
 >
-> The series must be bisectable at every commit, of course.
+> Wednesday, December 11, 2013, 6:53:07 PM, you wrote:
+>
+>> The best way to address all this is by automatic region awareness and
+>> doing the right thing on devices, this however requires good
+>> architecture / calibration data  / etc and all that needs to be
+>> verified by the system integrators, and finally they need to be
+>> certified. If you want to hack your firmware and software go at it,
+>> just be aware there are reasons for things.
+>
+> Well the general problem seems to be "we don't trust the user" so we FORCE him to the lowest
+> common denominator (without a way to overrule that) so he is forced to operate *well* within the law.
 
-Ok patch with revised header:
+Its simply stupid to have the user be involved, period, the fact that
+a user would be involved should only be for testing or helping
+compliance for a busted device, development, research and obviously
+hacking. Linux allows all these but by default a device with firmware
+and a custom regdomain that will barf if you try to use a channel that
+is not allowed is a restriction in firmware. Feel free to reverse
+engineer that if you don't like it but it just won't be supported or
+go upstream. Now, the common denominator is generally optimized for
+best performance as well so you shouldn't have to do anything, and for
+APs -- this is typically carefully crafted for a region, also highly
+optimized.
 
+>>>> It doesn't seem like you are getting your original requests getting
+>>>> processed, so I don't think CRDA is passing it. Can you verify running
+>>>> from CRDA code:
+>>>
+>>> They don't get processed unless i remove the return from the code as i indicated.
+>>> If i remove that return it processes the request.
+>>>
+>>>> ./regdbdump /usr/lib/crda/regulatory.bin
+>>>
+>>> Although it's in a different location on Debian, /lib/crda/regulatory.bin
+>>> the dump seems fine.
+>
+>> OK thanks. Can you send a patch of what exact change you made, it was
+>> unclear from the paste you made.
+>
+>> diff -u file.c.orig file.c
+>
+> Well i just did a pull from wireless-next, to try Avinash Patil's patch.
+> net/wireless/reg.c had already changed much so i couldn't apply his patch without.
+>
+> With his patch it sets the regulatory domain, although as now expected i still can not use channels 12 and 13 yet,
+> probably due to those firmware restrictions.
 
+Its unclear what results you got, and yeah if the device is restricted
+then its just the fw telling the driver its channels and you can't use
+them. That's it. You won't be able to override information then unless
+you hack the firmware.
 
-From: Peter Zijlstra <peterz@infradead.org>
-Subject: x86: Rename __this_cpu_xxx_# operations to raw_cpu_xxx_#
-
-This is required after the raw_cpu changes in the core since x86 needs
-to follow a different naming for __this_cpu primitives now.
-
-Change the names from __this_cpu_xxxx_# to raw_cpu_xxxx_#.
-
-Also changes the uses of the x86 percpu primitives in preempt.h.
-These depend directly on asm/percpu.h (header #include nesting issue).
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/arch/x86/include/asm/percpu.h
-===================================================================
---- linux.orig/arch/x86/include/asm/percpu.h	2013-12-02 16:07:50.984600478 -0600
-+++ linux/arch/x86/include/asm/percpu.h	2013-12-02 16:07:50.984600478 -0600
-@@ -362,25 +362,25 @@ do {									\
-  */
- #define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
-
--#define __this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define __this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define __this_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--
--#define __this_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_write_4(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_add_1(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_add_2(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_add_4(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_and_1(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_and_2(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_and_4(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_or_1(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_or_2(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_or_4(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
--#define __this_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
--#define __this_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
-+#define raw_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_read_4(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-+
-+#define raw_cpu_write_1(pcp, val)	percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_write_2(pcp, val)	percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_write_4(pcp, val)	percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_add_1(pcp, val)		percpu_add_op((pcp), val)
-+#define raw_cpu_add_2(pcp, val)		percpu_add_op((pcp), val)
-+#define raw_cpu_add_4(pcp, val)		percpu_add_op((pcp), val)
-+#define raw_cpu_and_1(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define raw_cpu_and_2(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define raw_cpu_and_4(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define raw_cpu_or_1(pcp, val)		percpu_to_op("or", (pcp), val)
-+#define raw_cpu_or_2(pcp, val)		percpu_to_op("or", (pcp), val)
-+#define raw_cpu_or_4(pcp, val)		percpu_to_op("or", (pcp), val)
-+#define raw_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
-+#define raw_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
-+#define raw_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
-
- #define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
- #define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-@@ -401,16 +401,16 @@ do {									\
- #define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
- #define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
-
--#define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_add_return_2(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_add_return_4(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--#define __this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--#define __this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--
--#define this_cpu_add_return_1(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_2(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_add_return_4(pcp, val)	percpu_add_return_op(pcp, val)
-+#define raw_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define raw_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+#define raw_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+
-+#define this_cpu_add_return_1(pcp, val)		percpu_add_return_op(pcp, val)
-+#define this_cpu_add_return_2(pcp, val)		percpu_add_return_op(pcp, val)
-+#define this_cpu_add_return_4(pcp, val)		percpu_add_return_op(pcp, val)
- #define this_cpu_cmpxchg_1(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- #define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
- #define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-@@ -427,7 +427,7 @@ do {									\
- 	__ret;								\
- })
-
--#define __this_cpu_cmpxchg_double_4	percpu_cmpxchg8b_double
-+#define raw_cpu_cmpxchg_double_4	percpu_cmpxchg8b_double
- #define this_cpu_cmpxchg_double_4	percpu_cmpxchg8b_double
- #endif /* CONFIG_X86_CMPXCHG64 */
-
-@@ -436,22 +436,22 @@ do {									\
-  * 32 bit must fall back to generic operations.
-  */
- #ifdef CONFIG_X86_64
--#define __this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define __this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define __this_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
--#define __this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
--#define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
--#define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
--#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
--#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
--
--#define this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
--#define this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
--#define this_cpu_add_8(pcp, val)	percpu_add_op((pcp), val)
--#define this_cpu_and_8(pcp, val)	percpu_to_op("and", (pcp), val)
--#define this_cpu_or_8(pcp, val)		percpu_to_op("or", (pcp), val)
--#define this_cpu_add_return_8(pcp, val)	percpu_add_return_op(pcp, val)
--#define this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-+#define raw_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
-+#define raw_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
-+#define raw_cpu_add_8(pcp, val)			percpu_add_op((pcp), val)
-+#define raw_cpu_and_8(pcp, val)			percpu_to_op("and", (pcp), val)
-+#define raw_cpu_or_8(pcp, val)			percpu_to_op("or", (pcp), val)
-+#define raw_cpu_add_return_8(pcp, val)		percpu_add_return_op(pcp, val)
-+#define raw_cpu_xchg_8(pcp, nval)		percpu_xchg_op(pcp, nval)
-+#define raw_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-+
-+#define this_cpu_read_8(pcp)			percpu_from_op("mov", (pcp), "m"(pcp))
-+#define this_cpu_write_8(pcp, val)		percpu_to_op("mov", (pcp), val)
-+#define this_cpu_add_8(pcp, val)		percpu_add_op((pcp), val)
-+#define this_cpu_and_8(pcp, val)		percpu_to_op("and", (pcp), val)
-+#define this_cpu_or_8(pcp, val)			percpu_to_op("or", (pcp), val)
-+#define this_cpu_add_return_8(pcp, val)		percpu_add_return_op(pcp, val)
-+#define this_cpu_xchg_8(pcp, nval)		percpu_xchg_op(pcp, nval)
- #define this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-
- /*
-@@ -474,7 +474,7 @@ do {									\
- 	__ret;								\
- })
-
--#define __this_cpu_cmpxchg_double_8	percpu_cmpxchg16b_double
-+#define raw_cpu_cmpxchg_double_8	percpu_cmpxchg16b_double
- #define this_cpu_cmpxchg_double_8	percpu_cmpxchg16b_double
-
- #endif
-@@ -495,9 +495,9 @@ static __always_inline int x86_this_cpu_
- 	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
-
- #ifdef CONFIG_X86_64
--	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_8(*a)) != 0;
-+	return ((1UL << (nr % BITS_PER_LONG)) & raw_cpu_read_8(*a)) != 0;
- #else
--	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_4(*a)) != 0;
-+	return ((1UL << (nr % BITS_PER_LONG)) & raw_cpu_read_4(*a)) != 0;
- #endif
- }
-
-Index: linux/arch/x86/include/asm/preempt.h
-===================================================================
---- linux.orig/arch/x86/include/asm/preempt.h	2013-12-02 16:07:50.984600478 -0600
-+++ linux/arch/x86/include/asm/preempt.h	2013-12-02 16:07:50.984600478 -0600
-@@ -13,12 +13,12 @@ DECLARE_PER_CPU(int, __preempt_count);
-  */
- static __always_inline int preempt_count(void)
- {
--	return __this_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
-+	return raw_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
- }
-
- static __always_inline void preempt_count_set(int pc)
- {
--	__this_cpu_write_4(__preempt_count, pc);
-+	raw_cpu_write_4(__preempt_count, pc);
- }
-
- /*
-@@ -47,17 +47,17 @@ static __always_inline void preempt_coun
-
- static __always_inline void set_preempt_need_resched(void)
- {
--	__this_cpu_and_4(__preempt_count, ~PREEMPT_NEED_RESCHED);
-+	raw_cpu_and_4(__preempt_count, ~PREEMPT_NEED_RESCHED);
- }
-
- static __always_inline void clear_preempt_need_resched(void)
- {
--	__this_cpu_or_4(__preempt_count, PREEMPT_NEED_RESCHED);
-+	raw_cpu_or_4(__preempt_count, PREEMPT_NEED_RESCHED);
- }
-
- static __always_inline bool test_preempt_need_resched(void)
- {
--	return !(__this_cpu_read_4(__preempt_count) & PREEMPT_NEED_RESCHED);
-+	return !(raw_cpu_read_4(__preempt_count) & PREEMPT_NEED_RESCHED);
- }
-
- /*
-@@ -66,12 +66,12 @@ static __always_inline bool test_preempt
-
- static __always_inline void __preempt_count_add(int val)
- {
--	__this_cpu_add_4(__preempt_count, val);
-+	raw_cpu_add_4(__preempt_count, val);
- }
-
- static __always_inline void __preempt_count_sub(int val)
- {
--	__this_cpu_add_4(__preempt_count, -val);
-+	raw_cpu_add_4(__preempt_count, -val);
- }
-
- static __always_inline bool __preempt_count_dec_and_test(void)
-@@ -84,7 +84,7 @@ static __always_inline bool __preempt_co
-  */
- static __always_inline bool should_resched(void)
- {
--	return unlikely(!__this_cpu_read_4(__preempt_count));
-+	return unlikely(!raw_cpu_read_4(__preempt_count));
- }
-
- #ifdef CONFIG_PREEMPT
+  Luis
