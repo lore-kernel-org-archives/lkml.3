@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab3LKHP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:15:59 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:57314 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3LKHP5 convert rfc822-to-8bit (ORCPT
+	id S1751297Ab3LKHSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:18:52 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41813 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab3LKHSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:15:57 -0500
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Cc: devicetree@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH RFC] net: of_mdio: Scan PHYs which have device_type set to ethernet-phy
-Date: Wed, 11 Dec 2013 07:15:54 +0000
-Message-ID: <1695129.4QIGmmVPkX@lenovo>
-User-Agent: KMail/4.11.2 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1384441556-20674-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1384441556-20674-1-git-send-email-srinivas.kandagatla@st.com>
+	Wed, 11 Dec 2013 02:18:51 -0500
+Message-ID: <52A811D1.1040908@gmail.com>
+Date: Wed, 11 Dec 2013 15:18:41 +0800
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Marek Vasut <marex@denx.de>, Daniel Mack <zonque@gmail.com>
+CC: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH] ARM: pxa: prevent PXA270 occasional reboot freezes
+References: <1386650355-2503-1-git-send-email-ynvich@gmail.com> <52A6D44C.1010504@gmail.com> <52A6F19B.8090309@gmail.com> <201312101931.34108.marex@denx.de>
+In-Reply-To: <201312101931.34108.marex@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 14 novembre 2013, 15:05:56 Srinivas Kandagatla a écrit :
-> According to Documentation/devicetree/bindings/net/phy.txt device_type
-> property of PHY nodes is mandatory, which should be set to
-> "ethernet-phy". This patch adds check in scanning phys and only scans
-> node which have device-type set to "ethernet-phy".
+On 12/11/2013 02:31 AM, Marek Vasut wrote:
+> On Tuesday, December 10, 2013 at 11:48:59 AM, Daniel Mack wrote:
+>> On 12/10/2013 09:43 AM, Haojian Zhuang wrote:
+>>> On 12/10/2013 12:39 PM, Sergei Ianovich wrote:
+>>>> Erratum 71 of PXA270M Processor Family Specification Update
+>>>> (April 19, 2010) explains that watchdog reset time is just
+>>>> 8us insead of 10ms in EMTS.
+>>>>
+>>>> If SDRAM is not reset, it causes memory bus congestion and
+>>>> the device hangs. We put SDRAM in selfresh mode before watchdog
+>>>> reset, removing potential freezes.
+>>>>
+>>>> Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
+>>>> reboots. With this patch it has successfully rebooted 500 times.
+>>>>
+>>>> Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+>>>> ---
+>>>>
+>>>>    arch/arm/mach-pxa/reset.c | 8 +++++++-
+>>>>    1 file changed, 7 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
+>>>> index 0d5dd64..263b152 100644
+>>>> --- a/arch/arm/mach-pxa/reset.c
+>>>> +++ b/arch/arm/mach-pxa/reset.c
+>>>> @@ -13,6 +13,7 @@
+>>>>
+>>>>    #include <mach/regs-ost.h>
+>>>>    #include <mach/reset.h>
+>>>>
+>>>> +#include <mach/smemc.h>
+>>>>
+>>>>    unsigned int reset_status;
+>>>>    EXPORT_SYMBOL(reset_status);
+>>>>
+>>>> @@ -81,6 +82,12 @@ static void do_hw_reset(void)
+>>>>
+>>>>    	writel_relaxed(OSSR_M3, OSSR);
+>>>>    	/* ... in 100 ms */
+>>>>    	writel_relaxed(readl_relaxed(OSCR) + 368640, OSMR3);
+>>>>
+>>>> +	/*
+>>>> +	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
+>>>> +	 * we put SDRAM into self-refresh to prevent that
+>>>> +	 */
+>>>> +	while (1)
+>>>> +		writel_relaxed(MDREFR_SLFRSH, MDREFR);
+>>>>
+>>>>    }
+>>>>
+>>>>    void pxa_restart(enum reboot_mode mode, const char *cmd)
+>>>>
+>>>> @@ -104,4 +111,3 @@ void pxa_restart(enum reboot_mode mode, const char
+>>>> *cmd)
+>>>>
+>>>>    		break;
+>>>>    	
+>>>>    	}
+>>>>
+>>>>    }
+>>>>
+>>>> -
+>>>
+>>> Hi Daniel/Marek/Igor,
+>>>
+>>> Could you help to try this patch? I'm lack of PXA27x board.
+>>
+>> I don't have any either right now ...
+>
+> On VPAC270
+>
+> Tested-by: Marek Vasut <marex@denx.de>
+>
+> Best regards,
+> Marek Vasut
+>
 
-Please CC netdev@vger.kernel.org as there might be networking folks not 
-actively following devicetree-discuss.
+Applied.
 
-> 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> ---
->  drivers/of/of_mdio.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index d5a57a9..78c53c7 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -57,6 +57,9 @@ int of_mdiobus_register(struct mii_bus *mdio, struct
-> device_node *np)
-> 
->  	/* Loop over the child nodes and register a phy_device for each one */
->  	for_each_available_child_of_node(np, child) {
-> +		/* A PHY must have device_type set to "ethernet-phy" */
-> +		if (of_node_cmp(child->type, "ethernet-phy"))
-> +			continue;
-
-As already stated by Grant this will break quite a lot of platforms out there. 
-Technically speaking, ePAPR v1.1 only specifies that "cpu" and "memory" nodes 
-should have a "device_type" property for compatibility. Altough I do agree 
-that it is nice to have a properly set "device_type", we can't always rely on 
-that. 
--- 
-Florian
+Thanks
+Haojian
