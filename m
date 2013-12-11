@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab3LKTOd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:14:33 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:52099 "EHLO
+	id S1752160Ab3LKTOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:14:31 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:30891 "EHLO
 	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab3LKTOV (ORCPT
+	with ESMTP id S1752072Ab3LKTOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:14:21 -0500
+	Wed, 11 Dec 2013 14:14:19 -0500
 X-IronPort-AV: E=Sophos;i="4.93,873,1378882800"; 
-   d="scan'208";a="1870497"
+   d="scan'208";a="1870494"
 From: Sherman Yin <syin@broadcom.com>
 To: Rob Herring <rob.herring@calxeda.com>,
         =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
@@ -25,9 +25,9 @@ CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         <bcm-kernel-feedback-list@broadcom.com>,
         <linux-arm-kernel@lists.infradead.org>,
         Sherman Yin <syin@broadcom.com>
-Subject: [PATCH v3 1/6] pinctrl: Add void * to pinctrl_pin_desc
-Date: Wed, 11 Dec 2013 10:37:16 -0800
-Message-ID: <1386787041-6035-2-git-send-email-syin@broadcom.com>
+Subject: [PATCH v3 3/6] pinctrl: Make PINCTRL selectable by defconfig/menuconfig
+Date: Wed, 11 Dec 2013 10:37:18 -0800
+Message-ID: <1386787041-6035-4-git-send-email-syin@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1386787041-6035-1-git-send-email-syin@broadcom.com>
 References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
@@ -38,36 +38,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drv_data is added to the pinctrl_pin_desc for drivers to define additional
-driver-specific per-pin data.
+Adds a string to the PINCTRL config option so that 1) CONFIG_PINCTRL=y would
+not be erased by make config, and 2) PINCTRL option would show up in menuconfig.
 
 Signed-off-by: Sherman Yin <syin@broadcom.com>
-Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
 ---
-v3: no change
-v2: no change
----
- include/linux/pinctrl/pinctrl.h |    2 ++
- 1 file changed, 2 insertions(+)
+v3: added to patchset
 
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index fefb886..cc8e1af 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -32,10 +32,12 @@ struct device_node;
-  * pins, pads or other muxable units in this struct
-  * @number: unique pin number from the global pin number space
-  * @name: a name for this pin
-+ * @drv_data: driver-defined per-pin data. pinctrl core does not touch this
-  */
- struct pinctrl_pin_desc {
- 	unsigned number;
- 	const char *name;
-+	void *drv_data;
- };
+ drivers/pinctrl/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 33f9dc1..a921ff1 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -3,7 +3,7 @@
+ #
  
- /* Convenience macro to define a single named or anonymous pin descriptor */
+ config PINCTRL
+-	bool
++	bool "Enable the pinctrl framework"
+ 
+ if PINCTRL
+ 
 -- 
 1.7.9.5
 
