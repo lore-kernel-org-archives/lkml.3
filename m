@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab3LKAqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:46:50 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:46350 "EHLO
+	id S1751751Ab3LKAqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:46:52 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9592 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751224Ab3LKAqo (ORCPT
+	by vger.kernel.org with ESMTP id S1751360Ab3LKAqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Dec 2013 19:46:44 -0500
-Message-Id: <20131211004643.475776182@goodmis.org>
+Message-Id: <20131211004643.182742571@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 10 Dec 2013 19:46:34 -0500
+Date: Tue, 10 Dec 2013 19:46:32 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH RT 3/5] lockdep: Correctly annotate hardirq context in irq_exit()
+        Tiejun Chen <tiejun.chen@windriver.com>
+Subject: [PATCH RT 1/5] cpu_down: move migrate_enable() back
 References: <20131211004631.950208564@goodmis.org>
-Content-Disposition: inline; filename=0003-lockdep-Correctly-annotate-hardirq-context-in-irq_ex.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0001-cpu_down-move-migrate_enable-back.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,136 +31,59 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Tiejun Chen <tiejun.chen@windriver.com>
 
-There was a reported deadlock on -rt which lockdep didn't report.
+Commit 08c1ab68, "hotplug-use-migrate-disable.patch", intends to
+use migrate_enable()/migrate_disable() to replace that combination
+of preempt_enable() and preempt_disable(), but actually in
+!CONFIG_PREEMPT_RT_FULL case, migrate_enable()/migrate_disable()
+are still equal to preempt_enable()/preempt_disable(). So that
+followed cpu_hotplug_begin()/cpu_unplug_begin(cpu) would go schedule()
+to trigger schedule_debug() like this:
 
-It turns out that in irq_exit() we tell lockdep that the hardirq
-context ends and then do all kinds of locking afterwards.
+_cpu_down()
+	|
+	+ migrate_disable() = preempt_disable()
+	|
+	+ cpu_hotplug_begin() or cpu_unplug_begin()
+		|
+		+ schedule()
+			|
+			+ __schedule()
+				|
+				+ preempt_disable();
+				|
+				+ __schedule_bug() is true!
 
-To fix it, move trace_hardirq_exit() to the very end of irq_exit(), this
-ensures all locking in tick_irq_exit() and rcu_irq_exit() are properly
-recorded as happening from hardirq context.
-
-This however leads to the 'fun' little problem of running softirqs
-while in hardirq context. To cure this make the softirq code a little
-more complex (in the CONFIG_TRACE_IRQFLAGS case).
-
-Due to stack swizzling arch dependent trickery we cannot pass an
-argument to __do_softirq() to tell it if it was done from hardirq
-context or not; so use a side-band argument.
-
-When we do __do_softirq() from hardirq context, 'atomically' flip to
-softirq context and back, so that no locking goes without being in
-either hard- or soft-irq context.
-
-I didn't find any new problems in mainline using this patch, but it
-did show the -rt problem.
+So we should move migrate_enable() as the original scheme.
 
 Cc: stable-rt@vger.kernel.org
-Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-dgwc5cdksbn0jk09vbmcc9sa@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/softirq.c | 45 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
+ kernel/cpu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 8447c8d..42b121f 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -350,6 +350,44 @@ EXPORT_SYMBOL(local_bh_enable_ip);
-  */
- #define MAX_SOFTIRQ_RESTART 10
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 98f2ea3..da6e128 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -594,6 +594,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		err = -EBUSY;
+ 		goto restore_cpus;
+ 	}
++	migrate_enable();
  
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+/*
-+ * Convoluted means of passing __do_softirq() a message through the various
-+ * architecture execute_on_stack() bits.
-+ *
-+ * When we run softirqs from irq_exit() and thus on the hardirq stack we need
-+ * to keep the lockdep irq context tracking as tight as possible in order to
-+ * not miss-qualify lock contexts and miss possible deadlocks.
-+ */
-+static DEFINE_PER_CPU(int, softirq_from_hardirq);
-+
-+static inline void lockdep_softirq_from_hardirq(void)
-+{
-+	this_cpu_write(softirq_from_hardirq, 1);
-+}
-+
-+static inline void lockdep_softirq_start(void)
-+{
-+	if (this_cpu_read(softirq_from_hardirq))
-+		trace_hardirq_exit();
-+	lockdep_softirq_enter();
-+}
-+
-+static inline void lockdep_softirq_end(void)
-+{
-+	lockdep_softirq_exit();
-+	if (this_cpu_read(softirq_from_hardirq)) {
-+		this_cpu_write(softirq_from_hardirq, 0);
-+		trace_hardirq_enter();
-+	}
-+}
-+
-+#else
-+static inline void lockdep_softirq_from_hardirq(void) { }
-+static inline void lockdep_softirq_start(void) { }
-+static inline void lockdep_softirq_end(void) { }
-+#endif
-+
- asmlinkage void __do_softirq(void)
- {
- 	__u32 pending;
-@@ -369,7 +407,7 @@ asmlinkage void __do_softirq(void)
- 
- 	__local_bh_disable((unsigned long)__builtin_return_address(0),
- 			   SOFTIRQ_OFFSET);
--	lockdep_softirq_enter();
-+	lockdep_softirq_start();
- 
- 	cpu = smp_processor_id();
- restart:
-@@ -385,7 +423,7 @@ restart:
- 	if (pending)
- 		wakeup_softirqd();
- 
--	lockdep_softirq_exit();
-+	lockdep_softirq_end();
- 
- 	vtime_account_irq_exit(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
-@@ -692,6 +730,7 @@ static inline void invoke_softirq(void)
- {
- #ifndef CONFIG_PREEMPT_RT_FULL
- 	if (!force_irqthreads) {
-+		lockdep_softirq_from_hardirq();
- #ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
- 		__do_softirq();
- #else
-@@ -720,7 +759,6 @@ static inline void invoke_softirq(void)
- void irq_exit(void)
- {
- 	vtime_account_irq_exit(current);
--	trace_hardirq_exit();
- 	sub_preempt_count(IRQ_EXIT_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
- 		invoke_softirq();
-@@ -731,6 +769,7 @@ void irq_exit(void)
- 		tick_nohz_irq_exit();
- #endif
- 	rcu_irq_exit();
-+	trace_hardirq_exit(); /* must be last! */
- 	sched_preempt_enable_no_resched();
- }
- 
+ 	cpu_hotplug_begin();
+ 	err = cpu_unplug_begin(cpu);
+@@ -647,7 +648,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ out_release:
+ 	cpu_unplug_done(cpu);
+ out_cancel:
+-	migrate_enable();
+ 	cpu_hotplug_done();
+ 	if (!err)
+ 		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
 -- 
 1.8.4.3
 
