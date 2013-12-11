@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3LKT5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:57:45 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:53910 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3LKT5n (ORCPT
+	id S1751934Ab3LKT55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:57:57 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:49478 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750924Ab3LKT5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:57:43 -0500
-Message-ID: <52A8C3B3.8050106@gmail.com>
-Date: Wed, 11 Dec 2013 12:57:39 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com> <52A8BD60.80300@gmail.com> <20131211195546.GG1458@ghostprotocols.net>
-In-Reply-To: <20131211195546.GG1458@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 11 Dec 2013 14:57:53 -0500
+Date: Wed, 11 Dec 2013 14:57:51 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>, Corey Minyard <cminyard@mvista.com>
+Subject: Re: [PATCH RT 2/5] a few open coded completions
+Message-ID: <20131211145751.386fbff2@gandalf.local.home>
+In-Reply-To: <20131211005058.415159126@goodmis.org>
+References: <20131211005046.115564491@goodmis.org>
+	<20131211005058.415159126@goodmis.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/13, 12:55 PM, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Dec 11, 2013 at 12:30:40PM -0700, David Ahern escreveu:
->> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
->>
->>> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
->>> index 55f3608..52fbfb6 100644
->>> --- a/tools/perf/util/machine.c
->>> +++ b/tools/perf/util/machine.c
->>> @@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
->>>
->>>   	return thread->pid_;
->>>   }
->>> +
->>> +int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
->>> +{
->>> +	struct thread *thread = machine__find_thread(machine, tid);
->>> +
->>> +	if (!thread)
->>> +		return -1;
->>> +
->>> +	if (pid)
->>> +		*pid = thread->pid_;
->>
->> Why is a 'get' function modifying the thread data?
->
-> Where is this happening? :-)
+Here's the new patch for 3.4-rt.
 
-D'oh. code review while on a call ... multitasking failed.
+-- Steve
 
-David
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Mon, 28 Oct 2013 11:50:06 +0100
+Subject: [PATCH] swait: Add a few more users
+
+The wait-simple queue is lighter weight and more efficient than the full
+wait queue, and may be used in atomic context on PREEMPT_RT.
+
+Fix up some places that needed to call the swait_*() functions instead
+of the wait_*() functions.
+
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/net/wireless/orinoco/orinoco_usb.c | 2 +-
+ drivers/usb/gadget/f_fs.c                  | 2 +-
+ drivers/usb/gadget/inode.c                 | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+index f634d45..8152c94 100644
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -714,7 +714,7 @@ static void ezusb_req_ctx_wait(struct ezusb_priv *upriv,
+ 			while (!ctx->done.done && msecs--)
+ 				udelay(1000);
+ 		} else {
+-			wait_event_interruptible(ctx->done.wait,
++			swait_event_interruptible(ctx->done.wait,
+ 						 ctx->done.done);
+ 		}
+ 		break;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index f52cb1a..54ea4e9 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1255,7 +1255,7 @@ static void ffs_data_put(struct ffs_data *ffs)
+ 		pr_info("%s(): freeing\n", __func__);
+ 		ffs_data_clear(ffs);
+ 		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
+-		       waitqueue_active(&ffs->ep0req_completion.wait));
++		       swaitqueue_active(&ffs->ep0req_completion.wait));
+ 		kfree(ffs);
+ 	}
+ }
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index e58b164..2dfd196 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -339,7 +339,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 	spin_unlock_irq (&epdata->dev->lock);
+ 
+ 	if (likely (value == 0)) {
+-		value = wait_event_interruptible (done.wait, done.done);
++		value = swait_event_interruptible (done.wait, done.done);
+ 		if (value != 0) {
+ 			spin_lock_irq (&epdata->dev->lock);
+ 			if (likely (epdata->ep != NULL)) {
+@@ -348,7 +348,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
+ 				usb_ep_dequeue (epdata->ep, epdata->req);
+ 				spin_unlock_irq (&epdata->dev->lock);
+ 
+-				wait_event (done.wait, done.done);
++				swait_event (done.wait, done.done);
+ 				if (epdata->status == -ECONNRESET)
+ 					epdata->status = -EINTR;
+ 			} else {
+-- 
+1.8.4.3
+
+
