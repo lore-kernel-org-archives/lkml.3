@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab3LKNky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 08:40:54 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:51937 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3LKNkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 08:40:51 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2] of: unflatten_and_copy: handle NULL initial_boot_params
-To: James Hogan <james.hogan@imgtec.com>,
-        Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org
-Cc: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <528E0F7F.7010901@imgtec.com>
-References: <1385041454-32385-1-git-send-email-james.hogan@imgtec.com> < 528E0F7F.7010901@imgtec.com>
-Date: Wed, 11 Dec 2013 13:40:43 +0000
-Message-Id: <20131211134043.ACED0C4061A@trevor.secretlab.ca>
+	id S1751747Ab3LKNk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 08:40:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37367 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345Ab3LKNkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 08:40:55 -0500
+Date: Wed, 11 Dec 2013 14:40:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <bitbucket@online.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <lenb@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
+Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
+Message-ID: <20131211134048.GH21683@pd.tnic>
+References: <1386559014.4875.16.camel@marge.simpson.net>
+ <1386652637.5374.72.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1312101458040.28330@ionos.tec.linutronix.de>
+ <alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de>
+ <1386732093.5964.6.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
+ <20131211113839.GF21683@pd.tnic>
+ <20131211115239.GA21999@twins.programming.kicks-ass.net>
+ <1386764955.12005.60.camel@marge.simpson.net>
+ <20131211124352.GB21999@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131211124352.GB21999@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Nov 2013 13:49:51 +0000, James Hogan <james.hogan@imgtec.com> wrote:
-> On 21/11/13 13:44, James Hogan wrote:
-> > Check whether initial_boot_params is NULL before dereferencing it in
-> > unflatten_and_copy_device_tree() for the case where no device tree is
-> > available but the arch can still boot to a minimal usable system without
-> > it. In this case also log a warning for when the kernel log buffer is
-> > obtainable.
-> > 
-> > Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <rob.herring@calxeda.com>
-> > Cc: devicetree@vger.kernel.org
-> > Cc: linux-arch@vger.kernel.org
-> 
-> Hmm, sorry, I forgot to add Grant's:
-> Acked-by: Grant Likely <grant.likely@linaro.org>
-> 
-> (from v1)
+On Wed, Dec 11, 2013 at 01:43:52PM +0100, Peter Zijlstra wrote:
+> Something like the below.. someone needs to double check and possibly
+> add SNB/IVB EX parts if they're already available.
 
-Applied, thanks.
+Right, our friends at Intel would need to tell us which families/models
+does AAI65 span... if, this is actually the case.
 
-g.
+But now that Mike's box is fixed too, it very much looks like it.
 
+Oh, and AAIxx errata are Intel Xeon Processor 7400 Series ones, we would
+also need to know whether other incarnations are affected too.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
