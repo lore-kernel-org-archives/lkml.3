@@ -1,46 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3LKC46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:56:58 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53884 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab3LKC44 (ORCPT
+	id S1751958Ab3LKC6R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:58:17 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:55359 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab3LKC6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:56:56 -0500
-Date: Tue, 10 Dec 2013 21:56:54 -0500 (EST)
-Message-Id: <20131210.215654.1165181423931409066.davem@davemloft.net>
-To: sebastian.hesselbarth@gmail.com
-Cc: f.fainelli@gmail.com, mugunthanvnm@ti.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 1/6] net: mv643xx_eth: properly start/stop phy device
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131210.215253.2121948728095674632.davem@davemloft.net>
-References: <1386513631-11284-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1386513631-11284-2-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20131210.215253.2121948728095674632.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 10 Dec 2013 18:56:56 -0800 (PST)
+	Tue, 10 Dec 2013 21:58:16 -0500
+Message-ID: <52A7D4C0.7060700@hitachi.com>
+Date: Wed, 11 Dec 2013 11:58:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v5 13/18] notifier: Use NOKPROBE_SYMBOL macro in
+ notifier
+References: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal> <20131209104748.13397.52431.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20131209104748.13397.52431.stgit@kbuild-fedora.novalocal>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBB2v74U021443
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 10 Dec 2013 21:52:53 -0500 (EST)
+(2013/12/09 19:47), Masami Hiramatsu wrote:
+> Use NOKPROBE_SYMBOL macro to protect functions from
+> kprobes instead of __kprobes annotation in notifier.
+
+Ah, this must just removes __kprobes since we don't use notify_die
+for kprobes anymore...
+
 
 > 
-> This series looks good, applied to net-next, thanks.
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> ---
+>  kernel/notifier.c |   22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/kernel/notifier.c b/kernel/notifier.c
+> index 2d5cc4c..61fc78a 100644
+> --- a/kernel/notifier.c
+> +++ b/kernel/notifier.c
+> @@ -71,9 +71,9 @@ static int notifier_chain_unregister(struct notifier_block **nl,
+>   *	@returns:	notifier_call_chain returns the value returned by the
+>   *			last notifier function called.
+>   */
+> -static int __kprobes notifier_call_chain(struct notifier_block **nl,
+> -					unsigned long val, void *v,
+> -					int nr_to_call,	int *nr_calls)
+> +static int notifier_call_chain(struct notifier_block **nl,
+> +			       unsigned long val, void *v,
+> +			       int nr_to_call, int *nr_calls)
+>  {
+>  	int ret = NOTIFY_DONE;
+>  	struct notifier_block *nb, *next_nb;
+> @@ -102,6 +102,7 @@ static int __kprobes notifier_call_chain(struct notifier_block **nl,
+>  	}
+>  	return ret;
+>  }
+> +NOKPROBE_SYMBOL(notifier_call_chain);
+>  
+>  /*
+>   *	Atomic notifier chain routines.  Registration and unregistration
+> @@ -172,9 +173,9 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
+>   *	Otherwise the return value is the return value
+>   *	of the last notifier function called.
+>   */
+> -int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> -					unsigned long val, void *v,
+> -					int nr_to_call, int *nr_calls)
+> +int __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> +				 unsigned long val, void *v,
+> +				 int nr_to_call, int *nr_calls)
+>  {
+>  	int ret;
+>  
+> @@ -184,13 +185,15 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
+> +NOKPROBE_SYMBOL(__atomic_notifier_call_chain);
+>  
+> -int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> -		unsigned long val, void *v)
+> +int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> +			       unsigned long val, void *v)
+>  {
+>  	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
+>  }
+>  EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
+> +NOKPROBE_SYMBOL(atomic_notifier_call_chain);
+>  
+>  /*
+>   *	Blocking notifier chain routines.  All access to the chain is
+> @@ -527,7 +530,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
+>  
+>  static ATOMIC_NOTIFIER_HEAD(die_chain);
+>  
+> -int notrace __kprobes notify_die(enum die_val val, const char *str,
+> +int notrace notify_die(enum die_val val, const char *str,
+>  	       struct pt_regs *regs, long err, int trap, int sig)
+>  {
+>  	struct die_args args = {
+> @@ -540,6 +543,7 @@ int notrace __kprobes notify_die(enum die_val val, const char *str,
+>  	};
+>  	return atomic_notifier_call_chain(&die_chain, val, &args);
+>  }
+> +NOKPROBE_SYMBOL(notify_die);
+>  
+>  int register_die_notifier(struct notifier_block *nb)
+>  {
+> 
+> 
+> 
 
-Actually, I had to revert.
 
-You cannot use late_initcall_sync() from code that is potentially
-built modular, this caused my build to fail at the mdio_bus code.
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-drivers/net/phy/mdio_bus.c:344:1: warning: data definition has no type or storage class [enabled by default]
-drivers/net/phy/mdio_bus.c:344:1: error: type defaults to ¡int¢ in declaration of ¡late_initcall_sync¢ [-Werror=implicit-int]
-drivers/net/phy/mdio_bus.c:344:1: warning: parameter names (without types) in function declaration [enabled by default]
-drivers/net/phy/mdio_bus.c:339:12: warning: ¡mdio_bus_class_suspend_unused¢ defined but not used [-Wunused-function]
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
