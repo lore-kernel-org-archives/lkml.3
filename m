@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab3LKAuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:50:14 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:41919 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3LKAuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:50:11 -0500
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v5 0/8] mm: sched: numa: several fixups
-Date: Wed, 11 Dec 2013 08:49:53 +0800
-Message-Id: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121100-2674-0000-0000-00000BD7F572
+	id S1751562Ab3LKA5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:57:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224Ab3LKA5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 19:57:14 -0500
+Date: Tue, 10 Dec 2013 19:55:50 -0500
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131211005550.GA20404@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+References: <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
+ <CA+55aFzhCSvc4Vy7tEC2K972h+vne6Y0QSekDDZbV_ATB-9mxw@mail.gmail.com>
+ <20131210230009.GF5050@redhat.com>
+ <20131211000504.GA13710@home.goodmis.org>
+ <20131211002330.GA12924@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211002330.GA12924@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, Dec 10, 2013 at 07:23:30PM -0500, Dave Jones wrote:
+ 
+ > I was distracted by seeing all the other threads exiting, so I was only looking at
+ > what this one had already done.
+ 
+another thing that distracted me was that /proc/10818/stack was just showing that
 
-I rebase this patchset against latest mmotm tree since Mel's [PATCH 00/17] 
-NUMA balancing segmentation fault fixes and misc followups v4 merged. Several 
-patches are dropped in my v5 since one is merged in tip tree and other three 
-patches conflict with Mel's series. I have already picked up everybody's Acked-by
-or Reviewed-by in v5 and hopefully they can be merged soon. ;-)
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-Wanpeng Li (8):
-  sched/numa: fix set cpupid on page migration twice against thp
-  sched/numa: drop sysctl_numa_balancing_settle_count sysctl
-  sched/numa: use wrapper function task_node to get node which task is on
-  sched/numa: fix set cpupid on page migration twice against normal page
-  sched/numa: use wrapper function task_faults_idx to calculate index in group_faults
-  sched/numa: fix period_slot recalculation
-  sched/numa: fix record hinting faults check
-  sched/numa: drop unnecessary variable in task_weight
+output.
 
- include/linux/sched/sysctl.h |    1 -
- kernel/sched/debug.c         |    2 +-
- kernel/sched/fair.c          |   30 +++++++-----------------------
- kernel/sysctl.c              |    7 -------
- mm/migrate.c                 |    4 ----
- 5 files changed, 8 insertions(+), 36 deletions(-)
+For my own education, what causes that ?
+How come it didn't show the same trace I saw when I sysrq-t'd ?
 
--- 
-1.7.7.6
-
+	Dave
