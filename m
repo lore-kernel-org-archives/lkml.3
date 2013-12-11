@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab3LKAxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:53:48 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34852 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3LKAuQ (ORCPT
+	id S1751452Ab3LKAuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:50:14 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:41919 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3LKAuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:50:16 -0500
+	Tue, 10 Dec 2013 19:50:11 -0500
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
@@ -14,82 +14,42 @@ Cc: Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v5 2/8] sched/numa: drop sysctl_numa_balancing_settle_count sysctl
-Date: Wed, 11 Dec 2013 08:49:55 +0800
-Message-Id: <1386723001-25408-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v5 0/8] mm: sched: numa: several fixups
+Date: Wed, 11 Dec 2013 08:49:53 +0800
+Message-Id: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121100-7014-0000-0000-0000040C4054
+x-cbid: 13121100-2674-0000-0000-00000BD7F572
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 887c290e (sched/numa: Decide whether to favour task or group weights
-based on swap candidate relationships) drop the check against
-sysctl_numa_balancing_settle_count, this patch remove the sysctl.
+Hi Andrew,
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
+I rebase this patchset against latest mmotm tree since Mel's [PATCH 00/17] 
+NUMA balancing segmentation fault fixes and misc followups v4 merged. Several 
+patches are dropped in my v5 since one is merged in tip tree and other three 
+patches conflict with Mel's series. I have already picked up everybody's Acked-by
+or Reviewed-by in v5 and hopefully they can be merged soon. ;-)
+
+Wanpeng Li (8):
+  sched/numa: fix set cpupid on page migration twice against thp
+  sched/numa: drop sysctl_numa_balancing_settle_count sysctl
+  sched/numa: use wrapper function task_node to get node which task is on
+  sched/numa: fix set cpupid on page migration twice against normal page
+  sched/numa: use wrapper function task_faults_idx to calculate index in group_faults
+  sched/numa: fix period_slot recalculation
+  sched/numa: fix record hinting faults check
+  sched/numa: drop unnecessary variable in task_weight
+
  include/linux/sched/sysctl.h |    1 -
- kernel/sched/fair.c          |    9 ---------
+ kernel/sched/debug.c         |    2 +-
+ kernel/sched/fair.c          |   30 +++++++-----------------------
  kernel/sysctl.c              |    7 -------
- 3 files changed, 0 insertions(+), 17 deletions(-)
+ mm/migrate.c                 |    4 ----
+ 5 files changed, 8 insertions(+), 36 deletions(-)
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index 41467f8..31e0193 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -48,7 +48,6 @@ extern unsigned int sysctl_numa_balancing_scan_delay;
- extern unsigned int sysctl_numa_balancing_scan_period_min;
- extern unsigned int sysctl_numa_balancing_scan_period_max;
- extern unsigned int sysctl_numa_balancing_scan_size;
--extern unsigned int sysctl_numa_balancing_settle_count;
- 
- #ifdef CONFIG_SCHED_DEBUG
- extern unsigned int sysctl_sched_migration_cost;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 42bb745..57f28d0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -886,15 +886,6 @@ static unsigned int task_scan_max(struct task_struct *p)
- 	return max(smin, smax);
- }
- 
--/*
-- * Once a preferred node is selected the scheduler balancer will prefer moving
-- * a task to that node for sysctl_numa_balancing_settle_count number of PTE
-- * scans. This will give the process the chance to accumulate more faults on
-- * the preferred node but still allow the scheduler to move the task again if
-- * the nodes CPUs are overloaded.
-- */
--unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
--
- static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
- {
- 	rq->nr_numa_running += (p->numa_preferred_nid != -1);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 34a6047..c8da99f 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -385,13 +385,6 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
--		.procname       = "numa_balancing_settle_count",
--		.data           = &sysctl_numa_balancing_settle_count,
--		.maxlen         = sizeof(unsigned int),
--		.mode           = 0644,
--		.proc_handler   = proc_dointvec,
--	},
--	{
- 		.procname       = "numa_balancing_migrate_deferred",
- 		.data           = &sysctl_numa_balancing_migrate_deferred,
- 		.maxlen         = sizeof(unsigned int),
 -- 
 1.7.7.6
 
