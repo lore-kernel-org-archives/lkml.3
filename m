@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab3LKW7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:59:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41316 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab3LKW7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:59:12 -0500
-Message-ID: <52A8EE38.2060004@suse.cz>
-Date: Wed, 11 Dec 2013 23:59:04 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1751726Ab3LKXAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 18:00:14 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:37473 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3LKXAK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 18:00:10 -0500
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
-        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: kernel BUG in munlock_vma_pages_range
-References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz> <52A6275F.4040007@oracle.com>
-In-Reply-To: <52A6275F.4040007@oracle.com>
+In-Reply-To: <CAMoF9u2GN0GuD9azO3irU80tY+bnRhBFxUw3fhajEkFYH9ugmg@mail.gmail.com>
+References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
+	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
+	<20131204183554.GA16693@kroah.com>
+	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
+	<20131204214325.GA19565@kroah.com>
+	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
+	<20131204220247.GA22031@kroah.com>
+	<CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
+	<CAMoF9u1W4-xUFjtMw+SuwR=wgnpfq4uMucKciqrqp81WK1aNmw@mail.gmail.com>
+	<CAMP5XgeGRjK5rPeMFv-LT3u+Bvc8WumtDgMdgnYDXO0t_C__Cw@mail.gmail.com>
+	<CAMoF9u2GN0GuD9azO3irU80tY+bnRhBFxUw3fhajEkFYH9ugmg@mail.gmail.com>
+Date: Wed, 11 Dec 2013 15:00:09 -0800
+Message-ID: <CAMP5Xgf=R_VuP=EvMFVuwx=XtTNwQ0Gx-+Fa63DoLH_073WiAQ@mail.gmail.com>
+Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Rogers <irogers@google.com>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        David Butcher <Dave.Butcher@arm.com>,
+        Rom Lemarchand <romlem@android.com>,
+        Dianne Hackborn <hackbod@android.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 09:26 PM, Sasha Levin wrote:
-> On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
->> On 12/09/2013 06:05 PM, Sasha Levin wrote:
->>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
->>>> Hello, I will look at it, thanks.
->>>> Do you have specific reproduction instructions?
->>>
->>> Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
->>> the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
->>> up testing on that part.
+On Wed, Dec 11, 2013 at 10:10 AM, Octavian Purdila
+<octavian.purdila@intel.com> wrote:
+> On Wed, Dec 11, 2013 at 5:21 AM, Arve Hjønnevåg <arve@android.com> wrote:
 >>
->> Thanks. Do you have trinity log and the .config file? I'm currently unable to even boot linux-next
->> with my config/setup due to a GPF.
->> Looking at code I wouldn't expect that it could encounter a tail page, without first encountering a
->> head page and skipping the whole huge page. At least in THP case, as TLB pages should be split when
->> a vma is split. As for hugetlbfs, it should be skipped for mlock/munlock operations completely. One
->> of these assumptions is probably failing here...
-> 
-> If it helps, I've added a dump_page() in case we hit a tail page there and got:
-> 
-> [  980.172299] page:ffffea003e5e8040 count:0 mapcount:1 mapping:          (null) index:0
-> x0
-> [  980.173412] page flags: 0x2fffff80008000(tail)
-> 
-> I can also add anything else in there to get other debug output if you think of something else useful.
+>> Assuming you are talking about a kernel compat layer that translates
+>> the flat_binder_object structs as they pass between 32 bit and 64 bit
+>> processes, that will not always work. The data portion of the message
+>> sometimes contain size values that are invisible to the kernel, but
+>> these values will be wrong if the kernel move data to make room for a
+>> different size flat_binder_object.
+>>
+>
+> Hi Arve,
+>
+> Yes, I was talking about translating flat_binder_objects.
+>
+> I understand the potential issue for the user data payload, however,
+> since most applications will use libbinder, the only problematic case
+> is readIntPtr/writeIntPtr, which we can deprecate and convert
+> applications that use it to readInt64. AFAICS there is only one user
+> in the AOSP for this API (libmedia).
+>
+> If you are referring to data blobs that application parses I don't
+> think there is anything we can do, even at libbinder level.
+>
+> Can you give me an example of the sort of problems you see?
+>
+> Thanks,
+> Tavi
 
-Please try the following. Thanks in advance.
+The specific problem I was told about can be found in
+frameworks/base/core/java/android/os/Bundle.java, but there could be
+other. The size of the bundle is stored in the parcel so the end of
+the bundle will be wrong if the bundle contains a flat_binder_object
+that the driver changes the size of. However, since the sending
+process gets the parcel size from libbinder, changing libbinder to
+always use the 64 bit version of flat_binder_object should work with
+this code.
 
-------8<------
-diff --git a/mm/mlock.c b/mm/mlock.c
-index d480cd6..c81b7c3 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -436,11 +436,14 @@ static unsigned long __munlock_pagevec_fill(struct pagevec *pvec,
- void munlock_vma_pages_range(struct vm_area_struct *vma,
- 			     unsigned long start, unsigned long end)
- {
-+	unsigned long orig_start = start;
-+	unsigned int page_increm = 0;
-+
- 	vma->vm_flags &= ~VM_LOCKED;
-
- 	while (start < end) {
- 		struct page *page = NULL;
--		unsigned int page_mask, page_increm;
-+		unsigned int page_mask;
- 		struct pagevec pvec;
- 		struct zone *zone;
- 		int zoneid;
-@@ -457,6 +460,22 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
- 				&page_mask);
-
- 		if (page && !IS_ERR(page)) {
-+			if (PageTail(page)) {
-+				struct page *first_page;
-+				dump_page(page);
-+				printk("start=%lu pfn=%lu orig_start=%lu "
-+				       "page_increm=%d "
-+				       "vm_start=%lu vm_end=%lu vm_flags=%lu\n",
-+					start, page_to_pfn(page), orig_start,
-+					page_increm,
-+					vma->vm_start, vma->vm_end,
-+					vma->vm_flags);
-+				first_page = page->first_page;
-+				printk("first_page pfn=%lu\n",
-+						page_to_pfn(first_page));
-+				dump_page(first_page);
-+				VM_BUG_ON(true);
-+			}
- 			if (PageTransHuge(page)) {
- 				lock_page(page);
- 				/*
-
-
+-- 
+Arve Hjønnevåg
