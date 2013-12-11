@@ -1,246 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3LKLTR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:19:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50541 "EHLO mx1.redhat.com"
+	id S1751801Ab3LKLVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:21:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44572 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab3LKLTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:19:12 -0500
-Date: Wed, 11 Dec 2013 06:18:56 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20131211061856.615c39ba@tlielax.poochiereds.net>
-In-Reply-To: <20131210232204.GD20831@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
-	<1386703055-22308-2-git-send-email-jlayton@redhat.com>
-	<20131210212253.GC20831@fieldses.org>
-	<20131210232204.GD20831@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751051Ab3LKLVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 06:21:44 -0500
+Date: Wed, 11 Dec 2013 11:21:37 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Alex Thorlton <athorlton@sgi.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 11/18] mm: fix TLB flush race between migration, and
+ change_protection_range
+Message-ID: <20131211112137.GZ11295@suse.de>
+References: <1386572952-1191-1-git-send-email-mgorman@suse.de>
+ <1386572952-1191-12-git-send-email-mgorman@suse.de>
+ <52A72463.9080108@redhat.com>
+ <20131210171936.GM11295@suse.de>
+ <20131210180208.GY4208@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131210180208.GY4208@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 18:22:04 -0500
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
-
-> On Tue, Dec 10, 2013 at 04:22:53PM -0500, bfields wrote:
-> > On Tue, Dec 10, 2013 at 02:17:30PM -0500, Jeff Layton wrote:
-> > > Currently, there's a lot of copy and paste between the two.  Add some
-> > > functions to do the initialization of the file_lock from values
-> > > passed in, and turn the flock/flock64 variants of those functions into
-> > > wrappers around them.
-> > > 
-> > > Unfortunately it's harder to consolidate the fl_start/fl_end
-> > > calculations due to the differently sized types involved so I've left
-> > > them separate for now.
+On Tue, Dec 10, 2013 at 10:02:08AM -0800, Paul E. McKenney wrote:
+> > > Should this be smp_mb__after_unlock_lock(); ?
 > > 
-> > I'd think you could assign everything to the flock64 type and do the
-> > common work there or something.
-> > 
-> > But I'm confused about what the current code is actually trying to do:
-> > if I'm chasing down the definitions right, these quantities are all
-> > signed, and when start is defined as an off_t it can overflow in the
-> > SEEK_CUR and SEEK_END cases.  And
-> > 
-> > 	if (fl->fl_end < fl->fl_start)
-> > 		return -EOVERFLOW
-> > 
-> > is counting on overlow wrapping around, which I thought wasn't
-> > guaranteed in the case of signed arithmetic?
+> > I think this is still ok. Minimally, it's missing the unlock/lock pair that
+> > would cause smp_mb__after_unlock_lock() to be treated as a full barrier
+> > on architectures that care. The CPU executing this code as already seen
+> > the pmd_numa update if it's in the fault handler so it just needs to be
+> > sure to not reorder the check with respect to the page copy.
 > 
-> E.g. the following (untested) removes the duplication and should return
-> -EOVERFLOW in the cases we currently do a random conversion from 64- to
-> 32-bit and back.  Susv3 says:
+> You really do need a lock operation somewhere shortly before the
+> smp_mb__after_unlock_lock().
 > 
-> 	[EOVERFLOW]
-> 	The cmd argument is F_GETLK, F_SETLK, or F_SETLKW and the
-> 	smallest or, if l_len is non-zero, the largest offset of any
-> 	byte in the requested segment cannot be represented correctly in
-> 	an object of type off_t.
-> 
-> so that's what I tried to do.
-> 
-> --b.
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 92a0f0a..47832f5 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -344,48 +344,41 @@ static int assign_type(struct file_lock *fl, long type)
->  	return 0;
->  }
->  
-> -/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-> - * style lock.
-> - */
-> -static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-> -			       struct flock *l)
-> +static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
-> +					struct flock64 *l, loff_t offset_max)
->  {
-> -	off_t start, end;
-> +	loff_t start;
->  
->  	switch (l->l_whence) {
->  	case SEEK_SET:
-> -		start = 0;
-> -		break;
-> +		fl->fl_start = 0;
->  	case SEEK_CUR:
-> -		start = filp->f_pos;
-> -		break;
-> +		fl->fl_start = filp->f_pos;
->  	case SEEK_END:
-> -		start = i_size_read(file_inode(filp));
-> -		break;
-> +		fl->fl_start = i_size_read(file_inode(filp));
->  	default:
->  		return -EINVAL;
->  	}
-> +	if (l->l_start < 0)
-> +		return -EINVAL;
-> +	if (l->l_start > offset_max - fl->fl_start)
-> +		return -EOVERFLOW;
-> +	fl->fl_start += l->l_start;
-> +	if (l->l_len > offset_max - fl->fl_start)
-> +		return -EOVERFLOW;
-> +	if (fl->fl_start + l->l_len < 0)
-> +		return -EINVAL;
->  
->  	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
->  	   POSIX-2001 defines it. */
-> -	start += l->l_start;
-> -	if (start < 0)
-> -		return -EINVAL;
-> -	fl->fl_end = OFFSET_MAX;
-> -	if (l->l_len > 0) {
-> -		end = start + l->l_len - 1;
-> -		fl->fl_end = end;
-> -	} else if (l->l_len < 0) {
-> -		end = start - 1;
-> -		fl->fl_end = end;
-> -		start += l->l_len;
-> -		if (start < 0)
-> -			return -EINVAL;
-> -	}
-> -	fl->fl_start = start;	/* we record the absolute position */
-> -	if (fl->fl_end < fl->fl_start)
-> -		return -EOVERFLOW;
-> -	
-> +	if (l->l_len > 0)
-> +		fl->fl_end = fl->fl_start + l->l_len - 1;
-> +	else if (l->l_len < 0) {
-> +		fl->fl_end = start - 1;
-> +		fl->fl_start += l->l_len;
-> +	} else
-> +		fl->fl_end = OFFSET_MAX;
-> +
->  	fl->fl_owner = current->files;
->  	fl->fl_pid = current->tgid;
->  	fl->fl_file = filp;
-> @@ -396,50 +389,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
->  	return assign_type(fl, l->l_type);
->  }
->  
-> +/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-> + * style lock.
-> + */
-> +static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-> +			       struct flock *l)
-> +{
-> +	struct flock64 ll = {
-> +		.l_type = l->l_type,
-> +		.l_whence = l->l_whence,
-> +		.l_start = l->l_start,
-> +		.l_len = l->l_len,
-> +	};
-> +	
-> +	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
-> +}
-> +
->  #if BITS_PER_LONG == 32
->  static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
->  				 struct flock64 *l)
->  {
-> -	loff_t start;
-> -
-> -	switch (l->l_whence) {
-> -	case SEEK_SET:
-> -		start = 0;
-> -		break;
-> -	case SEEK_CUR:
-> -		start = filp->f_pos;
-> -		break;
-> -	case SEEK_END:
-> -		start = i_size_read(file_inode(filp));
-> -		break;
-> -	default:
-> -		return -EINVAL;
-> -	}
-> -
-> -	start += l->l_start;
-> -	if (start < 0)
-> -		return -EINVAL;
-> -	fl->fl_end = OFFSET_MAX;
-> -	if (l->l_len > 0) {
-> -		fl->fl_end = start + l->l_len - 1;
-> -	} else if (l->l_len < 0) {
-> -		fl->fl_end = start - 1;
-> -		start += l->l_len;
-> -		if (start < 0)
-> -			return -EINVAL;
-> -	}
-> -	fl->fl_start = start;	/* we record the absolute position */
-> -	if (fl->fl_end < fl->fl_start)
-> -		return -EOVERFLOW;
-> -	
-> -	fl->fl_owner = current->files;
-> -	fl->fl_pid = current->tgid;
-> -	fl->fl_file = filp;
-> -	fl->fl_flags = FL_POSIX;
-> -	fl->fl_ops = NULL;
-> -	fl->fl_lmops = NULL;
-> -
-> -	return assign_type(fl, l->l_type);
-> +	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
->  }
->  #endif
->  
-> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-> index 95e46c8..36025f7 100644
-> --- a/include/uapi/asm-generic/fcntl.h
-> +++ b/include/uapi/asm-generic/fcntl.h
-> @@ -186,8 +186,6 @@ struct flock {
->  };
->  #endif
->  
-> -#ifndef CONFIG_64BIT
-> -
->  #ifndef HAVE_ARCH_STRUCT_FLOCK64
->  #ifndef __ARCH_FLOCK64_PAD
->  #define __ARCH_FLOCK64_PAD
-> @@ -202,6 +200,5 @@ struct flock64 {
->  	__ARCH_FLOCK64_PAD
->  };
->  #endif
-> -#endif /* !CONFIG_64BIT */
->  
->  #endif /* _ASM_GENERIC_FCNTL_H */
 
-Nice. I had started to consolidate them, but then figured out that
-there are so many edge cases and I didn't have a good way to test them
-all.
+My badly phrased point was that there was no unlock/lock operation nearby
+that needs to be ordered with respect to the tlb_flush_pending check. I
+do not see a need for smp_mb__after_unlock_lock() here and just this
+hunk is required.
 
-As far as I can tell though, this looks correct. I'll plan to drop my
-patch and base the rest of the set on top of yours.
+> > index c122bb1..33e5519 100644
+> > --- a/include/linux/mm_types.h
+> > +++ b/include/linux/mm_types.h
+> > @@ -482,7 +482,12 @@ static inline bool tlb_flush_pending(struct mm_struct *mm)
+> >  static inline void set_tlb_flush_pending(struct mm_struct *mm)
+> >  {
+> >  	mm->tlb_flush_pending = true;
+> > -	barrier();
+> > +
+> > +	/*
+> > +	 * Guarantee that the tlb_flush_pending store does not leak into the
+> > +	 * critical section updating the page tables
+> > +	 */
+> > +	smp_mb_before_spinlock();
+> >  }
+> >  /* Clearing is done after a TLB flush, which also provides a barrier. */
+> >  static inline void clear_tlb_flush_pending(struct mm_struct *mm)
+> > 
 
-Thanks,
+A double check would be nice please.
+
 -- 
-Jeff Layton <jlayton@redhat.com>
+Mel Gorman
+SUSE Labs
