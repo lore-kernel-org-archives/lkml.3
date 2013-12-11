@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3LKCda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:33:30 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:58835 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3LKCd2 (ORCPT
+	id S1751507Ab3LKCgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:36:13 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:54608 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3LKCgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:33:28 -0500
-Date: Tue, 10 Dec 2013 18:33:23 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, angus.clark@st.com, linus.walleij@linaro.org,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v3 24/36] mtd: st_spi_fsm: Supply the N25Qxxx chip
- specific configuration call-back
-Message-ID: <20131211023323.GP27149@ld-irv-0074.broadcom.com>
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
- <1385727565-25794-25-git-send-email-lee.jones@linaro.org>
+	Tue, 10 Dec 2013 21:36:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385727565-25794-25-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20131209233002.GV31386@dastard>
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+	<20131209233002.GV31386@dastard>
+Date: Tue, 10 Dec 2013 18:36:11 -0800
+Message-ID: <CAGXu5j+u0xSN7jQk8udLefMAa5xNSNHU98as33QYHWOyv-JuJw@mail.gmail.com>
+Subject: Re: XFS security fix never sent to -stable?
+From: Kees Cook <keescook@google.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Dwight Engen <dwight.engen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        xfs@oss.sgi.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 29, 2013 at 12:19:13PM +0000, Lee Jones wrote:
-> In the FSM driver we handle chip differences by providing the possibility
-> of calling back into a chip specific initialisation routine. In this patch
-> we provide one for the N25Qxxx series, which endeavours to setup things
-> like the read, write and erase sequences, as they differ from the
-> default. We also configure 32bit support and the amount of dummy cycles to
-> use.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mtd/devices/st_spi_fsm.c | 77 ++++++++++++++++++++++++++++++++++++++++
->  drivers/mtd/devices/st_spi_fsm.h |  7 ++--
->  2 files changed, 82 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-> index 3a6b233..2369da1 100644
-> --- a/drivers/mtd/devices/st_spi_fsm.c
-> +++ b/drivers/mtd/devices/st_spi_fsm.c
-> @@ -98,6 +98,8 @@ static struct seq_rw_config n25q_read4_configs[] = {
->  	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
->  };
->  
-> +static struct stfsm_seq stfsm_seq_read; 	/* Dynamically populated */
-> +static struct stfsm_seq stfsm_seq_write;	/* Dynamically populated */
+On Mon, Dec 9, 2013 at 3:30 PM, Dave Chinner <david@fromorbit.com> wrote:
+> [CC the xfs list. Kees - I shouldn't have to remind you to do this. ]
+>
+> On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
+>> Hi,
+>>
+>> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c ("xfs: add
+>> capability check to free eofblocks ioctl") is a security fix that was
+>> never sent to -stable? From what I can see, it was introduced in 3.8
+>> by 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+>> XFS_IOC_FREE_EOFBLOCKS ioctl").
+>>
+>> I don't see this in the 3.8.y tree. Should it be added there and newer?
+>
+> Well, it's not really a security problem at all, given that it only
+> affects speculative preallocation beyond EOF. i.e. it affects
+> filesystem metadata that does not yet index any user data.
+>
+> Indeed, the kernel already does exactly what this ioctl does every 5
+> minutes without user intervention. i.e. it's simply a maintenance
+> task we need to execute periodically or on demand as a result of
+> other events (e.g. from a userspace daemon that is listen to quota
+> exhaustion messages).
+>
+> So apart from allowing a user to burn some CPU with the ioctl doing
+> nothing but scanning, there's little in way of a security problem
+> being exposed on kernels prior to 3.12 here.
+>
+> The reason for the cap check? Turning off this ioctl in containers
+> restricted by user name spaces. i.e. new functionality added to XFS
+> in 3.12 introduced curiously vague and difficult to explain new
+> inode access restrictions, so we took the "be safe by default" route
+> and only allowed the init namespace access to the ioctl....
 
-These should be fields in struct stfsm, no?
+Right, it wasn't clear from the commit, and it looked troublesome, but
+it's function wasn't obvious, so that's why I asked.
 
->  static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
->  
->  static struct stfsm_seq stfsm_seq_read_jedec = {
-> diff --git a/drivers/mtd/devices/st_spi_fsm.h b/drivers/mtd/devices/st_spi_fsm.h
-> index 6699174..b5ce07d 100644
-> --- a/drivers/mtd/devices/st_spi_fsm.h
-> +++ b/drivers/mtd/devices/st_spi_fsm.h
-> @@ -304,6 +304,8 @@ struct flash_info {
->  	int		(*config)(struct stfsm *);
->  };
->  
-> +static int stfsm_n25q_config(struct stfsm *fsm);
-> +
+-Kees
 
-I really dislike putting this static declaration in the header. (And for
-now, I don't think you need this header at all, since very little of
-your work is shareable yet.) Your table *looks* like it could be shared,
-but it won't even compile if this header is included in other files,
-since they don't have the definitions of your static functions.
-
-Anyway, I think your table should be reworked if it's going to be useful
-to others.
-
->  static struct flash_info flash_types[] = {
->  	/*
->  	 * ST Microelectronics/Numonyx --
-> @@ -347,9 +349,10 @@ static struct flash_info flash_types[] = {
->  		   FLASH_FLAG_WRITE_1_2_2	| \
->  		   FLASH_FLAG_WRITE_1_1_4	| \
->  		   FLASH_FLAG_WRITE_1_4_4)
-> -	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108, NULL },
-> +	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108,
-> +	  stfsm_n25q_config },
->  	{ "n25q256", 0x20ba19, 0, 64 * 1024,  512,
-> -	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, NULL },
-> +	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, stfsm_n25q_config },
->  
->  	/*
->  	 * Spansion S25FLxxxP
-
-Brian
+-- 
+Kees Cook
+Chrome OS Security
