@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab3LKQk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 11:40:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968Ab3LKQkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 11:40:55 -0500
-Date: Wed, 11 Dec 2013 16:40:52 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: numa: Guarantee that tlb_flush_pending updates are
- visible before page table updates
-Message-ID: <20131211164052.GB11295@suse.de>
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
- <20131211132109.GB24125@suse.de>
- <20131211144446.GP4208@linux.vnet.ibm.com>
+	id S1751920Ab3LKQlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 11:41:15 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55776 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751872Ab3LKQlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 11:41:12 -0500
+Date: Wed, 11 Dec 2013 11:41:11 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: uhci_hcd: Possible corruption of DMA pool uhci->td_pool
+In-Reply-To: <52A87E84.3030804@rosalab.ru>
+Message-ID: <Pine.LNX.4.44L0.1312111125550.1531-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131211144446.GP4208@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 06:44:47AM -0800, Paul E. McKenney wrote:
-> On Wed, Dec 11, 2013 at 01:21:09PM +0000, Mel Gorman wrote:
-> > According to documentation on barriers, stores issued before a LOCK can
-> > complete after the lock implying that it's possible tlb_flush_pending can
-> > be visible after a page table update. As per revised documentation, this patch
-> > adds a smp_mb__before_spinlock to guarantee the correct ordering.
-> > 
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> Assuming that there is a lock acquisition after calls to
-> set_tlb_flush_pending():
-> 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> (I don't see set_tlb_flush_pending() in mainline.)
-> 
+On Wed, 11 Dec 2013, Eugene Shatokhin wrote:
 
-It's introduced by a patch flight that is currently sitting in Andrew's
-tree. In the case where we care about the value of tlb_flush_pending, a
-spinlock will be taken. PMD or PTE split spinlocks or the mm->page_table_lock
-depending on whether it is 3.13 or 3.12-stable and earlier kernels. I
-pushed the relevant patches to this tree and branch
+> Hi,
+> 
+> On ROSA Linux with kernel 3.10.21 with DMA debug options enabled, the 
+> kernel sometimes issues a warning about DMA pool corruption (see the log 
+> below).
+> 
+> That happens sometimes, when the system boots or resumes from 
+> hibernation with Samson C01U USB microphone attached.
+> 
+> The affected DMA pool is 'uhci->td_pool', uhci_alloc_td() from 
+> drivers/usb/host/uhci-hcd.c makes the relevant dma_pool_alloc() calls.
+> 
+> Any ideas about how to find what causes this and how to fix it?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git numab-instrument-serialise-v5r1
+This is not an easy sort of thing to track down...
 
-There is no guarantee the lock will be taken if there are no pages populated
-in the region but we also do not care about flushing the TLB in that case
-either. Does it matter that there is no guarantee a lock will be taken
-after smp_mb__before_spinlock, just very likely that it will be?
+> Here is the relevant part of the system log:
+> ----------------------------
+> [   22.264332] usb 2-1: new full-speed USB device number 2 using uhci_hcd
+> [   22.450609] usb 2-1: New USB device found, idVendor=17a0, idProduct=0001
+> [   22.450626] usb 2-1: New USB device strings: Mfr=1, Product=2, 
+> SerialNumber=0
+> [   22.450639] usb 2-1: Product: Samson C01U
+> [   22.450649] usb 2-1: Manufacturer: Samson Technologies
+> <...>
+> [  280.703483] retire_capture_urb: 4494 callbacks suppressed
+> [  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b060 
+> (corruped)
+> [  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7 
+>   ................
+> [  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+>   ................
+> [  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+>   ................
+> [  284.961087] retire_capture_urb: 4343 callbacks suppressed
+> [  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b5d0 
+> (corruped)
+> [  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7 
+>   ................
+> [  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+>   ................
+> [  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 
+>   ................
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> [  284.961087] cannot submit urb (err = -27)
+> ----------------------------
+> 
+> 0xa7 is POOL_POISON_FREED. The memory pages to be allocated from the 
+> pool should be filled with such bytes.
+> 
+> Each time I observed this problem, the first 8 bytes of the listed 
+> memory area were overwritten, with different data each time.
 
--- 
-Mel Gorman
-SUSE Labs
+It kind of looks like a hardware bug.  Still, it's hard to say.
+
+Can you test the current 3.13-rc kernel?  There have been a few recent 
+changes in this area that might have an effect.
+
+Alan Stern
+
