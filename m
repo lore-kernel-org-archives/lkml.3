@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab3LKPJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 10:09:18 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:41739 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab3LKPJQ (ORCPT
+	id S1751703Ab3LKPM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 10:12:26 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:57284 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab3LKPMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 10:09:16 -0500
-Date: Wed, 11 Dec 2013 16:09:11 +0100
+	Wed, 11 Dec 2013 10:12:25 -0500
+Date: Wed, 11 Dec 2013 16:12:20 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <bitbucket@online.de>, Borislav Petkov <bp@alien8.de>,
-        Len Brown <lenb@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-Message-ID: <20131211150911.GA11048@gmail.com>
-References: <alpine.DEB.2.02.1312101458040.28330@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de>
- <1386732093.5964.6.camel@marge.simpson.net>
- <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
- <20131211113839.GF21683@pd.tnic>
- <20131211115239.GA21999@twins.programming.kicks-ass.net>
- <1386764955.12005.60.camel@marge.simpson.net>
- <20131211124352.GB21999@twins.programming.kicks-ass.net>
- <20131211144238.GA4510@gmail.com>
- <alpine.DEB.2.02.1312111556390.28330@ionos.tec.linutronix.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
+Message-ID: <20131211151220.GB11048@gmail.com>
+References: <20131203233232.928771708@linux.com>
+ <20131203233251.745099192@linux.com>
+ <20131210153445.GE4610@htj.dyndns.org>
+ <20131210154506.GA1884@gmail.com>
+ <20131210154951.GF4610@htj.dyndns.org>
+ <20131210155546.GD1995@gmail.com>
+ <00000142ddb6d07d-f77cfa15-55a5-4806-891e-2d57894fc46b-000000@email.amazonses.com>
+ <20131210183133.GC20770@gmail.com>
+ <00000142de1ac9a3-d2b5b7fb-25c5-4bec-acbe-8be30a951bbc-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312111556390.28330@ionos.tec.linutronix.de>
+In-Reply-To: <00000142de1ac9a3-d2b5b7fb-25c5-4bec-acbe-8be30a951bbc-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+* Christoph Lameter <cl@linux.com> wrote:
 
-> On Wed, 11 Dec 2013, Ingo Molnar wrote:
-> > 
-> > Another thing that is required I think is to issue a write barrier 
-> > before CLFLUSH instruction. By my (possibly incorrect ...) reading of 
-> > the documentation CLFLUSH does not appear to be ordered (at all), so 
-> > it might execute before the modification to the affected memory?
+> On Tue, 10 Dec 2013, Ingo Molnar wrote:
 > 
-> We already have a write barrier in the code which modifies
-> current_thread_info()->flags.
+> > By what is this required - by the previous patch #13?
+> 
+> Yes its required in order to keep the __this_cpu ops working.
+> 
+> > Also, the changelog indicates it's two changes - please split the 
+> > patch in two if so.
+> 
+> Well this is how the x86 portions came from Peter. [...]
 
-Which code is that, could you please cite it? (I tried finding it but 
-my grep-fu failed me.)
+That's an interesting piece of information, in particular because you 
+lost From: PeterZ authorship there, don't do that!
+
+In any case, your reply does not address my review feedback.
 
 Thanks,
 
