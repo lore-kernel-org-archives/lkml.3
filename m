@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LKTL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:11:57 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:40562 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3LKTLu (ORCPT
+	id S1751954Ab3LKTMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:12:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42523 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3LKTMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:11:50 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
-Subject: [RFC][PATCH 4/5] timekeeping: Fix CLOCK_TAI timer/nanosleep delays
-Date: Wed, 11 Dec 2013 11:11:37 -0800
-Message-Id: <1386789098-17391-5-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386789098-17391-1-git-send-email-john.stultz@linaro.org>
-References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org>
+	Wed, 11 Dec 2013 14:12:03 -0500
+Date: Wed, 11 Dec 2013 19:11:53 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: sougata@tuxera.com, hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Szabolcs Szakacsits <szaka@tuxera.com>
+Subject: Re: [PATCH] hfsplus: Remove hfsplus_file_lookup
+Message-ID: <20131211191153.GZ10323@ZenIV.linux.org.uk>
+References: <1386780980.9524.10.camel@ultrabook>
+ <AE333CDA-DD74-42B8-92F4-551ACCAD8AFA@dubeyko.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE333CDA-DD74-42B8-92F4-551ACCAD8AFA@dubeyko.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A think-o in the calculation of the monotonic -> tai time offset
-results in CLOCK_TAI timers and nanosleeps to expire late (the
-latency is ~2x the tai offset).
+On Wed, Dec 11, 2013 at 10:49:29PM +0300, Vyacheslav Dubeyko wrote:
 
-Fix this by adding the tai offset from the realtime offset instead
-of subtracting.
+> This feature worked earlier under Linux. So, I suppose that some changes in HFS+ driver
+> or in VFS broke it. And it needs to investigate and fix the reported issue. Thank you for the
+> report.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable <stable@vger.kernel.org> #3.10+
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/timekeeping.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This "feature" is severely broken and yes, outright removal is what I'd
+suggest for a fix.  HFS+ allows hardlinks to files, which means that
+you allow multiple dentries for the same inode with ->lookup() in it,
+which is asking for deadlocks.
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index c1d36b6..a4c5742 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -77,7 +77,7 @@ static void tk_set_wall_to_mono(struct timekeeper *tk, struct timespec wtm)
- 	tk->wall_to_monotonic = wtm;
- 	set_normalized_timespec(&tmp, -wtm.tv_sec, -wtm.tv_nsec);
- 	tk->offs_real = timespec_to_ktime(tmp);
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tk->tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tk->tai_offset, 0));
- }
- 
- static void tk_set_sleep_time(struct timekeeper *tk, struct timespec t)
-@@ -595,7 +595,7 @@ s32 timekeeping_get_tai_offset(void)
- static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
- {
- 	tk->tai_offset = tai_offset;
--	tk->offs_tai = ktime_sub(tk->offs_real, ktime_set(tai_offset, 0));
-+	tk->offs_tai = ktime_add(tk->offs_real, ktime_set(tai_offset, 0));
- }
- 
- /**
--- 
-1.8.3.2
-
+This is fundamentally not supported.  Considering that forks are lousy
+idea in the first place, I'd seriously suggest to remove that idiocy for
+good.
