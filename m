@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab3LKLJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:09:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60461 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab3LKLI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:08:58 -0500
-Date: Wed, 11 Dec 2013 03:08:36 -0800
-From: tip-bot for Jean Pihet <tipbot@zytor.com>
-Message-ID: <tip-ef517c6bee5d16404b06bee1d07f00ffb74fc21a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, will.deacon@arm.com, jean.pihet@linaro.org,
-        jolsa@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, will.deacon@arm.com, jean.pihet@linaro.org,
-        jolsa@redhat.com, tglx@linutronix.de
-In-Reply-To: <1386678244-13535-2-git-send-email-jean.pihet@linaro.org>
-References: <1386678244-13535-2-git-send-email-jean.pihet@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add per-feature check flags
-Git-Commit-ID: ef517c6bee5d16404b06bee1d07f00ffb74fc21a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:08:43 -0800 (PST)
+	id S1752698Ab3LKLJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:09:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414Ab3LKLJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 06:09:13 -0500
+Subject: Re: [PATCH v13 12/16] fs: mark list_lru based shrinkers memcg aware
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, dchinner@redhat.com,
+        hannes@cmpxchg.org, mhocko@suse.cz, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, devel@openvz.org, glommer@openvz.org,
+        glommer@gmail.com, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <20131210041747.GA31386@dastard>
+References: <cover.1386571280.git.vdavydov@parallels.com>
+	 <9e1005848996c3df5ceca9e8262edcf8211a893d.1386571280.git.vdavydov@parallels.com>
+	 <20131210041747.GA31386@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 11 Dec 2013 11:08:05 +0000
+Message-ID: <1386760085.2706.20.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ef517c6bee5d16404b06bee1d07f00ffb74fc21a
-Gitweb:     http://git.kernel.org/tip/ef517c6bee5d16404b06bee1d07f00ffb74fc21a
-Author:     Jean Pihet <jean.pihet@linaro.org>
-AuthorDate: Tue, 10 Dec 2013 13:24:03 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Dec 2013 16:51:12 -0300
+Hi,
 
-perf tools: Add per-feature check flags
+On Tue, 2013-12-10 at 15:17 +1100, Dave Chinner wrote:
+> On Mon, Dec 09, 2013 at 12:05:53PM +0400, Vladimir Davydov wrote:
+> > Since now list_lru automatically distributes objects among per-memcg
+> > lists and list_lru_{count,walk} employ information passed in the
+> > shrink_control argument to scan appropriate list, all shrinkers that
+> > keep objects in the list_lru structure can already work as memcg-aware.
+> > Let us mark them so.
+> > 
+> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> > Cc: Glauber Costa <glommer@openvz.org>
+> > Cc: Dave Chinner <dchinner@redhat.com>
+> > Cc: Al Viro <viro@zeniv.linux.org.uk>
+> > ---
+> >  fs/gfs2/quota.c  |    2 +-
+> >  fs/super.c       |    2 +-
+> >  fs/xfs/xfs_buf.c |    2 +-
+> >  fs/xfs/xfs_qm.c  |    2 +-
+> >  4 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+> > index f0435da..6cf6114 100644
+> > --- a/fs/gfs2/quota.c
+> > +++ b/fs/gfs2/quota.c
+> > @@ -150,7 +150,7 @@ struct shrinker gfs2_qd_shrinker = {
+> >  	.count_objects = gfs2_qd_shrink_count,
+> >  	.scan_objects = gfs2_qd_shrink_scan,
+> >  	.seeks = DEFAULT_SEEKS,
+> > -	.flags = SHRINKER_NUMA_AWARE,
+> > +	.flags = SHRINKER_NUMA_AWARE | SHRINKER_MEMCG_AWARE,
+> >  };
+> 
+> I'll leave it for Steve to have the final say, but this cache tracks
+> objects that have contexts that span multiple memcgs (i.e. global
+> scope) and so is not a candidate for memcg based shrinking.
+> 
+> e.g. a single user can have processes running in multiple concurrent
+> memcgs, and so the user quota dquot needs to be accessed from all
+> those memcg contexts. Same for group quota objects - they can span
+> multiple memcgs that different users have instantiated, simply
+> because they all belong to the same group and hence are subject to
+> the group quota accounting.
+> 
+> And for XFS, there's also project quotas, which means you can have
+> files that are unique to both users and groups, but shared the same
+> project quota and hence span memcgs that way....
+> 
 
-Add CFLAGS and LDFLAGS for each feature to be checked. This allows to
-pass flags and parameters to the feature checks compilation.  Also
-simplifies the feature check makefile, to come in a subsequent patch.
+Well that seems to make sense to me. I'm not that familiar with memcg
+and my main interest was to use the provided lru code, unless there was
+a good reason why we should roll our own, and also to take advantage of
+the NUMA friendliness of the new code. Although my main target in GFS2
+was the glock lru, I've not got that far yet as it is a rather more
+complicated thing to do, compared with the quota code,
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: linaro-kernel@lists.linaro.org
-Cc: patches@linaro.org
-Link: http://lkml.kernel.org/r/1386678244-13535-2-git-send-email-jean.pihet@linaro.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/config/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Steve.
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index bae1072..2afb132 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -102,7 +102,7 @@ endif
- 
- feature_check = $(eval $(feature_check_code))
- define feature_check_code
--  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS)" LDFLAGS="$(LDFLAGS)" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
-+  feature-$(1) := $(shell $(MAKE) OUTPUT=$(OUTPUT_FEATURES) CFLAGS="$(EXTRA_CFLAGS) $(FEATURE_CHECK_CFLAGS-$(1))" LDFLAGS="$(LDFLAGS) $(FEATURE_CHECK_LDFLAGS-$(1))" LIBUNWIND_LIBS="$(LIBUNWIND_LIBS)" -C config/feature-checks test-$1 >/dev/null 2>/dev/null && echo 1 || echo 0)
- endef
- 
- feature_set = $(eval $(feature_set_code))
+
