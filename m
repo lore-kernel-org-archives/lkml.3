@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645Ab3LKBah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:30:37 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:62727 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3LKBag (ORCPT
+	id S1751911Ab3LKBc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:32:57 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46386 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3LKBcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:30:36 -0500
-X-AuditID: 9c93017e-b7bb9ae000000ec8-63-52a7c03b1572
-From: Namhyung Kim <namhyung@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 16/17] uprobes: Allocate ->utask before handler_chain() for tracing handlers
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org>
-	<1386570005-3368-17-git-send-email-namhyung@kernel.org>
-	<52A6EFD7.8050602@hitachi.com> <20131210155744.GA21466@redhat.com>
-Date: Wed, 11 Dec 2013 10:30:35 +0900
-In-Reply-To: <20131210155744.GA21466@redhat.com> (Oleg Nesterov's message of
-	"Tue, 10 Dec 2013 16:57:44 +0100")
-Message-ID: <87eh5ki37o.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 10 Dec 2013 20:32:52 -0500
+Message-ID: <52A7C0C3.2070805@codeaurora.org>
+Date: Tue, 10 Dec 2013 17:32:51 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Mark Brown <broonie@kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/8] regmap: Add support for using regmap over ssbi
+References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org> <1386718523-2587-4-git-send-email-sboyd@codeaurora.org> <20131210235000.GK11468@sirena.org.uk> <52A7AE1B.3040201@codeaurora.org> <20131211005106.GL11468@sirena.org.uk>
+In-Reply-To: <20131211005106.GL11468@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+On 12/10/13 16:51, Mark Brown wrote:
+> On Tue, Dec 10, 2013 at 04:13:15PM -0800, Stephen Boyd wrote:
+>> increment reg by 1 every time through this loop. Or should we just have
+>> use_single_rw == true?
+> No, it doesn't - it increments the address of reg by the size of a
+> register value each time.  Using use_single_rw might make sense, or if
+> you can't do bulk I/O at all then hooking in via reg_read() and
+> reg_write() in the config rather than trying to parse out the buffers
+> might be even better (you can still make helpers to set that up).
 
-On Tue, 10 Dec 2013 16:57:44 +0100, Oleg Nesterov wrote:
-> On 12/10, Masami Hiramatsu wrote:
->>
->> (2013/12/09 15:20), Namhyung Kim wrote:
->> > From: Oleg Nesterov <oleg@redhat.com>
->> >
->> > uprobe_trace_print() and uprobe_perf_print() need to pass the additional
->> > info to call_fetch() methods, currently there is no simple way to do this.
->> >
->> > current->utask looks like a natural place to hold this info, but we need
->> > to allocate it before handler_chain().
->> >
->> > This is a bit unfortunate, perhaps we will find a better solution later,
->> > but this is simnple and should work right now.
->>
->> Hmm, when this will happen?
->
-> Perhaps never. Perhaps it will stay forever and we remove get_utask() from
-> pre_ssout() (it is not needed after this patch).
->
-> However I still think we can cleanup this. And to remind, we need to clean
-> the usage of utask->vaddr in trace_uprobe.c anyway. We can either try to
-> find another place to pass the info, or we can create a helper(s) for the
-> tracing handlers to access (and populate if NULL) utask->handler_data.
-> Note that this (probably) also makes sense because we can unexport
-> "struct uprobe_task" (but this needs a couple of off-topic cleanups).
->
-> We will see. Lets do the minimal change which can work right now, Namhyung
-> has enough more serious problems ;)
 
-Very true. :)
+Are you suggesting we implement the reg_read/reg_write as global helpers
+that the config points to and then call regmap_init()? At a quick glance
+it looks like we lose out on regmap_bulk_read() if we do that. There is
+one driver that will use regmap_bulk_read(), but I suppose we can just
+loop on regmap_read() and do our own increment? If we use use_single_rw
+everything works and we can simplify this code to just pass the reg and
+val buffers directly to ssbi_read/write.
 
->
->> and isn't it better to increment
->> miss-hit counter of the uprobe?
->
-> What do you mean? This is not miss-hit and ->utask == NULL is quite normal.
-> For example, on ppc it can be always NULL because ppc likely emulates the
-> probed insn.
+This is what I have now.
 
-Yes, for x86, it's always NULL at first but then populated after doing
-single-step.  What we try to do is just moving the allocation before
-calling handler since we need to carry some information through it.
+static int regmap_ssbi_read(void *context,
+                            const void *regp, size_t reg_size,
+                            void *val, size_t val_size)
+{
+        int ret;
+        u16 reg;
 
-Thanks,
-Namhyung
+        BUG_ON(reg_size != 2);
 
->
-> Or did you mean that if get_utask() fails we should report this somehow?
-> Well, GFP_KERNEL should "never" fail and even if it fails we will restart
-> the same insn and retry the allocation.
->
-> Or did I miss your point completely ?
->
-> Oleg.
+        reg = *(u16 *)regp;
+        while (val_size) {
+                ret = ssbi_read(context, reg, val, 1);
+                if (ret)
+                        return ret;
+                reg++;
+                val += sizeof(u8);
+                val_size -= sizeof(u8);
+        }
+
+        return 0;
+}
+
+With use_single_rw I think it can be this.
+
+static int regmap_ssbi_read(void *context,
+                            const void *reg, size_t reg_size,
+                            void *val, size_t val_size)
+{
+        BUG_ON(reg_size != 2);  
+        return ssbi_read(context, *(u16 *)reg, val, 1);
+}
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
