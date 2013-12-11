@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab3LKLLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:11:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60255 "EHLO
+	id S1752205Ab3LKLFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:05:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60202 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab3LKLGW (ORCPT
+	with ESMTP id S1751684Ab3LKLFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:06:22 -0500
-Date: Wed, 11 Dec 2013 03:06:05 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-234520d3fbe43ef72268c4959f85ae326459378c@git.kernel.org>
+	Wed, 11 Dec 2013 06:05:37 -0500
+Date: Wed, 11 Dec 2013 03:05:08 -0800
+From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
+Message-ID: <tip-476b3a865f8a3734f74cf659cfa510856a105b1a@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de
+        mingo@kernel.org, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        tglx@linutronix.de
-In-Reply-To: <1386567251-22751-8-git-send-email-namhyung@kernel.org>
-References: <1386567251-22751-8-git-send-email-namhyung@kernel.org>
+        acme@redhat.com, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+In-Reply-To: <1386632823-17539-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+References: <1386632823-17539-1-git-send-email-yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent: Get rid of malloc_or_die()
-  in add_event()
-Git-Commit-ID: 234520d3fbe43ef72268c4959f85ae326459378c
+Subject: [tip:perf/core] perf kvm: Fix bug in 'stat report'
+Git-Commit-ID: 476b3a865f8a3734f74cf659cfa510856a105b1a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,88 +27,83 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:06:12 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:05:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  234520d3fbe43ef72268c4959f85ae326459378c
-Gitweb:     http://git.kernel.org/tip/234520d3fbe43ef72268c4959f85ae326459378c
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Mon, 9 Dec 2013 14:34:04 +0900
+Commit-ID:  476b3a865f8a3734f74cf659cfa510856a105b1a
+Gitweb:     http://git.kernel.org/tip/476b3a865f8a3734f74cf659cfa510856a105b1a
+Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+AuthorDate: Mon, 9 Dec 2013 18:47:03 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 9 Dec 2013 15:39:40 -0300
+CommitDate: Mon, 9 Dec 2013 15:20:12 -0300
 
-tools lib traceevent: Get rid of malloc_or_die() in add_event()
+perf kvm: Fix bug in 'stat report'
 
-Make it return error value since its only caller find_event() now can
-handle allocation error properly.
+When we use perf kvm record-report, there is a bug in report subcommand.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386567251-22751-8-git-send-email-namhyung@kernel.org
+Example:
+	# perf kvm stat record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.678 MB perf.data.guest (~29641 samples) ]
+	# perf kvm stat report
+	failed to open perf.data: No such file or directory  (try 'perf record' first)
+	Initializing perf session failed
+
+This bug was introduced by f5fc14124.
+
++       struct perf_data_file file = {
++               .path = input_name,
++               .mode = PERF_DATA_MODE_READ,
++       };
+
+        kvm->tool = eops;
+-       kvm->session = perf_session__new(kvm->file_name, O_RDONLY, 0, false,
+-                                        &kvm->tool);
++       kvm->session = perf_session__new(&file, false, &kvm->tool);
+
+It changed the path from kvm->file_name to input_name, this patch change the path back to
+'kvm->file_name', then it works well.
+
+Verification:
+	# perf kvm stat record -a sleep 1
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.807 MB perf.data.guest (~35264 samples) ]
+	# perf kvm stat report
+
+	Analyze events for all VCPUs:
+
+		     VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time         Avg time
+
+	       EPT_VIOLATION        200    32.79%     1.25%        0us    12064us     62.35us ( +-  96.74% )
+	       EPT_MISCONFIG        134    21.97%     0.21%        0us       35us     15.25us ( +-   4.14% )
+	       EXCEPTION_NMI         96    15.74%     0.02%        0us       11us      1.95us ( +-   9.81% )
+		 APIC_ACCESS         79    12.95%     0.02%        0us       13us      2.94us ( +-  11.20% )
+			 HLT         65    10.66%    98.47%        0us    16706us  15084.86us ( +-   1.89% )
+	      IO_INSTRUCTION         27     4.43%     0.02%        0us       29us      6.42us ( +-  15.53% )
+	  EXTERNAL_INTERRUPT          5     0.82%     0.01%        0us       77us     23.65us ( +-  57.90% )
+	 TPR_BELOW_THRESHOLD          4     0.66%     0.00%        0us        1us      1.22us ( +-   4.36% )
+
+	Total Samples:610, Total events handled time:995745.54us.
+
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/1386632823-17539-1-git-send-email-yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/parse-filter.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ tools/perf/builtin-kvm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index b3a61d4..2b73abf 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -245,15 +245,19 @@ static void free_arg(struct filter_arg *arg)
- 	free(arg);
- }
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index d9cc0e3..c2e5d56 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1232,7 +1232,7 @@ static int read_events(struct perf_kvm_stat *kvm)
+ 		.ordered_samples	= true,
+ 	};
+ 	struct perf_data_file file = {
+-		.path = input_name,
++		.path = kvm->file_name,
+ 		.mode = PERF_DATA_MODE_READ,
+ 	};
  
--static void add_event(struct event_list **events,
-+static int add_event(struct event_list **events,
- 		      struct event_format *event)
- {
- 	struct event_list *list;
- 
--	list = malloc_or_die(sizeof(*list));
-+	list = malloc(sizeof(*list));
-+	if (list == NULL)
-+		return -1;
-+
- 	list->next = *events;
- 	*events = list;
- 	list->event = event;
-+	return 0;
- }
- 
- static int event_match(struct event_format *event,
-@@ -276,6 +280,7 @@ find_event(struct pevent *pevent, struct event_list **events,
- 	regex_t ereg;
- 	regex_t sreg;
- 	int match = 0;
-+	int fail = 0;
- 	char *reg;
- 	int ret;
- 	int i;
-@@ -310,7 +315,10 @@ find_event(struct pevent *pevent, struct event_list **events,
- 		event = pevent->events[i];
- 		if (event_match(event, sys_name ? &sreg : NULL, &ereg)) {
- 			match = 1;
--			add_event(events, event);
-+			if (add_event(events, event) < 0) {
-+				fail = 1;
-+				break;
-+			}
- 		}
- 	}
- 
-@@ -320,6 +328,8 @@ find_event(struct pevent *pevent, struct event_list **events,
- 
- 	if (!match)
- 		return -1;
-+	if (fail)
-+		return -2;
- 
- 	return 0;
- }
