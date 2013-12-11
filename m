@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802Ab3LKTz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:55:57 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:64708 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab3LKTzx (ORCPT
+	id S1751849Ab3LKT4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:56:33 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53436 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3LKT4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:55:53 -0500
-Date: Wed, 11 Dec 2013 16:55:46 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
-Message-ID: <20131211195546.GG1458@ghostprotocols.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com>
- <52A8BD60.80300@gmail.com>
+	Wed, 11 Dec 2013 14:56:32 -0500
+Message-ID: <52A8C36A.9000501@gmail.com>
+Date: Wed, 11 Dec 2013 12:56:26 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A8BD60.80300@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] perf completion: complete 'perf kvm'
+References: <1386758056-24618-1-git-send-email-artagnon@gmail.com> <1386758056-24618-2-git-send-email-artagnon@gmail.com> <20131211195046.GA2295@infradead.org>
+In-Reply-To: <20131211195046.GA2295@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 11, 2013 at 12:30:40PM -0700, David Ahern escreveu:
-> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
-> 
-> >diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> >index 55f3608..52fbfb6 100644
-> >--- a/tools/perf/util/machine.c
-> >+++ b/tools/perf/util/machine.c
-> >@@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
-> >
-> >  	return thread->pid_;
-> >  }
-> >+
-> >+int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
-> >+{
-> >+	struct thread *thread = machine__find_thread(machine, tid);
-> >+
-> >+	if (!thread)
-> >+		return -1;
-> >+
-> >+	if (pid)
-> >+		*pid = thread->pid_;
-> 
-> Why is a 'get' function modifying the thread data?
+On 12/11/13, 12:50 PM, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Dec 11, 2013 at 04:04:15PM +0530, Ramkumar Ramachandra escreveu:
+>> Currently, there is no way to enumerate the subcommands under 'perf
+>> kvm', so hardcode them.
+>
+> [acme@ssdandy linux]$ perf kvm -h 2>&1 | grep usage
+>   usage: perf kvm [<options>] {top|record|report|diff|buildid-list|stat}
+>
+> Can't you use this somehow?
+>
+> I'm applying it tho as it is better than the current situation.
 
-Where is this happening? :-)
+I don't like the command list being embedded in the completion script. 
+It will get outdated quickly.
 
-My main complaint here was that we would be getting more things than
-what the function name implies, see another message with my reply to
-this patch.
+David
 
-- Arnaldo
+
