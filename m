@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab3LKOsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:48:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1609 "EHLO mx1.redhat.com"
+	id S1751521Ab3LKOvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:51:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63828 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904Ab3LKOsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:48:35 -0500
-Date: Wed, 11 Dec 2013 09:47:58 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH 03/12] pid: get ppid pid_t of task in init_pid_ns safely
-Message-ID: <20131211144758.GA1160@madcap2.tricolour.ca>
-References: <cover.1377032086.git.rgb@redhat.com>
- <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com>
- <20130827172155.GC29147@redhat.com>
- <20130830195646.GJ21110@madcap2.tricolour.ca>
- <52210275.8040601@canonical.com>
- <20130903183159.GA28517@madcap2.tricolour.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1750881Ab3LKOvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 09:51:04 -0500
+Date: Wed, 11 Dec 2013 09:50:28 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Message-ID: <1386773428-bwklwan0-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20131211092123.GV11295@suse.de>
+References: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1386723001-25408-9-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20131211092123.GV11295@suse.de>
+Subject: Re: [PATCH v5 8/8] sched/numa: drop unnecessary variable in
+ task_weight
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20130903183159.GA28517@madcap2.tricolour.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <20131211092123.GV11295@suse.de>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 02:31:59PM -0400, Richard Guy Briggs wrote:
-> On Fri, Aug 30, 2013 at 01:37:09PM -0700, John Johansen wrote:
-> > On 08/30/2013 12:56 PM, Richard Guy Briggs wrote:
-> > > On Tue, Aug 27, 2013 at 07:21:55PM +0200, Oleg Nesterov wrote:
-> > >> On 08/20, Richard Guy Briggs wrote:
-> > > Most of the instances are current, but the one called from apparmour is
-> > > stored.  I've just learned that this is bad and someone else just chimed
-> > > in that they have a patch to remove it...
+On Wed, Dec 11, 2013 at 09:21:23AM +0000, Mel Gorman wrote:
+> On Wed, Dec 11, 2013 at 08:50:01AM +0800, Wanpeng Li wrote:
+> > Drop unnecessary total_faults variable in function task_weight to unify
+> > task_weight and group_weight.
 > > 
-> > the apparmor case isn't actually stored long term. The stored task will be
-> > a parameter that was passed into an lsm hook and the buffer that it is
-> > stored in dies before the hook is done. Its temporarily stored in the
-> > struct so that it can be passed into the lsm_audit fn, and printed into an
-> > allocated audit buffer. The text version in the audit buffer is what will
-> > exist beyond the hook.
-> > 
-> > There are three patches, I'll reply them below once I have finished rebasing
-> > them to apply to the current tree instead of my dev tree.
+> > Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 > 
-> John, thanks for this context and fix.  That helps simplify things.
+> Nak.
+> 
+> task_weight is called for tasks other than current. If p handles a fault
+> in parallel then it can drop to 0 between when it's checked and used to
+> divide resulting in an oops.
 
-John, What's the status of this set of 3 patches?  I don't see them
-upstream.
+So we have the same race on group_weight(), and we have to add a local
+variable to store p->numa_group->total_faults?
 
-> - RGB
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Thanks,
+Naoya Horiguchi
