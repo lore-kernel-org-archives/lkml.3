@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab3LKU71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 15:59:27 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:33863 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab3LKU70 (ORCPT
+	id S1751439Ab3LKU7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 15:59:34 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:35586 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3LKU73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 15:59:26 -0500
+	Wed, 11 Dec 2013 15:59:29 -0500
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
         iommu@lists.linux-foundation.org
@@ -15,9 +15,9 @@ Cc: tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
         kvm@vger.kernel.org (open list:VFIO DRIVER),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/9] VFIO_IOMMU_TYPE1: Introduce the VFIO_DMA_MAP_FLAG_EXEC flag
-Date: Wed, 11 Dec 2013 21:58:25 +0100
-Message-Id: <1386795513-32426-2-git-send-email-a.motakis@virtualopensystems.com>
+Subject: [PATCH 2/9] VFIO_IOMMU_TYPE1: workaround to build for platform devices
+Date: Wed, 11 Dec 2013 21:58:26 +0100
+Message-Id: <1386795513-32426-3-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386795513-32426-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1386795513-32426-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -25,57 +25,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARM SMMU driver expects the IOMMU_EXEC flag, otherwise it will
-set the page tables for a device as XN (execute never). This affects
-devices such as the ARM PL330 DMA Controller, which fails to operate
-if the XN flag is set on the memory it tries to fetch its instructions
-from.
-
-We introduce the VFIO_DMA_MAP_FLAG_EXEC to VFIO, and use it in
-VFIO_IOMMU_TYPE1 to set the IOMMU_EXEC flag. This way the user can
-control whether the XN flag will be set on the requested mappings.
+This is a workaround to make the VFIO_IOMMU_TYPE1 driver usable with
+platform devices instead of PCI. A future permanent fix should support
+both. This is required in order to use the Exynos SMMU, or ARM SMMU
+driver with VFIO.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/vfio_iommu_type1.c | 5 ++++-
- include/uapi/linux/vfio.h       | 1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/vfio/Kconfig            |  2 +-
+ drivers/vfio/vfio_iommu_type1.c | 22 ++++++++++++++++++----
+ 2 files changed, 19 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
+index 26b3d9d..bd50721 100644
+--- a/drivers/vfio/Kconfig
++++ b/drivers/vfio/Kconfig
+@@ -11,7 +11,7 @@ config VFIO_IOMMU_SPAPR_TCE
+ menuconfig VFIO
+ 	tristate "VFIO Non-Privileged userspace driver framework"
+ 	depends on IOMMU_API
+-	select VFIO_IOMMU_TYPE1 if X86
++	select VFIO_IOMMU_TYPE1 if X86 || ARM
+ 	select VFIO_IOMMU_SPAPR_TCE if (PPC_POWERNV || PPC_PSERIES)
+ 	help
+ 	  VFIO provides a framework for secure userspace device drivers.
 diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
-index 4fb7a8f..ad7a1f6 100644
+index ad7a1f6..81e65f4 100644
 --- a/drivers/vfio/vfio_iommu_type1.c
 +++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -557,6 +557,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
- 		prot |= IOMMU_WRITE;
- 	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
- 		prot |= IOMMU_READ;
-+	if (map->flags & VFIO_DMA_MAP_FLAG_EXEC)
-+		prot |= IOMMU_EXEC;
+@@ -30,7 +30,8 @@
+ #include <linux/iommu.h>
+ #include <linux/module.h>
+ #include <linux/mm.h>
+-#include <linux/pci.h>		/* pci_bus_type */
++#include <linux/pci.h>			/* pci_bus_type */
++#include <linux/platform_device.h>	/* platform_bus_type */
+ #include <linux/rbtree.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+@@ -47,6 +48,8 @@ module_param_named(allow_unsafe_interrupts,
+ 		   allow_unsafe_interrupts, bool, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(allow_unsafe_interrupts,
+ 		 "Enable VFIO IOMMU support for on platforms without interrupt remapping support.");
++static struct bus_type *iommu_bus_type = NULL;
++static bool require_cap_intr_remap = false;
  
- 	if (!prot)
- 		return -EINVAL; /* No READ/WRITE? */
-@@ -865,7 +867,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
- 	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
- 		struct vfio_iommu_type1_dma_map map;
- 		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
--				VFIO_DMA_MAP_FLAG_WRITE;
-+				VFIO_DMA_MAP_FLAG_WRITE |
-+				VFIO_DMA_MAP_FLAG_EXEC;
+ static bool disable_hugepages;
+ module_param_named(disable_hugepages,
+@@ -785,7 +788,8 @@ static void *vfio_iommu_type1_open(unsigned long arg)
+ 	/*
+ 	 * Wish we didn't have to know about bus_type here.
+ 	 */
+-	iommu->domain = iommu_domain_alloc(&pci_bus_type);
++	iommu->domain = iommu_domain_alloc(iommu_bus_type);
++
+ 	if (!iommu->domain) {
+ 		kfree(iommu);
+ 		return ERR_PTR(-EIO);
+@@ -797,7 +801,7 @@ static void *vfio_iommu_type1_open(unsigned long arg)
+ 	 * the way.  Fortunately we know interrupt remapping is global for
+ 	 * our iommus.
+ 	 */
+-	if (!allow_unsafe_interrupts &&
++	if (require_cap_intr_remap && !allow_unsafe_interrupts &&
+ 	    !iommu_domain_has_cap(iommu->domain, IOMMU_CAP_INTR_REMAP)) {
+ 		pr_warn("%s: No interrupt remapping support.  Use the module param \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
+ 		       __func__);
+@@ -914,7 +918,17 @@ static const struct vfio_iommu_driver_ops vfio_iommu_driver_ops_type1 = {
  
- 		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+ static int __init vfio_iommu_type1_init(void)
+ {
+-	if (!iommu_present(&pci_bus_type))
++#ifdef CONFIG_PCI
++	if (iommu_present(&pci_bus_type)) {
++		iommu_bus_type = &pci_bus_type;
++		/* For PCI targets, IOMMU_CAP_INTR_REMAP is required */
++		require_cap_intr_remap = true;
++	}
++#endif
++	if (!iommu_bus_type && iommu_present(&platform_bus_type))
++		iommu_bus_type = &platform_bus_type;
++
++	if(!iommu_bus_type)
+ 		return -ENODEV;
  
-diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-index 0fd47f5..d8e9e99 100644
---- a/include/uapi/linux/vfio.h
-+++ b/include/uapi/linux/vfio.h
-@@ -392,6 +392,7 @@ struct vfio_iommu_type1_dma_map {
- 	__u32	flags;
- #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
- #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
-+#define VFIO_DMA_MAP_FLAG_EXEC (1 << 2)		/* executable from device */
- 	__u64	vaddr;				/* Process virtual address */
- 	__u64	iova;				/* IO virtual address */
- 	__u64	size;				/* Size of mapping (bytes) */
+ 	return vfio_register_iommu_driver(&vfio_iommu_driver_ops_type1);
 -- 
 1.8.3.2
 
