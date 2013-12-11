@@ -1,48 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab3LKHLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:11:09 -0500
-Received: from mga02.intel.com ([134.134.136.20]:43724 "EHLO mga02.intel.com"
+	id S1751961Ab3LKHPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:15:00 -0500
+Received: from mga02.intel.com ([134.134.136.20]:6674 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3LKHLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:11:04 -0500
+	id S1751000Ab3LKHLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 02:11:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,870,1378882800"; 
-   d="scan'208";a="450352405"
+   d="scan'208";a="450352439"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 00/15] perf, x86: Haswell LBR call stack support
-Date: Wed, 11 Dec 2013 15:10:45 +0800
-Message-Id: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH 03/15] perf, core: Introduce pmu context switch callback
+Date: Wed, 11 Dec 2013 15:10:48 +0800
+Message-Id: <1386745860-21143-4-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
+References: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Haswell has a new feature that utilizes the existing Last Branch Record
-facility to record call chains. When the feature is enabled, function
-call will be collected as normal, but as return instructions are executed
-the last captured branch record is popped from the on-chip LBR registers.
-The LBR call stack facility can help perf to get call chains of progam
-without frame pointer. This feature can be disabled/enabled through an
-attribute file in the cpu pmu sysfs directory.
+The callback is invoked when process is scheduled in/out. To avoid
+unnecessary overhead, the callback can be enabled/disabled.
 
-The LBR call stack has following known limitations
- - Zero length calls are not filtered out by hardware
- - Exception handing such as setjmp/longjmp will have calls/returns not
-   match
- - Pushing different return address onto the stack will have calls/returns
-   not match
- - If callstack is deeper than the LBR, only the last entries are captured
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |  7 +++++
+ arch/x86/kernel/cpu/perf_event.h |  4 +++
+ include/linux/perf_event.h       |  8 ++++++
+ kernel/events/core.c             | 59 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 78 insertions(+)
 
-Change since previous version
- - split change into more patches
- - introduce context switch callback and use it to flush LBR
- - use the context switch callback to save/restore LBR
- - dynamic allocate memory area for storing LBR stack, always switch the
-   memory area during context switch
- - disable this feature by default
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 8e13293..6703d17 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1846,6 +1846,12 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	NULL,
+ };
+ 
++static void x86_pmu_sched_task(struct perf_event_context *ctx, bool sched_in)
++{
++	if (x86_pmu.sched_task)
++		x86_pmu.sched_task(ctx, sched_in);
++}
++
+ static void x86_pmu_flush_branch_stack(void)
+ {
+ 	if (x86_pmu.flush_branch_stack)
+@@ -1879,6 +1885,7 @@ static struct pmu pmu = {
+ 
+ 	.event_idx		= x86_pmu_event_idx,
+ 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
++	.sched_task		= x86_pmu_sched_task,
+ };
+ 
+ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 1213641..5eb3a58 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -417,6 +417,8 @@ struct x86_pmu {
+ 
+ 	void		(*check_microcode)(void);
+ 	void		(*flush_branch_stack)(void);
++	void		(*sched_task)(struct perf_event_context *ctx,
++				      bool sched_in);
+ 
+ 	/*
+ 	 * Intel Arch Perfmon v2+
+@@ -678,6 +680,8 @@ void intel_pmu_pebs_disable_all(void);
+ 
+ void intel_ds_init(void);
+ 
++void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in);
++
+ void intel_pmu_lbr_reset(void);
+ 
+ void intel_pmu_lbr_enable(struct perf_event *event);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 8f4a70f..6a3e603 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -251,6 +251,12 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
++
++	/*
++	 * PMU callback for context-switches. optional
++	 */
++	void (*sched_task)		(struct perf_event_context *ctx,
++					 bool sched_in);
+ };
+ 
+ /**
+@@ -546,6 +552,8 @@ extern void perf_event_delayed_put(struct task_struct *task);
+ extern void perf_event_print_debug(void);
+ extern void perf_pmu_disable(struct pmu *pmu);
+ extern void perf_pmu_enable(struct pmu *pmu);
++extern void perf_sched_cb_disable(struct pmu *pmu);
++extern void perf_sched_cb_enable(struct pmu *pmu);
+ extern int perf_event_task_disable(void);
+ extern int perf_event_task_enable(void);
+ extern int perf_event_refresh(struct perf_event *event, int refresh);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 403b781..11c63d6 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -141,6 +141,7 @@ enum event_type_t {
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+ static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
++static DEFINE_PER_CPU(int, perf_sched_cb_usages);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -2327,6 +2328,59 @@ unlock:
+ 	}
+ }
+ 
++void perf_sched_cb_disable(struct pmu *pmu)
++{
++	__get_cpu_var(perf_sched_cb_usages)--;
++}
++
++void perf_sched_cb_enable(struct pmu *pmu)
++{
++	__get_cpu_var(perf_sched_cb_usages)++;
++}
++
++/*
++ * This function provides the context switch callback to the lower code
++ * layer. It is invoked ONLY when the context switch callback is enabled.
++ */
++static void perf_pmu_sched_task(struct task_struct *prev,
++				struct task_struct *next,
++				bool sched_in)
++{
++	struct perf_cpu_context *cpuctx;
++	struct pmu *pmu;
++	unsigned long flags;
++	int count = 0;
++
++	if (prev == next)
++		return;
++
++	local_irq_save(flags);
++
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		if (!pmu->sched_task)
++			continue;
++
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		pmu = cpuctx->ctx.pmu;
++
++		perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++
++		perf_pmu_disable(pmu);
++
++		pmu->sched_task(cpuctx->task_ctx, sched_in);
++
++		perf_pmu_enable(pmu);
++
++		perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
++	}
++
++	rcu_read_unlock();
++
++	local_irq_restore(flags);
++}
++
+ #define for_each_task_context_nr(ctxn)					\
+ 	for ((ctxn) = 0; (ctxn) < perf_nr_task_contexts; (ctxn)++)
+ 
+@@ -2346,6 +2400,9 @@ void __perf_event_task_sched_out(struct task_struct *task,
+ {
+ 	int ctxn;
+ 
++	if (__get_cpu_var(perf_sched_cb_usages))
++		perf_pmu_sched_task(task, next, false);
++
+ 	for_each_task_context_nr(ctxn)
+ 		perf_event_context_sched_out(task, ctxn, next);
+ 
+@@ -2605,6 +2662,8 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	/* check for system-wide branch_stack events */
+ 	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
+ 		perf_branch_stack_sched_in(prev, task);
++	if (__get_cpu_var(perf_sched_cb_usages))
++		perf_pmu_sched_task(prev, task, true);
+ }
+ 
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+-- 
+1.8.1.4
+
