@@ -1,105 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LKAJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:09:01 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:37749 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab3LKAHn (ORCPT
+	id S1751423Ab3LKALq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:11:46 -0500
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:46761 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab3LKALo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:07:43 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: [PATCH v2 2/5] net: macb: Migrate to devm clock interface
-Date: Tue, 10 Dec 2013 16:07:20 -0800
-Message-Id: <1386720443-24100-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com>
+	Tue, 10 Dec 2013 19:11:44 -0500
+Date: Tue, 10 Dec 2013 16:11:40 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, page_alloc: make __GFP_NOFAIL really not fail
+In-Reply-To: <20131210153909.8b4bfa1d643e5f8582eff7c9@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1312101559590.22701@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1312091355360.11026@chino.kir.corp.google.com> <20131209152202.df3d4051d7dc61ada7c420a9@linux-foundation.org> <alpine.DEB.2.02.1312101504120.22701@chino.kir.corp.google.com>
+ <20131210153909.8b4bfa1d643e5f8582eff7c9@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Migrate to using the device managed interface for clocks and clean up
-the associated error paths.
+On Tue, 10 Dec 2013, Andrew Morton wrote:
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-v2:
- - fix typo in commit message
----
- drivers/net/ethernet/cadence/macb.c | 32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+> > Heh, it's difficult to remove __GFP_NOFAIL when new users get added: 
+> > 84235de394d9 ("fs: buffer: move allocation failure loop into the 
+> > allocator") added a new user
+> 
+> That wasn't reeeeealy a new user - it was "convert an existing
+> open-coded retry-for-ever loop".  Which is what __GFP_NOFAIL is for.
+> 
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 389ccf1362d5..62aa136889a4 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1790,19 +1790,31 @@ static int __init macb_probe(struct platform_device *pdev)
- 	spin_lock_init(&bp->lock);
- 	INIT_WORK(&bp->tx_error_task, macb_tx_error_task);
- 
--	bp->pclk = clk_get(&pdev->dev, "pclk");
-+	bp->pclk = devm_clk_get(&pdev->dev, "pclk");
- 	if (IS_ERR(bp->pclk)) {
--		dev_err(&pdev->dev, "failed to get macb_clk\n");
-+		err = PTR_ERR(bp->pclk);
-+		dev_err(&pdev->dev, "failed to get macb_clk (%u)\n", err);
- 		goto err_out_free_dev;
- 	}
--	clk_prepare_enable(bp->pclk);
- 
--	bp->hclk = clk_get(&pdev->dev, "hclk");
-+	bp->hclk = devm_clk_get(&pdev->dev, "hclk");
- 	if (IS_ERR(bp->hclk)) {
--		dev_err(&pdev->dev, "failed to get hclk\n");
--		goto err_out_put_pclk;
-+		err = PTR_ERR(bp->hclk);
-+		dev_err(&pdev->dev, "failed to get hclk (%u)\n", err);
-+		goto err_out_free_dev;
-+	}
-+
-+	err = clk_prepare_enable(bp->pclk);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to enable pclk (%u)\n", err);
-+		goto err_out_free_dev;
-+	}
-+
-+	err = clk_prepare_enable(bp->hclk);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to enable hclk (%u)\n", err);
-+		goto err_out_disable_pclk;
- 	}
--	clk_prepare_enable(bp->hclk);
- 
- 	bp->regs = ioremap(regs->start, resource_size(regs));
- 	if (!bp->regs) {
-@@ -1908,10 +1920,8 @@ err_out_iounmap:
- 	iounmap(bp->regs);
- err_out_disable_clocks:
- 	clk_disable_unprepare(bp->hclk);
--	clk_put(bp->hclk);
-+err_out_disable_pclk:
- 	clk_disable_unprepare(bp->pclk);
--err_out_put_pclk:
--	clk_put(bp->pclk);
- err_out_free_dev:
- 	free_netdev(dev);
- err_out:
-@@ -1936,9 +1946,7 @@ static int __exit macb_remove(struct platform_device *pdev)
- 		free_irq(dev->irq, dev);
- 		iounmap(bp->regs);
- 		clk_disable_unprepare(bp->hclk);
--		clk_put(bp->hclk);
- 		clk_disable_unprepare(bp->pclk);
--		clk_put(bp->pclk);
- 		free_netdev(dev);
- 	}
- 
--- 
-1.8.5.1
-
+No, it just looks like that's what it did.  find_or_create_page() in that 
+function does an order-0 allocation which always implicitly __GFP_NOFAIL 
+because of the should_alloc_retry() behavior.  So why does it need to add 
+__GFP_NOFAIL there now?  Because it is now allowed to bypass memcg limits 
+to the root memcg, which is new behavior with the patch.  It adds 
+additional memcg powers that can't be duplicated in the caller, so now 
+it's really become __GFP_BYPASS_MEMCG_LIMIT_ON_OOM for everything that was 
+doing order-3 or smaller allocations, which should be all existing 
+__GFP_NOFAIL users.
