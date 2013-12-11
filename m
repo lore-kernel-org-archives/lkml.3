@@ -1,154 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab3LKBmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:42:47 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46910 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab3LKBmp (ORCPT
+	id S1751395Ab3LKBnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:43:45 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34793 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab3LKBnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:42:45 -0500
-Message-ID: <52A7C313.8090208@codeaurora.org>
-Date: Tue, 10 Dec 2013 17:42:43 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Tue, 10 Dec 2013 20:43:42 -0500
+Message-ID: <52A7C347.1060402@hitachi.com>
+Date: Wed, 11 Dec 2013 10:43:35 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/3] pinctrl: Add Qualcomm TLMM driver
-References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com> <1386295805-13708-2-git-send-email-bjorn.andersson@sonymobile.com> <52A24438.4000908@codeaurora.org> <20131210081031.GD11990@sonymobile.com>
-In-Reply-To: <20131210081031.GD11990@sonymobile.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 16/17] uprobes: Allocate ->utask before handler_chain()
+ for tracing handlers
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-17-git-send-email-namhyung@kernel.org> <52A6EFD7.8050602@hitachi.com> <20131210155744.GA21466@redhat.com>
+In-Reply-To: <20131210155744.GA21466@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/13 00:10, Bjorn Andersson wrote:
-> On Fri 06 Dec 13:40 PST 2013, Stephen Boyd wrote:
->>> +config PINCTRL_MSM
->>> +     bool
->> Why not tristate?
+(2013/12/11 0:57), Oleg Nesterov wrote:
+> On 12/10, Masami Hiramatsu wrote:
 >>
-> I have a hard time seeing an situation where you would like to build a system
-> with this driver as a module; it would force almost the entire system to be
-> loaded at a later time...
-
-We're going to need to build everything but the essentials as modules
-for the multi-platform kernel because we're going to run into the
-problem where the kernel can't link anymore. Data heavy drivers such as
-this are  targets for that because they waste more space being built-in
-and they're not absolutely necessary to boot into an initrd that holds
-the modules for a particular device.
-
->
->
->>> +     val = readl(pctrl->regs + g->intr_cfg_reg);
->>> +     val |= BIT(g->intr_raw_status_bit);
->>> +     if (g->intr_detection_width == 2) {
->>> +             val &= ~(3 << g->intr_detection_bit);
->>> +             val &= ~(1 << g->intr_polarity_bit);
->>> +             switch (type) {
->>> +             case IRQ_TYPE_EDGE_RISING:
->>> +                     val |= 1 << g->intr_detection_bit;
->>> +                     val |= BIT(g->intr_polarity_bit);
->>> +                     break;
->>> +             case IRQ_TYPE_EDGE_FALLING:
->>> +                     val |= 2 << g->intr_detection_bit;
->>> +                     val |= BIT(g->intr_polarity_bit);
->>> +                     break;
->>> +             case IRQ_TYPE_EDGE_BOTH:
->>> +                     val |= 3 << g->intr_detection_bit;
->>> +                     val |= BIT(g->intr_polarity_bit);
->>> +                     break;
->>> +             case IRQ_TYPE_LEVEL_LOW:
->>> +                     break;
->>> +             case IRQ_TYPE_LEVEL_HIGH:
->>> +                     val |= BIT(g->intr_polarity_bit);
->>> +                     break;
->>> +             }
->>> +     } else if (g->intr_detection_width == 1) {
->>> +             val &= ~(1 << g->intr_detection_bit);
->>> +             val &= ~(1 << g->intr_polarity_bit);
->>> +             switch (type) {
->>> +             case IRQ_TYPE_EDGE_RISING:
->>> +                     val |= BIT(g->intr_detection_bit);
->>> +                     val |= BIT(g->intr_polarity_bit);
->>> +                     break;
->>> +             case IRQ_TYPE_EDGE_FALLING:
->>> +                     val |= BIT(g->intr_detection_bit);
->>> +                     break;
->>> +             case IRQ_TYPE_EDGE_BOTH:
->>> +                     val |= BIT(g->intr_detection_bit);
->>> +                     break;
->>> +             case IRQ_TYPE_LEVEL_LOW:
->>> +                     break;
->>> +             case IRQ_TYPE_LEVEL_HIGH:
->>> +                     val |= BIT(g->intr_polarity_bit);
->>> +                     break;
->>> +             }
->>> +     } else {
->>> +             BUG();
->>> +     }
->> This would be better written as a collection of ifs so that
->> IRQ_TYPE_EDGE_BOTH doesn't have to be tested and we duplicate less code.
+>> (2013/12/09 15:20), Namhyung Kim wrote:
+>>> From: Oleg Nesterov <oleg@redhat.com>
+>>>
+>>> uprobe_trace_print() and uprobe_perf_print() need to pass the additional
+>>> info to call_fetch() methods, currently there is no simple way to do this.
+>>>
+>>> current->utask looks like a natural place to hold this info, but we need
+>>> to allocate it before handler_chain().
+>>>
+>>> This is a bit unfortunate, perhaps we will find a better solution later,
+>>> but this is simnple and should work right now.
 >>
-> I've rewritten this numerous times and this is the cleanest way I can find
-> to do this in. Yes, there's some duplication but it has a cleaner structure
-> and easier to follow than the nested if/elseif/else statements.
->
-> So I would like to keep it as is.
+>> Hmm, when this will happen?
+> 
+> Perhaps never. Perhaps it will stay forever and we remove get_utask() from
+> pre_ssout() (it is not needed after this patch).
 
-Isn't this the same?
+Ah, OK, get_utask() is almost same as kzalloc().
 
-+     val = readl(pctrl->regs + g->intr_cfg_reg);
-+     val |= BIT(g->intr_raw_status_bit);
-+
-+     detection_mask = BIT(g->intr_detection_width) - 1;
-+     val &= ~(detection_mask << g->intr_detection_bit);
-+     val &= ~BIT(g->intr_polarity_bit);
-+
-+     if (type & IRQ_TYPE_EDGE_RISING)
-+             val |= BIT(g->intr_detection_bit);
-+
-+     if (type & IRQ_TYPE_EDGE_FALLING)
-+             val |= g->intr_detection_width << g->intr_detection_bit;
-+
-+     if (!(type & IRQ_TYPE_LEVEL_LOW))
-+             val |= BIT(g->intr_polarity_bit);
-+
+> However I still think we can cleanup this. And to remind, we need to clean
+> the usage of utask->vaddr in trace_uprobe.c anyway. We can either try to
+> find another place to pass the info, or we can create a helper(s) for the
+> tracing handlers to access (and populate if NULL) utask->handler_data.
+> Note that this (probably) also makes sense because we can unexport
+> "struct uprobe_task" (but this needs a couple of off-topic cleanups).
+> 
+> We will see. Lets do the minimal change which can work right now, Namhyung
+> has enough more serious problems ;)
+> 
+>> and isn't it better to increment
+>> miss-hit counter of the uprobe?
+> 
+> What do you mean? This is not miss-hit and ->utask == NULL is quite normal.
 
->
->
->
->>> +#include <linux/pinctrl/pinctrl.h>
->>> +#include <linux/pinctrl/pinmux.h>
->>> +#include <linux/pinctrl/pinconf.h>
->>> +#include <linux/pinctrl/machine.h>
->> Are any of these includes actually necessary? Can't we just forward
->> declare struct pinctrl_pin_desc?
->>
-> None of them are needed in the current set of patches, as these are already
-> included in the c-files before including this.
->
-> But the right set should be: platform_device.h and pinctrl.h.
+But it could skip the handler_chain silently. It could confuse users
+why their probe doesn't hit as expected.
 
-We should be able to get away with forward declaring the structs we care
-about. C files that include this header should be including the
-pinctrl.h header file anyway, no?
+> For example, on ppc it can be always NULL because ppc likely emulates the
+> probed insn.
+
+Hmm, in that case, should uprobes handlers never be called on ppc with
+this change?
+
+> Or did you mean that if get_utask() fails we should report this somehow?
+
+I meant that if the uprobes hits some error and not work as expected,
+it should be reported somehow to users, and miss-hit counter will be
+a possible option.
+
+Thank you,
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
