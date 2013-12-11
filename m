@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab3LKHp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:45:57 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:39661 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab3LKHp4 (ORCPT
+	id S1750990Ab3LKHv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:51:28 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52930 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3LKHv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:45:56 -0500
-Message-ID: <52A81830.3000305@gmail.com>
-Date: Wed, 11 Dec 2013 09:45:52 +0200
-From: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 11 Dec 2013 02:51:26 -0500
+Date: Wed, 11 Dec 2013 08:51:17 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Mikko Perttunen <mperttunen@nvidia.com>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Terje =?iso-8859-15?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] gpu: host1x: clk_round_rate() can return a zero upon
+ error
+Message-ID: <20131211075117.GA24559@pengutronix.de>
+References: <alpine.DEB.2.02.1312091746400.4127@tamien>
 MIME-Version: 1.0
-To: Steven Luo <steven@steven676.net>
-CC: gregkh@linuxfoundation.org, nico@ngolde.de, fabs@goesec.de,
-        omar.ramirez@copitl.com, pali.rohar@gmail.com, pavel@ucw.cz,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        tony@atomide.com, felipe.contreras@gmail.com,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Use vm_iomap_memory for mmap-ing
- instead of remap_pfn_range
-References: <1386014416-4556-1-git-send-email-ivo.g.dimitrov.75@gmail.com> <20131207234912.GA1245@steven676.net>
-In-Reply-To: <20131207234912.GA1245@steven676.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312091746400.4127@tamien>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:49:47 up 108 days, 17:20, 47 users,  load average: 0.01, 0.06,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 09, 2013 at 06:00:12PM -0800, Paul Walmsley wrote:
+> 
+> Treat both negative and zero return values from clk_round_rate() as
+> errors.  This is needed since subsequent patches will convert
+> clk_round_rate()'s return value to be an unsigned type, rather than a
+> signed type, since some clock sources can generate rates higher than
+> (2^31)-1 Hz.
+> 
+> Eventually, when calling clk_round_rate(), only a return value of zero
+> will be considered a error.  All other values will be considered valid
+> rates.  The comparison against values less than 0 is kept to preserve
+> the correct behavior in the meantime.
 
-On 08.12.2013 01:49, Steven Luo wrote:
-> This patch causes problems with DSP codecs on OMAP3 devices running
-> Android -- specifically, when the decoder is cleaning up after itself,
-> munmap() of the mapped area fails, leading to a memory leak which
-> eventually crashes the system.
->
-> As far as I can tell, the code with this patch applied reduces to
-> (ignoring checks and such)
->
-> remap_pfn_range(vma, vma->vm_start,
-> 	(pdata->phys_mempool_base >> PAGE_SHIFT) + vma->vm_pgoff,
-> 	vma->vm_end - vma->vm_start,
-> 	vma->vm_page_prot);
->
-> whereas the original was
->
->> -	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
->> -				 vma->vm_end - vma->vm_start,
->> -				 vma->vm_page_prot);
-> We're subtracting (pdata->phys_mempool_base >> PAGE_SHIFT) from
-> vma->vm_pgoff before calling vm_iomap_memory() to address the issue --
-> if that's satisfactory to everyone involved, I can submit the following
-> patch.
->
->
-Hi,
+Shouldn't it be an error when the result is not within sensible limits
+instead? What do you do with a rate of 1Hz?
 
-I can pick your changes and re-send the original patch with them 
-incorporated if there are no objections. Are you fine with that?
+Sascha
 
-Regards,
-Ivo
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
