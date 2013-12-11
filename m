@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab3LKCMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:12:35 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45105 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3LKCMd (ORCPT
+	id S1751785Ab3LKCNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:13:17 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:35585 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab3LKCNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:12:33 -0500
-Message-ID: <52A7CA0A.9060009@hitachi.com>
-Date: Wed, 11 Dec 2013 11:12:26 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 10 Dec 2013 21:13:15 -0500
+Date: Tue, 10 Dec 2013 18:13:11 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, angus.clark@st.com, linus.walleij@linaro.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v3 28/36] mtd: st_spi_fsm: Supply a busy wait for
+ post-write status
+Message-ID: <20131211021311.GM27149@ld-irv-0074.broadcom.com>
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
+ <1385727565-25794-29-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
- fixes crash bugs
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <20131205102127.GA19923@gmail.com> <52A137B6.6030307@hitachi.com> <20131210152811.GA1195@gmail.com>
-In-Reply-To: <20131210152811.GA1195@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1385727565-25794-29-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/11 0:28), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2013/12/05 19:21), Ingo Molnar wrote:
->>>
->>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>>> So we need both a maintainable and a sane/safe solution, and I'd 
->>>>> like to apply the whole thing at once and be at ease that the 
->>>>> solution is round. We should have done this years ago.
->>>>
->>>> For the safeness of kprobes, I have an idea; introduce a whitelist 
->>>> for dynamic events. AFAICS, the biggest unstable issue of kprobes 
->>>> comes from putting *many* probes on the functions called from 
->>>> tracers.
->>>
->>> If the number of 'noprobe' annotations is expected to explode then 
->>> maybe another approach should be considered.
->>
->> No, since this is a "quantitative" issue, the annotation helps us.
+On Fri, Nov 29, 2013 at 12:19:17PM +0000, Lee Jones wrote:
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+> @@ -292,6 +308,42 @@ static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
+>  	return 0;
+>  }
+>  
+> +static uint8_t stfsm_wait_busy(struct stfsm *fsm)
+> +{
+> +	struct stfsm_seq *seq = &stfsm_seq_read_status_fifo;
+> +	unsigned long deadline;
+> +	uint32_t status;
+> +
+> +	/* Use RDRS1 */
+> +	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
+> +			   SEQ_OPC_CYCLES(8) |
+> +			   SEQ_OPC_OPCODE(FLASH_CMD_RDSR));
+> +
+> +	/* Load read_status sequence */
+> +	stfsm_load_seq(fsm, seq);
+> +
+> +	/* Repeat until busy bit is deasserted, or timeout */
+> +	deadline = jiffies + FLASH_MAX_BUSY_WAIT;
+> +	do {
+> +		cond_resched();
+> +
+> +		stfsm_wait_seq(fsm);
+> +
+> +		stfsm_read_fifo(fsm, &status, 4);
+> +
+> +		if ((status & FLASH_STATUS_BUSY) == 0)
+> +			return 0;
+> +
+> +		/* Restart */
+> +		writel(seq->seq_cfg, fsm->base + SPI_FAST_SEQ_CFG);
+> +
+> +	} while (!time_after_eq(jiffies, deadline));
 
-Sorry for confusion, it should be "the annotation helps us to solves
-only for qualitative issue". It's my miss...
+You have a timeout problem here, similar to the one I mentioned earlier,
+except that in this one, your do/while at least ensures that you always
+run the loop at least once... but still, what if "a long time" elapses
+between stfsm_read_fifo() and checking time_after_eq()?
 
->>> For example in perf we detect recursion. Could kprobes do that and 
->>> detect hitting a probe while running kprobes code, and ignore it [do 
->>> an early return]?
->>
->> Yes, the kprobe itself already has recursion detector and it rejects
->> calling handler.
-> 
-> So why are annotations needed at all? What can happen if an annotation 
-> is missing and a piece of code is probed which is also used by the 
-> kprobes code internally - do we crash, lock up, misbehave or handle it 
-> safely?
+I think you want something like this after the while():
 
-The kprobe has recursion detector, but it is detected in the kprobe
-exception(int3) handler, this means that if we put a probe before
-detecting the recursion, we'll do an infinite recursion.
-And also, even if we can detect the recursion, we can't stop the
-kernel, we need to skip the probe. This means that we need to recover
-to the main execution path by doing single step. As you may know,
-since the single stepping involves the debug exception, we have to
-avoid proving on that path too. Or we'll have an infinite recursion
-again.
-This is the basic reason why the __kprobes annotation is introduced.
+	stfsm_read_fifo(fsm, &status, 4);
+	if ((status & FLASH_STATUS_BUSY) == 0)
+		return 0;
 
-Thank you,
+> +	dev_err(fsm->dev, "timeout on wait_busy\n");
+> +
+> +	return -EIO;
+> +}
+> +
+>  static int stfsm_wrvcr(struct stfsm *fsm, uint8_t data)
+>  {
+>  	struct stfsm_seq *seq = &stfsm_seq_wrvcr;
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Brian
