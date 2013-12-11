@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3LKOQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:16:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53684 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab3LKOQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751767Ab3LKOQo (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Dec 2013 09:16:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53653 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab3LKOQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 09:16:42 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,152 +15,71 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
         Greg Thelen <gthelen@google.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [RFC 4/4] mm, memcg: expedite OOM if no memcg is reclaimable
-Date: Wed, 11 Dec 2013 15:15:55 +0100
-Message-Id: <1386771355-21805-5-git-send-email-mhocko@suse.cz>
+Subject: [RFC 0/4] memcg: Low-limit reclaim
+Date: Wed, 11 Dec 2013 15:15:51 +0100
+Message-Id: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
-References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let shrink_zone us know that at least one group has been eligible so
-that the caller knows that further attempts to reclaim will not help.
+Hi,
+previous discussions have shown that soft limits cannot be reformed
+(http://lwn.net/Articles/555249/). This series introduces an alternative
+approach to protecting memory allocated to processes executing within
+a memory cgroup controller. It is based on a new tunable that was
+discussed with Johannes and Tejun held during the last kernel summit.
 
-All the shrink_zone callers should back off in such a case. Direct
-reclaim should hand over to OOM as soon as possible, kswapd should not
-raise the priority and prefferably go to sleep, and the zone reclaim
-should just give up without re-trying with higher priority.
+This patchset introduces such low limit that is functionally similar to a
+minimum guarantee. Memcgs which are under their lowlimit are not considered
+eligible for the reclaim (both global and hardlimit). The default value of
+the limit is 0 so all groups are eligible by default and an interested
+party has to explicitly set the limit.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/vmscan.c | 52 +++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 41 insertions(+), 11 deletions(-)
+The primary use case is to protect an amount of memory allocated to a
+workload without it being reclaimed by an unrelated activity. In some
+cases this requirement can be fulfilled by mlock but it is not suitable
+for many loads and generally requires application awareness. Such
+application awareness can be complex. It effectively forbids the
+use of memory overcommit as the application must explicitly manage
+memory residency.
+With low limits, such workloads can be placed in a memcg with a low
+limit that protects the estimated working set.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 234d1690563a..b9e21df2751a 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2167,9 +2167,15 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 	}
- }
- 
--static void shrink_zone(struct zone *zone, struct scan_control *sc)
-+/*
-+ * Returns true if there is at least one lruvec has been scanned.
-+ * Always true for !CONFIG_MEMCG otherwise at least one eligible
-+ * memcg has to exist (see mem_cgroup_reclaim_eligible).
-+ */
-+static bool shrink_zone(struct zone *zone, struct scan_control *sc)
- {
- 	unsigned long nr_reclaimed, nr_scanned;
-+	int groups_reclaimed = 0;
- 
- 	do {
- 		struct mem_cgroup *root = sc->target_mem_cgroup;
-@@ -2200,6 +2206,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- 				continue;
- 			}
- 
-+			groups_reclaimed++;
- 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
- 
- 			shrink_lruvec(lruvec, sc);
-@@ -2226,8 +2233,12 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- 			   sc->nr_scanned - nr_scanned,
- 			   sc->nr_reclaimed - nr_reclaimed);
- 
-+		if (!groups_reclaimed)
-+			break;
- 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
- 					 sc->nr_scanned - nr_scanned, sc));
-+
-+	return groups_reclaimed > 0;
- }
- 
- /* Returns true if compaction should go ahead for a high-order request */
-@@ -2347,7 +2358,9 @@ static bool shrink_zones(struct zonelist *zonelist, struct scan_control *sc)
- 			/* need some check for avoid more shrink_zone() */
- 		}
- 
--		shrink_zone(zone, sc);
-+		/* No memcg to reclaim from so bail out */
-+		if (!shrink_zone(zone, sc))
-+			break;
- 	}
- 
- 	return aborted_reclaim;
-@@ -2442,6 +2455,17 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 			goto out;
- 
- 		/*
-+		 * If the target memcg is not eligible for reclaim then we have
-+		 * no option but OOM
-+		 */
-+		if (!sc->nr_scanned &&
-+				mem_cgroup_reclaim_no_eligible(
-+					sc->target_mem_cgroup)) {
-+			delayacct_freepages_end();
-+			return 0;
-+		}
-+
-+		/*
- 		 * If we're getting trouble reclaiming, start doing
- 		 * writepage even in laptop mode.
- 		 */
-@@ -2481,13 +2505,6 @@ out:
- 	if (aborted_reclaim)
- 		return 1;
- 
--	/*
--	 * If the target memcg is not eligible for reclaim then we have no opetion
--	 * but OOM
--	 */
--	if (!sc->nr_scanned && mem_cgroup_reclaim_no_eligible(sc->target_mem_cgroup))
--		return 0;
--
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
- 	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
- 		return 1;
-@@ -2772,6 +2789,17 @@ static bool pgdat_balanced(pg_data_t *pgdat, int order, int classzone_idx)
- 	unsigned long balanced_pages = 0;
- 	int i;
- 
-+
-+	/*
-+	 * If no memcg is eligible to reclaim then we end up scanning nothing
-+	 * and so it doesn't make any sense to do any scanning in the first
-+	 * place. So let's go to sleep and pretend everything is balanced.
-+	 * We rely on the direct reclaim to eventually sort out the situation
-+	 * e.g. by triggering OOM killer.
-+	 */
-+	if (mem_cgroup_reclaim_no_eligible(NULL))
-+		return true;
-+
- 	/* Check the watermark levels */
- 	for (i = 0; i <= classzone_idx; i++) {
- 		struct zone *zone = pgdat->node_zones + i;
-@@ -3115,7 +3143,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 		 * Raise priority if scanning rate is too low or there was no
- 		 * progress in reclaiming pages
- 		 */
--		if (raise_priority || !sc.nr_reclaimed)
-+		if (raise_priority || (sc.nr_scanned && !sc.nr_reclaimed))
- 			sc.priority--;
- 	} while (sc.priority >= 1 &&
- 		 !pgdat_balanced(pgdat, order, *classzone_idx));
-@@ -3572,7 +3600,9 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		 * priorities until we have enough memory freed.
- 		 */
- 		do {
--			shrink_zone(zone, &sc);
-+			/* memcg to reclaim from so bail out */
-+			if(!shrink_zone(zone, &sc))
-+				break;
- 		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
- 	}
- 
--- 
-1.8.4.4
+Another use case might be unreclaimable groups. Some loads might be so
+sensitive to reclaim that it is better to kill and start it again (or
+since checkpoint) rather than trash. This would be trivial with low
+limit set to unlimited and the OOM killer will handle the situation as
+required (e.g. kill and restart).
 
+The hierarchical behavior of the lowlimit is described in the first
+patch. It is followed by a direct reclaim fix which is necessary to
+handle situation when a no group is eligible because all groups are
+below low limit. This is not a big deal for hardlimit reclaim because
+we simply retry the reclaim few times and then trigger memcg OOM killer
+path. It would blow up in the global case when we would loop without
+doing any progress or trigger OOM killer. I would consider configuration
+leading to this state invalid but we should handle that gracefully.
+
+The third patch finally allows setting the lowlimit.
+
+The last patch tries expedites OOM if it is clear that no group is
+eligible for reclaim. It basically breaks out of loops in the direct
+reclaim and lets kswapd sleep because it wouldn't do any progress anyway.
+
+Thoughts?
+
+Short log says:
+Michal Hocko (4):
+      memcg, mm: introduce lowlimit reclaim
+      mm, memcg: allow OOM if no memcg is eligible during direct reclaim
+      memcg: Allow setting low_limit
+      mm, memcg: expedite OOM if no memcg is reclaimable
+
+And a diffstat
+ include/linux/memcontrol.h  | 14 +++++++++++
+ include/linux/res_counter.h | 40 ++++++++++++++++++++++++++++++
+ kernel/res_counter.c        |  2 ++
+ mm/memcontrol.c             | 60 ++++++++++++++++++++++++++++++++++++++++++++-
+ mm/vmscan.c                 | 59 +++++++++++++++++++++++++++++++++++++++++---
+ 5 files changed, 170 insertions(+), 5 deletions(-)
