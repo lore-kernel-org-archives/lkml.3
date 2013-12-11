@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3LKKPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:15:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41851 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab3LKKPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 05:15:08 -0500
-Date: Wed, 11 Dec 2013 10:15:03 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+	id S1751510Ab3LKKQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 05:16:21 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:41008 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab3LKKQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 05:16:18 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v5 7/8] sched/numa: fix record hinting faults check
-Message-ID: <20131211101503.GY11295@suse.de>
-References: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1386723001-25408-8-git-send-email-liwanp@linux.vnet.ibm.com>
- <20131211091422.GU11295@suse.de>
- <20131211094156.GB26093@hacker.(null)>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20131211094156.GB26093@hacker.(null)>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v6 1/6] sched/numa: fix set cpupid on page migration twice against thp
+Date: Wed, 11 Dec 2013 18:15:56 +0800
+Message-Id: <1386756961-3887-2-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1386756961-3887-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386756961-3887-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121110-6102-0000-0000-000004A589E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 05:41:56PM +0800, Wanpeng Li wrote:
-> Hi Mel,
-> On Wed, Dec 11, 2013 at 09:14:22AM +0000, Mel Gorman wrote:
-> >On Wed, Dec 11, 2013 at 08:50:00AM +0800, Wanpeng Li wrote:
-> >> Adjust numa_scan_period in task_numa_placement, depending on how much useful
-> >> work the numa code can do. The local faults and remote faults should be used
-> >> to check if there is record hinting faults instead of local faults and shared
-> >> faults. This patch fix it.
-> >> 
-> >> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> >> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> >
-> >This potentially has the side-effect of making it easier to reduce the
-> >scan rate because it'll only take the most recent scan window into
-> >account. The existing code takes recent shared accesses into account.
-> 
-> The local/remote and share/private both accumulate the just finished
-> scan window, why takes the most recent scan window into account will 
-> reduce the scan rate than takes recent shared accesses into account?
-> 
+commit 7851a45cd3 (mm: numa: Copy cpupid on page migration) copy over
+the cpupid at page migration time, there is unnecessary to set it again
+in function migrate_misplaced_transhuge_page, this patch fix it.
 
-Ok, shoddy reasoning and explanation on my part. It was the second question
-I really cared about -- was this tested? It wasn't and this patch is
-surprisingly subtle.
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/migrate.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-The intent of the code was to check "is this processes recent activity
-of interest to automatic numa balancing?"
-
-If it's incurring local faults, then it's interesting.
-
-If it's sharing faults then it is interesting. Shared accesses are
-inherently dirty data because it is racing with other threads to be the
-first to trap the hinting fault.
-
-The current code takes those points into account and decides to slow
-scanning on that basis. The change to using remote accesses is not
-equivalent. The change is not necessarily better or worse because it's
-workload dependant. It's just different and should be supported by more
-detailed reasoning than either you or I are giving it right now. It could
-also be argued that it should also be taking remote accesses into account
-but again, it is a subtle patch that would require a bit of backup.
-
+diff --git a/mm/migrate.c b/mm/migrate.c
+index bb94004..fdb70f7 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1736,8 +1736,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	if (!new_page)
+ 		goto out_fail;
+ 
+-	page_cpupid_xchg_last(new_page, page_cpupid_last(page));
+-
+ 	isolated = numamigrate_isolate_page(pgdat, page);
+ 	if (!isolated) {
+ 		put_page(new_page);
 -- 
-Mel Gorman
-SUSE Labs
+1.7.5.4
+
