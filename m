@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab3LKRsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:48:38 -0500
-Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:59790 "EHLO
-	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751407Ab3LKRse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:48:34 -0500
+	id S1751884Ab3LKRsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:48:50 -0500
+Received: from mga02.intel.com ([134.134.136.20]:11034 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762Ab3LKRsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 12:48:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,872,1378882800"; 
+   d="scan'208";a="423056397"
+Message-ID: <1386784112.6066.61.camel@tursulin-linux.isw.intel.com>
+Subject: Re: Potentially unbounded allocations in seq_read?
+From: Tvrtko Ursulin <tvrtko.ursulin@linux.intel.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Date: Wed, 11 Dec 2013 17:48:32 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
-In-Reply-To: <20131211151220.GB11048@gmail.com>
-Message-ID: <00000142e2c64102-07168d96-fb2f-4eeb-9b49-c3298bc81192-000000@email.amazonses.com>
-References: <20131203233232.928771708@linux.com> <20131203233251.745099192@linux.com> <20131210153445.GE4610@htj.dyndns.org> <20131210154506.GA1884@gmail.com> <20131210154951.GF4610@htj.dyndns.org> <20131210155546.GD1995@gmail.com>
- <00000142ddb6d07d-f77cfa15-55a5-4806-891e-2d57894fc46b-000000@email.amazonses.com> <20131210183133.GC20770@gmail.com> <00000142de1ac9a3-d2b5b7fb-25c5-4bec-acbe-8be30a951bbc-000000@email.amazonses.com> <20131211151220.GB11048@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.11-54.240.9.46
+In-Reply-To: <1386781481.6066.55.camel@tursulin-linux.isw.intel.com>
+References: <1386781481.6066.55.camel@tursulin-linux.isw.intel.com>
+Organization: Intel Corporation UK Plc
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013, Ingo Molnar wrote:
+On Wed, 2013-12-11 at 17:04 +0000, Tvrtko Ursulin wrote:
+> Hi all,
+> 
+> It seems that the buffer allocation in seq_read can double in size
+> indefinitely, at least I've seen that in practice with /proc/<pid>/smaps
+> (attempting to double m->size to 4M on a read of 1000 bytes). This
+> produces an ugly WARN_ON_ONCE, which should perhaps be avoided? (given
+> that it can be triggered by userspace at will)
+> 
+> From the top comment in seq_file.c one would think that it is a
+> fundamental limitation of the current code that everything which will be
+> read (even if in chunks) needs to be in the kernel side buffer at the
+> same time?
 
-> > Well this is how the x86 portions came from Peter. [...]
->
-> That's an interesting piece of information, in particular because you
-> lost From: PeterZ authorship there, don't do that!
+Oh-oh, seems that m->size is doubled on every read. So if app is reading
+with a buffer smaller than data available, it can do nine reads before
+it hits a >MAX_ORDER allocation. Not good. :)
 
-Ok will add that. There is a signoff there. Is that ok with you Peter?
+Regards,
 
-Thinking about this some more: Separating these two issues would make it
-impossible to build x86 since the hackery in x86/include/asm/preempt.h
-depends on having the right names in x86/include/asm/percpu.h. Changing
-the names first would result in preempt.h not being usable.
+Tvrtko
+
+
