@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab3LKL3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:29:33 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:36626 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3LKL3b (ORCPT
+	id S1751763Ab3LKLcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:32:19 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40003 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751319Ab3LKLcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:29:31 -0500
-Message-ID: <52A84C8E.5090209@gmail.com>
-Date: Wed, 11 Dec 2013 19:29:18 +0800
-From: Younger Liu <younger.liucn@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 11 Dec 2013 06:32:15 -0500
+Date: Wed, 11 Dec 2013 11:32:07 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: Dave Young <dyoung@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        hpa@zytor.com, James.Bottomley@HansenPartnership.com,
+        vgoyal@redhat.com, ebiederm@xmission.com, horms@verge.net.au,
+        kexec@lists.infradead.org, bp@alien8.de, greg@kroah.com,
+        toshi.kani@hp.com, Mark Salter <msalter@redhat.com>,
+        Tony Luck <tony.luck@gmail.com>
+Subject: Re: [PATCH v5 02/14] efi: use early_memremap and early_memunmap
+Message-ID: <20131211113207.GA29980@console-pimps.org>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-3-git-send-email-dyoung@redhat.com>
+ <20131211103903.GC19196@console-pimps.org>
+ <20131211110227.GK22356@rocoto.smurfnet.nu>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: joern@logfs.org, prasadjoshi.linux@gmail.com, logfs@logfs.org,
-        kernel <linux-kernel@vger.kernel.org>,
-        fs-devel <linux-fsdevel@vger.kernel.org>, liuyiyang@hisense.com
-Subject: [RESENT PATCH] logfs: Check for the return value after calling find_or_create_page()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131211110227.GK22356@rocoto.smurfnet.nu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Younger Liu <liuyiyang@hisense.com>
+On Wed, 11 Dec, at 12:02:27PM, Leif Lindholm wrote:
+> On Wed, Dec 11, 2013 at 10:39:03AM +0000, Matt Fleming wrote:
+> > Leif, Mark, does this patch look OK for ARM? We'd need to introduce a
+> > new early_memunmap() function so that things still build, but that
+> > should be straight forward. You'd even be able to get rid of the
+> > asymmetry in uefi_init() where you map efi.systab with early_memremap()
+> > but unmap it with early_iounmap().
+> 
+> This patch looks splendid for ARM. As long as Mark can get the new
+> function into an update to the early_*remap() set, I can include this
+> in my next version - which is coming this week.
 
-  In get_mapping_page(), after calling find_or_create_page(),
-the return value should be checked.
+Great!
 
-  This patch has been provided:
-http://www.spinics.net/lists/linux-fsdevel/msg66948.html
-but not been applied now.
+Oh and ia64 would also need early_memunmap(). Tony, the original patch
+is here,
 
-Signed-off-by: Younger Liu <liuyiyang@hisense.com>
-Cc: Younger Liu <younger.liucn@gmail.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reviewed-by: Prasad Joshi <prasadjoshi.linux@gmail.com>
----
- fs/logfs/segment.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+  http://article.gmane.org/gmane.linux.kernel.kexec/10383
 
-diff --git a/fs/logfs/segment.c b/fs/logfs/segment.c
-index d448a77..7f9b096 100644
---- a/fs/logfs/segment.c
-+++ b/fs/logfs/segment.c
-@@ -62,7 +62,8 @@ static struct page *get_mapping_page(struct
-super_block *sb, pgoff_t index,
- 		page = read_cache_page(mapping, index, filler, sb);
- 	else {
- 		page = find_or_create_page(mapping, index, GFP_NOFS);
--		unlock_page(page);
-+		if (page)
-+			unlock_page(page);
- 	}
- 	return page;
- }
 -- 
-1.7.9.5
-
+Matt Fleming, Intel Open Source Technology Center
