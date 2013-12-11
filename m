@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab3LKEfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 23:35:44 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:39966 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab3LKEfn (ORCPT
+	id S1752046Ab3LKEly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 23:41:54 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57892 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab3LKElv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 23:35:43 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] perf tool: Fix bug in thread__fork
-Date: Tue, 10 Dec 2013 21:35:38 -0700
-Message-Id: <1386736538-23525-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Tue, 10 Dec 2013 23:41:51 -0500
+Message-ID: <52A7EC9B.2080209@huawei.com>
+Date: Wed, 11 Dec 2013 12:39:55 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm,x86: fix span coverage in e820_all_mapped()
+References: <52A6D9B0.7040506@huawei.com> <CAE9FiQUd+sU4GEq0687u8+26jXJiJVboN90+L7svyosmm+V1Rg@mail.gmail.com> <52A7C16A.9040106@huawei.com> <52A7D415.6010908@zytor.com> <52A7E223.9030605@huawei.com> <52A7E3E5.2010609@zytor.com>
+In-Reply-To: <52A7E3E5.2010609@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1902efe7f for the new comm infra added the wrong check for return
-code on thread__set_comm. err == 0 is normal, so don't return at that
-point unless err != 0.
+On 2013/12/11 12:02, H. Peter Anvin wrote:
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- tools/perf/util/thread.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On 12/10/2013 07:55 PM, Xishi Qiu wrote:
+>>
+>> I think there is a problem.
+>> e.g.
+>> [start, end)=[8, 12), and [A, B)=[0, 10), [B, C)=[10,20),
+>> then e820_all_mapped() will return 1, it spans two regions.
+>>
+> 
+> Why is that a problem?
+> 
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 49eaf1d7d89d..e3948612543e 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -126,7 +126,7 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
- 		if (!comm)
- 			return -ENOMEM;
- 		err = thread__set_comm(thread, comm, timestamp);
--		if (!err)
-+		if (err)
- 			return err;
- 		thread->comm_set = true;
- 	}
--- 
-1.8.3.4 (Apple Git-47)
+[start, end) should be included in one region ?
+
+Thanks,
+Xishi Qiu
+
+> 	-hpa
+> 
+> 
+> 
+> 
+
+
 
