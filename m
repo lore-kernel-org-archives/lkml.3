@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3LKAIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:08:17 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:60423 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3LKAHp (ORCPT
+	id S1751934Ab3LKAJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:09:01 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:37749 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab3LKAHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:07:45 -0500
+	Tue, 10 Dec 2013 19:07:43 -0500
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         David Miller <davem@davemloft.net>
 Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         Michal Simek <michal.simek@xilinx.com>
-Subject: [PATCH v2 3/5] net: macb: Use devm_ioremap()
-Date: Tue, 10 Dec 2013 16:07:21 -0800
-Message-Id: <1386720443-24100-4-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH v2 2/5] net: macb: Migrate to devm clock interface
+Date: Tue, 10 Dec 2013 16:07:20 -0800
+Message-Id: <1386720443-24100-3-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.5.1
 In-Reply-To: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com>
@@ -23,62 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the device managed version of ioremap to remap IO memory,
-simplifying error paths.
+Migrate to using the device managed interface for clocks and clean up
+the associated error paths.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+v2:
+ - fix typo in commit message
+---
+ drivers/net/ethernet/cadence/macb.c | 32 ++++++++++++++++++++------------
+ 1 file changed, 20 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 62aa136889a4..436aecc31732 100644
+index 389ccf1362d5..62aa136889a4 100644
 --- a/drivers/net/ethernet/cadence/macb.c
 +++ b/drivers/net/ethernet/cadence/macb.c
-@@ -17,6 +17,7 @@
- #include <linux/circ_buf.h>
- #include <linux/slab.h>
- #include <linux/init.h>
-+#include <linux/io.h>
- #include <linux/gpio.h>
- #include <linux/interrupt.h>
- #include <linux/netdevice.h>
-@@ -1816,7 +1817,7 @@ static int __init macb_probe(struct platform_device *pdev)
- 		goto err_out_disable_pclk;
- 	}
+@@ -1790,19 +1790,31 @@ static int __init macb_probe(struct platform_device *pdev)
+ 	spin_lock_init(&bp->lock);
+ 	INIT_WORK(&bp->tx_error_task, macb_tx_error_task);
  
--	bp->regs = ioremap(regs->start, resource_size(regs));
-+	bp->regs = devm_ioremap(&pdev->dev, regs->start, resource_size(regs));
+-	bp->pclk = clk_get(&pdev->dev, "pclk");
++	bp->pclk = devm_clk_get(&pdev->dev, "pclk");
+ 	if (IS_ERR(bp->pclk)) {
+-		dev_err(&pdev->dev, "failed to get macb_clk\n");
++		err = PTR_ERR(bp->pclk);
++		dev_err(&pdev->dev, "failed to get macb_clk (%u)\n", err);
+ 		goto err_out_free_dev;
+ 	}
+-	clk_prepare_enable(bp->pclk);
+ 
+-	bp->hclk = clk_get(&pdev->dev, "hclk");
++	bp->hclk = devm_clk_get(&pdev->dev, "hclk");
+ 	if (IS_ERR(bp->hclk)) {
+-		dev_err(&pdev->dev, "failed to get hclk\n");
+-		goto err_out_put_pclk;
++		err = PTR_ERR(bp->hclk);
++		dev_err(&pdev->dev, "failed to get hclk (%u)\n", err);
++		goto err_out_free_dev;
++	}
++
++	err = clk_prepare_enable(bp->pclk);
++	if (err) {
++		dev_err(&pdev->dev, "failed to enable pclk (%u)\n", err);
++		goto err_out_free_dev;
++	}
++
++	err = clk_prepare_enable(bp->hclk);
++	if (err) {
++		dev_err(&pdev->dev, "failed to enable hclk (%u)\n", err);
++		goto err_out_disable_pclk;
+ 	}
+-	clk_prepare_enable(bp->hclk);
+ 
+ 	bp->regs = ioremap(regs->start, resource_size(regs));
  	if (!bp->regs) {
- 		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
- 		err = -ENOMEM;
-@@ -1828,7 +1829,7 @@ static int __init macb_probe(struct platform_device *pdev)
- 	if (err) {
- 		dev_err(&pdev->dev, "Unable to request IRQ %d (error %d)\n",
- 			dev->irq, err);
--		goto err_out_iounmap;
-+		goto err_out_disable_clocks;
- 	}
- 
- 	dev->netdev_ops = &macb_netdev_ops;
-@@ -1916,8 +1917,6 @@ err_out_unregister_netdev:
- 	unregister_netdev(dev);
- err_out_free_irq:
- 	free_irq(dev->irq, dev);
--err_out_iounmap:
--	iounmap(bp->regs);
+@@ -1908,10 +1920,8 @@ err_out_iounmap:
+ 	iounmap(bp->regs);
  err_out_disable_clocks:
  	clk_disable_unprepare(bp->hclk);
- err_out_disable_pclk:
-@@ -1944,7 +1943,6 @@ static int __exit macb_remove(struct platform_device *pdev)
- 		mdiobus_free(bp->mii_bus);
- 		unregister_netdev(dev);
+-	clk_put(bp->hclk);
++err_out_disable_pclk:
+ 	clk_disable_unprepare(bp->pclk);
+-err_out_put_pclk:
+-	clk_put(bp->pclk);
+ err_out_free_dev:
+ 	free_netdev(dev);
+ err_out:
+@@ -1936,9 +1946,7 @@ static int __exit macb_remove(struct platform_device *pdev)
  		free_irq(dev->irq, dev);
--		iounmap(bp->regs);
+ 		iounmap(bp->regs);
  		clk_disable_unprepare(bp->hclk);
+-		clk_put(bp->hclk);
  		clk_disable_unprepare(bp->pclk);
+-		clk_put(bp->pclk);
  		free_netdev(dev);
+ 	}
+ 
 -- 
 1.8.5.1
 
