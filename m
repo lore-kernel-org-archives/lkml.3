@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab3LKXza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 18:55:30 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:61585 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab3LKXz1 (ORCPT
+	id S1751823Ab3LKXzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 18:55:42 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:46400 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3LKXzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 18:55:27 -0500
+	Wed, 11 Dec 2013 18:55:37 -0500
 From: Magnus Damm <magnus.damm@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
         daniel.lezcano@linaro.org, horms@verge.net.au, john.stultz@linaro.org,
         olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>,
         tglx@linutronix.de
-Date: Thu, 12 Dec 2013 08:56:16 +0900
-Message-Id: <20131211235616.12661.19702.sendpatchset@w520>
-Subject: [PATCH v4 00/03] clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits
+Date: Thu, 12 Dec 2013 08:56:26 +0900
+Message-Id: <20131211235626.12661.8865.sendpatchset@w520>
+In-Reply-To: <20131211235616.12661.19702.sendpatchset@w520>
+References: <20131211235616.12661.19702.sendpatchset@w520>
+Subject: [PATCH v4 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clocksource: Consolidate SH and ARM mach-shmobile Kconfig bits (v4)
+From: Magnus Damm <damm@opensource.se>
 
-[PATCH v4 01/03] clocksource: Add Kconfig entries for CMT, MTU2, TMU and STI
-[PATCH v4 02/03] ARM: shmobile: Remove CMT, TMU and STI Kconfig entries
-[PATCH v2 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
-
-This is V4 of the SH and ARM mach-shmobile clocksource Kconfig
-consolidation series.
-
-By sharing Kconfig entires in drivers/clocksource/Kconfig we
-can get rid of duplicated bits that do not belong under arch/.
-
-With this series applied it is possible to build the timer
-drivers for CMT, MTU2, TMU and STI in case of SH or ARM. The timer
-drivers are automatically selected by default. It is also possible
-to select and/or deselect freely when COMPILE_TEST has been selected.
-
-Many thanks to John, Daniel and Arnd for feedback!
-
-Changes since V3:
- - Updated patch 1/3 with more detailed help texts
- - Updated patch 2/3 to fit latest renesas-devel tag, see below
- - Included acks from John Stultz for patch 2/3 and 3/3
+Add Kconfig entries for CMT, MTU2, TMU and STI to
+drivers/clocksource/Kconfig. This will allow us to
+get rid of duplicated entires in architecture code
+such as arch/sh and arch/arm/mach-shmobile.
 
 Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
 
- Written against renesas.git tag renesas-devel-v3.13-rc2-20131211
+ drivers/clocksource/Kconfig |   44 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
 
- arch/arm/mach-shmobile/Kconfig |   35 +++++++++++++++----------------
- arch/sh/Kconfig                |   21 -------------------
- drivers/clocksource/Kconfig    |   44 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+), 39 deletions(-)
-
+--- 0001/drivers/clocksource/Kconfig
++++ work/drivers/clocksource/Kconfig	2013-12-12 08:41:55.000000000 +0900
+@@ -134,3 +134,47 @@ config VF_PIT_TIMER
+ 	bool
+ 	help
+ 	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
++
++config SYS_SUPPORTS_CMT
++        bool
++
++config SYS_SUPPORTS_TMU
++        bool
++
++config SYS_SUPPORTS_MTU2
++        bool
++
++config SYS_SUPPORTS_STI
++        bool
++
++config SH_TIMER_CMT
++	bool "Renesas CMT timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_CMT
++	help
++	  This enables build of a clocksource and clockevent driver for
++	  the Compare Match Timer (CMT) hardware available in 16/32/48 bit
++	  variants on a wide range of Mobile and Automotive SoCs from Renesas.
++
++config SH_TIMER_MTU2
++	bool "Renesas MTU2 timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_MTU2
++	help
++	  This enables build of a clockevent driver for the Multi-Function
++	  Timer Pulse Unit 2 (TMU2) hardware available on SoCs from Renesas.
++	  This hardware comes with 16 bit timer registers.
++
++config SH_TIMER_TMU
++	bool "Renesas TMU timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_TMU
++	help
++	  This enables build of a clocksource and clockevent driver for
++	  the 32-bit Timer Unit (TMU) hardware available on a wide range
++	  SoCs from Renesas.
++
++config EM_TIMER_STI
++	bool "Renesas STI timer driver" if COMPILE_TEST
++	default SYS_SUPPORTS_STI
++	help
++	  This enables build of a clocksource and clockevent driver for
++	  the 48-bit System Timer (STI) hardware available on a SoCs
++	  such as EMEV2 from former NEC Electronics.
