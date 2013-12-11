@@ -1,41 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab3LKIh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:37:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42098 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3LKIhx (ORCPT
+	id S1751549Ab3LKIiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 03:38:14 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36969 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3LKIiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:37:53 -0500
-Date: Wed, 11 Dec 2013 11:33:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Ivajlo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: Steven Luo <steven@steven676.net>, devel@driverdev.osuosl.org,
-        fabs@goesec.de, tony@atomide.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        pavel@ucw.cz, pali.rohar@gmail.com, nico@ngolde.de
-Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Use vm_iomap_memory for mmap-ing
- instead of remap_pfn_range
-Message-ID: <20131211083359.GU28413@mwanda>
-References: <1386014416-4556-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
- <20131207234912.GA1245@steven676.net>
- <52A81830.3000305@gmail.com>
+	Wed, 11 Dec 2013 03:38:10 -0500
+Date: Wed, 11 Dec 2013 08:38:04 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Kees Cook <keescook@chromium.org>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Simon Wunderlich <sw@simonwunderlich.de>,
+        Antonio Quartulli <antonio@meshcoding.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next 2/3] batman-adv: Use seq_overflow
+Message-ID: <20131211083804.GV10323@ZenIV.linux.org.uk>
+References: <cover.1386738050.git.joe@perches.com>
+ <e7104b35287b1e1ec456734c1b5e1aa98dac99f8.1386738050.git.joe@perches.com>
+ <20131211075526.GR10323@ZenIV.linux.org.uk>
+ <20131211080504.GT10323@ZenIV.linux.org.uk>
+ <1386750377.8168.37.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52A81830.3000305@gmail.com>
+In-Reply-To: <1386750377.8168.37.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 09:45:52AM +0200, Ivajlo Dimitrov wrote:
-> I can pick your changes and re-send the original patch with them
-> incorporated if there are no objections. Are you fine with that?
+On Wed, Dec 11, 2013 at 12:26:17AM -0800, Joe Perches wrote:
+> On Wed, 2013-12-11 at 08:05 +0000, Al Viro wrote:
+> > On Wed, Dec 11, 2013 at 07:55:26AM +0000, Al Viro wrote:
+> > 
+> > > This sucker should return 0.  Insufficiently large buffer will be handled
+> > > by caller, TYVM, if you give that caller a chance to do so.  Returning 1
+> > > from ->show() is a bug in almost all cases, and definitely so in this one.
+> > > 
+> > > Just in case somebody decides that above is worth copying: It Is Not.
+> > > Original code is buggy, plain and simple.  This one trades the older
+> > > bug ("fail with -EINVAL whenever the buffer is too small") with just as buggy
+> > > "silently skip an entry entirely whenever the buffer is too small".
+> > > 
+> > > Don't Do That.
+> > 
+> > Pardon - Joe has made seq_overflow return -1 instead of true.  Correction
+> > to the above, then - s/This trades.*\./This is just as buggy./
 > 
+> Yeah, I started to use true/false, 0/1, but thought
+> I needed to match what seq_printf/seq_vprintf does.
+> 
+> > Conclusion is still the same - Don't Do That.  Returning -1 on insufficiently
+> > large buffer is a bug, plain and simple.
+> 
+> int seq_vprintf(struct seq_file *m, const char *f, va_list args)
+> {
+> 	int len;
+> 
+> 	if (m->count < m->size) {
+> 		len = vsnprintf(m->buf + m->count, m->size - m->count, f, args);
+> 		if (m->count + len < m->size) {
+> 			m->count += len;
+> 			return 0;
+> 		}
+> 	}
+> 	seq_set_overflow(m);
+> 	return -1;
+> }
+> EXPORT_SYMBOL(seq_vprintf);
+> 
+> int seq_printf(struct seq_file *m, const char *f, ...)
+> {
+> 	int ret;
+> 	va_list args;
+> 
+> 	va_start(args, f);
+> 	ret = seq_vprintf(m, f, args);
+> 	va_end(args);
+> 
+> 	return ret;
+> }
+> EXPORT_SYMBOL(seq_printf);
+> 
+> > And this patch series is completely misguided - it doesn't fix any bugs
+> > *and* it provides a misleading example for everyone.  See the reaction
+> > right in this thread, proposing to spread the same bug to currently
+> > working iterators.
+> 
+> Anyway, changing seq_overflow is easy enough
+> 
+> You prefer this?
+> 
+> bool seq_overflow(struct seq_file *seq)
+> {
+> 	return m->count == m->size;
+> }
 
-Do it on top of staging-next, don't redo the original.
+I prefer a series that starts with fixing the obvious bugs (i.e. places
+where we return seq_printf/seq_puts/seq_putc return value from ->show()).
+All such places should return 0.  Then we need to look at the remaining
+places that check return value of seq_printf() et.al.  And decide whether
+the callers really care about it.
 
-regards,
-dan carpenter
+Theoretically, there is a legitimate case when we want to look at that
+return value.  Namely,
+	seq_print(...)
+	if (!overflowed)
+		do tons of expensive calculations
+		generate more output
+	return 0
+That is the reason why those guys hadn't been returning void to start with.
+And yes, it was inviting bugs with ->show() returning -1 on overflows.
+Bad API design, plain and simple.
+
+I'm not sure we actually have any instances of that legitimate case, TBH.
+_IF_ we do, we ought to expose seq_overflow() (with saner name - this one
+invites the same "it's an error, need to report it" kind of bugs) and use
+it in such places.  But that needs to be decided on per-caller basis.  And
+I'd expect that there would be few enough such places after we kill the
+obvious bugs.
