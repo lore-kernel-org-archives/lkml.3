@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab3LKTyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:54:31 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:55766 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab3LKTy3 (ORCPT
+	id S1751760Ab3LKTzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:55:49 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57678 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab3LKTzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:54:29 -0500
-Date: Wed, 11 Dec 2013 16:54:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v0 07/71] perf tools: Record whether a dso is 64-bit
-Message-ID: <20131211195419.GF1458@ghostprotocols.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com>
- <52A8BC5D.2030603@gmail.com>
+	Wed, 11 Dec 2013 14:55:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A8BC5D.2030603@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52A8BAC5.70006@canonical.com>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
+	<1386546869-31900-3-git-send-email-yinghai@kernel.org>
+	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
+	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
+	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
+	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
+	<52A8BAC5.70006@canonical.com>
+Date: Wed, 11 Dec 2013 11:55:42 -0800
+X-Google-Sender-Auth: 5GGA0m1ab3x_T2Ms5NDGsmH65X4
+Message-ID: <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+From: Yinghai Lu <yinghai@kernel.org>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Dec 11, 2013 at 12:26:21PM -0700, David Ahern escreveu:
-> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
-> >diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-> >index a0c7c59..80817ec 100644
-> >--- a/tools/perf/util/dso.c
-> >+++ b/tools/perf/util/dso.c
-> >@@ -446,6 +446,7 @@ struct dso *dso__new(const char *name)
-> >  		dso->cache = RB_ROOT;
-> >  		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
-> >  		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
-> >+		dso->is_64_bit = (sizeof(void *) == 8);
-> 
-> Isnt' that going to record the bitness of perf when it is compiled?
+On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
+<joseph.salisbury@canonical.com> wrote:
+> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
+>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> That doesn't answer my question at all.
+>>>
+>>> I understand that this change makes it so Joseph doesn't have to use
+>>> "pci=realloc=off".  But why should auto-reallocation be limited to
+>>> buses that have resources above 4GB?  That doesn't make any sense.
+>>>
+>>> We should fix the reallocation code so it can deal with this case.  If
+>>> there's not enough space for everything, obviously we have to leave
+>>> something unassigned.  A ROM BAR is a good candidate for leaving
+>>> unassigned, because most of the time we can get along without it.
+>> Yes, that is ideal and not that simple.
+>> but that would be hard to backport to old kernels.
+>>
+>> BTW, Joseph, can you try
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> for-pci-3.14
+>> with pci=realloc=on
+>>
+>> on that system?
+>>
+>> Thanks
+>>
+>> Yinghai
+> I noticed there was some back and forth on this thread.  Do you still
+> want me to test this version, Yinghai?
 
-Right, it will. Its just a default, I assume this will be reset after
-the DSO is loaded, i.e. the ELF file gets accessed, no?
+Yes, if that works, we would not need to put the patch in upstream for limiting
+realloc auto scope.
 
-Which then would make this init to be just a distraction, no?
+Thanks
 
-I wonder if we couldn't extern PERF_RECORD_MMAP to have the binary type
-encoded there somehow...
-
-> >  		dso->loaded = 0;
-> >  		dso->rel = 0;
-> >  		dso->sorted_by_name = 0;
-> >diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-> >index 384f2d9..62680e1 100644
-> >--- a/tools/perf/util/dso.h
-> >+++ b/tools/perf/util/dso.h
-> >@@ -91,6 +91,7 @@ struct dso {
-> >  	u8		 annotate_warned:1;
-> >  	u8		 sname_alloc:1;
-> >  	u8		 lname_alloc:1;
-> >+	u8		 is_64_bit:1;
-> 
-> The is_64_bit name seems a bit hardcoded. We need something similar
-> for perf-trace to set the audit machine type for resolving syscalls.
-> How about having this field set a machine type rather than a
-> "64-bit" flag?
-> 
-> David
+Yinghai
