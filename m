@@ -1,38 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab3LKWMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:12:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49927 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab3LKWKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:10:49 -0500
-Date: Wed, 11 Dec 2013 14:10:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: <santosh.shilimkar@ti.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/2] mm/memblock: print phys_addr_t using %pa
-Message-Id: <20131211141040.6a28d2f9173cab62727c8c9f@linux-foundation.org>
-In-Reply-To: <1386776175-23779-2-git-send-email-grygorii.strashko@ti.com>
-References: <1386776175-23779-1-git-send-email-grygorii.strashko@ti.com>
-	<1386776175-23779-2-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751590Ab3LKWKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:10:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344Ab3LKWKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:10:14 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 06/11] numa_maps: redefine callback functions for page table walker
+Date: Wed, 11 Dec 2013 17:09:02 -0500
+Message-Id: <1386799747-31069-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1386799747-31069-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1386799747-31069-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013 17:36:14 +0200 Grygorii Strashko <grygorii.strashko@ti.com> wrote:
+gather_pte_stats() connected to pmd_entry() does both of pmd loop and
+pte loop. So this patch moves pte part into pte_entry().
 
-> printk supports %pa format specifier to print phys_addr_t type values,
-> so use it instead of %#010llx/0x%llx/0x%08lx and drop corresponding
-> type casting.
+ChangeLog v2:
+- rebase onto mmots
 
-This one needed some rework due to
-http://ozlabs.org/~akpm/mmots/broken-out/memblock-numa-introduce-flags-field-into-memblock.patch,
-but it was all pretty simple.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c | 54 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 26 insertions(+), 28 deletions(-)
+
+diff --git v3.13-rc3-mmots-2013-12-10-16-38.orig/fs/proc/task_mmu.c v3.13-rc3-mmots-2013-12-10-16-38/fs/proc/task_mmu.c
+index 7ed7c88f0687..8b23bbcc5e04 100644
+--- v3.13-rc3-mmots-2013-12-10-16-38.orig/fs/proc/task_mmu.c
++++ v3.13-rc3-mmots-2013-12-10-16-38/fs/proc/task_mmu.c
+@@ -1193,7 +1193,6 @@ const struct file_operations proc_pagemap_operations = {
+ #ifdef CONFIG_NUMA
+ 
+ struct numa_maps {
+-	struct vm_area_struct *vma;
+ 	unsigned long pages;
+ 	unsigned long anon;
+ 	unsigned long active;
+@@ -1259,43 +1258,41 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ 	return page;
+ }
+ 
+-static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
++static int gather_pte_stats(pte_t *pte, unsigned long addr,
+ 		unsigned long end, struct mm_walk *walk)
+ {
+-	struct numa_maps *md;
+-	spinlock_t *ptl;
+-	pte_t *orig_pte;
+-	pte_t *pte;
++	struct numa_maps *md = walk->private;
+ 
+-	md = walk->private;
++	struct page *page = can_gather_numa_stats(*pte, walk->vma, addr);
++	if (!page)
++		return 0;
++	gather_stats(page, md, pte_dirty(*pte), 1);
++	return 0;
++}
++
++static int gather_pmd_stats(pmd_t *pmd, unsigned long addr,
++		unsigned long end, struct mm_walk *walk)
++{
++	struct numa_maps *md = walk->private;
++	struct vm_area_struct *vma = walk->vma;
++	spinlock_t *ptl;
+ 
+-	if (pmd_trans_huge_lock(pmd, md->vma, &ptl) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pte_t huge_pte = *(pte_t *)pmd;
+ 		struct page *page;
+ 
+-		page = can_gather_numa_stats(huge_pte, md->vma, addr);
++		page = can_gather_numa_stats(huge_pte, vma, addr);
+ 		if (page)
+ 			gather_stats(page, md, pte_dirty(huge_pte),
+ 				     HPAGE_PMD_SIZE/PAGE_SIZE);
+ 		spin_unlock(ptl);
+-		return 0;
++		/* don't call gather_pte_stats() */
++		walk->skip = 1;
+ 	}
+-
+-	if (pmd_trans_unstable(pmd))
+-		return 0;
+-	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+-	do {
+-		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
+-		if (!page)
+-			continue;
+-		gather_stats(page, md, pte_dirty(*pte), 1);
+-
+-	} while (pte++, addr += PAGE_SIZE, addr != end);
+-	pte_unmap_unlock(orig_pte, ptl);
+ 	return 0;
+ }
+ #ifdef CONFIG_HUGETLB_PAGE
+-static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
++static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
+ 		unsigned long addr, unsigned long end, struct mm_walk *walk)
+ {
+ 	struct numa_maps *md;
+@@ -1314,7 +1311,7 @@ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
+ }
+ 
+ #else
+-static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
++static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
+ 		unsigned long addr, unsigned long end, struct mm_walk *walk)
+ {
+ 	return 0;
+@@ -1344,12 +1341,12 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	/* Ensure we start with an empty set of numa_maps statistics. */
+ 	memset(md, 0, sizeof(*md));
+ 
+-	md->vma = vma;
+-
+-	walk.hugetlb_entry = gather_hugetbl_stats;
+-	walk.pmd_entry = gather_pte_stats;
++	walk.hugetlb_entry = gather_hugetlb_stats;
++	walk.pmd_entry = gather_pmd_stats;
++	walk.pte_entry = gather_pte_stats;
+ 	walk.private = md;
+ 	walk.mm = mm;
++	walk.vma = vma;
+ 
+ 	pol = get_vma_policy(task, vma, vma->vm_start);
+ 	mpol_to_str(buffer, sizeof(buffer), pol);
+@@ -1380,6 +1377,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (is_vm_hugetlb_page(vma))
+ 		seq_printf(m, " huge");
+ 
++	/* mmap_sem is held by m_start */
+ 	walk_page_range(vma->vm_start, vma->vm_end, &walk);
+ 
+ 	if (!md->pages)
+-- 
+1.8.3.1
 
