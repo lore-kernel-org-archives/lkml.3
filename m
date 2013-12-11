@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab3LKCqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:46:03 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:57894 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab3LKCpz (ORCPT
+	id S1751808Ab3LKCrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:47:11 -0500
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:43710 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3LKCrI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:45:55 -0500
+	Tue, 10 Dec 2013 21:47:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131211020007.GH10988@dastard>
-References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
-	<20131209121534.GE4278@hercules>
-	<CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
-	<20131209235523.GW31386@dastard>
-	<CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
-	<20131211010326.GF10988@dastard>
-	<CA+5PVA7wso5fo11xX9kCUdbrqBQMzUnYwTOB_Qe3K7LDY4z_Cw@mail.gmail.com>
-	<20131211020007.GH10988@dastard>
-Date: Tue, 10 Dec 2013 18:45:54 -0800
-Message-ID: <CAGXu5jKUShtztTK-PtY7w0WSg=F3KUGL-iCM3=6H61qy3u6aZg@mail.gmail.com>
-Subject: Re: XFS security fix never sent to -stable?
-From: Kees Cook <keescook@google.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Dwight Engen <dwight.engen@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
-        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
-        xfs@oss.sgi.com, "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <74430a05-1640-4174-977d-52d2d2b8519f@email.android.com>
+References: <1386581831-312-1-git-send-email-ethan.kernel@gmail.com>
+	<20131209213057.GA11314@phenom.dumpdata.com>
+	<CABawtvMGOJg5DPRwdWAOSTkxgurv5bx8n=3yJFOq=aagxzseZQ@mail.gmail.com>
+	<74430a05-1640-4174-977d-52d2d2b8519f@email.android.com>
+Date: Wed, 11 Dec 2013 10:47:07 +0800
+Message-ID: <CABawtvM-wt2sDB=jzaapAVKjdMcdzTvNt+ohT5xXYsdzJakArw@mail.gmail.com>
+Subject: Re: [PATCH] [SCSI] iscsi_boot_sysfs: Fix a memory leak in iscsi_boot_destroy_kset()
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: michaelc@cs.wisc.edu, pjones@redhat.com,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 6:00 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Dec 10, 2013 at 08:10:51PM -0500, Josh Boyer wrote:
->> On Tue, Dec 10, 2013 at 8:03 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > Security processes are not something that should be hidden away in
->> > it's own private corner - if there's a problem upstream needs to
->> > take action on, then direct contact with upstream is necessary. We
->> > need to know about security issues - even ones that are classified
->> > post-commit as security issues - so we are operating with full
->> > knowledge of the issues in our code and the impact of our fixes....
+On Tue, Dec 10, 2013 at 10:11 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> Ethan Zhao <ethan.kernel@gmail.com> wrote:
+>>Konrad,
 >>
->> Agreed.  I'm going to interpret your comments at being directed to the
->> general audience because otherwise you're just shooting the messenger
->> :).
+>> boot_kset was allocated when module loaded by
+>>ibft_init()
+>>  iscsi_boot_create_kset()
+>>     kzalloc()
+>>
+>>but wasn't freed when module unloaded by
+>>ibft_exit()
+>>   ibft_cleanup()
+>>     iscsi_boot_destroy_kset()
+>>
+>>Thanks,
+>>Ethan
+>>
+>>On Tue, Dec 10, 2013 at 5:30 AM, Konrad Rzeszutek Wilk
+>><konrad.wilk@oracle.com> wrote:
+>>> On Mon, Dec 09, 2013 at 05:37:11PM +0800, Ethan Zhao wrote:
+>>>> From: "Ethan Zhao" <ethan.kernel@gmail.com>
+>>>>
+>>>> Load and unload iscsi_ibft module will cause kernel memory leak, fix
+>>it
+>>>> in scsi/iscsi_boot_sysfs.c iscsi_boot_destroy_kset().
+>>>>
+>>>
+>>> Is there a stack trace?
+>>>> Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+>>>> ---
+>>>>  drivers/scsi/iscsi_boot_sysfs.c | 1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/drivers/scsi/iscsi_boot_sysfs.c
+>>b/drivers/scsi/iscsi_boot_sysfs.c
+>>>> index 14c1c8f..680bf6f 100644
+>>>> --- a/drivers/scsi/iscsi_boot_sysfs.c
+>>>> +++ b/drivers/scsi/iscsi_boot_sysfs.c
+>>>> @@ -490,5 +490,6 @@ void iscsi_boot_destroy_kset(struct
+>>iscsi_boot_kset *boot_kset)
+>>>>               iscsi_boot_remove_kobj(boot_kobj);
+>>>>
+>>>>       kset_unregister(boot_kset->kset);
+>>>> +     kfree(boot_kset);
+>>>>  }
+>>>>  EXPORT_SYMBOL_GPL(iscsi_boot_destroy_kset);
+>>>> --
+>>>> 1.8.3.4 (Apple Git-47)
+>>>>
 >
-> Right, they are not aimed at you - they are aimed at those on the
-> security side of the fence. I'm tired of learning about CVEs in XFS
-> code through chinese whispers and/or luck.
+> Right. In the past we did not do that b/c certain drivers (like broadcom) would allocate on the kset their name and try to free (the driver would after freeing the ibft). So you would end up with this patch a double free ( and it might be fixed by now but I can't recall).
+>
+> My question was - did you observer a crash or bug. Hence the question about stack trace? How did you see this?
 
-Mostly I try to shield anyone not interested in CVEs from the boring
-process, and try to focus on just getting things marked as needing to
-go into stable. I don't think anyone needs to read the oss-security
-list if they don't want to.
+That is quite simple, just like fuzzy test, load and unload a module
+millions of times with a script in low memory size machine, in the
+meanwhile, monitor OOM etc.
 
-In this case, the fix Dan sent was part of a larger collection of
-security issues reported by Nico. I think the communication error here
-was Dan accidentally forgetting to add the Cc: stable tag. But beyond
-that, it was sent to the xfs list and Cc: to security, so I'm not sure
-it's fair to say it was hidden away. :)
+Thanks,
+Ethan
 
-Besides the missing Cc: stable tag, what should future patch senders
-do to call attention to an issue being a security problem at the time
-it is being reported?
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+>
+> Thank you.
+>
