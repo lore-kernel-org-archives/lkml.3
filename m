@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3LKCJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:09:58 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52479 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3LKCJx (ORCPT
+	id S1751564Ab3LKCKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:10:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42206 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab3LKCKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:09:53 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-04-52a7c9709127
-Date: Wed, 11 Dec 2013 11:09:59 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Jens Axboe <axboe@kernel.dk>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Bob Liu <bob.liu@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH v9 0/4] zram/zsmalloc promotion
-Message-ID: <20131211020959.GA17970@bbox>
-References: <1386727479-18502-1-git-send-email-minchan@kernel.org>
+	Tue, 10 Dec 2013 21:10:44 -0500
+Date: Tue, 10 Dec 2013 18:12:13 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Kees Cook <keescook@google.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Ben Myers <bpm@sgi.com>, xfs@oss.sgi.com,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: XFS security fix never sent to -stable?
+Message-ID: <20131211021213.GA18168@kroah.com>
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+ <20131209121534.GE4278@hercules>
+ <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
+ <20131209235523.GW31386@dastard>
+ <CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
+ <20131211010326.GF10988@dastard>
+ <CA+5PVA7wso5fo11xX9kCUdbrqBQMzUnYwTOB_Qe3K7LDY4z_Cw@mail.gmail.com>
+ <20131211020007.GH10988@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386727479-18502-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20131211020007.GH10988@dastard>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On Wed, Dec 11, 2013 at 01:00:07PM +1100, Dave Chinner wrote:
+> On Tue, Dec 10, 2013 at 08:10:51PM -0500, Josh Boyer wrote:
+> > On Tue, Dec 10, 2013 at 8:03 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > > Security processes are not something that should be hidden away in
+> > > it's own private corner - if there's a problem upstream needs to
+> > > take action on, then direct contact with upstream is necessary. We
+> > > need to know about security issues - even ones that are classified
+> > > post-commit as security issues - so we are operating with full
+> > > knowledge of the issues in our code and the impact of our fixes....
+> > 
+> > Agreed.  I'm going to interpret your comments at being directed to the
+> > general audience because otherwise you're just shooting the messenger
+> > :).
+> 
+> Right, they are not aimed at you - they are aimed at those on the
+> security side of the fence. I'm tired of learning about CVEs in XFS
+> code through chinese whispers and/or luck.
 
-On Wed, Dec 11, 2013 at 11:04:35AM +0900, Minchan Kim wrote:
-> Zram is a simple pseudo block device which can keep data on
-> in-memory with compressed[1].
-> 
-> It have been used for many embedded system for several years
-> One of significant usecase is in-memory swap device.
-> Because NAND which is very popular on most embedded device
-> is weak for frequent write without good wear-level
-> and slow I/O hurts system's responsiblity so zram is really
-> good choice to use memory efficiently.
-> 
-> In previous trial, there was some argument[2] that zram has
-> similar goal with zswap so let's merge zram's functionality
-> into zswap via adding pseudo block device in zswap but I and
-> some people(At least, Hugh and Rik) believe it's not a good idea.
-> [2][3][4] and zswap might go writethrough model[5]. It makes
-> clear difference zram and zswap.
-> 
-> Zram itself is simple/well-designed/good abstraciton so it has
-> clear market(ex, Android, TV, ChromeOS, some Linux distro) which
-> is never niche. :)
-> 
-> Another zram-blk's usecase is following as.
-> The admin can use it as tmpfs so it could help small memory system.
-> The tmpfs is never good solution for swapless embedded system.
-> 
-> Patch 1 adds new Kconfig for zram to use page table method instead
-> of copy.
-> 
-> Patch 2 adds more comment for zsmalloc.
-> 
-> Patch 3 moves zsmalloc under mm.
-> 
-> Patch 4 moves zram from driver/staging to driver/blocks, finally.
+CVEs for the kernel are almost always "assigned" after the problem is
+fixed, or when people "notice" something was changed upstream.  At that
+point, there's no need for the original committer to be notified, as
+there's nothing to do.
 
-Patch 1(suggested by Andrew Morton) and 2(Just comment to make review easy)
-are prepartion for promotion so I hope it could be merged into your staging
-regardless of allowing promotion at the moment.
+Anyway, I understand your frustration about CVEs, I don't like them much
+either, but some people do, so let them deal with them, and don't give
+them a second thought.
 
-Thanks.
-
--- 
-Kind regards,
-Minchan Kim
+greg k-h
