@@ -1,163 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab3LKAvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:51:06 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55079 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751360Ab3LKAu7 (ORCPT
+	id S1752171Ab3LKAvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:51:16 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34435 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab3LKAvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:50:59 -0500
-Message-Id: <20131211005058.712156556@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 10 Dec 2013 19:50:50 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>
-Subject: [PATCH RT 4/5] rtmutex: use a trylock for waiter lock in trylock
-References: <20131211005046.115564491@goodmis.org>
-Content-Disposition: inline; filename=0004-rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 10 Dec 2013 19:51:12 -0500
+Date: Wed, 11 Dec 2013 00:51:06 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Srinivas Ramana <sramana@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20131211005106.GL11468@sirena.org.uk>
+References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
+ <1386718523-2587-4-git-send-email-sboyd@codeaurora.org>
+ <20131210235000.GK11468@sirena.org.uk>
+ <52A7AE1B.3040201@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Jl+DbTnyraiZ/loT"
+Content-Disposition: inline
+In-Reply-To: <52A7AE1B.3040201@codeaurora.org>
+X-Cookie: If your bread is stale, make toast.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/8] regmap: Add support for using regmap over ssbi
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4.72-rt90-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+--Jl+DbTnyraiZ/loT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+On Tue, Dec 10, 2013 at 04:13:15PM -0800, Stephen Boyd wrote:
+> On 12/10/13 15:50, Mark Brown wrote:
+> > On Tue, Dec 10, 2013 at 03:35:18PM -0800, Stephen Boyd wrote:
 
-Mike Galbraith captered the following:
-| >#11 [ffff88017b243e90] _raw_spin_lock at ffffffff815d2596
-| >#12 [ffff88017b243e90] rt_mutex_trylock at ffffffff815d15be
-| >#13 [ffff88017b243eb0] get_next_timer_interrupt at ffffffff81063b42
-| >#14 [ffff88017b243f00] tick_nohz_stop_sched_tick at ffffffff810bd1fd
-| >#15 [ffff88017b243f70] tick_nohz_irq_exit at ffffffff810bd7d2
-| >#16 [ffff88017b243f90] irq_exit at ffffffff8105b02d
-| >#17 [ffff88017b243fb0] reschedule_interrupt at ffffffff815db3dd
-| >--- <IRQ stack> ---
-| >#18 [ffff88017a2a9bc8] reschedule_interrupt at ffffffff815db3dd
-| >    [exception RIP: task_blocks_on_rt_mutex+51]
-| >#19 [ffff88017a2a9ce0] rt_spin_lock_slowlock at ffffffff815d183c
-| >#20 [ffff88017a2a9da0] lock_timer_base.isra.35 at ffffffff81061cbf
-| >#21 [ffff88017a2a9dd0] schedule_timeout at ffffffff815cf1ce
-| >#22 [ffff88017a2a9e50] rcu_gp_kthread at ffffffff810f9bbb
-| >#23 [ffff88017a2a9ed0] kthread at ffffffff810796d5
-| >#24 [ffff88017a2a9f50] ret_from_fork at ffffffff815da04c
+> >> +		reg += sizeof(u16);
 
-lock_timer_base() does a try_lock() which deadlocks on the waiter lock
-not the lock itself.
-This patch takes the waiter_lock with trylock so it should work from interrupt
-context as well. If the fastpath doesn't work and the waiter_lock itself is
-taken then it seems that the lock itself taken.
-This patch also adds a "rt_spin_try_unlock" to keep lockdep happy. If we
-managed to take the wait_lock in the first place we should also be able
-to take it in the unlock path.
+> > I'd expect this to generate out of bounds accesses and bad interactions
+> > on the bus if we go through the loop more than once since it appears to
+> > incrementing the address of reg for every register.  I'm also having a
 
-Cc: stable-rt@vger.kernel.org
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- include/linux/spinlock_rt.h |  1 +
- kernel/rtmutex.c            | 31 +++++++++++++++++++++++++++----
- kernel/timer.c              |  2 +-
- 3 files changed, 29 insertions(+), 5 deletions(-)
+> ssbi_read() just reads the same register x number of times and doesn't
+> do any sort of incrementing of address. My understanding was that
+> regmap_bulk_read() will read incrementing addresses and then call down
+> into this code with the sequential addresses formatted into the reg
+> buffer. That was the flaw. Instead we need to take reg and then
 
-diff --git a/include/linux/spinlock_rt.h b/include/linux/spinlock_rt.h
-index 0618387..b3c504b 100644
---- a/include/linux/spinlock_rt.h
-+++ b/include/linux/spinlock_rt.h
-@@ -22,6 +22,7 @@ extern void __lockfunc rt_spin_lock(spinlock_t *lock);
- extern unsigned long __lockfunc rt_spin_lock_trace_flags(spinlock_t *lock);
- extern void __lockfunc rt_spin_lock_nested(spinlock_t *lock, int subclass);
- extern void __lockfunc rt_spin_unlock(spinlock_t *lock);
-+extern void __lockfunc rt_spin_unlock_after_trylock_in_irq(spinlock_t *lock);
- extern void __lockfunc rt_spin_unlock_wait(spinlock_t *lock);
- extern int __lockfunc rt_spin_trylock_irqsave(spinlock_t *lock, unsigned long *flags);
- extern int __lockfunc rt_spin_trylock_bh(spinlock_t *lock);
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 20742e7..3825e1c 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -801,10 +801,8 @@ static void  noinline __sched rt_spin_lock_slowlock(struct rt_mutex *lock)
- /*
-  * Slow path to release a rt_mutex spin_lock style
-  */
--static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
-+static void __sched __rt_spin_lock_slowunlock(struct rt_mutex *lock)
- {
--	raw_spin_lock(&lock->wait_lock);
--
- 	debug_rt_mutex_unlock(lock);
- 
- 	rt_mutex_deadlock_account_unlock(current);
-@@ -823,6 +821,23 @@ static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
- 	rt_mutex_adjust_prio(current);
- }
- 
-+static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
-+{
-+	raw_spin_lock(&lock->wait_lock);
-+	__rt_spin_lock_slowunlock(lock);
-+}
-+
-+static void  noinline __sched rt_spin_lock_slowunlock_hirq(struct rt_mutex *lock)
-+{
-+	int ret;
-+
-+	do {
-+		ret = raw_spin_trylock(&lock->wait_lock);
-+	} while (!ret);
-+
-+	__rt_spin_lock_slowunlock(lock);
-+}
-+
- void __lockfunc rt_spin_lock(spinlock_t *lock)
- {
- 	rt_spin_lock_fastlock(&lock->lock, rt_spin_lock_slowlock);
-@@ -853,6 +868,13 @@ void __lockfunc rt_spin_unlock(spinlock_t *lock)
- }
- EXPORT_SYMBOL(rt_spin_unlock);
- 
-+void __lockfunc rt_spin_unlock_after_trylock_in_irq(spinlock_t *lock)
-+{
-+	/* NOTE: we always pass in '1' for nested, for simplicity */
-+	spin_release(&lock->dep_map, 1, _RET_IP_);
-+	rt_spin_lock_fastunlock(&lock->lock, rt_spin_lock_slowunlock_hirq);
-+}
-+
- void __lockfunc __rt_spin_unlock(struct rt_mutex *lock)
- {
- 	rt_spin_lock_fastunlock(lock, rt_spin_lock_slowunlock);
-@@ -1056,7 +1078,8 @@ rt_mutex_slowtrylock(struct rt_mutex *lock)
- {
- 	int ret = 0;
- 
--	raw_spin_lock(&lock->wait_lock);
-+	if (!raw_spin_trylock(&lock->wait_lock))
-+		return ret;
- 	init_lists(lock);
- 
- 	if (likely(rt_mutex_owner(lock) != current)) {
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 78f07e5..fb1c00d 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1386,7 +1386,7 @@ unsigned long get_next_timer_interrupt(unsigned long now)
- 		if (time_before_eq(base->next_timer, base->timer_jiffies))
- 			base->next_timer = __next_timer_interrupt(base);
- 		expires = base->next_timer;
--		rt_spin_unlock(&base->lock);
-+		rt_spin_unlock_after_trylock_in_irq(&base->lock);
- 	} else {
- 		expires = now + 1;
- 	}
--- 
-1.8.4.3
+That's possibly not the ideal decision for the underlying API, if
+nothing else it's confusing naming given what a read function would
+normally do.
 
+> increment reg by 1 every time through this loop. Or should we just have
+> use_single_rw == true?
 
+No, it doesn't - it increments the address of reg by the size of a
+register value each time.  Using use_single_rw might make sense, or if
+you can't do bulk I/O at all then hooking in via reg_read() and
+reg_write() in the config rather than trying to parse out the buffers
+might be even better (you can still make helpers to set that up).
+
+--Jl+DbTnyraiZ/loT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSp7b3AAoJELSic+t+oim9GC8P/RxuI3ZsWVHXYUItu5mCw7Hv
+vUFuVxuGwZrTCEZ+jfGZERhrrxIepV6NpCyZnndSvqRF5woY98Pj50lOEl0asOkA
+k0pgY35l476I5MDtIGZmNS2nI6xE2cGq55szkBjFrEiXnzlBNZ7Y8zF/OxGIdPaD
+sBkNs1pUt4eGcO46x7GSJVIrxLJiX3NBCJekrBZ9wMWXf5lI7yyhsECD3gt4AaBH
+weBXkG3IFiXUx01yNRvhg3SjWSOD4s5UtxtM8MaoR/lkjpF/qrvaaBke9MSgPr+k
+IQdO/HhX8nxIKdupUAVyykxqbSdHVE24CzTZmrEtcr6Z09h/SzBI8dfYLkTxW16A
+g8MkAykXl2FIhhQ5xKb/HcfHVm+8h3D7UhvcQfPpdT+HmvMVwOKrHkTZ7mXJiK5W
+bbHmzAL3lFaSH/GnUUh6gycE9iPfE/iiUr/BIU+hLhk5/Sf0T4/tKVJlmlw/skdt
+Yax7YZeJkDRwsN1y46BaACrJQofoq9MZchgCybwb44oEj3QpCgc1s98u2CApwD3U
+dW8KEcOLupuXOZRxDJyYfvrubO3stGea3edRUIqIrJ85eWT9D7uaoBgi2fjnZmjJ
+Lc16POuaZEabnAIUy5G7f3MJhX4ws2AnzjMVLmCy7jNlcJGqHq6E3xNDGqKnkisY
+dAd7QQj0acl9t3H4W51s
+=w2JS
+-----END PGP SIGNATURE-----
+
+--Jl+DbTnyraiZ/loT--
