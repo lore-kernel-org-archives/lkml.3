@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3LKRSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:18:17 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35610 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab3LKRSL (ORCPT
+	id S1751842Ab3LKRSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:18:13 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55843 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751474Ab3LKRSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Dec 2013 12:18:11 -0500
-Date: Wed, 11 Dec 2013 18:18:07 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: process 'stuck' at exit.
-In-Reply-To: <20131211170844.GA21700@redhat.com>
-Message-ID: <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
-References: <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com> <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de> <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com> <20131210203559.GA1209@redhat.com>
- <20131210204925.GB27373@redhat.com> <20131210213431.GA6342@redhat.com> <20131210214143.GG27373@redhat.com> <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com> <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
- <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com> <20131211170844.GA21700@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Date: Wed, 11 Dec 2013 12:18:09 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vikas Sajjan <sajjan.linux@gmail.com>
+cc: Vikas Sajjan <vikas.sajjan@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, <vpalatin@chromium.org>,
+        <jwerner@chromium.org>, <tianyu.lan@intel.com>,
+        <burzalodowa@gmail.com>, <gregkh@linuxfoundation.org>,
+        <gautam.vivek@samsung.com>, Douglas Anderson <dianders@chromium.org>,
+        <balbi@ti.com>, sunil joshi <joshi@samsung.com>
+Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming SuperSpeed
+ HUBs
+In-Reply-To: <CAGm_ybgC6Ca0qz6zJL0PkEUiyUi=Ct0L5t2GJOt9ZU-buP+wBQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1312111204220.1531-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013, Oleg Nesterov wrote:
-> On 12/10, Linus Torvalds wrote:
-> >
-> > I think what happens is:
-> >  - get_user_pages_fast(address, 1, 1, &page) fails (because it's read-only)
-> >  - get_user_pages_fast(address, 1, 0, &page) succeeds and gets a large-page
-> >  - __get_user_pages_fast(address, 1, 1, &page) fails (because it's read-only).
-> >
-> > so what triggers this is likely that Dave now does large-pages, and
-> > one of them is a read-only mapping.
-> >
-> > So I would suggest replacing the second "1" in the
-> > __get_user_pages_fast() call with a "!ro" instead. So how about this
-> > second patch instead (the access_ok() move remains).
-> 
-> I know almost nothing about THP, but why we may need write == true in
-> this case?
-> 
-> IOW,
-> 
-> > -		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
-> > +		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
-> 
-> can't
-> 		if (likely(__get_user_pages_fast(address, 1, 0, &page) == 1)) {
-> 
-> work?
+On Tue, 10 Dec 2013, Vikas Sajjan wrote:
 
-If the futex call needs to write to that address, we need a writeable
-mapping, right? And get_user_pages_fast() will verify that for us.
- 
-> I have to admit, I do not understand why we can't avoid this altogether.
+> > Finally, I don't see why you put this in hub_activate().  Isn't it more
+> > closely connected with the reset-resume procedure for the child device?
 > 
-> __get_page_tail() can find the stable ->first_page, why get_futex_key()
-> can't ?
+> 
+> I was trying to add a FIX in usb_port_resume(), but in our case we
+> have CONFIG_USB_DEFAULT_PERSIST disabled.
+> 
+> Interestingly, if I disable the CONFIG_USB_DEFAULT_PERSIST, then the
+> function usb_port_resume() will never be called and transcend Jetflash
+> device Suspend-to-RAM fails.
 
-Because it can be split under us.
+I don't know what you mean by "fails".  The system goes to sleep and 
+then later on wakes up, doesn't it?
 
-Thanks,
+Do you mean that the Jetflash device gets disconnected when the system
+wakes up?  That's _supposed_ to happen under those circumstances.  
+When hub_activate() sees HUB_RESET_RESUME, all child devices get
+disconnected except those where udev->persist_enabled is set.
 
-	tglx
+> In normal scenario (ie., CONFIG_USB_DEFAULT_PERSIST=y) the sequence is:
+> ===========================================================================
+> Step 1: For Root HUB :
+> usb_resume_both() ---> usb_resume_device() -> generic_resume() -->
+> hcd_bus_resume() --> xhci_bus_resume().
+>                               |
+>                               |-->usb_resume_interface() --->
+> hub_reset_resume() -->  xhci_update_hub_device()
+> 
+> Step 2:  For the Device connected
+> usb_resume_both() ---> usb_resume_device() ->
+> generic_resume()-->usb_port_resume()-->hub_port_logical_disconnect()
+
+You lost me there.  Why does usb_port_resume call 
+hub_port_logical_disconnect?  Does this happen because 
+check_port_resume_type returns an error code?  What are the values of 
+the portchange and portstatus arguments to check_port_resume_type?
+
+> --> hub_port_disable() --> hub_usb3_port_disable().
+> 
+> 
+> In our scenario (ie., CONFIG_USB_DEFAULT_PERSIST=N) the sequence is:
+> ===============================================================================
+> Step 1: For Root HUB
+> usb_resume_both() ---> usb_resume_device() -> generic_resume() -->
+> hcd_bus_resume() --> xhci_bus_resume().
+>                               |
+>                               |-->usb_resume_interface() --->
+> hub_reset_resume() -->  xhci_update_hub_device()
+> 
+> Step 2 :  Never occurs
+
+That's exactly right.
+
+> So Suspend-to-RAM fails.
+
+No, it succeeds in behaving the way it is intended to behave.
+
+> Hence i added a FIX in  hub_reset_resume().
+> 
+> Let me know if I am wrong.
+
+I can't tell at this point.  It depends on the reason why 
+hub_port_logical_disconnect got called.
+
+Alan Stern
+
