@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab3LKT2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:28:48 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:64754 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab3LKT2o (ORCPT
+	id S1751614Ab3LKT36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:29:58 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:57536 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab3LKT35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:28:44 -0500
+	Wed, 11 Dec 2013 14:29:57 -0500
+Date: Wed, 11 Dec 2013 11:29:54 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: =?iso-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>
+Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: HIH-6130: Support I2C bus drivers without
+ I2C_FUNC_SMBUS_QUICK
+Message-ID: <20131211192954.GA21751@roeck-us.net>
+References: <1386760273-7703-1-git-send-email-jose.goncalves@inov.pt>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1312111155450.1531-100000@iolanthe.rowland.org>
-References: <1386300593-1270-1-git-send-email-jwerner@chromium.org>
-	<Pine.LNX.4.44L0.1312111155450.1531-100000@iolanthe.rowland.org>
-Date: Wed, 11 Dec 2013 11:28:43 -0800
-X-Google-Sender-Auth: aBKsawYOO2pfcZIJ_wOXDr4pT4A
-Message-ID: <CAODwPW_uuyaRLLD0txd6zGzHiKQM-qpAQZ+_QEQ=6U3JG4ukPQ@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: core: Make sure usb_set_configuration(-1) cannot fail
-From: Julius Werner <jwerner@chromium.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386760273-7703-1-git-send-email-jose.goncalves@inov.pt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sorry for not getting back to this sooner.  Ironically, it looks like
-> this change isn't needed any more, thanks to Thomas Pugliese's patch:
->
->         http://marc.info/?l=linux-usb&m=138661805209999&w=2
+On Wed, Dec 11, 2013 at 11:11:13AM +0000, José Miguel Gonçalves wrote:
+> Some I2C bus drivers do not allow zero-length data transfers which are
+> required to start a measurement with the HIH6130/1 sensor. Nevertheless,
+> we can overcome this limitation by writing a zero dummy byte. This byte
+> is ignored by the sensor and was verified to be working with the OMAP
+> I2C bus driver in a BeagleBone board.
+> 
+> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
 
-Yes... thanks for pointing it out, that would make this patch
-obsolete. I'll wait a few days with this to see if that patch gets
-accepted as it is.
+Applied, after simplifying write_length initialization a bit.
+
+Should this go to -stable ?
+
+Guenter
