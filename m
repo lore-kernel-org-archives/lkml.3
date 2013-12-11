@@ -1,94 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab3LKLM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:12:58 -0500
-Received: from lmv.inov.pt ([146.193.64.2]:47708 "EHLO lmv.inov.pt"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932Ab3LKLMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:12:54 -0500
-From: =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-Subject: [PATCH] hwmon: HIH-6130: Support I2C bus drivers without I2C_FUNC_SMBUS_QUICK
-Date: Wed, 11 Dec 2013 11:11:13 +0000
-Message-Id: <1386760273-7703-1-git-send-email-jose.goncalves@inov.pt>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752321Ab3LKLNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:13:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60549 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3LKLNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 06:13:20 -0500
+Date: Wed, 11 Dec 2013 03:07:21 -0800
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-58a98c9cc583435784a93f23754128363b4cca94@git.kernel.org>
+Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung.kim@lge.com,
+        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        ak@linux.intel.com, dsahern@gmail.com, tglx@linutronix.de,
+        yangds.fnst@cn.fujitsu.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, adrian.hunter@intel.com
+Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com, efault@gmx.de,
+        peterz@infradead.org, namhyung.kim@lge.com, jolsa@redhat.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
+        ak@linux.intel.com, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com,
+        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        adrian.hunter@intel.com
+In-Reply-To: <52A707A2.5020802@intel.com>
+References: <52A707A2.5020802@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf symbols:
+  Remove open coded management of  short_name_allocated member
+Git-Commit-ID: 58a98c9cc583435784a93f23754128363b4cca94
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0.1 (lmv.inov.pt [146.193.64.2]); Wed, 11 Dec 2013 11:11:28 +0000 (WET)
-X-INOV-EmailServer-Information: Please contact the Email service provider for more information
-X-INOV-EmailServer: Found to be clean
-X-INOV-EmailServer-From: jose.goncalves@inov.pt
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:07:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some I2C bus drivers do not allow zero-length data transfers which are
-required to start a measurement with the HIH6130/1 sensor. Nevertheless,
-we can overcome this limitation by writing a zero dummy byte. This byte
-is ignored by the sensor and was verified to be working with the OMAP
-I2C bus driver in a BeagleBone board.
+Commit-ID:  58a98c9cc583435784a93f23754128363b4cca94
+Gitweb:     http://git.kernel.org/tip/58a98c9cc583435784a93f23754128363b4cca94
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Tue, 10 Dec 2013 11:11:46 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 10 Dec 2013 16:51:08 -0300
 
-Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
+perf symbols: Remove open coded management of  short_name_allocated member
+
+Instead of expecting callers to set this member accodingly so that later
+at dso destruction it can, if needed, be correctly free()d, make it a
+requirement by passing it as a parameter to dso__set_short_name.
+
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Link: http://lkml.kernel.org/r/52A707A2.5020802@intel.com
+[ Renamed the 'allocated' parameter to clearly indicate to which variable it refers to. ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-v2: Use a field in struct hih6130 to store the measurement request's 
-    write length when probing.
+ tools/perf/util/dso.c     | 17 +++++++++++------
+ tools/perf/util/dso.h     |  2 +-
+ tools/perf/util/machine.c |  3 +--
+ 3 files changed, 13 insertions(+), 9 deletions(-)
 
- drivers/hwmon/hih6130.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hwmon/hih6130.c b/drivers/hwmon/hih6130.c
-index 2dc37c7..8e46265 100644
---- a/drivers/hwmon/hih6130.c
-+++ b/drivers/hwmon/hih6130.c
-@@ -43,6 +43,7 @@
-  * @last_update: time of last update (jiffies)
-  * @temperature: cached temperature measurement value
-  * @humidity: cached humidity measurement value
-+ * @write_length: length for I2C measurement request
-  */
- struct hih6130 {
- 	struct device *hwmon_dev;
-@@ -51,6 +52,7 @@ struct hih6130 {
- 	unsigned long last_update;
- 	int temperature;
- 	int humidity;
-+	size_t write_length;
- };
- 
- /**
-@@ -121,8 +123,15 @@ static int hih6130_update_measurements(struct i2c_client *client)
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 55c9835..f8c8497 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -379,7 +379,7 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
+ 	 * processing we had no idea this was the kernel dso.
  	 */
- 	if (time_after(jiffies, hih6130->last_update + HZ) || !hih6130->valid) {
- 
--		/* write to slave address, no data, to request a measurement */
--		ret = i2c_master_send(client, tmp, 0);
-+		/*
-+		 * Write to slave address to request a measurement.
-+		 * According with the datasheet it should be with no data, but
-+		 * for systems with I2C bus drivers that do not allow zero
-+		 * length packets we write one dummy byte to allow sensor
-+		 * measurements on them.
-+		 */
-+		tmp[0] = 0;
-+		ret = i2c_master_send(client, tmp, hih6130->write_length);
- 		if (ret < 0)
- 			goto out;
- 
-@@ -252,6 +261,9 @@ static int hih6130_probe(struct i2c_client *client,
- 		goto fail_remove_sysfs;
+ 	if (dso != NULL) {
+-		dso__set_short_name(dso, short_name);
++		dso__set_short_name(dso, short_name, false);
+ 		dso->kernel = dso_type;
  	}
  
-+	hih6130->write_length = (i2c_get_functionality(client->adapter) &
-+				 I2C_FUNC_SMBUS_QUICK ? 0 : 1);
-+
- 	return 0;
+@@ -394,17 +394,22 @@ void dso__set_long_name(struct dso *dso, char *name)
+ 	dso->long_name_len = strlen(name);
+ }
  
- fail_remove_sysfs:
--- 
-1.7.10.4
-
+-void dso__set_short_name(struct dso *dso, const char *name)
++void dso__set_short_name(struct dso *dso, const char *name, bool name_allocated)
+ {
+ 	if (name == NULL)
+ 		return;
+-	dso->short_name = name;
+-	dso->short_name_len = strlen(name);
++
++	if (dso->short_name_allocated)
++		free((char *)dso->short_name);
++
++	dso->short_name		  = name;
++	dso->short_name_len	  = strlen(name);
++	dso->short_name_allocated = name_allocated;
+ }
+ 
+ static void dso__set_basename(struct dso *dso)
+ {
+-	dso__set_short_name(dso, basename(dso->long_name));
++	dso__set_short_name(dso, basename(dso->long_name), false);
+ }
+ 
+ int dso__name_len(const struct dso *dso)
+@@ -440,7 +445,7 @@ struct dso *dso__new(const char *name)
+ 		int i;
+ 		strcpy(dso->name, name);
+ 		dso__set_long_name(dso, dso->name);
+-		dso__set_short_name(dso, dso->name);
++		dso__set_short_name(dso, dso->name, false);
+ 		for (i = 0; i < MAP__NR_TYPES; ++i)
+ 			dso->symbols[i] = dso->symbol_names[i] = RB_ROOT;
+ 		dso->cache = RB_ROOT;
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 00a232d..8eceab7 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -110,7 +110,7 @@ static inline void dso__set_loaded(struct dso *dso, enum map_type type)
+ struct dso *dso__new(const char *name);
+ void dso__delete(struct dso *dso);
+ 
+-void dso__set_short_name(struct dso *dso, const char *name);
++void dso__set_short_name(struct dso *dso, const char *name, bool name_allocated);
+ void dso__set_long_name(struct dso *dso, char *name);
+ 
+ int dso__name_len(const struct dso *dso);
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index f85da9a..09d5c66 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -935,8 +935,7 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 		if (name == NULL)
+ 			goto out_problem;
+ 
+-		dso__set_short_name(map->dso, name);
+-		map->dso->short_name_allocated = 1;
++		dso__set_short_name(map->dso, name, true);
+ 		map->end = map->start + event->mmap.len;
+ 	} else if (is_kernel_mmap) {
+ 		const char *symbol_name = (event->mmap.filename +
