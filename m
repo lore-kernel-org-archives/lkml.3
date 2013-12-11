@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab3LKUy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 15:54:57 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59442 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab3LKUyz (ORCPT
+	id S1751335Ab3LKU71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 15:59:27 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:33863 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997Ab3LKU70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 15:54:55 -0500
-Date: Wed, 11 Dec 2013 15:54:52 -0500 (EST)
-Message-Id: <20131211.155452.558417595732985707.davem@davemloft.net>
-To: hannes@stressinduktion.org
-Cc: dvlasenk@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, jpirko@redhat.com
-Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20131211192138.GB4675@order.stressinduktion.org>
-References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com>
-	<20131211192138.GB4675@order.stressinduktion.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 12:54:55 -0800 (PST)
+	Wed, 11 Dec 2013 15:59:26 -0500
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org
+Cc: tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        B08248@freescale.com, kim.phillips@linaro.org,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        kvm@vger.kernel.org (open list:VFIO DRIVER),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/9] VFIO_IOMMU_TYPE1: Introduce the VFIO_DMA_MAP_FLAG_EXEC flag
+Date: Wed, 11 Dec 2013 21:58:25 +0100
+Message-Id: <1386795513-32426-2-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1386795513-32426-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1386795513-32426-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Date: Wed, 11 Dec 2013 20:21:38 +0100
+The ARM SMMU driver expects the IOMMU_EXEC flag, otherwise it will
+set the page tables for a device as XN (execute never). This affects
+devices such as the ARM PL330 DMA Controller, which fails to operate
+if the XN flag is set on the memory it tries to fetch its instructions
+from.
 
-> On Wed, Dec 11, 2013 at 12:45:14PM +0100, Denys Vlasenko wrote:
->> If ipv6 auto-configuration does not work, currently it's hard
->> to track what's going on. This change adds log messages
->> (at debug level) on every code path where ipv6 autoconf fails.
->> 
->> v2: fixed indentation in multi-line log output statements.
-> 
-> Have you seen lots of those problems? Some of those seem like very
-> serious problems and maybe could also deserve a pr_warn or pr_err.
-> 
-> I hope these are one-time errors, so I don't think counters would
-> be helpful.
+We introduce the VFIO_DMA_MAP_FLAG_EXEC to VFIO, and use it in
+VFIO_IOMMU_TYPE1 to set the IOMMU_EXEC flag. This way the user can
+control whether the XN flag will be set on the requested mappings.
 
-I still think that statitics would better serve this issue.
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+---
+ drivers/vfio/vfio_iommu_type1.c | 5 ++++-
+ include/uapi/linux/vfio.h       | 1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-For one thing, the event would always be counted, whereas with
-pr_debug() someone has to turn on dynamic debugging in order
-to see the message.
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+index 4fb7a8f..ad7a1f6 100644
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -557,6 +557,8 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+ 		prot |= IOMMU_WRITE;
+ 	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
+ 		prot |= IOMMU_READ;
++	if (map->flags & VFIO_DMA_MAP_FLAG_EXEC)
++		prot |= IOMMU_EXEC;
+ 
+ 	if (!prot)
+ 		return -EINVAL; /* No READ/WRITE? */
+@@ -865,7 +867,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+ 	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
+ 		struct vfio_iommu_type1_dma_map map;
+ 		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+-				VFIO_DMA_MAP_FLAG_WRITE;
++				VFIO_DMA_MAP_FLAG_WRITE |
++				VFIO_DMA_MAP_FLAG_EXEC;
+ 
+ 		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+ 
+diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+index 0fd47f5..d8e9e99 100644
+--- a/include/uapi/linux/vfio.h
++++ b/include/uapi/linux/vfio.h
+@@ -392,6 +392,7 @@ struct vfio_iommu_type1_dma_map {
+ 	__u32	flags;
+ #define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
+ #define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
++#define VFIO_DMA_MAP_FLAG_EXEC (1 << 2)		/* executable from device */
+ 	__u64	vaddr;				/* Process virtual address */
+ 	__u64	iova;				/* IO virtual address */
+ 	__u64	size;				/* Size of mapping (bytes) */
+-- 
+1.8.3.2
 
-You can make them part of the per-inet6_dev MIB, and therefore
-implicitly letting the admin know what interface the events
-occurred on.
-
-I would even prefer an approach involving signalling netlink
-events in such circumstances with more detailed information.
-
-Thanks.
