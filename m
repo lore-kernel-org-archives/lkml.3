@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3LKXWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 18:22:21 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:42251 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3LKXWT (ORCPT
+	id S1751625Ab3LKXXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 18:23:08 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:23484 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3LKXXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 18:22:19 -0500
+	Wed, 11 Dec 2013 18:23:06 -0500
+X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
+   d="scan'208";a="1700640"
+Subject: Re: [PATCH] net-tg3: Initialize REG_BASE_ADDR at PCI config offset
+ 120 to 0
+From: Michael Chan <mchan@broadcom.com>
+To: David Miller <davem@davemloft.net>
+CC: <sergei.shtylyov@cogentembedded.com>, <natg@google.com>,
+        <nsujir@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <20131210.222313.694303616856894486.davem@davemloft.net>
+References: <1386658724.1752.19.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <20131210.134340.114603867817512238.davem@davemloft.net>
+	 <1386701379.1752.26.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <20131210.222313.694303616856894486.davem@davemloft.net>
+Content-Type: text/plain; charset="cp1252"
+Date: Wed, 11 Dec 2013 15:21:18 -0800
+Message-ID: <1386804078.1752.58.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <87k3fbuggk.fsf@xmission.com>
-References: <20131210001620.GA7938@www.outflux.net>
-	<87vbyvxojs.fsf@xmission.com>
-	<CAGXu5j+hCf8zkO3FEJ=ZO++unnpzL8GLivSNqy=dYFzJah0WCg@mail.gmail.com>
-	<87k3fbuggk.fsf@xmission.com>
-Date: Wed, 11 Dec 2013 15:22:18 -0800
-X-Google-Sender-Auth: JuMM9KJwlGJ0ohnhiLtpSFE96Fk
-Message-ID: <CAGXu5j+i1CfUqrFtwQUHC92n=qvFjKaqJeLh7Bn7aEFBE1cixw@mail.gmail.com>
-Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
-From: Kees Cook <keescook@chromium.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        kexec@lists.infradead.org, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 3:15 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Kees Cook <keescook@chromium.org> writes:
->
->> On Wed, Dec 11, 2013 at 9:52 AM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Kees Cook <keescook@chromium.org> writes:
->>>
->>>> For general-purpose (i.e. distro) kernel builds it makes sense to build with
->>>> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
->>>> with kexec. However, in the face of trying to lock down a system with such
->>>> a kernel, there needs to be a way to disable kexec (much like module loading
->>>> can be disabled). Without this, it is too easy for the root user to modify
->>>> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are
->>>> set.
->>>
->>> So let me get this straight.  You object to what happens in sys_reboot
->>> so you patch sys_kexec_load?
->>
->> Yes; it's the entry point for loading the image used for crashes and
->> LINUX_REBOOT_CMD_KEXEC.
->>
->>> You give someone the privilege to boot whatever they want and yet you
->>> don't want to support them booting whatever they want?
->>>
->>> I'm sorry my brain is hurting trying to understand the logic of this
->>> patch.
->>
->> I'm not trying to claim this fixes all attack vectors from a root
->> user. That is exceedingly hard. :) However, kexec gives the root user
->> a trivial (and undetectable) way to modify the running kernel.
->> Providing an option to block sys_kexec_load for systems that will
->> never use it (or will use it once at startup) is valuable in several
->> situations. There's no reason to make an attacker's job easier, and
->> this doesn't get in any one else's way.
->
-> I am simply trying to point out your patch is incomplete and silly as
-> presented.
->
-> LINUX_REBOOT_CMD_KEXEC should be disabled if you are calling the sysctl
-> kexec_disable.  If you want to it to be kexec_load_disable please call
-> it that.  A kexec_load_disable is a different thing than a
-> kexec_disable.
->
-> A kexec_disable would block both sys_kexec_load and
-> sys_reboot(LINUX_REBOOT_CMD_KEXEC) and would remove any staged kexec
-> images.  Allowing you to stop considering kexec past that point from a
-> security analysis perspective.  That is what it sounds like you want.
->
-> What I am asking for is an problem description and an implementation
-> that are in sync, and a problem description that people can look at and
-> say was this a complete implementation.
->
-> Right now I can not tell what was intended so I can not truly tell if
-> the patch is correct.  Code with that property does not serve anyone any
-> good, especially as the kernel evolves.
->
-> So please decide if you want kexec_disable or kexec_load_disable, or if
-> you want something a little more nuanced.
->
-> Right now I think a full and complete kexec_disable makes sense.  I
-> probably won't use it but I think it makes sense.  Your patch
-> implementiong kexec_load_disable seems to be a half solution that tries
-> to please everyone and does not serve anyone well.  So I don't see the
-> point.
+On Tue, 2013-12-10 at 22:23 -0500, David Miller wrote:
+> Ok, that may be true, but I'd like to consider the much larger issue
+> at hand.
+> 
+> If the indirect mechanism is enabled, some of the offsets that may be
+> in there might be value, but would be entirely undesirable to be read
+> because the read has side effects.
+> 
+> What if the interrupt status register is what gets read if the user
+> scans config space at just the wrong moment, and therefore an
+> interrupt gets lost?
+> 
+I did a quick audit of the driver to see if we are seriously exposed to
+this problem.  Only very old chips (5700 to 5703) use indirect register
+access as workarounds for various issues.  I looked at the IRQ path
+which uses status block to determine if there is work to do.  If status
+block contains no new data, we check the PCI_STATE register and the bits
+don't get cleared on read.  MAC status register which is used to
+determine link status does not have bits that are cleared on read.  So
+we should be ok.
 
-Sure, it seems reasonable to clarify it's purpose. I would like block
-_changes_ to the kexec image. In the case of systems not using kexec,
-this freezes it to "no kexec image", for those with a crash kernel, it
-freezes it to just that image, and makes sure it can't change until
-reboot. Blocking LINUX_REBOOT_CMD_KEXEC doesn't make sense in the
-latter sense, so it seems like changing the sysctl to
-"kexec_load_disable" is the sensible direction. I can send a v3 that
-changes the name and clarifies the purpose and potential uses.
+We use the statistics block for counters on these older chips so there
+is no conflict.  On newer chips, we read counters from registers which
+get cleared on read, but we never use indirect methods to read these
+counters.
 
--Kees
+On all new chips, indirect method is not used except to download
+firmware (on 57766 only).  Userspace read will not interfere with
+firmware download.
 
--- 
-Kees Cook
-Chrome OS Security
+So it looks to me that we are in good shape.  Thanks.
+
