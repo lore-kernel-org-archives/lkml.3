@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab3LKIdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:33:45 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:56696 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab3LKIdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:33:43 -0500
+	id S1751490Ab3LKIht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 03:37:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39048 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab3LKIhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 03:37:48 -0500
+Date: Wed, 11 Dec 2013 08:37:45 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/18] sched: Add tracepoints related to NUMA task
+ migration
+Message-ID: <20131211083744.GP11295@suse.de>
+References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+ <1386690695-27380-18-git-send-email-mgorman@suse.de>
+ <20131210142211.099fe782c361707ab3c04742@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <52A81F89.4010603@ti.com>
-References: <1386672926-26885-1-git-send-email-gautam.vivek@samsung.com>
-	<1386672926-26885-2-git-send-email-gautam.vivek@samsung.com>
-	<20131210140142.GB28456@xps8300>
-	<CAFp+6iENkrSUT=_iv+uZnVpDSGDQGOzF_oyZ6Dmzr8VcQfjztw@mail.gmail.com>
-	<52A81F89.4010603@ti.com>
-Date: Wed, 11 Dec 2013 14:03:42 +0530
-Message-ID: <CAFp+6iHkZJ9xVaS6ksp_zMR3332uxZpPohTiRUrbCJr+Gm0gvA@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/4] phy: Add provision for tuning phy.
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20131210142211.099fe782c361707ab3c04742@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+On Tue, Dec 10, 2013 at 02:22:11PM -0800, Andrew Morton wrote:
+> On Tue, 10 Dec 2013 15:51:35 +0000 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > This patch adds three tracepoints
+> >  o trace_sched_move_numa	when a task is moved to a node
+> >  o trace_sched_swap_numa	when a task is swapped with another task
+> >  o trace_sched_stick_numa	when a numa-related migration fails
+> > 
+> > The tracepoints allow the NUMA scheduler activity to be monitored and the
+> > following high-level metrics can be calculated
+> > 
+> >  o NUMA migrated stuck	 nr trace_sched_stick_numa
+> >  o NUMA migrated idle	 nr trace_sched_move_numa
+> >  o NUMA migrated swapped nr trace_sched_swap_numa
+> >  o NUMA local swapped	 trace_sched_swap_numa src_nid == dst_nid (should never happen)
+> >  o NUMA remote swapped	 trace_sched_swap_numa src_nid != dst_nid (should == NUMA migrated swapped)
+> >  o NUMA group swapped	 trace_sched_swap_numa src_ngid == dst_ngid
+> > 			 Maybe a small number of these are acceptable
+> > 			 but a high number would be a major surprise.
+> > 			 It would be even worse if bounces are frequent.
+> >  o NUMA avg task migs.	 Average number of migrations for tasks
+> >  o NUMA stddev task mig	 Self-explanatory
+> >  o NUMA max task migs.	 Maximum number of migrations for a single task
+> > 
+> > In general the intent of the tracepoints is to help diagnose problems
+> > where automatic NUMA balancing appears to be doing an excessive amount of
+> > useless work.
+> > 
+> > ...
+> >
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -1272,11 +1272,13 @@ static int task_numa_migrate(struct task_struct *p)
+> >  	p->numa_scan_period = task_scan_min(p);
+> >  
+> >  	if (env.best_task == NULL) {
+> > -		int ret = migrate_task_to(p, env.best_cpu);
+> > +		if ((ret = migrate_task_to(p, env.best_cpu)) != 0)
+> > +			trace_sched_stick_numa(p, env.src_cpu, env.best_cpu);
+> >  		return ret;
+> >  	}
+> >  
+> > -	ret = migrate_swap(p, env.best_task);
+> > +	if ((ret = migrate_swap(p, env.best_task)) != 0);
+> 
+> I'll zap that semicolon...
+> 
 
-
-On Wed, Dec 11, 2013 at 1:47 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> On Wednesday 11 December 2013 12:08 PM, Vivek Gautam wrote:
->> Hi,
->>
->>
->> On Tue, Dec 10, 2013 at 7:31 PM, Heikki Krogerus
->> <heikki.krogerus@linux.intel.com> wrote:
->>> Hi,
->>
->> Thanks for reviewing this.
->>
->>>
->>> On Tue, Dec 10, 2013 at 04:25:23PM +0530, Vivek Gautam wrote:
->>>> Some PHY controllers may need to tune PHY post-initialization,
->>>> so that the PHY consumers can call phy-tuning at appropriate
->>>> point of time.
->>>>
->>>> Signed-off-by: vivek Gautam <gautam.vivek@samsung.com>
->>>> ---
->>>>  drivers/phy/phy-core.c  |   20 ++++++++++++++++++++
->>>>  include/linux/phy/phy.h |    7 +++++++
->>>>  2 files changed, 27 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
->>>> index 03cf8fb..68dbb90 100644
->>>> --- a/drivers/phy/phy-core.c
->>>> +++ b/drivers/phy/phy-core.c
->>>> @@ -239,6 +239,26 @@ out:
->>>>  }
->>>>  EXPORT_SYMBOL_GPL(phy_power_off);
->>>>
->>>> +int phy_tune(struct phy *phy)
->>>> +{
->>>> +     int ret = -ENOTSUPP;
->>>> +
->>>> +     mutex_lock(&phy->mutex);
->>>> +     if (phy->ops->tune) {
->>>> +             ret =  phy->ops->tune(phy);
->>>> +             if (ret < 0) {
->>>> +                     dev_err(&phy->dev, "phy tuning failed --> %d\n", ret);
->>>> +                     goto out;
->>>> +             }
->>>> +     }
->>>> +
->>>> +out:
->>>> +     mutex_unlock(&phy->mutex);
->>>> +
->>>> +     return ret;
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(phy_tune);
->>>
->>> I think "setup" instead of "tune" is much more clear and reusable.
->>
->> I think "setup" will look more like first time setting up the phy,
->> which is rather served by "init" callback.
->> This i thought would serve the purpose of over-riding certain PHY
->> parameters, which would not have been
->> possible at "init" time.
->> Please correct my thinking if i am unable to understand your point here.
->
-> how about 'calibrate'?
-
-Hmm, seems like a better name :-)
-
->
-> Thanks
-> Kishon
->>
->>>
->>> Thanks,
->>>
->>> --
->>> heikki
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->
-
-
+Thanks
 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Mel Gorman
+SUSE Labs
