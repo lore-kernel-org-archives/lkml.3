@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab3LKXJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 18:09:41 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59537 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3LKXI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 18:08:56 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v2 tip/core/rcu 3/4] rcu: Make rcu_assign_pointer's assignment volatile and type-safe
-Date: Wed, 11 Dec 2013 15:08:47 -0800
-Message-Id: <1386803328-13272-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1386803328-13272-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20131211230823.GA12448@linux.vnet.ibm.com>
- <1386803328-13272-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121123-3532-0000-0000-000003C5085A
+	id S1751934Ab3LKXJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 18:09:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40054 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751592Ab3LKXJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 18:09:43 -0500
+Message-ID: <52A8F073.9040500@zytor.com>
+Date: Wed, 11 Dec 2013 15:08:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+CC: Borislav Petkov <bp@alien8.de>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
+Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
+References: <alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de> <1386732093.5964.6.camel@marge.simpson.net> <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de> <20131211113839.GF21683@pd.tnic> <20131211115239.GA21999@twins.programming.kicks-ass.net> <1386764955.12005.60.camel@marge.simpson.net> <20131211124352.GB21999@twins.programming.kicks-ass.net> <20131211134048.GH21683@pd.tnic> <20131211145655.GB4510@gmail.com> <20131211164318.GA2480@laptop.programming.kicks-ass.net> <20131211175036.GC12431@gmail.com>
+In-Reply-To: <20131211175036.GC12431@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Triplett <josh@joshtriplett.org>
+On 12/11/2013 09:50 AM, Ingo Molnar wrote:
+> 
+> Well, availability could be a problem too, if some CPU (real or 
+> virtual) implements MWAIT but not CLFLUSH.
+> 
+> In theory we could make mwait an alternatives variant and patch in the 
+> right combination of instructions? The CLFLUSH goes to the same 
+> address as on which the monitoring happens, so it could be considered 
+> one meta-instruction.
+> 
 
-The rcu_assign_pointer() primitive needs to use ACCESS_ONCE to make
-the assignment to the destination pointer volatile, to protect against
-compilers too clever for their own good.
+The first thing to do is probably to drop the use of thread_info as a
+wakeup doorbell.  It seemed like a good idea at the time -- after all,
+there is one for each thread -- but it is extremely likely to be dirty
+in the cache, which is (presumably) what causes these kinds of bugs to
+be maximally likely.  Even if we don't do the CLFLUSH it is likely that
+the hardware has to do something expensive behind the scenes.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/linux/rcupdate.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So I would like to propose that we switch to using a percpu variable
+which is a single cache line of nothing at all.  It would only ever be
+touched by MONITOR and for explicit wakeup.  Hopefully that will resolve
+this problem without the need for the CLFLUSH.
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 00ad28168ef0..97853cd2d7b4 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -551,7 +551,7 @@ static inline void rcu_preempt_sleep_check(void)
- #define __rcu_assign_pointer(p, v, space) \
- 	do { \
- 		smp_wmb(); \
--		(p) = (typeof(*v) __force space *)(v); \
-+		ACCESS_ONCE(p) = (typeof(*(v)) __force space *)(v); \
- 	} while (0)
- 
- 
--- 
-1.8.1.5
+	-hpa
+
 
