@@ -1,22 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304Ab3LKGpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 01:45:43 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:56858 "EHLO
+	id S1751358Ab3LKGrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 01:47:17 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:60950 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750774Ab3LKGpl (ORCPT
+	by vger.kernel.org with ESMTP id S1750774Ab3LKGrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 01:45:41 -0500
+	Wed, 11 Dec 2013 01:47:14 -0500
 From: Neil Zhang <zhangwm@marvell.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH v2] usb: phy: initilize the notifier when add a new phy
-Date: Wed, 11 Dec 2013 14:45:14 +0800
-Message-ID: <1386744314-4824-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+To: Neil Zhang <zhangwm@marvell.com>, "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Dec 2013 22:46:48 -0800
+Subject: RE: [PATCH] usb: phy: initilize the notifier when add a new phy
+Thread-Topic: [PATCH] usb: phy: initilize the notifier when add a new phy
+Thread-Index: Ac72OMj77RWTedCzQF+M+PRRyKNYbgAA9CuA
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE4F8E316090@SC-VEXCH4.marvell.com>
+References: <1386742701-20111-1-git-send-email-zhangwm@marvell.com>
+In-Reply-To: <1386742701-20111-1-git-send-email-zhangwm@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
  definitions=2013-12-11_02:2013-12-10,2013-12-11,1970-01-01 signatures=0
 X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
@@ -25,93 +34,115 @@ X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamsco
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBB6lN9L022713
 
-We need to initilize the notifer before use it.
-So lets initilize it when add a new phy device to reduce the code
-redundance.
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- drivers/usb/phy/phy-ab8500-usb.c    |    2 --
- drivers/usb/phy/phy-generic.c       |    1 -
- drivers/usb/phy/phy-gpio-vbus-usb.c |    2 --
- drivers/usb/phy/phy-mxs-usb.c       |    2 --
- drivers/usb/phy/phy.c               |    4 ++++
- 5 files changed, 4 insertions(+), 7 deletions(-)
+> -----Original Message-----
+> From: Neil Zhang [mailto:zhangwm@marvell.com]
+> Sent: 2013Äê12ÔÂ11ÈÕ 14:18
+> To: balbi@ti.com; gregkh@linuxfoundation.org
+> Cc: linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Neil Zhang
+> Subject: [PATCH] usb: phy: initilize the notifier when add a new phy
+> 
+> We need to initilize the notifer before use it.
+> So lets initilize it when add a new phy device to reduce the code redundance.
+> 
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>  drivers/usb/phy/phy-ab8500-usb.c    |    2 --
+>  drivers/usb/phy/phy-generic.c       |    1 -
+>  drivers/usb/phy/phy-gpio-vbus-usb.c |    2 --
+>  drivers/usb/phy/phy-mxs-usb.c       |    2 --
+>  drivers/usb/phy/phy.c               |    4 ++++
+>  5 files changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/usb/phy/phy-ab8500-usb.c
+> b/drivers/usb/phy/phy-ab8500-usb.c
+> index 0874023..11ab2c4 100644
+> --- a/drivers/usb/phy/phy-ab8500-usb.c
+> +++ b/drivers/usb/phy/phy-ab8500-usb.c
+> @@ -1415,8 +1415,6 @@ static int ab8500_usb_probe(struct platform_device
+> *pdev)
+> 
+>  	platform_set_drvdata(pdev, ab);
+> 
+> -	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
+> -
+>  	/* all: Disable phy when called from set_host and set_peripheral */
+>  	INIT_WORK(&ab->phy_dis_work, ab8500_usb_phy_disable_work);
+> 
+> diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c index
+> aa6d37b..bb39498 100644
+> --- a/drivers/usb/phy/phy-generic.c
+> +++ b/drivers/usb/phy/phy-generic.c
+> @@ -241,7 +241,6 @@ int usb_phy_gen_create_phy(struct device *dev, struct
+> usb_phy_gen_xceiv *nop,
+>  	nop->phy.otg->set_host		= nop_set_host;
+>  	nop->phy.otg->set_peripheral	= nop_set_peripheral;
+> 
+> -	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(usb_phy_gen_create_phy);
+> diff --git a/drivers/usb/phy/phy-gpio-vbus-usb.c
+> b/drivers/usb/phy/phy-gpio-vbus-usb.c
+> index 02799a5..69462e0 100644
+> --- a/drivers/usb/phy/phy-gpio-vbus-usb.c
+> +++ b/drivers/usb/phy/phy-gpio-vbus-usb.c
+> @@ -314,8 +314,6 @@ static int gpio_vbus_probe(struct platform_device
+> *pdev)
+>  		goto err_irq;
+>  	}
+> 
+> -	ATOMIC_INIT_NOTIFIER_HEAD(&gpio_vbus->phy.notifier);
+> -
+>  	INIT_DELAYED_WORK(&gpio_vbus->work, gpio_vbus_work);
+> 
+>  	gpio_vbus->vbus_draw = regulator_get(&pdev->dev, "vbus_draw"); diff
+> --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c index
+> 545844b..9df81f0 100644
+> --- a/drivers/usb/phy/phy-mxs-usb.c
+> +++ b/drivers/usb/phy/phy-mxs-usb.c
+> @@ -160,8 +160,6 @@ static int mxs_phy_probe(struct platform_device
+> *pdev)
+>  	mxs_phy->phy.notify_disconnect	= mxs_phy_on_disconnect;
+>  	mxs_phy->phy.type		= USB_PHY_TYPE_USB2;
+> 
+> -	ATOMIC_INIT_NOTIFIER_HEAD(&mxs_phy->phy.notifier);
+> -
+>  	mxs_phy->clk = clk;
+> 
+>  	platform_set_drvdata(pdev, mxs_phy);
+> diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c index
+> 1b74523..6689bd0 100644
+> --- a/drivers/usb/phy/phy.c
+> +++ b/drivers/usb/phy/phy.c
+> @@ -329,6 +329,8 @@ int usb_add_phy(struct usb_phy *x, enum
+> usb_phy_type type)
+>  		return -EINVAL;
+>  	}
+> 
+> +	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
+> +
+>  	spin_lock_irqsave(&phy_lock, flags);
+> 
+>  	list_for_each_entry(phy, &phy_list, head) { @@ -367,6 +369,8 @@ int
+> usb_add_phy_dev(struct usb_phy *x)
+>  		return -EINVAL;
+>  	}
+> 
+> +	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
+> +
+>  	spin_lock_irqsave(&phy_lock, flags);
+>  	list_for_each_entry(phy_bind, &phy_bind_list, list)
+>  		if (!(strcmp(phy_bind->phy_dev_name, dev_name(x->dev))))
+> --
+> 1.7.9.5
 
-diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
-index 0874023..11ab2c4 100644
---- a/drivers/usb/phy/phy-ab8500-usb.c
-+++ b/drivers/usb/phy/phy-ab8500-usb.c
-@@ -1415,8 +1415,6 @@ static int ab8500_usb_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, ab);
- 
--	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
--
- 	/* all: Disable phy when called from set_host and set_peripheral */
- 	INIT_WORK(&ab->phy_dis_work, ab8500_usb_phy_disable_work);
- 
-diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
-index aa6d37b..bb39498 100644
---- a/drivers/usb/phy/phy-generic.c
-+++ b/drivers/usb/phy/phy-generic.c
-@@ -241,7 +241,6 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
- 	nop->phy.otg->set_host		= nop_set_host;
- 	nop->phy.otg->set_peripheral	= nop_set_peripheral;
- 
--	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(usb_phy_gen_create_phy);
-diff --git a/drivers/usb/phy/phy-gpio-vbus-usb.c b/drivers/usb/phy/phy-gpio-vbus-usb.c
-index 02799a5..69462e0 100644
---- a/drivers/usb/phy/phy-gpio-vbus-usb.c
-+++ b/drivers/usb/phy/phy-gpio-vbus-usb.c
-@@ -314,8 +314,6 @@ static int gpio_vbus_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
--	ATOMIC_INIT_NOTIFIER_HEAD(&gpio_vbus->phy.notifier);
--
- 	INIT_DELAYED_WORK(&gpio_vbus->work, gpio_vbus_work);
- 
- 	gpio_vbus->vbus_draw = regulator_get(&pdev->dev, "vbus_draw");
-diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
-index 545844b..9df81f0 100644
---- a/drivers/usb/phy/phy-mxs-usb.c
-+++ b/drivers/usb/phy/phy-mxs-usb.c
-@@ -160,8 +160,6 @@ static int mxs_phy_probe(struct platform_device *pdev)
- 	mxs_phy->phy.notify_disconnect	= mxs_phy_on_disconnect;
- 	mxs_phy->phy.type		= USB_PHY_TYPE_USB2;
- 
--	ATOMIC_INIT_NOTIFIER_HEAD(&mxs_phy->phy.notifier);
--
- 	mxs_phy->clk = clk;
- 
- 	platform_set_drvdata(pdev, mxs_phy);
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index 1b74523..e6f61e4 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -329,6 +329,8 @@ int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
- 		return -EINVAL;
- 	}
- 
-+	ATOMIC_INIT_NOTIFIER_HEAD(&x->notifier);
-+
- 	spin_lock_irqsave(&phy_lock, flags);
- 
- 	list_for_each_entry(phy, &phy_list, head) {
-@@ -367,6 +369,8 @@ int usb_add_phy_dev(struct usb_phy *x)
- 		return -EINVAL;
- 	}
- 
-+	ATOMIC_INIT_NOTIFIER_HEAD(&x->notifier);
-+
- 	spin_lock_irqsave(&phy_lock, flags);
- 	list_for_each_entry(phy_bind, &phy_bind_list, list)
- 		if (!(strcmp(phy_bind->phy_dev_name, dev_name(x->dev))))
--- 
-1.7.9.5
+Please ignore this one and check patch v2.
+Thanks.
 
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
