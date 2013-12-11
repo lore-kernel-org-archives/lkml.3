@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761Ab3LKXa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 18:30:29 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43268 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3LKXaO (ORCPT
+	id S1751824Ab3LKXbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 18:31:48 -0500
+Received: from smtprelay0067.hostedemail.com ([216.40.44.67]:46255 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751000Ab3LKXbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 18:30:14 -0500
-Date: Wed, 11 Dec 2013 23:30:11 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
+	Wed, 11 Dec 2013 18:31:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:2895:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:7652:7875:8603:10004:10400:10848:11232:11658:11914:12296:12517:12519:12555:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: owl61_6663c3d6f132f
+X-Filterd-Recvd-Size: 3128
+Message-ID: <1386804701.2479.2.camel@joe-AO722>
+Subject: Re: [PATCH -next 1/3] seq: Add a seq_overflow test.
+From: Joe Perches <joe@perches.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: clear close-on-exec flag as part of put_unused_fd()
-Message-ID: <20131211233011.GA10323@ZenIV.linux.org.uk>
-References: <1386796107-4197-1-git-send-email-ydroneaud@opteya.com>
- <20131211223634.GA13828@mguzik.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211223634.GA13828@mguzik.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 11 Dec 2013 15:31:41 -0800
+In-Reply-To: <52A8F4E0.5080402@gmail.com>
+References: <cover.1386738050.git.joe@perches.com>
+	 <f752df21274aef5c88da81d6c37d427bfe1859a2.1386738050.git.joe@perches.com>
+	 <52A8F4E0.5080402@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 11:36:35PM +0100, Mateusz Guzik wrote:
-
-> >From my reading this will break at least the following:
-> fd = open(..., .. | O_CLOEXEC);
-> dup2(whatever, fd);
+On Thu, 2013-12-12 at 10:27 +1100, Ryan Mallon wrote:
+> On 11/12/13 16:12, Joe Perches wrote:
+> > seq_printf and seq_puts returns are often misused.
+> > 
+> > Instead of checking the seq_printf or seq_puts return,
+> > add a new seq_overflow function to test if a seq_file has
+> > overflowed the available buffer space.
+> > 
+> > This will eventually allow seq_printf and seq_puts to be
+> > converted to have a void return instead of the int return
+> > that is often assumed to have a size_t value instead of an
+> > error/no-error value.
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  fs/seq_file.c            | 15 ++++++++-------
+> >  include/linux/seq_file.h |  2 ++
+> >  2 files changed, 10 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/fs/seq_file.c b/fs/seq_file.c
+> > index 1d641bb..aab0736 100644
+> > --- a/fs/seq_file.c
+> > +++ b/fs/seq_file.c
+> > @@ -14,16 +14,17 @@
+> >  #include <asm/uaccess.h>
+> >  #include <asm/page.h>
+> >  
+> > -
+> > -/*
+> > - * seq_files have a buffer which can may overflow. When this happens a larger
+> > - * buffer is reallocated and all the data will be printed again.
+> > - * The overflow state is true when m->count == m->size.
+> > +/**
+> > + * seq_overflow - test if a seq_file has overflowed the space available
+> > + * @m: the seq_file handle
+> > + *
+> > + * Returns -1 when an overflow has occurred, 0 otherwise.
+> >   */
+> > -static bool seq_overflow(struct seq_file *m)
+> > +int seq_overflow(struct seq_file *m)
+> >  {
+> > -	return m->count == m->size;
+> > +	return m->count == m->size ? -1 : 0;
+> >  }
+> > +EXPORT_SYMBOL(seq_overflow);
 > 
-> now fd has O_CLOEXEC even though it should not
+> What is the reasoning in making this return int instead of bool? Having
+> it return int encourages people to do:
+> 
+> 	return seq_overflow(s);
+> 
+> When used in seq_file functions will return -EPERM (-1) to user-space,
+> which is confusing. It should probably return bool and let the caller
+> sort out the correct error to return.
 
-Moreover, consider fork() done by a thread that shares descriptor
-table with somebody else.  Suppose it happens in the middle of
-open() with O_CLOEXEC being done by another thread.  We copy descriptor
-table after descriptor had been reserved (and marked close-on-exec),
-but before a reference to struct file has actually been inserted there.
-This code
-        for (i = open_files; i != 0; i--) {
-                struct file *f = *old_fds++;
-                if (f) {
-                        get_file(f);
-                } else {
-                        /*    
-                         * The fd may be claimed in the fd bitmap but not yet
-                         * instantiated in the files array if a sibling thread
-                         * is partway through open().  So make sure that this
-                         * fd is available to the new process.
-                         */
-                        __clear_open_fd(open_files - i, new_fdt);
-                }
-                rcu_assign_pointer(*new_fds++, f);
-        }
-        spin_unlock(&oldf->file_lock);
-in dup_fd() will clear the corresponding bit in open_fds, leaving close_on_exec
-alone.  Currently that's fine (we will override whatever had been in
-close_on_exec when we reserve that descriptor again), but AFAICS with this
-patch it will break.
+It was intended to make the return from seq_printf the same.
 
-Sure, it can be fixed up (ditto with dup2(), etc.), but what's the point?
-Result will require more subtle reasoning to prove correctness and will
-be more prone to breakage.  Does that really yield visible performance
-improvements that would be worth the extra complexity?  After all, you
-trade some writes to close_on_exec on descriptor reservation for unconditional
-write on descriptor freeing; if anything, I would expect that you'll get
-minor _loss_ from that change, assuming they'll be measurable in the first
-place...
+Anyway, the patch series is out of date (see Al's comments).
+I'll update it later unless you or someone else does it first.
+
+
