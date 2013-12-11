@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab3LKRQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:16:19 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58144 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3LKRQQ (ORCPT
+	id S1751692Ab3LKRRm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:17:42 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:61553 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab3LKRRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:16:16 -0500
-Date: Wed, 11 Dec 2013 12:16:12 -0500 (EST)
-Message-Id: <20131211.121612.1818249304919726954.davem@davemloft.net>
-To: freddy@asix.com.tw
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
-Subject: Re: [PATCH 1/1] AX88179_178A: Enable the hardware pseudo header in
- case of the NET_IP_ALIGN equals 0
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <52A80397.2080508@asix.com.tw>
-References: <1386323898-2246-1-git-send-email-freddy@asix.com.tw>
-	<20131209.200131.1376169274733452706.davem@davemloft.net>
-	<52A80397.2080508@asix.com.tw>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 09:16:16 -0800 (PST)
+	Wed, 11 Dec 2013 12:17:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <12930742.20131211180047@eikelenboom.it>
+References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it>
+ <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com>
+ <CAJwzM1nwFa7z5gwh42aj39M2dxVXnuecDrhQkVyL+DDFAXwwbg@mail.gmail.com> <12930742.20131211180047@eikelenboom.it>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 11 Dec 2013 18:17:19 +0100
+X-Google-Sender-Auth: hLXernIwQKudQc2Z16_LTpYR7f0
+Message-ID: <CAB=NE6UP876LzOi9-51dokRyT8TyftGitRSDz1FptSJZ9uK4PQ@mail.gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Avinash Patil <avinashapatil@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Freddy Xin <freddy@asix.com.tw>
-Date: Wed, 11 Dec 2013 14:17:59 +0800
+On Wed, Dec 11, 2013 at 6:00 PM, Sander Eikelenboom
+<linux@eikelenboom.it> wrote:
+> Could you send me the patch (or a link to it), i can't find it on the linux-wireless list.
 
-> I think there is no way of undoing the reservation in the driver.
+I looked for such a patch and didn't find it either, perhaps both of
+your issues are the same as with CRDA and the wireless-regdb not
+having a proper signature set. You can verify if this is the case by
+just downloading the git repo for wireless-regdb and CRDA and on both
+just do:
 
-Then you should add a flag that, indeed, tells usbnet not to do the
-reservation in the first place.
+make
+sudo make install
+
+After doing this on wireless-regdb just get the $USER.key.pub.pem and
+stash that into the crda/pubkeys/ before compiling. That will let CRDA
+trust your own key.
+
+  Luis
