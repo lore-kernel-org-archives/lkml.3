@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab3LKTyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:54:06 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:35845 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751000Ab3LKTyC (ORCPT
+	id S1751658Ab3LKTyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:54:31 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:55766 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab3LKTy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:54:02 -0500
-Date: Wed, 11 Dec 2013 14:54:00 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Corey Minyard <cminyard@mvista.com>
-Subject: Re: [PATCH RT 2/5] a few open coded completions
-Message-ID: <20131211145400.1b355ce4@gandalf.local.home>
-In-Reply-To: <20131211004643.325379918@goodmis.org>
-References: <20131211004631.950208564@goodmis.org>
-	<20131211004643.325379918@goodmis.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 11 Dec 2013 14:54:29 -0500
+Date: Wed, 11 Dec 2013 16:54:19 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 07/71] perf tools: Record whether a dso is 64-bit
+Message-ID: <20131211195419.GF1458@ghostprotocols.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com>
+ <52A8BC5D.2030603@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A8BC5D.2030603@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the new patch for 3.8-rt.
+Em Wed, Dec 11, 2013 at 12:26:21PM -0700, David Ahern escreveu:
+> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
+> >diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+> >index a0c7c59..80817ec 100644
+> >--- a/tools/perf/util/dso.c
+> >+++ b/tools/perf/util/dso.c
+> >@@ -446,6 +446,7 @@ struct dso *dso__new(const char *name)
+> >  		dso->cache = RB_ROOT;
+> >  		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+> >  		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+> >+		dso->is_64_bit = (sizeof(void *) == 8);
+> 
+> Isnt' that going to record the bitness of perf when it is compiled?
 
--- Steve
+Right, it will. Its just a default, I assume this will be reset after
+the DSO is loaded, i.e. the ELF file gets accessed, no?
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Mon, 28 Oct 2013 11:50:06 +0100
-Subject: [PATCH] swait: Add a few more users
+Which then would make this init to be just a distraction, no?
 
-The wait-simple queue is lighter weight and more efficient than the full
-wait queue, and may be used in atomic context on PREEMPT_RT.
+I wonder if we couldn't extern PERF_RECORD_MMAP to have the binary type
+encoded there somehow...
 
-Fix up some places that needed to call the swait_*() functions instead
-of the wait_*() functions.
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/net/wireless/orinoco/orinoco_usb.c | 2 +-
- drivers/usb/gadget/f_fs.c                  | 2 +-
- drivers/usb/gadget/inode.c                 | 4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
-index 01624dc..b0f9d2c 100644
---- a/drivers/net/wireless/orinoco/orinoco_usb.c
-+++ b/drivers/net/wireless/orinoco/orinoco_usb.c
-@@ -714,7 +714,7 @@ static void ezusb_req_ctx_wait(struct ezusb_priv *upriv,
- 			while (!ctx->done.done && msecs--)
- 				udelay(1000);
- 		} else {
--			wait_event_interruptible(ctx->done.wait,
-+			swait_event_interruptible(ctx->done.wait,
- 						 ctx->done.done);
- 		}
- 		break;
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index de3e266..5b2a068 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1284,7 +1284,7 @@ static void ffs_data_put(struct ffs_data *ffs)
- 		pr_info("%s(): freeing\n", __func__);
- 		ffs_data_clear(ffs);
- 		BUG_ON(waitqueue_active(&ffs->ev.waitq) ||
--		       waitqueue_active(&ffs->ep0req_completion.wait));
-+		       swaitqueue_active(&ffs->ep0req_completion.wait));
- 		kfree(ffs->dev_name);
- 		kfree(ffs);
- 	}
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 8ac840f..fe85df7 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -338,7 +338,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
- 	spin_unlock_irq (&epdata->dev->lock);
- 
- 	if (likely (value == 0)) {
--		value = wait_event_interruptible (done.wait, done.done);
-+		value = swait_event_interruptible (done.wait, done.done);
- 		if (value != 0) {
- 			spin_lock_irq (&epdata->dev->lock);
- 			if (likely (epdata->ep != NULL)) {
-@@ -347,7 +347,7 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
- 				usb_ep_dequeue (epdata->ep, epdata->req);
- 				spin_unlock_irq (&epdata->dev->lock);
- 
--				wait_event (done.wait, done.done);
-+				swait_event (done.wait, done.done);
- 				if (epdata->status == -ECONNRESET)
- 					epdata->status = -EINTR;
- 			} else {
--- 
-1.8.4.3
-
+> >  		dso->loaded = 0;
+> >  		dso->rel = 0;
+> >  		dso->sorted_by_name = 0;
+> >diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+> >index 384f2d9..62680e1 100644
+> >--- a/tools/perf/util/dso.h
+> >+++ b/tools/perf/util/dso.h
+> >@@ -91,6 +91,7 @@ struct dso {
+> >  	u8		 annotate_warned:1;
+> >  	u8		 sname_alloc:1;
+> >  	u8		 lname_alloc:1;
+> >+	u8		 is_64_bit:1;
+> 
+> The is_64_bit name seems a bit hardcoded. We need something similar
+> for perf-trace to set the audit machine type for resolving syscalls.
+> How about having this field set a machine type rather than a
+> "64-bit" flag?
+> 
+> David
