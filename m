@@ -1,264 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab3LKWgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:36:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27862 "EHLO mga09.intel.com"
+	id S1751702Ab3LKWjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:39:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34829 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab3LKWgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:36:32 -0500
+	id S1751076Ab3LKWja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:39:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
-   d="scan'208";a="450809096"
-Subject: [PATCH 1/2] mm: slab/slub: use page->list consistently instead of page->lru
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, cl@gentwo.org, kirill.shutemov@linux.intel.com,
-        Andi Kleen <ak@linux.intel.com>, akpm@linux-foundation.org,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Wed, 11 Dec 2013 14:36:31 -0800
-Message-Id: <20131211223631.51094A3D@viggo.jf.intel.com>
+   d="scan'208";a="423197462"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Cc: Gavin Hindman <gavin.hindman@intel.com>,
+        "Triplett, Josh" <josh.triplett@intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH] powercap/rapl: add support for ValleyView Soc
+Date: Wed, 11 Dec 2013 14:39:27 -0800
+Message-Id: <1386801567-26661-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds support for RAPL on Intel ValleyView based SoC
+platforms, such as Baytrail.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Besides adding CPU ID, special energy unit encoding is handled
+for ValleyView.
 
-'struct page' has two list_head fields: 'lru' and 'list'.
-Conveniently, they are unioned together.  This means that code
-can use them interchangably, which gets horribly confusing like
-with this nugget from slab.c:
-
->	list_del(&page->lru);
->	if (page->active == cachep->num)
->		list_add(&page->list, &n->slabs_full);
-
-This patch makes the slab and slub code use page->list
-universally instead of mixing ->list and ->lru.
-
-It also adds some comments to attempt to keep new users from
-picking up uses of ->list.
-
-So, the new rule is: page->list is what the slabs use.  page->lru
-is for everybody else.  This is a pretty arbitrary rule, but we
-need _something_.  Maybe we should just axe the ->list one and
-make the sl?bs use ->lru.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 ---
+ drivers/powercap/intel_rapl.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
- linux.git-davehans/include/linux/mm_types.h |    5 ++
- linux.git-davehans/mm/slab.c                |   50 ++++++++++++++--------------
- 2 files changed, 29 insertions(+), 26 deletions(-)
-
-diff -puN include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently include/linux/mm_types.h
---- linux.git/include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently	2013-12-11 14:34:51.438183588 -0800
-+++ linux.git-davehans/include/linux/mm_types.h	2013-12-11 14:34:51.445183899 -0800
-@@ -123,6 +123,8 @@ struct page {
- 	union {
- 		struct list_head lru;	/* Pageout list, eg. active_list
- 					 * protected by zone->lru_lock !
-+					 * Can be used as a generic list
-+					 * by the page owner.
- 					 */
- 		struct {		/* slub per cpu partial pages */
- 			struct page *next;	/* Next partial slab */
-@@ -135,7 +137,8 @@ struct page {
- #endif
- 		};
- 
--		struct list_head list;	/* slobs list of pages */
-+		struct list_head list;	/* sl[aou]bs list of pages.
-+					 * do not use outside of slabs */
- 		struct slab *slab_page; /* slab fields */
- 		struct rcu_head rcu_head;	/* Used by SLAB
- 						 * when destroying via RCU
-diff -puN mm/slab.c~make-slab-use-page-lru-vs-list-consistently mm/slab.c
---- linux.git/mm/slab.c~make-slab-use-page-lru-vs-list-consistently	2013-12-11 14:34:51.440183677 -0800
-+++ linux.git-davehans/mm/slab.c	2013-12-11 14:34:51.444183855 -0800
-@@ -765,15 +765,15 @@ static void recheck_pfmemalloc_active(st
- 		return;
- 
- 	spin_lock_irqsave(&n->list_lock, flags);
--	list_for_each_entry(page, &n->slabs_full, lru)
-+	list_for_each_entry(page, &n->slabs_full, list)
- 		if (is_slab_pfmemalloc(page))
- 			goto out;
- 
--	list_for_each_entry(page, &n->slabs_partial, lru)
-+	list_for_each_entry(page, &n->slabs_partial, list)
- 		if (is_slab_pfmemalloc(page))
- 			goto out;
- 
--	list_for_each_entry(page, &n->slabs_free, lru)
-+	list_for_each_entry(page, &n->slabs_free, list)
- 		if (is_slab_pfmemalloc(page))
- 			goto out;
- 
-@@ -1428,7 +1428,7 @@ void __init kmem_cache_init(void)
- {
- 	int i;
- 
--	BUILD_BUG_ON(sizeof(((struct page *)NULL)->lru) <
-+	BUILD_BUG_ON(sizeof(((struct page *)NULL)->list) <
- 					sizeof(struct rcu_head));
- 	kmem_cache = &kmem_cache_boot;
- 	setup_node_pointer(kmem_cache);
-@@ -1624,15 +1624,15 @@ slab_out_of_memory(struct kmem_cache *ca
- 			continue;
- 
- 		spin_lock_irqsave(&n->list_lock, flags);
--		list_for_each_entry(page, &n->slabs_full, lru) {
-+		list_for_each_entry(page, &n->slabs_full, list) {
- 			active_objs += cachep->num;
- 			active_slabs++;
- 		}
--		list_for_each_entry(page, &n->slabs_partial, lru) {
-+		list_for_each_entry(page, &n->slabs_partial, list) {
- 			active_objs += page->active;
- 			active_slabs++;
- 		}
--		list_for_each_entry(page, &n->slabs_free, lru)
-+		list_for_each_entry(page, &n->slabs_free, list)
- 			num_slabs++;
- 
- 		free_objects += n->free_objects;
-@@ -2424,11 +2424,11 @@ static int drain_freelist(struct kmem_ca
- 			goto out;
- 		}
- 
--		page = list_entry(p, struct page, lru);
-+		page = list_entry(p, struct page, list);
- #if DEBUG
- 		BUG_ON(page->active);
- #endif
--		list_del(&page->lru);
-+		list_del(&page->list);
- 		/*
- 		 * Safe to drop the lock. The slab is no longer linked
- 		 * to the cache.
-@@ -2721,7 +2721,7 @@ static int cache_grow(struct kmem_cache
- 	spin_lock(&n->list_lock);
- 
- 	/* Make slab active. */
--	list_add_tail(&page->lru, &(n->slabs_free));
-+	list_add_tail(&page->list, &(n->slabs_free));
- 	STATS_INC_GROWN(cachep);
- 	n->free_objects += cachep->num;
- 	spin_unlock(&n->list_lock);
-@@ -2864,7 +2864,7 @@ retry:
- 				goto must_grow;
- 		}
- 
--		page = list_entry(entry, struct page, lru);
-+		page = list_entry(entry, struct page, list);
- 		check_spinlock_acquired(cachep);
- 
- 		/*
-@@ -2884,7 +2884,7 @@ retry:
- 		}
- 
- 		/* move slabp to correct slabp list: */
--		list_del(&page->lru);
-+		list_del(&page->list);
- 		if (page->active == cachep->num)
- 			list_add(&page->list, &n->slabs_full);
- 		else
-@@ -3163,7 +3163,7 @@ retry:
- 			goto must_grow;
- 	}
- 
--	page = list_entry(entry, struct page, lru);
-+	page = list_entry(entry, struct page, list);
- 	check_spinlock_acquired_node(cachep, nodeid);
- 
- 	STATS_INC_NODEALLOCS(cachep);
-@@ -3175,12 +3175,12 @@ retry:
- 	obj = slab_get_obj(cachep, page, nodeid);
- 	n->free_objects--;
- 	/* move slabp to correct slabp list: */
--	list_del(&page->lru);
-+	list_del(&page->list);
- 
- 	if (page->active == cachep->num)
--		list_add(&page->lru, &n->slabs_full);
-+		list_add(&page->list, &n->slabs_full);
- 	else
--		list_add(&page->lru, &n->slabs_partial);
-+		list_add(&page->list, &n->slabs_partial);
- 
- 	spin_unlock(&n->list_lock);
- 	goto done;
-@@ -3337,7 +3337,7 @@ static void free_block(struct kmem_cache
- 
- 		page = virt_to_head_page(objp);
- 		n = cachep->node[node];
--		list_del(&page->lru);
-+		list_del(&page->list);
- 		check_spinlock_acquired_node(cachep, node);
- 		slab_put_obj(cachep, page, objp, node);
- 		STATS_DEC_ACTIVE(cachep);
-@@ -3355,14 +3355,14 @@ static void free_block(struct kmem_cache
- 				 */
- 				slab_destroy(cachep, page);
- 			} else {
--				list_add(&page->lru, &n->slabs_free);
-+				list_add(&page->list, &n->slabs_free);
- 			}
- 		} else {
- 			/* Unconditionally move a slab to the end of the
- 			 * partial list on free - maximum time for the
- 			 * other objects to be freed, too.
- 			 */
--			list_add_tail(&page->lru, &n->slabs_partial);
-+			list_add_tail(&page->list, &n->slabs_partial);
- 		}
- 	}
+diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+index 2a786c5..3c67683 100644
+--- a/drivers/powercap/intel_rapl.c
++++ b/drivers/powercap/intel_rapl.c
+@@ -833,6 +833,11 @@ static int rapl_write_data_raw(struct rapl_domain *rd,
+ 	return 0;
  }
-@@ -3404,7 +3404,7 @@ free_done:
- 		while (p != &(n->slabs_free)) {
- 			struct page *page;
  
--			page = list_entry(p, struct page, lru);
-+			page = list_entry(p, struct page, list);
- 			BUG_ON(page->active);
++static const struct x86_cpu_id energy_unit_quirk_ids[] = {
++	{ X86_VENDOR_INTEL, 6, 0x37},/* VLV */
++	{}
++};
++
+ static int rapl_check_unit(struct rapl_package *rp, int cpu)
+ {
+ 	u64 msr_val;
+@@ -853,8 +858,11 @@ static int rapl_check_unit(struct rapl_package *rp, int cpu)
+ 	 * time unit: 1/time_unit_divisor Seconds
+ 	 */
+ 	value = (msr_val & ENERGY_UNIT_MASK) >> ENERGY_UNIT_OFFSET;
+-	rp->energy_unit_divisor = 1 << value;
+-
++	/* some CPUs have different way to calculate energy unit */
++	if (x86_match_cpu(energy_unit_quirk_ids))
++		rp->energy_unit_divisor = 1000000 / (1 << value);
++	else
++		rp->energy_unit_divisor = 1 << value;
  
- 			i++;
-@@ -4029,13 +4029,13 @@ void get_slabinfo(struct kmem_cache *cac
- 		check_irq_on();
- 		spin_lock_irq(&n->list_lock);
- 
--		list_for_each_entry(page, &n->slabs_full, lru) {
-+		list_for_each_entry(page, &n->slabs_full, list) {
- 			if (page->active != cachep->num && !error)
- 				error = "slabs_full accounting error";
- 			active_objs += cachep->num;
- 			active_slabs++;
- 		}
--		list_for_each_entry(page, &n->slabs_partial, lru) {
-+		list_for_each_entry(page, &n->slabs_partial, list) {
- 			if (page->active == cachep->num && !error)
- 				error = "slabs_partial accounting error";
- 			if (!page->active && !error)
-@@ -4043,7 +4043,7 @@ void get_slabinfo(struct kmem_cache *cac
- 			active_objs += page->active;
- 			active_slabs++;
- 		}
--		list_for_each_entry(page, &n->slabs_free, lru) {
-+		list_for_each_entry(page, &n->slabs_free, list) {
- 			if (page->active && !error)
- 				error = "slabs_free accounting error";
- 			num_slabs++;
-@@ -4266,9 +4266,9 @@ static int leaks_show(struct seq_file *m
- 		check_irq_on();
- 		spin_lock_irq(&n->list_lock);
- 
--		list_for_each_entry(page, &n->slabs_full, lru)
-+		list_for_each_entry(page, &n->slabs_full, list)
- 			handle_slab(x, cachep, page);
--		list_for_each_entry(page, &n->slabs_partial, lru)
-+		list_for_each_entry(page, &n->slabs_partial, list)
- 			handle_slab(x, cachep, page);
- 		spin_unlock_irq(&n->list_lock);
- 	}
-_
+ 	value = (msr_val & POWER_UNIT_MASK) >> POWER_UNIT_OFFSET;
+ 	rp->power_unit_divisor = 1 << value;
+@@ -941,6 +949,7 @@ static void package_power_limit_irq_restore(int package_id)
+ static const struct x86_cpu_id rapl_ids[] = {
+ 	{ X86_VENDOR_INTEL, 6, 0x2a},/* SNB */
+ 	{ X86_VENDOR_INTEL, 6, 0x2d},/* SNB EP */
++	{ X86_VENDOR_INTEL, 6, 0x37},/* VLV */
+ 	{ X86_VENDOR_INTEL, 6, 0x3a},/* IVB */
+ 	{ X86_VENDOR_INTEL, 6, 0x45},/* HSW */
+ 	/* TODO: Add more CPU IDs after testing */
+-- 
+1.8.1.2
+
