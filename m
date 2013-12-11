@@ -1,251 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab3LKOhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:37:32 -0500
-Received: from fieldses.org ([174.143.236.118]:52095 "EHLO fieldses.org"
+	id S1751746Ab3LKOjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:39:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43887 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab3LKOha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:37:30 -0500
-Date: Wed, 11 Dec 2013 09:37:24 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20131211143724.GA29300@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
- <1386703055-22308-2-git-send-email-jlayton@redhat.com>
- <20131210212253.GC20831@fieldses.org>
- <20131210232204.GD20831@fieldses.org>
- <20131211061856.615c39ba@tlielax.poochiereds.net>
+	id S1751262Ab3LKOjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 09:39:06 -0500
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <santosh.shilimkar@ti.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/2] mm/memblock: print phys_addr_t using %pa
+Date: Wed, 11 Dec 2013 17:36:14 +0200
+Message-ID: <1386776175-23779-2-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1386776175-23779-1-git-send-email-grygorii.strashko@ti.com>
+References: <1386776175-23779-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211061856.615c39ba@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 06:18:56AM -0500, Jeff Layton wrote:
-> On Tue, 10 Dec 2013 18:22:04 -0500
-> "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> 
-> > On Tue, Dec 10, 2013 at 04:22:53PM -0500, bfields wrote:
-> > > On Tue, Dec 10, 2013 at 02:17:30PM -0500, Jeff Layton wrote:
-> > > > Currently, there's a lot of copy and paste between the two.  Add some
-> > > > functions to do the initialization of the file_lock from values
-> > > > passed in, and turn the flock/flock64 variants of those functions into
-> > > > wrappers around them.
-> > > > 
-> > > > Unfortunately it's harder to consolidate the fl_start/fl_end
-> > > > calculations due to the differently sized types involved so I've left
-> > > > them separate for now.
-> > > 
-> > > I'd think you could assign everything to the flock64 type and do the
-> > > common work there or something.
-> > > 
-> > > But I'm confused about what the current code is actually trying to do:
-> > > if I'm chasing down the definitions right, these quantities are all
-> > > signed, and when start is defined as an off_t it can overflow in the
-> > > SEEK_CUR and SEEK_END cases.  And
-> > > 
-> > > 	if (fl->fl_end < fl->fl_start)
-> > > 		return -EOVERFLOW
-> > > 
-> > > is counting on overlow wrapping around, which I thought wasn't
-> > > guaranteed in the case of signed arithmetic?
-> > 
-> > E.g. the following (untested) removes the duplication and should return
-> > -EOVERFLOW in the cases we currently do a random conversion from 64- to
-> > 32-bit and back.  Susv3 says:
-> > 
-> > 	[EOVERFLOW]
-> > 	The cmd argument is F_GETLK, F_SETLK, or F_SETLKW and the
-> > 	smallest or, if l_len is non-zero, the largest offset of any
-> > 	byte in the requested segment cannot be represented correctly in
-> > 	an object of type off_t.
-> > 
-> > so that's what I tried to do.
-> > 
-> > --b.
-> > 
-> > diff --git a/fs/locks.c b/fs/locks.c
-> > index 92a0f0a..47832f5 100644
-> > --- a/fs/locks.c
-> > +++ b/fs/locks.c
-> > @@ -344,48 +344,41 @@ static int assign_type(struct file_lock *fl, long type)
-> >  	return 0;
-> >  }
-> >  
-> > -/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-> > - * style lock.
-> > - */
-> > -static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-> > -			       struct flock *l)
-> > +static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
-> > +					struct flock64 *l, loff_t offset_max)
-> >  {
-> > -	off_t start, end;
-> > +	loff_t start;
-> >  
-> >  	switch (l->l_whence) {
-> >  	case SEEK_SET:
-> > -		start = 0;
-> > -		break;
-> > +		fl->fl_start = 0;
-> >  	case SEEK_CUR:
-> > -		start = filp->f_pos;
-> > -		break;
-> > +		fl->fl_start = filp->f_pos;
-> >  	case SEEK_END:
-> > -		start = i_size_read(file_inode(filp));
-> > -		break;
-> > +		fl->fl_start = i_size_read(file_inode(filp));
-> >  	default:
-> >  		return -EINVAL;
-> >  	}
-> > +	if (l->l_start < 0)
-> > +		return -EINVAL;
-> > +	if (l->l_start > offset_max - fl->fl_start)
-> > +		return -EOVERFLOW;
-> > +	fl->fl_start += l->l_start;
-> > +	if (l->l_len > offset_max - fl->fl_start)
-> > +		return -EOVERFLOW;
-> > +	if (fl->fl_start + l->l_len < 0)
-> > +		return -EINVAL;
-> >  
-> >  	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
-> >  	   POSIX-2001 defines it. */
-> > -	start += l->l_start;
-> > -	if (start < 0)
-> > -		return -EINVAL;
-> > -	fl->fl_end = OFFSET_MAX;
-> > -	if (l->l_len > 0) {
-> > -		end = start + l->l_len - 1;
-> > -		fl->fl_end = end;
-> > -	} else if (l->l_len < 0) {
-> > -		end = start - 1;
-> > -		fl->fl_end = end;
-> > -		start += l->l_len;
-> > -		if (start < 0)
-> > -			return -EINVAL;
-> > -	}
-> > -	fl->fl_start = start;	/* we record the absolute position */
-> > -	if (fl->fl_end < fl->fl_start)
-> > -		return -EOVERFLOW;
-> > -	
-> > +	if (l->l_len > 0)
-> > +		fl->fl_end = fl->fl_start + l->l_len - 1;
-> > +	else if (l->l_len < 0) {
-> > +		fl->fl_end = start - 1;
-> > +		fl->fl_start += l->l_len;
-> > +	} else
-> > +		fl->fl_end = OFFSET_MAX;
-> > +
-> >  	fl->fl_owner = current->files;
-> >  	fl->fl_pid = current->tgid;
-> >  	fl->fl_file = filp;
-> > @@ -396,50 +389,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-> >  	return assign_type(fl, l->l_type);
-> >  }
-> >  
-> > +/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-> > + * style lock.
-> > + */
-> > +static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-> > +			       struct flock *l)
-> > +{
-> > +	struct flock64 ll = {
-> > +		.l_type = l->l_type,
-> > +		.l_whence = l->l_whence,
-> > +		.l_start = l->l_start,
-> > +		.l_len = l->l_len,
-> > +	};
-> > +	
-> > +	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
-> > +}
-> > +
-> >  #if BITS_PER_LONG == 32
-> >  static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
-> >  				 struct flock64 *l)
-> >  {
-> > -	loff_t start;
-> > -
-> > -	switch (l->l_whence) {
-> > -	case SEEK_SET:
-> > -		start = 0;
-> > -		break;
-> > -	case SEEK_CUR:
-> > -		start = filp->f_pos;
-> > -		break;
-> > -	case SEEK_END:
-> > -		start = i_size_read(file_inode(filp));
-> > -		break;
-> > -	default:
-> > -		return -EINVAL;
-> > -	}
-> > -
-> > -	start += l->l_start;
-> > -	if (start < 0)
-> > -		return -EINVAL;
-> > -	fl->fl_end = OFFSET_MAX;
-> > -	if (l->l_len > 0) {
-> > -		fl->fl_end = start + l->l_len - 1;
-> > -	} else if (l->l_len < 0) {
-> > -		fl->fl_end = start - 1;
-> > -		start += l->l_len;
-> > -		if (start < 0)
-> > -			return -EINVAL;
-> > -	}
-> > -	fl->fl_start = start;	/* we record the absolute position */
-> > -	if (fl->fl_end < fl->fl_start)
-> > -		return -EOVERFLOW;
-> > -	
-> > -	fl->fl_owner = current->files;
-> > -	fl->fl_pid = current->tgid;
-> > -	fl->fl_file = filp;
-> > -	fl->fl_flags = FL_POSIX;
-> > -	fl->fl_ops = NULL;
-> > -	fl->fl_lmops = NULL;
-> > -
-> > -	return assign_type(fl, l->l_type);
-> > +	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
-> >  }
-> >  #endif
-> >  
-> > diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-> > index 95e46c8..36025f7 100644
-> > --- a/include/uapi/asm-generic/fcntl.h
-> > +++ b/include/uapi/asm-generic/fcntl.h
-> > @@ -186,8 +186,6 @@ struct flock {
-> >  };
-> >  #endif
-> >  
-> > -#ifndef CONFIG_64BIT
-> > -
-> >  #ifndef HAVE_ARCH_STRUCT_FLOCK64
-> >  #ifndef __ARCH_FLOCK64_PAD
-> >  #define __ARCH_FLOCK64_PAD
-> > @@ -202,6 +200,5 @@ struct flock64 {
-> >  	__ARCH_FLOCK64_PAD
-> >  };
-> >  #endif
-> > -#endif /* !CONFIG_64BIT */
-> >  
-> >  #endif /* _ASM_GENERIC_FCNTL_H */
-> 
-> Nice. I had started to consolidate them, but then figured out that
-> there are so many edge cases and I didn't have a good way to test them
-> all.
-> 
-> As far as I can tell though, this looks correct. I'll plan to drop my
-> patch and base the rest of the set on top of yours.
+printk supports %pa format specifier to print phys_addr_t type values,
+so use it instead of %#010llx/0x%llx/0x%08lx and drop corresponding
+type casting.
 
-Well, it'd be weird if I didn't screw up something somewhere.  If we've
-both looked at it and not found anything then maybe it's OK.  But I'll
-see if I can do some basic tests for the edge cases.
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
 
---b.
+It's additional change on top of the memblock series 
+https://lkml.org/lkml/2013/12/9/715
+
+ mm/memblock.c |   85 +++++++++++++++++++++++++++------------------------------
+ 1 file changed, 40 insertions(+), 45 deletions(-)
+
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 974f0d3..71b11d9 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -308,7 +308,7 @@ static int __init_memblock memblock_double_array(struct memblock_type *type,
+ {
+ 	struct memblock_region *new_array, *old_array;
+ 	phys_addr_t old_alloc_size, new_alloc_size;
+-	phys_addr_t old_size, new_size, addr;
++	phys_addr_t old_size, new_size, addr, end_addr;
+ 	int use_slab = slab_is_available();
+ 	int *in_slab;
+ 
+@@ -369,9 +369,9 @@ static int __init_memblock memblock_double_array(struct memblock_type *type,
+ 		return -1;
+ 	}
+ 
+-	memblock_dbg("memblock: %s is doubled to %ld at [%#010llx-%#010llx]",
+-			memblock_type_name(type), type->max * 2, (u64)addr,
+-			(u64)addr + new_size - 1);
++	end_addr = addr + new_size - 1;
++	memblock_dbg("memblock: %s is doubled to %ld at [%pa-%pa]",
++		     memblock_type_name(type), type->max * 2, &addr, &end_addr);
+ 
+ 	/*
+ 	 * Found space, we now need to move the array over before we add the
+@@ -657,10 +657,10 @@ int __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
+ 
+ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ {
+-	memblock_dbg("   memblock_free: [%#016llx-%#016llx] %pF\n",
+-		     (unsigned long long)base,
+-		     (unsigned long long)base + size - 1,
+-		     (void *)_RET_IP_);
++	phys_addr_t end = base + size - 1;
++
++	memblock_dbg("   memblock_free: [%pa-%pa] %pF\n",
++		     &base, &end, (void *)_RET_IP_);
+ 
+ 	return __memblock_remove(&memblock.reserved, base, size);
+ }
+@@ -668,11 +668,10 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
++	phys_addr_t end = base + size - 1;
+ 
+-	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
+-		     (unsigned long long)base,
+-		     (unsigned long long)base + size - 1,
+-		     (void *)_RET_IP_);
++	memblock_dbg("memblock_reserve: [%pa-%pa] %pF\n",
++		     &base, &end, (void *)_RET_IP_);
+ 
+ 	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
+ }
+@@ -926,8 +925,8 @@ phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys
+ 	alloc = __memblock_alloc_base(size, align, max_addr);
+ 
+ 	if (alloc == 0)
+-		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
+-		      (unsigned long long) size, (unsigned long long) max_addr);
++		panic("ERROR: Failed to allocate %pa bytes below %pa.\n",
++		      &size, &max_addr);
+ 
+ 	return alloc;
+ }
+@@ -1060,9 +1059,9 @@ void * __init memblock_virt_alloc_try_nid_nopanic(
+ 				phys_addr_t min_addr, phys_addr_t max_addr,
+ 				int nid)
+ {
+-	memblock_dbg("%s: %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx %pF\n",
+-		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
+-		     (u64)max_addr, (void *)_RET_IP_);
++	memblock_dbg("%s: %pa bytes align=%pa nid=%d\n\tfrom=%pa max_addr=%pa %pF\n",
++		     __func__, &size, &align, nid, &min_addr,
++		     &max_addr, (void *)_RET_IP_);
+ 	return memblock_virt_alloc_internal(size, align, min_addr,
+ 					     max_addr, nid);
+ }
+@@ -1092,17 +1091,16 @@ void * __init memblock_virt_alloc_try_nid(
+ {
+ 	void *ptr;
+ 
+-	memblock_dbg("%s: %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx %pF\n",
+-		     __func__, (u64)size, (u64)align, nid, (u64)min_addr,
+-		     (u64)max_addr, (void *)_RET_IP_);
++	memblock_dbg("%s: %pa bytes align=%pa nid=%d\n\tfrom=%pa max_addr=%pa %pF\n",
++		     __func__, &size, &align, nid, &min_addr,
++		     &max_addr, (void *)_RET_IP_);
+ 	ptr = memblock_virt_alloc_internal(size, align,
+ 					   min_addr, max_addr, nid);
+ 	if (ptr)
+ 		return ptr;
+ 
+-	panic("%s: Failed to allocate %llu bytes align=0x%llx nid=%d from=0x%llx max_addr=0x%llx\n",
+-	      __func__, (u64)size, (u64)align, nid, (u64)min_addr,
+-	      (u64)max_addr);
++	panic("%s: Failed to allocate %pa bytes align=%pa nid=%d from=%pa max_addr=%pa\n",
++	      __func__, &size, &align, nid, &min_addr, &max_addr);
+ 	return NULL;
+ }
+ 
+@@ -1116,9 +1114,10 @@ void * __init memblock_virt_alloc_try_nid(
+  */
+ void __init __memblock_free_early(phys_addr_t base, phys_addr_t size)
+ {
+-	memblock_dbg("%s: [%#016llx-%#016llx] %pF\n",
+-		     __func__, (u64)base, (u64)base + size - 1,
+-		     (void *)_RET_IP_);
++	phys_addr_t end = base + size - 1;
++
++	memblock_dbg("%s: [%pa-%pa] %pF\n",
++		     __func__, &base, &end, (void *)_RET_IP_);
+ 	kmemleak_free_part(__va(base), size);
+ 	__memblock_remove(&memblock.reserved, base, size);
+ }
+@@ -1134,11 +1133,11 @@ void __init __memblock_free_early(phys_addr_t base, phys_addr_t size)
+  */
+ void __init __memblock_free_late(phys_addr_t base, phys_addr_t size)
+ {
+-	u64 cursor, end;
++	phys_addr_t cursor, end;
+ 
+-	memblock_dbg("%s: [%#016llx-%#016llx] %pF\n",
+-		     __func__, (u64)base, (u64)base + size - 1,
+-		     (void *)_RET_IP_);
++	end = base + size - 1;
++	memblock_dbg("%s: [%pa-%pa] %pF\n",
++		     __func__, &base, &end, (void *)_RET_IP_);
+ 	kmemleak_free_part(__va(base), size);
+ 	cursor = PFN_UP(base);
+ 	end = PFN_DOWN(base + size);
+@@ -1328,7 +1327,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ 
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+ {
+-	unsigned long long base, size;
++	phys_addr_t base, size, end;
+ 	int i;
+ 
+ 	pr_info(" %s.cnt  = 0x%lx\n", name, type->cnt);
+@@ -1339,22 +1338,23 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
+ 
+ 		base = rgn->base;
+ 		size = rgn->size;
++		end = base + size - 1;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 		if (memblock_get_region_node(rgn) != MAX_NUMNODES)
+ 			snprintf(nid_buf, sizeof(nid_buf), " on node %d",
+ 				 memblock_get_region_node(rgn));
+ #endif
+-		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s\n",
+-			name, i, base, base + size - 1, size, nid_buf);
++		pr_info(" %s[%#x]\t[%pa-%pa], %pa bytes%s\n",
++			name, i, &base, &end, &size, nid_buf);
+ 	}
+ }
+ 
+ void __init_memblock __memblock_dump_all(void)
+ {
+ 	pr_info("MEMBLOCK configuration:\n");
+-	pr_info(" memory size = %#llx reserved size = %#llx\n",
+-		(unsigned long long)memblock.memory.total_size,
+-		(unsigned long long)memblock.reserved.total_size);
++	pr_info(" memory size = %pa reserved size = %pa\n",
++		&memblock.memory.total_size,
++		&memblock.reserved.total_size);
+ 
+ 	memblock_dump(&memblock.memory, "memory");
+ 	memblock_dump(&memblock.reserved, "reserved");
+@@ -1382,17 +1382,12 @@ static int memblock_debug_show(struct seq_file *m, void *private)
+ 	int i;
+ 
+ 	for (i = 0; i < type->cnt; i++) {
++		phys_addr_t end;
++
+ 		reg = &type->regions[i];
++		end = reg->base + reg->size - 1;
+ 		seq_printf(m, "%4d: ", i);
+-		if (sizeof(phys_addr_t) == 4)
+-			seq_printf(m, "0x%08lx..0x%08lx\n",
+-				   (unsigned long)reg->base,
+-				   (unsigned long)(reg->base + reg->size - 1));
+-		else
+-			seq_printf(m, "0x%016llx..0x%016llx\n",
+-				   (unsigned long long)reg->base,
+-				   (unsigned long long)(reg->base + reg->size - 1));
+-
++		seq_printf(m, "%pa..%pa\n", &reg->base, &end);
+ 	}
+ 	return 0;
+ }
+-- 
+1.7.9.5
+
