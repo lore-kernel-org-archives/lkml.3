@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab3LKTTl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:19:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51574 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab3LKTTj (ORCPT
+	id S1751872Ab3LKTVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:21:40 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:48943 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab3LKTVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:19:39 -0500
-Message-ID: <52A8BAC5.70006@canonical.com>
-Date: Wed, 11 Dec 2013 14:19:33 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
- mmio
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com> <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
-In-Reply-To: <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Dec 2013 14:21:39 -0500
+Date: Wed, 11 Dec 2013 20:21:38 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, jpirko@redhat.com
+Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
+Message-ID: <20131211192138.GB4675@order.stressinduktion.org>
+Mail-Followup-To: Denys Vlasenko <dvlasenk@redhat.com>,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	davem@davemloft.net, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	James Morris <jmorris@namei.org>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	Patrick McHardy <kaber@trash.net>, jpirko@redhat.com
+References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2013 03:10 PM, Yinghai Lu wrote:
-> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> That doesn't answer my question at all.
->>
->> I understand that this change makes it so Joseph doesn't have to use
->> "pci=realloc=off".  But why should auto-reallocation be limited to
->> buses that have resources above 4GB?  That doesn't make any sense.
->>
->> We should fix the reallocation code so it can deal with this case.  If
->> there's not enough space for everything, obviously we have to leave
->> something unassigned.  A ROM BAR is a good candidate for leaving
->> unassigned, because most of the time we can get along without it.
-> Yes, that is ideal and not that simple.
-> but that would be hard to backport to old kernels.
->
-> BTW, Joseph, can you try
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-pci-3.14
-> with pci=realloc=on
->
-> on that system?
->
-> Thanks
->
-> Yinghai
-I noticed there was some back and forth on this thread.  Do you still
-want me to test this version, Yinghai?
+On Wed, Dec 11, 2013 at 12:45:14PM +0100, Denys Vlasenko wrote:
+> If ipv6 auto-configuration does not work, currently it's hard
+> to track what's going on. This change adds log messages
+> (at debug level) on every code path where ipv6 autoconf fails.
+> 
+> v2: fixed indentation in multi-line log output statements.
+
+Have you seen lots of those problems? Some of those seem like very
+serious problems and maybe could also deserve a pr_warn or pr_err.
+
+I hope these are one-time errors, so I don't think counters would
+be helpful.
+
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> ---
+>  net/ipv6/addrconf.c | 45 ++++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 36 insertions(+), 9 deletions(-)
+> 
+> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+> index 3c3425e..c09c5f4 100644
+> --- a/net/ipv6/addrconf.c
+> +++ b/net/ipv6/addrconf.c
+> @@ -1694,8 +1694,11 @@ static void addrconf_leave_anycast(struct inet6_ifaddr *ifp)
+>  
+>  static int addrconf_ifid_eui48(u8 *eui, struct net_device *dev)
+>  {
+> -	if (dev->addr_len != ETH_ALEN)
+> +	if (dev->addr_len != ETH_ALEN) {
+> +		pr_debug("IPv6 addrconf: %s: address length %d != %s\n",
+> +			 dev->name, dev->addr_len, "ETH_ALEN");
+
+I like __stringify(ETH_ALEN) instead of "ETH_ALEN" a bit more but no need
+to change the patch because of that. ;)
+
+> @@ -1842,6 +1865,10 @@ static int ipv6_inherit_eui64(u8 *eui, struct inet6_dev *idev)
+>  		}
+>  	}
+>  	read_unlock_bh(&idev->lock);
+> +	if (err)
+> +		pr_debug("IPv6 addrconf: "
+> +			 "%s: no link-local address to inherit\n",
+> +			 idev->dev->name);
+
+Another nit:
+String literals should not be wrapped to ease grepping for them in the source.
+
+Thanks,
+
+  Hannes
+
