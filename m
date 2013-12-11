@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3LKSLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:11:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab3LKSLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:11:17 -0500
-Date: Wed, 11 Dec 2013 19:11:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 16/17] uprobes: Allocate ->utask before handler_chain()
-	for tracing handlers
-Message-ID: <20131211181155.GA25144@redhat.com>
-References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-17-git-send-email-namhyung@kernel.org> <52A6EFD7.8050602@hitachi.com> <20131210155744.GA21466@redhat.com> <52A7C347.1060402@hitachi.com>
+	id S1751374Ab3LKSVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:21:14 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:51821 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3LKSVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 13:21:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A7C347.1060402@hitachi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <52A8A5B0.2080206@zytor.com>
+References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
+	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
+	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
+	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>
+	<CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
+	<52A63AD4.2030101@zytor.com>
+	<CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
+	<52A63BF3.1000608@zytor.com>
+	<CAMe9rOqF5f2Wktsqf_43hwa_c20+_S+W8N5VDZ6TVqPXDh7puw@mail.gmail.com>
+	<52A63DCF.2060504@zytor.com>
+	<CAMe9rOqAV5_+H97XSnrOHxcruouC=hCjDuEkiiyM8UM0BH5CWw@mail.gmail.com>
+	<alpine.LNX.2.00.1312111435470.1413@pobox.suse.cz>
+	<CAMe9rOoS6aZFCP=NNCcUuOanFcj0Y2Uq4jyC+KGC2qCR8M=s=A@mail.gmail.com>
+	<52A8A5B0.2080206@zytor.com>
+Date: Wed, 11 Dec 2013 10:21:12 -0800
+Message-ID: <CAMe9rOqLwm3JdY6qbY=V3EKMZFku9rQB6Th91PbSvY=yCYaZug@mail.gmail.com>
+Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Boyer <jwboyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11, Masami Hiramatsu wrote:
+On Wed, Dec 11, 2013 at 9:49 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/11/2013 05:41 AM, H.J. Lu wrote:
+>>
+>> When -Ttext-segment=XXX is used, the program is expected to
+>> load at XXX, regardless -pie is used or not.
+>>
 >
-> (2013/12/11 0:57), Oleg Nesterov wrote:
-> > On 12/10, Masami Hiramatsu wrote:
-> >>
-> >> and isn't it better to increment
-> >> miss-hit counter of the uprobe?
-> >
-> > What do you mean? This is not miss-hit and ->utask == NULL is quite normal.
+> "Expected to" by whom?  I think that is at the very best a matter of
+> interpretation.
 >
-> But it could skip the handler_chain silently. It could confuse users
-> why their probe doesn't hit as expected.
 
-No, we will restart the same (probed) instruction, handle_swbp()
-will be called again, get_utask() will be called again.
+# ld --help
+...
+ -Ttext-segment ADDRESS      Set address of text segment
+...
 
-Not to mention that (in practice) if GFP_KERNEL fails the task is
-already killed.
 
-> > For example, on ppc it can be always NULL because ppc likely emulates the
-> > probed insn.
->
-> Hmm, in that case, should uprobes handlers never be called on ppc with
-> this change?
-
-Why? With this change ppc will have ->utask != NULL even if it doesn't
-need it at all.
-
-Oleg.
-
+-- 
+H.J.
