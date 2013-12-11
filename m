@@ -1,191 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3LKQtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 11:49:42 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:36372 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab3LKQtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 11:49:35 -0500
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, gregkh@linuxfoundation.org, cody@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, utz.bacher@de.ibm.com, mmarek@suse.cz,
-        rmallon@gmail.com, jsvogt@de.ibm.com, MIJUNG@de.ibm.com,
-        cascardo@linux.vnet.ibm.com, michael@ibmra.de,
-        haver@linux.vnet.ibm.com
-Subject: [RFC 1/2] CRC32 Add GenWQE CRC to kernel CRC code
-Date: Wed, 11 Dec 2013 17:49:22 +0100
-Message-Id: <1386780563-1722-1-git-send-email-haver@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1386592244-2521-7-git-send-email-haver@linux.vnet.ibm.com>
-References: <1386592244-2521-7-git-send-email-haver@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121116-5024-0000-0000-0000081D4D0F
+	id S1751687Ab3LKQv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 11:51:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036Ab3LKQv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 11:51:57 -0500
+Date: Wed, 11 Dec 2013 11:54:33 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
+ flock_to_posix_lock routines
+Message-ID: <20131211115433.28a09745@corrin.poochiereds.net>
+In-Reply-To: <20131211151931.GC29300@fieldses.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-2-git-send-email-jlayton@redhat.com>
+	<20131210212253.GC20831@fieldses.org>
+	<20131210232204.GD20831@fieldses.org>
+	<20131211061856.615c39ba@tlielax.poochiereds.net>
+	<20131211143724.GA29300@fieldses.org>
+	<20131211151931.GC29300@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Our GenWQE driver is using a CRC32 polynom, which as far as I could
-see, no one else is using in the kernel. In its original version we
-implemented our own CRC32, but I think it is nicer to use the common
-code as suggested by Greg.
+On Wed, 11 Dec 2013 10:19:31 -0500
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-I did not want to add yet another crc32g_table and waste (1KiB) memory
-when no one else is using it. I tried to externalize the
-crc32init_be_generic and crc32_be_generic functions. I failed. The
-crc32init* I found is used to autogenerate code can is itself not part
-of the resulting kernel.
+> On Wed, Dec 11, 2013 at 09:37:24AM -0500, J. Bruce Fields wrote:
+> > Well, it'd be weird if I didn't screw up something somewhere.
+> 
+> Yes, a classic: I forgot the breaks after each switch case.
+> 
+> Here's a version that at least doesn't return -EINVAL on every lock
+> attempt.
+> 
+> --b.
+> 
+> commit 70b7b9a442d06a71306736eb01cedba5dd6d86cf
+> Author: J. Bruce Fields <bfields@redhat.com>
+> Date:   Tue Dec 10 18:14:28 2013 -0500
+> 
+>     locks: fix posix lock range overflow handling
+>     
+>     In the 32-bit case fcntl is converting signed 64-bit to signed 32-bit
+>     quantities in a couple places, with probably incorrect results.
+>     
+>     So instead let's return -EOVERFLOW as described in SUSv3, whenever "the
+>     smallest or, if l_len is non-zero, the largest offset of any byte in the
+>     requested segment cannot be represented correctly in an object of type
+>     off_t."
+>     
+>     While we're here, do some cleanup including consolidating code for the
+>     flock and flock64 cases.
+>     
+>     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 92a0f0a..b70486a 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -344,48 +344,44 @@ static int assign_type(struct file_lock *fl, long type)
+>  	return 0;
+>  }
+>  
+> -/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> - * style lock.
+> - */
+> -static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+> -			       struct flock *l)
+> +static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
+> +					struct flock64 *l, loff_t offset_max)
+>  {
+> -	off_t start, end;
+> +	loff_t start;
+>  
+>  	switch (l->l_whence) {
+>  	case SEEK_SET:
+> -		start = 0;
+> +		fl->fl_start = 0;
+>  		break;
+>  	case SEEK_CUR:
+> -		start = filp->f_pos;
+> +		fl->fl_start = filp->f_pos;
+>  		break;
+>  	case SEEK_END:
+> -		start = i_size_read(file_inode(filp));
+> +		fl->fl_start = i_size_read(file_inode(filp));
+>  		break;
+>  	default:
+>  		return -EINVAL;
+>  	}
+> +	if (l->l_start < 0)
+> +		return -EINVAL;
+> +	if (l->l_start > offset_max - fl->fl_start)
+> +		return -EOVERFLOW;
+> +	fl->fl_start += l->l_start;
+> +	if (l->l_len > offset_max - fl->fl_start)
+> +		return -EOVERFLOW;
+> +	if (fl->fl_start + l->l_len < 0)
+> +		return -EINVAL;
+>  
+>  	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
+>  	   POSIX-2001 defines it. */
+> -	start += l->l_start;
+> -	if (start < 0)
+> -		return -EINVAL;
+> -	fl->fl_end = OFFSET_MAX;
+> -	if (l->l_len > 0) {
+> -		end = start + l->l_len - 1;
+> -		fl->fl_end = end;
+> -	} else if (l->l_len < 0) {
+> -		end = start - 1;
+> -		fl->fl_end = end;
+> -		start += l->l_len;
+> -		if (start < 0)
+> -			return -EINVAL;
+> -	}
+> -	fl->fl_start = start;	/* we record the absolute position */
+> -	if (fl->fl_end < fl->fl_start)
+> -		return -EOVERFLOW;
+> -	
+> +	if (l->l_len > 0)
+> +		fl->fl_end = fl->fl_start + l->l_len - 1;
+> +	else if (l->l_len < 0) {
+> +		fl->fl_end = start - 1;
+> +		fl->fl_start += l->l_len;
+> +	} else
+> +		fl->fl_end = OFFSET_MAX;
+> +
+>  	fl->fl_owner = current->files;
+>  	fl->fl_pid = current->tgid;
+>  	fl->fl_file = filp;
+> @@ -396,50 +392,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  	return assign_type(fl, l->l_type);
+>  }
+>  
+> +/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> + * style lock.
+> + */
+> +static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+> +			       struct flock *l)
+> +{
+> +	struct flock64 ll = {
+> +		.l_type = l->l_type,
+> +		.l_whence = l->l_whence,
+> +		.l_start = l->l_start,
+> +		.l_len = l->l_len,
+> +	};
+> +	
+> +	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
+> +}
+> +
+>  #if BITS_PER_LONG == 32
+>  static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  				 struct flock64 *l)
+>  {
+> -	loff_t start;
+> -
+> -	switch (l->l_whence) {
+> -	case SEEK_SET:
+> -		start = 0;
+> -		break;
+> -	case SEEK_CUR:
+> -		start = filp->f_pos;
+> -		break;
+> -	case SEEK_END:
+> -		start = i_size_read(file_inode(filp));
+> -		break;
+> -	default:
+> -		return -EINVAL;
+> -	}
+> -
+> -	start += l->l_start;
+> -	if (start < 0)
+> -		return -EINVAL;
+> -	fl->fl_end = OFFSET_MAX;
+> -	if (l->l_len > 0) {
+> -		fl->fl_end = start + l->l_len - 1;
+> -	} else if (l->l_len < 0) {
+> -		fl->fl_end = start - 1;
+> -		start += l->l_len;
+> -		if (start < 0)
+> -			return -EINVAL;
+> -	}
+> -	fl->fl_start = start;	/* we record the absolute position */
+> -	if (fl->fl_end < fl->fl_start)
+> -		return -EOVERFLOW;
+> -	
+> -	fl->fl_owner = current->files;
+> -	fl->fl_pid = current->tgid;
+> -	fl->fl_file = filp;
+> -	fl->fl_flags = FL_POSIX;
+> -	fl->fl_ops = NULL;
+> -	fl->fl_lmops = NULL;
+> -
+> -	return assign_type(fl, l->l_type);
+> +	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
+>  }
+>  #endif
+>  
+> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+> index 95e46c8..36025f7 100644
+> --- a/include/uapi/asm-generic/fcntl.h
+> +++ b/include/uapi/asm-generic/fcntl.h
+> @@ -186,8 +186,6 @@ struct flock {
+>  };
+>  #endif
+>  
+> -#ifndef CONFIG_64BIT
+> -
+>  #ifndef HAVE_ARCH_STRUCT_FLOCK64
+>  #ifndef __ARCH_FLOCK64_PAD
+>  #define __ARCH_FLOCK64_PAD
+> @@ -202,6 +200,5 @@ struct flock64 {
+>  	__ARCH_FLOCK64_PAD
+>  };
+>  #endif
+> -#endif /* !CONFIG_64BIT */
+>  
+>  #endif /* _ASM_GENERIC_FCNTL_H */
 
-As result I gave up on that approach and just added the GenWQE special
-polynom in addition to the other 3 crc tables. I wanted to figure out
-if it is possible in principle to use the generic code.
+Thanks -- looks like this is hitting the same discrepancy that I was
+getting with my consolidation attempt. Setting a lock like this on
+x86_64 fails with the current kernel:
 
-Is the consumption of 1KiB for a little table justifyable if it 
-currently has just one user?
+	struct flock lck1 = {
+		.l_type		= F_WRLCK,
+		.l_whence	= SEEK_SET,
+		.l_start	= 0,
+		.l_len		= LONG_MAX,
+	};
 
-Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
----
- include/linux/crc32.h |    2 	2 +	0 -	0 !
- lib/crc32.c           |   10 	10 +	0 -	0 !
- lib/crc32defs.h       |    5 	5 +	0 -	0 !
- lib/gen_crc32table.c  |   39 	31 +	8 -	0 !
- 4 files changed, 48 insertions(+), 8 deletions(-)
 
---- a/include/linux/crc32.h
-+++ b/include/linux/crc32.h
-@@ -11,6 +11,8 @@
- extern u32  crc32_le(u32 crc, unsigned char const *p, size_t len);
- extern u32  crc32_be(u32 crc, unsigned char const *p, size_t len);
- 
-+extern u32  __crc32g_be(u32 crc, unsigned char const *p, size_t len);
-+
- /**
-  * crc32_le_combine - Combine two crc32 check values into one. For two
-  * 		      sequences of bytes, seq1 and seq2 with lengths len1
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -339,14 +339,24 @@ u32 __pure crc32_be(u32 crc, unsigned ch
- {
- 	return crc32_be_generic(crc, p, len, NULL, CRCPOLY_BE);
- }
-+u32 __pure __crc32g_be(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_be_generic(crc, p, len, NULL, CRC32G_POLY_BE);
-+}
- #else
- u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
- {
- 	return crc32_be_generic(crc, p, len,
- 			(const u32 (*)[256])crc32table_be, CRCPOLY_BE);
- }
-+u32 __pure __crc32g_be(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_be_generic(crc, p, len,
-+			(const u32 (*)[256])crc32gtable_be, CRC32G_POLY_BE);
-+}
- #endif
- EXPORT_SYMBOL(crc32_be);
-+EXPORT_SYMBOL(__crc32g_be);
- 
- #ifdef CONFIG_CRC32_SELFTEST
- 
---- a/lib/crc32defs.h
-+++ b/lib/crc32defs.h
-@@ -13,6 +13,11 @@
-  */
- #define CRC32C_POLY_LE 0x82F63B78
- 
-+/*
-+ * This is the CRC32g polynomial, used by the GenWQE driver.
-+ */
-+#define CRC32G_POLY_BE 0x20044009
-+
- /* Try to choose an implementation variant via Kconfig */
- #ifdef CONFIG_CRC32_SLICEBY8
- # define CRC_LE_BITS 64
---- a/lib/gen_crc32table.c
-+++ b/lib/gen_crc32table.c
-@@ -24,6 +24,7 @@
- static uint32_t crc32table_le[LE_TABLE_ROWS][256];
- static uint32_t crc32table_be[BE_TABLE_ROWS][256];
- static uint32_t crc32ctable_le[LE_TABLE_ROWS][256];
-+static uint32_t crc32gtable_be[BE_TABLE_ROWS][256];
- 
- /**
-  * crc32init_le() - allocate and initialize LE table data
-@@ -65,29 +66,40 @@ static void crc32cinit_le(void)
- }
- 
- /**
-- * crc32init_be() - allocate and initialize BE table data
-+ * crc32init_be_generic() - allocate and initialize BE table data
-  */
--static void crc32init_be(void)
-+static void crc32init_be_generic(const uint32_t polynomial,
-+				 uint32_t (*tab)[256])
- {
- 	unsigned i, j;
- 	uint32_t crc = 0x80000000;
- 
--	crc32table_be[0][0] = 0;
-+	tab[0][0] = 0;
- 
- 	for (i = 1; i < BE_TABLE_SIZE; i <<= 1) {
--		crc = (crc << 1) ^ ((crc & 0x80000000) ? CRCPOLY_BE : 0);
-+		crc = (crc << 1) ^ ((crc & 0x80000000) ? polynomial : 0);
- 		for (j = 0; j < i; j++)
--			crc32table_be[0][i + j] = crc ^ crc32table_be[0][j];
-+			tab[0][i + j] = crc ^ tab[0][j];
- 	}
- 	for (i = 0; i < BE_TABLE_SIZE; i++) {
--		crc = crc32table_be[0][i];
-+		crc = tab[0][i];
- 		for (j = 1; j < BE_TABLE_ROWS; j++) {
--			crc = crc32table_be[0][(crc >> 24) & 0xff] ^ (crc << 8);
--			crc32table_be[j][i] = crc;
-+			crc = tab[0][(crc >> 24) & 0xff] ^ (crc << 8);
-+			tab[j][i] = crc;
- 		}
- 	}
- }
- 
-+static void crc32init_be(void)
-+{
-+	crc32init_be_generic(CRCPOLY_BE, crc32table_be);
-+}
-+
-+static void crc32ginit_be(void)
-+{
-+	crc32init_be_generic(CRC32G_POLY_BE, crc32gtable_be);
-+}
-+
- static void output_table(uint32_t (*table)[256], int rows, int len, char *trans)
- {
- 	int i, j;
-@@ -126,6 +138,7 @@ int main(int argc, char** argv)
- 			     BE_TABLE_SIZE, "tobe");
- 		printf("};\n");
- 	}
-+
- 	if (CRC_LE_BITS > 1) {
- 		crc32cinit_le();
- 		printf("static u32 __cacheline_aligned "
-@@ -136,5 +149,15 @@ int main(int argc, char** argv)
- 		printf("};\n");
- 	}
- 
-+	if (CRC_BE_BITS > 1) {
-+		crc32ginit_be();
-+		printf("static u32 __cacheline_aligned "
-+		       "crc32gtable_be[%d][%d] = {",
-+		       BE_TABLE_ROWS, BE_TABLE_SIZE);
-+		output_table(crc32gtable_be, LE_TABLE_ROWS,
-+			     BE_TABLE_SIZE, "tobe");
-+		printf("};\n");
-+	}
-+
- 	return 0;
- }
+...but succeeds with your patch in place. I've not sat down yet to
+figure out whether you broke or fixed something though :).
 
+-- 
+Jeff Layton <jlayton@redhat.com>
