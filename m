@@ -1,151 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191Ab3LKUxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 15:53:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25278 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab3LKUxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 15:53:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,873,1378882800"; 
-   d="scan'208";a="423149090"
-Date: Wed, 11 Dec 2013 12:53:36 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 01/71] perf: Disable all pmus on unthrottling and
- rescheduling
-Message-ID: <20131211205336.GO22695@tassilo.jf.intel.com>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751396Ab3LKUy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 15:54:57 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59442 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab3LKUyz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 15:54:55 -0500
+Date: Wed, 11 Dec 2013 15:54:52 -0500 (EST)
+Message-Id: <20131211.155452.558417595732985707.davem@davemloft.net>
+To: hannes@stressinduktion.org
+Cc: dvlasenk@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, jpirko@redhat.com
+Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131211192138.GB4675@order.stressinduktion.org>
+References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com>
+	<20131211192138.GB4675@order.stressinduktion.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 12:54:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 02:36:13PM +0200, Alexander Shishkin wrote:
-> Currently, only one pmu in a context gets disabled during unthrottling
-> and event_sched_{out,in}, however, events in one context may belong to
-> different pmus, which results in pmus being reprogrammed while they are
-> still enabled. This patch temporarily disables pmus that correspond to
-> each event in the context while these events are being modified.
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date: Wed, 11 Dec 2013 20:21:38 +0100
 
-This is a generic bug fix and should be merged independent of the PT code.
-This affects any setup using multiple PMUs at the same time.
-
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-
--Andi
+> On Wed, Dec 11, 2013 at 12:45:14PM +0100, Denys Vlasenko wrote:
+>> If ipv6 auto-configuration does not work, currently it's hard
+>> to track what's going on. This change adds log messages
+>> (at debug level) on every code path where ipv6 autoconf fails.
+>> 
+>> v2: fixed indentation in multi-line log output statements.
 > 
-> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-> ---
->  kernel/events/core.c | 27 ++++++++++++++++++++++++---
->  1 file changed, 24 insertions(+), 3 deletions(-)
+> Have you seen lots of those problems? Some of those seem like very
+> serious problems and maybe could also deserve a pr_warn or pr_err.
 > 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 403b781..d656cd6 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -1396,6 +1396,9 @@ event_sched_out(struct perf_event *event,
->  	if (event->state != PERF_EVENT_STATE_ACTIVE)
->  		return;
->  
-> +	if (event->pmu != ctx->pmu)
-> +		perf_pmu_disable(event->pmu);
-> +
->  	event->state = PERF_EVENT_STATE_INACTIVE;
->  	if (event->pending_disable) {
->  		event->pending_disable = 0;
-> @@ -1412,6 +1415,9 @@ event_sched_out(struct perf_event *event,
->  		ctx->nr_freq--;
->  	if (event->attr.exclusive || !cpuctx->active_oncpu)
->  		cpuctx->exclusive = 0;
-> +
-> +	if (event->pmu != ctx->pmu)
-> +		perf_pmu_enable(event->pmu);
->  }
->  
->  static void
-> @@ -1652,6 +1658,7 @@ event_sched_in(struct perf_event *event,
->  		 struct perf_event_context *ctx)
->  {
->  	u64 tstamp = perf_event_time(event);
-> +	int ret = 0;
->  
->  	if (event->state <= PERF_EVENT_STATE_OFF)
->  		return 0;
-> @@ -1674,10 +1681,14 @@ event_sched_in(struct perf_event *event,
->  	 */
->  	smp_wmb();
->  
-> +	if (event->pmu != ctx->pmu)
-> +		perf_pmu_disable(event->pmu);
-> +
->  	if (event->pmu->add(event, PERF_EF_START)) {
->  		event->state = PERF_EVENT_STATE_INACTIVE;
->  		event->oncpu = -1;
-> -		return -EAGAIN;
-> +		ret = -EAGAIN;
-> +		goto out;
->  	}
->  
->  	event->tstamp_running += tstamp - event->tstamp_stopped;
-> @@ -1693,7 +1704,11 @@ event_sched_in(struct perf_event *event,
->  	if (event->attr.exclusive)
->  		cpuctx->exclusive = 1;
->  
-> -	return 0;
-> +out:
-> +	if (event->pmu != ctx->pmu)
-> +		perf_pmu_enable(event->pmu);
-> +
-> +	return ret;
->  }
->  
->  static int
-> @@ -2743,6 +2758,9 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
->  		if (!event_filter_match(event))
->  			continue;
->  
-> +		if (ctx->pmu != event->pmu)
-> +			perf_pmu_disable(event->pmu);
-> +
->  		hwc = &event->hw;
->  
->  		if (hwc->interrupts == MAX_INTERRUPTS) {
-> @@ -2752,7 +2770,7 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
->  		}
->  
->  		if (!event->attr.freq || !event->attr.sample_freq)
-> -			continue;
-> +			goto next;
->  
->  		/*
->  		 * stop the event and update event->count
-> @@ -2774,6 +2792,9 @@ static void perf_adjust_freq_unthr_context(struct perf_event_context *ctx,
->  			perf_adjust_period(event, period, delta, false);
->  
->  		event->pmu->start(event, delta > 0 ? PERF_EF_RELOAD : 0);
-> +	next:
-> +		if (ctx->pmu != event->pmu)
-> +			perf_pmu_enable(event->pmu);
->  	}
->  
->  	perf_pmu_enable(ctx->pmu);
-> -- 
-> 1.8.5.1
-> 
+> I hope these are one-time errors, so I don't think counters would
+> be helpful.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+I still think that statitics would better serve this issue.
+
+For one thing, the event would always be counted, whereas with
+pr_debug() someone has to turn on dynamic debugging in order
+to see the message.
+
+You can make them part of the per-inet6_dev MIB, and therefore
+implicitly letting the admin know what interface the events
+occurred on.
+
+I would even prefer an approach involving signalling netlink
+events in such circumstances with more detailed information.
+
+Thanks.
