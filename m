@@ -1,78 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab3LKRBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:01:04 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:40785 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3LKRBB convert rfc822-to-8bit (ORCPT
+	id S1751945Ab3LKRBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:01:40 -0500
+Received: from nbl-ex10-fe01.nebula.fi ([188.117.32.121]:28953 "EHLO
+	ex10.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750904Ab3LKRBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:01:01 -0500
-Date: Wed, 11 Dec 2013 18:00:47 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <12930742.20131211180047@eikelenboom.it>
-To: Avinash Patil <avinashapatil@gmail.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-In-Reply-To: <CAJwzM1nwFa7z5gwh42aj39M2dxVXnuecDrhQkVyL+DDFAXwwbg@mail.gmail.com>
-References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it> <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com> <CAJwzM1nwFa7z5gwh42aj39M2dxVXnuecDrhQkVyL+DDFAXwwbg@mail.gmail.com>
+	Wed, 11 Dec 2013 12:01:37 -0500
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Dec 2013 12:01:36 EST
+Message-ID: <1386780980.9524.10.camel@ultrabook>
+Subject: [PATCH] hfsplus: Remove hfsplus_file_lookup
+From: Sougata Santra <sougata@tuxera.com>
+Reply-To: <sougata@tuxera.com>
+To: <hch@infradead.org>
+CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        Szabolcs Szakacsits <szaka@tuxera.com>
+Date: Wed, 11 Dec 2013 18:56:20 +0200
+Organization: Tuxera
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [194.100.106.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sougata Santra <sougata@tuxera.com>
+
+HFS+ resource fork lookup breaks opendir() library function. Since
+opendir first calls open() with O_DIRECTORY flag set. O_DIRECTORY
+means "refuse to open if not a directory". The open system call
+in the kernel does a check for inode->i_op->lookup and returns
+-ENOTDIR. So if hfsplus_file_lookup is set it allows opendir()
+for plain files.
+
+Also resource fork lookup in HFS+ does not work. Since it is never
+invoked after VFS permission checking. It will always return with
+-EACCES.
+
+Signed-off-by: Sougata Santra <sougata@tuxera.com>
+---
+
+When we call opendir() on a file, it does not return NULL.
+opendir() library call is based on open with O_DIRECTORY flag
+passed and then layered on top of getdents() system call.
+O_DIRECTORY means "refuse to open if not a directory".
+
+The open() system call in the kernel does a check for:
+do_sys_open() -->..--> can_lookup() i.e it only checks
+inode->i_op->lookup and returns ENOTDIR if
+this function pointer is not set.
+"
+In OSX, we can open "file/rsrc" to get the resource fork of "file".
+This behavior is emulated inside hfsplus on Linux, which means that
+to some degree every file acts like a directory. That is the reason
+lookup() inode operations is supported for files, and it is possible
+to do a lookup on this specific name. As a result of this open succeeds
+without returning  ENOTDIR for HFS+
+"
+Please see the LKML discussion thread on this issue:
+http://marc.info/?l=linux-fsdevel&m=122823343730412&w=2 
+
+I tried to test file/rsrc lookup in HFS+ driver and the feature does not work.
+>From OSX:
+$ touch test
+$ echo "1234" > test/..namedfork/rsrc
+$ ls -l test..namedfork/rsrc
+--rw-r--r-- 1 tuxera staff 5 10 dec 12:59 test/..namedfork/rsrc
+
+[sougata@ultrabook tmp]$ id
+uid=1000(sougata) gid=1000(sougata) groups=1000(sougata),5(tty),18(dialout),1001(vboxusers)
+
+[sougata@ultrabook tmp]$ mount
+/dev/sdb1 on /mnt/tmp type hfsplus (rw,relatime,umask=0,uid=1000,gid=1000,nls=utf8)
+
+[sougata@ultrabook tmp]$ ls -l test/rsrc
+ls: cannot access test/rsrc: Permission denied
+
+According to this LKML thread it is expected behavior.
+http://marc.info/?t=121139033800008&r=1&w=4
+I guess now that permission checking happens in vfs generic_permission() ?
+So it turns out that even though the lookup() inode_operation exists for HFS+ files.
+It cannot really get invoked ?. So if we can disable this feature to make opendir()
+work for HFS+.
+
+Thanks,
+    Sougata
+
+ fs/hfsplus/inode.c | 59 ------------------------------------------------------
+ 1 file changed, 59 deletions(-)
+
+diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
+index 37213d0..3ebda92 100644
+--- a/fs/hfsplus/inode.c
++++ b/fs/hfsplus/inode.c
+@@ -178,64 +178,6 @@ const struct dentry_operations hfsplus_dentry_operations = {
+ 	.d_compare    = hfsplus_compare_dentry,
+ };
+ 
+-static struct dentry *hfsplus_file_lookup(struct inode *dir,
+-		struct dentry *dentry, unsigned int flags)
+-{
+-	struct hfs_find_data fd;
+-	struct super_block *sb = dir->i_sb;
+-	struct inode *inode = NULL;
+-	struct hfsplus_inode_info *hip;
+-	int err;
+-
+-	if (HFSPLUS_IS_RSRC(dir) || strcmp(dentry->d_name.name, "rsrc"))
+-		goto out;
+-
+-	inode = HFSPLUS_I(dir)->rsrc_inode;
+-	if (inode)
+-		goto out;
+-
+-	inode = new_inode(sb);
+-	if (!inode)
+-		return ERR_PTR(-ENOMEM);
+-
+-	hip = HFSPLUS_I(inode);
+-	inode->i_ino = dir->i_ino;
+-	INIT_LIST_HEAD(&hip->open_dir_list);
+-	mutex_init(&hip->extents_lock);
+-	hip->extent_state = 0;
+-	hip->flags = 0;
+-	hip->userflags = 0;
+-	set_bit(HFSPLUS_I_RSRC, &hip->flags);
+-
+-	err = hfs_find_init(HFSPLUS_SB(sb)->cat_tree, &fd);
+-	if (!err) {
+-		err = hfsplus_find_cat(sb, dir->i_ino, &fd);
+-		if (!err)
+-			err = hfsplus_cat_read_inode(inode, &fd);
+-		hfs_find_exit(&fd);
+-	}
+-	if (err) {
+-		iput(inode);
+-		return ERR_PTR(err);
+-	}
+-	hip->rsrc_inode = dir;
+-	HFSPLUS_I(dir)->rsrc_inode = inode;
+-	igrab(dir);
+-
+-	/*
+-	 * __mark_inode_dirty expects inodes to be hashed.  Since we don't
+-	 * want resource fork inodes in the regular inode space, we make them
+-	 * appear hashed, but do not put on any lists.  hlist_del()
+-	 * will work fine and require no locking.
+-	 */
+-	hlist_add_fake(&inode->i_hash);
+-
+-	mark_inode_dirty(inode);
+-out:
+-	d_add(dentry, inode);
+-	return NULL;
+-}
+-
+ static void hfsplus_get_perms(struct inode *inode,
+ 		struct hfsplus_perm *perms, int dir)
+ {
+@@ -385,7 +327,6 @@ int hfsplus_file_fsync(struct file *file, loff_t start, loff_t end,
+ }
+ 
+ static const struct inode_operations hfsplus_file_inode_operations = {
+-	.lookup		= hfsplus_file_lookup,
+ 	.setattr	= hfsplus_setattr,
+ 	.setxattr	= generic_setxattr,
+ 	.getxattr	= generic_getxattr,
+-- 
+1.8.1.4
 
 
-Wednesday, December 11, 2013, 5:34:27 PM, you wrote:
-
-> Hi Luis,
->  I have seen that hint during regulatory init still has request processed set to false. This results into further request set to pending. I have sent a patch for the same last week. Please have a look- I think issue faced by me is similar to what Sander is same.
-> Thanks,
-> Avinash.
-
-Hi Avinash,
-
-Could you send me the patch (or a link to it), i can't find it on the linux-wireless list.
-
---
-Sander
-
-
->  On Dec 11, 2013 9:14 PM, "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
->  On Wed, Dec 11, 2013 at 4:17 PM, Sander Eikelenboom
->  <linux@eikelenboom.it> wrote:
- >> Since i haven't got a response to this yet and after having the troubled machine back:
- >> The problem is still present in linux 3.13-rc3
->  
->  Keep in mind regulatory hints for Intel or Atheros cards do nothing
->  other than help compliance further given that the cards already have
->  their own regulatory data, the user input / hint is only going to
->  reduce the card's channels further. That said the fact that you are
->  not seeing a regulatory domain being set is an issue provided you have
->  CRDA installed or use CONFIG_CFG80211_INTERNAL_REGDB. Keep in mind
->  that the latest version of wireless-regdb had a signature issue
->  reported by users and not sure if that is cleared yet, so that would
->  also prevent the wireless-regdb being read even if CRDA was present.
->  To rule that out try putting the db.txt into net/wireless/db.txt and
->  compile with CONFIG_CFG80211_INTERNAL_REGDB for now.
->  
->  Then send the dmesg output, no need for all that fluffy intel debug
->  log as its not useful in this case.
->  
->    Luis
->  --
->  To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
->  the body of a message to majordomo@vger.kernel.org
->  More majordomo info at  http://vger.kernel.org/majordomo-info.html
->  
 
