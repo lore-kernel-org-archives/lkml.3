@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab3LKFFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 00:05:13 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:7890 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750732Ab3LKFFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 00:05:09 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] usb: phy: Initilize the spinlock in notifier
-Date: Wed, 11 Dec 2013 13:05:07 +0800
-Message-ID: <1386738308-19773-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2013-12-11_01:2013-12-10,2013-12-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1312100250
+	id S1750997Ab3LKFJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 00:09:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744Ab3LKFJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 00:09:11 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>
+Subject: [PATCH net V3 1/2] tun: unbreak truncated packet signalling
+Date: Wed, 11 Dec 2013 13:08:33 +0800
+Message-Id: <1386738514-1502-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to initilize every spinlock before use it.
-So lets initilize the spinlock in notifier when add a new phy device.
+Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
+(tuntap: hardware vlan tx support) breaks the truncated packet signal by nev
+return a length greater than iov length in tun_put_user(). This patch fixes
+by always return the length of packet plus possible vlan header. Caller can
+detect the truncated packet by comparing the return value and the size of io
+length.
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/usb/phy/phy.c |    2 ++
- 1 file changed, 2 insertions(+)
+Changes from V2:
+- use "copied" as the variable name instead to be more descriptive
+Changes from v1:
+- increase total unconditionally
+- do not move veth structure out of the vlan handing block
+---
+ drivers/net/tun.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
-index 1b74523..479ceb8 100644
---- a/drivers/usb/phy/phy.c
-+++ b/drivers/usb/phy/phy.c
-@@ -367,6 +367,8 @@ int usb_add_phy_dev(struct usb_phy *x)
- 		return -EINVAL;
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index e26cbea..7c8343a 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1184,7 +1184,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ {
+ 	struct tun_pi pi = { 0, skb->protocol };
+ 	ssize_t total = 0;
+-	int vlan_offset = 0;
++	int vlan_offset = 0, copied;
+ 
+ 	if (!(tun->flags & TUN_NO_PI)) {
+ 		if ((len -= sizeof(pi)) < 0)
+@@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 		total += tun->vnet_hdr_sz;
  	}
  
-+	spin_lock_init(&x->notifier.lock);
-+
- 	spin_lock_irqsave(&phy_lock, flags);
- 	list_for_each_entry(phy_bind, &phy_bind_list, list)
- 		if (!(strcmp(phy_bind->phy_dev_name, dev_name(x->dev))))
++	copied = total;
++	total += skb->len;
+ 	if (!vlan_tx_tag_present(skb)) {
+ 		len = min_t(int, skb->len, len);
+ 	} else {
+@@ -1262,24 +1264,24 @@ static ssize_t tun_put_user(struct tun_struct *tun,
+ 
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 		len = min_t(int, skb->len + VLAN_HLEN, len);
++		total += VLAN_HLEN;
+ 
+ 		copy = min_t(int, vlan_offset, len);
+-		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
++		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+ 		len -= copy;
+-		total += copy;
++		copied += copy;
+ 		if (ret || !len)
+ 			goto done;
+ 
+ 		copy = min_t(int, sizeof(veth), len);
+-		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
++		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
+ 		len -= copy;
+-		total += copy;
++		copied += copy;
+ 		if (ret || !len)
+ 			goto done;
+ 	}
+ 
+-	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
+-	total += len;
++	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+ 
+ done:
+ 	tun->dev->stats.tx_packets++;
 -- 
-1.7.9.5
+1.8.3.2
 
