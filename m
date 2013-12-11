@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab3LKJsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:48:50 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:58592 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3LKJsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:48:45 -0500
-Date: Wed, 11 Dec 2013 09:48:39 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/8] mfd: pm8921: Update for genirq changes
-Message-ID: <20131211094839.GH16780@lee--X1>
-References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
- <1386718523-2587-7-git-send-email-sboyd@codeaurora.org>
+	id S1751535Ab3LKJtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:49:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40999 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751048Ab3LKJtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 04:49:17 -0500
+Date: Wed, 11 Dec 2013 09:49:12 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
+ notifications to access reserves
+Message-ID: <20131211094912.GX11295@suse.de>
+References: <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
+ <20131204054533.GZ3556@cmpxchg.org>
+ <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
+ <20131205025026.GA26777@htj.dyndns.org>
+ <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
+ <20131206190105.GE13373@htj.dyndns.org>
+ <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
+ <20131210215037.GB9143@htj.dyndns.org>
+ <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386718523-2587-7-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Since this code has been marked broken for some time a few genirq
-> tree wide changes weren't made. set_irq_wake() was renamed to
-> irq_set_irq_wake() in commit a0cd9ca2b (genirq: Namespace
-> cleanup, 2011-02-10) and commit 10a8c383 (irq: introduce entry
-> and exit functions for chained handlers) introduced the chained
-> irq functions but this driver wasn't updated to use them. Fix
-> these problems and remove the BROKEN marking on this driver.
+On Tue, Dec 10, 2013 at 03:55:48PM -0800, David Rientjes wrote:
+> > Okay, are you saying that userland OOM handlers will be able to dip
+> > into kernel reserve memory?  Maybe I'm mistaken but you realize that
+> > that reserve is there to make things like task exits work under OOM
+> > conditions, right?  The only way userland OOM handlers as you describe
+> > would work would be creating a separate reserve for them.
+> > 
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/mfd/Kconfig       | 1 -
->  drivers/mfd/pm8921-core.c | 7 +++++--
->  2 files changed, 5 insertions(+), 3 deletions(-)
+> Yes, PF_OOM_HANDLER processes would be able to allocate this amount as 
+> specified by memory.oom_reserve_in_bytes below the per-zone watermarks and 
+> the amount of reserves can already be controlled via min_free_kbytes, 
+> which we already increase internally for thp.
 
-This driver was marked as BROKEN due to compilation failures only, so
-as long as it now compiles cleanly (which I'm sure you've tested) I'm
-happy with this patch.
+THP increased min_free_kbytes for external fragmentation control as
+it reduces the amount of mixing of the different migrate types within
+pageblocks. It was not about reserves, increasing reserves was just the
+most straight forward way of handling the problem.
 
-It doesn't apply, without your 5th patch, so for now I'll just Ack
-it. Please remember to apply my Ack when you resubmit, as it will act
-as a reminder and I won't have to re-review.
+This dicussion is closer to swap-over-network than to anything
+THP did. Swap-over-network takes care to only allocate memory for
+reserves if it the allocation was required for swapping and reject
+all other allocation requests to the extent they can get throttled in
+throttle_direct_reclaim. Once allocated from reserves for swapping,
+care is taken that the allocations are not leaked to other users (e.g.
+is_obj_pfmemalloc checks in slab).
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+It does not look like PF_OOM_HANDLER takes the same sort of care. Even
+if it did, it's not quite the same. swap-over-network allocates from the
+zone reserves *only* the memory required to writeback the pages. It can
+be slow but it'll make forward progress. A userspace process with special
+privileges could allocate any amount of memory for any reason so it would
+need a pre-configured and limited reserve on top of the zone reserves or
+run the risk of livelock.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mel Gorman
+SUSE Labs
