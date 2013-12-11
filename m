@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab3LKT5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:57:19 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:56991 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab3LKT5S (ORCPT
+	id S1751915Ab3LKT5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:57:45 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:53910 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3LKT5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:57:18 -0500
-Message-ID: <52A8C39A.4040301@linaro.org>
-Date: Wed, 11 Dec 2013 11:57:14 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 11 Dec 2013 14:57:43 -0500
+Message-ID: <52A8C3B3.8050106@gmail.com>
+Date: Wed, 11 Dec 2013 12:57:39 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Brecht Machiels <brecht@mos6581.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Heinz Wiesinger <HMWiesinger@gmx.at>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
-References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org> <529CF1D5.6010406@linaro.org>
-In-Reply-To: <529CF1D5.6010406@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com> <52A8BD60.80300@gmail.com> <20131211195546.GG1458@ghostprotocols.net>
+In-Reply-To: <20131211195546.GG1458@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2013 12:47 PM, John Stultz wrote:
-> On 12/01/2013 01:03 PM, Brecht Machiels wrote:
->> Hi,
+On 12/11/13, 12:55 PM, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Dec 11, 2013 at 12:30:40PM -0700, David Ahern escreveu:
+>> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
 >>
->> I recently installed (Arch x86_64) Linux with the 3.12.1 kernel on a Toshiba Satellite L300 laptop. After shutting down Linux, the laptop will spontaneously boot up after about five minutes. This seems to be consistent. There are no options in the BIOS for en/disabling or configuring the RTC wakeup alarm. After 'shudown --halt' and shutting down the laptop manually (pressing the power button for 3 seconds), it will not spontaneously boot up. I understand Linux is configuring the RTC alarm on shutdown? 
+>>> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+>>> index 55f3608..52fbfb6 100644
+>>> --- a/tools/perf/util/machine.c
+>>> +++ b/tools/perf/util/machine.c
+>>> @@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
+>>>
+>>>   	return thread->pid_;
+>>>   }
+>>> +
+>>> +int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
+>>> +{
+>>> +	struct thread *thread = machine__find_thread(machine, tid);
+>>> +
+>>> +	if (!thread)
+>>> +		return -1;
+>>> +
+>>> +	if (pid)
+>>> +		*pid = thread->pid_;
 >>
->> After finding some other reports of similar problems, I have built a custom 3.12.1 kernel after reverting commit 41c7f74 (rtc: Disable the alarm in the hardware (v2)) [1]. This seems to solve the problem for me.
->>
->> Related discussions and bug reports:
->> * http://thread.gmane.org/gmane.linux.kernel/1527538
->>   refers to: https://bugzilla.novell.com/show_bug.cgi?id=812592
->>              https://bugzilla.novell.com/show_bug.cgi?id=805740
->> * http://thread.gmane.org/gmane.linux.kernel/1275165/focus=1388471
->>   refers to: http://bugs.debian.org/691902
->>
->> Both LKML threads seem to have died without any action being taken.
->>
->> Setting the RTC alarm time way in the future, as suggested in [2] didn't work for me.
->>
->> Output of dmidecode is attached. Please let me know if any other information could be useful.
->>
->> [1] https://github.com/torvalds/linux/commit/41c7f74
->> [2] https://forums.computers.toshiba-europe.com/forums/thread.jspa?messageID=256816
-> Ok, sorry about this. I've been hoping we'd get some better insight into
-> what's actually happening on these strange BIOSes where disabling the
-> irq seems to cause it to scream (powering the system back on when its
-> shutdown), in the hopes of having a proper workaround. But despite
-> Borislav's efforts, he didn't seem to be able to root cause the issue.
+>> Why is a 'get' function modifying the thread data?
 >
-> So sadly at this point I guess having the dmi based quirk is the only
-> reasonable approach. The downside is it will end up killing alarm
-> functionality on the hardware.
->
-> Let me know if the following functions for you (I think I've added the
-> quirk properly for your system, but am not sure).
+> Where is this happening? :-)
 
+D'oh. code review while on a call ... multitasking failed.
 
-Hey Brecht,
-   Just wanted to follow up and see if you had a chance to try this patch?
-
-thanks
--john
-
+David
