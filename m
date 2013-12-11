@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab3LKBHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:07:23 -0500
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:44296 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab3LKBHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:07:22 -0500
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Dec 2013 20:07:21 EST
-Date: Tue, 10 Dec 2013 20:00:27 -0500
-From: Wakko Warner <wakko@animx.eu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Help with mpt2sas kernel message
-Message-ID: <20131211010027.GA30462@animx.eu.org>
-Reply-To: Wakko Warner <wakko@animx.eu.org>
+	id S1751941Ab3LKBHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:07:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54858 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab3LKBH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 20:07:26 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQVf+vAbW1v_VL5XSseQg06S6AX8RrE4vvJwPbLOeRcr=A@mail.gmail.com>
+References: <52A6D9B0.7040506@huawei.com> <CAE9FiQUd+sU4GEq0687u8+26jXJiJVboN90+L7svyosmm+V1Rg@mail.gmail.com> <52A787D0.2070400@zytor.com> <CAE9FiQU8Y_thGxZamz0Uwt4FGXh7KJu7jGP8ED3dbjQuyq7vcQ@mail.gmail.com> <52A79B0D.4090303@zytor.com> <CAE9FiQVf+vAbW1v_VL5XSseQg06S6AX8RrE4vvJwPbLOeRcr=A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] mm,x86: fix span coverage in e820_all_mapped()
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 10 Dec 2013 17:06:36 -0800
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Xishi Qiu <qiuxishi@huawei.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux MM <linux-mm@kvack.org>
+Message-ID: <b2e6fc81-a956-46f7-9a44-a707064c24a2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel: vanilla 3.7.2.
+Ok, the issue I thought we were discussing was actually [A,B) [B,C) [C,D) ...
 
-I have 2 mpt2sas controllers.  I'm running a md check on the 2 arrays that I
-have (one per card).  I'm seeing this in my kernel log (last 4 lines):
-2013-12-10 19:52:10 kame kernel:[1558186.193904] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
-2013-12-10 19:52:35 kame kernel:[1558211.606908] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
-2013-12-10 19:53:02 kame kernel:[1558237.954502] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
-2013-12-10 19:53:50 kame kernel:[1558286.227318] mpt2sas0: log_info(0x31080000): originator(PL), code(0x08), sub_code(0x0000)
-
-Can someone tell me if there is a problem here?
-
-I'd also like to know which card mpt2sas0 is.  Is it the one that has the
-lower numbered pci bus?  I was unable to figure that out from
-/sys/bus/pci/drivers/mpt2sas.
-
-The contents are:
-lrwxrwxrwx 1 root root    0 Dec 10 19:49 0000:03:00.0 -> ../../../../devices/pci0000:00/0000:00:05.0/0000:03:00.0/
-lrwxrwxrwx 1 root root    0 Dec 10 19:49 0000:04:00.0 -> ../../../../devices/pci0000:00/0000:00:07.0/0000:04:00.0/
-
-lspci for those:
-03:00.0 Serial Attached SCSI controller: LSI Logic / Symbios Logic SAS2008 PCI-Express Fusion-MPT SAS-2 [Falcon] (rev 03)
-04:00.0 Serial Attached SCSI controller: LSI Logic / Symbios Logic SAS2008 PCI-Express Fusion-MPT SAS-2 [Falcon] (rev 02)
-
-I am able to figure out which drives are on which of these controllers from
-/sys/block
-
-So far, I'm not seeing any data errors.  Although drives on 03:00.0 appear
-to be running slower than the ones on 04:00.0 according to /proc/mdstat.  No
-drives are actually in use other than the check that is running.
+Yinghai Lu <yinghai@kernel.org> wrote:
+>On Tue, Dec 10, 2013 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 12/10/2013 01:52 PM, Yinghai Lu wrote:
+>>>>
+>>>> What happens if it spans more than two regions?
+>>>
+>>> [A, B), [B+1, C), [C+1, D) ?
+>>> start in [A, B), and end in [C+1, D).
+>>>
+>>> old code:
+>>> first with [A, B), start set to B.
+>>> then with [B+1, C), start still keep as B.
+>>> then with [C+1, D), start still keep as B.
+>>> at last still return 0...aka not_all_mapped.
+>>>
+>>> old code is still right.
+>>>
+>>
+>> Why not_all_mapped?
+>
+>[B, B+1), and [C, C+1) are not there.
 
 -- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
