@@ -1,35 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3LKSAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:00:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30010 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab3LKSAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:00:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,872,1378882800"; 
-   d="scan'208";a="448458430"
-Message-ID: <1386784797.6066.63.camel@tursulin-linux.isw.intel.com>
-Subject: Re: Potentially unbounded allocations in seq_read?
-From: Tvrtko Ursulin <tvrtko.ursulin@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
+	id S1752000Ab3LKSAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:00:13 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42259 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3LKSAJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 13:00:09 -0500
+Date: Wed, 11 Dec 2013 18:00:07 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tvrtko Ursulin <tvrtko.ursulin@linux.intel.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 11 Dec 2013 17:59:57 +0000
-In-Reply-To: <20131211174909.GW10323@ZenIV.linux.org.uk>
+Subject: Re: Potentially unbounded allocations in seq_read?
+Message-ID: <20131211180007.GX10323@ZenIV.linux.org.uk>
 References: <1386781481.6066.55.camel@tursulin-linux.isw.intel.com>
-	 <20131211174909.GW10323@ZenIV.linux.org.uk>
-Organization: Intel Corporation UK Plc
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+ <1386784112.6066.61.camel@tursulin-linux.isw.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386784112.6066.61.camel@tursulin-linux.isw.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-11 at 17:49 +0000, Al Viro wrote:
-> On Wed, Dec 11, 2013 at 05:04:41PM +0000, Tvrtko Ursulin wrote:
+On Wed, Dec 11, 2013 at 05:48:32PM +0000, Tvrtko Ursulin wrote:
+> On Wed, 2013-12-11 at 17:04 +0000, Tvrtko Ursulin wrote:
 > > Hi all,
 > > 
 > > It seems that the buffer allocation in seq_read can double in size
@@ -37,38 +34,23 @@ On Wed, 2013-12-11 at 17:49 +0000, Al Viro wrote:
 > > (attempting to double m->size to 4M on a read of 1000 bytes). This
 > > produces an ugly WARN_ON_ONCE, which should perhaps be avoided? (given
 > > that it can be triggered by userspace at will)
+> > 
+> > From the top comment in seq_file.c one would think that it is a
+> > fundamental limitation of the current code that everything which will be
+> > read (even if in chunks) needs to be in the kernel side buffer at the
+> > same time?
 > 
-> An entry in /proc/<pid>/smaps that did not fit into 2Mb?  Seriously?
-> How in hell has that happened?  If you can trigger that at will, please
-> post the reproducer.
+> Oh-oh, seems that m->size is doubled on every read. So if app is reading
+> with a buffer smaller than data available, it can do nine reads before
+> it hits a >MAX_ORDER allocation. Not good. :)
 
-Yeah, no, wrong assumption. It was not about the size but the number of
-reads. For example:
-
-open("/proc/3131/smaps", O_RDONLY|O_LARGEFILE) = 3
-fstat64(1, {st_mode=S_IFCHR|0666, st_rdev=makedev(1, 3), ...}) = 0
-brk(0xf9019000)                         = 0xf9019000
-read(3, "be483000-be4ab000 rw-s 00000000 "..., 4096) = 4054
-write(1, "be483000-be4ab000 rw-s 00000000 "..., 4054) = 4054
-read(3, "be5c3000-be5c5000 rw-s 10da3f000"..., 4096) = 3656
-write(1, "be5c3000-be5c5000 rw-s 10da3f000"..., 3656) = 3656
-read(3, "be6b1000-be6b2000 rw-s 10da48000"..., 4096) = 3661
-write(1, "be6b1000-be6b2000 rw-s 10da48000"..., 3661) = 3661
-read(3, "be6b9000-be6ba000 rw-s 10da38000"..., 4096) = 3599
-write(1, "be6b9000-be6ba000 rw-s 10da38000"..., 3599) = 3599
-read(3, "be6d6000-be7b6000 rw-s 10d889000"..., 4096) = 3599
-write(1, "be6d6000-be7b6000 rw-s 10d889000"..., 3599) = 3599
-read(3, "be884000-be885000 rw-s 10d85c000"..., 4096) = 3661
-write(1, "be884000-be885000 rw-s 10d85c000"..., 3661) = 3661
-read(3, "be88d000-be8de000 rw-p 00000000 "..., 4096) = 4007
-write(1, "be88d000-be8de000 rw-p 00000000 "..., 4007) = 4007
-read(3, "bea29000-bea4d000 r-xp 00000000 "..., 4096) = 4057
-write(1, "bea29000-bea4d000 r-xp 00000000 "..., 4057) = 4057
-read(3, "beab3000-bead0000 r--p 00000000 "..., 4096) = 2092
-write(1, "beab3000-bead0000 r--p 00000000 "..., 2092) = 2092
-read(3, 0xf9017030, 4096)               = -1 ENOMEM (Out of memory)
-
-Regards,
-Tvrtko
-
-
+Huh?  Is that from observation or from reading the code?  If it's the former,
+I would really like to see details, if it's the latter... you are misreading
+it.  m->size is doubled until it's large enough to hold ->show() output;
+size argument of seq_read() has nothing to do with that.  Once the damn
+thing is large enough, read() is served from it.  So are subsequent reads,
+until you manage to eat all that had been generated.  Then the same buffer
+is used for the next entry; again, no doubling unless that next entry is
+even bigger and won't fit.  Doubling on each read(2) takes really strange
+iterator to trigger and you'll need ->show() spewing bigger and bigger
+entries.  Again - details, please...
