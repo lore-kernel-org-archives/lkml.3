@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3LKOQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:16:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53653 "EHLO mx2.suse.de"
+	id S1752072Ab3LKOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:17:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53677 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882Ab3LKOQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:16:42 -0500
+	id S1751408Ab3LKOQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 09:16:43 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,71 +15,133 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
         Greg Thelen <gthelen@google.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Tejun Heo <tj@kernel.org>
-Subject: [RFC 0/4] memcg: Low-limit reclaim
-Date: Wed, 11 Dec 2013 15:15:51 +0100
-Message-Id: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+Subject: [RFC 3/4] memcg: Allow setting low_limit
+Date: Wed, 11 Dec 2013 15:15:54 +0100
+Message-Id: <1386771355-21805-4-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.8.4.4
+In-Reply-To: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
+References: <1386771355-21805-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-previous discussions have shown that soft limits cannot be reformed
-(http://lwn.net/Articles/555249/). This series introduces an alternative
-approach to protecting memory allocated to processes executing within
-a memory cgroup controller. It is based on a new tunable that was
-discussed with Johannes and Tejun held during the last kernel summit.
+Export memory.low_limit_in_bytes knob with the same rules as the hard
+limit represented by limit_in_bytes knob (e.g. no limit to be set for
+the root cgroup). There is no memsw alternative for low_limit_in_bytes
+because the primary motivation behind this limit is to protect the
+working set of the group and so considering swap doesn't make much
+sense. There is also no kmem variant exported because we do not have any
+easy way to protect kernel allocations now.
 
-This patchset introduces such low limit that is functionally similar to a
-minimum guarantee. Memcgs which are under their lowlimit are not considered
-eligible for the reclaim (both global and hardlimit). The default value of
-the limit is 0 so all groups are eligible by default and an interested
-party has to explicitly set the limit.
+Please note that the low limit might exceed the hard limit which
+basically means that the group is never reclaimable. If the hard limit
+is reached with this setting then the memcg OOM killer is triggered to
+sort out the situation.
 
-The primary use case is to protect an amount of memory allocated to a
-workload without it being reclaimed by an unrelated activity. In some
-cases this requirement can be fulfilled by mlock but it is not suitable
-for many loads and generally requires application awareness. Such
-application awareness can be complex. It effectively forbids the
-use of memory overcommit as the application must explicitly manage
-memory residency.
-With low limits, such workloads can be placed in a memcg with a low
-limit that protects the estimated working set.
+TODO: update Documentation/cgroups/memory.txt
 
-Another use case might be unreclaimable groups. Some loads might be so
-sensitive to reclaim that it is better to kill and start it again (or
-since checkpoint) rather than trash. This would be trivial with low
-limit set to unlimited and the OOM killer will handle the situation as
-required (e.g. kill and restart).
-
-The hierarchical behavior of the lowlimit is described in the first
-patch. It is followed by a direct reclaim fix which is necessary to
-handle situation when a no group is eligible because all groups are
-below low limit. This is not a big deal for hardlimit reclaim because
-we simply retry the reclaim few times and then trigger memcg OOM killer
-path. It would blow up in the global case when we would loop without
-doing any progress or trigger OOM killer. I would consider configuration
-leading to this state invalid but we should handle that gracefully.
-
-The third patch finally allows setting the lowlimit.
-
-The last patch tries expedites OOM if it is clear that no group is
-eligible for reclaim. It basically breaks out of loops in the direct
-reclaim and lets kswapd sleep because it wouldn't do any progress anyway.
-
-Thoughts?
-
-Short log says:
-Michal Hocko (4):
-      memcg, mm: introduce lowlimit reclaim
-      mm, memcg: allow OOM if no memcg is eligible during direct reclaim
-      memcg: Allow setting low_limit
-      mm, memcg: expedite OOM if no memcg is reclaimable
-
-And a diffstat
- include/linux/memcontrol.h  | 14 +++++++++++
- include/linux/res_counter.h | 40 ++++++++++++++++++++++++++++++
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/res_counter.h | 13 +++++++++++++
  kernel/res_counter.c        |  2 ++
- mm/memcontrol.c             | 60 ++++++++++++++++++++++++++++++++++++++++++++-
- mm/vmscan.c                 | 59 +++++++++++++++++++++++++++++++++++++++++---
- 5 files changed, 170 insertions(+), 5 deletions(-)
+ mm/memcontrol.c             | 27 ++++++++++++++++++++++++++-
+ 3 files changed, 41 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index c7e7dfeca847..7befcf3c2ee2 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -93,6 +93,7 @@ enum {
+ 	RES_LIMIT,
+ 	RES_FAILCNT,
+ 	RES_SOFT_LIMIT,
++	RES_LOW_LIMIT,
+ };
+ 
+ /*
+@@ -251,4 +252,16 @@ res_counter_set_soft_limit(struct res_counter *cnt,
+ 	return 0;
+ }
+ 
++static inline int
++res_counter_set_low_limit(struct res_counter *cnt,
++				unsigned long long low_limit)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&cnt->lock, flags);
++	cnt->low_limit = low_limit;
++	spin_unlock_irqrestore(&cnt->lock, flags);
++	return 0;
++}
++
+ #endif
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index 4aa8a305aede..c57daf997d9d 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -135,6 +135,8 @@ res_counter_member(struct res_counter *counter, int member)
+ 		return &counter->failcnt;
+ 	case RES_SOFT_LIMIT:
+ 		return &counter->soft_limit;
++	case RES_LOW_LIMIT:
++		return &counter->low_limit;
+ 	};
+ 
+ 	BUG();
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 102e2da9ec8d..afe7c84d823f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1694,8 +1694,9 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+ 	pr_cont(" as a result of limit of %s\n", memcg_name);
+ done:
+ 
+-	pr_info("memory: usage %llukB, limit %llukB, failcnt %llu\n",
++	pr_info("memory: usage %llukB, low_limit %llukB limit %llukB, failcnt %llu\n",
+ 		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
++		res_counter_read_u64(&memcg->res, RES_LOW_LIMIT) >> 10,
+ 		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
+ 		res_counter_read_u64(&memcg->res, RES_FAILCNT));
+ 	pr_info("memory+swap: usage %llukB, limit %llukB, failcnt %llu\n",
+@@ -5300,6 +5301,24 @@ static int mem_cgroup_write(struct cgroup_subsys_state *css, struct cftype *cft,
+ 		else
+ 			return -EINVAL;
+ 		break;
++	case RES_LOW_LIMIT:
++		if (mem_cgroup_is_root(memcg)) { /* Can't set limit on root */
++			ret = -EINVAL;
++			break;
++		}
++		ret = res_counter_memparse_write_strategy(buffer, &val);
++		if (ret)
++			break;
++		if (type == _MEM) {
++			ret = res_counter_set_low_limit(&memcg->res, val);
++			break;
++		}
++		/*
++		 * memsw low limit doesn't make any sense and kmem is not
++		 * implemented yet - if ever
++		 */
++		return -EINVAL;
++
+ 	case RES_SOFT_LIMIT:
+ 		ret = res_counter_memparse_write_strategy(buffer, &val);
+ 		if (ret)
+@@ -6013,6 +6032,12 @@ static struct cftype mem_cgroup_files[] = {
+ 		.read = mem_cgroup_read,
+ 	},
+ 	{
++		.name = "low_limit_in_bytes",
++		.private = MEMFILE_PRIVATE(_MEM, RES_LOW_LIMIT),
++		.write_string = mem_cgroup_write,
++		.read = mem_cgroup_read,
++	},
++	{
+ 		.name = "soft_limit_in_bytes",
+ 		.private = MEMFILE_PRIVATE(_MEM, RES_SOFT_LIMIT),
+ 		.write_string = mem_cgroup_write,
+-- 
+1.8.4.4
+
