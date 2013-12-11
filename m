@@ -1,117 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab3LKTG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:06:59 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:41744 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3LKTG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:06:57 -0500
-Date: Wed, 11 Dec 2013 20:06:51 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <716357837.20131211200651@eikelenboom.it>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: "Berg, Johannes" <johannes.berg@intel.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-In-Reply-To: <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
-References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it> <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com> <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com> <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com> <871324710.20131211191104@eikelenboom.it> <CAB=NE6XRnE0j9NMW0K1vKzEO9v70arSH4YXZjudqa0ZxiLB4AA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751608Ab3LKTIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:08:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29934 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab3LKTIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 14:08:01 -0500
+Date: Wed, 11 Dec 2013 14:07:41 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
+ flock_to_posix_lock routines
+Message-ID: <20131211140741.292028e8@tlielax.poochiereds.net>
+In-Reply-To: <20131211151931.GC29300@fieldses.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-2-git-send-email-jlayton@redhat.com>
+	<20131210212253.GC20831@fieldses.org>
+	<20131210232204.GD20831@fieldses.org>
+	<20131211061856.615c39ba@tlielax.poochiereds.net>
+	<20131211143724.GA29300@fieldses.org>
+	<20131211151931.GC29300@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 11 Dec 2013 10:19:31 -0500
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-Wednesday, December 11, 2013, 7:38:50 PM, you wrote:
+> On Wed, Dec 11, 2013 at 09:37:24AM -0500, J. Bruce Fields wrote:
+> > Well, it'd be weird if I didn't screw up something somewhere.
+> 
+> Yes, a classic: I forgot the breaks after each switch case.
+> 
+> Here's a version that at least doesn't return -EINVAL on every lock
+> attempt.
+> 
+> --b.
+> 
+> commit 70b7b9a442d06a71306736eb01cedba5dd6d86cf
+> Author: J. Bruce Fields <bfields@redhat.com>
+> Date:   Tue Dec 10 18:14:28 2013 -0500
+> 
+>     locks: fix posix lock range overflow handling
+>     
+>     In the 32-bit case fcntl is converting signed 64-bit to signed 32-bit
+>     quantities in a couple places, with probably incorrect results.
+>     
+>     So instead let's return -EOVERFLOW as described in SUSv3, whenever "the
+>     smallest or, if l_len is non-zero, the largest offset of any byte in the
+>     requested segment cannot be represented correctly in an object of type
+>     off_t."
+>     
+>     While we're here, do some cleanup including consolidating code for the
+>     flock and flock64 cases.
+>     
+>     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 92a0f0a..b70486a 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -344,48 +344,44 @@ static int assign_type(struct file_lock *fl, long type)
+>  	return 0;
+>  }
+>  
+> -/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> - * style lock.
+> - */
+> -static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+> -			       struct flock *l)
+> +static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
+> +					struct flock64 *l, loff_t offset_max)
+>  {
+> -	off_t start, end;
+> +	loff_t start;
+>  
+>  	switch (l->l_whence) {
+>  	case SEEK_SET:
+> -		start = 0;
+> +		fl->fl_start = 0;
+>  		break;
+>  	case SEEK_CUR:
+> -		start = filp->f_pos;
+> +		fl->fl_start = filp->f_pos;
+>  		break;
+>  	case SEEK_END:
+> -		start = i_size_read(file_inode(filp));
+> +		fl->fl_start = i_size_read(file_inode(filp));
+>  		break;
+>  	default:
+>  		return -EINVAL;
+>  	}
+> +	if (l->l_start < 0)
+> +		return -EINVAL;
+> +	if (l->l_start > offset_max - fl->fl_start)
+> +		return -EOVERFLOW;
+> +	fl->fl_start += l->l_start;
+> +	if (l->l_len > offset_max - fl->fl_start)
+> +		return -EOVERFLOW;
+> +	if (fl->fl_start + l->l_len < 0)
+> +		return -EINVAL;
+>  
+>  	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
+>  	   POSIX-2001 defines it. */
+> -	start += l->l_start;
+> -	if (start < 0)
+> -		return -EINVAL;
+> -	fl->fl_end = OFFSET_MAX;
+> -	if (l->l_len > 0) {
+> -		end = start + l->l_len - 1;
+> -		fl->fl_end = end;
+> -	} else if (l->l_len < 0) {
+> -		end = start - 1;
+> -		fl->fl_end = end;
+> -		start += l->l_len;
+> -		if (start < 0)
+> -			return -EINVAL;
+> -	}
+> -	fl->fl_start = start;	/* we record the absolute position */
+> -	if (fl->fl_end < fl->fl_start)
+> -		return -EOVERFLOW;
+> -	
+> +	if (l->l_len > 0)
+> +		fl->fl_end = fl->fl_start + l->l_len - 1;
+> +	else if (l->l_len < 0) {
+> +		fl->fl_end = start - 1;
 
-> On Wed, Dec 11, 2013 at 7:11 PM, Sander Eikelenboom
-> <linux@eikelenboom.it> wrote:
->>
->> Wednesday, December 11, 2013, 6:53:07 PM, you wrote:
->>
->>> The best way to address all this is by automatic region awareness and
->>> doing the right thing on devices, this however requires good
->>> architecture / calibration data  / etc and all that needs to be
->>> verified by the system integrators, and finally they need to be
->>> certified. If you want to hack your firmware and software go at it,
->>> just be aware there are reasons for things.
->>
->> Well the general problem seems to be "we don't trust the user" so we FORCE him to the lowest
->> common denominator (without a way to overrule that) so he is forced to operate *well* within the law.
+Erm... I think this is not quite right...
 
-> Its simply stupid to have the user be involved, period, the fact that
-> a user would be involved should only be for testing or helping
-> compliance for a busted device, development, research and obviously
-> hacking. Linux allows all these but by default a device with firmware
-> and a custom regdomain that will barf if you try to use a channel that
-> is not allowed is a restriction in firmware. Feel free to reverse
-> engineer that if you don't like it but it just won't be supported or
-> go upstream. Now, the common denominator is generally optimized for
-> best performance as well so you shouldn't have to do anything, and for
-> APs -- this is typically carefully crafted for a region, also highly
-> optimized.
+"start" is uninitialized here. I think this should be:
 
-Well how about a car maker shipping al his cars capped to say 10 miles an hour,
-because somewhere in the world that's the lowest. So to prevent you from breaking the law
-we will cap your 500HP engine, owh in your country you have a higher speedlimit, ah wel bad luck for you then.
-We need to enforce this so no one is going to brake any law any where.
+    fl->fl_end = fl->fl_start - 1
 
-It's just plain stupid in my opinion (but not something linux can do much about, but it's about enforcing this stuff in firmware in general
-and thinking too much for the user (fine if you are capable to do so, but in this case clearly not, since there is no automatic way to detect in which country the device is,
-except by relying on user input).
-Why just don't set the safe and restricted value on boot and let the user overrule that if he wishes.
-(that means the user has to invoke a action, so he also should be aware of the consequences).
+With that too, we can get rid of the local "start" variable. I think
+this may explain why I'm tripping over the BUG() in locks_remove_file.
+
+While we're in here, I'm going to see what can be done to get rid of
+that BUG() call too. That problem doesn't seem like something we ought
+to be bringing down the box over...
 
 
->>>>> It doesn't seem like you are getting your original requests getting
->>>>> processed, so I don't think CRDA is passing it. Can you verify running
->>>>> from CRDA code:
->>>>
->>>> They don't get processed unless i remove the return from the code as i indicated.
->>>> If i remove that return it processes the request.
->>>>
->>>>> ./regdbdump /usr/lib/crda/regulatory.bin
->>>>
->>>> Although it's in a different location on Debian, /lib/crda/regulatory.bin
->>>> the dump seems fine.
->>
->>> OK thanks. Can you send a patch of what exact change you made, it was
->>> unclear from the paste you made.
->>
->>> diff -u file.c.orig file.c
->>
->> Well i just did a pull from wireless-next, to try Avinash Patil's patch.
->> net/wireless/reg.c had already changed much so i couldn't apply his patch without.
->>
->> With his patch it sets the regulatory domain, although as now expected i still can not use channels 12 and 13 yet,
->> probably due to those firmware restrictions.
+> +		fl->fl_start += l->l_len;
+> +	} else
+> +		fl->fl_end = OFFSET_MAX;
+> +
+>  	fl->fl_owner = current->files;
+>  	fl->fl_pid = current->tgid;
+>  	fl->fl_file = filp;
+> @@ -396,50 +392,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  	return assign_type(fl, l->l_type);
+>  }
+>  
+> +/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
+> + * style lock.
+> + */
+> +static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+> +			       struct flock *l)
+> +{
+> +	struct flock64 ll = {
+> +		.l_type = l->l_type,
+> +		.l_whence = l->l_whence,
+> +		.l_start = l->l_start,
+> +		.l_len = l->l_len,
+> +	};
+> +	
+> +	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
+> +}
+> +
+>  #if BITS_PER_LONG == 32
+>  static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  				 struct flock64 *l)
+>  {
+> -	loff_t start;
+> -
+> -	switch (l->l_whence) {
+> -	case SEEK_SET:
+> -		start = 0;
+> -		break;
+> -	case SEEK_CUR:
+> -		start = filp->f_pos;
+> -		break;
+> -	case SEEK_END:
+> -		start = i_size_read(file_inode(filp));
+> -		break;
+> -	default:
+> -		return -EINVAL;
+> -	}
+> -
+> -	start += l->l_start;
+> -	if (start < 0)
+> -		return -EINVAL;
+> -	fl->fl_end = OFFSET_MAX;
+> -	if (l->l_len > 0) {
+> -		fl->fl_end = start + l->l_len - 1;
+> -	} else if (l->l_len < 0) {
+> -		fl->fl_end = start - 1;
+> -		start += l->l_len;
+> -		if (start < 0)
+> -			return -EINVAL;
+> -	}
+> -	fl->fl_start = start;	/* we record the absolute position */
+> -	if (fl->fl_end < fl->fl_start)
+> -		return -EOVERFLOW;
+> -	
+> -	fl->fl_owner = current->files;
+> -	fl->fl_pid = current->tgid;
+> -	fl->fl_file = filp;
+> -	fl->fl_flags = FL_POSIX;
+> -	fl->fl_ops = NULL;
+> -	fl->fl_lmops = NULL;
+> -
+> -	return assign_type(fl, l->l_type);
+> +	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
+>  }
+>  #endif
+>  
+> diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+> index 95e46c8..36025f7 100644
+> --- a/include/uapi/asm-generic/fcntl.h
+> +++ b/include/uapi/asm-generic/fcntl.h
+> @@ -186,8 +186,6 @@ struct flock {
+>  };
+>  #endif
+>  
+> -#ifndef CONFIG_64BIT
+> -
+>  #ifndef HAVE_ARCH_STRUCT_FLOCK64
+>  #ifndef __ARCH_FLOCK64_PAD
+>  #define __ARCH_FLOCK64_PAD
+> @@ -202,6 +200,5 @@ struct flock64 {
+>  	__ARCH_FLOCK64_PAD
+>  };
+>  #endif
+> -#endif /* !CONFIG_64BIT */
+>  
+>  #endif /* _ASM_GENERIC_FCNTL_H */
 
-> Its unclear what results you got, and yeah if the device is restricted
-> then its just the fw telling the driver its channels and you can't use
-> them. That's it. You won't be able to override information then unless
-> you hack the firmware.
 
-Without the patch:
-
-- "iw reg get" gives country 00
-- now do a "iw reg set US", no error so it should be fine
-- now do a "iw reg get" .. gives country 00 again, so it has not been set to the country requested.
-
-With the patch:
-
-- "iw reg get" gives country 00
-- now do a "iw reg set US", no error so it should be fine
-- now do a "iw reg get" .. gives country US, so it has been set to the country requested.
-
->   Luis
-
-
+-- 
+Jeff Layton <jlayton@redhat.com>
