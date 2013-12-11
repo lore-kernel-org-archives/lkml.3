@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab3LKNVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 08:21:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49300 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3LKNVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 08:21:13 -0500
-Date: Wed, 11 Dec 2013 13:21:09 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: numa: Guarantee that tlb_flush_pending updates are
- visible before page table updates
-Message-ID: <20131211132109.GB24125@suse.de>
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+	id S1751519Ab3LKNWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 08:22:19 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:52774 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab3LKNWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 08:22:17 -0500
+Date: Wed, 11 Dec 2013 14:22:14 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
+Message-ID: <20131211132212.GA7862@localhost.localdomain>
+References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386690695-27380-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to documentation on barriers, stores issued before a LOCK can
-complete after the lock implying that it's possible tlb_flush_pending can
-be visible after a page table update. As per revised documentation, this patch
-adds a smp_mb__before_spinlock to guarantee the correct ordering.
+On Tue, Dec 03, 2013 at 01:57:37PM +0530, Viresh Kumar wrote:
+> Hi Frederic/Kevin,
+> 
+> I was doing some work where I was required to use NO_HZ_FULL
+> on core 1 on a dual core ARM machine.
+> 
+> I observed that I was able to isolate the second core using cpusets
+> but whenever the tick occurs, it occurs twice. i.e. Timer count
+> gets updated by two every time my core is disturbed.
+> 
+> I tried to trace it (output attached) and found this sequence (Talking
+> only about core 1 here):
+> - Single task was running on Core 1 (using cpusets)
+> - got an arch_timer interrupt
+> - started servicing vmstat stuff
+> - so came out of NO_HZ_FULL domain as there is more than
+> one task on Core
+> - queued work again and went to the existing single task (stress)
+> - again got arch_timer interrupt after 5 ms (HZ=200)
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/mm_types.h | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Right, looking at the details, the 2nd interrupt is caused by workqueue delayed
+work bdi writeback.
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index c122bb1..a12f2ab 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -482,7 +482,12 @@ static inline bool tlb_flush_pending(struct mm_struct *mm)
- static inline void set_tlb_flush_pending(struct mm_struct *mm)
- {
- 	mm->tlb_flush_pending = true;
--	barrier();
-+
-+	/*
-+	 * Guarantee that the tlb_flush_pending store does not leak into the
-+	 * critical section updating the page tables
-+	 */
-+	smp_mb__before_spinlock();
- }
- /* Clearing is done after a TLB flush, which also provides a barrier. */
- static inline void clear_tlb_flush_pending(struct mm_struct *mm)
+> - got "tick_stop" event and went into NO_HZ_FULL domain again..
+> - Got isolated again for long duration..
+> 
+> So the query is: why don't we check that at the end of servicing vmstat
+> stuff and migrating back to "stress" ??
+
+I fear I don't understand your question. Do you mean why don't we prevent from
+that bdi writeback work to run when we are in full dynticks mode?
+
+We can't just ignore workqueues and timers callback when they are scheduled
+otherwise the kernel is going to behave randomly.
+
+OTOH what we can do is to work on these per cpu workqueues and timers and do
+what's necessary to avoid them to fire, as explained in detail there Documentation/kernel-per-CPU-kthreads.txt
+
+There is also the problem of unbound workqueues for which we don't have a solution
+yet. But the idea is that we could tweak their affinity from sysfs.
+
+> 
+> Thanks.
+> 
+> --
+> viresh
+
+
