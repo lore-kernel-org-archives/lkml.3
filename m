@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602Ab3LKWrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:47:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41111 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab3LKWrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:47:24 -0500
-Date: Wed, 11 Dec 2013 22:47:19 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: page_alloc: exclude unreclaimable allocations from
- zone fairness policy
-Message-ID: <20131211224719.GE11295@suse.de>
-References: <1386785356-19911-1-git-send-email-hannes@cmpxchg.org>
+	id S1751740Ab3LKWrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:47:46 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:34150 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab3LKWrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 17:47:45 -0500
+Date: Wed, 11 Dec 2013 14:47:41 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@sr71.net>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, cl@gentwo.org,
+        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 2/2] mm: blk-mq: uses page->list incorrectly
+In-Reply-To: <20131211223632.8B2DFD41@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1312111447280.7354@chino.kir.corp.google.com>
+References: <20131211223631.51094A3D@viggo.jf.intel.com> <20131211223632.8B2DFD41@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1386785356-19911-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 01:09:16PM -0500, Johannes Weiner wrote:
-> Dave Hansen noted a regression in a microbenchmark that loops around
-> open() and close() on an 8-node NUMA machine and bisected it down to
-> 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy").  That
-> change forces the slab allocations of the file descriptor to spread
-> out to all 8 nodes, causing remote references in the page allocator
-> and slab.
+On Wed, 11 Dec 2013, Dave Hansen wrote:
+
 > 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> 'struct page' has two list_head fields: 'lru' and 'list'.
+> Conveniently, they are unioned together.  This means that code
+> can use them interchangably, which gets horribly confusing.
+> 
+> The blk-mq made the logical decision to try to use page->list.
+> But, that field was actually introduced just for the slub code.
+> ->lru is the right field to use outside of slab/slub.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-The original patch was primarily concerned with the fair aging of LRU pages
-of zones within a node. This patch uses GFP_MOVABLE_MASK which includes
-__GFP_RECLAIMABLE meaning any slab created with SLAB_RECLAIM_ACCOUNT is still
-getting the round-robin treatment. Those pages have a different lifecycle
-to LRU pages and the shrinkers are only node aware, not zone aware.
-While I get this patch probably helps this specific benchmark, was the
-use of GFP_MOVABLE_MASK intentional or did you mean to use __GFP_MOVABLE?
-
-Looking at the original patch again I think I made a major mistake when
-reviewing it. Considering the effect of the following for NUMA machines
-
-        for_each_zone_zonelist_nodemask(zone, z, zonelist,
-                                                high_zoneidx, nodemask) {
-		....
-                if (alloc_flags & ALLOC_WMARK_LOW) {
-                        if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-				continue;
-                        if (zone_reclaim_mode &&
-                            !zone_local(preferred_zone, zone))
-                                continue;
-		}
-
-
-Enabling zone_reclaim_mode sucks badly for workloads that are not paritioned
-to fit within NUMA nodes. Consequently, I expect the common case it that
-it's disabled by default due to small NUMA distances or manually disabled.
-
-However, the effect of that block is that we allocate NR_ALLOC_BATCH
-from local zones then fallback to batch allocating remote nodes! I bet
-the numa_hit stats in /proc/vmstat have sucked recently. The original
-problem was because the page allocator would try allocating from the
-highest zone while kswapd reclaimed from it causing LRU-aging problems.
-The problem is not the same between nodes. How do you feel about dropping
-the zone_reclaim_mode check above and only round-robin in batches between
-zones on the local node?
-
--- 
-Mel Gorman
-SUSE Labs
+Acked-by: David Rientjes <rientjes@google.com>
