@@ -1,163 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab3LKAsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 19:48:00 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:46350 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751260Ab3LKAqp (ORCPT
+	id S1751827Ab3LKAuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 19:50:17 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57405 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab3LKAuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 19:46:45 -0500
-Message-Id: <20131211004643.613346307@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 10 Dec 2013 19:46:35 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Mike Galbraith <bitbucket@online.de>
-Subject: [PATCH RT 4/5] rtmutex: use a trylock for waiter lock in trylock
-References: <20131211004631.950208564@goodmis.org>
-Content-Disposition: inline; filename=0004-rtmutex-use-a-trylock-for-waiter-lock-in-trylock.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Tue, 10 Dec 2013 19:50:14 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v5 1/8] sched/numa: fix set cpupid on page migration twice against thp
+Date: Wed, 11 Dec 2013 08:49:54 +0800
+Message-Id: <1386723001-25408-2-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386723001-25408-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121100-8878-0000-0000-00000A0569C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.13-rt26-rc1 stable review patch.
-If anyone has any objections, please let me know.
+commit 7851a45cd3 (mm: numa: Copy cpupid on page migration) copy over
+the cpupid at page migration time, there is unnecessary to set it again
+in function migrate_misplaced_transhuge_page, this patch fix it.
 
-------------------
-
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-
-Mike Galbraith captered the following:
-| >#11 [ffff88017b243e90] _raw_spin_lock at ffffffff815d2596
-| >#12 [ffff88017b243e90] rt_mutex_trylock at ffffffff815d15be
-| >#13 [ffff88017b243eb0] get_next_timer_interrupt at ffffffff81063b42
-| >#14 [ffff88017b243f00] tick_nohz_stop_sched_tick at ffffffff810bd1fd
-| >#15 [ffff88017b243f70] tick_nohz_irq_exit at ffffffff810bd7d2
-| >#16 [ffff88017b243f90] irq_exit at ffffffff8105b02d
-| >#17 [ffff88017b243fb0] reschedule_interrupt at ffffffff815db3dd
-| >--- <IRQ stack> ---
-| >#18 [ffff88017a2a9bc8] reschedule_interrupt at ffffffff815db3dd
-| >    [exception RIP: task_blocks_on_rt_mutex+51]
-| >#19 [ffff88017a2a9ce0] rt_spin_lock_slowlock at ffffffff815d183c
-| >#20 [ffff88017a2a9da0] lock_timer_base.isra.35 at ffffffff81061cbf
-| >#21 [ffff88017a2a9dd0] schedule_timeout at ffffffff815cf1ce
-| >#22 [ffff88017a2a9e50] rcu_gp_kthread at ffffffff810f9bbb
-| >#23 [ffff88017a2a9ed0] kthread at ffffffff810796d5
-| >#24 [ffff88017a2a9f50] ret_from_fork at ffffffff815da04c
-
-lock_timer_base() does a try_lock() which deadlocks on the waiter lock
-not the lock itself.
-This patch takes the waiter_lock with trylock so it should work from interrupt
-context as well. If the fastpath doesn't work and the waiter_lock itself is
-taken then it seems that the lock itself taken.
-This patch also adds a "rt_spin_try_unlock" to keep lockdep happy. If we
-managed to take the wait_lock in the first place we should also be able
-to take it in the unlock path.
-
-Cc: stable-rt@vger.kernel.org
-Reported-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- include/linux/spinlock_rt.h |  1 +
- kernel/rtmutex.c            | 31 +++++++++++++++++++++++++++----
- kernel/timer.c              |  2 +-
- 3 files changed, 29 insertions(+), 5 deletions(-)
+ mm/migrate.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/spinlock_rt.h b/include/linux/spinlock_rt.h
-index 0618387..b3c504b 100644
---- a/include/linux/spinlock_rt.h
-+++ b/include/linux/spinlock_rt.h
-@@ -22,6 +22,7 @@ extern void __lockfunc rt_spin_lock(spinlock_t *lock);
- extern unsigned long __lockfunc rt_spin_lock_trace_flags(spinlock_t *lock);
- extern void __lockfunc rt_spin_lock_nested(spinlock_t *lock, int subclass);
- extern void __lockfunc rt_spin_unlock(spinlock_t *lock);
-+extern void __lockfunc rt_spin_unlock_after_trylock_in_irq(spinlock_t *lock);
- extern void __lockfunc rt_spin_unlock_wait(spinlock_t *lock);
- extern int __lockfunc rt_spin_trylock_irqsave(spinlock_t *lock, unsigned long *flags);
- extern int __lockfunc rt_spin_trylock_bh(spinlock_t *lock);
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 20742e7..3825e1c 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -801,10 +801,8 @@ static void  noinline __sched rt_spin_lock_slowlock(struct rt_mutex *lock)
- /*
-  * Slow path to release a rt_mutex spin_lock style
-  */
--static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
-+static void __sched __rt_spin_lock_slowunlock(struct rt_mutex *lock)
- {
--	raw_spin_lock(&lock->wait_lock);
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 8dc277d..b13e181 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1758,8 +1758,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	if (!new_page)
+ 		goto out_fail;
+ 
+-	page_cpupid_xchg_last(new_page, page_cpupid_last(page));
 -
- 	debug_rt_mutex_unlock(lock);
- 
- 	rt_mutex_deadlock_account_unlock(current);
-@@ -823,6 +821,23 @@ static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
- 	rt_mutex_adjust_prio(current);
- }
- 
-+static void  noinline __sched rt_spin_lock_slowunlock(struct rt_mutex *lock)
-+{
-+	raw_spin_lock(&lock->wait_lock);
-+	__rt_spin_lock_slowunlock(lock);
-+}
-+
-+static void  noinline __sched rt_spin_lock_slowunlock_hirq(struct rt_mutex *lock)
-+{
-+	int ret;
-+
-+	do {
-+		ret = raw_spin_trylock(&lock->wait_lock);
-+	} while (!ret);
-+
-+	__rt_spin_lock_slowunlock(lock);
-+}
-+
- void __lockfunc rt_spin_lock(spinlock_t *lock)
- {
- 	rt_spin_lock_fastlock(&lock->lock, rt_spin_lock_slowlock);
-@@ -853,6 +868,13 @@ void __lockfunc rt_spin_unlock(spinlock_t *lock)
- }
- EXPORT_SYMBOL(rt_spin_unlock);
- 
-+void __lockfunc rt_spin_unlock_after_trylock_in_irq(spinlock_t *lock)
-+{
-+	/* NOTE: we always pass in '1' for nested, for simplicity */
-+	spin_release(&lock->dep_map, 1, _RET_IP_);
-+	rt_spin_lock_fastunlock(&lock->lock, rt_spin_lock_slowunlock_hirq);
-+}
-+
- void __lockfunc __rt_spin_unlock(struct rt_mutex *lock)
- {
- 	rt_spin_lock_fastunlock(lock, rt_spin_lock_slowunlock);
-@@ -1056,7 +1078,8 @@ rt_mutex_slowtrylock(struct rt_mutex *lock)
- {
- 	int ret = 0;
- 
--	raw_spin_lock(&lock->wait_lock);
-+	if (!raw_spin_trylock(&lock->wait_lock))
-+		return ret;
- 	init_lists(lock);
- 
- 	if (likely(rt_mutex_owner(lock) != current)) {
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 3bb957e..330221b 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1398,7 +1398,7 @@ unsigned long get_next_timer_interrupt(unsigned long now)
- 		expires = base->next_timer;
- 	}
- #ifdef CONFIG_PREEMPT_RT_FULL
--	rt_spin_unlock(&base->lock);
-+	rt_spin_unlock_after_trylock_in_irq(&base->lock);
- #else
- 	spin_unlock(&base->lock);
- #endif
+ 	isolated = numamigrate_isolate_page(pgdat, page);
+ 	if (!isolated) {
+ 		put_page(new_page);
 -- 
-1.8.4.3
-
+1.7.7.6
 
