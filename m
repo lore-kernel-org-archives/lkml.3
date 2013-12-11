@@ -1,155 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116Ab3LKHGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:06:53 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:53610 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab3LKHGr convert rfc822-to-8bit (ORCPT
+	id S1751319Ab3LKHJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:09:12 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:22196 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3LKHJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:06:47 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.0 \(1822\))
-Subject: Re: [PATCH 1/3] of: Fix early OF builtup on kobj-ification
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <1386684833-24112-2-git-send-email-panto@antoniou-consulting.com>
-Date: Wed, 11 Dec 2013 08:06:42 +0100
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        Device Tree Mailing List <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C3A30FEB-11CB-4CEA-8CB3-B1CA53A87C61@dominion.thruhere.net>
-References: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com> <1386684833-24112-2-git-send-email-panto@antoniou-consulting.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-X-Mailer: Apple Mail (2.1822)
+	Wed, 11 Dec 2013 02:09:07 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee691-b7fd26d000003f7b-b4-52a80f8c830f
+Content-transfer-encoding: 8BIT
+Message-id: <1386745678.2101.152.camel@kjgkr>
+Subject: Re: [PATCH 2/2] f2fs: fix the location of tracepoint
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Date: Wed, 11 Dec 2013 16:07:58 +0900
+In-reply-to: <1386741927-6007-2-git-send-email-jaegeuk.kim@samsung.com>
+References: <1386741927-6007-1-git-send-email-jaegeuk.kim@samsung.com>
+ <1386741927-6007-2-git-send-email-jaegeuk.kim@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI90e/hVBBs3LZS0uLXK32LP3JIvF
+	5V1z2ByYPXYv+Mzk8XmTXABTFJdNSmpOZllqkb5dAlfG2o+zWQreclRsnDuXuYGxkb2LkZND
+	QsBE4tz7Y0wQtpjEhXvr2boYuTiEBJYxSvxrvM8CU7T1xR12iMQiRokdS36AJXgFBCV+TL4H
+	ZHNwMAvISxy5lA0SZhZQl5g0bxEzRP0rRokVK78xQtTrSjxedg1sm7CArcTDnnZ2kF42AW2J
+	zfsNQMJCAooSb/ffZQUJiwDZl987QUz3kNh1rBTEZBFQlXj13hGkmFPAXaJ7znUWiMZmRomt
+	k1VBbH4BUYnDC7czQxyvJLG7vRPseAmBTewSN9pusYEkWAQEJL5NPgR2vISArMSmA1D1khIH
+	V9xgmcAoMQvJi7MQXpyF5MUFjMyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MUKiauIOxvsH
+	rA8xJgNtnMgsJZqcD4zKvJJ4Q2MzIwtTE1NjI3NLM9KElcR50x8lBQkJpCeWpGanphakFsUX
+	leakFh9iZOLglGpgdEp6vum170772XFnZF5fruOWsWotmclvwn9xe2HupreqHFURX3e8uOUe
+	KJfPpr9OZNuDRJFLBkmih5kO6V44qP28b/9S6ZhjG3tf8vGtu8bOyD1djmvX8tpLMU8Zfr5L
+	XPPDwkdp5+MeSfc/i2pe/qg86bKZ42zUrmYRcQ/WeI1dv5nUny6pVmIpzkg01GIuKk4EAOXv
+	q6HAAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgG4P/4ogg+O3JS0uLXK32LP3JIvF
+	5V1z2ByYPXYv+Mzk8XmTXABTVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmS
+	Ql5ibqqtkotPgK5bZg7QDiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1j
+	xtqPs1kK3nJUbJw7l7mBsZG9i5GTQ0LARGLriztQtpjEhXvr2boYuTiEBBYxSuxY8oMFJMEr
+	ICjxY/I9IJuDg1lAXuLIpWyQMLOAusSkeYuYIepfMUqsWPmNEaJeV+LxsmtMILawgK3Ew552
+	dpBeNgFtic37DUDCQgKKEm/332UFCYsA2ZffO0FM95DYdawUxGQRUJV49d4RpJhTwF2ie851
+	FojGZkaJrZNVQWx+AVGJwwu3M0McrySxu72TfQKj0CwkJ89COHkWkpMXMDKvYhRNLUguKE5K
+	zzXUK07MLS7NS9dLzs/dxAiO2WdSOxhXNlgcYhTgYFTi4T1QtDxIiDWxrLgy9xCjBAezkgjv
+	CoYVQUK8KYmVValF+fFFpTmpxYcYk4HunsgsJZqcD0wneSXxhsYmZkaWRmYWRibm5qQJK4nz
+	Hmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAeHTKFAVlza8XtASay5dEvTD7Mi1x+29lAxGbq20V
+	cks6urbIe8rOFvGL21p9+n30hSu31zpMvP1n/5Mmd96MyfWzFDzOf9ylbCQev/H55Y1OjbFe
+	ifNfaEzy3pt2aleR8d/6JmOew68OtG1Olr+7+0nlnLjQwru2PKrt9reWJ75SCn1hJOJgqsRS
+	nJFoqMVcVJwIAOCCj0IdAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Oops,
+Please ignore the second patch.
+Sorry for the noise.
 
-Op 10 dec. 2013, om 15:13 heeft Pantelis Antoniou <panto@antoniou-consulting.com> het volgende geschreven:
-
-> When booting platforms that do very early OF initialization before
-> core_initcalls are performed of_init is called too late.
+2013-12-11 (수), 15:05 +0900, Jaegeuk Kim:
+> We need to get a trace before submit_bio, since its bi_sector is remapped during
+> the submit_bio.
 > 
-> This results in a hard-hard without getting a chance to output anything.
-
-I think that should be 'hard-hang'.
-
-regards,
-
-Koen
-
-> 
-> Fixed by adding a flag that marks when init has been done, and
-> performing the per-node init at that time.
-> 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 > ---
-> drivers/of/base.c | 28 +++++++++++++++++++++++-----
-> 1 file changed, 23 insertions(+), 5 deletions(-)
+>  fs/f2fs/data.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 734689b..a4f3dda 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -98,7 +98,7 @@ int __weak of_node_to_nid(struct device_node *np)
->  */
-> struct device_node *of_node_get(struct device_node *node)
-> {
-> -	if (node)
-> +	if (node && of_kset)
-> 		kobject_get(&node->kobj);
-> 	return node;
-> }
-> @@ -156,7 +156,7 @@ static void of_node_release(struct kobject *kobj)
->  */
-> void of_node_put(struct device_node *node)
-> {
-> -	if (node)
-> +	if (node && of_kset)
-> 		kobject_put(&node->kobj);
-> }
-> EXPORT_SYMBOL(of_node_put);
-> @@ -202,9 +202,16 @@ static const char *safe_name(struct kobject *kobj, const char *orig_name)
-> static int __of_add_property(struct device_node *np, struct property *pp)
-> {
-> 	int rc;
-> +	bool secure;
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index ebc9177..969df55 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -103,9 +103,10 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
+>  
+>  	rw = fio->rw | fio->rw_flag;
+>  
+> +	trace_f2fs_submit_write_bio(io->sbi->sb, rw, fio->type, io->bio);
 > +
-> +	/* note that we don't take a lock here */
-> +
-> +	/* fake the return while of_init is not yet called */
-> +	if (!of_kset)
-> +		return 0;
-> 
-> 	/* Important: Don't leak passwords */
-> -	bool secure = strncmp(pp->name, "security-", 9) == 0;
-> +	secure = strncmp(pp->name, "security-", 9) == 0;
-> 
-> 	pp->attr.attr.name = safe_name(&np->kobj, pp->name);
-> 	pp->attr.attr.mode = secure ? S_IRUSR : S_IRUGO;
-> @@ -222,6 +229,12 @@ static int __of_node_add(struct device_node *np)
-> 	struct property *pp;
-> 	int rc;
-> 
-> +	/* note that we don't take a lock here */
-> +
-> +	/* fake the return while of_init is not yet called */
-> +	if (!of_kset)
-> +		return 0;
-> +
-> 	np->kobj.kset = of_kset;
-> 	if (!np->parent) {
-> 		/* Nodes without parents are new top level trees */
-> @@ -245,11 +258,14 @@ static int __of_node_add(struct device_node *np)
-> int of_node_add(struct device_node *np)
-> {
-> 	int rc = 0;
-> -	kobject_init(&np->kobj, &of_node_ktype);
-> +
-> +	/* fake the return while of_init is not yet called */
-> 	mutex_lock(&of_aliases_mutex);
-> +	kobject_init(&np->kobj, &of_node_ktype);
-> 	if (of_kset)
-> 		rc = __of_node_add(np);
-> 	mutex_unlock(&of_aliases_mutex);
-> +
-> 	return rc;
-> }
-> 
-> @@ -275,14 +291,16 @@ static int __init of_init(void)
-> 
-> 	/* Make sure all nodes added before this time get added to sysfs */
-> 	mutex_lock(&of_aliases_mutex);
-> +
-> 	for_each_of_allnodes(np)
-> 		__of_node_add(np);
-> -	mutex_unlock(&of_aliases_mutex);
-> 
-> 	/* Symlink in /proc as required by userspace ABI */
-> 	if (of_allnodes)
-> 		proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
-> 
-> +	mutex_unlock(&of_aliases_mutex);
-> +
-> 	return 0;
-> }
-> core_initcall(of_init);
-> -- 
-> 1.7.12
-> 
-> 
+>  	if (is_read_io(rw)) {
+>  		submit_bio(rw, io->bio);
+> -		trace_f2fs_submit_read_bio(io->sbi->sb, rw, fio->type, io->bio);
+>  		io->bio = NULL;
+>  		return;
+>  	}
+> @@ -122,7 +123,6 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
+>  	} else {
+>  		submit_bio(rw, io->bio);
+>  	}
+> -	trace_f2fs_submit_write_bio(io->sbi->sb, rw, fio->type, io->bio);
+>  	io->bio = NULL;
+>  }
+>  
+
+-- 
+Jaegeuk Kim
+Samsung
 
