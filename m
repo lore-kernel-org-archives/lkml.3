@@ -1,97 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab3LKThi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 14:37:38 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:50526 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab3LKThe (ORCPT
+	id S1751692Ab3LKTit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 14:38:49 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:35839 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab3LKTis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 14:37:34 -0500
-Message-ID: <52A8BEFA.8000005@linaro.org>
-Date: Wed, 11 Dec 2013 11:37:30 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 11 Dec 2013 14:38:48 -0500
+Date: Wed, 11 Dec 2013 16:38:40 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v0 23/71] perf evlist: Add perf_evlist__to_front()
+Message-ID: <20131211193840.GE1458@ghostprotocols.net>
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1386765443-26966-24-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] perf: POSIX CLOCK_PERF to report current time value
-References: <1386707259-21725-1-git-send-email-dsahern@gmail.com> <52A77D3A.8080407@linaro.org> <20131211120750.GD25541@gmail.com>
-In-Reply-To: <20131211120750.GD25541@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386765443-26966-24-git-send-email-alexander.shishkin@linux.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 04:07 AM, Ingo Molnar wrote:
-> * John Stultz <john.stultz@linaro.org> wrote:
->
->> [...]
->>
->> I'd much rather see perf export CLOCK_MONOTONIC_RAW timestamps, 
->> since that clockid is well defined. [...]
-> So the problem with that clock is that it does the following for every 
-> timestamp:
->
->         cycle_now = clock->read(clock);
->
-> ... which is impossibly slow if something like the HPET is used, which 
-> is rather common - so this is a non-starter to timestamp perf events 
-> with. We use the scheduler clock as a reasonable compromise between 
-> scalability and clock globality.
->
-> I can see two solutions:
->
-> 1)
->
-> One approach is what I described in my other reply a few minutes ago: 
-> track the flow of GTOD, timestamped with the fast perf timestamps, so 
-> that GTOD can be correlated to the perf clock, if user-space so 
-> wishes. The correlation is simple so this gets close to the ease of 
-> use of being able to timestamp GTOD directly.
->
-> (That would be useful for other purposes as well, such as 
-> instrumenting GTOD updates.)
->
-> 2)
->
-> An alternate, rather interesting approach would be to change the 
-> scheduler clock offset to be influenced by the above events, so that 
-> it quasi-approximates GTOD and emits natural time of day timestamps.
->
-> This already happens partially in the sched-clock slow path, 
-> kernel/sched/clock.c's sched_clock_local(), it uses scd->tick_gtod 
-> timestamps to correlate to the monotonic clock. This could be changed 
-> over to use not get_ktime() but getnstimeofday(), to get true TOD 
-> timestamps.
->
-> The trickier bit is the x86 fast-path, in arch/x86/kernel/tsc.c's 
-> native_sched_clock(). That relies on __cycles_2_ns() to transform a 
-> CPU cycles timestamp into (boot time offset) nanoseconds. For that it 
-> uses the cyc2ns_offset percpu variable. That variable could be updated 
-> periodically so that it's TOD offset.
->
-> My (strong!) preference would be #2, for the simple reason that it 
-> would make perf timestamps instantly usable and tooling wouldn't have 
-> to do anything to get true timestamps.
+Em Wed, Dec 11, 2013 at 02:36:35PM +0200, Alexander Shishkin escreveu:
+> From: Adrian Hunter <adrian.hunter@intel.com>
+ 
+> Add a function to move a selected event to the front of the list.
+ 
+> This is needed because it is not possible to use the
+> PERF_EVENT_IOC_SET_OUTPUT IOCTL from an Instruction Tracing event to a
+> non-Instruction Tracing event.  Thus the Instruction Tracing event
+> must come first.
 
-Right. #2 is basically what I was (probably poorly) trying to describe
-as my ideal solution, making perf export what is essentially
-CLOCK_MONOTONIC_RAW time (using CLOCK_MONOTONIC_RAW is more likely to be
-easier to match then CLOCK_REALTIME/getnstimeofday(), since you don't
-have to deal with anyone setting the clock, or frequency adjustments
-from NTP).
 
-thanks
--john
+The description doesn't matches what the code is doing, as it is moving
+a _group_, not an event.
 
+Also I wonder if you can't do this more effiently by finding where it
+starts, ends and then doing some more splice like operatins instead of
+moving member by member to a temp list. Setting the (next, prev) fields
+of the various sublists to the right places.
+
+There is even list_cut_position() already in list.h, used with
+list_move() and list_splice() I think you can do it more efficiently,
+I think.
+
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/evlist.c | 17 +++++++++++++++++
+>  tools/perf/util/evlist.h |  3 +++
+>  2 files changed, 20 insertions(+)
+> 
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index f9dbf5f..93683bc 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -1216,3 +1216,20 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+>  
+>  	return 0;
+>  }
+> +
+> +void perf_evlist__to_front(struct perf_evlist *evlist,
+> +			   struct perf_evsel *move_evsel)
+> +{
+> +	struct perf_evsel *evsel, *n;
+> +	LIST_HEAD(move);
+> +
+> +	if (move_evsel == perf_evlist__first(evlist))
+> +		return;
+> +
+> +	list_for_each_entry_safe(evsel, n, &evlist->entries, node) {
+> +		if (evsel->leader == move_evsel->leader)
+> +			list_move_tail(&evsel->node, &move);
+> +	}
+> +
+> +	list_splice(&move, &evlist->entries);
+> +}
+> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+> index 8a04aae..9f64ede 100644
+> --- a/tools/perf/util/evlist.h
+> +++ b/tools/perf/util/evlist.h
+> @@ -194,5 +194,8 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
+>  }
+>  
+>  bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str);
+> +void perf_evlist__to_front(struct perf_evlist *evlist,
+> +			   struct perf_evsel *move_evsel);
+> +
+>  
+>  #endif /* __PERF_EVLIST_H */
+> -- 
+> 1.8.5.1
