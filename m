@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348Ab3LKJgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:36:00 -0500
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:34586 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3LKJf5 (ORCPT
+	id S1751370Ab3LKJio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:38:44 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:55490 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750945Ab3LKJik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:35:57 -0500
-Date: Wed, 11 Dec 2013 09:35:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 5/8] mfd: Move pm8xxx-irq.c contents into only driver
- that uses it
-Message-ID: <20131211093552.GG16780@lee--X1>
-References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org>
- <1386718523-2587-6-git-send-email-sboyd@codeaurora.org>
+	Wed, 11 Dec 2013 04:38:40 -0500
+Message-ID: <52A83258.5070506@st.com>
+Date: Wed, 11 Dec 2013 09:37:28 +0000
+From: Angus Clark <angus.clark@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100312 Lightning/1.0b2pre Shredder/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1386718523-2587-6-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <dwmw2@infradead.org>, <linus.walleij@linaro.org>,
+        <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH v3 01/36] mtd: st_spi_fsm: Allocate resources and register
+ with MTD framework
+References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org> <1385727565-25794-2-git-send-email-lee.jones@linaro.org> <20131210204635.GD27149@ld-irv-0074.broadcom.com> <20131211084856.GF2390@lee--X1>
+In-Reply-To: <20131211084856.GF2390@lee--X1>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.49.178]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013, Stephen Boyd wrote:
+Hi Lee and Brian,
 
-> The pm8xxx-irq.c code is practically mandatory given that the
-> pm8921-core driver will WARN about it missing and the Kconfig
-> marks it as default y when a PM8xxx chips is enabled. The only
-> reason the file was split out was because we planned to support
-> other pm8xxx chips with different pm8xxx-core.c files. Now that
-> we have DT on ARM this isn't necessary because we should be able
-> to support all the ssbi based PM8xxx chips in one driver and one
-> file with no data bloat. Let's move this code into the only
-> driver that uses it right now (pm8921) so that it's always compiled when
-> needed. In the future we can rename pm8921-core.c to something
-> more generic.
+I would also like to thank Brian; as always, very sensible comments.
+
+I am tied up most of today and off work tomorrow (Christmas shopping!), but I
+will set aside Friday to go through the comments in detail.  I should also have
+some time next week if necessary, subject to any panics that might arise!
+
+I also intend to respond to Huang's updated 'spi-nor' framework at the same
+time.  At some stage, I would expect some of the device probing code in
+st_spi_fsm, particularly the configuration of read/write/erase operations based
+on capabilities, to be pulled into the 'spi-nor' framework.  I do not see this
+an an obstacle to st_spi_fsm being integrated earlier though; it's presence in
+the kernel would provide another example of a H/W Controller that 'spi-nor'
+needs to accommodate.
+
+Cheers,
+
+Angus
+
+
+On 12/11/2013 08:48 AM, Lee Jones wrote:
+> Hi Brian,
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/mfd/Kconfig       |  10 --
->  drivers/mfd/pm8921-core.c | 349 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/mfd/pm8xxx-irq.c  | 371 ----------------------------------------------
+> Thank you for taking the time to review, it's very much appreciated.
+> You bought out some interesting points that I'm happy to go away and
+> rectify. Firstly however, as I inherited this code I'd like to give
+> Angus a chance to comment before we go off on our own tangent and
+> rework some of the good code which perhaps should remain unchanged.
+> 
+> Angus, do you have enough time to go through Brian's review comments
+> and perhaps reply to the ones that you feel would benefit from your
+> expert knowledge. To be frank, some of the questions that were asked I
+> wouldn't be able to answer without your guidance in any case.
+> 
+> Thanks both.
+> 
+> Kind regards,
+> Lee
+> 
 
-If you're going to take this approach (which I'm fine with unless
-there are likely to be anymore incarnations of pm8xxx chips?), I think
-you should also clean-up the header in this patch.
-
-  include/linux/mfd/pm8xxx/irq.h
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
