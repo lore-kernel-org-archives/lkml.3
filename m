@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab3LKBCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 20:02:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58614 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260Ab3LKBCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 20:02:35 -0500
-Date: Wed, 11 Dec 2013 01:02:24 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: process 'stuck' at exit.
-Message-ID: <20131211010224.GN11295@suse.de>
-References: <20131210154724.GA30020@redhat.com>
- <CA+55aFxgFAfcQKDoDhmJcCRb5pfxumxJ9OmpUhhNzs+CY_Yqqw@mail.gmail.com>
- <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+	id S1751598Ab3LKBDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 20:03:35 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:62203 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751171Ab3LKBDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Dec 2013 20:03:33 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AskVAJu4p1J5LHyk/2dsb2JhbABZgwc4gwChcAOPMoVPgR8XdIIlAQEEATocIwULCAMOCgkDIg8FJQMhE4d8BQ7BNxcWjm8HgyGBEwSYE4ExkGODPSg
+Date: Wed, 11 Dec 2013 12:03:27 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Luis Henriques <luis.henriques@canonical.com>,
+        Kees Cook <keescook@google.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Ben Myers <bpm@sgi.com>, Greg KH <gregkh@linuxfoundation.org>,
+        xfs@oss.sgi.com, "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: XFS security fix never sent to -stable?
+Message-ID: <20131211010326.GF10988@dastard>
+References: <CAGXu5jLKkgYg5UWJc8xBGN5NgDh68Q3YRxO--zmDL86BWPH78A@mail.gmail.com>
+ <20131209121534.GE4278@hercules>
+ <CA+5PVA4ychvLEi1ZZ6rYy2=5-wZAbQ_a-aoy8=1w3+tr-pt3Fg@mail.gmail.com>
+ <20131209235523.GW31386@dastard>
+ <CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312102001090.28330@ionos.tec.linutronix.de>
+In-Reply-To: <CA+5PVA5rUmWYQiPwkN15CnfqckmEjVukXz3mU75CiUBVzfERqA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 08:18:29PM +0100, Thomas Gleixner wrote:
-> On Tue, 10 Dec 2013, Linus Torvalds wrote:
+On Tue, Dec 10, 2013 at 08:20:07AM -0500, Josh Boyer wrote:
+> On Mon, Dec 9, 2013 at 6:55 PM, Dave Chinner <david@fromorbit.com>
+> wrote:
+> > [cc xfs list, cc stable@vger.kernel.org]
+> >
+> > On Mon, Dec 09, 2013 at 08:17:09AM -0500, Josh Boyer wrote:
+> >> On Mon, Dec 9, 2013 at 7:15 AM, Luis Henriques
+> >> <luis.henriques@canonical.com> wrote:
+> >> > On Thu, Dec 05, 2013 at 04:35:50PM -0800, Kees Cook wrote:
+> >> >> Hi,
+> >> >>
+> >> >> It looks like 8c567a7fab6e086a0284eee2db82348521e7120c
+> >> >> ("xfs: add capability check to free eofblocks ioctl") is a
+> >> >> security fix that was never sent to -stable? From what I can
+> >> >> see, it was introduced in 3.8 by
+> >> >> 8ca149de80478441352a8622ea15fae7de703ced ("xfs: add
+> >> >> XFS_IOC_FREE_EOFBLOCKS ioctl").
+> >> >>
+> >> >> I don't see this in the 3.8.y tree. Should it be added there
+> >> >> and newer?
+> >> >
+> >> > Thanks Kees, I'm queuing it for the 3.11 kernel.
+> >>
+> >> There's also this one:
+> >>
+> >> http://thread.gmane.org/gmane.comp.file-systems.xfs.general/57654
+> >>
+> >> It fixes CVE-2013-6382
+> >
+> > First I've heard about it there being a CVE for that bug. Since
+> > when has it been considered best practice to publish CVEs
+> > without first (or ever) directly contacting the relevant
+> > upstream developers?
 > 
-> > Hmm. Looks like the futex code is somehow stuck in a loop, calling
-> > get_user_pages_fast().
-> > 
-> > The futex code itself is apparently so low-overhead that it doesn't
-> > show up in your 'perf top' report (which is dominated by all the
-> > expensive debug things that get_user_pages_fast() etc ends up doing),
-> > but that's the only looping I can see. Perhaps the "goto again" case
-> > for transparent huge pages in get_futex_key()? Or the
-> 
-> Cc'ng more folks on that.
-> 
+> We got a Fedora bug for it, and there are similar RHEL bugs open.
+> I had assumed you would be informed either via upstream or
+> through those.
 
-I just saw this before heading to bed and have not read the thread. I'll
-read it in the morning but in the meantime the following might ring a bell
-for someone elses investigation or someone more familiar with how futexs
-work from end to end.
+I've not been cc'd on any of those bugs internally at RH, so I don't
+have visibility of the problems unless someone specifically adds me
+to those bugs.  As it is, raising fedora/RHEL bugs is not informing
+upstream - it is a distro process for tracking the distro issue
+through to closure.
 
-Was NUMA balancing enabled and was this a NUMA machine?
+> The CVE request was submitted by Kees here:
+> http://seclists.org/oss-sec/2013/q4/330
 
-I ask because of these two patches that are currently in flight
+Ugh, no, I'm not going to subscribe to a high noise list where the
+only way I might be informed of a CVE being raised is by following
+links to git commit IDs....
 
-  mm: numa: Serialise parallel get_user_page against THP migration mm
-  fix TLB flush race between migration, and change_protection_range
+Upstream is not magically informed about CVEs, and relying on
+upstream developers to scan or poll *anything* just to find if a
+CVE on their subsystem has been released is not reliable and
+does not scale. If anyone raises a CVE against a kernel subsystem,
+then the relevant list in the MAINTAINERS file for that subsystem
+should be on the cc list of any discussion about the CVE, and on the
+announcement of the CVE.
 
-There are related patches but these two are the most important for what
-I have in mind. The two in combination address a problem whereby a write
-from one thread can be lost due to a THP migration but it's specific to
-automatic NUMA balancing. If the lost update was for a page containing a
-futex then the lost write could confuse waiters. The downside is that this
-is a bad fit for the problem description in the first mail. A lost update
-might result in processes waiting forever on a value that never changes
-but offhand it's less clear why it might result in a loop. Unless of
-course there is a combination of events that allows for a busy wait on a
-value that will never change due to the lost write.
+Security processes are not something that should be hidden away in
+it's own private corner - if there's a problem upstream needs to
+take action on, then direct contact with upstream is necessary. We
+need to know about security issues - even ones that are classified
+post-commit as security issues - so we are operating with full
+knowledge of the issues in our code and the impact of our fixes....
 
+Cheers,
+
+Dave.
 -- 
-Mel Gorman
-SUSE Labs
+Dave Chinner
+david@fromorbit.com
