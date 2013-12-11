@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750911Ab3LKGDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 01:03:32 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:35902 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3LKGD3 (ORCPT
+	id S1751173Ab3LKGEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 01:04:25 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39630 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3LKGEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 01:03:29 -0500
-From: Alexander Popov <a13xp0p0v88@gmail.com>
-To: Gerhard Sittig <gsi@denx.de>, Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        Anatolij Gustschin <agust@denx.de>,
-        Alexander Popov <a13xp0p0v88@gmail.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] dmaengine: remove obsolete comment reference to dma_data_direction
-Date: Wed, 11 Dec 2013 10:07:02 +0400
-Message-Id: <1386742022-2995-1-git-send-email-a13xp0p0v88@gmail.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 11 Dec 2013 01:04:22 -0500
+Message-ID: <52A8004F.4090705@huawei.com>
+Date: Wed, 11 Dec 2013 14:03:59 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: <clm@fb.com>, <jbacik@fb.com>, <chris.mason@fusionio.com>,
+        <jbacik@fusionio.com>
+CC: <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <mfasheh@suse.de>, <hch@lst.de>, <viro@zeniv.linux.org.uk>,
+        <miaox@cn.fujitsu.com>, Li Zefan <lizefan@huawei.com>
+Subject: [PATCH RESEND] fs: btrfs: new helper: file_inode(file)
+References: <52A7FEA4.80208@huawei.com>
+In-Reply-To: <52A7FEA4.80208@huawei.com>
+X-Forwarded-Message-Id: <52A7FEA4.80208@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enum dma_transfer_direction is currently used
-in struct dma_slave_config, so update the comment
 
-Signed-off-by: Alexander Popov <a13xp0p0v88@gmail.com>
+Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
 ---
- include/linux/dmaengine.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ fs/btrfs/ioctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 41cf0c3..bd6b882 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -305,9 +305,8 @@ enum dma_slave_buswidth {
- /**
-  * struct dma_slave_config - dma slave channel runtime config
-  * @direction: whether the data shall go in or out on this slave
-- * channel, right now. DMA_TO_DEVICE and DMA_FROM_DEVICE are
-- * legal values, DMA_BIDIRECTIONAL is not acceptable since we
-- * need to differentiate source and target addresses.
-+ * channel, right now. DMA_MEM_TO_DEV and DMA_DEV_TO_MEM are
-+ * legal values.
-  * @src_addr: this is the physical address where DMA slave data
-  * should be read (RX), if the source is memory this argument is
-  * ignored.
+ - just change style
+
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index a111622..fdfc0d7 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2690,7 +2690,7 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
+ 	struct btrfs_ioctl_same_args tmp;
+ 	struct btrfs_ioctl_same_args *same;
+ 	struct btrfs_ioctl_same_extent_info *info;
+-	struct inode *src = file->f_dentry->d_inode;
++	struct inode *src = file_inode(file);
+ 	struct file *dst_file = NULL;
+ 	struct inode *dst;
+ 	u64 off;
+@@ -2779,7 +2779,7 @@ static long btrfs_ioctl_file_extent_same(struct file *file,
+ 		if (file->f_path.mnt != dst_file->f_path.mnt)
+ 			goto next;
+
+-		dst = dst_file->f_dentry->d_inode;
++		dst = file_inode(dst_file);
+ 		if (src->i_sb != dst->i_sb)
+ 			goto next;
+
 -- 
-1.8.4.2
+1.8.2.2
+
+
 
