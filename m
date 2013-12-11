@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab3LKFlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 00:41:36 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:61979 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774Ab3LKFlf (ORCPT
+	id S1750851Ab3LKFuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 00:50:21 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:28633 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab3LKFuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 00:41:35 -0500
-Message-ID: <1386740489.7152.288.camel@host5.omatika.ru>
-Subject: Re: [PATCH 02/11] arm: pxa27x: support ICP DAS LP-8x4x
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Daniel Mack <zonque@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Eric Miao <eric.y.miao@gmail.com>
-Date: Wed, 11 Dec 2013 09:41:29 +0400
-In-Reply-To: <201312110611.46443.arnd@arndb.de>
-References: <1385879185-22455-1-git-send-email-ynvich@gmail.com>
-	 <201312102257.33942.arnd@arndb.de>
-	 <1386736215.7152.259.camel@host5.omatika.ru>
-	 <201312110611.46443.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Wed, 11 Dec 2013 00:50:18 -0500
+Message-ID: <52A7FCD7.2080809@huawei.com>
+Date: Wed, 11 Dec 2013 13:49:11 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: <sage@inktank.com>, majianpeng <majianpeng@gmail.com>,
+        <yunchuanwen@ubuntukylin.com>, <liwang@ubuntukylin.com>,
+        <zheng.z.yan@intel.com>
+CC: <ceph-devel@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Li Zefan" <lizefan@huawei.com>, <milosz@adfin.com>
+Subject: [PATCH] fs: ceph: new helper: file_inode(file)
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-12-11 at 06:11 +0100, Arnd Bergmann wrote:
-> It depends: if the driver is for the entire FPGA and does
-> the irqchip stuff in addition, it should probably live
-> in drivers/mfd. If it's a pure irqchip driver, drivers/irqchip
-> is better. You have to be careful in the second case though
-> because devices pointing to this irqchip in DT won't get
-> an IRQ resource assigned automatically but have to use
-> irq_of_parse_and_map instead. This may have been fixed since
-> I last looked though, I would consider that behavior a
-> bug in the of_platform handling.
 
-Thanks again for explaining.
+Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
+---
+ fs/ceph/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Although FPGA is a MFD, its irq are used mostly by 8250 serial ports. It
-will be enough to embed irqchip into serial driver for now.
-
-If there is a need to use the chip in another driver, it will be
-possible to introduce an artificial dependency there for the serial
-driver to ensure the serial driver is loaded before the other one.
-
-Is this plan acceptable?
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 3de8982..7549bd6 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -1018,7 +1018,7 @@ static long ceph_fallocate(struct file *file, int mode,
+ 				loff_t offset, loff_t length)
+ {
+ 	struct ceph_file_info *fi = file->private_data;
+-	struct inode *inode = file->f_dentry->d_inode;
++	struct inode *inode = file_inode(file);
+ 	struct ceph_inode_info *ci = ceph_inode(inode);
+ 	struct ceph_osd_client *osdc =
+ 		&ceph_inode_to_client(inode)->client->osdc;
+-- 
+1.8.2.2
 
