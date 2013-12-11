@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab3LKLH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:07:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60339 "EHLO
+	id S1752530Ab3LKLIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 06:08:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60380 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab3LKLHW (ORCPT
+	with ESMTP id S1751520Ab3LKLIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:07:22 -0500
-Date: Wed, 11 Dec 2013 03:06:53 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-0ehaawv5xc83w6ag03c5hi10@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        paulus@samba.org, eranian@google.com, acme@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1386583370-1699-3-git-send-email-jolsa@redhat.com>
-References: <1386583370-1699-3-git-send-email-jolsa@redhat.com>
+	Wed, 11 Dec 2013 06:08:00 -0500
+Date: Wed, 11 Dec 2013 03:07:03 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-nu228f8vlp9w0lr7c0q77dqi@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script: Add --header/--header-only options
-Git-Commit-ID: e90debddf8f26094cd90162b9af2a8ed37ed57cb
+Subject: [tip:perf/core] perf symbols: Rename [sl]
+ name_alloc to match the members they refer to
+Git-Commit-ID: c7282f2efff9f115378b450b7aea51210fabb6ef
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,106 +32,128 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:07:00 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 11 Dec 2013 03:07:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e90debddf8f26094cd90162b9af2a8ed37ed57cb
-Gitweb:     http://git.kernel.org/tip/e90debddf8f26094cd90162b9af2a8ed37ed57cb
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 9 Dec 2013 11:02:50 +0100
+Commit-ID:  c7282f2efff9f115378b450b7aea51210fabb6ef
+Gitweb:     http://git.kernel.org/tip/c7282f2efff9f115378b450b7aea51210fabb6ef
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 10 Dec 2013 10:44:37 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Tue, 10 Dec 2013 16:51:07 -0300
 
-perf script: Add --header/--header-only options
+perf symbols: Rename [sl]name_alloc to match the members they refer to
 
-Currently the perf.data header is always displayed for stdio output,
-which is no always useful.
+So we now have:
 
-Disabling header information by default and adding following options to
-control header output:
+   dso->short_name
+   dso->short_name_len
+   dso->short_name_allocated
 
-  --header      - display header information
-  --header-only - display header information only w/o further
-                  processing
+Ditto for the 'long  variants. To more quickly grasp what they refer to.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/n/tip-0ehaawv5xc83w6ag03c5hi10@git.kernel.org
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1386583370-1699-3-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/n/tip-nu228f8vlp9w0lr7c0q77dqi@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-script.txt |  6 ++++++
- tools/perf/builtin-script.c              | 13 ++++++++++---
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ tools/perf/util/dso.c     | 4 ++--
+ tools/perf/util/dso.h     | 4 ++--
+ tools/perf/util/machine.c | 4 ++--
+ tools/perf/util/symbol.c  | 6 +++---
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index c2a5071..05f9a0a 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -209,6 +209,12 @@ OPTIONS
- --show-mmap-events
- 	Display mmap related events (e.g. MMAP, MMAP2).
- 
-+--header
-+	Show perf.data header.
-+
-+--header-only
-+	Show only perf.data header.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script-perl[1],
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 7a571fb..f8ab125 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1494,6 +1494,8 @@ static int have_cmd(int argc, const char **argv)
- int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	bool show_full_info = false;
-+	bool header = false;
-+	bool header_only = false;
- 	char *rec_script_path = NULL;
- 	char *rep_script_path = NULL;
- 	struct perf_session *session;
-@@ -1532,6 +1534,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('i', "input", &input_name, "file", "input file name"),
- 	OPT_BOOLEAN('d', "debug-mode", &debug_mode,
- 		   "do various checks like samples ordering and lost events"),
-+	OPT_BOOLEAN(0, "header", &header, "Show data header."),
-+	OPT_BOOLEAN(0, "header-only", &header_only, "Show only data header."),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
-@@ -1748,6 +1752,12 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	if (header || header_only) {
-+		perf_session__fprintf_info(session, stdout, show_full_info);
-+		if (header_only)
-+			return 0;
-+	}
-+
- 	script.session = session;
- 
- 	if (cpu_list) {
-@@ -1755,9 +1765,6 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			return -1;
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index a0c7c59..55c9835 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -465,9 +465,9 @@ void dso__delete(struct dso *dso)
+ 	int i;
+ 	for (i = 0; i < MAP__NR_TYPES; ++i)
+ 		symbols__delete(&dso->symbols[i]);
+-	if (dso->sname_alloc)
++	if (dso->short_name_allocated)
+ 		free((char *)dso->short_name);
+-	if (dso->lname_alloc)
++	if (dso->long_name_allocated)
+ 		free(dso->long_name);
+ 	dso_cache__free(&dso->cache);
+ 	dso__free_a2l(dso);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 384f2d9..00a232d 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -89,8 +89,8 @@ struct dso {
+ 	u8		 has_srcline:1;
+ 	u8		 hit:1;
+ 	u8		 annotate_warned:1;
+-	u8		 sname_alloc:1;
+-	u8		 lname_alloc:1;
++	u8		 short_name_allocated:1;
++	u8		 long_name_allocated:1;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
+ 	u8		 rel;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index bac817a..f66f309 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -764,7 +764,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
+ 				goto out;
+ 			}
+ 			dso__set_long_name(map->dso, long_name);
+-			map->dso->lname_alloc = 1;
++			map->dso->long_name_allocated = 1;
+ 			dso__kernel_module_get_build_id(map->dso, "");
+ 		}
  	}
+@@ -936,7 +936,7 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
+ 			goto out_problem;
  
--	if (!script_name && !generate_script_lang)
--		perf_session__fprintf_info(session, stdout, show_full_info);
--
- 	if (!no_callchain)
- 		symbol_conf.use_callchain = true;
- 	else
+ 		map->dso->short_name = name;
+-		map->dso->sname_alloc = 1;
++		map->dso->short_name_allocated = 1;
+ 		map->end = map->start + event->mmap.len;
+ 	} else if (is_kernel_mmap) {
+ 		const char *symbol_name = (event->mmap.filename +
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index de87dba..265a149 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1458,7 +1458,7 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 	if (filename != NULL) {
+ 		err = dso__load_vmlinux(dso, map, filename, filter);
+ 		if (err > 0) {
+-			dso->lname_alloc = 1;
++			dso->long_name_allocated = 1;
+ 			goto out;
+ 		}
+ 		free(filename);
+@@ -1468,7 +1468,7 @@ int dso__load_vmlinux_path(struct dso *dso, struct map *map,
+ 		err = dso__load_vmlinux(dso, map, vmlinux_path[i], filter);
+ 		if (err > 0) {
+ 			dso__set_long_name(dso, strdup(vmlinux_path[i]));
+-			dso->lname_alloc = 1;
++			dso->long_name_allocated = 1;
+ 			break;
+ 		}
+ 	}
+@@ -1612,7 +1612,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		if (err > 0) {
+ 			dso__set_long_name(dso,
+ 					   strdup(symbol_conf.vmlinux_name));
+-			dso->lname_alloc = 1;
++			dso->long_name_allocated = 1;
+ 			return err;
+ 		}
+ 		return err;
