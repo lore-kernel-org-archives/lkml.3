@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535Ab3LKMIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:08:00 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:61797 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab3LKMH6 (ORCPT
+	id S1751570Ab3LKMJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:09:23 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:39950 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3LKMJW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:07:58 -0500
-Date: Wed, 11 Dec 2013 13:07:50 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] perf: POSIX CLOCK_PERF to report current time value
-Message-ID: <20131211120750.GD25541@gmail.com>
-References: <1386707259-21725-1-git-send-email-dsahern@gmail.com>
- <52A77D3A.8080407@linaro.org>
+	Wed, 11 Dec 2013 07:09:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A77D3A.8080407@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 11 Dec 2013 14:01:29 +0200
+Message-ID: <CA+Mediw7p6CEHAvP0p=MdCQmWL10QASVpxTo-_WDsvFgxziyww@mail.gmail.com>
+Subject: [3.10.22+][3.12][performance regression] - huge softirq increase on netfilter
+From: Nikolay Ulyanitsky <lystor@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello
 
-* John Stultz <john.stultz@linaro.org> wrote:
 
-> [...]
-> 
-> I'd much rather see perf export CLOCK_MONOTONIC_RAW timestamps, 
-> since that clockid is well defined. [...]
+3.10.22 has new 2 patches that increase softirq from 0.0% to 15.0% in
+comparison with 3.10.21 on my software routers:
 
-So the problem with that clock is that it does the following for every 
-timestamp:
+78ab8cb      netfilter: nf_conntrack: use RCU safe kfree for conntrack
+extensions
+873be93      ipc/sem.c: synchronize semop and semctl with IPC_RMID
 
-        cycle_now = clock->read(clock);
 
-... which is impossibly slow if something like the HPET is used, which 
-is rather common - so this is a non-starter to timestamp perf events 
-with. We use the scheduler clock as a reasonable compromise between 
-scalability and clock globality.
+Screenshots:
+Server1 (ipt_NETFLOW):     http://s12.postimg.org/5eprc03tp/vega.png
+Server2 (NAT):    http://s27.postimg.org/swj3he8dv/mimosa.png
 
-I can see two solutions:
 
-1)
+Server1:
+3.10.21: softirq = 0%
+3.10.22+, 3.12.4: softirq = 15%
+3.10.22+, 3.12.4 WITHOUT 78ab8cb, WITH 873be93: softirq = 1%
+3.10.22+, 3.12.4 WITHOUT 78ab8cb, WITHOUT 873be93: softirq = 0%
 
-One approach is what I described in my other reply a few minutes ago: 
-track the flow of GTOD, timestamped with the fast perf timestamps, so 
-that GTOD can be correlated to the perf clock, if user-space so 
-wishes. The correlation is simple so this gets close to the ease of 
-use of being able to timestamp GTOD directly.
 
-(That would be useful for other purposes as well, such as 
-instrumenting GTOD updates.)
+Hardware:
+2 x Xeon 3.2GHz, Intel SE7520, 4 x Intel 82576 Gigabit Network
 
-2)
+CentOS 6.5 x86_64
 
-An alternate, rather interesting approach would be to change the 
-scheduler clock offset to be influenced by the above events, so that 
-it quasi-approximates GTOD and emits natural time of day timestamps.
 
-This already happens partially in the sched-clock slow path, 
-kernel/sched/clock.c's sched_clock_local(), it uses scd->tick_gtod 
-timestamps to correlate to the monotonic clock. This could be changed 
-over to use not get_ktime() but getnstimeofday(), to get true TOD 
-timestamps.
+Kernel configs:
+3.12.4: http://pastebin.com/ugTWFeJg
+3.10.22: http://pastebin.com/N8z4UAV5
 
-The trickier bit is the x86 fast-path, in arch/x86/kernel/tsc.c's 
-native_sched_clock(). That relies on __cycles_2_ns() to transform a 
-CPU cycles timestamp into (boot time offset) nanoseconds. For that it 
-uses the cyc2ns_offset percpu variable. That variable could be updated 
-periodically so that it's TOD offset.
 
-My (strong!) preference would be #2, for the simple reason that it 
-would make perf timestamps instantly usable and tooling wouldn't have 
-to do anything to get true timestamps. We could add a new 
-PERF_SAMPLE_TIME_OF_DAY feature bit so that user-space can consciously 
-request GTOD timestamps. This feature bit could even be arch 
-influenced, so that architectures could convert their perf clocks at 
-the pace they desire - which tooling can detect and handle safely.
+Please fix/revert these patches.
 
-Thoughts?
 
-Thanks,
+Thanks
 
-	Ingo
+
+–
+
+With best regards,
+
+Nikolay Ulyanitsky
