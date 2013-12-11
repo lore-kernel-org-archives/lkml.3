@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3LKOoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 09:44:54 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:39415 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3LKOow (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 09:44:52 -0500
-Date: Wed, 11 Dec 2013 06:44:47 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alex Thorlton <athorlton@sgi.com>, Rik van Riel <riel@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: numa: Guarantee that tlb_flush_pending updates are
- visible before page table updates
-Message-ID: <20131211144446.GP4208@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1386690695-27380-1-git-send-email-mgorman@suse.de>
- <20131211132109.GB24125@suse.de>
+	id S1751631Ab3LKOsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 09:48:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750904Ab3LKOsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 09:48:35 -0500
+Date: Wed, 11 Dec 2013 09:47:58 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        Ingo Molnar <mingo@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH 03/12] pid: get ppid pid_t of task in init_pid_ns safely
+Message-ID: <20131211144758.GA1160@madcap2.tricolour.ca>
+References: <cover.1377032086.git.rgb@redhat.com>
+ <a411b87ba4c4af251166ee5877cb8c646cf7826c.1377032086.git.rgb@redhat.com>
+ <20130827172155.GC29147@redhat.com>
+ <20130830195646.GJ21110@madcap2.tricolour.ca>
+ <52210275.8040601@canonical.com>
+ <20130903183159.GA28517@madcap2.tricolour.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131211132109.GB24125@suse.de>
+In-Reply-To: <20130903183159.GA28517@madcap2.tricolour.ca>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121114-0928-0000-0000-0000048D628F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 01:21:09PM +0000, Mel Gorman wrote:
-> According to documentation on barriers, stores issued before a LOCK can
-> complete after the lock implying that it's possible tlb_flush_pending can
-> be visible after a page table update. As per revised documentation, this patch
-> adds a smp_mb__before_spinlock to guarantee the correct ordering.
+On Tue, Sep 03, 2013 at 02:31:59PM -0400, Richard Guy Briggs wrote:
+> On Fri, Aug 30, 2013 at 01:37:09PM -0700, John Johansen wrote:
+> > On 08/30/2013 12:56 PM, Richard Guy Briggs wrote:
+> > > On Tue, Aug 27, 2013 at 07:21:55PM +0200, Oleg Nesterov wrote:
+> > >> On 08/20, Richard Guy Briggs wrote:
+> > > Most of the instances are current, but the one called from apparmour is
+> > > stored.  I've just learned that this is bad and someone else just chimed
+> > > in that they have a patch to remove it...
+> > 
+> > the apparmor case isn't actually stored long term. The stored task will be
+> > a parameter that was passed into an lsm hook and the buffer that it is
+> > stored in dies before the hook is done. Its temporarily stored in the
+> > struct so that it can be passed into the lsm_audit fn, and printed into an
+> > allocated audit buffer. The text version in the audit buffer is what will
+> > exist beyond the hook.
+> > 
+> > There are three patches, I'll reply them below once I have finished rebasing
+> > them to apply to the current tree instead of my dev tree.
 > 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> John, thanks for this context and fix.  That helps simplify things.
 
-Assuming that there is a lock acquisition after calls to
-set_tlb_flush_pending():
+John, What's the status of this set of 3 patches?  I don't see them
+upstream.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> - RGB
 
-(I don't see set_tlb_flush_pending() in mainline.)
+- RGB
 
-> ---
->  include/linux/mm_types.h | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index c122bb1..a12f2ab 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -482,7 +482,12 @@ static inline bool tlb_flush_pending(struct mm_struct *mm)
->  static inline void set_tlb_flush_pending(struct mm_struct *mm)
->  {
->  	mm->tlb_flush_pending = true;
-> -	barrier();
-> +
-> +	/*
-> +	 * Guarantee that the tlb_flush_pending store does not leak into the
-> +	 * critical section updating the page tables
-> +	 */
-> +	smp_mb__before_spinlock();
->  }
->  /* Clearing is done after a TLB flush, which also provides a barrier. */
->  static inline void clear_tlb_flush_pending(struct mm_struct *mm)
-> 
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
