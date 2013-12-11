@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab3LKU0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 15:26:52 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:59295 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab3LKU0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 15:26:35 -0500
-Date: Wed, 11 Dec 2013 15:26:33 -0500 (EST)
-Message-Id: <20131211.152633.1259772133334006433.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vyasevich@gmail.com,
-        wuzhy@linux.vnet.ibm.com, mst@redhat.com
-Subject: Re: [PATCH net V3 2/2] macvtap: signal truncated packets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386738514-1502-2-git-send-email-jasowang@redhat.com>
-References: <1386738514-1502-1-git-send-email-jasowang@redhat.com>
-	<1386738514-1502-2-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751358Ab3LKUat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 15:30:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38314 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750922Ab3LKUar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 15:30:47 -0500
+Message-ID: <52A8CB45.2080704@zytor.com>
+Date: Wed, 11 Dec 2013 12:29:57 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Zhouyi Zhou <zhouzhouyi@gmail.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, bp@alien8.de,
+        keescook@chromium.org, zhangyanfei@cn.fujitsu.com
+CC: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: Re: [RFC PATCH] x86_64: double the x86_64 kernel stack size?
+References: <1386743332-32171-1-git-send-email-yizhouzhou@ict.ac.cn>
+In-Reply-To: <1386743332-32171-1-git-send-email-yizhouzhou@ict.ac.cn>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 12:26:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 11 Dec 2013 13:08:34 +0800
-
-> macvtap_put_user() never return a value grater than iov length, this in fact
-> bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
-> returning the size of packet plus the possible vlan header to let the trunca
-> checking work.
+On 12/10/2013 10:28 PM, Zhouyi Zhou wrote:
+> Somethings I compiled the Linux network modules (especially bridge and netfilter)
+> without optimization, the kernel always crashes because of exhausted kernel stack.
 > 
-> Cc: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> The similar problem has been discussed in
+> http://lists.linuxfoundation.org/pipermail/bridge/2005-January/004402.html
+> 
+> Is it OK the double the x86_64 kernel stack size?
+>  
 
-Also applied and queued up for -stable, thanks.
+Hell no.
+
+	-hpa
+
