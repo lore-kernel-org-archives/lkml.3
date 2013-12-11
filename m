@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab3LKX4D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 18:56:03 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:42326 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab3LKXz4 (ORCPT
+	id S1752010Ab3LKX5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 18:57:22 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57864 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab3LKX5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 18:55:56 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: khilman@linaro.org, arnd@arndb.de, linux-sh@vger.kernel.org,
-        daniel.lezcano@linaro.org, horms@verge.net.au, john.stultz@linaro.org,
-        olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>,
-        tglx@linutronix.de
-Date: Thu, 12 Dec 2013 08:56:45 +0900
-Message-Id: <20131211235645.12661.28823.sendpatchset@w520>
-In-Reply-To: <20131211235616.12661.19702.sendpatchset@w520>
-References: <20131211235616.12661.19702.sendpatchset@w520>
-Subject: [PATCH v2 03/03] sh: Remove Kconfig entries for TMU, CMT and MTU2
+	Wed, 11 Dec 2013 18:57:18 -0500
+From: Olof Johansson <olof@lixom.net>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] net: eth: cpsw: 64-bit phys_addr_t and sparse cleanup
+Date: Wed, 11 Dec 2013 15:58:07 -0800
+Message-Id: <1386806287-6564-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+Minor fix for printk format of a phys_addr_t, and the switch of two local
+functions to static since they're not used outside of the file.
 
-Now when drivers/clocksource/Kconfig has been
-updated with entires for CMT, TMU and MTU2
-it is safe to remove these from SH.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Acked-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 ---
 
- arch/sh/Kconfig |   21 ---------------------
- 1 file changed, 21 deletions(-)
+Missed this one with the previous 64-bit phys_addr_t fix. Feel free to
+fold it in, or apply separately.
 
---- 0001/arch/sh/Kconfig
-+++ work/arch/sh/Kconfig	2013-11-05 21:03:10.000000000 +0900
-@@ -565,27 +565,6 @@ source "arch/sh/boards/Kconfig"
+
+-Olof
+
+ drivers/net/ethernet/ti/cpsw.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index c8a54f9..915eca9 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -582,7 +582,7 @@ static void cpsw_intr_disable(struct cpsw_priv *priv)
+ 	return;
+ }
  
- menu "Timer and clock configuration"
+-void cpsw_tx_handler(void *token, int len, int status)
++static void cpsw_tx_handler(void *token, int len, int status)
+ {
+ 	struct sk_buff		*skb = token;
+ 	struct net_device	*ndev = skb->dev;
+@@ -599,7 +599,7 @@ void cpsw_tx_handler(void *token, int len, int status)
+ 	dev_kfree_skb_any(skb);
+ }
  
--config SH_TIMER_TMU
--	bool "TMU timer driver"
--	depends on SYS_SUPPORTS_TMU
--	default y
--	help
--	  This enables the build of the TMU timer driver.
--
--config SH_TIMER_CMT
--	bool "CMT timer driver"
--	depends on SYS_SUPPORTS_CMT
--	default y
--	help
--	  This enables build of the CMT timer driver.
--
--config SH_TIMER_MTU2
--	bool "MTU2 timer driver"
--	depends on SYS_SUPPORTS_MTU2
--	default y
--	help
--	  This enables build of the MTU2 timer driver.
--
- config SH_PCLK_FREQ
- 	int "Peripheral clock frequency (in Hz)"
- 	depends on SH_CLK_CPG_LEGACY
+-void cpsw_rx_handler(void *token, int len, int status)
++static void cpsw_rx_handler(void *token, int len, int status)
+ {
+ 	struct sk_buff		*skb = token;
+ 	struct sk_buff		*new_skb;
+@@ -2142,8 +2142,8 @@ static int cpsw_probe(struct platform_device *pdev)
+ 			  data->cpts_clock_mult, data->cpts_clock_shift))
+ 		dev_err(priv->dev, "error registering cpts device\n");
+ 
+-	cpsw_notice(priv, probe, "initialized device (regs %x, irq %d)\n",
+-		    ss_res->start, ndev->irq);
++	cpsw_notice(priv, probe, "initialized device (regs %pa, irq %d)\n",
++		    &ss_res->start, ndev->irq);
+ 
+ 	if (priv->data.dual_emac) {
+ 		ret = cpsw_probe_dual_emac(pdev, priv);
+-- 
+1.7.10.4
+
