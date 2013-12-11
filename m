@@ -1,218 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab3LKVA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:00:59 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:47188 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab3LKVAy (ORCPT
+	id S1751863Ab3LKVBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:01:34 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:35241 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3LKVAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:00:54 -0500
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org
-Cc: tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
-        B08248@freescale.com, kim.phillips@linaro.org,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 9/9] VFIO_PLATFORM: Support for maskable and automasked interrupts
-Date: Wed, 11 Dec 2013 21:58:33 +0100
-Message-Id: <1386795513-32426-10-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386795513-32426-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1386795513-32426-1-git-send-email-a.motakis@virtualopensystems.com>
+	Wed, 11 Dec 2013 16:00:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131211140014.GF28456@xps8300>
+References: <1386714484-30251-1-git-send-email-james@albanarts.com>
+	<20131211140014.GF28456@xps8300>
+Date: Wed, 11 Dec 2013 13:00:33 -0800
+Message-ID: <CAAYSxhr10XqQdQrvGf3Ez6e4LSbvmc0J-=yRgUePVEcd93e5wQ@mail.gmail.com>
+Subject: Re: [PATCH] serial: 8250_dw: Fix LCR workaround regression
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: James Hogan <james@albanarts.com>, linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        James Hogan <james.hogan@imgtec.com>, Jiri Slaby <jslaby@suse.cz>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support to mask interrupts, and also for automasked interrupts.
-Level sensitive interrupts are exposed as automasked interrupts and
-are masked and disabled automatically when they fire.
+On Wed, Dec 11, 2013 at 6:00 AM, Heikki Krogerus
+<heikki.krogerus@linux.intel.com> wrote:
+> Hi,
+>
+> On Tue, Dec 10, 2013 at 10:28:04PM +0000, James Hogan wrote:
+>> From: James Hogan <james.hogan@imgtec.com>
+>>
+>> Commit c49436b657d0 (serial: 8250_dw: Improve unwritable LCR workaround)
+>> caused a regression. It added a check that the LCR was written properly
+>> to detect and workaround the busy quirk, but the behaviour of bit 5
+>> (UART_LCR_SPAR) differs between IP versions 3.00a and 3.14c per the
+>> docs. On older versions this caused the check to fail and it would
+>> repeatedly force idle and rewrite the LCR register, causing delays and
+>> preventing any input from serial being received.
+>>
+>> This is fixed by masking out UART_LCR_SPAR before making the comparison.
+>>
+>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Tim Kryger <tim.kryger@linaro.org>
+>> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+>> Cc: Matt Porter <matt.porter@linaro.org>
+>> Cc: Markus Mayer <markus.mayer@linaro.org>
+>> Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> Tested-by: Tim Kryger <tim.kryger@linaro.org>
+>> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+>
+> I tested this with HW without the busy functionality
+> (UART_16550_COMPATIBLE == yes). No problems here. FWIW:
+>
+> Tested-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
----
- drivers/vfio/platform/vfio_platform_irq.c     | 117 ++++++++++++++++++++++++--
- drivers/vfio/platform/vfio_platform_private.h |   2 +
- 2 files changed, 113 insertions(+), 6 deletions(-)
+Greg, can you consider taking this patch as a regression fix for 3.13?
 
-diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-index 433edc1..e38982f 100644
---- a/drivers/vfio/platform/vfio_platform_irq.c
-+++ b/drivers/vfio/platform/vfio_platform_irq.c
-@@ -52,9 +52,16 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
- 		struct vfio_platform_irq irq;
- 		int hwirq = platform_get_irq(vdev->pdev, i);
- 
--		irq.flags = VFIO_IRQ_INFO_EVENTFD;
-+		spin_lock_init(&irq.lock);
-+
-+		irq.flags = VFIO_IRQ_INFO_EVENTFD | VFIO_IRQ_INFO_MASKABLE;
-+
-+		if (irq_get_trigger_type(hwirq) & IRQ_TYPE_LEVEL_MASK)
-+			irq.flags |= VFIO_IRQ_INFO_AUTOMASKED;
-+
- 		irq.count = 1;
- 		irq.hwirq = hwirq;
-+		irq.masked = false;
- 
- 		vdev->irq[i] = irq;
- 	}
-@@ -66,19 +73,39 @@ void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
- {
- 	int i;
- 
--	for (i = 0; i < vdev->num_irqs; i++)
-+	for (i = 0; i < vdev->num_irqs; i++) {
- 		vfio_set_trigger(vdev, i, -1);
- 
-+		if (vdev->irq[i].masked)
-+			enable_irq(vdev->irq[i].hwirq);
-+	}
-+
- 	kfree(vdev->irq);
- }
- 
- static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
- {
--	struct eventfd_ctx *trigger = dev_id;
-+	struct vfio_platform_irq *irq_ctx = dev_id;
-+	unsigned long flags;
-+	int ret = IRQ_NONE;
-+
-+	spin_lock_irqsave(&irq_ctx->lock, flags);
-+
-+	if (!irq_ctx->masked) {
-+		ret = IRQ_HANDLED;
-+
-+		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
-+			disable_irq_nosync(irq_ctx->hwirq);
-+			irq_ctx->masked = true;
-+		}
-+	}
- 
--	eventfd_signal(trigger, 1);
-+	spin_unlock_irqrestore(&irq_ctx->lock, flags);
- 
--	return IRQ_HANDLED;
-+	if (ret == IRQ_HANDLED)
-+		eventfd_signal(irq_ctx->trigger, 1);
-+
-+	return ret;
- }
- 
- static int vfio_set_trigger(struct vfio_platform_device *vdev,
-@@ -159,6 +186,82 @@ static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
- 	return -EFAULT;
- }
- 
-+static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
-+				    unsigned index, unsigned start,
-+				    unsigned count, uint32_t flags, void *data)
-+{
-+	uint8_t arr;
-+
-+	if (start != 0 || count != 1)
-+		return -EINVAL;
-+
-+	switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
-+	case VFIO_IRQ_SET_DATA_BOOL:
-+		if (copy_from_user(&arr, data, sizeof(uint8_t)))
-+			return -EFAULT;
-+
-+		if (arr != 0x1)
-+			return -EINVAL;
-+
-+	case VFIO_IRQ_SET_DATA_NONE:
-+
-+		spin_lock_irq(&vdev->irq[index].lock);
-+
-+		if (vdev->irq[index].masked) {
-+			enable_irq(vdev->irq[index].hwirq);
-+			vdev->irq[index].masked = false;
-+		}
-+
-+		spin_unlock_irq(&vdev->irq[index].lock);
-+
-+		return 0;
-+
-+	case VFIO_IRQ_SET_DATA_EVENTFD: /* XXX not implemented yet */
-+	default:
-+		return -ENOTTY;
-+	}
-+
-+	return 0;
-+}
-+
-+static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
-+				    unsigned index, unsigned start,
-+				    unsigned count, uint32_t flags, void *data)
-+{
-+	uint8_t arr;
-+
-+	if (start != 0 || count != 1)
-+		return -EINVAL;
-+
-+	switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
-+	case VFIO_IRQ_SET_DATA_BOOL:
-+		if (copy_from_user(&arr, data, sizeof(uint8_t)))
-+			return -EFAULT;
-+
-+		if (arr != 0x1)
-+			return -EINVAL;
-+
-+	case VFIO_IRQ_SET_DATA_NONE:
-+
-+		spin_lock_irq(&vdev->irq[index].lock);
-+
-+		if (!vdev->irq[index].masked) {
-+			disable_irq(vdev->irq[index].hwirq);
-+			vdev->irq[index].masked = true;
-+		}
-+
-+		spin_unlock_irq(&vdev->irq[index].lock);
-+
-+		return 0;
-+
-+	case VFIO_IRQ_SET_DATA_EVENTFD: /* XXX not implemented yet */
-+	default:
-+		return -ENOTTY;
-+	}
-+
-+	return 0;
-+}
-+
- int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
- 				 uint32_t flags, unsigned index, unsigned start,
- 				 unsigned count, void *data)
-@@ -169,8 +272,10 @@ int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
- 
- 	switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
- 	case VFIO_IRQ_SET_ACTION_MASK:
-+		func = vfio_platform_set_irq_mask;
-+		break;
- 	case VFIO_IRQ_SET_ACTION_UNMASK:
--		/* XXX not implemented */
-+		func = vfio_platform_set_irq_unmask;
- 		break;
- 	case VFIO_IRQ_SET_ACTION_TRIGGER:
- 		func = vfio_platform_set_irq_trigger;
-diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-index befef01..5721313 100644
---- a/drivers/vfio/platform/vfio_platform_private.h
-+++ b/drivers/vfio/platform/vfio_platform_private.h
-@@ -21,6 +21,8 @@ struct vfio_platform_irq {
- 	u32			count;
- 	int			hwirq;
- 	char			*name;
-+	bool			masked;
-+	spinlock_t		lock;
- };
- 
- struct vfio_platform_region {
--- 
-1.8.3.2
+Just in case you want a little more background beyond what is in the
+commit message...
 
+Statically declared DW UARTs will execute autoconfig_16550a during
+probe which attempts to set the SPAR bit of LCR.  Some old versions of
+the DW IP don't implement the stick parity feature and for these
+versions the SPAR bit always reads back as zero. Since these writes
+aren't fully accepted by the hardware, they trigger the workaround
+which interprets the partially rejected write to mean the UART was
+busy.  A number of attempts are made to idle the UART and re-write the
+LCR but eventually the workaround gives up and prints a warning.  DT
+declared DW UARTs don't run autoconfig and don't see this issue as far
+as I know.
+
+Thanks,
+Tim Kryger
