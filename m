@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab3LKSVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:21:14 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51821 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3LKSVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:21:13 -0500
+	id S1751520Ab3LKSYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:24:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52819 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751339Ab3LKSYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 13:24:46 -0500
+Message-ID: <52A8ADE4.8020609@redhat.com>
+Date: Wed, 11 Dec 2013 13:24:36 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <52A8A5B0.2080206@zytor.com>
-References: <CAMe9rOo9sUQiusm8u=eFDnxYz37Cczd+97M9in=P2mNWXpH5pQ@mail.gmail.com>
-	<alpine.LNX.2.00.1312092154350.24835@pobox.suse.cz>
-	<CAMe9rOr06QeTGe4OC5_JYtfdziYj8NsRgS5=arEJY3BTqeLMVg@mail.gmail.com>
-	<alpine.LNX.2.00.1312092210280.24835@pobox.suse.cz>
-	<CAMe9rOrDmtHXZ1cA1or_XkktSPguDnH8sNLGM_oxj7bcsek4ww@mail.gmail.com>
-	<52A63AD4.2030101@zytor.com>
-	<CAMe9rOqEO271PUUkPAQu5hnZFyTX2viUXg8R0hpwDky0B-seyg@mail.gmail.com>
-	<52A63BF3.1000608@zytor.com>
-	<CAMe9rOqF5f2Wktsqf_43hwa_c20+_S+W8N5VDZ6TVqPXDh7puw@mail.gmail.com>
-	<52A63DCF.2060504@zytor.com>
-	<CAMe9rOqAV5_+H97XSnrOHxcruouC=hCjDuEkiiyM8UM0BH5CWw@mail.gmail.com>
-	<alpine.LNX.2.00.1312111435470.1413@pobox.suse.cz>
-	<CAMe9rOoS6aZFCP=NNCcUuOanFcj0Y2Uq4jyC+KGC2qCR8M=s=A@mail.gmail.com>
-	<52A8A5B0.2080206@zytor.com>
-Date: Wed, 11 Dec 2013 10:21:12 -0800
-Message-ID: <CAMe9rOqLwm3JdY6qbY=V3EKMZFku9rQB6Th91PbSvY=yCYaZug@mail.gmail.com>
-Subject: Re: [PATCH] binfmt_elf: fix PIE load with randomization disabled
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: page_alloc: exclude unreclaimable allocations from
+ zone fairness policy
+References: <1386785356-19911-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1386785356-19911-1-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 9:49 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/11/2013 05:41 AM, H.J. Lu wrote:
->>
->> When -Ttext-segment=XXX is used, the program is expected to
->> load at XXX, regardless -pie is used or not.
->>
->
-> "Expected to" by whom?  I think that is at the very best a matter of
-> interpretation.
->
+On 12/11/2013 01:09 PM, Johannes Weiner wrote:
+> Dave Hansen noted a regression in a microbenchmark that loops around
+> open() and close() on an 8-node NUMA machine and bisected it down to
+> 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy").  That
+> change forces the slab allocations of the file descriptor to spread
+> out to all 8 nodes, causing remote references in the page allocator
+> and slab.
+> 
+> The round-robin policy is only there to provide fairness among memory
+> allocations that are reclaimed involuntarily based on pressure in each
+> zone.  It does not make sense to apply it to unreclaimable kernel
+> allocations that are freed manually, in this case instantly after the
+> allocation, and incur the remote reference costs twice for no reason.
+> 
+> Only round-robin allocations that are usually freed through page
+> reclaim or slab shrinking.
+> 
+> Bisected-by: Dave Hansen <dave.hansen@intel.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@kernel.org>
 
-# ld --help
-...
- -Ttext-segment ADDRESS      Set address of text segment
-...
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
 
 -- 
-H.J.
+All rights reversed
