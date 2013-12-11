@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab3LKRzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:55:55 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:58181 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab3LKRzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:55:50 -0500
+	id S1751566Ab3LKR6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:58:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33511 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab3LKR57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 12:57:59 -0500
+Date: Wed, 11 Dec 2013 17:57:53 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: process 'stuck' at exit.
+Message-ID: <20131211175752.GC11295@suse.de>
+References: <CA+55aFzLnheC6W+Db=-MVr6aR5UzP-c1Q1yk_aN-9gxSjUpANw@mail.gmail.com>
+ <20131210203559.GA1209@redhat.com>
+ <20131210204925.GB27373@redhat.com>
+ <20131210213431.GA6342@redhat.com>
+ <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <alpine.DEB.2.02.1312102329201.28330@ionos.tec.linutronix.de>
+ <20131211163125.GC24125@suse.de>
+ <alpine.DEB.2.02.1312111737590.28330@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com>
-References: <1385494815-15740-1-git-send-email-grygorii.strashko@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Wed, 11 Dec 2013 23:25:28 +0530
-Message-ID: <CA+V-a8sY2XeXYco-a7jDrtnYm=_+Z1q05gw9Tr9RRZSU3Y=bDQ@mail.gmail.com>
-Subject: Re: [RFC v1 0/9] gpio: davinci: reuse for keystone arch
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312111737590.28330@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii,
+On Wed, Dec 11, 2013 at 05:38:55PM +0100, Thomas Gleixner wrote:
+> On Wed, 11 Dec 2013, Mel Gorman wrote:
+> > On Tue, Dec 10, 2013 at 11:42:15PM +0100, Thomas Gleixner wrote:
+> > > Now, if that map is RO, i.e. we took the fallback path then the THP
+> > > one will fail as it has write=1 unconditionally.
+> > > 
+> > >       if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) 
+> > > 
+> > 
+> > Not that it really matters but the naming and comments around that
+> > particular __get_user_pages_fast call are a little misleading.  The ifdef
+> > CONFIG_TRANSPARENT_HUGEPAGE in futex.c is there because greater care has
+> > to be taken against THP splits, not because it is dealing exclusively with
+> > THP. The PageTail check applies to either hugetlbfs or THPs and similarly
+> > gup_huge_pmd handles both. The whole path should be very rare for THPs
+> > considering that THPs exist on MAP_PRIVATE anonymous mappings and how many
+> > shared futexes exist backed by such mappings? A RO mapping makes that seem
+> > even more strange because what thread is updating the value the caller is
+> > waiting on? It seems more like that was a shared futex on a hugetlbfs-backed
+> > mappings which might explain why the bug was undiscovered for so long.
+> 
+> This is the fshared path. The MAP_PRIVATE path does not do that dance
+> at all.
+> 
 
-Thanks for the patches.
+do_futex takes an op parameter and sets FLAGS_SHARED on that op parameter,
+not whether the VMA backing that address was created with the MAP_PRIVATE
+or MAP_SHARED flag. For example;
 
-On Wed, Nov 27, 2013 at 1:10 AM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> This series is intended to update Davinci GPIO driver and reuse
-> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
-> Keystone GPIO IP: supports:
-> - up to 32 GPIO lines;
-> - only unbanked irqs;
->
-> See Documentation:
-> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
->
-> [1] Depends on patch:
-> "[PATCH 1/2] gpio: davinci: Fix a check for unbanked gpio"
-> https://lkml.org/lkml/2013/11/8/22
->
-> [2] and depends on series from Prabhakar Lad:
-> "[PATCH v6 0/6] gpio: daVinci: cleanup and feature enhancement"
-> https://www.mail-archive.com/devicetree@vger.kernel.org/msg05970.html
->
-> Based on:
-> git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
-> branch: keystone/master
->
-> This series has been marked as RFC because it's based on an unfinished
-> series of patches [2], but with hope that it will help to reach final decisions
-> and satisfy all interested parties.
->
-> Grygorii Strashko (9):
->   gpio: davinci: get rid of DAVINCI_N_GPIO
->   gpio: introduce GPIO_DAVINCI kconfig option
->   gpio: davinci: use chained_irq_enter/chained_irq_exit API
->   gpio: davinci: make IRQ initialization soc specific
->   gpio: davinci: reuse for Keystone SoC
->   arm: dts: keystone: add GPIO device entry
->   ARM: keystone_defconfig: enable gpio support
->   arm: dts: keystone-evm: add LEDs supports
->   ARM: keystone_defconfig: enable LED support
->
-For patches 1, 2 and 3
+do_futex(addr, op) where !(ops & FUTEX_PRIVATE_FLAG) and cmd == FUTEX_WAIT
+  -> futex_wait
+    -> futex_wait_setup
+      -> get_futex_key(fshared == true)
 
-Acked-and-tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+THP pages encountered in the fshared path should be rare because why create
+a shared futex on a private mapping? That does not make it impossible
+which is why splits are guarded against. If it was genuinely impossible
+to be in this path for MAP_PRIVATE then there is no point worrying about
+THP as it is currently supported at least. Overall, it still seems more
+likely this was a hugetlbfs page.
 
-Regards,
---Prabhakar Lad
+-- 
+Mel Gorman
+SUSE Labs
