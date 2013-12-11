@@ -1,140 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab3LKSLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 13:11:14 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:41318 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab3LKSLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 13:11:12 -0500
-Date: Wed, 11 Dec 2013 19:11:04 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <871324710.20131211191104@eikelenboom.it>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: "Berg, Johannes" <johannes.berg@intel.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
-In-Reply-To: <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
-References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it> <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com> <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com> <1342235583.20131211182804@eikelenboom.it> <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
+	id S1751920Ab3LKSLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 13:11:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751245Ab3LKSLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 13:11:17 -0500
+Date: Wed, 11 Dec 2013 19:11:55 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Hemant Kumar <hkshaw@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 16/17] uprobes: Allocate ->utask before handler_chain()
+	for tracing handlers
+Message-ID: <20131211181155.GA25144@redhat.com>
+References: <1386570005-3368-1-git-send-email-namhyung@kernel.org> <1386570005-3368-17-git-send-email-namhyung@kernel.org> <52A6EFD7.8050602@hitachi.com> <20131210155744.GA21466@redhat.com> <52A7C347.1060402@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <52A7C347.1060402@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/11, Masami Hiramatsu wrote:
+>
+> (2013/12/11 0:57), Oleg Nesterov wrote:
+> > On 12/10, Masami Hiramatsu wrote:
+> >>
+> >> and isn't it better to increment
+> >> miss-hit counter of the uprobe?
+> >
+> > What do you mean? This is not miss-hit and ->utask == NULL is quite normal.
+>
+> But it could skip the handler_chain silently. It could confuse users
+> why their probe doesn't hit as expected.
 
-Wednesday, December 11, 2013, 6:53:07 PM, you wrote:
+No, we will restart the same (probed) instruction, handle_swbp()
+will be called again, get_utask() will be called again.
 
-> On Wed, Dec 11, 2013 at 6:28 PM, Sander Eikelenboom
-> <linux@eikelenboom.it> wrote:
->> Wednesday, December 11, 2013, 6:14:16 PM, you wrote:
->>> Yeap, that's the case for Intel Atheros, and I think nowadays new
->>> broadcom upstream drivers too. Users should not have to be involved on
->>> setting the regulatory domain, everything should just work
->>> automatically.
->>
->> Erhmm yes that works, under the assumption that the device is not leaving the country it was programmed for at the factory.
+Not to mention that (in practice) if GFP_KERNEL fails the task is
+already killed.
 
-> Moving out of a region that you purchased a device is called to "world
-> roam". Believe it or not some devices are designed with the intent you
-> do not take it out of a country. The Playstation comes to mind as an
-> example but I believe some Apple tablets are also in the same
-> situation. Some devices like mobile phones obviously need to support
-> world roaming and they do, what they do then is build architecture to
-> support a base set and then rely on your APs around to see the country
-> IE to determine region. Some other devices rely on cellular base
-> station information, but that is allowed only in a few countries right
-> now and in the US at least this requires some sort of special review
-> from FCC on the design. We support all this in the Linux kernel today,
-> its up to system integrators to do things and certify things properly.
+> > For example, on ppc it can be always NULL because ppc likely emulates the
+> > probed insn.
+>
+> Hmm, in that case, should uprobes handlers never be called on ppc with
+> this change?
 
->> (Or you like to be limited in your abilities, channel 12 and 13 are legal here)
->> That there is a restriction on boot or on first use, i can understand. Crippling a device for it's life time though.
+Why? With this change ppc will have ->utask != NULL even if it doesn't
+need it at all.
 
-> The best way to address all this is by automatic region awareness and
-> doing the right thing on devices, this however requires good
-> architecture / calibration data  / etc and all that needs to be
-> verified by the system integrators, and finally they need to be
-> certified. If you want to hack your firmware and software go at it,
-> just be aware there are reasons for things.
-
-Well the general problem seems to be "we don't trust the user" so we FORCE him to the lowest
-common denominator (without a way to overrule that) so he is forced to operate *well* within the law.
-
->>> It doesn't seem like you are getting your original requests getting
->>> processed, so I don't think CRDA is passing it. Can you verify running
->>> from CRDA code:
->>
->> They don't get processed unless i remove the return from the code as i indicated.
->> If i remove that return it processes the request.
->>
->>> ./regdbdump /usr/lib/crda/regulatory.bin
->>
->> Although it's in a different location on Debian, /lib/crda/regulatory.bin
->> the dump seems fine.
-
-> OK thanks. Can you send a patch of what exact change you made, it was
-> unclear from the paste you made.
-
-> diff -u file.c.orig file.c
-
-Well i just did a pull from wireless-next, to try Avinash Patil's patch.
-net/wireless/reg.c had already changed much so i couldn't apply his patch without.
-
-With his patch it sets the regulatory domain, although as now expected i still can not use channels 12 and 13 yet,
-probably due to those firmware restrictions.
-
-His patch is copy pasted below.
-
-
->   Luis
-
-
----------- Forwarded message ----------
-From: "Avinash Patil" <patila@marvell.com>
-Date: Dec 6, 2013 8:31 PM
-Subject: [RFC] cfg80211: set regulatory request processed for initiator core
-To: <johannes@sipsolutions.net>, <linux-wireless@vger.kernel.org>
-Cc:
-
-During cfg80211 init, cfg80211 initializes regulatory to set to
-world domain. Here we dont set last request processed flag.
-This results into further request set to pending indefinitely.
-
-This patch fixes this by setting last request to processed.
-
-Signed-off-by: Avinash Patil <patila@marvell.com>
----
- net/wireless/reg.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index ec54e1a..70a8f0a 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1670,6 +1670,8 @@ static void reg_process_hint(struct
-regulatory_request *reg_request)
-        switch (reg_request->initiator) {
-        case NL80211_REGDOM_SET_BY_CORE:
-                reg_process_hint_core(reg_request);
-+               nl80211_send_reg_change_event(reg_request);
-+               reg_set_request_processed();
-                return;
-        case NL80211_REGDOM_SET_BY_USER:
-                treatment = reg_process_hint_user(reg_request);
---
-1.7.3.4
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Oleg.
 
