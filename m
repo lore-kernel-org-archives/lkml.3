@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154Ab3LKGM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 01:12:29 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47066 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3LKGM1 (ORCPT
+	id S1750992Ab3LKGS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 01:18:27 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:51537 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750719Ab3LKGSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 01:12:27 -0500
-Message-ID: <52A80210.7060907@huawei.com>
-Date: Wed, 11 Dec 2013 14:11:28 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 11 Dec 2013 01:18:24 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] usb: phy: initilize the notifier when add a new phy
+Date: Wed, 11 Dec 2013 14:18:21 +0800
+Message-ID: <1386742701-20111-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: <zohar@us.ibm.com>, <d.kasatkin@samsung.com>, <james.l.morris@oracle.com>,
-        <zohar@linux.vnet.ibm.com>, <roberto.sassu@polito.it>
-CC: <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] security: ima: new helper: file_inode(file)
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2013-12-11_02:2013-12-10,2013-12-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1312100266
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We need to initilize the notifer before use it.
+So lets initilize it when add a new phy device to reduce the code
+redundance.
 
-Signed-off-by: Libo Chen <clbchenlibo.chen@huawei.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- security/integrity/ima/ima_api.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/phy/phy-ab8500-usb.c    |    2 --
+ drivers/usb/phy/phy-generic.c       |    1 -
+ drivers/usb/phy/phy-gpio-vbus-usb.c |    2 --
+ drivers/usb/phy/phy-mxs-usb.c       |    2 --
+ drivers/usb/phy/phy.c               |    4 ++++
+ 5 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index c38bbce..6d76d4a 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -132,7 +132,7 @@ void ima_add_violation(struct file *file, const unsigned char *filename,
- 		       const char *op, const char *cause)
- {
- 	struct ima_template_entry *entry;
--	struct inode *inode = file->f_dentry->d_inode;
-+	struct inode *inode = file_inode(file);
- 	int violation = 1;
- 	int result;
-
+diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
+index 0874023..11ab2c4 100644
+--- a/drivers/usb/phy/phy-ab8500-usb.c
++++ b/drivers/usb/phy/phy-ab8500-usb.c
+@@ -1415,8 +1415,6 @@ static int ab8500_usb_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, ab);
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
+-
+ 	/* all: Disable phy when called from set_host and set_peripheral */
+ 	INIT_WORK(&ab->phy_dis_work, ab8500_usb_phy_disable_work);
+ 
+diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+index aa6d37b..bb39498 100644
+--- a/drivers/usb/phy/phy-generic.c
++++ b/drivers/usb/phy/phy-generic.c
+@@ -241,7 +241,6 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_gen_xceiv *nop,
+ 	nop->phy.otg->set_host		= nop_set_host;
+ 	nop->phy.otg->set_peripheral	= nop_set_peripheral;
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(usb_phy_gen_create_phy);
+diff --git a/drivers/usb/phy/phy-gpio-vbus-usb.c b/drivers/usb/phy/phy-gpio-vbus-usb.c
+index 02799a5..69462e0 100644
+--- a/drivers/usb/phy/phy-gpio-vbus-usb.c
++++ b/drivers/usb/phy/phy-gpio-vbus-usb.c
+@@ -314,8 +314,6 @@ static int gpio_vbus_probe(struct platform_device *pdev)
+ 		goto err_irq;
+ 	}
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&gpio_vbus->phy.notifier);
+-
+ 	INIT_DELAYED_WORK(&gpio_vbus->work, gpio_vbus_work);
+ 
+ 	gpio_vbus->vbus_draw = regulator_get(&pdev->dev, "vbus_draw");
+diff --git a/drivers/usb/phy/phy-mxs-usb.c b/drivers/usb/phy/phy-mxs-usb.c
+index 545844b..9df81f0 100644
+--- a/drivers/usb/phy/phy-mxs-usb.c
++++ b/drivers/usb/phy/phy-mxs-usb.c
+@@ -160,8 +160,6 @@ static int mxs_phy_probe(struct platform_device *pdev)
+ 	mxs_phy->phy.notify_disconnect	= mxs_phy_on_disconnect;
+ 	mxs_phy->phy.type		= USB_PHY_TYPE_USB2;
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&mxs_phy->phy.notifier);
+-
+ 	mxs_phy->clk = clk;
+ 
+ 	platform_set_drvdata(pdev, mxs_phy);
+diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+index 1b74523..6689bd0 100644
+--- a/drivers/usb/phy/phy.c
++++ b/drivers/usb/phy/phy.c
+@@ -329,6 +329,8 @@ int usb_add_phy(struct usb_phy *x, enum usb_phy_type type)
+ 		return -EINVAL;
+ 	}
+ 
++	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
++
+ 	spin_lock_irqsave(&phy_lock, flags);
+ 
+ 	list_for_each_entry(phy, &phy_list, head) {
+@@ -367,6 +369,8 @@ int usb_add_phy_dev(struct usb_phy *x)
+ 		return -EINVAL;
+ 	}
+ 
++	ATOMIC_INIT_NOTIFIER_HEAD(&ab->phy.notifier);
++
+ 	spin_lock_irqsave(&phy_lock, flags);
+ 	list_for_each_entry(phy_bind, &phy_bind_list, list)
+ 		if (!(strcmp(phy_bind->phy_dev_name, dev_name(x->dev))))
 -- 
-1.8.2.2
+1.7.9.5
 
