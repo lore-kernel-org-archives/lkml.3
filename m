@@ -1,191 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762Ab3LKVFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:05:25 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:46775 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab3LKVFX (ORCPT
+	id S1751788Ab3LKVFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:05:32 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:46990 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3LKVF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:05:23 -0500
-Date: Wed, 11 Dec 2013 16:05:15 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, kay@vrfy.org
-Subject: test-kernfs module
-Message-ID: <20131211210515.GA7683@mtj.dyndns.org>
-References: <1386795780-23324-1-git-send-email-tj@kernel.org>
+	Wed, 11 Dec 2013 16:05:27 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Jason Cooper <jason@lakedaemon.net>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>
+Subject: Re: [PATCH] serial: 8250_dw: Fix LCR workaround regression
+Date: Wed, 11 Dec 2013 21:05:10 +0000
+Message-ID: <2515351.7napg2VnCT@radagast>
+Organization: Imagination Technologies
+User-Agent: KMail/4.10.5 (Linux/3.12.3+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAAYSxhr10XqQdQrvGf3Ez6e4LSbvmc0J-=yRgUePVEcd93e5wQ@mail.gmail.com>
+References: <1386714484-30251-1-git-send-email-james@albanarts.com> <20131211140014.GF28456@xps8300> <CAAYSxhr10XqQdQrvGf3Ez6e4LSbvmc0J-=yRgUePVEcd93e5wQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386795780-23324-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart2998279.KlRiSWXGat"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/test-kernfs/Makefile b/test-kernfs/Makefile
-new file mode 100644
-index 0000000..e64553b
---- /dev/null
-+++ b/test-kernfs/Makefile
-@@ -0,0 +1 @@
-+obj-m := test-kernfs.o
-diff --git a/test-kernfs/test-kernfs.c b/test-kernfs/test-kernfs.c
-new file mode 100644
-index 0000000..4f91b1b
---- /dev/null
-+++ b/test-kernfs/test-kernfs.c
-@@ -0,0 +1,153 @@
-+#include <linux/module.h>
-+#include <linux/kernfs.h>
-+#include <linux/fs.h>
-+#include <linux/seq_file.h>
-+
-+static struct kernfs_root *test_root;
-+
-+char test_buf[4096] = "whatever";
-+
-+static int test_seq_show(struct seq_file *sf, void *v)
-+{
-+	struct kernfs_open_file *of = sf->private;
-+
-+	seq_printf(sf, "%s: %s\n", of->kn->name, test_buf);
-+	return 0;
-+}
-+
-+static ssize_t test_write(struct kernfs_open_file *sf, char *buf, size_t bytes,
-+			  loff_t off)
-+{
-+	bytes = min_t(size_t, bytes, PAGE_SIZE - 1);
-+	memcpy(test_buf, buf, bytes);
-+	test_buf[bytes] = '\0';
-+	return bytes;
-+}
-+
-+static struct kernfs_ops test_kernfs_ops = {
-+	.seq_show	= test_seq_show,
-+	.write		= test_write,
-+};
-+
-+static int test_mkdir(struct kernfs_node *parent, const char *name, umode_t mode)
-+{
-+	struct kernfs_node *kn;
-+
-+	if (IS_ERR(kn = kernfs_create_dir(parent, name, mode, NULL))) {
-+		printk("XXX test_mkdir %zd\n", PTR_ERR(kn));
-+		return PTR_ERR(kn);
-+	}
-+
-+	kernfs_create_file(kn, "file", 0755, 4096, &test_kernfs_ops, NULL);
-+
-+	printk("XXX test_mkdir success\n");
-+	return 0;
-+}
-+
-+static int test_rmdir(struct kernfs_node *kn)
-+{
-+	printk("XXX test_rmdir\n");
-+	kernfs_remove(kn);
-+	return 0;
-+}
-+
-+static int test_rename(struct kernfs_node *kn, struct kernfs_node *new_parent,
-+		       const char *new_name)
-+{
-+	static char namebuf[4096];
-+
-+	snprintf(namebuf, sizeof(namebuf), "%s-XXX", new_name);
-+	printk("XXX test_rename\n");
-+	return kernfs_rename_ns(kn, new_parent, namebuf, NULL);
-+}
-+
-+static struct kernfs_dir_ops test_dops = {
-+	.mkdir		= test_mkdir,
-+	.rmdir		= test_rmdir,
-+	.rename		= test_rename,
-+};
-+
-+static void test_populate(void)
-+{
-+	struct kernfs_node *root = test_root->kn;
-+	struct kernfs_node *d0, *d00, *d01, *d1, *d10;
-+	struct kernfs_node *f0_0, *f0_1, *f00_0, *f01_1;
-+	struct kernfs_node *l1_0, *l1_1, *l10_0;
-+
-+	if (IS_ERR(d0 = kernfs_create_dir(root, "d0", 0755, NULL)))
-+		goto err;
-+	if (IS_ERR(d00 = kernfs_create_dir(d0, "d00", 0755, NULL)))
-+		goto err;
-+	if (IS_ERR(d01 = kernfs_create_dir(d0, "d01", 0755, NULL)))
-+		goto err;
-+	if (IS_ERR(d1 = kernfs_create_dir(root, "d1", 0755, NULL)))
-+		goto err;
-+	if (IS_ERR(d10 = kernfs_create_dir(d1, "d10", 0755, NULL)))
-+		goto err;
-+
-+	if (IS_ERR(f0_0 = kernfs_create_file(d0, "f0_0", 0755, 4096,
-+					     &test_kernfs_ops, NULL)))
-+		goto err;
-+	if (IS_ERR(f0_1 = kernfs_create_file(d0, "f0_1", 0755, 4096,
-+					     &test_kernfs_ops, NULL)))
-+		goto err;
-+	if (IS_ERR(f00_0 = kernfs_create_file(d00, "f00_0", 0755, 4096,
-+					      &test_kernfs_ops, NULL)))
-+		goto err;
-+	if (IS_ERR(f01_1 = kernfs_create_file(d01, "f01_1", 0755, 4096,
-+					      &test_kernfs_ops, NULL)))
-+		goto err;
-+
-+	if (IS_ERR(l1_0 = kernfs_create_link(d1, "l1_0", f0_0)))
-+		goto err;
-+	if (IS_ERR(l1_1 = kernfs_create_link(d1, "l1_1", f0_1)))
-+		goto err;
-+	if (IS_ERR(l10_0 = kernfs_create_link(d10, "l10_0", f0_0)))
-+		goto err;
-+
-+	return;
-+err:
-+	printk("XXX failed to populate\n");
-+}
-+
-+static struct dentry *test_mount(struct file_system_type *fs_type, int flags,
-+				 const char *dev_name, void *data)
-+{
-+	return kernfs_mount(fs_type, flags, test_root);
-+}
-+
-+static struct file_system_type test_fs_type = {
-+	.name		= "test",
-+	.mount		= test_mount,
-+	.kill_sb	= kernfs_kill_sb,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int __init test_init(void)
-+{
-+	int err;
-+
-+	test_root = kernfs_create_root(&test_dops, NULL);
-+	if (IS_ERR(test_root))
-+		return PTR_ERR(test_root);
-+
-+	err = register_filesystem(&test_fs_type);
-+	if (err) {
-+		kernfs_destroy_root(test_root);
-+		return err;
-+	}
-+
-+	test_populate();
-+
-+	return 0;
-+}
-+
-+static void __exit test_exit(void)
-+{
-+	unregister_filesystem(&test_fs_type);
-+	kernfs_destroy_root(test_root);
-+}
-+
-+module_init(test_init);
-+module_exit(test_exit);
-+MODULE_LICENSE("GPL");
+
+--nextPart2998279.KlRiSWXGat
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+
+On Wednesday 11 December 2013 13:00:33 Tim Kryger wrote:
+> On Wed, Dec 11, 2013 at 6:00 AM, Heikki Krogerus
+> 
+> <heikki.krogerus@linux.intel.com> wrote:
+> > Hi,
+> > 
+> > On Tue, Dec 10, 2013 at 10:28:04PM +0000, James Hogan wrote:
+> >> From: James Hogan <james.hogan@imgtec.com>
+> >> 
+> >> Commit c49436b657d0 (serial: 8250_dw: Improve unwritable LCR workaround)
+> >> caused a regression. It added a check that the LCR was written properly
+> >> to detect and workaround the busy quirk, but the behaviour of bit 5
+> >> (UART_LCR_SPAR) differs between IP versions 3.00a and 3.14c per the
+> >> docs. On older versions this caused the check to fail and it would
+> >> repeatedly force idle and rewrite the LCR register, causing delays and
+> >> preventing any input from serial being received.
+> >> 
+> >> This is fixed by masking out UART_LCR_SPAR before making the comparison.
+> >> 
+> >> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> Cc: Jiri Slaby <jslaby@suse.cz>
+> >> Cc: Tim Kryger <tim.kryger@linaro.org>
+> >> Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> >> Cc: Matt Porter <matt.porter@linaro.org>
+> >> Cc: Markus Mayer <markus.mayer@linaro.org>
+> >> Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> >> Tested-by: Tim Kryger <tim.kryger@linaro.org>
+> >> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> > 
+> > I tested this with HW without the busy functionality
+> > (UART_16550_COMPATIBLE == yes). No problems here. FWIW:
+> > 
+> > Tested-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> 
+> Greg, can you consider taking this patch as a regression fix for 3.13?
+> 
+> Just in case you want a little more background beyond what is in the
+> commit message...
+> 
+> Statically declared DW UARTs will execute autoconfig_16550a during
+> probe which attempts to set the SPAR bit of LCR.  Some old versions of
+> the DW IP don't implement the stick parity feature and for these
+> versions the SPAR bit always reads back as zero. Since these writes
+> aren't fully accepted by the hardware, they trigger the workaround
+> which interprets the partially rejected write to mean the UART was
+> busy.  A number of attempts are made to idle the UART and re-write the
+> LCR but eventually the workaround gives up and prints a warning. DT
+> declared DW UARTs don't run autoconfig and don't see this issue as far
+> as I know.
+
+Hi Tim
+
+Thanks for the extra description. FYI, I was instantiating DW UART from DT 
+when I saw the problem.
+
+Cheers
+James
+--nextPart2998279.KlRiSWXGat
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABAgAGBQJSqNOTAAoJEKHZs+irPybfSsQP/jRiDTaJK0XscY6/uaU8XI9k
+naSkOlGvdJJmEx89HyWnuaM/m7bgQJaY4zUFCixp33VlJw3ozPbWPx7rCAvwwaFb
+Hfp5gWZDy9meYb20WgenI39YmNkNYy81ukhsS4/g2Z7VnhjUxnA4boUmxNcQjevW
+TRtvdMG7Qdi9EOyJzDqlIWlTfMAVtS4scGfgDQaB0D6Y7wy+81mRNlf1HOspzK3n
+67wBS4lz5631IVl5TNqdvCAaLZ9NxWexNLbQkblWcU4AnBPHxQbulKV9jAOZzZMT
+uhUVAKMSfwfadQETkdWLooL04r4nAG9qnadIOjLmYyoX55NYzQzungEOZzfNE5b+
+ScqXaZ7XXnydYan0fAQFQ4W6HOeeolDnWdC7LHzYdULPdRhlpyzL02gEmW+nmyG6
+wxQT4/sKGWSTJ+K22SWmk4skP4YTX7VJmHX4iFyQS4K5PA2Bc5oNsR/CdokEEL/e
+P18WaHFQ8tr7QHUfRX0xeHeNctL5sz3HBM5slvNVo3cVTm+zgSiJIyM/Ro9i965j
+XDeqcSUGTyr88XcKIeFBjTg2te9L/g8t8h4I6+ZIg3OuIg5xBIu2aGGPhxEEky7h
+NICq5VPeHAs3VbfTMSZ97Z622RNm1tCwwxj1ZaH+gJ0N2G0yMOsUKPiTR9ENrklM
+/nZ5wBD2J4q/oOGEYqw8
+=GIDi
+-----END PGP SIGNATURE-----
+
+--nextPart2998279.KlRiSWXGat--
+
