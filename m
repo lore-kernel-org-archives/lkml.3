@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab3LKDEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 22:04:49 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:55489 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab3LKDEp (ORCPT
+	id S1751726Ab3LKDIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 22:08:20 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:51936 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab3LKDIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 22:04:45 -0500
-Message-ID: <52A7D646.2040904@hitachi.com>
-Date: Wed, 11 Dec 2013 12:04:38 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 10 Dec 2013 22:08:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@kernel.org>
+Subject: Re: [Linaro-acpi] [RFC part1 PATCH 1/7] ACPI: Make ACPI core running without PCI on ARM64
+Date: Wed, 11 Dec 2013 04:07:27 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Hanjun Guo <hanjun.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+References: <1386088611-2801-1-git-send-email-hanjun.guo@linaro.org> <201312102100.20570.arnd@arndb.de> <20131210202323.GJ11468@sirena.org.uk>
+In-Reply-To: <20131210202323.GJ11468@sirena.org.uk>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-arch@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v5 13/18] notifier: Use NOKPROBE_SYMBOL macro in
- notifier
-References: <20131209104717.13397.8864.stgit@kbuild-fedora.novalocal> <20131209104748.13397.52431.stgit@kbuild-fedora.novalocal> <52A7D4C0.7060700@hitachi.com>
-In-Reply-To: <52A7D4C0.7060700@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201312110407.27848.arnd@arndb.de>
+X-Provags-ID: V02:K0:4POhREwpkv66FP7gntIZqIJHx5D73VYhDN+lrJBB8hJ
+ ojxQwjMfA6DnBrIC0yN7t3How5kqtdZCLyEsBP3ZvXaVn4py5L
+ uyEapmdhJ23nzi2hOtKpkjLDhkARSDDe/yz0VFGEGA4fJ6M8yC
+ Tekb321HeEdDmvuTtrRzxU526RQSzu27YoDXL1TzSCnPCYgzC/
+ 5JDKGSIvQFH6IrhnbYMaCcYXj1WWSY8Uaohml6eUw81/O16MEC
+ i7ufxPaOjzq0cW21quoPpkhEFRSUOVAkmCn7SkiME4DSagnmt7
+ agLxh+JNIYkRcg9Y/c0qosNL1uTmNLrESaoUkQftn30pOQbGCY
+ nXU+ijw/1wyl5wplOkcY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/11 11:58), Masami Hiramatsu wrote:
-> (2013/12/09 19:47), Masami Hiramatsu wrote:
->> Use NOKPROBE_SYMBOL macro to protect functions from
->> kprobes instead of __kprobes annotation in notifier.
+On Tuesday 10 December 2013, Mark Brown wrote:
+> On Tue, Dec 10, 2013 at 09:00:20PM +0100, Arnd Bergmann wrote:
+> > On Tuesday 10 December 2013, Mark Brown wrote:
 > 
-> Ah, this must just removes __kprobes since we don't use notify_die
-> for kprobes anymore...
+> > > It's not just the SoC, it's also the rest of the board.  The patches the
+> > > Intel guys are submitting at the minute are mainly for the off-SoC
+> > > devices at least as far as I noticed.  This'll impact anyone who ends up
+> > > using ACPI, we need to at least pay attention to what's going on there.
+> 
+> > Yes, but I'm not that worried about off-soc stuff, which tends to be
+> > off the much simpler variety: a few MMIO or PIO registers, IRQs,
+> > GPIOs or (with ACPI-5.0) devices on i2c and spi buses.
+> 
+> That's not my experience especially once you get into phone type
+> hardware - there's not much complexity difference when gluing things
+> into the system and the fact that it's connected by the board increases
+> the amount of flexibility that has to be coped with.
 
-Oops, NO. kprobes generically still using the exception notifier to handle
-GPF in the handler even on x86... For safety, I'd like to keep it as it is
-until all dependency is removed.
+Yes, that is probably right. The only argument that one can make about
+the mobile phone case is that these devices are so complex that nobody
+even bothers any more running upstream kernels on them on any CPU
+architecture. If the kernel code is kept out of the mainline tree,
+it doesn't matter to us what they use, and the developers don't gain
+much by following any of the available firmware models either.
 
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+	Arnd
