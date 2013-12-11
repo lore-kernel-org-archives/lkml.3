@@ -1,225 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab3LKPTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 10:19:34 -0500
-Received: from fieldses.org ([174.143.236.118]:48424 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab3LKPTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 10:19:33 -0500
-Date: Wed, 11 Dec 2013 10:19:31 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org
-Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
- flock_to_posix_lock routines
-Message-ID: <20131211151931.GC29300@fieldses.org>
-References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
- <1386703055-22308-2-git-send-email-jlayton@redhat.com>
- <20131210212253.GC20831@fieldses.org>
- <20131210232204.GD20831@fieldses.org>
- <20131211061856.615c39ba@tlielax.poochiereds.net>
- <20131211143724.GA29300@fieldses.org>
+	id S1751784Ab3LKPUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 10:20:25 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:50799 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab3LKPUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 10:20:23 -0500
+Date: Wed, 11 Dec 2013 16:19:09 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Paul Walmsley <pwalmsley@nvidia.com>
+Cc: Mikko Perttunen <mperttunen@nvidia.com>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] gpu: host1x: clk_round_rate() can return a zero upon
+ error
+Message-ID: <20131211151908.GC31617@ulmo.nvidia.com>
+References: <alpine.DEB.2.02.1312091746400.4127@tamien>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kfjH4zxOES6UT95V"
 Content-Disposition: inline
-In-Reply-To: <20131211143724.GA29300@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1312091746400.4127@tamien>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 09:37:24AM -0500, J. Bruce Fields wrote:
-> Well, it'd be weird if I didn't screw up something somewhere.
 
-Yes, a classic: I forgot the breaks after each switch case.
+--kfjH4zxOES6UT95V
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here's a version that at least doesn't return -EINVAL on every lock
-attempt.
+On Mon, Dec 09, 2013 at 06:00:12PM -0800, Paul Walmsley wrote:
+>=20
+> Treat both negative and zero return values from clk_round_rate() as
+> errors.  This is needed since subsequent patches will convert
+> clk_round_rate()'s return value to be an unsigned type, rather than a
+> signed type, since some clock sources can generate rates higher than
+> (2^31)-1 Hz.
+>=20
+> Eventually, when calling clk_round_rate(), only a return value of zero
+> will be considered a error.  All other values will be considered valid
+> rates.  The comparison against values less than 0 is kept to preserve
+> the correct behavior in the meantime.
+>=20
+> Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+> Cc: Mikko Perttunen <mperttunen@nvidia.com>
+> Cc: Arto Merilainen <amerilainen@nvidia.com>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Cc: Terje Bergstr=C3=B6m <tbergstrom@nvidia.com>
+> ---
+> Applies on v3.13-rc3.  See also:
+>=20
+> http://marc.info/?l=3Dlinux-arm-kernel&m=3D138542591313620&w=3D2
+>=20
+>  drivers/gpu/drm/tegra/hdmi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+> index 0cd9bc2056e8..8cf9d3aeb0cd 100644
+> --- a/drivers/gpu/drm/tegra/hdmi.c
+> +++ b/drivers/gpu/drm/tegra/hdmi.c
+> @@ -959,7 +959,7 @@ static int tegra_output_hdmi_check_mode(struct tegra_=
+output *output,
+>  	parent =3D clk_get_parent(hdmi->clk_parent);
+>=20
+>  	err =3D clk_round_rate(parent, pclk * 4);
+> -	if (err < 0)
+> +	if (err <=3D 0)
+>  		*status =3D MODE_NOCLOCK;
+>  	else
+>  		*status =3D MODE_OK;
 
---b.
+Looks good. Out of curiosity, what are the plans on how to change the
+clk_round_rate() API. I assume that at some point it will be modified
+to return an unsigned long? At that point we'll need to update all
+drivers as well to make sure the signed variables don't overflow.
 
-commit 70b7b9a442d06a71306736eb01cedba5dd6d86cf
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Tue Dec 10 18:14:28 2013 -0500
+Perhaps unsigned long long would be a better choice for future
+compatibility?
 
-    locks: fix posix lock range overflow handling
-    
-    In the 32-bit case fcntl is converting signed 64-bit to signed 32-bit
-    quantities in a couple places, with probably incorrect results.
-    
-    So instead let's return -EOVERFLOW as described in SUSv3, whenever "the
-    smallest or, if l_len is non-zero, the largest offset of any byte in the
-    requested segment cannot be represented correctly in an object of type
-    off_t."
-    
-    While we're here, do some cleanup including consolidating code for the
-    flock and flock64 cases.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Thierry
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 92a0f0a..b70486a 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -344,48 +344,44 @@ static int assign_type(struct file_lock *fl, long type)
- 	return 0;
- }
- 
--/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-- * style lock.
-- */
--static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
--			       struct flock *l)
-+static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
-+					struct flock64 *l, loff_t offset_max)
- {
--	off_t start, end;
-+	loff_t start;
- 
- 	switch (l->l_whence) {
- 	case SEEK_SET:
--		start = 0;
-+		fl->fl_start = 0;
- 		break;
- 	case SEEK_CUR:
--		start = filp->f_pos;
-+		fl->fl_start = filp->f_pos;
- 		break;
- 	case SEEK_END:
--		start = i_size_read(file_inode(filp));
-+		fl->fl_start = i_size_read(file_inode(filp));
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
-+	if (l->l_start < 0)
-+		return -EINVAL;
-+	if (l->l_start > offset_max - fl->fl_start)
-+		return -EOVERFLOW;
-+	fl->fl_start += l->l_start;
-+	if (l->l_len > offset_max - fl->fl_start)
-+		return -EOVERFLOW;
-+	if (fl->fl_start + l->l_len < 0)
-+		return -EINVAL;
- 
- 	/* POSIX-1996 leaves the case l->l_len < 0 undefined;
- 	   POSIX-2001 defines it. */
--	start += l->l_start;
--	if (start < 0)
--		return -EINVAL;
--	fl->fl_end = OFFSET_MAX;
--	if (l->l_len > 0) {
--		end = start + l->l_len - 1;
--		fl->fl_end = end;
--	} else if (l->l_len < 0) {
--		end = start - 1;
--		fl->fl_end = end;
--		start += l->l_len;
--		if (start < 0)
--			return -EINVAL;
--	}
--	fl->fl_start = start;	/* we record the absolute position */
--	if (fl->fl_end < fl->fl_start)
--		return -EOVERFLOW;
--	
-+	if (l->l_len > 0)
-+		fl->fl_end = fl->fl_start + l->l_len - 1;
-+	else if (l->l_len < 0) {
-+		fl->fl_end = start - 1;
-+		fl->fl_start += l->l_len;
-+	} else
-+		fl->fl_end = OFFSET_MAX;
-+
- 	fl->fl_owner = current->files;
- 	fl->fl_pid = current->tgid;
- 	fl->fl_file = filp;
-@@ -396,50 +392,27 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	return assign_type(fl, l->l_type);
- }
- 
-+/* Verify a "struct flock" and copy it to a "struct file_lock" as a POSIX
-+ * style lock.
-+ */
-+static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
-+			       struct flock *l)
-+{
-+	struct flock64 ll = {
-+		.l_type = l->l_type,
-+		.l_whence = l->l_whence,
-+		.l_start = l->l_start,
-+		.l_len = l->l_len,
-+	};
-+	
-+	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
-+}
-+
- #if BITS_PER_LONG == 32
- static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 				 struct flock64 *l)
- {
--	loff_t start;
--
--	switch (l->l_whence) {
--	case SEEK_SET:
--		start = 0;
--		break;
--	case SEEK_CUR:
--		start = filp->f_pos;
--		break;
--	case SEEK_END:
--		start = i_size_read(file_inode(filp));
--		break;
--	default:
--		return -EINVAL;
--	}
--
--	start += l->l_start;
--	if (start < 0)
--		return -EINVAL;
--	fl->fl_end = OFFSET_MAX;
--	if (l->l_len > 0) {
--		fl->fl_end = start + l->l_len - 1;
--	} else if (l->l_len < 0) {
--		fl->fl_end = start - 1;
--		start += l->l_len;
--		if (start < 0)
--			return -EINVAL;
--	}
--	fl->fl_start = start;	/* we record the absolute position */
--	if (fl->fl_end < fl->fl_start)
--		return -EOVERFLOW;
--	
--	fl->fl_owner = current->files;
--	fl->fl_pid = current->tgid;
--	fl->fl_file = filp;
--	fl->fl_flags = FL_POSIX;
--	fl->fl_ops = NULL;
--	fl->fl_lmops = NULL;
--
--	return assign_type(fl, l->l_type);
-+	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
- }
- #endif
- 
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 95e46c8..36025f7 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -186,8 +186,6 @@ struct flock {
- };
- #endif
- 
--#ifndef CONFIG_64BIT
--
- #ifndef HAVE_ARCH_STRUCT_FLOCK64
- #ifndef __ARCH_FLOCK64_PAD
- #define __ARCH_FLOCK64_PAD
-@@ -202,6 +200,5 @@ struct flock64 {
- 	__ARCH_FLOCK64_PAD
- };
- #endif
--#endif /* !CONFIG_64BIT */
- 
- #endif /* _ASM_GENERIC_FCNTL_H */
+--kfjH4zxOES6UT95V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqIJsAAoJEN0jrNd/PrOhpNsQAJLU511q8MBG79GSUY/guo4x
+12N5PBIZ1/r2AaMhongDGYMzgp8tjY00s1cQkFnM0U0SO8D0HU7Z/n5w8Y8iCS8k
+FMWVe2zryy/anjSfTgNTCdN9LgaVOFiJZfrmnU5ld2dvDR4OCs8t7Ff0VY84oflr
+o8KOhzxb9C4Qrv5cPNzOePtVh/kwncl7YA/4a7pNeBGBKs5v9mj3od5JwP6zEmk0
+7XChM8UAPUM4AfB1025TVavRl1sAcvvMev+Q0T+D1aCef3ry73/GC19IQP2oUB8K
+PWZu5e1+QBub4CBkLbYCzdHAa7/N0erR/BVkqB71mDpguwdMYjMBs6l/Hk2V0t/1
+eqmrgC5uZQiknpK/CHA8fuHULZGa9QMF3d7ly1zC0oA5pwadbIhaPYVSY578sxZc
+emBhAaJ8xqAK/5TpTHxjlZcYoVT9CQmkPlPyr+wZ6nJz/sgipYABRfTcSDU401eK
+M6Z2gsB4pi2McUro8fvTV8Uz9rhdYWKHC8WHtFx5/IEaKAHVNvpq3T798Jhu29Bs
+YYrxTqKVdDbutqHT1FsXPyxk2SpL877unoA3rT4A731sy7c3v+2LuA1OcIjbHjR8
++PnqsGmn0vc4yfZXMjUAml7I4sXHn46AFs30g3H8vvd6C41TVc5QoOWy1Hq+ae58
+EB5CjlJ1OKUB+AgzADSk
+=OXGm
+-----END PGP SIGNATURE-----
+
+--kfjH4zxOES6UT95V--
