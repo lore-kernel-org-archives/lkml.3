@@ -1,129 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3LKHNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 02:13:13 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:38100 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab3LKHLS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 02:11:18 -0500
-From: Florian Fainelli <f.fainelli@gmail.com>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: devicetree@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, netdev@vger.kernel.org
-Subject: Re: [PATCH v2] Documentation: Add MDIO bus node to PHY binding document
-Date: Wed, 11 Dec 2013 07:11:14 +0000
-Message-ID: <3125212.eYMMS8pR1J@lenovo>
-User-Agent: KMail/4.11.2 (Linux/3.11.0-14-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1384351669-8325-1-git-send-email-jonas.jensen@gmail.com>
-References: <1384174825-14249-1-git-send-email-jonas.jensen@gmail.com> <1384351669-8325-1-git-send-email-jonas.jensen@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1751908Ab3LKHNl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 02:13:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:40037 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab3LKHLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 02:11:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,870,1378882800"; 
+   d="scan'208";a="450352526"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 10/15] perf, x86: Save/resotre LBR stack during context switch
+Date: Wed, 11 Dec 2013 15:10:55 +0800
+Message-Id: <1386745860-21143-11-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
+References: <1386745860-21143-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 13 novembre 2013, 15:07:49 Jonas Jensen a écrit :
-> Add MDIO bus node segment and update the example,
-> allowing trivial bindings to break out boilerplate.
-> 
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
-> 
-> Notes:
->     Thanks Mark,
-> 
->     This should have the changes from your comments. It also adds optional
-> properties "compatible" and "reg", were those overlooked or left out
-> intentionally?
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Please CC netdev@vger.kernel.org too as there might be some interest from 
-networking folks not actively following devicetree-discuss.
+When the LBR call stack is enabled, it is necessary to save/restore
+the LBR stack on context switch. The solution is saving/restoring
+the LBR stack to/from task's perf event context.
 
-This does looks good to me, there is not much to be said to the point where I 
-wonder if this even deserves such an example, but it cannot hurt.
+Don't save/restore the LBR stack if task has no perf event context
+or there are system-wide users of LBR stack. Flush the LBR stack
+instead.
 
-> 
->     Changes since v1:
-> 
->     1. reformat "MDIO bus node" description and add, node name should be
-> "mdio" 2. reformat property descriptions, describe what the cells represent
-> 3. add optional properties
->     4. add a description after "PHY nodes"
-> 
->     Applies to next-20131113
-> 
->  Documentation/devicetree/bindings/net/phy.txt | 48
-> ++++++++++++++++++++++----- 1 file changed, 40 insertions(+), 8
-> deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/net/phy.txt
-> b/Documentation/devicetree/bindings/net/phy.txt index 7cd18fb..4179a70
-> 100644
-> --- a/Documentation/devicetree/bindings/net/phy.txt
-> +++ b/Documentation/devicetree/bindings/net/phy.txt
-> @@ -1,5 +1,26 @@
-> +MDIO Bus Nodes
-> +
-> +An MDIO bus node describes an MDIO bus, and is a container for PHY nodes
-> +as described below. An MDIO bus node should be named "mdio".
-> +
-> +Required properties:
-> +
-> +- #address-cells = Should be <1>, specifies the number of cells needed
-> +  to encode the PHY address
-> +- #size-cells = Should be <0>
-> +
-> +Optional Properties:
-> +
-> +- compatible : Should contain a specific name for the MDIO bus,
-> +  if known, followed by "-mdio"
-> +- reg : Should contain register location and length
-> +
-> +
->  PHY nodes
-> 
-> +Describes the PHY chip. A MAC connecting the PHY may use a phandle to
-> +this node.
-> +
->  Required properties:
-> 
->   - device_type : Should be "ethernet-phy"
-> @@ -23,13 +44,24 @@ Optional Properties:
->    assume clause 22. The compatible list may also contain other
->    elements.
-> 
-> +
->  Example:
-> 
-> -ethernet-phy@0 {
-> -	compatible = "ethernet-phy-ieee802.3-c22";
-> -	linux,phandle = <2452000>;
-> -	interrupt-parent = <40000>;
-> -	interrupts = <35 1>;
-> -	reg = <0>;
-> -	device_type = "ethernet-phy";
-> -};
-> +mdio {
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
-> +
-> +	ethernet-phy@0 {
-> +		device_type = "ethernet-phy";
-> +		compatible = "...", "ethernet-phy-ieee802.3-c22";
-> +		reg = <0>;
-> +		interrupts = <24 0>;
-> +	}
-> +
-> +	ethernet-phy@1 {
-> +		device_type = "ethernet-phy";
-> +		compatible = "...";
-> +		reg = <1>;
-> +		interrupts = <35 1>;
-> +	}
-> +}
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 83 +++++++++++++++++++++++++-----
+ 1 file changed, 69 insertions(+), 14 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index f57960d..80bb097 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -187,18 +187,85 @@ void intel_pmu_lbr_reset(void)
+ 		intel_pmu_lbr_reset_64();
+ }
+ 
++/*
++ * TOS = most recently recorded branch
++ */
++static inline u64 intel_pmu_lbr_tos(void)
++{
++	u64 tos;
++
++	rdmsrl(x86_pmu.lbr_tos, tos);
++
++	return tos;
++}
++
++enum {
++	LBR_UNINIT,
++	LBR_NONE,
++	LBR_VALID,
++};
++
++static void __intel_pmu_lbr_restore(struct x86_perf_task_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
++	u64 tos = intel_pmu_lbr_tos();
++
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_state = LBR_NONE;
++}
++
++static void __intel_pmu_lbr_save(struct x86_perf_task_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
++	u64 tos = intel_pmu_lbr_tos();
++
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_state = LBR_VALID;
++}
++
++
+ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+ {
++	struct cpu_hw_events *cpuc;
++	struct x86_perf_task_context *task_ctx;
++
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 
++	cpuc = &__get_cpu_var(cpu_hw_events);
++	task_ctx = ctx ? ctx->task_ctx_data : NULL;
++
++
+ 	/*
+ 	 * It is necessary to flush the stack on context switch. This happens
+ 	 * when the branch stack does not tag its entries with the pid of the
+ 	 * current task.
+ 	 */
+-	if (sched_in)
+-		intel_pmu_lbr_reset();
++	if (sched_in) {
++		if (cpuc->lbr_sys_users > 0 ||
++		    !task_ctx ||
++		    !task_ctx->lbr_callstack_users ||
++		    task_ctx->lbr_stack_state != LBR_VALID)
++			intel_pmu_lbr_reset();
++		else
++			__intel_pmu_lbr_restore(task_ctx);
++	} else if (task_ctx) {
++		if (task_ctx->lbr_callstack_users &&
++		    task_ctx->lbr_stack_state != LBR_UNINIT)
++			__intel_pmu_lbr_save(task_ctx);
++		else
++			task_ctx->lbr_stack_state = LBR_NONE;
++	}
+ }
+ 
+ static inline bool branch_user_callstack(unsigned br_sel)
+@@ -271,18 +338,6 @@ void intel_pmu_lbr_disable_all(void)
+ 		__intel_pmu_lbr_disable();
+ }
+ 
+-/*
+- * TOS = most recently recorded branch
+- */
+-static inline u64 intel_pmu_lbr_tos(void)
+-{
+-	u64 tos;
+-
+-	rdmsrl(x86_pmu.lbr_tos, tos);
+-
+-	return tos;
+-}
+-
+ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
+ {
+ 	unsigned long mask = x86_pmu.lbr_nr - 1;
 -- 
-Florian
+1.8.1.4
+
