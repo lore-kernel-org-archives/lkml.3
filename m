@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab3LKNWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 08:22:19 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:52774 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab3LKNWR (ORCPT
+	id S1751558Ab3LKNYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 08:24:49 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:51334 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab3LKNYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 08:22:17 -0500
-Date: Wed, 11 Dec 2013 14:22:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
-Message-ID: <20131211132212.GA7862@localhost.localdomain>
-References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+	Wed, 11 Dec 2013 08:24:48 -0500
+Date: Wed, 11 Dec 2013 14:24:43 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stanislav Fomichev <stfomichev@yandex-team.ru>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Pekka Enberg <penberg@kernel.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/2] tools/: Convert to new topic libraries
+Message-ID: <20131211132443.GA3101@gmail.com>
+References: <1386605664-24041-1-git-send-email-bp@alien8.de>
+ <1386605664-24041-2-git-send-email-bp@alien8.de>
+ <52A7C3E7.301@gmail.com>
+ <20131211095626.GA21683@pd.tnic>
+ <20131211123159.GR8098@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+In-Reply-To: <20131211123159.GR8098@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 03, 2013 at 01:57:37PM +0530, Viresh Kumar wrote:
-> Hi Frederic/Kevin,
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Em Wed, Dec 11, 2013 at 10:56:26AM +0100, Borislav Petkov escreveu:
+> > On Tue, Dec 10, 2013 at 06:46:15PM -0700, David Ahern wrote:
+> > > no longer applies to the moving target that is acme's tree.
+> > 
+> > Of course it doesn't, with all the junk flood going in there :-)
+> > 
+> > Btw, this is why I'm planning on sending only a small amount of patches
+> > and hoping that acme picks them up quickly. :)
 > 
-> I was doing some work where I was required to use NO_HZ_FULL
-> on core 1 on a dual core ARM machine.
-> 
-> I observed that I was able to isolate the second core using cpusets
-> but whenever the tick occurs, it occurs twice. i.e. Timer count
-> gets updated by two every time my core is disturbed.
-> 
-> I tried to trace it (output attached) and found this sequence (Talking
-> only about core 1 here):
-> - Single task was running on Core 1 (using cpusets)
-> - got an arch_timer interrupt
-> - started servicing vmstat stuff
-> - so came out of NO_HZ_FULL domain as there is more than
-> one task on Core
-> - queued work again and went to the existing single task (stress)
-> - again got arch_timer interrupt after 5 ms (HZ=200)
+> I'll try to keep this moving today, together with the start of
+> tools/lib/symbol/ ;-)
 
-Right, looking at the details, the 2nd interrupt is caused by workqueue delayed
-work bdi writeback.
+That looks good to me as well. Lets see how well this whole approach 
+works in practice. Please be on the lookout for 
+anomalies/inconsistencies as the set of topics increases.
 
-> - got "tick_stop" event and went into NO_HZ_FULL domain again..
-> - Got isolated again for long duration..
-> 
-> So the query is: why don't we check that at the end of servicing vmstat
-> stuff and migrating back to "stress" ??
+Thanks,
 
-I fear I don't understand your question. Do you mean why don't we prevent from
-that bdi writeback work to run when we are in full dynticks mode?
-
-We can't just ignore workqueues and timers callback when they are scheduled
-otherwise the kernel is going to behave randomly.
-
-OTOH what we can do is to work on these per cpu workqueues and timers and do
-what's necessary to avoid them to fire, as explained in detail there Documentation/kernel-per-CPU-kthreads.txt
-
-There is also the problem of unbound workqueues for which we don't have a solution
-yet. But the idea is that we could tweak their affinity from sysfs.
-
-> 
-> Thanks.
-> 
-> --
-> viresh
-
-
+	Ingo
