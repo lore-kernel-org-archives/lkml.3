@@ -1,88 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab3LKC30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Dec 2013 21:29:26 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44685 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab3LKC3Y (ORCPT
+	id S1751564Ab3LKCaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Dec 2013 21:30:46 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9913 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3LKCam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Dec 2013 21:29:24 -0500
-X-AuditID: 9c930197-b7bdbae000000e78-a3-52a7ce02052f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 01/14] tools lib traceevent: Get rid of malloc_or_die() in show_error()
-References: <1386567251-22751-1-git-send-email-namhyung@kernel.org>
-	<1386567251-22751-2-git-send-email-namhyung@kernel.org>
-	<20131209183009.GC8098@ghostprotocols.net>
-	<20131209140342.5f72298f@gandalf.local.home>
-	<20131209191439.GG8098@ghostprotocols.net>
-	<20131209142350.5d23108c@gandalf.local.home>
-	<87mwk9jwcf.fsf@sejong.aot.lge.com>
-	<20131209211410.01fcaebf@gandalf.local.home>
-	<878uvtjo3r.fsf@sejong.aot.lge.com>
-	<87zjo9i87p.fsf@sejong.aot.lge.com>
-	<87vbywi5j0.fsf@sejong.aot.lge.com>
-	<20131210205526.567874b1@gandalf.local.home>
-Date: Wed, 11 Dec 2013 11:29:21 +0900
-In-Reply-To: <20131210205526.567874b1@gandalf.local.home> (Steven Rostedt's
-	message of "Tue, 10 Dec 2013 20:55:26 -0500")
-Message-ID: <8761qwi0hq.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 10 Dec 2013 21:30:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 10 Dec 2013 18:27:16 -0800
+Message-ID: <52A7CE4E.1030802@nvidia.com>
+Date: Wed, 11 Dec 2013 11:30:38 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] gpiolib: return -ENOENT if no GPIO mapping exists
+References: <1386686247-24592-1-git-send-email-acourbot@nvidia.com> <1386689291.1871.169.camel@smile>
+In-Reply-To: <1386689291.1871.169.camel@smile>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 20:55:26 -0500, Steven Rostedt wrote:
-> On Wed, 11 Dec 2013 09:40:35 +0900
-> Namhyung Kim <namhyung@kernel.org> wrote:
->> And should we extend the error code to include the return value of
->> pevent_filter_match() too?  If not, it seems we need to pass another
->> argument to receive the actual error code in case of FILTER_ERROR.
+On 12/11/2013 12:28 AM, Andy Shevchenko wrote:
+> On Tue, 2013-12-10 at 23:37 +0900, Alexandre Courbot wrote:
+>> Some devices drivers make use of optional GPIO parameters. For such
+>> drivers, it is important to discriminate between the case where no
+>> GPIO mapping has been defined for the function they are requesting, and
+>> the case where a mapping exists but an error occured while resolving it
+>> or when acquiring the GPIO.
+>>
+>> This patch changes the family of gpiod_get() functions such that they
+>> will return -ENOENT if and only if no GPIO mapping is defined for the
+>> requested function. Other error codes are used when an actual error
+>> occured during the GPIO resolution.
+>>
 >
-> I'm a bit confused on this. Perhaps it's something you added in your
-> patches. If what returns FILTER_ERROR?
+> One minor comment below.
+> Independently on that:
+>
+> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-Well, I mean there are some cases which return FILTER_ERROR.  With my
-patch, test_filter() can failed with the error_str set like following:
-
- - invalid expression type
- - must have number field
- - invalid numeric argument type
- - invalid numeric comparison type
- - invalid string comparison type
- - invalid operator type
- - invalid argument type
-
-To distinguish them, we either need to extend return value or another
-argument.  But the current return value of pevent_filter_match() was
-defined as FILTER_{MATCH,MISS,NOEXIST,NONE,ERROR}.
-
-And also I want all user APIs share same return value/type as
-pevent_errno so that user can pass it our strerror function to see the
-error message.
-
-So to use return value, we need to extend the error code to include all
-possible error cases above as well as normal cases (MATCH, MISS, ...).
+Thanks!
 
 >
->> 
->> I'm saying these here since they might require interface/signature
->> change so will affect existing users like trace-cmd.
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>> Changes since v1:
+>> - Rebase on top of Linus' devel tree
+>> - Fixed error reporting as suggested by Andy
+>> ---
+>>   Documentation/gpio/consumer.txt |  6 +++++-
+>>   drivers/gpio/gpiolib.c          | 33 ++++++++++++++++-----------------
+>>   2 files changed, 21 insertions(+), 18 deletions(-)
+>>
+>> diff --git a/Documentation/gpio/consumer.txt b/Documentation/gpio/consumer.txt
+>> index 07c74a3..e42f77d 100644
+>> --- a/Documentation/gpio/consumer.txt
+>> +++ b/Documentation/gpio/consumer.txt
+>> @@ -38,7 +38,11 @@ device that displays digits), an additional index argument can be specified:
+>>   					  const char *con_id, unsigned int idx)
+>>
+>>   Both functions return either a valid GPIO descriptor, or an error code checkable
+>> -with IS_ERR(). They will never return a NULL pointer.
+>> +with IS_ERR() (they will never return a NULL pointer). -ENOENT will be returned
+>> +if and only if no GPIO has been assigned to the device/function/index triplet,
+>> +other error codes are used for cases where a GPIO has been assigned but an error
+>> +occured while trying to acquire it. This is useful to discriminate between mere
+>> +errors and an absence of GPIO for optional GPIO parameters.
+>>
+>>   Device-managed variants of these functions are also defined:
+>>
+>> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>> index 12e47df..32a6e3a 100644
+>> --- a/drivers/gpio/gpiolib.c
+>> +++ b/drivers/gpio/gpiolib.c
+>> @@ -2367,7 +2367,7 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
+>>   				    unsigned int idx,
+>>   				    enum gpio_lookup_flags *flags)
+>>   {
+>> -	struct gpio_desc *desc = ERR_PTR(-ENODEV);
+>> +	struct gpio_desc *desc = ERR_PTR(-ENOENT);
+>>   	struct gpiod_lookup_table *table;
+>>   	struct gpiod_lookup *p;
+>>
+>> @@ -2389,19 +2389,21 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
+>>   		chip = find_chip_by_name(p->chip_label);
+>>
+>>   		if (!chip) {
+>> -			dev_warn(dev, "cannot find GPIO chip %s\n",
+>> -				 p->chip_label);
+>> -			continue;
+>> +			dev_err(dev, "cannot find GPIO chip %s\n",
+>> +				p->chip_label);
+>> +			return ERR_PTR(-ENODEV);
+>>   		}
+>>
+>>   		if (chip->ngpio <= p->chip_hwnum) {
+>> -			dev_warn(dev, "GPIO chip %s has %d GPIOs\n",
+>> -				 chip->label, chip->ngpio);
+>> -			continue;
+>> +			dev_err(dev, "requested GPIO %d is out of range [0..%d]"
+>> +			       " for chip %s\n", idx, chip->ngpio, chip->label);
 >
-> I'm OK if they change now. I'll have trace-cmd and other users adapt.
-> As each currently has their own copy. I've been updating trace-cmd with
-> what's in tools for a while now, and plan to continue doing that until
-> we have something that seems good for a public library.
+> You may leave string literals over 80 character border. chackpatch.pl
+> will not complain about.
+>
+> I might put a) 'dev_warn(dev,', b) '"..."', and c) 'the rest'
+> on three separate lines.
 
-Okay, I'll cook the patch soon!
+Oh right, I didn't know you could do that, thanks.
 
-Thanks,
-Namhyung
+Having the message on a single line is indeed better for grepping. v3 on 
+the way...
+
+>
+>> +			return ERR_PTR(-EINVAL);
+>>   		}
+>>
+>>   		desc = gpiochip_offset_to_desc(chip, p->chip_hwnum);
+>>   		*flags = p->flags;
+>> +
+>> +		return desc;
+>>   	}
+>>
+>>   	return desc;
+>> @@ -2413,7 +2415,8 @@ static struct gpio_desc *gpiod_find(struct device *dev, const char *con_id,
+>>    * @con_id:	function within the GPIO consumer
+>>    *
+>>    * Return the GPIO descriptor corresponding to the function con_id of device
+>> - * dev, or an IS_ERR() condition if an error occured.
+>> + * dev, -ENOENT if no GPIO has been assigned to the requested function, or
+>> + * another IS_ERR() code if an error occured while trying to acquire the GPIO.
+>>    */
+>>   struct gpio_desc *__must_check gpiod_get(struct device *dev, const char *con_id)
+>>   {
+>> @@ -2430,7 +2433,9 @@ EXPORT_SYMBOL_GPL(gpiod_get);
+>>    * This variant of gpiod_get() allows to access GPIOs other than the first
+>>    * defined one for functions that define several GPIOs.
+>>    *
+>> - * Return a valid GPIO descriptor, or an IS_ERR() condition in case of error.
+>> + * Return a valid GPIO descriptor, -ENOENT if no GPIO has been assigned to the
+>> + * requested function and/or index, or another IS_ERR() code if an error
+>> + * occured while trying to acquire the GPIO.
+>>    */
+>>   struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
+>>   					       const char *con_id,
+>> @@ -2455,15 +2460,9 @@ struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
+>>   	 * Either we are not using DT or ACPI, or their lookup did not return
+>>   	 * a result. In that case, use platform lookup as a fallback.
+>>   	 */
+>> -	if (!desc || IS_ERR(desc)) {
+>> -		struct gpio_desc *pdesc;
+>> -
+>> +	if (!desc || desc == ERR_PTR(-ENOENT)) {
+>>   		dev_dbg(dev, "using lookup tables for GPIO lookup");
+>> -		pdesc = gpiod_find(dev, con_id, idx, &flags);
+>> -
+>> -		/* If used as fallback, do not replace the previous error */
+>> -		if (!IS_ERR(pdesc) || !desc)
+>> -			desc = pdesc;
+>> +		desc = gpiod_find(dev, con_id, idx, &flags);
+>>   	}
+>>
+>>   	if (IS_ERR(desc)) {
+>
+
