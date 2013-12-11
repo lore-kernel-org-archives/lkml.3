@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3LKRwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:52:41 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:47658 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab3LKRwj (ORCPT
+	id S1752015Ab3LKRxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:53:07 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:46968 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab3LKRxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:52:39 -0500
-Date: Wed, 11 Dec 2013 18:52:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/41] percpu: Add raw_cpu_ops
-Message-ID: <20131211175235.GD12431@gmail.com>
-References: <20131203233251.745099192@linux.com>
- <20131210153445.GE4610@htj.dyndns.org>
- <20131210154506.GA1884@gmail.com>
- <20131210154951.GF4610@htj.dyndns.org>
- <20131210155546.GD1995@gmail.com>
- <00000142ddb6d07d-f77cfa15-55a5-4806-891e-2d57894fc46b-000000@email.amazonses.com>
- <20131210183133.GC20770@gmail.com>
- <00000142de1ac9a3-d2b5b7fb-25c5-4bec-acbe-8be30a951bbc-000000@email.amazonses.com>
- <20131211151220.GB11048@gmail.com>
- <00000142e2c64102-07168d96-fb2f-4eeb-9b49-c3298bc81192-000000@email.amazonses.com>
+	Wed, 11 Dec 2013 12:53:05 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org
+References: <20131210001620.GA7938@www.outflux.net>
+Date: Wed, 11 Dec 2013 09:52:55 -0800
+In-Reply-To: <20131210001620.GA7938@www.outflux.net> (Kees Cook's message of
+	"Mon, 9 Dec 2013 16:16:20 -0800")
+Message-ID: <87vbyvxojs.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000142e2c64102-07168d96-fb2f-4eeb-9b49-c3298bc81192-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19PDSzG0VNGXg4hemhlfqdJLqRBTYh6ckM=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4178]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Kees Cook <keescook@chromium.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kees Cook <keescook@chromium.org> writes:
 
-* Christoph Lameter <cl@linux.com> wrote:
+> For general-purpose (i.e. distro) kernel builds it makes sense to build with
+> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+> with kexec. However, in the face of trying to lock down a system with such
+> a kernel, there needs to be a way to disable kexec (much like module loading
+> can be disabled). Without this, it is too easy for the root user to modify
+> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are
+> set.
 
-> On Wed, 11 Dec 2013, Ingo Molnar wrote:
-> 
-> > > Well this is how the x86 portions came from Peter. [...]
-> >
-> > That's an interesting piece of information, in particular because 
-> > you lost From: PeterZ authorship there, don't do that!
-> 
-> Ok will add that. There is a signoff there. Is that ok with you 
-> Peter?
+So let me get this straight.  You object to what happens in sys_reboot
+so you patch sys_kexec_load?
 
-Signoff alone does not signal authorship, only a "From: " line does.
+You give someone the privilege to boot whatever they want and yet you
+don't want to support them booting whatever they want?
 
-> Thinking about this some more: Separating these two issues would 
-> make it impossible to build x86 since the hackery in 
-> x86/include/asm/preempt.h depends on having the right names in 
-> x86/include/asm/percpu.h. Changing the names first would result in 
-> preempt.h not being usable.
+I'm sorry my brain is hurting trying to understand the logic of this
+patch.
 
-The series must be bisectable at every commit, of course.
-
-Thanks,
-
-	Ingo
+Eric
