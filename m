@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab3LKV2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:28:42 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:37587 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3LKV2h (ORCPT
+	id S1751905Ab3LKV26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:28:58 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:63323 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab3LKV2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:28:37 -0500
-Date: Wed, 11 Dec 2013 13:28:35 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: HIH-6130: Support I2C bus drivers without
- I2C_FUNC_SMBUS_QUICK
-Message-ID: <20131211212835.GA23938@roeck-us.net>
-References: <1386760273-7703-1-git-send-email-jose.goncalves@inov.pt>
- <20131211192954.GA21751@roeck-us.net>
- <52A8C25A.6000403@inov.pt>
+	Wed, 11 Dec 2013 16:28:51 -0500
+Message-ID: <1386797325.1516.275.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting
+ permanent mac address
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+CC: Dan Williams <dcbw@redhat.com>, Kalle Valo <kvalo@adurom.com>,
+        "Luciano Coelho" <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <freemangordon@abv.bg>,
+        <aaro.koskinen@iki.fi>, <pavel@ucw.cz>, <sre@ring0.de>,
+        <joni.lapilainen@gmail.com>, Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Date: Wed, 11 Dec 2013 21:28:45 +0000
+In-Reply-To: <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+	 <201312101814.35112@pali> <1386697762.30202.6.camel@dcbw.foobar.com>
+	 <201312101852.17030@pali>
+	 <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <52A8C25A.6000403@inov.pt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20352.005
+X-TM-AS-Result: No--28.573300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 07:51:54PM +0000, José Miguel Gonçalves wrote:
-> On 11-12-2013 19:29, Guenter Roeck wrote:
-> >On Wed, Dec 11, 2013 at 11:11:13AM +0000, José Miguel Gonçalves wrote:
-> >>Some I2C bus drivers do not allow zero-length data transfers which are
-> >>required to start a measurement with the HIH6130/1 sensor. Nevertheless,
-> >>we can overcome this limitation by writing a zero dummy byte. This byte
-> >>is ignored by the sensor and was verified to be working with the OMAP
-> >>I2C bus driver in a BeagleBone board.
-> >>
-> >>Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
-> >Applied, after simplifying write_length initialization a bit.
-> >
-> >Should this go to -stable ?
+On Wed, 2013-12-11 at 21:17 +0000, Ben Hutchings wrote:
+> On Tue, 2013-12-10 at 18:52 +0100, Pali RohÃ¡r wrote:
+[...]
+> > Maybe another way could be to use request_firmware to load address 
+> > from userspace... Or what do you think?
 > 
-> Any BeagleBone user that tries to use this sensor will encounter
-> this issue. As this board is very popular, this will potentially
-> solve the problems of many users. Nevertheless, it does not seems to
-> me that this patch fixes "something critical", which is one of the
-> conditions to be accepted in the -stable tree.
-> 
-Depends on the definition of "critical".
+> I think that's an even worse idea.  This is not firmware and it already
+> exists in separate storage.
+[...]
 
-Guenter
+Actually, as it seems you meant to do some kind of dynamic conversion, I
+think it's not so bad.  Unfortunately I don't think it can work as I
+explained in my other email.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
