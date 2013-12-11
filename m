@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503Ab3LKWeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 17:34:31 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:33728 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3LKWea (ORCPT
+	id S1751512Ab3LKWfz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 17:35:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50163 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab3LKWfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 17:34:30 -0500
-Date: Wed, 11 Dec 2013 14:34:26 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Nikolay Ulyanitsky <lystor@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [3.10.22+][3.12][performance regression] - huge softirq increase
- on netfilter
-Message-ID: <20131211223426.GV4208@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+Mediw7p6CEHAvP0p=MdCQmWL10QASVpxTo-_WDsvFgxziyww@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+Mediw7p6CEHAvP0p=MdCQmWL10QASVpxTo-_WDsvFgxziyww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121122-0928-0000-0000-000004930705
+	Wed, 11 Dec 2013 17:35:50 -0500
+Date: Wed, 11 Dec 2013 14:34:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] futex: Switch to USER_DS for futex test
+Message-Id: <20131211143450.329edd5199fd9a4d56abb6bc@linux-foundation.org>
+In-Reply-To: <1386758601-8520-1-git-send-email-geert@linux-m68k.org>
+References: <1386758601-8520-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 02:01:29PM +0200, Nikolay Ulyanitsky wrote:
-> Hello
-> 
-> 
-> 3.10.22 has new 2 patches that increase softirq from 0.0% to 15.0% in
-> comparison with 3.10.21 on my software routers:
-> 
-> 78ab8cb      netfilter: nf_conntrack: use RCU safe kfree for conntrack
-> extensions
+On Wed, 11 Dec 2013 11:43:21 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-This one fixes a use-after-free bug, so reverting it might be unwise.
-However, it looks like it should only be affecting networking connection
-tracking.  Is that an important part of your workload?
+> Since commit e4f2dfbb5e92be4e46c0625f4f8eb101110f756f ("m68k: implement
+> futex.h to support userspace robust futexes and PI mutexes"), the kernel
+> crashes during boot up on MC68030:
+> 
+> Data read fault at 0x00000000 in Super Data (pc=0x3afec)
+> BAD KERNEL BUSERR
+> Oops: 00000000
+> Modules linked in:
+> PC: [<0003afec>] cmpxchg_futex_value_locked+0x14/0x4a
+> SR: 2004  SP: 0082fed4  a2: 0082c000
+> d0: 00000000    d1: 00000001    d2: 00000018    d3: 00000000
+> d4: 00000061    d5: 00001000    a0: 00000000    a1: 0082e000
+> Process swapper (pid: 1, task=0082c000)
+> Frame format=B ssw=074d isc=4a80 isb=661c daddr=00000000 dobuf=00000001
+> baddr=0003aff2 dibuf=00000000 ver=f
+> Stack from 0082ff5c:
+>         002b8cb8 0082ff70 00000000 00000000 00000000 00000000 00000000 000020ac
+>         00000018 00000007 00000061 00001000 00000000 00000000 002cab50 00002008
+>         002b3a56 002b8ca4 0082c3f0 00000000 0082c53c 001e316a 00000000 00000000
+>         001e3172 001e316a 000025d4 00000000 00000000 00000000 00000000 00000000
+>         00000000 00000000 00000000 00000000 00000000 00000000 00000000 20000000
+>         00000000
+> Call Trace: [<002b8cb8>] futex_init+0x14/0x54
+>  [<000020ac>] do_one_initcall+0xa4/0x144
+>  [<00001000>] kernel_pg_dir+0x0/0x1000
+>  [<00002008>] do_one_initcall+0x0/0x144
+>  [<002b3a56>] kernel_init_freeable+0xca/0x152
+>  [<002b8ca4>] futex_init+0x0/0x54
+>  [<001e316a>] kernel_init+0x0/0xc8
+>  [<001e3172>] kernel_init+0x8/0xc8
+>  [<001e316a>] kernel_init+0x0/0xc8
+>  [<000025d4>] ret_from_kernel_thread+0xc/0x14
+> 
+> This happens because the futex test in futex_init() lacks a switch to the
+> USER_DS address space, while cmpxchg_futex_value_locked() and
+> futex_atomic_cmpxchg_inatomic() operate on userspace pointers (albeit NULL
+> for this particular test).
+> 
+> Fix this by switching to USER_DS before running the test, and restoring the
+> old address space afterwards.
+> 
+> ...
+>
+>  static int __init futex_init(void)
+>  {
+> +	mm_segment_t fs;
+>  	u32 curval;
+>  	int i;
+>  
+> @@ -2745,8 +2747,11 @@ static int __init futex_init(void)
+>  	 * implementation, the non-functional ones will return
+>  	 * -ENOSYS.
+>  	 */
+> +	fs = get_fs();
+> +	set_fs(USER_DS);
+>  	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+>  		futex_cmpxchg_enabled = 1;
+> +	set_fs(fs);
 
-Also, are you checking overall CPU consumption?  One effect of this
-patch is to shift overhead from process level to softirq, so please check
-process-level CPU consumption to make sure you have a fair comparison.
-
-> 873be93      ipc/sem.c: synchronize semop and semctl with IPC_RMID
-
-This one also fixes some bugs.  But I don't immediately see why it
-should increase softirq CPU consumption.
-
-						Thanx, Paul
-
-> Screenshots:
-> Server1 (ipt_NETFLOW):     http://s12.postimg.org/5eprc03tp/vega.png
-> Server2 (NAT):    http://s27.postimg.org/swj3he8dv/mimosa.png
-> 
-> 
-> Server1:
-> 3.10.21: softirq = 0%
-> 3.10.22+, 3.12.4: softirq = 15%
-> 3.10.22+, 3.12.4 WITHOUT 78ab8cb, WITH 873be93: softirq = 1%
-> 3.10.22+, 3.12.4 WITHOUT 78ab8cb, WITHOUT 873be93: softirq = 0%
-> 
-> 
-> Hardware:
-> 2 x Xeon 3.2GHz, Intel SE7520, 4 x Intel 82576 Gigabit Network
-> 
-> CentOS 6.5 x86_64
-> 
-> 
-> Kernel configs:
-> 3.12.4: http://pastebin.com/ugTWFeJg
-> 3.10.22: http://pastebin.com/N8z4UAV5
-> 
-> 
-> Please fix/revert these patches.
-> 
-> 
-> Thanks
-> 
-> 
-> –
-> 
-> With best regards,
-> 
-> Nikolay Ulyanitsky
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+hm.  Are we sure that a reference to NULL will continue to fault on all
+architectures when switched to USER_DS?
 
