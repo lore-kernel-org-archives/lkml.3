@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab3LKIiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:38:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36969 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab3LKIiK (ORCPT
+	id S1751183Ab3LKIoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 03:44:25 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42435 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab3LKIoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:38:10 -0500
-Date: Wed, 11 Dec 2013 08:38:04 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next 2/3] batman-adv: Use seq_overflow
-Message-ID: <20131211083804.GV10323@ZenIV.linux.org.uk>
-References: <cover.1386738050.git.joe@perches.com>
- <e7104b35287b1e1ec456734c1b5e1aa98dac99f8.1386738050.git.joe@perches.com>
- <20131211075526.GR10323@ZenIV.linux.org.uk>
- <20131211080504.GT10323@ZenIV.linux.org.uk>
- <1386750377.8168.37.camel@joe-AO722>
+	Wed, 11 Dec 2013 03:44:23 -0500
+X-AuditID: 9c930179-b7ce4ae000000e86-36-52a825e5aba1
+Date: Wed, 11 Dec 2013 17:47:19 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 7/7] mm/migrate: remove result argument on page
+ allocation function for migration
+Message-ID: <20131211084719.GA2043@lge.com>
+References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1386580248-22431-8-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000142d83adfc7-81b70cc9-c87b-4e7e-bd98-0a97ee21db31-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386750377.8168.37.camel@joe-AO722>
+In-Reply-To: <00000142d83adfc7-81b70cc9-c87b-4e7e-bd98-0a97ee21db31-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 12:26:17AM -0800, Joe Perches wrote:
-> On Wed, 2013-12-11 at 08:05 +0000, Al Viro wrote:
-> > On Wed, Dec 11, 2013 at 07:55:26AM +0000, Al Viro wrote:
-> > 
-> > > This sucker should return 0.  Insufficiently large buffer will be handled
-> > > by caller, TYVM, if you give that caller a chance to do so.  Returning 1
-> > > from ->show() is a bug in almost all cases, and definitely so in this one.
-> > > 
-> > > Just in case somebody decides that above is worth copying: It Is Not.
-> > > Original code is buggy, plain and simple.  This one trades the older
-> > > bug ("fail with -EINVAL whenever the buffer is too small") with just as buggy
-> > > "silently skip an entry entirely whenever the buffer is too small".
-> > > 
-> > > Don't Do That.
-> > 
-> > Pardon - Joe has made seq_overflow return -1 instead of true.  Correction
-> > to the above, then - s/This trades.*\./This is just as buggy./
+On Mon, Dec 09, 2013 at 04:40:06PM +0000, Christoph Lameter wrote:
+> On Mon, 9 Dec 2013, Joonsoo Kim wrote:
 > 
-> Yeah, I started to use true/false, 0/1, but thought
-> I needed to match what seq_printf/seq_vprintf does.
+> > First, we don't use error number in fail case. Call-path related to
+> > new_page_node() is shown in the following.
+> >
+> > do_move_page_to_node_array() -> migrate_pages() -> unmap_and_move()
+> > -> new_page_node()
+> >
+> > If unmap_and_move() failed, migrate_pages() also returns err, and then
+> > do_move_page_to_node_array() skips to set page's status to user buffer.
+> > So we don't need to set error number to each pages on failure case.
 > 
-> > Conclusion is still the same - Don't Do That.  Returning -1 on insufficiently
-> > large buffer is a bug, plain and simple.
-> 
-> int seq_vprintf(struct seq_file *m, const char *f, va_list args)
-> {
-> 	int len;
-> 
-> 	if (m->count < m->size) {
-> 		len = vsnprintf(m->buf + m->count, m->size - m->count, f, args);
-> 		if (m->count + len < m->size) {
-> 			m->count += len;
-> 			return 0;
-> 		}
-> 	}
-> 	seq_set_overflow(m);
-> 	return -1;
-> }
-> EXPORT_SYMBOL(seq_vprintf);
-> 
-> int seq_printf(struct seq_file *m, const char *f, ...)
-> {
-> 	int ret;
-> 	va_list args;
-> 
-> 	va_start(args, f);
-> 	ret = seq_vprintf(m, f, args);
-> 	va_end(args);
-> 
-> 	return ret;
-> }
-> EXPORT_SYMBOL(seq_printf);
-> 
-> > And this patch series is completely misguided - it doesn't fix any bugs
-> > *and* it provides a misleading example for everyone.  See the reaction
-> > right in this thread, proposing to spread the same bug to currently
-> > working iterators.
-> 
-> Anyway, changing seq_overflow is easy enough
-> 
-> You prefer this?
-> 
-> bool seq_overflow(struct seq_file *seq)
-> {
-> 	return m->count == m->size;
-> }
+> I dont get this. new_page_node() sets the error condition in the
+> page_to_node array before this patch. There is no post processing in
+> do_move_page_to_node_array(). The function simply returns and relies on
+> new_page_node() to have set the page status. do_move_pages() then returns
+> the page status back to userspace. How does the change preserve these
+> diagnostics?
 
-I prefer a series that starts with fixing the obvious bugs (i.e. places
-where we return seq_printf/seq_puts/seq_putc return value from ->show()).
-All such places should return 0.  Then we need to look at the remaining
-places that check return value of seq_printf() et.al.  And decide whether
-the callers really care about it.
+Hello, Christoph.
 
-Theoretically, there is a legitimate case when we want to look at that
-return value.  Namely,
-	seq_print(...)
-	if (!overflowed)
-		do tons of expensive calculations
-		generate more output
-	return 0
-That is the reason why those guys hadn't been returning void to start with.
-And yes, it was inviting bugs with ->show() returning -1 on overflows.
-Bad API design, plain and simple.
+In do_move_pages(), if error occurs, 'goto out_pm' is executed and the
+page status doesn't back to userspace. So we don't need to store err number.
 
-I'm not sure we actually have any instances of that legitimate case, TBH.
-_IF_ we do, we ought to expose seq_overflow() (with saner name - this one
-invites the same "it's an error, need to report it" kind of bugs) and use
-it in such places.  But that needs to be decided on per-caller basis.  And
-I'd expect that there would be few enough such places after we kill the
-obvious bugs.
+Perhaps my description should be changed something like below.
+
+  *do_move_pages()* -> do_move_page_to_node_array() -> migrate_pages()
+  -> unmap_and_move() -> new_page_node()
+
+  If unmap_and_move() failed, migrate_pages() also returns err, and then
+  *do_move_pages()* skips to set page's status to user buffer.
+  So we don't need to set error number to each pages on failure case.
+
+Is it sufficient explanation?
+
+> 
+> > Next, we don't need to set node id of the new page in unmap_and_move(),
+> > since it cannot be different with pm->node. In new_page_node(), we always
+> > try to allocate the page in exact node by referencing pm->node. So it is
+> > sufficient to set node id of the new page in new_page_node(), instead of
+> > unmap_and_move().
+> 
+> Thats a good thought.
+
+Thanks!
