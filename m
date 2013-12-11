@@ -1,45 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab3LKLw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 06:52:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54468 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3LKLwz (ORCPT
+	id S1751804Ab3LKMAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:00:23 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:55649 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3LKMAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 06:52:55 -0500
-Date: Wed, 11 Dec 2013 12:52:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <bitbucket@online.de>,
-        Len Brown <lenb@kernel.org>, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-Message-ID: <20131211115239.GA21999@twins.programming.kicks-ass.net>
-References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
- <1386478624.4748.19.camel@marge.simpson.net>
- <CAJvTdKn_2mihtMLiQVNCOp_zokx8CsSr2c5NhbkbfJ-qvma-8Q@mail.gmail.com>
- <1386559014.4875.16.camel@marge.simpson.net>
- <1386652637.5374.72.camel@marge.simpson.net>
- <alpine.DEB.2.02.1312101458040.28330@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1312110030330.28330@ionos.tec.linutronix.de>
- <1386732093.5964.6.camel@marge.simpson.net>
- <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
- <20131211113839.GF21683@pd.tnic>
+	Wed, 11 Dec 2013 07:00:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211113839.GF21683@pd.tnic>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
+Date: Wed, 11 Dec 2013 13:00:18 +0100
+Message-ID: <CACRpkdb03X_Z7amX-vAVX8KboeCo3ia6oqv8KW79WY=nZXV7wQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] net: rfkill: gpio: convert to descriptor-based
+ GPIO interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-netdev@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 12:38:39PM +0100, Borislav Petkov wrote:
-> Right, if it turns out that this is really the case and that this
-> erratum hasn't been fixed for models later than 29 - we'd need the
-> additional model numbers to set X86_FEATURE_CLFLUSH_MONITOR correctly.
+On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-You also need: https://lkml.org/lkml/2013/11/19/143
+> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>
+> Convert to the safer gpiod_* family of API functions.
+>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  net/rfkill/rfkill-gpio.c | 77 +++++++++++++++++++++---------------------------
+>  1 file changed, 34 insertions(+), 43 deletions(-)
+>
+> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+> index 5620d3c07479..bd2a5b90400c 100644
+> --- a/net/rfkill/rfkill-gpio.c
+> +++ b/net/rfkill/rfkill-gpio.c
+> @@ -25,15 +25,15 @@
+>  #include <linux/clk.h>
+>  #include <linux/slab.h>
+>  #include <linux/acpi.h>
+> -#include <linux/acpi_gpio.h>
+> +#include <linux/gpio/consumer.h>
+>
+>  #include <linux/rfkill-gpio.h>
+>
+>  struct rfkill_gpio_data {
+>         const char              *name;
+>         enum rfkill_type        type;
+> -       int                     reset_gpio;
+> -       int                     shutdown_gpio;
+> +       struct gpio_desc        *reset_gpio;
+> +       struct gpio_desc        *shutdown_gpio;
+>
+>         struct rfkill           *rfkill_dev;
+>         char                    *reset_name;
+> @@ -48,19 +48,15 @@ static int rfkill_gpio_set_power(void *data, bool blocked)
+>         struct rfkill_gpio_data *rfkill = data;
+>
+>         if (blocked) {
+> -               if (gpio_is_valid(rfkill->shutdown_gpio))
+> -                       gpio_set_value(rfkill->shutdown_gpio, 0);
+> -               if (gpio_is_valid(rfkill->reset_gpio))
+> -                       gpio_set_value(rfkill->reset_gpio, 0);
+> +               gpiod_set_value(rfkill->shutdown_gpio, 0);
+> +               gpiod_set_value(rfkill->reset_gpio, 0);
+>                 if (!IS_ERR(rfkill->clk) && rfkill->clk_enabled)
+>                         clk_disable(rfkill->clk);
+>         } else {
+>                 if (!IS_ERR(rfkill->clk) && !rfkill->clk_enabled)
+>                         clk_enable(rfkill->clk);
+> -               if (gpio_is_valid(rfkill->reset_gpio))
+> -                       gpio_set_value(rfkill->reset_gpio, 1);
+> -               if (gpio_is_valid(rfkill->shutdown_gpio))
+> -                       gpio_set_value(rfkill->shutdown_gpio, 1);
+> +               gpiod_set_value(rfkill->reset_gpio, 1);
+> +               gpiod_set_value(rfkill->shutdown_gpio, 1);
+>         }
+>
+>         rfkill->clk_enabled = blocked;
+> @@ -83,8 +79,6 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
+>
+>         rfkill->name = dev_name(dev);
+>         rfkill->type = (unsigned)id->driver_data;
+> -       rfkill->reset_gpio = acpi_get_gpio_by_index(dev, 0, NULL);
+> -       rfkill->shutdown_gpio = acpi_get_gpio_by_index(dev, 1, NULL);
+>
+>         return 0;
+>  }
+> @@ -94,8 +88,9 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>         struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
+>         struct rfkill_gpio_data *rfkill;
+>         const char *clk_name = NULL;
+> -       int ret = 0;
+> -       int len = 0;
+> +       struct gpio_desc *gpio;
+> +       int ret;
+> +       int len;
+>
+>         rfkill = devm_kzalloc(&pdev->dev, sizeof(*rfkill), GFP_KERNEL);
+>         if (!rfkill)
+> @@ -109,28 +104,10 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>                 clk_name = pdata->power_clk_name;
+>                 rfkill->name = pdata->name;
+>                 rfkill->type = pdata->type;
+> -               rfkill->reset_gpio = pdata->reset_gpio;
+> -               rfkill->shutdown_gpio = pdata->shutdown_gpio;
+>         } else {
+>                 return -ENODEV;
+>         }
+>
+> -       /* make sure at-least one of the GPIO is defined and that
+> -        * a name is specified for this instance */
+> -       if ((!gpio_is_valid(rfkill->reset_gpio) &&
+> -            !gpio_is_valid(rfkill->shutdown_gpio)) || !rfkill->name) {
+> -               pr_warn("%s: invalid platform data\n", __func__);
+> -               return -EINVAL;
+> -       }
+> -
+> -       if (pdata && pdata->gpio_runtime_setup) {
+> -               ret = pdata->gpio_runtime_setup(pdev);
+> -               if (ret) {
+> -                       pr_warn("%s: can't set up gpio\n", __func__);
+> -                       return ret;
+> -               }
+> -       }
+> -
+>         len = strlen(rfkill->name);
+>         rfkill->reset_name = devm_kzalloc(&pdev->dev, len + 7, GFP_KERNEL);
+>         if (!rfkill->reset_name)
+> @@ -145,20 +122,34 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>
+>         rfkill->clk = devm_clk_get(&pdev->dev, clk_name);
+>
+> -       if (gpio_is_valid(rfkill->reset_gpio)) {
+> -               ret = devm_gpio_request_one(&pdev->dev, rfkill->reset_gpio,
+> -                                           0, rfkill->reset_name);
+> -               if (ret) {
+> -                       pr_warn("%s: failed to get reset gpio.\n", __func__);
+> +       gpio = devm_gpiod_get_index(&pdev->dev, rfkill->reset_name, 0);
+> +       if (!IS_ERR(gpio)) {
+> +               ret = gpiod_direction_output(gpio, 0);
+> +               if (ret)
+>                         return ret;
+> -               }
+> +               rfkill->reset_gpio = gpio;
+> +       }
+> +
+> +       gpio = devm_gpiod_get_index(&pdev->dev, rfkill->shutdown_name, 1);
+> +       if (!IS_ERR(gpio)) {
+> +               ret = gpiod_direction_output(gpio, 0);
+> +               if (ret)
+> +                       return ret;
+> +               rfkill->shutdown_gpio = gpio;
+>         }
+>
+> -       if (gpio_is_valid(rfkill->shutdown_gpio)) {
+> -               ret = devm_gpio_request_one(&pdev->dev, rfkill->shutdown_gpio,
+> -                                           0, rfkill->shutdown_name);
+> +       /* Make sure at-least one of the GPIO is defined and that
+> +        * a name is specified for this instance
+> +        */
+> +       if ((!rfkill->reset_gpio && !rfkill->shutdown_gpio) || !rfkill->name) {
+> +               dev_err(&pdev->dev, "invalid platform data\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       if (pdata && pdata->gpio_runtime_setup) {
+> +               ret = pdata->gpio_runtime_setup(pdev);
+>                 if (ret) {
+> -                       pr_warn("%s: failed to get shutdown gpio.\n", __func__);
+> +                       dev_err(&pdev->dev, "can't set up gpio\n");
+>                         return ret;
+>                 }
+>         }
 
-Because obviously not all mwait idle loops check that cpu bit.
+DavidM: can I have an ACK from you to apply this patch through the GPIO
+tree?
+
+Yours,
+Linus Walleij
