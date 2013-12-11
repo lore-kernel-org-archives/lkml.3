@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3LKMwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 07:52:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40653 "EHLO mga09.intel.com"
+	id S1753287Ab3LKMxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 07:53:35 -0500
+Received: from mga01.intel.com ([192.55.52.88]:35059 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab3LKMk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 07:40:28 -0500
+	id S1752166Ab3LKMjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 07:39:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.93,871,1378882800"; 
-   d="scan'208";a="450498118"
+   d="scan'208";a="448280302"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -19,9 +19,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v0 29/71] perf pmu: Let pmu's with no events show up on perf list
-Date: Wed, 11 Dec 2013 14:36:41 +0200
-Message-Id: <1386765443-26966-30-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v0 25/71] perf evsel: Add 'no_aux_samples' option
+Date: Wed, 11 Dec 2013 14:36:37 +0200
+Message-Id: <1386765443-26966-26-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc2
 In-Reply-To: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -31,65 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-perf list only lists PMUs with events.  Add a
-flag to cause a PMU to be also listed separately.
+Add an option to prevent additional
+samples being added to a selected
+event by perf_evsel__config().
+
+This is needed when using the sched_switch
+tracepoint to follow object code execution.
+Since sched_switch will be used only for
+switch information, additional sampling is
+wasteful.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/pmu.c | 13 +++++++++++--
- tools/perf/util/pmu.h |  1 +
- 2 files changed, 12 insertions(+), 2 deletions(-)
+ tools/perf/util/evsel.c | 6 +++---
+ tools/perf/util/evsel.h | 1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index a742eeb..c6c240f 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -733,15 +733,18 @@ void print_pmu_events(const char *event_glob, bool name_only)
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 7b510fd..dbf737c 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -596,7 +596,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		attr->mmap_data = track;
+ 	}
  
- 	pmu = NULL;
- 	len = 0;
--	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
- 		list_for_each_entry(alias, &pmu->aliases, list)
- 			len++;
-+		if (pmu->selectable)
-+			len++;
-+	}
- 	aliases = malloc(sizeof(char *) * len);
- 	if (!aliases)
- 		return;
- 	pmu = NULL;
- 	j = 0;
--	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-+	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
- 		list_for_each_entry(alias, &pmu->aliases, list) {
- 			char *name = format_alias(buf, sizeof(buf), pmu, alias);
- 			bool is_cpu = !strcmp(pmu->name, "cpu");
-@@ -758,6 +761,12 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			aliases[j] = strdup(aliases[j]);
- 			j++;
- 		}
-+		if (pmu->selectable) {
-+			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
-+			aliases[j] = strdup(buf);
-+			j++;
-+		}
-+	}
- 	len = j;
- 	qsort(aliases, len, sizeof(char *), cmp_string);
- 	for (j = 0; j < len; j++) {
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 437fdb2..d5266d1 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -18,6 +18,7 @@ struct perf_event_attr;
- struct perf_pmu {
- 	char *name;
- 	__u32 type;
-+	bool selectable;
- 	struct perf_event_attr *default_config;
- 	struct cpu_map *cpus;
- 	struct list_head format;
+-	if (opts->call_graph) {
++	if (opts->call_graph && !evsel->no_aux_samples) {
+ 		perf_evsel__set_sample_bit(evsel, CALLCHAIN);
+ 
+ 		if (opts->call_graph == CALLCHAIN_DWARF) {
+@@ -619,7 +619,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 	     target__has_cpu(&opts->target) || per_cpu))
+ 		perf_evsel__set_sample_bit(evsel, TIME);
+ 
+-	if (opts->raw_samples) {
++	if (opts->raw_samples && !evsel->no_aux_samples) {
+ 		perf_evsel__set_sample_bit(evsel, TIME);
+ 		perf_evsel__set_sample_bit(evsel, RAW);
+ 		perf_evsel__set_sample_bit(evsel, CPU);
+@@ -632,7 +632,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		attr->watermark = 0;
+ 		attr->wakeup_events = 1;
+ 	}
+-	if (opts->branch_stack) {
++	if (opts->branch_stack && !evsel->no_aux_samples) {
+ 		perf_evsel__set_sample_bit(evsel, BRANCH_STACK);
+ 		attr->branch_sample_type = opts->branch_stack;
+ 	}
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 8120eeb..af38e2c 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -83,6 +83,7 @@ struct perf_evsel {
+ 	int			is_pos;
+ 	bool 			supported;
+ 	bool 			needs_swap;
++	bool			no_aux_samples;
+ 	/* parse modifier helper */
+ 	int			exclude_GH;
+ 	int			nr_members;
 -- 
 1.8.5.1
 
