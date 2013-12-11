@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab3LKVJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 16:09:55 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:49180 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab3LKVJw (ORCPT
+	id S1751483Ab3LKVNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 16:13:35 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:45889 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab3LKVNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 16:09:52 -0500
-Date: Wed, 11 Dec 2013 22:09:51 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: David Miller <davem@davemloft.net>
-Cc: dvlasenk@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, jpirko@redhat.com
-Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
-Message-ID: <20131211210951.GC4675@order.stressinduktion.org>
-Mail-Followup-To: David Miller <davem@davemloft.net>, dvlasenk@redhat.com,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-	kaber@trash.net, jpirko@redhat.com
-References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com> <20131211192138.GB4675@order.stressinduktion.org> <20131211.155452.558417595732985707.davem@davemloft.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131211.155452.558417595732985707.davem@davemloft.net>
+	Wed, 11 Dec 2013 16:13:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <87vbyvxojs.fsf@xmission.com>
+References: <20131210001620.GA7938@www.outflux.net>
+	<87vbyvxojs.fsf@xmission.com>
+Date: Wed, 11 Dec 2013 13:13:32 -0800
+X-Google-Sender-Auth: yxCaGKCey-x9k-rxOnaANAdh9lo
+Message-ID: <CAGXu5j+hCf8zkO3FEJ=ZO++unnpzL8GLivSNqy=dYFzJah0WCg@mail.gmail.com>
+Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
+From: Kees Cook <keescook@chromium.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        kexec@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 03:54:52PM -0500, David Miller wrote:
-> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Date: Wed, 11 Dec 2013 20:21:38 +0100
-> 
-> > On Wed, Dec 11, 2013 at 12:45:14PM +0100, Denys Vlasenko wrote:
-> >> If ipv6 auto-configuration does not work, currently it's hard
-> >> to track what's going on. This change adds log messages
-> >> (at debug level) on every code path where ipv6 autoconf fails.
-> >> 
-> >> v2: fixed indentation in multi-line log output statements.
-> > 
-> > Have you seen lots of those problems? Some of those seem like very
-> > serious problems and maybe could also deserve a pr_warn or pr_err.
-> > 
-> > I hope these are one-time errors, so I don't think counters would
-> > be helpful.
-> 
-> I still think that statitics would better serve this issue.
-> 
-> For one thing, the event would always be counted, whereas with
-> pr_debug() someone has to turn on dynamic debugging in order
-> to see the message.
+On Wed, Dec 11, 2013 at 9:52 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Kees Cook <keescook@chromium.org> writes:
+>
+>> For general-purpose (i.e. distro) kernel builds it makes sense to build with
+>> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
+>> with kexec. However, in the face of trying to lock down a system with such
+>> a kernel, there needs to be a way to disable kexec (much like module loading
+>> can be disabled). Without this, it is too easy for the root user to modify
+>> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are
+>> set.
+>
+> So let me get this straight.  You object to what happens in sys_reboot
+> so you patch sys_kexec_load?
 
-I proposed switching some of these to pr_warn/err. pr_debugs get used very
-seldomly, I agree.
+Yes; it's the entry point for loading the image used for crashes and
+LINUX_REBOOT_CMD_KEXEC.
 
-> You can make them part of the per-inet6_dev MIB, and therefore
-> implicitly letting the admin know what interface the events
-> occurred on.
+> You give someone the privilege to boot whatever they want and yet you
+> don't want to support them booting whatever they want?
+>
+> I'm sorry my brain is hurting trying to understand the logic of this
+> patch.
 
-If such an error happens I would try to recreate the interface (in case of
-virtual ones), thus erasing the statistics.
+I'm not trying to claim this fixes all attack vectors from a root
+user. That is exceedingly hard. :) However, kexec gives the root user
+a trivial (and undetectable) way to modify the running kernel.
+Providing an option to block sys_kexec_load for systems that will
+never use it (or will use it once at startup) is valuable in several
+situations. There's no reason to make an attacker's job easier, and
+this doesn't get in any one else's way.
 
-> I would even prefer an approach involving signalling netlink
-> events in such circumstances with more detailed information.
+-Kees
 
-That sounds good. But I would like to hear how often these problems
-really occur first. Maybe Denys has some numbers? If that happens a lot
-I would like to check if the notifier_chains are correctly setup so that
-interfaces correclty notify ipv6 to retry link local address generation.
-
-Greetings,
-
-  Hannes
-
+-- 
+Kees Cook
+Chrome OS Security
