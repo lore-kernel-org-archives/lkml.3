@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab3LKRxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 12:53:07 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:46968 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3LKRxF (ORCPT
+	id S1752040Ab3LKRxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 12:53:34 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:34453 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab3LKRxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 12:53:05 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Rob Landley <rob@landley.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org
-References: <20131210001620.GA7938@www.outflux.net>
-Date: Wed, 11 Dec 2013 09:52:55 -0800
-In-Reply-To: <20131210001620.GA7938@www.outflux.net> (Kees Cook's message of
-	"Mon, 9 Dec 2013 16:16:20 -0800")
-Message-ID: <87vbyvxojs.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 11 Dec 2013 12:53:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19PDSzG0VNGXg4hemhlfqdJLqRBTYh6ckM=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4178]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Kees Cook <keescook@chromium.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v2] kexec: add sysctl to disable kexec
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <1342235583.20131211182804@eikelenboom.it>
+References: <1507831110.20131018194349@eikelenboom.it> <792757788.20131023142849@eikelenboom.it>
+ <1819533168.20131211161710@eikelenboom.it> <CAB=NE6V-RSnqbAC-0tfYK=WGJLp1aPC2UpFDurs49h+wXr9UfQ@mail.gmail.com>
+ <1818324675.20131211175350@eikelenboom.it> <CAB=NE6Wf=T0bGLSYPDyb=-fMAVnGcbGkeaBiNrzwV-Lpxr6VZg@mail.gmail.com>
+ <1342235583.20131211182804@eikelenboom.it>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 11 Dec 2013 18:53:07 +0100
+X-Google-Sender-Auth: xrjOjkcAeAqACU-NoVY01jql24s
+Message-ID: <CAB=NE6UfumA2xez1DvtDSBDZ72WF_tOozFo_8LRnMryYiSqD-A@mail.gmail.com>
+Subject: Re: [cfg80211 / iwlwifi] setting wireless regulatory domain doesn't work.
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: "Berg, Johannes" <johannes.berg@intel.com>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
+On Wed, Dec 11, 2013 at 6:28 PM, Sander Eikelenboom
+<linux@eikelenboom.it> wrote:
+> Wednesday, December 11, 2013, 6:14:16 PM, you wrote:
+>> Yeap, that's the case for Intel Atheros, and I think nowadays new
+>> broadcom upstream drivers too. Users should not have to be involved on
+>> setting the regulatory domain, everything should just work
+>> automatically.
+>
+> Erhmm yes that works, under the assumption that the device is not leaving the country it was programmed for at the factory.
 
-> For general-purpose (i.e. distro) kernel builds it makes sense to build with
-> CONFIG_KEXEC to allow end users to choose what kind of things they want to do
-> with kexec. However, in the face of trying to lock down a system with such
-> a kernel, there needs to be a way to disable kexec (much like module loading
-> can be disabled). Without this, it is too easy for the root user to modify
-> kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are
-> set.
+Moving out of a region that you purchased a device is called to "world
+roam". Believe it or not some devices are designed with the intent you
+do not take it out of a country. The Playstation comes to mind as an
+example but I believe some Apple tablets are also in the same
+situation. Some devices like mobile phones obviously need to support
+world roaming and they do, what they do then is build architecture to
+support a base set and then rely on your APs around to see the country
+IE to determine region. Some other devices rely on cellular base
+station information, but that is allowed only in a few countries right
+now and in the US at least this requires some sort of special review
+from FCC on the design. We support all this in the Linux kernel today,
+its up to system integrators to do things and certify things properly.
 
-So let me get this straight.  You object to what happens in sys_reboot
-so you patch sys_kexec_load?
+> (Or you like to be limited in your abilities, channel 12 and 13 are legal here)
+> That there is a restriction on boot or on first use, i can understand. Crippling a device for it's life time though.
 
-You give someone the privilege to boot whatever they want and yet you
-don't want to support them booting whatever they want?
+The best way to address all this is by automatic region awareness and
+doing the right thing on devices, this however requires good
+architecture / calibration data  / etc and all that needs to be
+verified by the system integrators, and finally they need to be
+certified. If you want to hack your firmware and software go at it,
+just be aware there are reasons for things.
 
-I'm sorry my brain is hurting trying to understand the logic of this
-patch.
+>> It doesn't seem like you are getting your original requests getting
+>> processed, so I don't think CRDA is passing it. Can you verify running
+>> from CRDA code:
+>
+> They don't get processed unless i remove the return from the code as i indicated.
+> If i remove that return it processes the request.
+>
+>> ./regdbdump /usr/lib/crda/regulatory.bin
+>
+> Although it's in a different location on Debian, /lib/crda/regulatory.bin
+> the dump seems fine.
 
-Eric
+OK thanks. Can you send a patch of what exact change you made, it was
+unclear from the paste you made.
+
+diff -u file.c.orig file.c
+
+  Luis
