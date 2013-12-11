@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab3LKKSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:18:12 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52686 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab3LKKQU (ORCPT
+	id S1751398Ab3LKKUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 05:20:38 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:36403 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750960Ab3LKKUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 05:16:20 -0500
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v6 3/6] sched/numa: use wrapper function task_node to get node which task is on
-Date: Wed, 11 Dec 2013 18:15:58 +0800
-Message-Id: <1386756961-3887-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1386756961-3887-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386756961-3887-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121110-1618-0000-0000-0000051E140B
+	Wed, 11 Dec 2013 05:20:32 -0500
+Date: Wed, 11 Dec 2013 10:20:25 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, toshi.kani@hp.com
+Subject: Re: [PATCH v5 01/14] x86/mm: sparse warning fix for early_memremap
+Message-ID: <20131211102025.GB19196@console-pimps.org>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-2-git-send-email-dyoung@redhat.com>
+ <20131209150521.GE31650@pd.tnic>
+ <20131210021221.GA3800@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210021221.GA3800@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- v2 -> v3:
-  * tranlate cpu_to_node(task_cpu(p)) to task_node(p) in sched/debug.c
+On Tue, 10 Dec, at 10:12:21AM, Dave Young wrote:
+> On 12/09/13 at 04:05pm, Borislav Petkov wrote:
+> > On Mon, Dec 09, 2013 at 05:42:14PM +0800, Dave Young wrote:
+> > > There's a lot of sparse warnings for code like below:
+> > > void *a = early_memremap(phys_addr, size);
+> > > 
+> > > early_memremap intend to map kernel memory with ioremap facility, the return
+> > > pointer should be a kernel ram pointer instead of iomem one.
+> > > 
+> > > For making the function clearer and supressing sparse warnings this patch
+> > > do below two things:
+> > > 1. cast to (__force void *) for the return value of early_memremap
+> > 
+> > I'd guess this is to shut up the __iomem thing? And we're getting that
+> > because we're using ioremap, ... hohum...
+> 
+> Yes, IMHO early_memremap really should not return __iomem pointer since it's
+> *memremap*... 
 
-Use wrapper function task_node to get node which task is on.
+This needs reviewing by at least one of the x86 folks, but it certainly
+makes sense to me.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- kernel/sched/debug.c |    2 +-
- kernel/sched/fair.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 5c34d18..374fe04 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -139,7 +139,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
- 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
- #endif
- #ifdef CONFIG_NUMA_BALANCING
--	SEQ_printf(m, " %d", cpu_to_node(task_cpu(p)));
-+	SEQ_printf(m, " %d", task_node(p));
- #endif
- #ifdef CONFIG_CGROUP_SCHED
- 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index acdef27..c3f6ff9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1216,7 +1216,7 @@ static int task_numa_migrate(struct task_struct *p)
- 	 * elsewhere, so there is no point in (re)trying.
- 	 */
- 	if (unlikely(!sd)) {
--		p->numa_preferred_nid = cpu_to_node(task_cpu(p));
-+		p->numa_preferred_nid = task_node(p);
- 		return -EINVAL;
- 	}
- 
-@@ -1283,7 +1283,7 @@ static void numa_migrate_preferred(struct task_struct *p)
- 	p->numa_migrate_retry = jiffies + HZ;
- 
- 	/* Success if task is already running on preferred CPU */
--	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
-+	if (task_node(p) == p->numa_preferred_nid)
- 		return;
- 
- 	/* Otherwise, try migrate to a CPU on the preferred node */
 -- 
-1.7.5.4
-
+Matt Fleming, Intel Open Source Technology Center
