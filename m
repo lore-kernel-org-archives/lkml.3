@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3LKJP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 04:15:57 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:56791 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab3LKJPt (ORCPT
+	id S1751483Ab3LKJRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 04:17:50 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:61327 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab3LKJRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 04:15:49 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH RFC] net: of_mdio: Scan PHYs which have device_type set to ethernet-phy
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Cc: devicetree@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <1695129.4QIGmmVPkX@lenovo>
-References: <1384441556-20674-1-git-send-email-srinivas.kandagatla@st.com> < 1695129.4QIGmmVPkX@lenovo>
-Date: Wed, 11 Dec 2013 09:15:44 +0000
-Message-Id: <20131211091544.EA4F7C4061A@trevor.secretlab.ca>
+	Wed, 11 Dec 2013 04:17:45 -0500
+Date: Wed, 11 Dec 2013 09:17:39 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 07/15] mfd: menelaus: Limit the usage of the_menelaus
+Message-ID: <20131211091739.GB16780@lee--X1>
+References: <20131209161422.GC24047@saruman.home>
+ <1386606085-26838-1-git-send-email-balbi@ti.com>
+ <1386606085-26838-7-git-send-email-balbi@ti.com>
+ <20131210085701.GP12675@lee--X1>
+ <20131210163220.GE22750@saruman.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131210163220.GE22750@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013 07:15:54 +0000, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> Le jeudi 14 novembre 2013, 15:05:56 Srinivas Kandagatla a écrit :
-> > According to Documentation/devicetree/bindings/net/phy.txt device_type
-> > property of PHY nodes is mandatory, which should be set to
-> > "ethernet-phy". This patch adds check in scanning phys and only scans
-> > node which have device-type set to "ethernet-phy".
-> 
-> Please CC netdev@vger.kernel.org as there might be networking folks not 
-> actively following devicetree-discuss.
-> 
-> > 
-> > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> > ---
-> >  drivers/of/of_mdio.c |    7 +++++++
-> >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> > index d5a57a9..78c53c7 100644
-> > --- a/drivers/of/of_mdio.c
-> > +++ b/drivers/of/of_mdio.c
-> > @@ -57,6 +57,9 @@ int of_mdiobus_register(struct mii_bus *mdio, struct
-> > device_node *np)
-> > 
-> >  	/* Loop over the child nodes and register a phy_device for each one */
-> >  	for_each_available_child_of_node(np, child) {
-> > +		/* A PHY must have device_type set to "ethernet-phy" */
-> > +		if (of_node_cmp(child->type, "ethernet-phy"))
-> > +			continue;
-> 
-> As already stated by Grant this will break quite a lot of platforms out there. 
-> Technically speaking, ePAPR v1.1 only specifies that "cpu" and "memory" nodes 
-> should have a "device_type" property for compatibility. Altough I do agree 
-> that it is nice to have a properly set "device_type", we can't always rely on 
-> that. 
+On Tue, 10 Dec 2013, Felipe Balbi wrote:
 
-Actually it is the opposite. device_type is deprecated and has been for
-a long time now. Device bindings should not not be using device_type
-unless it is there for legacy compatibility.
+> On Tue, Dec 10, 2013 at 08:57:01AM +0000, Lee Jones wrote:
+> > > Pass a menelaus_chip pointer as argument to most functions so we can
+> > > minimize the usage of the global the_menelaus pointer.
+> > > 
+> > > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > > ---
+> > >  drivers/mfd/menelaus.c | 265 ++++++++++++++++++++++++++-----------------------
+> > >  1 file changed, 142 insertions(+), 123 deletions(-)
+> > 
+> > How is this different from patch 6?
+> 
+> have you read the patch ? patch 6 converts *only* enable/disable irq
+> functions.
 
-g.
+Well it actually converts menelaus_ack_irq() too, but that's not the
+point I was making.
 
+I can see that the 'code' is different, but the functionality of the
+patch is the same i.e. converting functions to pass around the
+menelaus_chip pointer for eradication of the_menelaus global pointer.
+
+I'm not concerned about the 'lines changed' count. The change your
+making is trivial, thus there is no requirement to split unnecessarily
+over 5 patches. Please squash them into a single functionality patch.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
