@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab3LKKY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 05:24:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42286 "EHLO mx2.suse.de"
+	id S1751866Ab3LKKY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 05:24:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42289 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751215Ab3LKKYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751051Ab3LKKYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Dec 2013 05:24:53 -0500
 From: Vlastimil Babka <vbabka@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>
-Subject: [PATCH V2 1/6] mm: compaction: trace compaction begin and end
-Date: Wed, 11 Dec 2013 11:24:32 +0100
-Message-Id: <1386757477-10333-2-git-send-email-vbabka@suse.cz>
+Cc: Vlastimil Babka <vbabka@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH V2 2/6] mm: compaction: encapsulate defer reset logic
+Date: Wed, 11 Dec 2013 11:24:33 +0100
+Message-Id: <1386757477-10333-3-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386757477-10333-1-git-send-email-vbabka@suse.cz>
 References: <1386757477-10333-1-git-send-email-vbabka@suse.cz>
@@ -21,97 +21,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mgorman@suse.de>
+Currently there are several functions to manipulate the deferred compaction
+state variables. The remaining case where the variables are touched directly
+is when a successful allocation occurs in direct compaction, or is expected
+to be successful in the future by kswapd. Here, the lowest order that is
+expected to fail is updated, and in the case of successful allocation, the
+deferred status and counter is reset completely.
 
-This patch adds two tracepoints for compaction begin and end of a zone. Using
-this it is possible to calculate how much time a workload is spending
-within compaction and potentially debug problems related to cached pfns
-for scanning. In combination with the direct reclaim and slab trace points
-it should be possible to estimate most allocation-related overhead for
-a workload.
+Create a new function compaction_defer_reset() to encapsulate this
+functionality and make it easier to understand the code. No functional change.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 ---
- include/trace/events/compaction.h | 42 +++++++++++++++++++++++++++++++++++++++
- mm/compaction.c                   |  4 ++++
- 2 files changed, 46 insertions(+)
+ include/linux/compaction.h | 16 ++++++++++++++++
+ mm/compaction.c            |  9 ++++-----
+ mm/page_alloc.c            |  5 +----
+ 3 files changed, 21 insertions(+), 9 deletions(-)
 
-diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
-index fde1b3e..06f544e 100644
---- a/include/trace/events/compaction.h
-+++ b/include/trace/events/compaction.h
-@@ -67,6 +67,48 @@ TRACE_EVENT(mm_compaction_migratepages,
- 		__entry->nr_failed)
- );
- 
-+TRACE_EVENT(mm_compaction_begin,
-+	TP_PROTO(unsigned long zone_start, unsigned long migrate_start,
-+		unsigned long free_start, unsigned long zone_end),
-+
-+	TP_ARGS(zone_start, migrate_start, free_start, zone_end),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned long, zone_start)
-+		__field(unsigned long, migrate_start)
-+		__field(unsigned long, free_start)
-+		__field(unsigned long, zone_end)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->zone_start = zone_start;
-+		__entry->migrate_start = migrate_start;
-+		__entry->free_start = free_start;
-+		__entry->zone_end = zone_end;
-+	),
-+
-+	TP_printk("zone_start=%lu migrate_start=%lu free_start=%lu zone_end=%lu",
-+		__entry->zone_start,
-+		__entry->migrate_start,
-+		__entry->free_start,
-+		__entry->zone_end)
-+);
-+
-+TRACE_EVENT(mm_compaction_end,
-+	TP_PROTO(int status),
-+
-+	TP_ARGS(status),
-+
-+	TP_STRUCT__entry(
-+		__field(int, status)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->status = status;
-+	),
-+
-+	TP_printk("status=%d", __entry->status)
-+);
- 
- #endif /* _TRACE_COMPACTION_H */
- 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 805165b..bb50fd3 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -966,6 +966,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	if (compaction_restarting(zone, cc->order) && !current_is_kswapd())
- 		__reset_isolation_suitable(zone);
- 
-+	trace_mm_compaction_begin(start_pfn, cc->migrate_pfn, cc->free_pfn, end_pfn);
-+
- 	migrate_prep_local();
- 
- 	while ((ret = compact_finished(zone, cc)) == COMPACT_CONTINUE) {
-@@ -1011,6 +1013,8 @@ out:
- 	cc->nr_freepages -= release_freepages(&cc->freepages);
- 	VM_BUG_ON(cc->nr_freepages != 0);
- 
-+	trace_mm_compaction_end(ret);
-+
- 	return ret;
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index 091d72e..7e1c76e 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -62,6 +62,22 @@ static inline bool compaction_deferred(struct zone *zone, int order)
+ 	return zone->compact_considered < defer_limit;
  }
  
++/*
++ * Update defer tracking counters after successful compaction of given order,
++ * which means an allocation either succeeded (alloc_success == true) or is
++ * expected to succeed.
++ */
++static inline void compaction_defer_reset(struct zone *zone, int order,
++		bool alloc_success)
++{
++	if (alloc_success) {
++		zone->compact_considered = 0;
++		zone->compact_defer_shift = 0;
++	}
++	if (order >= zone->compact_order_failed)
++		zone->compact_order_failed = order + 1;
++}
++
+ /* Returns true if restarting compaction after many failures */
+ static inline bool compaction_restarting(struct zone *zone, int order)
+ {
+diff --git a/mm/compaction.c b/mm/compaction.c
+index bb50fd3..e431804 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1120,12 +1120,11 @@ static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+ 			compact_zone(zone, cc);
+ 
+ 		if (cc->order > 0) {
+-			int ok = zone_watermark_ok(zone, cc->order,
+-						low_wmark_pages(zone), 0, 0);
+-			if (ok && cc->order >= zone->compact_order_failed)
+-				zone->compact_order_failed = cc->order + 1;
++			if (zone_watermark_ok(zone, cc->order,
++						low_wmark_pages(zone), 0, 0))
++				compaction_defer_reset(zone, cc->order, false);
+ 			/* Currently async compaction is never deferred. */
+-			else if (!ok && cc->sync)
++			else if (cc->sync)
+ 				defer_compaction(zone, cc->order);
+ 		}
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580a5f0..50c7f67 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2243,10 +2243,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 				preferred_zone, migratetype);
+ 		if (page) {
+ 			preferred_zone->compact_blockskip_flush = false;
+-			preferred_zone->compact_considered = 0;
+-			preferred_zone->compact_defer_shift = 0;
+-			if (order >= preferred_zone->compact_order_failed)
+-				preferred_zone->compact_order_failed = order + 1;
++			compaction_defer_reset(preferred_zone, order, true);
+ 			count_vm_event(COMPACTSUCCESS);
+ 			return page;
+ 		}
 -- 
 1.8.4
 
