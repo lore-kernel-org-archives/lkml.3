@@ -1,54 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751030Ab3LKItE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 03:49:04 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:57298 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab3LKItC (ORCPT
+	id S1751280Ab3LKItn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 03:49:43 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3794 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab3LKItm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 03:49:02 -0500
-Date: Wed, 11 Dec 2013 08:48:56 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>, angus.clark@st.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, linus.walleij@linaro.org,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v3 01/36] mtd: st_spi_fsm: Allocate resources and
- register with MTD framework
-Message-ID: <20131211084856.GF2390@lee--X1>
-References: <1385727565-25794-1-git-send-email-lee.jones@linaro.org>
- <1385727565-25794-2-git-send-email-lee.jones@linaro.org>
- <20131210204635.GD27149@ld-irv-0074.broadcom.com>
+	Wed, 11 Dec 2013 03:49:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 11 Dec 2013 00:42:43 -0800
+From: Chaitanya Bandi <bandik@nvidia.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
+CC: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
+        <ldewangan@nvidia.com>, <dmaengine@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <bandik@nvidia.com>
+Subject: [PATCH] dma: tegra: Use runtime_pm for clk enable/disable
+Date: Wed, 11 Dec 2013 14:19:16 +0530
+Message-ID: <1386751756-12583-1-git-send-email-bandik@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20131210204635.GD27149@ld-irv-0074.broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
+Used runtime_pm APIs for clock enabling/disabling.
+Made changes such that clock is not enabled during
+idle. Also moved the usage of clk prepare/unprepare
+such that they are not called in isr context.
 
-Thank you for taking the time to review, it's very much appreciated.
-You bought out some interesting points that I'm happy to go away and
-rectify. Firstly however, as I inherited this code I'd like to give
-Angus a chance to comment before we go off on our own tangent and
-rework some of the good code which perhaps should remain unchanged.
+Signed-off-by: Chaitanya Bandi <bandik@nvidia.com>
+---
+Verified with audio playback on Dalmore and check runtime status.
 
-Angus, do you have enough time to go through Brian's review comments
-and perhaps reply to the ones that you feel would benefit from your
-expert knowledge. To be frank, some of the questions that were asked I
-wouldn't be able to answer without your guidance in any case.
+ drivers/dma/tegra20-apb-dma.c | 35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
-Thanks both.
-
-Kind regards,
-Lee
-
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 73654e3..355572d 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -1,7 +1,7 @@
+ /*
+  * DMA driver for Nvidia's Tegra20 APB DMA controller.
+  *
+- * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ * Copyright (c) 2012-13, NVIDIA CORPORATION.  All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms and conditions of the GNU General Public License,
+@@ -580,6 +580,11 @@ static void handle_once_dma_done(struct tegra_dma_channel *tdc,
+ 	list_add_tail(&sgreq->node, &tdc->free_sg_req);
+ 
+ 	/* Do not start DMA if it is going to be terminate */
++	if (list_empty(&tdc->pending_sg_req) && (!to_terminate)) {
++		clk_disable(tdc->tdma->dma_clk);
++		pm_runtime_put(tdc->tdma->dev);
++	}
++
+ 	if (to_terminate || list_empty(&tdc->pending_sg_req))
+ 		return;
+ 
+@@ -682,12 +687,21 @@ static void tegra_dma_issue_pending(struct dma_chan *dc)
+ {
+ 	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+ 	unsigned long flags;
++	int ret;
+ 
+ 	spin_lock_irqsave(&tdc->lock, flags);
+ 	if (list_empty(&tdc->pending_sg_req)) {
+ 		dev_err(tdc2dev(tdc), "No DMA request\n");
+ 		goto end;
+ 	}
++
++	pm_runtime_get(tdc->tdma->dev);
++	ret = clk_enable(tdc->tdma->dma_clk);
++	if (ret < 0) {
++		dev_err(tdc2dev(tdc), "clk_enable failed: %d\n", ret);
++		return;
++	}
++
+ 	if (!tdc->busy) {
+ 		tdc_start_head_req(tdc);
+ 
+@@ -744,6 +758,8 @@ static void tegra_dma_terminate_all(struct dma_chan *dc)
+ 				get_current_xferred_count(tdc, sgreq, status);
+ 	}
+ 	tegra_dma_resume(tdc);
++	clk_disable(tdc->tdma->dma_clk);
++	pm_runtime_put(tdc->tdma->dev);
+ 
+ skip_dma_stop:
+ 	tegra_dma_abort_all(tdc);
+@@ -1153,22 +1169,16 @@ static struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
+ static int tegra_dma_alloc_chan_resources(struct dma_chan *dc)
+ {
+ 	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+-	struct tegra_dma *tdma = tdc->tdma;
+-	int ret;
+ 
++	clk_prepare(tdc->tdma->dma_clk);
+ 	dma_cookie_init(&tdc->dma_chan);
+ 	tdc->config_init = false;
+-	ret = clk_prepare_enable(tdma->dma_clk);
+-	if (ret < 0)
+-		dev_err(tdc2dev(tdc), "clk_prepare_enable failed: %d\n", ret);
+-	return ret;
++	return 0;
+ }
+ 
+ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ {
+ 	struct tegra_dma_channel *tdc = to_tegra_dma_chan(dc);
+-	struct tegra_dma *tdma = tdc->tdma;
+-
+ 	struct tegra_dma_desc *dma_desc;
+ 	struct tegra_dma_sg_req *sg_req;
+ 	struct list_head dma_desc_list;
+@@ -1182,7 +1192,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ 
+ 	if (tdc->busy)
+ 		tegra_dma_terminate_all(dc);
+-
++	clk_unprepare(tdc->tdma->dma_clk);
+ 	spin_lock_irqsave(&tdc->lock, flags);
+ 	list_splice_init(&tdc->pending_sg_req, &sg_req_list);
+ 	list_splice_init(&tdc->free_sg_req, &sg_req_list);
+@@ -1204,7 +1214,6 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ 		list_del(&sg_req->node);
+ 		kfree(sg_req);
+ 	}
+-	clk_disable_unprepare(tdma->dma_clk);
+ }
+ 
+ /* Tegra20 specific DMA controller information */
+@@ -1418,7 +1427,7 @@ static int tegra_dma_runtime_suspend(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct tegra_dma *tdma = platform_get_drvdata(pdev);
+ 
+-	clk_disable_unprepare(tdma->dma_clk);
++	clk_disable(tdma->dma_clk);
+ 	return 0;
+ }
+ 
+@@ -1428,7 +1437,7 @@ static int tegra_dma_runtime_resume(struct device *dev)
+ 	struct tegra_dma *tdma = platform_get_drvdata(pdev);
+ 	int ret;
+ 
+-	ret = clk_prepare_enable(tdma->dma_clk);
++	ret = clk_enable(tdma->dma_clk);
+ 	if (ret < 0) {
+ 		dev_err(dev, "clk_enable failed: %d\n", ret);
+ 		return ret;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1.5
+
