@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab3LLShl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:37:41 -0500
-Received: from relay.parallels.com ([195.214.232.42]:60845 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3LLShk (ORCPT
+	id S1752120Ab3LLSi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:38:27 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:64278 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3LLSiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:37:40 -0500
-Message-ID: <52AA026C.3040605@parallels.com>
-Date: Thu, 12 Dec 2013 22:37:32 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
+	Thu, 12 Dec 2013 13:38:23 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] cgroup: fix fail path in cgroup_load_subsys()
-References: <1386403085-24866-1-git-send-email-vdavydov@parallels.com> <20131212153536.GD32683@htj.dyndns.org> <20131212155523.GF32683@htj.dyndns.org>
-In-Reply-To: <20131212155523.GF32683@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.25.135]
+In-Reply-To: <20131212182831.GM1939@saruman.home>
+References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
+	<1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
+	<CACRpkdaD13JnGetD-GLpxSoaf_LkRKYFjis7Tftc6U38E1ES5A@mail.gmail.com>
+	<20131212182831.GM1939@saruman.home>
+Date: Thu, 12 Dec 2013 19:38:22 +0100
+Message-ID: <CACRpkdb4pF9-rB_zzXgzOnuAc_z=ZN+XHRq6i_Dd76FK08wdkg@mail.gmail.com>
+Subject: Re: [RFC/RFT/PATCH V3] gpio: omap: refresh patch "be more aggressive
+ with pm_runtime" against v3.12-rc5
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Chao Xu <caesarxuchao@gmail.com>, Linux-OMAP <linux-omap@vger.kernel.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@linaro.org>, Nishanth Menon <nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 07:55 PM, Tejun Heo wrote:
-> On Thu, Dec 12, 2013 at 10:35:36AM -0500, Tejun Heo wrote:
->> On Sat, Dec 07, 2013 at 11:58:05AM +0400, Vladimir Davydov wrote:
->>> We should not call cgroup_unload_subsys() if online_css() fails, because
->>> online_css() does not assign css to cgroup on failure, while
->>> offline_css() called from cgroup_unload_subsys() expects it is assigned.
->>> So let's call everything we need to rollback inline without involving
->>> cgroup_unload_subsys().
->>>
->>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
->>> Cc: Tejun Heo <tj@kernel.org>
->>> Cc: Li Zefan <lizefan@huawei.com>
->> Applied to cgroup/for-3.13-fixes.
-> Scrap that.  I don't think we can fail css_online for the root css in
-> 3.13-fixes and this would cause conflict with 3.14, so let's not
-> commit it to 3.13-fixes.  Vladimir, can you please respin the patch on
-> top of cgroup/for-3.14
+On Thu, Dec 12, 2013 at 7:28 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Dec 12, 2013 at 07:19:35PM +0100, Linus Walleij wrote:
 
-No problem.
+>> One thing caught my eye, you add:
+>>
+>> > +static void _aggressive_pm_runtime_get_sync(struct gpio_bank *bank)
+>> > +static void _aggressive_pm_runtime_put(struct gpio_bank *bank)
+>> (..)
+>>
+>> Then everywhere:
+>>
+>> > +       _aggressive_pm_runtime_get_sync(bank);
+>> (...)
+>> > +       _aggressive_pm_runtime_put(bank);
+>>
+>> Aggressive, argh, runtime PM is agressive by definition. If you
+>> want to switch this on and off use the compile option
+>> to enable/disable runtime PM altogether and do not wrap it
+>> like this.
+>
+> heh, OMAP doesn't work without pm_runtime.
 
-> but make cgroup_unload_subsys() check whether
-> css is actually there before calling offline so that it matches the
-> usual offline path better?
+Hm then maybe that needs to be fixed ... or the runtime PM
+people need to be convinced to support different levels of
+aggressiveness in the core?
 
-You want me to add something like this to the patch, don't you?
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 402f7aa..bc03b97 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4680,6 +4680,7 @@ EXPORT_SYMBOL_GPL(cgroup_load_subsys);
- void cgroup_unload_subsys(struct cgroup_subsys *ss)
- {
-     struct cgrp_cset_link *link;
-+    struct cgroup_subsys_state *css;
- 
-     BUG_ON(ss->module == NULL);
- 
-@@ -4693,7 +4694,9 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
-     mutex_lock(&cgroup_mutex);
-     mutex_lock(&cgroup_root_mutex);
- 
--    offline_css(cgroup_css(cgroup_dummy_top, ss));
-+    css = cgroup_css(cgroup_dummy_top, ss);
-+    if (css)
-+        offline_css(css);
- 
-     /* deassign the subsys_id */
-     cgroup_subsys[ss->subsys_id] = NULL;
-
-
-If so, I don't mind, but why? cgroup_unload_subsys() should never be
-called without properly initialized css.
-
-Thanks.
+Yours,
+Linus Walleij
