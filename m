@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab3LLRSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 12:18:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42098 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab3LLRSF (ORCPT
+	id S1751908Ab3LLRWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 12:22:47 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38426 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab3LLRWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 12:18:05 -0500
-Date: Thu, 12 Dec 2013 18:17:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-Message-ID: <20131212171753.GA7959@laptop.programming.kicks-ass.net>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
- <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
- <20131212114447.GH21999@twins.programming.kicks-ass.net>
- <20131212094227.0a227f6f@gandalf.local.home>
- <20131212160323.GJ21999@twins.programming.kicks-ass.net>
- <20131212115137.4e5d156f@gandalf.local.home>
- <20131212121015.139ebe8c@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212121015.139ebe8c@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 12 Dec 2013 12:22:44 -0500
+Date: Thu, 12 Dec 2013 12:22:41 -0500 (EST)
+Message-Id: <20131212.122241.2022824170198915190.davem@davemloft.net>
+To: dvlasenk@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        jpirko@redhat.com
+Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <52A99B56.1070503@redhat.com>
+References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com>
+	<20131211192138.GB4675@order.stressinduktion.org>
+	<52A99B56.1070503@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 12 Dec 2013 09:22:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 12:10:15PM -0500, Steven Rostedt wrote:
-> So if we break up your code above, we have:
-> 
-> 	raw_spin_lock_irqsave(&head->lock, flags);
-> 	w->task = current;
-> 	if (list_empty(&w->node)) {
-> 		list_add(&w->node, &head->list);
-> 		smp_mb();
-> 	}
-> 	__set_current_state(state);
-> 	raw_spin_unlock_irqrestore(&head->lock, flags);
-> 
-> 	if (!cond)
-> 		schedule();
-> 
+From: Denys Vlasenko <dvlasenk@redhat.com>
+Date: Thu, 12 Dec 2013 12:17:42 +0100
 
-the unlock is semi-permeable and would allow the cond test to cross over
-and even be satisfied before the state write.
+> I can easily imagine their frustration. Kernel _knows_ why
+> it didn't work, and it's not expected to normally pappen,
+> why didn't it tell anything about it?
 
-> 
-> vs
-> 
-> 	cond = true;
-> 
-> 	raw_spin_lock_irqsave(&head->lock, flags);
-> 	woken = __swait_wake_locked(head, state, num);
-> 	raw_spin_unlock_irqrestore(&head->lock, flags);
+Packets are dropped silently, ARP fails and entries go stale silently,
+none of this is logged with kernel messages, why is ipv6 autoconf so
+unique and important to justify different behavior?
 
-Same here, the lock is semi-permeable and would allow the cond store to
-leak down.
-
-In the first case we really need the implied mb of set_current_state(),
-the the second case the actual wakeup would still provide the required
-barrier.
+Give it statistics just like we have for every other kind of similar
+event.
