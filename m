@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab3LLFiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 00:38:12 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:39818 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab3LLFiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 00:38:08 -0500
+	id S1751395Ab3LLFrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 00:47:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43306 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751162Ab3LLFrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 00:47:09 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1386826641.6056.31.camel@marge.simpson.net>
+References: <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de> <20131211113839.GF21683@pd.tnic> <20131211115239.GA21999@twins.programming.kicks-ass.net> <1386764955.12005.60.camel@marge.simpson.net> <20131211124352.GB21999@twins.programming.kicks-ass.net> <20131211134048.GH21683@pd.tnic> <20131211145655.GB4510@gmail.com> <20131211164318.GA2480@laptop.programming.kicks-ass.net> <20131211175036.GC12431@gmail.com> <52A8F073.9040500@zytor.com> <20131211231425.GD8863@pd.tnic> <52A908DB.60902@zytor.com> <1386822357.6056.12.camel@marge.simpson.net> <52A94065.1050103@zytor.com> <1386826641.6056.31.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <20131211124240.GA24557@htj.dyndns.org>
-References: <alpine.DEB.2.02.1312032116440.29733@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1312032118570.29733@chino.kir.corp.google.com>
- <20131204054533.GZ3556@cmpxchg.org> <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
- <20131205025026.GA26777@htj.dyndns.org> <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
- <20131206190105.GE13373@htj.dyndns.org> <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
- <20131210215037.GB9143@htj.dyndns.org> <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
- <20131211124240.GA24557@htj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Wed, 11 Dec 2013 21:37:46 -0800
-X-Google-Sender-Auth: my6n-Y7-tGgUJleeVaOkFhaYCzk
-Message-ID: <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom notifications
- to access reserves
-To: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>,
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 11 Dec 2013 21:45:55 -0800
+To: Mike Galbraith <bitbucket@online.de>
+CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
+Message-ID: <6e4b858b-fcad-4231-8351-d2f473bf6ba6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The immediate problem I see with setting aside reserves "off the top"
-is that we don't really know a priori how much memory the kernel
-itself is going to use, which could still land us in an overcommitted
-state.
+As in it hangs at that point?
 
-In other words, if I have your 128 MB machine, and I set aside 8 MB
-for OOM handling, and give 120 MB for jobs, I have not accounted for
-the kernel.  So I set aside 8 MB for OOM and 100 MB for jobs, leaving
-20 MB for jobs.  That should be enough right?  Hell if I know, and
-nothing ensures that.
+Mike Galbraith <bitbucket@online.de> wrote:
+>On Wed, 2013-12-11 at 20:49 -0800, H. Peter Anvin wrote: 
+>> On 12/11/2013 08:25 PM, Mike Galbraith wrote:
+>> >  arch/x86/include/asm/mwait.h   |    4 ++--
+>> >  arch/x86/kernel/cpu/common.c   |    7 ++++---
+>> >  arch/x86/kernel/setup_percpu.c |    1 +
+>> >  3 files changed, 7 insertions(+), 5 deletions(-)
+>> > 
+>> > Index: linux-2.6/arch/x86/kernel/cpu/common.c
+>> > ===================================================================
+>> > --- linux-2.6.orig/arch/x86/kernel/cpu/common.c
+>> > +++ linux-2.6/arch/x86/kernel/cpu/common.c
+>> > @@ -65,13 +65,14 @@ void __init setup_cpu_local_masks(void)
+>> >  }
+>> >  
+>> >  /* allocate percpu area for mwait doorbell */
+>> > -char __percpu *mwait_doorbell;
+>> > +DEFINE_PER_CPU(char *, mwait_doorbell);
+>> > +EXPORT_PER_CPU_SYMBOL(mwait_doorbell);
+>> >  
+>> 
+>> Sorry, this is wrong.  This is NOT a percpu variable, it is a pointer
+>to
+>> a percpu allocation, but the variable itself is not a percpu
+>variable.
+>> This explains your boom.
+>
+>With that fixed, it boots, but is not quite perfect.
+>
+>... 
+>[  258.560079] fbcon: radeondrmfb (fb0) is primary device
+>[  258.722483] Console: switching to colour frame buffer device 128x48
+>[  258.847076] radeon 0000:01:03.0: fb0: radeondrmfb frame buffer
+>device
+>[  258.911991] radeon 0000:01:03.0: registered panic notifier
+>[  258.968772] [drm] Initialized radeon 2.35.0 20080528 for
+>0000:01:03.0 on minor 0
+>...
+>[  469.738604] netxen_nic 0000:04:00.3: using msi-x interrupts
+>[  469.739078] netxen_nic 0000:04:00.3: eth5: GbE port initialized
+>[  469.830512] ipmi_si 00:01: Found new BMC (man_id: 0x00000b, prod_id:
+>0x2000, dev_id: 0x13)
+>[  469.830524] ipmi_si 00:01: IPMI kcs interface initialized
+>[  473.729862] iTCO_wdt: unable to reset NO_REBOOT flag, device
+>disabled by hardware/BIOS
+>...
+>[  711.636741] fuse init (API version 7.22)
+>
+>...zzzz ok box, doctor appointment is in an hour away.
+>
+>-Mike 
 
-On Wed, Dec 11, 2013 at 4:42 AM, Tejun Heo <tj@kernel.org> wrote:
-> Yo,
->
-> On Tue, Dec 10, 2013 at 03:55:48PM -0800, David Rientjes wrote:
->> > Well, the gotcha there is that you won't be able to do that with
->> > system level OOM handler either unless you create a separately
->> > reserved memory, which, again, can be achieved using hierarchical
->> > memcg setup already.  Am I missing something here?
->>
->> System oom conditions would only arise when the usage of memcgs A + B
->> above cause the page allocator to not be able to allocate memory without
->> oom killing something even though the limits of both A and B may not have
->> been reached yet.  No userspace oom handler can allocate memory with
->> access to memory reserves in the page allocator in such a context; it's
->> vital that if we are to handle system oom conditions in userspace that we
->> given them access to memory that other processes can't allocate.  You
->> could attach a userspace system oom handler to any memcg in this scenario
->> with memory.oom_reserve_in_bytes and since it has PF_OOM_HANDLER it would
->> be able to allocate in reserves in the page allocator and overcharge in
->> its memcg to handle it.  This isn't possible only with a hierarchical
->> memcg setup unless you ensure the sum of the limits of the top level
->> memcgs do not equal or exceed the sum of the min watermarks of all memory
->> zones, and we exceed that.
->
-> Yes, exactly.  If system memory is 128M, create top level memcgs w/
-> 120M and 8M each (well, with some slack of course) and then overcommit
-> the descendants of 120M while putting OOM handlers and friends under
-> 8M without overcommitting.
->
-> ...
->> The stronger rationale is that you can't handle system oom in userspace
->> without this functionality and we need to do so.
->
-> You're giving yourself an unreasonable precondition - overcommitting
-> at root level and handling system OOM from userland - and then trying
-> to contort everything to fit that.  How can possibly "overcommitting
-> at root level" be a goal of and in itself?  Please take a step back
-> and look at and explain the *problem* you're trying to solve.  You
-> haven't explained why that *need*s to be the case at all.
->
-> I wrote this at the start of the thread but you're still doing the
-> same thing.  You're trying to create a hidden memcg level inside a
-> memcg.  At the beginning of this thread, you were trying to do that
-> for !root memcgs and now you're arguing that you *need* that for root
-> memcg.  Because there's no other limit we can make use of, you're
-> suggesting the use of kernel reserve memory for that purpose.  It
-> seems like an absurd thing to do to me.  It could be that you might
-> not be able to achieve exactly the same thing that way, but the right
-> thing to do would be improving memcg in general so that it can instead
-> of adding yet more layer of half-baked complexity, right?
->
-> Even if there are some inherent advantages of system userland OOM
-> handling with a separate physical memory reserve, which AFAICS you
-> haven't succeeded at showing yet, this is a very invasive change and,
-> as you said before, something with an *extremely* narrow use case.
-> Wouldn't it be a better idea to improve the existing mechanisms - be
-> that memcg in general or kernel OOM handling - to fit the niche use
-> case better?  I mean, just think about all the corner cases.  How are
-> you gonna handle priority inversion through locked pages or
-> allocations given out to other tasks through slab?  You're suggesting
-> opening a giant can of worms for extremely narrow benefit which
-> doesn't even seem like actually needing opening the said can.
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
