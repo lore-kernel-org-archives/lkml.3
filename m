@@ -1,469 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab3LLOT4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:19:56 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:3663 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab3LLOTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:19:52 -0500
-X-IronPort-AV: E=Sophos;i="4.93,878,1378857600"; 
-   d="scan'208";a="83660844"
-Message-ID: <1386857960.11201.57.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2] xen/block: Correctly define structures
- in public headers on ARM32 and ARM64
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Julien Grall <julien.grall@linaro.org>
-CC: <xen-devel@lists.xenproject.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>,
-        "David Vrabel" <david.vrabel@citrix.com>, <patches@linaro.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Roger Pau Monne" <roger.pau@citrix.com>
-Date: Thu, 12 Dec 2013 14:19:20 +0000
-In-Reply-To: <1386085237-8334-1-git-send-email-julien.grall@linaro.org>
-References: <1386085237-8334-1-git-send-email-julien.grall@linaro.org>
-Organization: Citrix Systems, Inc.
-Content-Type: multipart/mixed; boundary="=-ZF/b3mwHPENAnDNEFU6b"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+	id S1751995Ab3LLOVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:21:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36052 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3LLOVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:21:17 -0500
+Message-Id: <20131212141655.178518043@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 12 Dec 2013 15:08:45 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 10/15] x86: Move some code around
+References: <20131212140835.729222186@infradead.org>
+Content-Disposition: inline; filename=peterz-tsc-move.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+There are no __cycles_2_ns() users outside of arch/x86/kernel/tsc.c,
+so move it there.
 
-On Tue, 2013-12-03 at 15:40 +0000, Julien Grall wrote:
-> On ARM (32 bits and 64 bits), the double-word is 8-bytes aligned. This will
-> result on different structure from Xen and Linux repositories.
-> 
-> As Linux is using __packed__ attribute, it must have a 4-bytes padding before
-> each "id" field.
-> 
-> This change breaks guest block support with older kernel. IMHO, it's acceptable
-> because Xen on ARM is still on Tech Preview and the hypercall ABI is not yet
-> freezed.
-> 
-> Only one architecture (x86_32) doesn't have 64-bit ABI for the block interface.
-> Don't add padding if Linux is compiled for this architecture.
+There are no cycles_2_ns() users.
 
-Konrad asked for confirmation that this didn't change x86.
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/include/asm/timer.h |   59 ----------------------
+ arch/x86/kernel/tsc.c        |  112 +++++++++++++++++++++++--------------------
+ 2 files changed, 61 insertions(+), 110 deletions(-)
 
-Using
-http://stackoverflow.com/questions/9788679/how-to-get-the-relative-adress-of-a-field-in-a-structure-dump-c
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -13,66 +13,7 @@ extern int recalibrate_cpu_khz(void);
+ 
+ extern int no_timer_check;
+ 
+-/* Accelerators for sched_clock()
+- * convert from cycles(64bits) => nanoseconds (64bits)
+- *  basic equation:
+- *		ns = cycles / (freq / ns_per_sec)
+- *		ns = cycles * (ns_per_sec / freq)
+- *		ns = cycles * (10^9 / (cpu_khz * 10^3))
+- *		ns = cycles * (10^6 / cpu_khz)
+- *
+- *	Then we use scaling math (suggested by george@mvista.com) to get:
+- *		ns = cycles * (10^6 * SC / cpu_khz) / SC
+- *		ns = cycles * cyc2ns_scale / SC
+- *
+- *	And since SC is a constant power of two, we can convert the div
+- *  into a shift.
+- *
+- *  We can use khz divisor instead of mhz to keep a better precision, since
+- *  cyc2ns_scale is limited to 10^6 * 2^10, which fits in 32 bits.
+- *  (mathieu.desnoyers@polymtl.ca)
+- *
+- *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
+- *
+- * In:
+- *
+- * ns = cycles * cyc2ns_scale / SC
+- *
+- * Although we may still have enough bits to store the value of ns,
+- * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
+- * leading to an incorrect result.
+- *
+- * To avoid this, we can decompose 'cycles' into quotient and remainder
+- * of division by SC.  Then,
+- *
+- * ns = (quot * SC + rem) * cyc2ns_scale / SC
+- *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
+- *
+- *			- sqazi@google.com
+- */
+-
+ DECLARE_PER_CPU(unsigned long, cyc2ns);
+ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
+ 
+-#define CYC2NS_SCALE_FACTOR 10 /* 2^10, carefully chosen */
+-
+-static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+-{
+-	unsigned long long ns = this_cpu_read(cyc2ns_offset);
+-	ns += mul_u64_u32_shr(cyc, this_cpu_read(cyc2ns), CYC2NS_SCALE_FACTOR);
+-	return ns;
+-}
+-
+-static inline unsigned long long cycles_2_ns(unsigned long long cyc)
+-{
+-	unsigned long long ns;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-	ns = __cycles_2_ns(cyc);
+-	local_irq_restore(flags);
+-
+-	return ns;
+-}
+-
+ #endif /* _ASM_X86_TIMER_H */
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -38,6 +38,66 @@ static int __read_mostly tsc_unstable;
+ static int __read_mostly tsc_disabled = -1;
+ 
+ int tsc_clocksource_reliable;
++
++/* Accelerators for sched_clock()
++ * convert from cycles(64bits) => nanoseconds (64bits)
++ *  basic equation:
++ *              ns = cycles / (freq / ns_per_sec)
++ *              ns = cycles * (ns_per_sec / freq)
++ *              ns = cycles * (10^9 / (cpu_khz * 10^3))
++ *              ns = cycles * (10^6 / cpu_khz)
++ *
++ *      Then we use scaling math (suggested by george@mvista.com) to get:
++ *              ns = cycles * (10^6 * SC / cpu_khz) / SC
++ *              ns = cycles * cyc2ns_scale / SC
++ *
++ *      And since SC is a constant power of two, we can convert the div
++ *  into a shift.
++ *
++ *  We can use khz divisor instead of mhz to keep a better precision, since
++ *  cyc2ns_scale is limited to 10^6 * 2^10, which fits in 32 bits.
++ *  (mathieu.desnoyers@polymtl.ca)
++ *
++ *                      -johnstul@us.ibm.com "math is hard, lets go shopping!"
++ */
++
++DEFINE_PER_CPU(unsigned long, cyc2ns);
++DEFINE_PER_CPU(unsigned long long, cyc2ns_offset);
++
++#define CYC2NS_SCALE_FACTOR 10 /* 2^10, carefully chosen */
++
++static inline unsigned long long cycles_2_ns(unsigned long long cyc)
++{
++	unsigned long long ns = this_cpu_read(cyc2ns_offset);
++	ns += mul_u64_u32_shr(cyc, this_cpu_read(cyc2ns), CYC2NS_SCALE_FACTOR);
++	return ns;
++}
++
++static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
++{
++	unsigned long long tsc_now, ns_now, *offset;
++	unsigned long flags, *scale;
++
++	local_irq_save(flags);
++	sched_clock_idle_sleep_event();
++
++	scale = &per_cpu(cyc2ns, cpu);
++	offset = &per_cpu(cyc2ns_offset, cpu);
++
++	rdtscll(tsc_now);
++	ns_now = cycles_2_ns(tsc_now);
++
++	if (cpu_khz) {
++		*scale = ((NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR) +
++				cpu_khz / 2) / cpu_khz;
++		*offset = ns_now - mult_frac(tsc_now, *scale,
++					     (1UL << CYC2NS_SCALE_FACTOR));
++	}
++
++	sched_clock_idle_wakeup_event(0);
++	local_irq_restore(flags);
++}
++
+ /*
+  * Scheduler clock - returns current time in nanosec units.
+  */
+@@ -62,7 +122,7 @@ u64 native_sched_clock(void)
+ 	rdtscll(this_offset);
+ 
+ 	/* return the value in ns */
+-	return __cycles_2_ns(this_offset);
++	return cycles_2_ns(this_offset);
+ }
+ 
+ /* We need to define a real function for sched_clock, to override the
+@@ -589,56 +649,6 @@ int recalibrate_cpu_khz(void)
+ EXPORT_SYMBOL(recalibrate_cpu_khz);
+ 
+ 
+-/* Accelerators for sched_clock()
+- * convert from cycles(64bits) => nanoseconds (64bits)
+- *  basic equation:
+- *              ns = cycles / (freq / ns_per_sec)
+- *              ns = cycles * (ns_per_sec / freq)
+- *              ns = cycles * (10^9 / (cpu_khz * 10^3))
+- *              ns = cycles * (10^6 / cpu_khz)
+- *
+- *      Then we use scaling math (suggested by george@mvista.com) to get:
+- *              ns = cycles * (10^6 * SC / cpu_khz) / SC
+- *              ns = cycles * cyc2ns_scale / SC
+- *
+- *      And since SC is a constant power of two, we can convert the div
+- *  into a shift.
+- *
+- *  We can use khz divisor instead of mhz to keep a better precision, since
+- *  cyc2ns_scale is limited to 10^6 * 2^10, which fits in 32 bits.
+- *  (mathieu.desnoyers@polymtl.ca)
+- *
+- *                      -johnstul@us.ibm.com "math is hard, lets go shopping!"
+- */
+-
+-DEFINE_PER_CPU(unsigned long, cyc2ns);
+-DEFINE_PER_CPU(unsigned long long, cyc2ns_offset);
+-
+-static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+-{
+-	unsigned long long tsc_now, ns_now, *offset;
+-	unsigned long flags, *scale;
+-
+-	local_irq_save(flags);
+-	sched_clock_idle_sleep_event();
+-
+-	scale = &per_cpu(cyc2ns, cpu);
+-	offset = &per_cpu(cyc2ns_offset, cpu);
+-
+-	rdtscll(tsc_now);
+-	ns_now = __cycles_2_ns(tsc_now);
+-
+-	if (cpu_khz) {
+-		*scale = ((NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR) +
+-				cpu_khz / 2) / cpu_khz;
+-		*offset = ns_now - mult_frac(tsc_now, *scale,
+-					     (1UL << CYC2NS_SCALE_FACTOR));
+-	}
+-
+-	sched_clock_idle_wakeup_event(0);
+-	local_irq_restore(flags);
+-}
+-
+ static unsigned long long cyc2ns_suspend;
+ 
+ void tsc_save_sched_clock_state(void)
 
-I created offsets.py as described there then for i386, amd64, arm, arm64
-before and after I built with CONFIG_DEBUG_INFO but not
-CONFIG_DEBUG_INFO_REDUCED then:
 
-        $ cat script
-        python
-        sys.path.insert(0, '')
-        import offsets
-        end
-        
-        offsets-of "struct blkif_request"
-        offsets-of "struct blkif_request_rw"
-        offsets-of "struct blkif_request_discard"
-        offsets-of "struct blkif_request_other"
-        offsets-of "struct blkif_request_indirect"
-        $ gdb -x script --batch drivers/block/xen-blkfront.o
-        struct blkif_request {
-            operation => 0
-            u => 1
-        }
-        struct blkif_request_rw {
-            nr_segments => 0
-            handle => 1
-            _pad1 => 3
-            id => 7
-            sector_number => 15
-            seg => 23
-        }
-        struct blkif_request_discard {
-            flag => 0
-            _pad1 => 1
-            _pad2 => 3
-            id => 7
-            sector_number => 15
-            nr_sectors => 23
-            _pad3 => 31
-        }
-        struct blkif_request_other {
-            _pad1 => 0
-            _pad2 => 1
-            _pad3 => 3
-            id => 7
-        }
-        struct blkif_request_indirect {
-            indirect_op => 0
-            nr_segments => 1
-            _pad1 => 3
-            id => 7
-            sector_number => 15
-            handle => 23
-            _pad2 => 25
-            indirect_grefs => 27
-            _pad3 => 59
-        }
-
-There is no difference to either x86 arch:
-        $ diff -q x86_32.{before,after} && echo same
-        same
-        $ diff -q x86_64.{before,after} && echo same
-        same
-        $
-And crucially:
-        $ diff -q arm.after arm64.after && echo same
-        same
-        $ diff -q arm.after x86_64.after && echo same
-        same
-        $
-
-Full results attached.
-
-Ian.
-
-
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="arm.after"
-Content-Type: text/plain; name="arm.after"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    seg => 23
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    _pad2 => 3
-    id => 7
-    sector_number => 15
-    nr_sectors => 23
-    _pad3 => 31
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    _pad3 => 3
-    id => 7
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    handle => 23
-    _pad2 => 25
-    indirect_grefs => 27
-    _pad3 => 59
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="arm.before"
-Content-Type: text/plain; name="arm.before"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    id => 3
-    sector_number => 11
-    seg => 19
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    id => 3
-    sector_number => 11
-    nr_sectors => 19
-    _pad3 => 27
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    id => 3
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    id => 3
-    sector_number => 11
-    handle => 19
-    _pad2 => 21
-    indirect_grefs => 23
-    _pad3 => 55
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="arm64.after"
-Content-Type: text/plain; name="arm64.after"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    seg => 23
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    _pad2 => 3
-    id => 7
-    sector_number => 15
-    nr_sectors => 23
-    _pad3 => 31
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    _pad3 => 3
-    id => 7
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    handle => 23
-    _pad2 => 25
-    indirect_grefs => 27
-    _pad3 => 59
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="arm64.before"
-Content-Type: text/plain; name="arm64.before"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    id => 3
-    sector_number => 11
-    seg => 19
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    id => 3
-    sector_number => 11
-    nr_sectors => 19
-    _pad3 => 27
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    id => 3
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    id => 3
-    sector_number => 11
-    handle => 19
-    _pad2 => 21
-    indirect_grefs => 23
-    _pad3 => 55
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="x86_32.after"
-Content-Type: text/plain; name="x86_32.after"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    id => 3
-    sector_number => 11
-    seg => 19
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    id => 3
-    sector_number => 11
-    nr_sectors => 19
-    _pad3 => 27
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    id => 3
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    id => 3
-    sector_number => 11
-    handle => 19
-    _pad2 => 21
-    indirect_grefs => 23
-    _pad3 => 55
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="x86_32.before"
-Content-Type: text/plain; name="x86_32.before"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    id => 3
-    sector_number => 11
-    seg => 19
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    id => 3
-    sector_number => 11
-    nr_sectors => 19
-    _pad3 => 27
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    id => 3
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    id => 3
-    sector_number => 11
-    handle => 19
-    _pad2 => 21
-    indirect_grefs => 23
-    _pad3 => 55
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="x86_64.after"
-Content-Type: text/plain; name="x86_64.after"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    seg => 23
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    _pad2 => 3
-    id => 7
-    sector_number => 15
-    nr_sectors => 23
-    _pad3 => 31
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    _pad3 => 3
-    id => 7
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    handle => 23
-    _pad2 => 25
-    indirect_grefs => 27
-    _pad3 => 59
-}
-
---=-ZF/b3mwHPENAnDNEFU6b
-Content-Disposition: attachment; filename="x86_64.before"
-Content-Type: text/plain; name="x86_64.before"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-struct blkif_request {
-    operation => 0
-    u => 1
-}
-struct blkif_request_rw {
-    nr_segments => 0
-    handle => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    seg => 23
-}
-struct blkif_request_discard {
-    flag => 0
-    _pad1 => 1
-    _pad2 => 3
-    id => 7
-    sector_number => 15
-    nr_sectors => 23
-    _pad3 => 31
-}
-struct blkif_request_other {
-    _pad1 => 0
-    _pad2 => 1
-    _pad3 => 3
-    id => 7
-}
-struct blkif_request_indirect {
-    indirect_op => 0
-    nr_segments => 1
-    _pad1 => 3
-    id => 7
-    sector_number => 15
-    handle => 23
-    _pad2 => 25
-    indirect_grefs => 27
-    _pad3 => 59
-}
-
---=-ZF/b3mwHPENAnDNEFU6b--
