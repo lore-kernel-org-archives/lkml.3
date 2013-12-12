@@ -1,104 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab3LLJM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 04:12:29 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:11479 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab3LLJMV (ORCPT
+	id S1751474Ab3LLJQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 04:16:27 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:57157 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab3LLJQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 04:12:21 -0500
-X-AuditID: cbfee68e-b7fee6d000003b32-a1-52a97df379dd
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Gregory CLEMENT'" <gregory.clement@free-electrons.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Cc: "'Kuninori Morimoto'" <kuninori.morimoto.gx@renesas.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Wei Yongjun'" <weiyj.lk@gmail.com>,
-        "'Jason Cooper'" <jason@lakedaemon.net>,
-        "'Simon Horman'" <horms@verge.net.au>, linux-sh@vger.kernel.org,
-        "'Magnus Damm'" <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Valentine Barshak'" <valentine.barshak@cogentembedded.com>,
-        "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        linux-tegra@vger.kernel.org, "'Shawn Guo'" <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20131211183237.GI4699@google.com>
- <52A96877.90902@free-electrons.com>
-In-reply-to: <52A96877.90902@free-electrons.com>
-Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada,
- R-Car PCI host maintainers
-Date: Thu, 12 Dec 2013 18:12:18 +0900
-Message-id: <001901cef71a$41f3a520$c5daef60$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac73DX8jLZm4Pdk4TvC/NyRJkE9DYwADBrSQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA5WSa0hTcRjG/Z9zdnZB6bRm/RMvYTcyvM2p/24WWHBCMDUtskKnHZykUzaV
-	IKqpZWgkiYoxVCxnlobKLHAac05sSdZSyxJyeC/FRTQVDS9tO1/82rcf7/M8PO8LLw8XGjge
-	vHR5DqOQSzN8SQHxfmNW7G+79SIuqP4LH2kKZGjOeAhpi6wAFb5eAihfM0yg4SdDHDTf2wmQ
-	dmqEg4Y7q0n0odZEosdmPYaq1ypwVLyoJtF4s5VEMy0aHK121hJoZrwAQ42Wfgz9HurDka6l
-	mHtKRI9XbmL0tHYQ0Dr1GJeu0+bSKoOZoL+PvCHpds0denmgjKBLXzUBusHSB+jq1WWCtmm9
-	Y1wTBcevMRnpeYwiMCJZIHv3cJLMHuDeWG4wcVWggCwBPB6kJPB+T24J4NtxJ/xkabWPBTwh
-	9QzAB4VzGCtI4PB8OWCFKgDbiyaBQxBSfwFsG/NyMEkdgIuLvVwHi6jb0FS5gjkCOFXDgZub
-	XVw2EA8bVB1O5lNBcGq2g3DwDuoqtKoWSAcT1H5Yc7ff6XGjTsCaug2M5e1wpdzi9OOUH2zV
-	mTCWfWD7SyvOXnMQTq77O1BEiWHr9E3WIYL6n7+c+0NqkwfrxwYJtoqCy+VGgo16Qa0BZ+/d
-	DXuefyMeAajeUqzeUqzeUqzeUlEHiCbgzmSnZitT0hTiAKU0U5krTwtIzcrUAvZ7SjvAqOGY
-	EaTa68twD/fULPt3yXOSgkPCxChUEhoiDj8S9n9j311uTydS4oRUmjSHuc4w2YwiSZGbwSiN
-	AOPxPVTgtLDRM1/mWZXQeC4tVp9cVZH1J9a8Mhi9V1989mO0OjjRZSHs4gWXNe0VLziTaZs4
-	GclPclV294YnMFWXz/cdTVn6cVhzL9rUIVTL3nZ9DXT/fIl8HBWcZz5j2xPhA5Xr9d0TOo73
-	lFuBJLKtMH10pF1kbo5diY/aB7ZJrDEVvoRSJg32wxVK6T8RACyQUwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHJsWRmVeSWpSXmKPExsVy+t9jQd3PtSuDDDZOYrZY0pRh8fKQpsWm
-	treMFs1bvzJaNC65zGJxeeElVotXh3cxWmx6fI3V4vKuOWwWZ+cdZ7OYcX4fk8WcP1OYLTq/
-	zGKzeLD6LZvF03VLmC1+7prHYvH0QROTxfJ7J5ksPlw6ymyxc10nu4OIx4Op/5k8nmy6yOix
-	c9Zddo8Fm0o9Gg6cZ/G4c20Pm8fmJfUe385MZPHo27KK0WPpvaOMHnN+fmPx+LxJLoAnqoHR
-	JiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoTyWFssSc
-	UqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxoneR2wFZ9grvi09zt7A2MTWxcjJ
-	ISFgInH51WRGCFtM4sK99UBxLg4hgemMEpvbHoElhAR+MUpsuCsLYrMJqEl8+XKYHcQWEaiT
-	OD71BxNIA7PAXFaJ//93s0M0hEgsbdgBZnMKGEg8fraDBcQWFoiVeNvwBmwzi4CqxNyWk2A1
-	vAK2EnMX/GOCsAUlfky+B1bPLKAlsX7ncSYIW15i85q3zF2MHECXqks8+qsLYooIGEmsf1IN
-	USEise/FO8YJjEKzkAyahWTQLCSDZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMj
-	OLU9k97BuKrB4hCjAAejEg/vi4MrgoRYE8uKK3MPMUpwMCuJ8LqkrgwS4k1JrKxKLcqPLyrN
-	SS0+xJgM9OdEZinR5Hxg2s0riTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoR
-	zBYmDk6pBsaFzUmX9mUs+VUTmL3QSHa/yZO30ifmzo3nObsl3izXxSyUaY6E9feXZ+a9kvnP
-	G6mcyNW/QrrapJ3ZZGn54m2W70zO7Co9xD1b/oqQ3lmH9L9rhC/X7CouZmEoPhdmolCg/v/e
-	5X1b9p6aZugdscPp3Ve32QVZSj0tN6+4n7xez3Rklwvf/hwlluKMREMt5qLiRABVPO3psQMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 12 Dec 2013 04:16:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131211143450.329edd5199fd9a4d56abb6bc@linux-foundation.org>
+References: <1386758601-8520-1-git-send-email-geert@linux-m68k.org>
+	<20131211143450.329edd5199fd9a4d56abb6bc@linux-foundation.org>
+Date: Thu, 12 Dec 2013 10:16:21 +0100
+X-Google-Sender-Auth: W80JvJsfGeYblqPrDJhTbKR_lAQ
+Message-ID: <CAMuHMdUq3wQMxcic6NUy+su6bdgDLJAaODAOF5OcryJMDmj_fg@mail.gmail.com>
+Subject: Re: [PATCH] futex: Switch to USER_DS for futex test
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Jonas Bonn <jonas@southpole.se>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 12, 2013 4:41 PM, Gregory CLEMENT wrote:
-> On 11/12/2013 19:32, Bjorn Helgaas wrote:
-> > If this looks reasonable, I'll merge it via the PCI tree for v3.13.
-> >
-> > Bjorn
+On Wed, Dec 11, 2013 at 11:34 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 11 Dec 2013 11:43:21 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>
+>> Since commit e4f2dfbb5e92be4e46c0625f4f8eb101110f756f ("m68k: implement
+>> futex.h to support userspace robust futexes and PI mutexes"), the kernel
+>> crashes during boot up on MC68030:
+>>
+>> Data read fault at 0x00000000 in Super Data (pc=0x3afec)
+>> BAD KERNEL BUSERR
+>> Oops: 00000000
+>> Modules linked in:
+>> PC: [<0003afec>] cmpxchg_futex_value_locked+0x14/0x4a
+>> SR: 2004  SP: 0082fed4  a2: 0082c000
+>> d0: 00000000    d1: 00000001    d2: 00000018    d3: 00000000
+>> d4: 00000061    d5: 00001000    a0: 00000000    a1: 0082e000
+>> Process swapper (pid: 1, task=0082c000)
+>> Frame format=B ssw=074d isc=4a80 isb=661c daddr=00000000 dobuf=00000001
+>> baddr=0003aff2 dibuf=00000000 ver=f
+>> Stack from 0082ff5c:
+>>         002b8cb8 0082ff70 00000000 00000000 00000000 00000000 00000000 000020ac
+>>         00000018 00000007 00000061 00001000 00000000 00000000 002cab50 00002008
+>>         002b3a56 002b8ca4 0082c3f0 00000000 0082c53c 001e316a 00000000 00000000
+>>         001e3172 001e316a 000025d4 00000000 00000000 00000000 00000000 00000000
+>>         00000000 00000000 00000000 00000000 00000000 00000000 00000000 20000000
+>>         00000000
+>> Call Trace: [<002b8cb8>] futex_init+0x14/0x54
+>>  [<000020ac>] do_one_initcall+0xa4/0x144
+>>  [<00001000>] kernel_pg_dir+0x0/0x1000
+>>  [<00002008>] do_one_initcall+0x0/0x144
+>>  [<002b3a56>] kernel_init_freeable+0xca/0x152
+>>  [<002b8ca4>] futex_init+0x0/0x54
+>>  [<001e316a>] kernel_init+0x0/0xc8
+>>  [<001e3172>] kernel_init+0x8/0xc8
+>>  [<001e316a>] kernel_init+0x0/0xc8
+>>  [<000025d4>] ret_from_kernel_thread+0xc/0x14
+>>
+>> This happens because the futex test in futex_init() lacks a switch to the
+>> USER_DS address space, while cmpxchg_futex_value_locked() and
+>> futex_atomic_cmpxchg_inatomic() operate on userspace pointers (albeit NULL
+>> for this particular test).
+>>
+>> Fix this by switching to USER_DS before running the test, and restoring the
+>> old address space afterwards.
+>>
+>> ...
+>>
+>>  static int __init futex_init(void)
+>>  {
+>> +     mm_segment_t fs;
+>>       u32 curval;
+>>       int i;
+>>
+>> @@ -2745,8 +2747,11 @@ static int __init futex_init(void)
+>>        * implementation, the non-functional ones will return
+>>        * -ENOSYS.
+>>        */
+>> +     fs = get_fs();
+>> +     set_fs(USER_DS);
+>>       if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+>>               futex_cmpxchg_enabled = 1;
+>> +     set_fs(fs);
+>
+> hm.  Are we sure that a reference to NULL will continue to fault on all
+> architectures when switched to USER_DS?
 
-[.....]
+Good question! As you queued it in -mm, we'll see in -next.
 
-> > +PCI DRIVER FOR MVEBU (Marvell Armada 370 and Armada XP SOC support)
-> > +M:	Jason Cooper <jason@lakedaemon.net>
-> > +L:	linux-pci@vger.kernel.org
-> > +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> > +S:	Maintained
-> > +F:	drivers/pci/host/*mvebu*
-> 
-> I think that Thomas Petazzoni would be more appropriate, he worked
-> on the mvebu PCIe since 6 moths and now know very well the
-> subject. Until now all the mvebu PCIe related questions were
-> managed by Thomas.
+FWIW, I've just tested it on:
+  - ARM (ARMv7, cortex-a15): OK
+  - MIPS (TX4927): OK
+  - OpenRISC: -ENOSYS (expected, as asm-generic/futex.h doesn't implement
+    futex_atomic_cmpxchg_inatomic() yet)
 
-I think so, too. :-)
+Speaking about asm-generic: arch/m68k/include/asm/futex.h doesn't contain
+any m68k-specific code, so it's a candidate to replace
+include/asm-generic/futex.h. Actually I just tried that, and the above passed
+for OpenRISC.
+Unfortunately I don't have networking (yet) on my de0-nano FPGA board,
+so I'm not in a good position to run a full futex test suite on OpenRISC.
 
-Thomas Petazzoni is the author of the  mvebu PCIe. Also, he did
-The basic foundation of PCIe Host with Thierry Reding.  I think
-That he is the best person for the Maintainer of the mvebu PCIe.
+Gr{oetje,eeting}s,
 
-Best regards,
-Jingoo Han
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
