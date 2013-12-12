@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab3LLTNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:13:31 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:53688 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3LLTN0 (ORCPT
+	id S1752014Ab3LLTPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:15:21 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:57931 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3LLTPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:13:26 -0500
-Message-ID: <52AA0AD2.5030307@linaro.org>
-Date: Thu, 12 Dec 2013 11:13:22 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Thu, 12 Dec 2013 14:15:19 -0500
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
-Subject: Re: [RFC][PATCH 3/5] timekeeping: Avoid possible deadlock from clock_was_set_delayed
-References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org> <1386789098-17391-4-git-send-email-john.stultz@linaro.org> <52A9E5B2.8040702@oracle.com> <52AA014B.6000301@oracle.com> <52AA0798.1050709@linaro.org> <52AA08EB.1080703@oracle.com>
-In-Reply-To: <52AA08EB.1080703@oracle.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <52A7C4BB.6000701@codeaurora.org>
+References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1386295805-13708-3-git-send-email-bjorn.andersson@sonymobile.com>
+	<52A24E08.706@codeaurora.org>
+	<20131210084140.GF11990@sonymobile.com>
+	<52A7C4BB.6000701@codeaurora.org>
+Date: Thu, 12 Dec 2013 20:15:18 +0100
+Message-ID: <CACRpkdY9Z71VcS6ERiaDbg9P7qPEK_jCVXLvoCDx6YztYCnR2Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] pinctrl: Add msm8x74 configuration
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 11:05 AM, Sasha Levin wrote:
-> On 12/12/2013 01:59 PM, John Stultz wrote:
->> On 12/12/2013 10:32 AM, Sasha Levin wrote:
->>> On 12/12/2013 11:34 AM, Sasha Levin wrote:
->>>> On 12/11/2013 02:11 PM, John Stultz wrote:
->>>>> As part of normal operaions, the hrtimer subsystem frequently calls
->>>>> into the timekeeping code, creating a locking order of
->>>>>     hrtimer locks -> timekeeping locks
->>>>>
->>>>> clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
->>>>> between the timekeeping the hrtimer subsystem, so that we could
->>>>> notify the hrtimer subsytem the time had changed while holding
->>>>> the timekeeping locks. This was done by scheduling delayed work
->>>>> that would run later once we were out of the timekeeing code.
->>>>>
->>>>> But unfortunately the lock chains are complex enoguh that in
->>>>> scheduling delayed work, we end up eventually trying to grab
->>>>> an hrtimer lock.
->>>>>
->>>>> Sasha Levin noticed this in testing when the new seqlock lockdep
->>>>> enablement triggered the following (somewhat abrieviated) message:
->>>>
->>>> [snip]
->>>>
->>>> This seems to work for me, I don't see the lockdep spew anymore.
->>>>
->>>>       Tested-by: Sasha Levin <sasha.levin@oracle.com>
+On Wed, Dec 11, 2013 at 2:49 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 12/10/13 00:41, Bjorn Andersson wrote:
+>> On Fri 06 Dec 14:22 PST 2013, Stephen Boyd wrote:
+
+>>> Also, do we ever plan to have anything more than the gpio pins and the
+>>> sdc pins? It seems like we spend a lot of space describing exactly the
+>>> same thing in these structs for each of the 146 gpio pins when we could
+>>> just know that range 0 to 146 is gpio pins and have different code for
+>>> that part vs the 6 or something sd pins.
 >>>
->>> I think I spoke too soon.
->>>
->>> It took way more time to reproduce than previously, but I got:
->>>
->>>
->>> -> #1 (&(&pool->lock)->rlock){-.-...}:
->>> [ 1195.578519]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
->>> [ 1195.578519]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
->>> [ 1195.578519]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
->>> [ 1195.578519]        [<ffffffff843b0760>] _raw_spin_lock+0x40/0x80
->>> [ 1195.578519]        [<ffffffff81153e0e>] __queue_work+0x14e/0x3f0
->>> [ 1195.578519]        [<ffffffff81154168>] queue_work_on+0x98/0x120
->>> [ 1195.578519]        [<ffffffff81161351>]
->>> clock_was_set_delayed+0x21/0x30
->>> [ 1195.578519]        [<ffffffff811c4b41>] do_adjtimex+0x111/0x160
->>> [ 1195.578519]        [<ffffffff811360e3>] SYSC_adjtimex+0x43/0x80
->>> [ 1195.578519]        [<ffffffff8113612e>] SyS_adjtimex+0xe/0x10
->>> [ 1195.578519]        [<ffffffff843baed0>] tracesys+0xdd/0xe2
->>> [ 1195.578519]
+>> We have to have a pingroup list, so I did look at having that list
+>> referencing a common object with the gpio/sdc specific data.
 >>
->> Are you sure you have that patch applied?
->>
->> With it we shouldn't be calling clock_was_set_delayed() from
->> do_adjtimex().
+>> But just having it in one large blob is the way that other pinctrl
+>> drivers does it and hence a common problem to pinctrl and multi-platform
+>> arm support.
 >
-> Hm, It seems that there's a conflict there that wasn't resolved
-> properly. Does this patch
-> depend on anything else that's not currently in -next?
+> I don't follow what Linus is recommending. How could
+> .gpio_request_enable()/.gpio_disable_free() help us here?
 
-Oh yes, sorry, I didn't cc you on the entire patch set. Apologies!
+That removes the need to define a single group for each pin that
+can be used as GPIO.
 
-You'll probably want to grab the two previous patches:
-https://lkml.org/lkml/2013/12/11/479
-https://lkml.org/lkml/2013/12/11/758
+It is described in Documentation/pinctrl.txt under the heading
+"Pin control interaction with the GPIO subsystem"
 
-thanks
--john
+On a related key I guess drivers/gpio/gpio-msm-v2.c needs
+to be patched to call pinctrl_request_gpio()/
+pinctrl_free_gpio()/pinctrl_gpio_direction_input()/
+pinctrl_gpio_direction_output() before the GPIO back-end
+works at all so there is still time to change this (plus it is
+not part of the DT binding or anything so it can be changed
+at any time).
 
+Yours,
+Linus Walleij
