@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab3LLPIA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:08:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:48812 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab3LLPH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:07:59 -0500
-Message-ID: <52A9D111.3090409@zytor.com>
-Date: Thu, 12 Dec 2013 07:06:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752007Ab3LLPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:08:56 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36874 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3LLPIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 10:08:52 -0500
+Date: Thu, 12 Dec 2013 07:08:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v6 tip/core/locking 3/8]
+ Documentation/memory-barriers.txt: Prohibit speculative writes
+Message-ID: <20131212150844.GZ4208@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20131211215850.GA810@linux.vnet.ibm.com>
+ <1386799151-2219-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1386799151-2219-3-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20131212131710.GE5806@gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-CC: Borislav Petkov <bp@alien8.de>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-References: <20131211113839.GF21683@pd.tnic> <20131211115239.GA21999@twins.programming.kicks-ass.net> <1386764955.12005.60.camel@marge.simpson.net> <20131211124352.GB21999@twins.programming.kicks-ass.net> <20131211134048.GH21683@pd.tnic> <20131211145655.GB4510@gmail.com> <20131211164318.GA2480@laptop.programming.kicks-ass.net> <20131211175036.GC12431@gmail.com> <52A8F073.9040500@zytor.com> <20131212085143.GC21999@twins.programming.kicks-ass.net> <20131212132846.GA16750@gmail.com>
-In-Reply-To: <20131212132846.GA16750@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131212131710.GE5806@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121215-6688-0000-0000-000004720B6B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 05:28 AM, Ingo Molnar wrote:
->>
->> The reason we use thread_info::flags is because we need to write
->> TIF_NEED_RESCHED into it to wake up anyhow.
->>
->> Using another cacheline would mean the wakeup path would need to write a
->> second cross cpu cacheline -- that is badness too.
->>
->> So no, I don't think we want to listen to another line.
+On Thu, Dec 12, 2013 at 02:17:10PM +0100, Ingo Molnar wrote:
 > 
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > No SMP architecture currently supporting Linux allows speculative writes,
+> > so this commit updates Documentation/memory-barriers.txt to prohibit
+> > them in Linux core code.  It also records restrictions on their use.
+> > 
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> The signoff sequence looks weird here. If this came from Peter 
+> originally, did you mean:
+> 
+>   From: Peter Zijlstra <peterz@infradead.org>
+> 
+> instead of "From: Paul ..." ?
 
-Right, okay, so that's the implicit wakeup.  However, I would think the
-CLFLUSH would hurt a lot more.
+Indeed I did!  I will fix.
 
-	-hpa
-
+							Thanx, Paul
 
