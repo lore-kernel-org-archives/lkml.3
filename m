@@ -1,117 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602Ab3LLOJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:09:55 -0500
-Received: from mga01.intel.com ([192.55.52.88]:48574 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab3LLOJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:09:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,878,1378882800"; 
-   d="scan'208";a="448954989"
-Message-ID: <52A9C3AB.9060202@intel.com>
-Date: Thu, 12 Dec 2013 16:09:47 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751696Ab3LLOLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:11:52 -0500
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:65241 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab3LLOLv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:11:51 -0500
+Date: Thu, 12 Dec 2013 15:11:47 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/3] x86: mm: Change tlb_flushall_shift for IvyBridge
+Message-ID: <20131212141147.GB17059@gmail.com>
+References: <1386849309-22584-1-git-send-email-mgorman@suse.de>
+ <1386849309-22584-3-git-send-email-mgorman@suse.de>
+ <20131212131309.GD5806@gmail.com>
+ <52A9BC3A.7010602@linaro.org>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 23/71] perf evlist: Add perf_evlist__to_front()
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-24-git-send-email-alexander.shishkin@linux.intel.com> <20131211193840.GE1458@ghostprotocols.net>
-In-Reply-To: <20131211193840.GE1458@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A9BC3A.7010602@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13 21:38, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Dec 11, 2013 at 02:36:35PM +0200, Alexander Shishkin escreveu:
->> From: Adrian Hunter <adrian.hunter@intel.com>
->  
->> Add a function to move a selected event to the front of the list.
->  
->> This is needed because it is not possible to use the
->> PERF_EVENT_IOC_SET_OUTPUT IOCTL from an Instruction Tracing event to a
->> non-Instruction Tracing event.  Thus the Instruction Tracing event
->> must come first.
-> 
-> 
-> The description doesn't matches what the code is doing, as it is moving
-> a _group_, not an event.
 
-OK I will rename it
+* Alex Shi <alex.shi@linaro.org> wrote:
 
-> 
-> Also I wonder if you can't do this more effiently by finding where it
-> starts, ends and then doing some more splice like operatins instead of
-> moving member by member to a temp list. Setting the (next, prev) fields
-> of the various sublists to the right places.
-> 
-> There is even list_cut_position() already in list.h, used with
-> list_move() and list_splice() I think you can do it more efficiently,
-> I think.
+> On 12/12/2013 09:13 PM, Ingo Molnar wrote:
+> > 
+> > * Mel Gorman <mgorman@suse.de> wrote:
+> > 
+> >> There was a large performance regression that was bisected to commit 611ae8e3
+> >> (x86/tlb: enable tlb flush range support for x86). This patch simply changes
+> >> the default balance point between a local and global flush for IvyBridge.
+> >>
+> >> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> >> ---
+> >>  arch/x86/kernel/cpu/intel.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> >> index dc1ec0d..2d93753 100644
+> >> --- a/arch/x86/kernel/cpu/intel.c
+> >> +++ b/arch/x86/kernel/cpu/intel.c
+> >> @@ -627,7 +627,7 @@ static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+> >>  		tlb_flushall_shift = 5;
+> >>  		break;
+> >>  	case 0x63a: /* Ivybridge */
+> >> -		tlb_flushall_shift = 1;
+> >> +		tlb_flushall_shift = 2;
+> >>  		break;
+> > 
+> > I'd not be surprised if other CPU models showed similar weaknesses 
+> > under ebizzy as well.
+> > 
+> > I don't particularly like the tuning aspect of the whole feature: the 
+> > tunings are model specific and they seem to come out of thin air, 
+> > without explicit measurements visible.
+> > 
+> > In particular the first commit that added this optimization:
+> > 
+> >  commit c4211f42d3e66875298a5e26a75109878c80f15b
+> >  Date:   Thu Jun 28 09:02:19 2012 +0800
+> > 
+> >     x86/tlb: add tlb_flushall_shift for specific CPU
+> > 
+> > already had these magic tunings, with no explanation about what kind 
+> > of measurement was done to back up those tunings.
+> > 
+> > I don't think this is acceptable and until this is cleared up I think 
+> > we might be better off turning off this feature altogether, or making 
+> > a constant, very low tuning point.
+> > 
+> > The original code came via:
+> > 
+> >   611ae8e3f520 x86/tlb: enable tlb flush range support for x86
+> > 
+> > which references a couple of benchmarks, in particular a 
+> > micro-benchmark:
+> > 
+> >   My micro benchmark 'mummap' http://lkml.org/lkml/2012/5/17/59
+> >   show that the random memory access on other CPU has 0~50% speed up
+> >   on a 2P * 4cores * HT NHM EP while do 'munmap'.
+> > 
+> > if the tunings were done with the micro-benchmark then I think they 
+> > are bogus, because AFAICS it does not measure the adversarial case of 
+> > the optimization.
 
-OK
+You have not replied to this concern of mine: if my concern is valid 
+then that invalidates much of the current tunings.
 
+> > So I'd say at minimum we need to remove the per model tunings, and 
+> > need to use very conservative defaults, to make sure we don't slow 
+> > down reasonable workloads.
 > 
-> - Arnaldo
->  
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>  tools/perf/util/evlist.c | 17 +++++++++++++++++
->>  tools/perf/util/evlist.h |  3 +++
->>  2 files changed, 20 insertions(+)
->>
->> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
->> index f9dbf5f..93683bc 100644
->> --- a/tools/perf/util/evlist.c
->> +++ b/tools/perf/util/evlist.c
->> @@ -1216,3 +1216,20 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
->>  
->>  	return 0;
->>  }
->> +
->> +void perf_evlist__to_front(struct perf_evlist *evlist,
->> +			   struct perf_evsel *move_evsel)
->> +{
->> +	struct perf_evsel *evsel, *n;
->> +	LIST_HEAD(move);
->> +
->> +	if (move_evsel == perf_evlist__first(evlist))
->> +		return;
->> +
->> +	list_for_each_entry_safe(evsel, n, &evlist->entries, node) {
->> +		if (evsel->leader == move_evsel->leader)
->> +			list_move_tail(&evsel->node, &move);
->> +	}
->> +
->> +	list_splice(&move, &evlist->entries);
->> +}
->> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
->> index 8a04aae..9f64ede 100644
->> --- a/tools/perf/util/evlist.h
->> +++ b/tools/perf/util/evlist.h
->> @@ -194,5 +194,8 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
->>  }
->>  
->>  bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str);
->> +void perf_evlist__to_front(struct perf_evlist *evlist,
->> +			   struct perf_evsel *move_evsel);
->> +
->>  
->>  #endif /* __PERF_EVLIST_H */
->> -- 
->> 1.8.5.1
-> 
-> 
+> I also hate to depends on mysterious hardware differentiation. But 
+> there do have some changes in tlb/cache part on different Intel 
+> CPU.(Guess HPA know this more). And the different shift value get 
+> from testing not from air. :)
 
+As far as I could see from the changelogs and the code itself the 
+various tunings came from nowhere.
+
+So I don't see my concerns addressed. My inclination would be to start 
+with something like Mel's known-good tuning value below, we know that 
+ebizzy does not regress with that setting. Any more aggressive tuning 
+needs to be backed up with ebizzy-alike adversarial workload 
+performance numbers.
+
+Thanks,
+
+	Ingo
+
+(Patch totally untested.)
+
+=============>
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index dc1ec0d..c98385d 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -614,23 +614,8 @@ static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+ 	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
+ 		tlb_flushall_shift = -1;
+ 		break;
+-	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
+-	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
+-	case 0x625: /* 32 nm nehalem, "Clarkdale" */
+-	case 0x62c: /* 32 nm nehalem, "Gulftown" */
+-	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
+-	case 0x62f: /* 32 nm Xeon E7 */
+-		tlb_flushall_shift = 6;
+-		break;
+-	case 0x62a: /* SandyBridge */
+-	case 0x62d: /* SandyBridge, "Romely-EP" */
+-		tlb_flushall_shift = 5;
+-		break;
+-	case 0x63a: /* Ivybridge */
+-		tlb_flushall_shift = 1;
+-		break;
+ 	default:
+-		tlb_flushall_shift = 6;
++		tlb_flushall_shift = 2;
+ 	}
+ }
+ 
