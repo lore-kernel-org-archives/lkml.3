@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab3LLSe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:34:58 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:33587 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab3LLSe4 (ORCPT
+	id S1752068Ab3LLShG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:37:06 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45358 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3LLShD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:34:56 -0500
+	Thu, 12 Dec 2013 13:37:03 -0500
+Message-ID: <52AA024B.20409@wwwdotorg.org>
+Date: Thu, 12 Dec 2013 11:36:59 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <1386729148-16262-1-git-send-email-acourbot@nvidia.com>
-References: <1386729148-16262-1-git-send-email-acourbot@nvidia.com>
-Date: Thu, 12 Dec 2013 19:34:55 +0100
-Message-ID: <CACRpkdYNL9gAqugPmRzDUEZGzUCtNCDX4Ro=vQXWkNtvJVw6bA@mail.gmail.com>
-Subject: Re: [PATCH v3] gpiolib: return -ENOENT if no GPIO mapping exists
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@linaro.org
+CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, thierry.reding@gmail.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: tegra: select PINCTRL_TEGRA124 for Tegra124
+ SoC
+References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 3:32 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
+> The pincontrol driver for Tegra124 is build through config
+> PINCTRL_TEGRA124. Select this config option whenever Tegra124
+> SoC is enabled.
 
-> Some devices drivers make use of optional GPIO parameters. For such
-> drivers, it is important to discriminate between the case where no
-> GPIO mapping has been defined for the function they are requesting, and
-> the case where a mapping exists but an error occured while resolving it
-> or when acquiring the GPIO.
->
-> This patch changes the family of gpiod_get() functions such that they
-> will return -ENOENT if and only if no GPIO mapping is defined for the
-> requested function. Other error codes are used when an actual error
-> occured during the GPIO resolution.
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
-> Changes since v2:
-> - Put string on a single line (thanks Andy!)
-> - Added Andy's reviewed-by
+Applied to Tegra's for-3.14/soc branch.
 
-Applied this v2 version with Mika's review tag.
-
-Yours,
-Linus Walleij
+(I thought I had sent this before myself, but I'd only written the patch
+locally, and had not actually sent it out, hence I took your identical
+patch.)
