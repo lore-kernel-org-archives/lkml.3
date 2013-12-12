@@ -1,76 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab3LLKb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 05:31:57 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:44826 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab3LLKby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 05:31:54 -0500
-Message-ID: <52A99092.6080305@hitachi.com>
-Date: Thu, 12 Dec 2013 19:31:46 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
+	id S1751507Ab3LLKcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 05:32:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54622 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155Ab3LLKcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 05:32:02 -0500
+Date: Thu, 12 Dec 2013 11:31:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 6/6] [RFC] kprobes/x86: Call exception handlers
- directly from do_int3/do_debug
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204012856.22118.91079.stgit@kbuild-fedora.novalocal> <20131203213904.5ff1794c@gandalf.local.home> <alpine.LRH.2.00.1312111418550.6318@twin.jikos.cz> <52A93E3A.9080600@hitachi.com> <alpine.LNX.2.00.1312121058220.1413@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1312121058220.1413@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131212103159.GB2630@dhcp22.suse.cz>
+References: <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+ <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+ <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+ <20131210103827.GB20242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
+ <20131211095549.GA18741@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/12 18:59), Jiri Kosina wrote:
-> On Thu, 12 Dec 2013, Masami Hiramatsu wrote:
+On Wed 11-12-13 14:40:24, David Rientjes wrote:
+> On Wed, 11 Dec 2013, Michal Hocko wrote:
 > 
->>> Yeah, it's broken. Obviously, if you happen to trigger int3 before the 
->>> notifier has been registered, it'd cause int3 exception to be unhandled. 
->>> See
->>>
->>> 	commit 17f41571bb2c4a398785452ac2718a6c5d77180e
->>> 	Author: Jiri Kosina <jkosina@suse.cz>
->>> 	Date:   Tue Jul 23 10:09:28 2013 +0200
->>>
->>> 	    kprobes/x86: Call out into INT3 handler directly instead of using notifier
->>>
->>> for one such issue that happened with jump labels.
->>>
->>>> Hmm, if there's no users of the int3 notifier, should we just remove it?
->>>
->>> Hmm, there are still uprobes, right?
->>
->> Right, uprobes still use it, however, since it only handles user-space
->> breakpoint, there is no problem.
+> > > Triggering a pointless notification with PF_EXITING is rare, yet one 
+> > > pointless notification can be avoided with the patch. 
+> > 
+> > Sigh. Yes it will avoid one particular and rare race. There will still
+> > be notifications without oom kills.
+> > 
 > 
-> Agreed. But therefore the notifier can't just be removed, unless uprobes 
-> are converted to direct call as well (but I don't think that'd be 
-> beneficial, notifier is sufficient in this case).
+> Would you prefer doing the mem_cgroup_oom_notify() in two places instead:
+> 
+>  - immediately before doing oom_kill_process() when it's guaranteed that
+>    the kernel would have killed something, and
+> 
+>  - when memory.oom_control == 1 in mem_cgroup_oom_synchronize()?
 
-Ah, I don't intended to remove notify_die from do_int3, since
-notify_die notifies many other exceptions too. :)
+Yes that would make sense to me. At least the two oom_control paths
+would be consistent wrt. notifications. I thought it would be too messy
+but it looks quite straightforward:
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c72b03bf9679..5cb1deea6aac 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2256,15 +2256,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 
+ 	locked = mem_cgroup_oom_trylock(memcg);
+ 
+-	if (locked)
+-		mem_cgroup_oom_notify(memcg);
+-
+ 	if (locked && !memcg->oom_kill_disable) {
+ 		mem_cgroup_unmark_under_oom(memcg);
+ 		finish_wait(&memcg_oom_waitq, &owait.wait);
++		/* calls mem_cgroup_oom_notify if there is a task to kill */
+ 		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
+ 					 current->memcg_oom.order);
+ 	} else {
++		if (locked && memcg->oom_kill_disable)
++			mem_cgroup_oom_notify(memcg);
++
+ 		schedule();
+ 		mem_cgroup_unmark_under_oom(memcg);
+ 		finish_wait(&memcg_oom_waitq, &owait.wait);
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 1e4a600a6163..2a7f15900922 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -470,6 +470,9 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		victim = p;
+ 	}
+ 
++	if (memcg)
++		mem_cgroup_oom_notify(memcg);
++
+ 	/* mm cannot safely be dereferenced after task_unlock(victim) */
+ 	mm = victim->mm;
+ 	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
 
-Thank you,
 
+The semantic would be as simple as "notification is sent only when
+an action is due". It will be still racy as nothing prevents a task
+which is not under OOM to exit and release some memory but there is no
+sensible way to address that. On the other hand such a semantic would be
+sensible for oom_control listeners because they will know that an action
+has to be or will be taken (the line was drawn).
+
+Can we agree on this, Johannes? Or you see the line drawn when
+mem_cgroup_oom_synchronize has been reached already no matter whether
+the action is to be done or not?
+
+Regardless the above. We would still have to cope with PF_EXITING
+without TIF_MEMDIE entering OOM which is a separate issue. I think the
+easier and cleaner solution would be to bail out early and do not even
+charge for PF_EXITING tasks. It will solve the issue mentioned before
+and also reduce the exit latency. Besides that I do not think we are
+talking about many charges, do we?
+
+> > Anyway.
+> > Does the reclaim make any sense for PF_EXITING tasks? Shouldn't we
+> > simply bypass charges of these tasks automatically. Those tasks will
+> > free some memory anyway so why to trigger reclaim and potentially OOM
+> > in the first place? Do we need to go via TIF_MEMDIE loop in the first
+> > place?
+> > 
+> 
+> I don't see any reason to make an optimization there since they will get 
+> TIF_MEMDIE set if reclaim has failed on one of their charges or if it 
+> results in a system oom through the page allocator's oom killer.
+
+This all will happen after MEM_CGROUP_RECLAIM_RETRIES full reclaim
+rounds. Is it really worth the addional overhead just to later say "OK
+go ahead and skipp charges"?
+And for the !oom memcg it might reclaim some pages which could have
+stayed on LRUs just to free some memory little bit later and release the
+memory pressure.
+So I would rather go with
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c72b03bf9679..fee25c5934d2 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 	 * MEMDIE process.
+ 	 */
+ 	if (unlikely(test_thread_flag(TIF_MEMDIE)
+-		     || fatal_signal_pending(current)))
++		     || fatal_signal_pending(current))
++		     || current->flags & PF_EXITING)
+ 		goto bypass;
+ 
+ 	if (unlikely(task_in_memcg_oom(current)))
+
+rather than the later checks down the oom_synchronize paths. The comment
+already mentions dying process...
+
+> It would be nice to ensure reclaim has had a chance to free memory in
+> the presence of any other potential parallel memory freeing.
+
+I am afraid I didn't get what you mean by this. We can only check we are
+under OOM or try to reclaim to see if there is something...
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Michal Hocko
+SUSE Labs
