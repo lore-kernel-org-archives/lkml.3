@@ -1,56 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3LLA17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:27:59 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:48603 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab3LLA16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:27:58 -0500
+	id S1751842Ab3LLA34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:29:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51305 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab3LLA3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:29:55 -0500
+Date: Thu, 12 Dec 2013 01:29:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org
+Subject: Re: EFI tree kernel panic in phys_efi_set_virtual_address_map()
+Message-ID: <20131212002946.GF8863@pd.tnic>
+References: <1386806463.1791.295.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
-References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
-Date: Wed, 11 Dec 2013 16:21:09 -0800
-X-Google-Sender-Auth: 0vWRtS5n4kT0s6YP_dVfRBqb3gA
-Message-ID: <CAE9FiQUtqtBLx3_pdhs=CjgqViGrDL9xdCjLKgs66jA-apHdQA@mail.gmail.com>
-Subject: Re: How to reserve pci bus numbers for hotplug?
-From: Yinghai Lu <yinghai@kernel.org>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1386806463.1791.295.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 3:37 PM, Andreas Noever
-<andreas.noever@gmail.com> wrote:
+On Wed, Dec 11, 2013 at 05:01:03PM -0700, Toshi Kani wrote:
+> Hi Boris,
+> 
+> An EFI tree kernel panic'd during boot on one of my systems.  It boots
+> fine when efi=old_map option is specified.  So, I think it is caused by
+> your EFI virtual mapping changes.
+> 
+> The panic message is as follows.  I added some printk's to log the
+> arguments of phys_efi_set_virtual_address_map().  The fault address is
+> __pa(new_memmap) + 0x20 (too high for the map?).
+> 
+> Thanks,
+> -Toshi
+> 
+> 
+> 
+> efi: >> Call phys_efi_set_virtual_address_map()
+> efi:    count 29
+> efi:    desc_size 0x30
+> efi:    new_memmap 0xffff8a03fec16800
+> efi:    __pa(new_memmap) 0x203fec16800
+> 
+> BUG: unable to handle kernel paging request at 00000203fec16820
+> IP: [<0000000072dcda76>] 0x72dcda75
+> PGD 0 
 
-> If I could get Linux to assign enough resources (bus numbers for now)
-> then I could drop the acpi_osi parameter and make thunderbolt work
-> after suspend... So, is there an easy way to fix this? (Quirks,
-> reconfiguring bus number assignments from a platform driver, ...?)
+It looks like the page hierarchy which contains __pa(new_memmap) is not
+mapped in the EFI page table. Nice.
 
-please check if busn_alloc at
+> Oops: 0000 [#1] SMP 
+> Modules linked in:
+> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #52
+> Hardware name: HP CB920s x1, BIOS Bundle: 005.028.018 SFW: 012.124.000
+> 10/28/2013
+> task: ffffffff81a10480 ti: ffffffff81a00000 task.ti: ffffffff81a00000
+> RIP: 0010:[<0000000072dcda76>]  [<0000000072dcda76>] 0x72dcda75
+> RSP: 0000:ffffffff81a01e08  EFLAGS: 00010206
+> RAX: 00000000725fee18 RBX: 00000000725feda0 RCX: 00000203fec16800
+> RDX: 0000000072dfe070 RSI: 0000000060000202 RDI: 0000000072dcdac8
+> RBP: 0000000072dd0560 R08: 0000000000000000 R09: 000000000000001d
+> R10: 0000000000000030 R11: 8000000000000000 R12: ffff8a03fec16800
+> R13: 0000000000000001 R14: 000000000000001d R15: 000000000009c000
+> FS:  0000000000000000(0000) GS:ffff88087fa00000(0000)
+> knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00000203fec16820 CR3: 000000000009c000 CR4: 00000000000406b0
+> Stack:
+>  0000000072dfb88f 0000000000000001 0000000000000d08 0000000000000000
+>  ffffffff81d79a98 0000000072dcdac8 0000000072dcdb93 0000000000000001
+>  ffffffff81a01f80 0000000000000570 0000000000000000 0000000000000000
+> Call Trace:
+>  [<ffffffff81045cec>] ? efi_call4+0x6c/0xf0
+>  [<ffffffff81b02f65>] ? efi_enter_virtual_mode+0x229/0x3f1
+>  [<ffffffff81aebdf2>] ? start_kernel+0x36c/0x407
+>  [<ffffffff81aeb88f>] ? repair_env_string+0x5c/0x5c
+>  [<ffffffff81aeb5a3>] ? x86_64_start_reservations+0x2a/0x2c
+>  [<ffffffff81aeb696>] ? x86_64_start_kernel+0xf1/0xf4
+> Code:  Bad RIP value.
+> RIP  [<0000000072dcda76>] 0x72dcda75
+>  RSP <ffffffff81a01e08>
+> CR2: 00000203fec16820
+> ---[ end trace e50b25032c120443 ]---
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-pci-busn-alloc-3.14
+Ok, it is late here and I'm almost blocked but you could try the dirty
+patch below - more fiddling tomorrow.
 
-could help.
+In the meantime, can you send me full dmesg, the exact tree you're using
+and your .config?
 
-  resources: Split out __allocate_resource()
-  resources: Add resource_shrink_parents_top()
-  resources: Add probe_resource()
-  resources: Replace registered resource in tree.
-  PCI: Add pci_bus_extend/shrink_top()
-  PCI: Probe safe range that we can use for unassigned bridge.
-  PCI: Add pci_bus_replace_busn_res()
-  PCI: Allocate bus range instead of use max blindly
-  PCI: Strict checking of valid range for bridge
-  PCI: Kill pci_fixup_parent_subordinate_busnr()
-  PCI: Seperate child bus scanning to two passes overall
-  pcmcia: Remove workaround for fixing pci parent bus subordinate
-  PCI, pciehp: Remove not needed bus number range checking
-  PCI: More strict checking of valid range for bridge
-  PCI: Don't shrink too much for hotplug bridge
-  expand_bus_for_sriov
+Thanks.
+
+--
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index f8ec4dafc74e..254d3f2eff9f 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -245,8 +245,13 @@ static efi_status_t __init phys_efi_set_virtual_address_map(
+ 	u32 descriptor_version,
+ 	efi_memory_desc_t *virtual_map)
+ {
++	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
+ 	efi_status_t status;
+ 
++	memcpy(pgd + pgd_index((unsigned long)virtual_map),
++		init_mm.pgd + pgd_index((unsigned long)virtual_map),
++		sizeof(pgd_t));
++
+ 	efi_call_phys_prelog();
+ 	status = efi_call_phys4(efi_phys.set_virtual_address_map,
+ 				memory_map_size, descriptor_size,
+
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
