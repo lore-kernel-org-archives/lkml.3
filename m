@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3LLCHe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 21:07:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab3LLCHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 21:07:31 -0500
-Date: Thu, 12 Dec 2013 10:06:42 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, x86@kernel.org, mjg59@srcf.ucam.org,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, toshi.kani@hp.com
-Subject: Re: [PATCH v5 01/14] x86/mm: sparse warning fix for early_memremap
-Message-ID: <20131212020642.GB3751@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-2-git-send-email-dyoung@redhat.com>
- <20131209150521.GE31650@pd.tnic>
- <20131210021221.GA3800@dhcp-16-126.nay.redhat.com>
- <20131211102025.GB19196@console-pimps.org>
- <20131211111240.GE21683@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211111240.GE21683@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751975Ab3LLCJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 21:09:11 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7128 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751374Ab3LLCJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 21:09:08 -0500
+Date: Wed, 11 Dec 2013 21:09:03 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
+ implementation
+Message-ID: <20131211210903.1e44ba39@gandalf.local.home>
+In-Reply-To: <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
+	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/13 at 12:12pm, Borislav Petkov wrote:
-> On Wed, Dec 11, 2013 at 10:20:25AM +0000, Matt Fleming wrote:
-> > This needs reviewing by at least one of the x86 folks, but it
-> > certainly makes sense to me.
-> 
-> Ingo told me yesterday, it makes sense too. I'd guess we can try it.
-> FWIW, all callers of early_memremap use the memory they get remapped as
-> normal memory so we should be safe.
-> 
-> Maybe this whole discussion should be noted down in the commit message
-> so that people know.
 
-Thanks for the info. will add.
+> --- /dev/null
+> +++ b/kernel/swait.c
+> @@ -0,0 +1,118 @@
+> +/*
+> + * Simple waitqueues without fancy flags and callbacks
+
+We should probably have a more detailed description of when to use
+simple wait queues verses normal wait queues. These are obviously much
+lighter wait, and should be the preferred method unless you need a
+feature of the more heavy weight wait queues.
+
+-- Steve
+
+"weight wait" Ha! Don't get to use that very often ;-)
+
+
+> + *
+> + * (C) 2011 Thomas Gleixner <tglx@linutronix.de>
+> + *
+> + * Based on kernel/wait.c
+> + *
+> + * For licencing details see kernel-base/COPYING
+> + */
+> +#include <linux/init.h>
+> +#include <linux/export.h>
+> +#include <linux/sched.h>
+> +#include <linux/swait.h>
