@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab3LLQyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:54:52 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45672 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab3LLQys (ORCPT
+	id S1752048Ab3LLQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:54:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24920 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab3LLQyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:54:48 -0500
+	Thu, 12 Dec 2013 11:54:52 -0500
 From: vegard.nossum@oracle.com
 To: linux-kernel@vger.kernel.org
-Cc: Vegard Nossum <vegard.nossum@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 7/9] drm/i915: Known exploit detection for CVE-2013-0913
-Date: Thu, 12 Dec 2013 17:52:30 +0100
-Message-Id: <1386867152-24072-7-git-send-email-vegard.nossum@oracle.com>
+Cc: Vegard Nossum <vegard.nossum@oracle.com>, Alan Cox <alan@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 6/9] x86: Known exploit detection for CVE-2013-0268
+Date: Thu, 12 Dec 2013 17:52:29 +0100
+Message-Id: <1386867152-24072-6-git-send-email-vegard.nossum@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
 References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
@@ -25,39 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vegard Nossum <vegard.nossum@oracle.com>
 
-See 3118a4f652c7b12c752f3222af0447008f9b2368.
+See c903f0456bc69176912dee6dd25c6a66ee1aed00.
 
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 ++++-
+ arch/x86/kernel/msr.c |    5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index bf34577..48490c1 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -32,6 +32,7 @@
- #include "i915_trace.h"
- #include "intel_drv.h"
- #include <linux/dma_remapping.h>
+diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
+index 88458fa..fad04f1 100644
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -37,6 +37,7 @@
+ #include <linux/notifier.h>
+ #include <linux/uaccess.h>
+ #include <linux/gfp.h>
 +#include <linux/exploit.h>
  
- struct eb_objects {
- 	struct list_head objects;
-@@ -785,8 +786,10 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
- 		 * the worst case where we need to allocate the entire
- 		 * relocation tree as a single array.
- 		 */
--		if (exec[i].relocation_count > relocs_max - relocs_total)
-+		if (exec[i].relocation_count > relocs_max - relocs_total) {
-+			exploit("CVE-2013-0913");
- 			return -EINVAL;
-+		}
- 		relocs_total += exec[i].relocation_count;
+ #include <asm/processor.h>
+ #include <asm/msr.h>
+@@ -174,8 +175,10 @@ static int msr_open(struct inode *inode, struct file *file)
+ 	unsigned int cpu = iminor(file_inode(file));
+ 	struct cpuinfo_x86 *c;
  
- 		length = exec[i].relocation_count *
+-	if (!capable(CAP_SYS_RAWIO))
++	if (!capable(CAP_SYS_RAWIO)) {
++		exploit("CVE-2013-0268");
+ 		return -EPERM;
++	}
+ 
+ 	if (cpu >= nr_cpu_ids || !cpu_online(cpu))
+ 		return -ENXIO;	/* No such CPU */
 -- 
 1.7.10.4
 
