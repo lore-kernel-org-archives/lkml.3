@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521Ab3LLK5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 05:57:31 -0500
-Received: from www.linutronix.de ([62.245.132.108]:39360 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab3LLK5V (ORCPT
+	id S1751492Ab3LLLDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:03:49 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:41633 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3LLLDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 05:57:21 -0500
-Date: Thu, 12 Dec 2013 11:56:58 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Hellwig <hch@infradead.org>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-In-Reply-To: <20131212080314.GA25783@infradead.org>
-Message-ID: <alpine.DEB.2.02.1312121147130.28330@ionos.tec.linutronix.de>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com> <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com> <20131212080314.GA25783@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 12 Dec 2013 06:03:47 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+In-Reply-To: <26167386.hX5eWUjT6T@flatron>
+References: <1386825152-398-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+	<26167386.hX5eWUjT6T@flatron>
+Date: Thu, 12 Dec 2013 16:33:46 +0530
+Message-ID: <CAAunhULO5n3rf5_Q+HwExd=kadsPC_rTz9oP8kXKM7krBetbdQ@mail.gmail.com>
+Subject: Re: [PATCH CFT] ARM:S5P64X0: Enable ARM_PATCH_PHYS_VIRT and
+ AUTO_ZRELADDR by default
+From: Panchaxari Prasannamurthy Tumkur 
+	<panchaxari.prasannamurthy@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Kgene Kim <kgene.kim@samsung.com>, Patch Tracking <patches@linaro.org>,
+        linaro-kernel@lists.linaro.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Dec 2013, Christoph Hellwig wrote:
+Hi Tomasz
 
-> On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
-> > From: Thomas Gleixner <tglx@linutronix.de>
-> > 
-> > The wait_queue is a swiss army knife and in most of the cases the
-> > full complexity is not needed.  Here we provide a slim version, as
-> > it lowers memory consumption and runtime overhead.
-> 
-> Might it make more sense to just make the simple one the default and use
-> the complex one in the few cases that need it?
+> Could you explain the purpose of this change on S5P64x0?
+>
+> This is actually quite a poor platform choice. As of today, the kernel
+> is stuck with supporting just SMDK6440/6450 boards, which are proprietary
+> development boards and it doesn't look like any further boards will show
+> up in future. Kukjin has actually proposed removing support for this
+> platform at all and I consider this reasonable.
+>
+> Kukjin, should we proceed with removal?
 
-Sure.
- 
-> It would also be good to enumerate those cases.  The wake callbacks come
-> to mind, but I guess there are more?
+The purpose of this patch is with the greater intent of consolidating
+ARM-32 kernel. Which means a generic kernel for ARM-32 processors.
 
-You can convert everything which uses default_wake_function and does
-not use the exclusive wait trickery.
+Hence these platform supported configs are introduced as default for
+that particular platform.
 
-Thanks,
+I hope i answered your question. Else please mail me with further queries.
 
-	tglx
+thanks
+Panchaxari
