@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3LLHgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 02:36:53 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50936 "EHLO
+	id S1752190Ab3LLHgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 02:36:50 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63830 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab3LLHg1 (ORCPT
+	with ESMTP id S1751808Ab3LLHgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 02:36:27 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-0d-52a967776d1f
+	Thu, 12 Dec 2013 02:36:25 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-01-52a967761fe9
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 11/14] tools lib traceevent: Make pevent_filter_add_filter_str() return pevent_errno
-Date: Thu, 12 Dec 2013 16:36:14 +0900
-Message-Id: <1386833777-3790-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/14] tools lib traceevent: Get rid of die() in reparent_op_arg()
+Date: Thu, 12 Dec 2013 16:36:11 +0900
+Message-Id: <1386833777-3790-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
 References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
@@ -26,228 +26,254 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+To do that, make the function returns the error code.  Also pass
+error_str so that it can set proper error message when error occurred.
 
-Refactor the pevent_filter_add_filter_str() to return a proper error
-code and get rid of the third error_str argument.
-
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/event-parse.h  |  8 ++--
- tools/lib/traceevent/parse-filter.c | 78 +++++++++++--------------------------
- 2 files changed, 27 insertions(+), 59 deletions(-)
+ tools/lib/traceevent/event-parse.h  |  5 +-
+ tools/lib/traceevent/parse-filter.c | 94 +++++++++++++++++++++++--------------
+ 2 files changed, 64 insertions(+), 35 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index da942d59cc3a..089964e56ed4 100644
+index 89e4dfd40db6..5e4392d8e2d4 100644
 --- a/tools/lib/traceevent/event-parse.h
 +++ b/tools/lib/traceevent/event-parse.h
-@@ -372,7 +372,8 @@ enum pevent_flag {
- 	_PE(ILLEGAL_TOKEN,	"illegal token"),			      \
- 	_PE(INVALID_PAREN,	"open parenthesis cannot come here"), 	      \
- 	_PE(UNBALANCED_PAREN,	"unbalanced number of parenthesis"),	      \
--	_PE(UNKNOWN_TOKEN,	"unknown token")
-+	_PE(UNKNOWN_TOKEN,	"unknown token"),			      \
-+	_PE(FILTER_NOT_FOUND,	"no filter found")
+@@ -364,7 +364,10 @@ enum pevent_flag {
+ 	_PE(ILLEGAL_LVALUE,	"illegal lvalue for string comparison"),      \
+ 	_PE(INVALID_REGEX,	"regex did not compute"),		      \
+ 	_PE(ILLEGAL_STRING_CMP,	"illegal comparison for string"), 	      \
+-	_PE(ILLEGAL_INTEGER_CMP,"illegal comparison for integer")
++	_PE(ILLEGAL_INTEGER_CMP,"illegal comparison for integer"), 	      \
++	_PE(REPARENT_NOT_OP,	"cannot reparent other than OP"),	      \
++	_PE(REPARENT_FAILED,	"failed to reparent filter OP"),	      \
++	_PE(BAD_FILTER_ARG,	"bad arg in filter tree")
  
  #undef _PE
  #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
-@@ -863,9 +864,8 @@ enum filter_trivial_type {
- 	FILTER_TRIVIAL_BOTH,
- };
- 
--int pevent_filter_add_filter_str(struct event_filter *filter,
--				 const char *filter_str,
--				 char **error_str);
-+enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
-+					       const char *filter_str);
- 
- 
- int pevent_filter_match(struct event_filter *filter,
 diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 5aa5012a17ee..78440d73e0ad 100644
+index 774c3e4c1d9f..9b05892566e0 100644
 --- a/tools/lib/traceevent/parse-filter.c
 +++ b/tools/lib/traceevent/parse-filter.c
-@@ -1209,7 +1209,7 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 	return ret;
- }
+@@ -784,15 +784,18 @@ enum filter_vals {
+ 	FILTER_VAL_TRUE,
+ };
  
--static int
+-void reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
+-		  struct filter_arg *arg)
 +static enum pevent_errno
- process_event(struct event_format *event, const char *filter_str,
- 	      struct filter_arg **parg, char **error_str)
++reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
++		struct filter_arg *arg, char **error_str)
  {
-@@ -1218,21 +1218,15 @@ process_event(struct event_format *event, const char *filter_str,
- 	pevent_buffer_init(filter_str, strlen(filter_str));
+ 	struct filter_arg *other_child;
+ 	struct filter_arg **ptr;
  
- 	ret = process_filter(event, parg, error_str, 0);
--	if (ret == 1) {
--		show_error(error_str,
--			   "Unbalanced number of ')'");
--		return -1;
--	}
- 	if (ret < 0)
- 		return ret;
+ 	if (parent->type != FILTER_ARG_OP &&
+-	    arg->type != FILTER_ARG_OP)
+-		die("can not reparent other than OP");
++	    arg->type != FILTER_ARG_OP) {
++		show_error(error_str, "can not reparent other than OP");
++		return PEVENT_ERRNO__REPARENT_NOT_OP;
++	}
  
- 	/* If parg is NULL, then make it into FALSE */
- 	if (!*parg) {
- 		*parg = allocate_arg();
--		if (*parg == NULL) {
--			show_error(error_str, "failed to allocate filter arg");
--			return -1;
--		}
-+		if (*parg == NULL)
-+			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+
- 		(*parg)->type = FILTER_ARG_BOOLEAN;
- 		(*parg)->boolean.value = FILTER_FALSE;
- 	}
-@@ -1240,13 +1234,13 @@ process_event(struct event_format *event, const char *filter_str,
- 	return 0;
- }
+ 	/* Get the sibling */
+ 	if (old_child->op.right == arg) {
+@@ -801,8 +804,10 @@ void reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
+ 	} else if (old_child->op.left == arg) {
+ 		ptr = &old_child->op.left;
+ 		other_child = old_child->op.right;
+-	} else
+-		die("Error in reparent op, find other child");
++	} else {
++		show_error(error_str, "Error in reparent op, find other child");
++		return PEVENT_ERRNO__REPARENT_FAILED;
++	}
  
--static int filter_event(struct event_filter *filter,
--			struct event_format *event,
--			const char *filter_str, char **error_str)
-+static enum pevent_errno
-+filter_event(struct event_filter *filter, struct event_format *event,
-+	     const char *filter_str, char **error_str)
- {
- 	struct filter_type *filter_type;
- 	struct filter_arg *arg;
--	int ret;
-+	enum pevent_errno ret;
- 
- 	if (filter_str) {
- 		ret = process_event(event, filter_str, &arg, error_str);
-@@ -1256,20 +1250,16 @@ static int filter_event(struct event_filter *filter,
- 	} else {
- 		/* just add a TRUE arg */
- 		arg = allocate_arg();
--		if (arg == NULL) {
--			show_error(error_str, "failed to allocate filter arg");
--			return -1;
--		}
-+		if (arg == NULL)
-+			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+
- 		arg->type = FILTER_ARG_BOOLEAN;
- 		arg->boolean.value = FILTER_TRUE;
+ 	/* Detach arg from old_child */
+ 	*ptr = NULL;
+@@ -813,23 +818,29 @@ void reparent_op_arg(struct filter_arg *parent, struct filter_arg *old_child,
+ 		*parent = *arg;
+ 		/* Free arg without recussion */
+ 		free(arg);
+-		return;
++		return 0;
  	}
  
- 	filter_type = add_filter_type(filter, event->id);
--	if (filter_type == NULL) {
--		show_error(error_str, "failed to add a new filter: %s",
--			   filter_str ? filter_str : "true");
--		return -1;
--	}
-+	if (filter_type == NULL)
-+		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 	if (parent->op.right == old_child)
+ 		ptr = &parent->op.right;
+ 	else if (parent->op.left == old_child)
+ 		ptr = &parent->op.left;
+-	else
+-		die("Error in reparent op");
++	else {
++		show_error(error_str, "Error in reparent op");
++		return PEVENT_ERRNO__REPARENT_FAILED;
++	}
++
+ 	*ptr = arg;
  
- 	if (filter_type->filter)
- 		free_arg(filter_type->filter);
-@@ -1282,18 +1272,12 @@ static int filter_event(struct event_filter *filter,
-  * pevent_filter_add_filter_str - add a new filter
-  * @filter: the event filter to add to
-  * @filter_str: the filter string that contains the filter
-- * @error_str: string containing reason for failed filter
-- *
-- * Returns 0 if the filter was successfully added
-- *   -1 if there was an error.
-  *
-- * On error, if @error_str points to a string pointer,
-- * it is set to the reason that the filter failed.
-- * This string must be freed with "free".
-+ * Returns 0 if the filter was successfully added or a
-+ * negative error code.
-  */
--int pevent_filter_add_filter_str(struct event_filter *filter,
--				 const char *filter_str,
--				 char **error_str)
-+enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
-+					       const char *filter_str)
+ 	free_arg(old_child);
++	return 0;
+ }
+ 
+-enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
++/* Returns either filter_vals (success) or pevent_errno (failfure) */
++static int test_arg(struct filter_arg *parent, struct filter_arg *arg,
++		    char **error_str)
  {
- 	struct pevent *pevent = filter->pevent;
- 	struct event_list *event;
-@@ -1304,23 +1288,20 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
- 	char *event_name = NULL;
- 	char *sys_name = NULL;
- 	char *sp;
--	int rtn = 0;
-+	enum pevent_errno rtn = 0; /* PEVENT_ERRNO__SUCCESS */
- 	int len;
- 	int ret;
-+	char *error_str = NULL;
+-	enum filter_vals lval, rval;
++	int lval, rval;
  
- 	/* clear buffer to reset show error */
- 	pevent_buffer_init("", 0);
+ 	switch (arg->type) {
  
--	if (error_str)
--		*error_str = NULL;
--
- 	filter_start = strchr(filter_str, ':');
- 	if (filter_start)
- 		len = filter_start - filter_str;
- 	else
- 		len = strlen(filter_str);
+@@ -844,63 +855,68 @@ enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
+ 		return FILTER_VAL_NORM;
  
--
- 	do {
- 		next_event = strchr(filter_str, ',');
- 		if (next_event &&
-@@ -1333,10 +1314,9 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
+ 	case FILTER_ARG_EXP:
+-		lval = test_arg(arg, arg->exp.left);
++		lval = test_arg(arg, arg->exp.left, error_str);
+ 		if (lval != FILTER_VAL_NORM)
+ 			return lval;
+-		rval = test_arg(arg, arg->exp.right);
++		rval = test_arg(arg, arg->exp.right, error_str);
+ 		if (rval != FILTER_VAL_NORM)
+ 			return rval;
+ 		return FILTER_VAL_NORM;
  
- 		this_event = malloc(len + 1);
- 		if (this_event == NULL) {
--			show_error(error_str, "Memory allocation failure");
- 			/* This can only happen when events is NULL, but still */
- 			free_events(events);
--			return -1;
-+			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 	case FILTER_ARG_NUM:
+-		lval = test_arg(arg, arg->num.left);
++		lval = test_arg(arg, arg->num.left, error_str);
+ 		if (lval != FILTER_VAL_NORM)
+ 			return lval;
+-		rval = test_arg(arg, arg->num.right);
++		rval = test_arg(arg, arg->num.right, error_str);
+ 		if (rval != FILTER_VAL_NORM)
+ 			return rval;
+ 		return FILTER_VAL_NORM;
+ 
+ 	case FILTER_ARG_OP:
+ 		if (arg->op.type != FILTER_OP_NOT) {
+-			lval = test_arg(arg, arg->op.left);
++			lval = test_arg(arg, arg->op.left, error_str);
+ 			switch (lval) {
+ 			case FILTER_VAL_NORM:
+ 				break;
+ 			case FILTER_VAL_TRUE:
+ 				if (arg->op.type == FILTER_OP_OR)
+ 					return FILTER_VAL_TRUE;
+-				rval = test_arg(arg, arg->op.right);
++				rval = test_arg(arg, arg->op.right, error_str);
+ 				if (rval != FILTER_VAL_NORM)
+ 					return rval;
+ 
+-				reparent_op_arg(parent, arg, arg->op.right);
+-				return FILTER_VAL_NORM;
++				return reparent_op_arg(parent, arg, arg->op.right,
++						       error_str);
+ 
+ 			case FILTER_VAL_FALSE:
+ 				if (arg->op.type == FILTER_OP_AND)
+ 					return FILTER_VAL_FALSE;
+-				rval = test_arg(arg, arg->op.right);
++				rval = test_arg(arg, arg->op.right, error_str);
+ 				if (rval != FILTER_VAL_NORM)
+ 					return rval;
+ 
+-				reparent_op_arg(parent, arg, arg->op.right);
+-				return FILTER_VAL_NORM;
++				return reparent_op_arg(parent, arg, arg->op.right,
++						       error_str);
++
++			default:
++				return lval;
+ 			}
  		}
- 		memcpy(this_event, filter_str, len);
- 		this_event[len] = 0;
-@@ -1350,30 +1330,18 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
- 		event_name = strtok_r(NULL, "/", &sp);
  
- 		if (!sys_name) {
--			show_error(error_str, "No filter found");
- 			/* This can only happen when events is NULL, but still */
- 			free_events(events);
- 			free(this_event);
--			return -1;
-+			return PEVENT_ERRNO__FILTER_NOT_FOUND;
+-		rval = test_arg(arg, arg->op.right);
++		rval = test_arg(arg, arg->op.right, error_str);
+ 		switch (rval) {
+ 		case FILTER_VAL_NORM:
++		default:
+ 			break;
++
+ 		case FILTER_VAL_TRUE:
+ 			if (arg->op.type == FILTER_OP_OR)
+ 				return FILTER_VAL_TRUE;
+ 			if (arg->op.type == FILTER_OP_NOT)
+ 				return FILTER_VAL_FALSE;
+ 
+-			reparent_op_arg(parent, arg, arg->op.left);
+-			return FILTER_VAL_NORM;
++			return reparent_op_arg(parent, arg, arg->op.left,
++					       error_str);
+ 
+ 		case FILTER_VAL_FALSE:
+ 			if (arg->op.type == FILTER_OP_AND)
+@@ -908,26 +924,27 @@ enum filter_vals test_arg(struct filter_arg *parent, struct filter_arg *arg)
+ 			if (arg->op.type == FILTER_OP_NOT)
+ 				return FILTER_VAL_TRUE;
+ 
+-			reparent_op_arg(parent, arg, arg->op.left);
+-			return FILTER_VAL_NORM;
++			return reparent_op_arg(parent, arg, arg->op.left,
++					       error_str);
  		}
  
- 		/* Find this event */
- 		ret = find_event(pevent, &events, strim(sys_name), strim(event_name));
- 		if (ret < 0) {
--			if (ret == PEVENT_ERRNO__MEM_ALLOC_FAILED)
--				show_error(error_str,
--					   "Memory allocation failure");
--			else if (event_name)
--				show_error(error_str,
--					   "No event found under '%s.%s'",
--					   sys_name, event_name);
--			else
--				show_error(error_str,
--					   "No event found under '%s'",
--					   sys_name);
- 			free_events(events);
- 			free(this_event);
--			return -1;
-+			return ret;
+-		return FILTER_VAL_NORM;
++		return rval;
+ 	default:
+-		die("bad arg in filter tree");
++		show_error(error_str, "bad arg in filter tree");
++		return PEVENT_ERRNO__BAD_FILTER_ARG;
+ 	}
+ 	return FILTER_VAL_NORM;
+ }
+ 
+ /* Remove any unknown event fields */
+-static struct filter_arg *collapse_tree(struct filter_arg *arg)
++static struct filter_arg *collapse_tree(struct filter_arg *arg, char **error_str)
+ {
+ 	enum filter_vals ret;
+ 
+-	ret = test_arg(arg, arg);
++	ret = test_arg(arg, arg, error_str);
+ 	switch (ret) {
+ 	case FILTER_VAL_NORM:
+-		return arg;
++		break;
+ 
+ 	case FILTER_VAL_TRUE:
+ 	case FILTER_VAL_FALSE:
+@@ -936,7 +953,16 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
+ 		if (arg) {
+ 			arg->type = FILTER_ARG_BOOLEAN;
+ 			arg->boolean.value = ret == FILTER_VAL_TRUE;
++		} else {
++			show_error(error_str, "Failed to allocate filter arg");
  		}
- 		free(this_event);
- 	} while (filter_str);
-@@ -1385,7 +1353,7 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
- 	/* filter starts here */
- 	for (event = events; event; event = event->next) {
- 		ret = filter_event(filter, event->event, filter_start,
--				   error_str);
-+				   &error_str);
- 		/* Failures are returned if a parse error happened */
- 		if (ret < 0)
- 			rtn = ret;
++		break;
++
++	default:
++		/* test_arg() already set the error_str */
++		free_arg(arg);
++		arg = NULL;
++		break;
+ 	}
+ 
+ 	return arg;
+@@ -1152,9 +1178,9 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 	if (!current_op)
+ 		current_op = current_exp;
+ 
+-	current_op = collapse_tree(current_op);
++	current_op = collapse_tree(current_op, error_str);
+ 	if (current_op == NULL)
+-		goto fail_alloc;
++		goto fail;
+ 
+ 	*parg = current_op;
+ 
 -- 
 1.7.11.7
 
