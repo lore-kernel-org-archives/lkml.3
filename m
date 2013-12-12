@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab3LLTJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:09:33 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:52031 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab3LLTJb (ORCPT
+	id S1751958Ab3LLTNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:13:31 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:53688 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab3LLTN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:09:31 -0500
+	Thu, 12 Dec 2013 14:13:26 -0500
+Message-ID: <52AA0AD2.5030307@linaro.org>
+Date: Thu, 12 Dec 2013 11:13:22 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <52A7C313.8090208@codeaurora.org>
-References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1386295805-13708-2-git-send-email-bjorn.andersson@sonymobile.com>
-	<52A24438.4000908@codeaurora.org>
-	<20131210081031.GD11990@sonymobile.com>
-	<52A7C313.8090208@codeaurora.org>
-Date: Thu, 12 Dec 2013 20:09:30 +0100
-Message-ID: <CACRpkdbEKUibOBk=iUi-CrHdmgV46GetyNUgomyngFAwrb=biQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] pinctrl: Add Qualcomm TLMM driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: [RFC][PATCH 3/5] timekeeping: Avoid possible deadlock from clock_was_set_delayed
+References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org> <1386789098-17391-4-git-send-email-john.stultz@linaro.org> <52A9E5B2.8040702@oracle.com> <52AA014B.6000301@oracle.com> <52AA0798.1050709@linaro.org> <52AA08EB.1080703@oracle.com>
+In-Reply-To: <52AA08EB.1080703@oracle.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 2:42 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 12/10/13 00:10, Bjorn Andersson wrote:
->> On Fri 06 Dec 13:40 PST 2013, Stephen Boyd wrote:
->>>> +config PINCTRL_MSM
->>>> +     bool
->>> Why not tristate?
+On 12/12/2013 11:05 AM, Sasha Levin wrote:
+> On 12/12/2013 01:59 PM, John Stultz wrote:
+>> On 12/12/2013 10:32 AM, Sasha Levin wrote:
+>>> On 12/12/2013 11:34 AM, Sasha Levin wrote:
+>>>> On 12/11/2013 02:11 PM, John Stultz wrote:
+>>>>> As part of normal operaions, the hrtimer subsystem frequently calls
+>>>>> into the timekeeping code, creating a locking order of
+>>>>>     hrtimer locks -> timekeeping locks
+>>>>>
+>>>>> clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
+>>>>> between the timekeeping the hrtimer subsystem, so that we could
+>>>>> notify the hrtimer subsytem the time had changed while holding
+>>>>> the timekeeping locks. This was done by scheduling delayed work
+>>>>> that would run later once we were out of the timekeeing code.
+>>>>>
+>>>>> But unfortunately the lock chains are complex enoguh that in
+>>>>> scheduling delayed work, we end up eventually trying to grab
+>>>>> an hrtimer lock.
+>>>>>
+>>>>> Sasha Levin noticed this in testing when the new seqlock lockdep
+>>>>> enablement triggered the following (somewhat abrieviated) message:
+>>>>
+>>>> [snip]
+>>>>
+>>>> This seems to work for me, I don't see the lockdep spew anymore.
+>>>>
+>>>>       Tested-by: Sasha Levin <sasha.levin@oracle.com>
 >>>
->> I have a hard time seeing an situation where you would like to build a system
->> with this driver as a module; it would force almost the entire system to be
->> loaded at a later time...
->
-> We're going to need to build everything but the essentials as modules
-> for the multi-platform kernel because we're going to run into the
-> problem where the kernel can't link anymore. Data heavy drivers such as
-> this are  targets for that because they waste more space being built-in
-> and they're not absolutely necessary to boot into an initrd that holds
-> the modules for a particular device.
-
-This is a quite generic problem rather than a pin control problem.
-
-We're actually going to have to compile quite a few drivers into the
-kernel as well, like all irqchips and all clock sources...
-
-I think we have toyed with the idea of tagging code and data so
-that it will be discarded on non-matched platforms, I have no
-idea how that would look in practice :-(
-
-There are quite a few pin control drivers compiled into any
-present multiplatform kernels, so I wouldn't say that one
-more or less hurts us today.
-
->>>> +#include <linux/pinctrl/pinctrl.h>
->>>> +#include <linux/pinctrl/pinmux.h>
->>>> +#include <linux/pinctrl/pinconf.h>
->>>> +#include <linux/pinctrl/machine.h>
->>> Are any of these includes actually necessary? Can't we just forward
->>> declare struct pinctrl_pin_desc?
+>>> I think I spoke too soon.
 >>>
->> None of them are needed in the current set of patches, as these are already
->> included in the c-files before including this.
+>>> It took way more time to reproduce than previously, but I got:
+>>>
+>>>
+>>> -> #1 (&(&pool->lock)->rlock){-.-...}:
+>>> [ 1195.578519]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
+>>> [ 1195.578519]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
+>>> [ 1195.578519]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
+>>> [ 1195.578519]        [<ffffffff843b0760>] _raw_spin_lock+0x40/0x80
+>>> [ 1195.578519]        [<ffffffff81153e0e>] __queue_work+0x14e/0x3f0
+>>> [ 1195.578519]        [<ffffffff81154168>] queue_work_on+0x98/0x120
+>>> [ 1195.578519]        [<ffffffff81161351>]
+>>> clock_was_set_delayed+0x21/0x30
+>>> [ 1195.578519]        [<ffffffff811c4b41>] do_adjtimex+0x111/0x160
+>>> [ 1195.578519]        [<ffffffff811360e3>] SYSC_adjtimex+0x43/0x80
+>>> [ 1195.578519]        [<ffffffff8113612e>] SyS_adjtimex+0xe/0x10
+>>> [ 1195.578519]        [<ffffffff843baed0>] tracesys+0xdd/0xe2
+>>> [ 1195.578519]
 >>
->> But the right set should be: platform_device.h and pinctrl.h.
+>> Are you sure you have that patch applied?
+>>
+>> With it we shouldn't be calling clock_was_set_delayed() from
+>> do_adjtimex().
 >
-> We should be able to get away with forward declaring the structs we care
-> about. C files that include this header should be including the
-> pinctrl.h header file anyway, no?
+> Hm, It seems that there's a conflict there that wasn't resolved
+> properly. Does this patch
+> depend on anything else that's not currently in -next?
 
-Patches accepted...
+Oh yes, sorry, I didn't cc you on the entire patch set. Apologies!
 
-Yours,
-Linus Walleij
+You'll probably want to grab the two previous patches:
+https://lkml.org/lkml/2013/12/11/479
+https://lkml.org/lkml/2013/12/11/758
+
+thanks
+-john
+
