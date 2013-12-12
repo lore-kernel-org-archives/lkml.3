@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab3LLTRU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:17:20 -0500
-Received: from relay.parallels.com ([195.214.232.42]:36784 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab3LLTRS (ORCPT
+	id S1751358Ab3LLTXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:23:34 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:40920 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3LLTXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:17:18 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <cgroups@vger.kernel.org>, <devel@openvz.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH cgroup/for-3.14] cgroup: fix fail path in cgroup_load_subsys()
-Date: Thu, 12 Dec 2013 23:17:08 +0400
-Message-ID: <1386875828-5075-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 12 Dec 2013 14:23:31 -0500
+Date: Thu, 12 Dec 2013 14:23:19 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Tim Hockin <thockin@hockin.org>
+Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
+ notifications to access reserves
+Message-ID: <20131212192319.GL32683@htj.dyndns.org>
+References: <20131205025026.GA26777@htj.dyndns.org>
+ <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
+ <20131206190105.GE13373@htj.dyndns.org>
+ <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
+ <20131210215037.GB9143@htj.dyndns.org>
+ <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
+ <20131211124240.GA24557@htj.dyndns.org>
+ <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
+ <20131212142156.GB32683@htj.dyndns.org>
+ <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.25.135]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling cgroup_unload_subsys() from cgroup_load_subsys() after
-online_css() failure will result in a NULL ptr dereference on attempt to
-offline_css(), because online_css() only assigns css to cgroup on
-success. Let's fix that by skipping calls to offline_css() and
-css_free() in cgroup_unload_subsys() if there is no css, and freeing css
-in cgroup_load_subsys() on online_css() failure.
+Hello, Tim.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+On Thu, Dec 12, 2013 at 10:42:20AM -0800, Tim Hockin wrote:
+> Yeah sorry.  Replying from my phone is awkward at best.  I know better :)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 402f7aa..7030f04 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4652,8 +4652,10 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	write_unlock(&css_set_lock);
- 
- 	ret = online_css(css);
--	if (ret)
-+	if (ret) {
-+		ss->css_free(css);
- 		goto err_unload;
-+	}
- 
- 	/* success! */
- 	mutex_unlock(&cgroup_root_mutex);
-@@ -4680,6 +4682,7 @@ EXPORT_SYMBOL_GPL(cgroup_load_subsys);
- void cgroup_unload_subsys(struct cgroup_subsys *ss)
- {
- 	struct cgrp_cset_link *link;
-+	struct cgroup_subsys_state *css;
- 
- 	BUG_ON(ss->module == NULL);
- 
-@@ -4693,7 +4696,9 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
- 	mutex_lock(&cgroup_mutex);
- 	mutex_lock(&cgroup_root_mutex);
- 
--	offline_css(cgroup_css(cgroup_dummy_top, ss));
-+	css = cgroup_css(cgroup_dummy_top, ss);
-+	if (css)
-+		offline_css(css);
- 
- 	/* deassign the subsys_id */
- 	cgroup_subsys[ss->subsys_id] = NULL;
-@@ -4720,7 +4725,8 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
- 	 * need to free before marking as null because ss->css_free needs
- 	 * the cgrp->subsys pointer to find their state.
- 	 */
--	ss->css_free(cgroup_css(cgroup_dummy_top, ss));
-+	if (css)
-+		ss->css_free(css);
- 	RCU_INIT_POINTER(cgroup_dummy_top->subsys[ss->subsys_id], NULL);
- 
- 	mutex_unlock(&cgroup_root_mutex);
+Heh, sorry about being bitchy. :)
+
+> In my mind, the ONLY point of pulling system-OOM handling into
+> userspace is to make it easier for crazy people (Google) to implement
+> bizarre system-OOM policies.  Example:
+
+I think that's one of the places where we largely disagree.  If at all
+possible, I'd much prefer google's workload to be supported inside the
+general boundaries of the upstream kernel without having to punch a
+large hole in it.  To me, the general development history of memcg in
+general and this thread in particular seem to epitomize why it is a
+bad idea to have isolated, large and deep "crazy" use cases.  Punching
+the initial hole is the easy part; however, we all are quite limited
+in anticpating future needs and sooner or later that crazy use case is
+bound to evolve further towards the isolated extreme it departed
+towards and require more and larger holes and further contortions to
+accomodate such progress.
+
+The concern I have with the suggested solution is not necessarily that
+it's technically complex than it looks like on the surface - I'm sure
+it can be made to work one way or the other - but that it's a fairly
+large step toward an isolated extreme which memcg as a project
+probably should not head toward.
+
+There sure are cases where such exceptions can't be avoided and are
+good trade-offs but, here, we're talking about a major architectural
+decision which not only affects memcg but mm in general.  I'm afraid
+this doesn't sound like an no-brainer flexibility we can afford.
+
+> When we have a system OOM we want to do a walk of the administrative
+> memcg tree (which is only a couple levels deep, users can make
+> non-admin sub-memcgs), selecting the lowest priority entity at each
+> step (where both tasks and memcgs have a priority and the priority
+> range is much wider than the current OOM scores, and where memcg
+> priority is sometimes a function of memcg usage), until we reach a
+> leaf.
+> 
+> Once we reach a leaf, I want to log some info about the memcg doing
+> the allocation, the memcg being terminated, and maybe some other bits
+> about the system (depending on the priority of the selected victim,
+> this may or may not be an "acceptable" situation).  Then I want to
+> kill *everything* under that memcg.  Then I want to "publish" some
+> information through a sane API (e.g. not dmesg scraping).
+> 
+> This is basically our policy as we understand it today.  This is
+> notably different than it was a year ago, and it will probably evolve
+> further in the next year.
+
+I think per-memcg score and killing is something which makes
+fundamental sense.  In fact, killing a single process has never made
+much sense to me as that is a unit which ultimately is only meaningful
+to the kernel itself and not necessraily to userland, so no matter
+what I think we're gonna gain per-memcg behavior and it seems most,
+albeit not all, of what you described above should be implementable
+through that.
+
+Ultimately, if the use case calls for very fine level of control, I
+think the right thing to do is making nesting work properly which is
+likely to take some time.  In the meantime, even if such use case
+requires modifying the kernel to tailor the OOM behavior, I think
+sticking to kernel OOM provides a lot easier way to eventual
+convergence.  Userland system OOM basically means giving up and would
+lessen the motivation towards improving the shared infrastructures
+while adding significant pressure towards schizophreic diversion.
+
+> We have a long tail of kernel memory usage.  If we provision machines
+> so that the "do work here" first-level memcg excludes the average
+> kernel usage, we have a huge number of machines that will fail to
+> apply OOM policy because of actual overcommitment.  If we provision
+> for 95th or 99th percentile kernel usage, we're wasting large amounts
+> of memory that could be used to schedule jobs.  This is the
+> fundamental problem we face with static apportionment (and we face it
+> in a dozen other situations, too).  Expressing this set-aside memory
+> as "off-the-top" rather than absolute limits makes the whole system
+> more flexible.
+
+I agree that's pretty sad.  Maybe I shouldn't be surprised given the
+far-from-perfect coverage of kmemcg at this point, but, again,
+*everyone* wants [k]memcg coverage to be more complete and we have and
+are still building the infrastructures to make that possible, so I'm
+still of the opinion that making [k]memcg work better is the better
+direction to pursue and given the short development history of kmemcg
+I'm fairly sure there are quite a few low hanging fruits.
+
+Another thing which *might* be relevant is the rigidity of the upper
+limit and the vagueness of soft limit of the current implementation.
+I have a rather strong suspicion that the way memcg config knobs
+behave now - one finicky, the other whatever - is likely hindering the
+use cases to fan out more naturally.  I could be completely wrong on
+this but your mention of inflexibility of absolute limits reminds me
+of the issue.
+
+Thanks.
+
 -- 
-1.7.1
-
+tejun
