@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3LLOOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:14:15 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:34203 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab3LLOOM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:14:12 -0500
+	id S1751846Ab3LLOO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:14:29 -0500
+Received: from mga11.intel.com ([192.55.52.93]:50627 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489Ab3LLOO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:14:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,878,1378882800"; 
+   d="scan'208";a="448957185"
+Message-ID: <52A9C4BF.4050206@intel.com>
+Date: Thu, 12 Dec 2013 16:14:23 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CABawtvN-rO+YAy55+W-oxgtibh=9ZDnqNMGcreg6u==C3Cr7xA@mail.gmail.com>
-References: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
-	<1378362989.18435.2.camel@marge.simpson.net>
-	<20130905111428.GB23362@gmail.com>
-	<1378386697.6567.9.camel@marge.simpson.net>
-	<20130905133750.GA26637@gmail.com>
-	<1378445942.5434.31.camel@marge.simpson.net>
-	<20130909122325.GX31370@twins.programming.kicks-ass.net>
-	<1378730538.5586.30.camel@marge.simpson.net>
-	<20130909133044.GB31370@twins.programming.kicks-ass.net>
-	<20130909134635.GB26785@twins.programming.kicks-ass.net>
-	<20130911085643.GS26785@twins.programming.kicks-ass.net>
-	<1378895123.5476.83.camel@marge.simpson.net>
-	<CABawtvMo+NtTv3a3jj=YTg-Om=MzHhVDARdtTA-DtTMzNeNAJA@mail.gmail.com>
-	<1381120901.9926.11.camel@marge.simpson.net>
-	<CABawtvN-rO+YAy55+W-oxgtibh=9ZDnqNMGcreg6u==C3Cr7xA@mail.gmail.com>
-Date: Thu, 12 Dec 2013 22:14:11 +0800
-Message-ID: <CABawtvNf5k8pKY6ioa8GdUzOn7h3aOBsWhSUNgmfuQSj+xtUbQ@mail.gmail.com>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rjw@sisk.pl,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com> <20131211141908.GC1458@ghostprotocols.net>
+In-Reply-To: <20131211141908.GC1458@ghostprotocols.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
-    it seems the IPI issue got root cause (cpu hardware errata ) now ?
-I only catch some pieces of the mails, is that to say the crazy horse
-made by Intel will wake up unexpected, and eat too much reschedule
-IPI, then the horse got hotter, performance down, and so the fix would
-be a 'CFLUSH' to all the buggy CPU, is that right ?
-
-Thanks,
-Ethan
-
-
-
-
-
-On Mon, Oct 7, 2013 at 12:57 PM, Ethan Zhao <ethan.kernel@gmail.com> wrote:
-> Got it.
->
-> On Mon, Oct 7, 2013 at 12:41 PM, Mike Galbraith <bitbucket@online.de> wrote:
->> On Fri, 2013-10-04 at 20:06 +0800, Ethan Zhao wrote:
->>> Mike, Peter,
->>>    Seems lots of work has been done these days, studious guys. those
->>> patches merged in last stable/dev branch (fix performance regression
->>> caused by extra rtimer programming and rescheduling IPI,confusing
->>> idle... etc) ? So I could just do a lazy pull for test with my
->>> environment.  I need catch up with other mail loops with my vacation
->>> again.
+On 11/12/13 16:19, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Dec 11, 2013 at 02:36:26PM +0200, Alexander Shishkin escreveu:
+>> From: Adrian Hunter <adrian.hunter@intel.com>
 >>
->> Massive timer overhead seems to have crawled off and died while I wasn't
->> looking.  Peter's fix for IPI woes..
+>> Tools may wish to track on which cpu a thread
+>> is running.  Add 'cpu' to struct thread for
+>> that purpose.  Also add machine functions to
+>> get / set the cpu for a tid.
 >>
->> tip commit ea811747 sched, idle: Fix the idle polling state logic
+>> This will be used to determine the cpu when
+>> decoding a per-thread Instruction Trace.
 >>
->> ..hasn't yet swum upstream.
 >>
->> -Mike
->>
+>> +++ b/tools/perf/util/machine.c
+>> @@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
+>>  
+>>  	return thread->pid_;
+>>  }
+>> +
+>> +int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
+>> +{
+>> +	struct thread *thread = machine__find_thread(machine, tid);
+>> +
+>> +	if (!thread)
+>> +		return -1;
+>> +
+>> +	if (pid)
+>> +		*pid = thread->pid_;
+>> +
+>> +	return thread->cpu;
+>> +}
+> 
+> What is the problem with:
+> 
+> 	struct thread *thread = machine__find_thread(machine, tid);
+> 	pid_t pid = thread->pid_;
+> 	int cpu = thread->cpu;
+> 
+> In your case you'll have:
+> 
+> 	int pid;
+> 	int cpu = machine__get_thread_cpu(machine, tid, &pid);
+> 
+> Which is slightly more compact, but then we end up with a function that
+> from its name should just get a 'cpu' but also asks for the pid.
+> 
+> I think it is better to just use what we have (machine__find_thread),
+> have a 'thread' variable and then use any of its members, directly.
+
+OK
+
+
+
