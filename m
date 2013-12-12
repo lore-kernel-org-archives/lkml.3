@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab3LLHio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 02:38:44 -0500
+	id S1752356Ab3LLHjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 02:39:16 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53469 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab3LLHg1 (ORCPT
+	with ESMTP id S1751959Ab3LLHgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 02:36:27 -0500
-X-AuditID: 9c93016f-b7c57ae0000070d3-17-52a9677700bd
+	Thu, 12 Dec 2013 02:36:25 -0500
+X-AuditID: 9c93016f-b7c57ae0000070d3-08-52a96776e955
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 13/14] tools lib traceevent: Get rid of die() in some string conversion funcitons
-Date: Thu, 12 Dec 2013 16:36:16 +0900
-Message-Id: <1386833777-3790-14-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/14] tools lib traceevent: Refactor process_filter()
+Date: Thu, 12 Dec 2013 16:36:13 +0900
+Message-Id: <1386833777-3790-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
 References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
@@ -26,157 +26,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those functions are for stringify filter arguments.  As caller of
-those functions handles NULL string properly, it seems that it's
-enough to return NULL rather than calling die().
+From: Namhyung Kim <namhyung.kim@lge.com>
+
+So that it can return a proper pevent_errno value.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/parse-filter.c | 58 +++++++++++++++++++++++--------------
- 1 file changed, 36 insertions(+), 22 deletions(-)
+ tools/lib/traceevent/event-parse.h  |  6 +++-
+ tools/lib/traceevent/parse-filter.c | 64 +++++++++++++++++++++----------------
+ 2 files changed, 42 insertions(+), 28 deletions(-)
 
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 57b66aed8122..da942d59cc3a 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -368,7 +368,11 @@ enum pevent_flag {
+ 	_PE(REPARENT_NOT_OP,	"cannot reparent other than OP"),	      \
+ 	_PE(REPARENT_FAILED,	"failed to reparent filter OP"),	      \
+ 	_PE(BAD_FILTER_ARG,	"bad arg in filter tree"),		      \
+-	_PE(UNEXPECTED_TYPE,	"unexpected type (not a value)")
++	_PE(UNEXPECTED_TYPE,	"unexpected type (not a value)"),	      \
++	_PE(ILLEGAL_TOKEN,	"illegal token"),			      \
++	_PE(INVALID_PAREN,	"open parenthesis cannot come here"), 	      \
++	_PE(UNBALANCED_PAREN,	"unbalanced number of parenthesis"),	      \
++	_PE(UNKNOWN_TOKEN,	"unknown token")
+ 
+ #undef _PE
+ #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
 diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 9303c55128db..32ab4396653c 100644
+index 8d71208f0131..5aa5012a17ee 100644
 --- a/tools/lib/traceevent/parse-filter.c
 +++ b/tools/lib/traceevent/parse-filter.c
-@@ -1361,8 +1361,10 @@ enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
- 		if (ret >= 0 && pevent->test_filters) {
- 			char *test;
- 			test = pevent_filter_make_string(filter, event->event->id);
--			printf(" '%s: %s'\n", event->event->name, test);
--			free(test);
-+			if (test) {
-+				printf(" '%s: %s'\n", event->event->name, test);
-+				free(test);
-+			}
- 		}
- 	}
- 
-@@ -2097,7 +2099,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 				default:
- 					break;
- 				}
--				str = malloc_or_die(6);
-+				str = malloc(6);
-+				if (str == NULL)
-+					break;
- 				if (val)
- 					strcpy(str, "TRUE");
- 				else
-@@ -2120,7 +2124,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 		}
- 
- 		len = strlen(left) + strlen(right) + strlen(op) + 10;
--		str = malloc_or_die(len);
-+		str = malloc(len);
-+		if (str == NULL)
-+			break;
- 		snprintf(str, len, "(%s) %s (%s)",
- 			 left, op, right);
- 		break;
-@@ -2138,7 +2144,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 			right_val = 0;
- 		if (right_val >= 0) {
- 			/* just return the opposite */
--			str = malloc_or_die(6);
-+			str = malloc(6);
-+			if (str == NULL)
-+				break;
- 			if (right_val)
- 				strcpy(str, "FALSE");
- 			else
-@@ -2146,8 +2154,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
- 			break;
- 		}
- 		len = strlen(right) + strlen(op) + 3;
--		str = malloc_or_die(len);
--		snprintf(str, len, "%s(%s)", op, right);
-+		str = malloc(len);
-+		if (str)
-+			snprintf(str, len, "%s(%s)", op, right);
- 		break;
- 
- 	default:
-@@ -2163,9 +2172,9 @@ static char *val_to_str(struct event_filter *filter, struct filter_arg *arg)
- {
- 	char *str;
- 
--	str = malloc_or_die(30);
--
--	snprintf(str, 30, "%lld", arg->value.val);
-+	str = malloc(30);
-+	if (str)
-+		snprintf(str, 30, "%lld", arg->value.val);
- 
- 	return str;
+@@ -937,9 +937,10 @@ static int test_arg(struct filter_arg *parent, struct filter_arg *arg,
  }
-@@ -2220,12 +2229,14 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
- 		op = "^";
+ 
+ /* Remove any unknown event fields */
+-static struct filter_arg *collapse_tree(struct filter_arg *arg, char **error_str)
++static int collapse_tree(struct filter_arg *arg,
++			 struct filter_arg **arg_collapsed, char **error_str)
+ {
+-	enum filter_vals ret;
++	int ret;
+ 
+ 	ret = test_arg(arg, arg, error_str);
+ 	switch (ret) {
+@@ -955,6 +956,7 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg, char **error_str
+ 			arg->boolean.value = ret == FILTER_VAL_TRUE;
+ 		} else {
+ 			show_error(error_str, "Failed to allocate filter arg");
++			ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 		}
  		break;
- 	default:
--		die("oops in exp");
-+		op = "[ERROR IN EXPRESSION TYPE]";
-+		break;
+ 
+@@ -965,10 +967,11 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg, char **error_str
+ 		break;
  	}
  
- 	len = strlen(op) + strlen(lstr) + strlen(rstr) + 4;
--	str = malloc_or_die(len);
--	snprintf(str, len, "%s %s %s", lstr, op, rstr);
-+	str = malloc(len);
-+	if (str)
-+		snprintf(str, len, "%s %s %s", lstr, op, rstr);
- out:
- 	free(lstr);
- 	free(rstr);
-@@ -2271,9 +2282,9 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
- 			op = "<=";
+-	return arg;
++	*arg_collapsed = arg;
++	return ret;
+ }
  
- 		len = strlen(lstr) + strlen(op) + strlen(rstr) + 4;
--		str = malloc_or_die(len);
--		sprintf(str, "%s %s %s", lstr, op, rstr);
--
-+		str = malloc(len);
-+		if (str)
-+			sprintf(str, "%s %s %s", lstr, op, rstr);
- 		break;
+-static int
++static enum pevent_errno
+ process_filter(struct event_format *event, struct filter_arg **parg,
+ 	       char **error_str, int not)
+ {
+@@ -982,7 +985,7 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 	enum filter_op_type btype;
+ 	enum filter_exp_type etype;
+ 	enum filter_cmp_type ctype;
+-	int ret;
++	enum pevent_errno ret;
  
- 	default:
-@@ -2311,10 +2322,11 @@ static char *str_to_str(struct event_filter *filter, struct filter_arg *arg)
+ 	*parg = NULL;
  
- 		len = strlen(arg->str.field->name) + strlen(op) +
- 			strlen(arg->str.val) + 6;
--		str = malloc_or_die(len);
--		snprintf(str, len, "%s %s \"%s\"",
--			 arg->str.field->name,
--			 op, arg->str.val);
-+		str = malloc(len);
-+		if (str) {
-+			snprintf(str, len, "%s %s \"%s\"",
-+				 arg->str.field->name, op, arg->str.val);
-+		}
- 		break;
+@@ -1007,20 +1010,20 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 				if (not) {
+ 					arg = NULL;
+ 					if (current_op)
+-						goto fail_print;
++						goto fail_syntax;
+ 					free(token);
+ 					*parg = current_exp;
+ 					return 0;
+ 				}
+ 			} else
+-				goto fail_print;
++				goto fail_syntax;
+ 			arg = NULL;
+ 			break;
  
- 	default:
-@@ -2330,7 +2342,9 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
+ 		case EVENT_DELIM:
+ 			if (*token == ',') {
+-				show_error(error_str,
+-					   "Illegal token ','");
++				show_error(error_str, "Illegal token ','");
++				ret = PEVENT_ERRNO__ILLEGAL_TOKEN;
+ 				goto fail;
+ 			}
  
- 	switch (arg->type) {
- 	case FILTER_ARG_BOOLEAN:
--		str = malloc_or_die(6);
-+		str = malloc(6);
-+		if (str == NULL)
-+			return NULL;
- 		if (arg->boolean.value)
- 			strcpy(str, "TRUE");
- 		else
-@@ -2369,7 +2383,7 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
-  *
-  * Returns a string that displays the filter contents.
-  *  This string must be freed with free(str).
-- *  NULL is returned if no filter is found.
-+ *  NULL is returned if no filter is found or allocation failed.
-  */
- char *
- pevent_filter_make_string(struct event_filter *filter, int event_id)
+@@ -1028,19 +1031,23 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 				if (left_item) {
+ 					show_error(error_str,
+ 						   "Open paren can not come after item");
++					ret = PEVENT_ERRNO__INVALID_PAREN;
+ 					goto fail;
+ 				}
+ 				if (current_exp) {
+ 					show_error(error_str,
+ 						   "Open paren can not come after expression");
++					ret = PEVENT_ERRNO__INVALID_PAREN;
+ 					goto fail;
+ 				}
+ 
+ 				ret = process_filter(event, &arg, error_str, 0);
+-				if (ret != 1) {
+-					if (ret == 0)
++				if (ret != PEVENT_ERRNO__UNBALANCED_PAREN) {
++					if (ret == 0) {
+ 						show_error(error_str,
+ 							   "Unbalanced number of '('");
++						ret = PEVENT_ERRNO__UNBALANCED_PAREN;
++					}
+ 					goto fail;
+ 				}
+ 				ret = 0;
+@@ -1048,7 +1055,7 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 				/* A not wants just one expression */
+ 				if (not) {
+ 					if (current_op)
+-						goto fail_print;
++						goto fail_syntax;
+ 					*parg = arg;
+ 					return 0;
+ 				}
+@@ -1063,19 +1070,19 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 
+ 			} else { /* ')' */
+ 				if (!current_op && !current_exp)
+-					goto fail_print;
++					goto fail_syntax;
+ 
+ 				/* Make sure everything is finished at this level */
+ 				if (current_exp && !check_op_done(current_exp))
+-					goto fail_print;
++					goto fail_syntax;
+ 				if (current_op && !check_op_done(current_op))
+-					goto fail_print;
++					goto fail_syntax;
+ 
+ 				if (current_op)
+ 					*parg = current_op;
+ 				else
+ 					*parg = current_exp;
+-				return 1;
++				return PEVENT_ERRNO__UNBALANCED_PAREN;
+ 			}
+ 			break;
+ 
+@@ -1087,21 +1094,22 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 			case OP_BOOL:
+ 				/* Logic ops need a left expression */
+ 				if (!current_exp && !current_op)
+-					goto fail_print;
++					goto fail_syntax;
+ 				/* fall through */
+ 			case OP_NOT:
+ 				/* logic only processes ops and exp */
+ 				if (left_item)
+-					goto fail_print;
++					goto fail_syntax;
+ 				break;
+ 			case OP_EXP:
+ 			case OP_CMP:
+ 				if (!left_item)
+-					goto fail_print;
++					goto fail_syntax;
+ 				break;
+ 			case OP_NONE:
+ 				show_error(error_str,
+ 					   "Unknown op token %s", token);
++				ret = PEVENT_ERRNO__UNKNOWN_TOKEN;
+ 				goto fail;
+ 			}
+ 
+@@ -1152,7 +1160,7 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 				ret = add_left(arg, left_item);
+ 				if (ret < 0) {
+ 					arg = NULL;
+-					goto fail_print;
++					goto fail_syntax;
+ 				}
+ 				current_exp = arg;
+ 				break;
+@@ -1161,25 +1169,25 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 			}
+ 			arg = NULL;
+ 			if (ret < 0)
+-				goto fail_print;
++				goto fail_syntax;
+ 			break;
+ 		case EVENT_NONE:
+ 			break;
+ 		case EVENT_ERROR:
+ 			goto fail_alloc;
+ 		default:
+-			goto fail_print;
++			goto fail_syntax;
+ 		}
+ 	} while (type != EVENT_NONE);
+ 
+ 	if (!current_op && !current_exp)
+-		goto fail_print;
++		goto fail_syntax;
+ 
+ 	if (!current_op)
+ 		current_op = current_exp;
+ 
+-	current_op = collapse_tree(current_op, error_str);
+-	if (current_op == NULL)
++	ret = collapse_tree(current_op, parg, error_str);
++	if (ret < 0)
+ 		goto fail;
+ 
+ 	*parg = current_op;
+@@ -1188,15 +1196,17 @@ process_filter(struct event_format *event, struct filter_arg **parg,
+ 
+  fail_alloc:
+ 	show_error(error_str, "failed to allocate filter arg");
++	ret = PEVENT_ERRNO__MEM_ALLOC_FAILED;
+ 	goto fail;
+- fail_print:
++ fail_syntax:
+ 	show_error(error_str, "Syntax error");
++	ret = PEVENT_ERRNO__SYNTAX_ERROR;
+  fail:
+ 	free_arg(current_op);
+ 	free_arg(current_exp);
+ 	free_arg(arg);
+ 	free(token);
+-	return -1;
++	return ret;
+ }
+ 
+ static int
 -- 
 1.7.11.7
 
