@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab3LLR60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 12:58:26 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:34111 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab3LLR6W (ORCPT
+	id S1751995Ab3LLSAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:00:22 -0500
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:47980 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751519Ab3LLSAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 12:58:22 -0500
-Message-ID: <52A9F93A.5040104@gmail.com>
-Date: Thu, 12 Dec 2013 12:58:18 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 12 Dec 2013 13:00:18 -0500
+X-Greylist: delayed 959 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 13:00:18 EST
+Date: Thu, 12 Dec 2013 17:44:18 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Dave Hansen <dave@sr71.net>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [RFC][PATCH 3/3] mm: slabs: reset page at free
+In-Reply-To: <20131211224028.9D7AD2B7@viggo.jf.intel.com>
+Message-ID: <00000142e7e8ba5d-bcdf8715-dd6a-411a-8c55-12a4668c6489-000000@email.amazonses.com>
+References: <20131211224022.AA8CF0B9@viggo.jf.intel.com> <20131211224028.9D7AD2B7@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, dvlasenk@redhat.com
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        jpirko@redhat.com
-Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
-References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com>	<20131211192138.GB4675@order.stressinduktion.org>	<52A99B56.1070503@redhat.com> <20131212.122241.2022824170198915190.davem@davemloft.net>
-In-Reply-To: <20131212.122241.2022824170198915190.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.12-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 12:22 PM, David Miller wrote:
-> From: Denys Vlasenko <dvlasenk@redhat.com>
-> Date: Thu, 12 Dec 2013 12:17:42 +0100
-> 
->> I can easily imagine their frustration. Kernel _knows_ why
->> it didn't work, and it's not expected to normally pappen,
->> why didn't it tell anything about it?
-> 
-> Packets are dropped silently, ARP fails and entries go stale silently,
-> none of this is logged with kernel messages, why is ipv6 autoconf so
-> unique and important to justify different behavior?
+On Wed, 11 Dec 2013, Dave Hansen wrote:
 
-But most of the changes from V2 report an actual error condition in
-the kernel: addr_len is not set correctly for the device type.
-These changes are worth keeping and not just as pr_debug.  Having
-a counter of these failures will not provide much useful data if you
-happen to have multiple such device and where one happens to work and
-the other doesn't (very unlikely, I know).
+> We now have slub's ->freelist usage impinging on page->mapping's
+> storage space.  The buddy allocator wants ->mapping to be NULL
+> when a page is handed back, so we have to make sure that it is
+> cleared.
+>
+> Note that slab already doeds this, so just create a common helper
+> and have all the slabs do it this way.  ->mapping is right next
+> to ->flags, so it's virtually guaranteed to be in the L1 at this
+> point, so this shouldn't cost very much to do in practice.
 
-> 
-> Give it statistics just like we have for every other kind of similar
-> event.
+Maybe add a common page alloc and free function in mm/slab_common.c?
 
-The fact that link-local address could not be generated for a specific
-device type does not lend itself well to counting.  There is no way
-from to tell from the counter which device does not support IPv6 autoconfig.
-
--vlad
+All the allocators do similar things after all.
