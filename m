@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab3LLL1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:27:47 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54977 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab3LLL1o (ORCPT
+	id S1751760Ab3LLL2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:28:11 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:37421 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3LLL2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:27:44 -0500
-Date: Thu, 12 Dec 2013 11:27:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Matt Porter <mporter@linaro.org>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Kamil Debski <k.debski@samsung.com>,
-        Linaro Patches <patches@linaro.org>, Tomasz Figa <t.figa@samsung.com>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/9] phy: add
-	phy_get_bus_width()/phy_set_bus_width() calls
-Message-ID: <20131212112715.GK4360@n2100.arm.linux.org.uk>
-References: <1386847117-21240-1-git-send-email-mporter@linaro.org> <1386847117-21240-2-git-send-email-mporter@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386847117-21240-2-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 12 Dec 2013 06:28:08 -0500
+X-AuditID: cbfec7f5-b7fd16d000007299-c5-52a99dc665f3
+Message-id: <52A99DC4.9000704@samsung.com>
+Date: Thu, 12 Dec 2013 12:28:04 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330
+ Thunderbird/17.0.5
+MIME-version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] kernel/locking: mutex: simplify access to the first entry
+ in the wait-list
+References: <1386841541-32244-1-git-send-email-andrzej.p@samsung.com>
+ <20131212095320.GE21999@twins.programming.kicks-ass.net>
+In-reply-to: <20131212095320.GE21999@twins.programming.kicks-ass.net>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xK7rH5q4MMti9jdHibNMbdovLu+aw
+	Waw9cpfd4tKBBUwWx3sPMDmwemxeoeXxft9VNo++LasYPT5vkgtgieKySUnNySxLLdK3S+DK
+	+NY7hbXgF3PFrjUnWBoYlzJ3MXJySAiYSHyZvAnKFpO4cG89WxcjF4eQwFJGiScLV7FDOJ8Z
+	JU6vvcEIUsUroCWx+XkDUBUHB4uAqsTpM7YgYTYBY4m9BzvASkQFwiSmvr3DBlEuKPFj8j0W
+	EFtEQFNiZdt9sAXMArMYJY5/+AO2WVggUeLAiTdQmxsYJTYuWQDWwSngKnH7+VR2EJtZwFpi
+	5aRtjBC2vMTmNW+ZJzACjUFYMgtJ2SwkZQsYmVcxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525i
+	hATy1x2MS49ZHWIU4GBU4uF9cXBFkBBrYllxZe4hRgkOZiURXpfUlUFCvCmJlVWpRfnxRaU5
+	qcWHGJk4OKUaGE09vnp+eJ9e43bg+7OHF27Vz2+aGf3Hxk34xakda1xPijzyWLnHqcz+6Gum
+	SVfdRDfl5ixcY9B6U/DP7u5lwoZt/5bI/75zPoPx7d0iXx9/3y1hUs02Kk8S7xWUfGtc9GTn
+	xPKDX0JuC80X9JqzZGbd2mnLuyc9ltglKvMyfmaqPXO0l2cswx4lluKMREMt5qLiRADDTq78
+	QgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 06:18:29AM -0500, Matt Porter wrote:
->  /**
-> + * struct phy_attrs - represents phy attributes
-> + * @bus_width: Data path width implemented by PHY
-> + */
-> +struct phy_attrs {
-> +	u32			bus_width;
+W dniu 12.12.2013 10:53, Peter Zijlstra pisze:
+> On Thu, Dec 12, 2013 at 10:45:41AM +0100, Andrzej Pietrasiewicz wrote:
+>> Use list_first_entry instead of explicitly accessing the first entry
+>> with "head".next. The comment one line above becomes obsolete.
+>>
+>> Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+>> Signed-off-by: Kyungmin Park <andrzej.p@samsung.com>
+>
+> This is an invalid sign-off trail.
+>
+Right... Thanks for spotting this. I will correct it and resubmit.
 
-Why u32?
-
->  int phy_power_off(struct phy *phy);
-> +static inline u32 phy_get_bus_width(struct phy *phy)
-> +{
-> +	return phy->attrs.bus_width;
-...
->  
-> +static inline u32 phy_get_bus_width(struct phy *phy)
-> +{
-> +	return -ENOSYS;
-
-Why u32, especially as you're returning a negative number here.
-
-If the bus width is a small integer (I'm assuming you don't have up to
-2^30 bus signals) then what's wrong with it being an 'int' ?
+AP
