@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3LLMHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:07:50 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:54561 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3LLMHq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:07:46 -0500
-Message-ID: <52A9A711.1040002@linaro.org>
-Date: Thu, 12 Dec 2013 13:07:45 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751702Ab3LLMIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:08:11 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54633 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751482Ab3LLMIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:08:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,877,1378882800"; 
+   d="scan'208";a="423531006"
+Message-ID: <52A9A71C.50004@intel.com>
+Date: Thu, 12 Dec 2013 14:07:56 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] time: Serialize calls to 'clockevents_update_freq'
- in the timing core
-References: <alpine.DEB.2.02.1312071151340.30673@ionos.tec.linutronix.de> <1386635686-15686-1-git-send-email-soren.brinkmann@xilinx.com> <1386635686-15686-2-git-send-email-soren.brinkmann@xilinx.com> <52A87799.8010300@linaro.org> <ba4dce4a-1332-4fd8-80de-41347bb5b7b2@TX2EHSMHS005.ehs.local>
-In-Reply-To: <ba4dce4a-1332-4fd8-80de-41347bb5b7b2@TX2EHSMHS005.ehs.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: David Ahern <dsahern@gmail.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 07/71] perf tools: Record whether a dso is 64-bit
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com> <52A8BC5D.2030603@gmail.com> <20131211195419.GF1458@ghostprotocols.net>
+In-Reply-To: <20131211195419.GF1458@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 09:09 PM, Sören Brinkmann wrote:
-> Hi Daniel,
->
-> On Wed, Dec 11, 2013 at 03:32:57PM +0100, Daniel Lezcano wrote:
->> On 12/10/2013 01:34 AM, Soren Brinkmann wrote:
->>> From: Thomas Gleixner <tglx@linutronix.de>
->>>
->>> We can identify the broadcast device in the core and serialize all
->>> callers including interrupts on a different CPU against the update.
->>> Also, disabling interrupts is moved into the core allowing callers to
->>> leave interrutps enabled when calling clockevents_update_freq().
->>>
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>> ---
->>>   kernel/time/clockevents.c    | 29 ++++++++++++++++++++++-------
->>>   kernel/time/tick-broadcast.c | 25 +++++++++++++++++++------
->>>   kernel/time/tick-internal.h  |  4 ++++
->>>   3 files changed, 45 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
->>> index 086ad6043bcb..641d91003a45 100644
->>> --- a/kernel/time/clockevents.c
->>> +++ b/kernel/time/clockevents.c
->>> @@ -439,6 +439,16 @@ void clockevents_config_and_register(struct clock_event_device *dev,
->>>   }
->>>   EXPORT_SYMBOL_GPL(clockevents_config_and_register);
->>>
->>> +int __clockevents_update_freq(struct clock_event_device *dev, u32 freq)
->>> +{
->>> +	clockevents_config(dev, freq);
->>> +
->>> +	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
->>> +		return 0;
->>> +
->>> +	return clockevents_program_event(dev, dev->next_event, false);
->>> +}
->>> +
+On 11/12/13 21:54, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Dec 11, 2013 at 12:26:21PM -0700, David Ahern escreveu:
+>> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
+>>> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+>>> index a0c7c59..80817ec 100644
+>>> --- a/tools/perf/util/dso.c
+>>> +++ b/tools/perf/util/dso.c
+>>> @@ -446,6 +446,7 @@ struct dso *dso__new(const char *name)
+>>>  		dso->cache = RB_ROOT;
+>>>  		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+>>>  		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+>>> +		dso->is_64_bit = (sizeof(void *) == 8);
 >>
->> ./arch/arm/kernel/smp_twd.c should be modified to call
->> __clockevents_update_freq instead of clockevents_update_freq, no ?
->
-> IIUC, the __-version is only for timer core internal usage and not an
-> exported interface. Doesn't the non-__ version work for the twd?
-> I don't see issues on my Zynq platform with these patches.
+>> Isnt' that going to record the bitness of perf when it is compiled?
+> 
+> Right, it will. Its just a default, I assume this will be reset after
+> the DSO is loaded, i.e. the ELF file gets accessed, no?
 
-I don't think there is an issue but if we can rid of the extra code 
-added in clockevents_update_freq with this patch for twd, it would make 
-sense. The __-version means the function is lockless and there is a 
-function without '__' in the name with the lock.
+Yes
 
-> Another side note regarding the twd: Shouldn't we set the
-> CLOCK_EVT_FEAT_PERCPU flag we introduced recently for that timer?
+> 
+> Which then would make this init to be just a distraction, no?
 
-Yes.
+Yes
 
-There will be some fun with the patchset http://lwn.net/Articles/566270/ 
-where the local timer could be used as a broadcast timer.
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+> 
+> I wonder if we couldn't extern PERF_RECORD_MMAP to have the binary type
+> encoded there somehow...
+> 
+>>>  		dso->loaded = 0;
+>>>  		dso->rel = 0;
+>>>  		dso->sorted_by_name = 0;
+>>> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+>>> index 384f2d9..62680e1 100644
+>>> --- a/tools/perf/util/dso.h
+>>> +++ b/tools/perf/util/dso.h
+>>> @@ -91,6 +91,7 @@ struct dso {
+>>>  	u8		 annotate_warned:1;
+>>>  	u8		 sname_alloc:1;
+>>>  	u8		 lname_alloc:1;
+>>> +	u8		 is_64_bit:1;
+>>
+>> The is_64_bit name seems a bit hardcoded. We need something similar
+>> for perf-trace to set the audit machine type for resolving syscalls.
+>> How about having this field set a machine type rather than a
+>> "64-bit" flag?
+>>
+>> David
+> 
+> 
 
