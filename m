@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab3LLSTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:19:38 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:41641 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab3LLSTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:19:35 -0500
+	id S1752095Ab3LLSTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:19:43 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41800 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809Ab3LLSTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 13:19:39 -0500
+Date: Thu, 12 Dec 2013 12:18:18 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Matt Porter <mporter@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: Re: [PATCH v5 1/9] phy: add phy_get_bus_width()/phy_set_bus_width()
+ calls
+Message-ID: <20131212181818.GI1939@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1386854770-2173-1-git-send-email-mporter@linaro.org>
+ <1386854770-2173-2-git-send-email-mporter@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
-References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
-	<1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
-Date: Thu, 12 Dec 2013 19:19:35 +0100
-Message-ID: <CACRpkdaD13JnGetD-GLpxSoaf_LkRKYFjis7Tftc6U38E1ES5A@mail.gmail.com>
-Subject: Re: [RFC/RFT/PATCH V3] gpio: omap: refresh patch "be more aggressive
- with pm_runtime" against v3.12-rc5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chao Xu <caesarxuchao@gmail.com>
-Cc: Linux-OMAP <linux-omap@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Nishanth Menon <nm@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PMULwz+zIGJzpDN9"
+Content-Disposition: inline
+In-Reply-To: <1386854770-2173-2-git-send-email-mporter@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 8, 2013 at 5:40 AM, Chao Xu <caesarxuchao@gmail.com> wrote:
+--PMULwz+zIGJzpDN9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: Felipe Balbi <balbi@ti.com>
->
-> try to keep gpio block suspended as much as possible.
->
-> Tested with pandaboard and a sysfs exported gpio.
->
-> Signed-off-by: Felipe Balbi <balbi at ti.com>
->
-> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added
-> revision check to enable aggressive pm_runtime on OMAP4-only. Because
-> am33xx_gpio_sysc.idlemodes seems to be wrongly marked as
-> SIDLE_SMART_WKUP, which might cause missed interrupts with this patch.
-> Tested on Pandaboard rev A2.]
-> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
-> ---
-> changes since v2:
-> *add wrapper function to avoid 'is_aggressive_pm' check everywhere, as
-> suggested by Santosh Shilimkar
-> *fix format issue in commit log
+Hi,
 
-I'm dropping this until you convince Kevin/Tony that this is
-the way to go.
+On Thu, Dec 12, 2013 at 08:26:02AM -0500, Matt Porter wrote:
+> This adds a pair of APIs that allows the generic PHY subsystem to
+> provide information on the PHY bus width. The PHY provider driver may
+> use phy_set_bus_width() to set the bus width that the PHY supports.
+> The controller driver may then use phy_get_bus_width() to fetch the
+> PHY bus width in order to properly configure the controller.
+>=20
+> Signed-off-by: Matt Porter <mporter@linaro.org>
 
-One thing caught my eye, you add:
+Kishon, I need your Acked-by here, if you're ok with the change.
 
-> +static void _aggressive_pm_runtime_get_sync(struct gpio_bank *bank)
-> +static void _aggressive_pm_runtime_put(struct gpio_bank *bank)
-(..)
+--=20
+balbi
 
-Then everywhere:
+--PMULwz+zIGJzpDN9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +       _aggressive_pm_runtime_get_sync(bank);
-(...)
-> +       _aggressive_pm_runtime_put(bank);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
 
-Aggressive, argh, runtime PM is agressive by definition. If you
-want to switch this on and off use the compile option
-to enable/disable runtime PM altogether and do not wrap it
-like this.
+iQIcBAEBAgAGBQJSqf3qAAoJEIaOsuA1yqREIh8P/j7kXjr/8/nG/9VkH3Ob/SMx
+v+/meeBDhloMdwJQPpfZtt2UuR5bOcNW2Nndk4NHBZY8rI9JyllyMYG1V9C3AOsP
+B+fnADY8MTuP6wSogWcHb7e8aCRIqfRoFT++eQboQSIy7rYO4rBfsAzqf9nlgQ6h
+9mmGoNZmFDVCFqfkBI6YiU3GJpxI9Z5w20y9+5Xf+0ukwRdA2CjdIt2s87MsROty
+a84c9BWN0oO9xL6Jy7nZvftln0DtuKdxdQ9pFhw1Str8cLN+IZXvemRgRYrEmWA7
+JgnVbrFgMqdRnmG5sZCcCgE5bGElihUvqpWcTF8BjR1S/ZwiqdGOh13phnL0BQYE
+wlKSquVDERbjWtafNmds6C9dRnYBcMIRi0Xk2lkuc4eof2XFsthb3YNqpBysu6RI
+Tg9hE3dg+nCHztdwdfbzCVFtJTas1i+fKXW9vRLIWDZgqtDMxv6BDpQct3hLouRI
+kGWhmteB2veiUHCUaleNX1Amevwe18YcD1ByLNu9hPkDPjDE4Iejcrr3g7w3ZHu2
+qbwRO8BOOsoZ5hIdyoQxpZN1etGpLFK/rS3p4fk/yKyliGGqlv+NGULjGuiRkO4i
+IB7e5FSAPO90t5Htf6+D2odGiX5U55tV02K+pD4puU9LZnvXuJyca/3yOItUBpr8
+rEx/jVopri0tii77zmNc
+=SzAj
+-----END PGP SIGNATURE-----
 
-Yours,
-Linus Walleij
+--PMULwz+zIGJzpDN9--
