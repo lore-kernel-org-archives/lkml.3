@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab3LLIwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:52:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55632 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab3LLIwE (ORCPT
+	id S1751585Ab3LLIxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:53:04 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:62766 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3LLIxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:52:04 -0500
-Date: Thu, 12 Dec 2013 09:51:43 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-Message-ID: <20131212085143.GC21999@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
- <20131211113839.GF21683@pd.tnic>
- <20131211115239.GA21999@twins.programming.kicks-ass.net>
- <1386764955.12005.60.camel@marge.simpson.net>
- <20131211124352.GB21999@twins.programming.kicks-ass.net>
- <20131211134048.GH21683@pd.tnic>
- <20131211145655.GB4510@gmail.com>
- <20131211164318.GA2480@laptop.programming.kicks-ass.net>
- <20131211175036.GC12431@gmail.com>
- <52A8F073.9040500@zytor.com>
+	Thu, 12 Dec 2013 03:53:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52A8F073.9040500@zytor.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <CAP8WD_aJEmBYbM0BmQodGJsOPqZ+vqk9B15n297q_+aCorR=VQ@mail.gmail.com>
+References: <1386837577-15130-1-git-send-email-olof@lixom.net>
+	<CAP8WD_aJEmBYbM0BmQodGJsOPqZ+vqk9B15n297q_+aCorR=VQ@mail.gmail.com>
+Date: Thu, 12 Dec 2013 00:53:00 -0800
+Message-ID: <CAOesGMj_0m-Y8TvrZF=zgT33RuDtismjY=k6pbfm+MFmp2p=_w@mail.gmail.com>
+Subject: Re: [PATCH] net: eth: 8390: remove section warning in etherh.c
+From: Olof Johansson <olof@lixom.net>
+To: whiteheadm@acm.org
+Cc: David Miller <davem@davemloft.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 03:08:35PM -0800, H. Peter Anvin wrote:
-> On 12/11/2013 09:50 AM, Ingo Molnar wrote:
-> > 
-> > Well, availability could be a problem too, if some CPU (real or 
-> > virtual) implements MWAIT but not CLFLUSH.
-> > 
-> > In theory we could make mwait an alternatives variant and patch in the 
-> > right combination of instructions? The CLFLUSH goes to the same 
-> > address as on which the monitoring happens, so it could be considered 
-> > one meta-instruction.
-> > 
-> 
-> The first thing to do is probably to drop the use of thread_info as a
-> wakeup doorbell.  It seemed like a good idea at the time -- after all,
-> there is one for each thread -- but it is extremely likely to be dirty
-> in the cache, which is (presumably) what causes these kinds of bugs to
-> be maximally likely.  Even if we don't do the CLFLUSH it is likely that
-> the hardware has to do something expensive behind the scenes.
-> 
-> So I would like to propose that we switch to using a percpu variable
-> which is a single cache line of nothing at all.  It would only ever be
-> touched by MONITOR and for explicit wakeup.  Hopefully that will resolve
-> this problem without the need for the CLFLUSH.
+On Thu, Dec 12, 2013 at 12:46 AM, tedheadster <tedheadster@gmail.com> wrote:
+> On Thu, Dec 12, 2013 at 3:39 AM, Olof Johansson <olof@lixom.net> wrote:
+>>
+>> Commit c45f812f0280 ('8390 : Replace ei_debug with msg_enable/NETIF_MSG_*
+>> feature') ended up moving the printout of version[] from something that
+>> will be compiled out due to defines, to something that is now evaluated
+>> at runtime.
+>>
+>> That means that what always used to be an access to an __initdata string
+>> from non-__init code started showing up as a section mismatch when it
+>> didn't before.
+>>
+>> All other 8390 versions skip __initdata on the version string, and
+>> starting to annotate the whole chain of callers with __init seems like
+>> more churn than it's worth on this driver, so remove it from etherh.c as
+>> well.
+>>
+>
+> Olof,
+>   should you also remove the __init tag from etherh_banner() since it is
+> called from etherh_probe(), which does not have an __init tag?
 
-The reason we use thread_info::flags is because we need to write
-TIF_NEED_RESCHED into it to wake up anyhow.
+Hmm.
 
-Using another cacheline would mean the wakeup path would need to write a
-second cross cpu cacheline -- that is badness too.
+The section warning functionality is clever enough to not trigger when
+a function is named _probe() and references __initdata, and discarding
+etherh_banner() should be just fine so I don't see a need to remove
+it.
 
-So no, I don't think we want to listen to another line.
+
+-Olof
