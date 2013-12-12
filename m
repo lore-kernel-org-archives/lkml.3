@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab3LLOO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:14:29 -0500
-Received: from mga11.intel.com ([192.55.52.93]:50627 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab3LLOO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:14:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,878,1378882800"; 
-   d="scan'208";a="448957185"
-Message-ID: <52A9C4BF.4050206@intel.com>
-Date: Thu, 12 Dec 2013 16:14:23 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751642Ab3LLOQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:16:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48299 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3LLOP6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:15:58 -0500
+Date: Thu, 12 Dec 2013 06:15:31 -0800
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-d8af4ce490e92adfa123ae79899332bd829903e7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86/traps:
+  Clean up error exception handler definitions
+Git-Commit-ID: d8af4ce490e92adfa123ae79899332bd829903e7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 14/71] perf tools: Add cpu to struct thread
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-15-git-send-email-alexander.shishkin@linux.intel.com> <20131211141908.GC1458@ghostprotocols.net>
-In-Reply-To: <20131211141908.GC1458@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 12 Dec 2013 06:15:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13 16:19, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Dec 11, 2013 at 02:36:26PM +0200, Alexander Shishkin escreveu:
->> From: Adrian Hunter <adrian.hunter@intel.com>
->>
->> Tools may wish to track on which cpu a thread
->> is running.  Add 'cpu' to struct thread for
->> that purpose.  Also add machine functions to
->> get / set the cpu for a tid.
->>
->> This will be used to determine the cpu when
->> decoding a per-thread Instruction Trace.
->>
->>
->> +++ b/tools/perf/util/machine.c
->> @@ -1412,3 +1412,29 @@ pid_t machine__get_thread_pid(struct machine *machine, pid_t tid)
->>  
->>  	return thread->pid_;
->>  }
->> +
->> +int machine__get_thread_cpu(struct machine *machine, pid_t tid, pid_t *pid)
->> +{
->> +	struct thread *thread = machine__find_thread(machine, tid);
->> +
->> +	if (!thread)
->> +		return -1;
->> +
->> +	if (pid)
->> +		*pid = thread->pid_;
->> +
->> +	return thread->cpu;
->> +}
-> 
-> What is the problem with:
-> 
-> 	struct thread *thread = machine__find_thread(machine, tid);
-> 	pid_t pid = thread->pid_;
-> 	int cpu = thread->cpu;
-> 
-> In your case you'll have:
-> 
-> 	int pid;
-> 	int cpu = machine__get_thread_cpu(machine, tid, &pid);
-> 
-> Which is slightly more compact, but then we end up with a function that
-> from its name should just get a 'cpu' but also asks for the pid.
-> 
-> I think it is better to just use what we have (machine__find_thread),
-> have a 'thread' variable and then use any of its members, directly.
+Commit-ID:  d8af4ce490e92adfa123ae79899332bd829903e7
+Gitweb:     http://git.kernel.org/tip/d8af4ce490e92adfa123ae79899332bd829903e7
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Thu, 12 Dec 2013 14:46:42 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 12 Dec 2013 14:46:42 +0100
 
-OK
+x86/traps: Clean up error exception handler definitions
 
+So I was reading the exception handler generation code and got a real
+headache looking at the unstructured mess that our DO_ERROR*()
+generation code is today.
 
+Make it more readable.
 
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Link: http://lkml.kernel.org/n/tip-kuabysiykvUJpgus35lhnhvs@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/traps.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b857ed8..57409f6 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -211,21 +211,17 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ 	exception_exit(prev_state);					\
+ }
+ 
+-DO_ERROR_INFO(X86_TRAP_DE, SIGFPE, "divide error", divide_error, FPE_INTDIV,
+-		regs->ip)
+-DO_ERROR(X86_TRAP_OF, SIGSEGV, "overflow", overflow)
+-DO_ERROR(X86_TRAP_BR, SIGSEGV, "bounds", bounds)
+-DO_ERROR_INFO(X86_TRAP_UD, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN,
+-		regs->ip)
+-DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
+-		coprocessor_segment_overrun)
+-DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
+-DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
++DO_ERROR_INFO(X86_TRAP_DE,     SIGFPE,  "divide error",			divide_error,		     FPE_INTDIV, regs->ip )
++DO_ERROR     (X86_TRAP_OF,     SIGSEGV, "overflow",			overflow					  )
++DO_ERROR     (X86_TRAP_BR,     SIGSEGV, "bounds",			bounds						  )
++DO_ERROR_INFO(X86_TRAP_UD,     SIGILL,  "invalid opcode",		invalid_op,		     ILL_ILLOPN, regs->ip )
++DO_ERROR     (X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",	coprocessor_segment_overrun			  )
++DO_ERROR     (X86_TRAP_TS,     SIGSEGV, "invalid TSS",			invalid_TSS					  )
++DO_ERROR     (X86_TRAP_NP,     SIGBUS,  "segment not present",		segment_not_present				  )
+ #ifdef CONFIG_X86_32
+-DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
++DO_ERROR     (X86_TRAP_SS,     SIGBUS,  "stack segment",		stack_segment					  )
+ #endif
+-DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
+-		BUS_ADRALN, 0)
++DO_ERROR_INFO(X86_TRAP_AC,     SIGBUS,  "alignment check",		alignment_check,	     BUS_ADRALN, 0	  )
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
