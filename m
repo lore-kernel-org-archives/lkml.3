@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab3LLVLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:11:35 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:47174 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab3LLVLc (ORCPT
+	id S1751830Ab3LLVN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:13:28 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:52113 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3LLVN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:11:32 -0500
+	Thu, 12 Dec 2013 16:13:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <26167386.hX5eWUjT6T@flatron>
-References: <1386825152-398-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-	<26167386.hX5eWUjT6T@flatron>
-Date: Thu, 12 Dec 2013 22:11:31 +0100
-Message-ID: <CACRpkdbGSXA8oT8L-0fzJx7esXn7GWQA+Wi7WCQKX9eiy-fYCQ@mail.gmail.com>
-Subject: Re: [PATCH CFT] ARM:S5P64X0: Enable ARM_PATCH_PHYS_VIRT and
- AUTO_ZRELADDR by default
+In-Reply-To: <1553057.pNIrIqAFlL@avalon>
+References: <1386421734-10240-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<CACRpkdZi-7VrdeN349VAR+qTL0Oeb=E9YDhXh3L=EiGLhr59rg@mail.gmail.com>
+	<1553057.pNIrIqAFlL@avalon>
+Date: Thu, 12 Dec 2013 22:13:26 +0100
+Message-ID: <CACRpkdZ1X1ekPP1jgAS8=PdyVr871Ee8KWgk5mqoGdqG9+n+rQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: at91: correct a few typos
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: panchaxari <panchaxari.prasannamurthy@linaro.org>,
-        Kgene Kim <kgene.kim@samsung.com>, Patch Tracking <patches@linaro.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 10:47 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-
-> This is actually quite a poor platform choice. As of today, the kernel
-> is stuck with supporting just SMDK6440/6450 boards, which are proprietary
-> development boards and it doesn't look like any further boards will show
-> up in future. Kukjin has actually proposed removing support for this
-> platform at all and I consider this reasonable.
+On Thu, Dec 12, 2013 at 3:47 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Linus,
 >
-> Kukjin, should we proceed with removal?
+> On Thursday 12 December 2013 15:42:28 Linus Walleij wrote:
+>> On Sat, Dec 7, 2013 at 2:08 PM, Alexandre Belloni wrote:
+>> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>>
+>> Patch applied.
+>>
+>> Please include Laurent Pinchart on the To: line on AT91 pin control
+>> patches.
+>
+> I understand that you would like patch to have a wide review coverage, but why
+> me ? :-)
 
-Isn't Mark Brown using that platform for some various stuff?
+Bah nevermind, too much in my head, I confused AT91 for
+SH mobile nothing else... Nicolas and Jean-Christophe is on the
+list and all is well.
 
 Yours,
 Linus Walleij
