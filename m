@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab3LLAER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:04:17 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51525 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab3LLAEQ (ORCPT
+	id S1751671Ab3LLAGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:06:06 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:30880 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3LLAGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:04:16 -0500
-X-AuditID: 9c930179-b7ce4ae000000e86-0b-52a8fd7e3c3e
-Date: Thu, 12 Dec 2013 09:07:14 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v2 7/7] mm/migrate: remove result argument on page
- allocation function for migration
-Message-ID: <20131212000714.GA3634@lge.com>
-References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1386580248-22431-8-git-send-email-iamjoonsoo.kim@lge.com>
- <00000142d83adfc7-81b70cc9-c87b-4e7e-bd98-0a97ee21db31-000000@email.amazonses.com>
- <20131211084719.GA2043@lge.com>
- <00000142e263bbcd-65959fd3-eadc-4580-b55b-065c734a229e-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000142e263bbcd-65959fd3-eadc-4580-b55b-065c734a229e-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 11 Dec 2013 19:06:03 -0500
+Message-ID: <1386806463.1791.295.camel@misato.fc.hp.com>
+Subject: EFI tree kernel panic in phys_efi_set_virtual_address_map()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org
+Date: Wed, 11 Dec 2013 17:01:03 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 04:00:56PM +0000, Christoph Lameter wrote:
-> On Wed, 11 Dec 2013, Joonsoo Kim wrote:
-> 
-> > In do_move_pages(), if error occurs, 'goto out_pm' is executed and the
-> > page status doesn't back to userspace. So we don't need to store err number.
-> 
-> If a page cannot be moved then the error code is containing the number of
-> pages that could not be migrated. The check there is for err < 0.
-> So a positive number is not an error.
-> 
-> migrate_pages only returns an error code if we are running out of memory.
+Hi Boris,
 
-Ah... I missed it. I will drop this patch and send v3 for whole patchset.
+An EFI tree kernel panic'd during boot on one of my systems.  It boots
+fine when efi=old_map option is specified.  So, I think it is caused by
+your EFI virtual mapping changes.
 
-Thanks.
+The panic message is as follows.  I added some printk's to log the
+arguments of phys_efi_set_virtual_address_map().  The fault address is
+__pa(new_memmap) + 0x20 (too high for the map?).
+
+Thanks,
+-Toshi
+
+
+
+efi: >> Call phys_efi_set_virtual_address_map()
+efi:    count 29
+efi:    desc_size 0x30
+efi:    new_memmap 0xffff8a03fec16800
+efi:    __pa(new_memmap) 0x203fec16800
+
+BUG: unable to handle kernel paging request at 00000203fec16820
+IP: [<0000000072dcda76>] 0x72dcda75
+PGD 0 
+Oops: 0000 [#1] SMP 
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #52
+Hardware name: HP CB920s x1, BIOS Bundle: 005.028.018 SFW: 012.124.000
+10/28/2013
+task: ffffffff81a10480 ti: ffffffff81a00000 task.ti: ffffffff81a00000
+RIP: 0010:[<0000000072dcda76>]  [<0000000072dcda76>] 0x72dcda75
+RSP: 0000:ffffffff81a01e08  EFLAGS: 00010206
+RAX: 00000000725fee18 RBX: 00000000725feda0 RCX: 00000203fec16800
+RDX: 0000000072dfe070 RSI: 0000000060000202 RDI: 0000000072dcdac8
+RBP: 0000000072dd0560 R08: 0000000000000000 R09: 000000000000001d
+R10: 0000000000000030 R11: 8000000000000000 R12: ffff8a03fec16800
+R13: 0000000000000001 R14: 000000000000001d R15: 000000000009c000
+FS:  0000000000000000(0000) GS:ffff88087fa00000(0000)
+knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00000203fec16820 CR3: 000000000009c000 CR4: 00000000000406b0
+Stack:
+ 0000000072dfb88f 0000000000000001 0000000000000d08 0000000000000000
+ ffffffff81d79a98 0000000072dcdac8 0000000072dcdb93 0000000000000001
+ ffffffff81a01f80 0000000000000570 0000000000000000 0000000000000000
+Call Trace:
+ [<ffffffff81045cec>] ? efi_call4+0x6c/0xf0
+ [<ffffffff81b02f65>] ? efi_enter_virtual_mode+0x229/0x3f1
+ [<ffffffff81aebdf2>] ? start_kernel+0x36c/0x407
+ [<ffffffff81aeb88f>] ? repair_env_string+0x5c/0x5c
+ [<ffffffff81aeb5a3>] ? x86_64_start_reservations+0x2a/0x2c
+ [<ffffffff81aeb696>] ? x86_64_start_kernel+0xf1/0xf4
+Code:  Bad RIP value.
+RIP  [<0000000072dcda76>] 0x72dcda75
+ RSP <ffffffff81a01e08>
+CR2: 00000203fec16820
+---[ end trace e50b25032c120443 ]---
+
+
