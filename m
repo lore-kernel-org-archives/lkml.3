@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab3LLG0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 01:26:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22482 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198Ab3LLG0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 01:26:05 -0500
-Date: Thu, 12 Dec 2013 14:25:06 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 09/14] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131212062506.GH3751@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-10-git-send-email-dyoung@redhat.com>
- <20131211222057.GB8863@pd.tnic>
- <20131212030619.GG3751@dhcp-16-126.nay.redhat.com>
+	id S1751720Ab3LLGeD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 01:34:03 -0500
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:58145 "HELO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751198Ab3LLGeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 01:34:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212030619.GG3751@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPrCYkfS9h_yoQMcrQDXpW_3FcSfiPz0aeNX+_gc=G4exSEVWg@mail.gmail.com>
+References: <1386151791-4881-1-git-send-email-vkale@apm.com>
+	<1386151791-4881-3-git-send-email-vkale@apm.com>
+	<20131209165003.GJ13908@mudshark.cambridge.arm.com>
+	<CAPrCYkfS9h_yoQMcrQDXpW_3FcSfiPz0aeNX+_gc=G4exSEVWg@mail.gmail.com>
+Date: Thu, 12 Dec 2013 12:03:59 +0530
+Message-ID: <CAPrCYkct6XePhYEEC=x0yNQoS-z=fcp2_WKxU1Zk0eO=9+ZaLA@mail.gmail.com>
+Subject: Re: [PATCH V7 2/2] arm64: perf: add support for percpu pmu interrupt
+From: Vinayak Kale <vkale@apm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > + */
-> > > +static int __init map_regions_fixed(void)
-> > > +{
-> > > +	int i, s, ret = 0;
-> > > +	u64 end, systab;
-> > > +	unsigned long size;
-> > > +	efi_memory_desc_t *md;
-> > > +	struct efi_setup_data *data;
-> > > +
-> > > +	s = sizeof(*data) + nr_efi_runtime_map * sizeof(data->map[0]);
-> > > +	data = early_memremap(efi_setup, s);
-> > > +	if (!data) {
-> > > +		ret = -ENOMEM;
-> > > +		goto out;
-> > > +	}
-> > 
-> > newline.
-> 
-> Will remove
+Hi Will,
 
-misread the comment, there's no new line here. Looks like you want a
-new blank line here, ok..
+On Tue, Dec 10, 2013 at 1:00 PM, Vinayak Kale <vkale@apm.com> wrote:
+> Hi Will,
+>
+>
+> On Mon, Dec 9, 2013 at 10:20 PM, Will Deacon <will.deacon@arm.com> wrote:
+>> Hi Vinayak,
+>>
+>> On Wed, Dec 04, 2013 at 10:09:51AM +0000, Vinayak Kale wrote:
+>>> Add support for irq registration when pmu interrupt is percpu.
+>>
+>> Getting closer...
+>>
+>>> Signed-off-by: Vinayak Kale <vkale@apm.com>
+>>> Signed-off-by: Tuan Phan <tphan@apm.com>
+>>> ---
+>>>  arch/arm64/kernel/perf_event.c |  108 +++++++++++++++++++++++++++++-----------
+>>>  1 file changed, 78 insertions(+), 30 deletions(-)
+>>>
+>>> diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+>>> index cea1594..d8e6667 100644
+>>> --- a/arch/arm64/kernel/perf_event.c
+>>> +++ b/arch/arm64/kernel/perf_event.c
+>>> @@ -22,6 +22,7 @@
+>>>
+>>>  #include <linux/bitmap.h>
+>>>  #include <linux/interrupt.h>
+>>> +#include <linux/irq.h>
+>>>  #include <linux/kernel.h>
+>>>  #include <linux/export.h>
+>>>  #include <linux/perf_event.h>
+>>> @@ -363,26 +364,52 @@ validate_group(struct perf_event *event)
+>>>  }
+>>>
+>>>  static void
+>>> +armpmu_disable_percpu_irq(void *data)
+>>> +{
+>>> +     disable_percpu_irq((long)data);
+>>> +}
+>>
+>> Given that we wait for the CPUs to finish enabling/disabling the IRQ, I
+>> actually meant pass the pointer to the IRQ, which removes the horrible
+>> casts in the caller.
+>>
+>>> +     if (irq_is_percpu(irq)) {
+>>> +             cpumask_clear(&armpmu->active_irqs);
+>>
+>> Thanks for moving the mask manipulation out. It now makes it obvious that we
+>> don't care about the mask at all for PPIs, so that can be removed (the code
+>> you have is racy against hotplug anyway).
+>>
+>> I took the liberty of writing a fixup for you (see below). Can you test it
+>> on your platform please?
+>
+> Below fixup works fine on APM platform.
+> Do you want me to send this fixup as part of next revision of the
+> patch or will you apply it yourself? (For later case, you have my ack)
 
-> 
-> > 
-> > > +	for (i = 0, md = data->map; i < nr_efi_runtime_map; i++, md++) {
-> > > +		efi_map_region_fixed(md); /* FIXME: add error handling */
-> > > +		size = md->num_pages << PAGE_SHIFT;
-> > > +		end = md->phys_addr + size;
-> > > +
-> > > +		systab = (u64) (unsigned long) efi_phys.systab;
-> > > +		if (md->phys_addr <= systab && systab < end) {
-> > > +			systab += md->virt_addr - md->phys_addr;
-> > > +			efi.systab = (efi_system_table_t *)(unsigned long)systab;
-> > > +		}
-> > > +		ret = save_runtime_map(md, i);
-> > 
+Any comments? Do I need to send the fix-up in next revision of patch?
+
+Thanks
+-Vinayak
