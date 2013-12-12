@@ -1,178 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab3LLRC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 12:02:56 -0500
-Received: from nbl-ex10-fe01.nebula.fi ([188.117.32.121]:7462 "EHLO
-	ex10.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751849Ab3LLRCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 12:02:50 -0500
-Message-ID: <1386867767.2468.1.camel@ultrabook>
-Subject: [PATCH] hfsplus: Remove hfsplus_file_lookup
-From: Sougata Santra <sougata@tuxera.com>
-Reply-To: <sougata@tuxera.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>,
-        Szabolcs Szakacsits <szaka@tuxera.com>, <hch@infradead.org>
-Date: Thu, 12 Dec 2013 19:02:47 +0200
-Organization: Tuxera
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1751926Ab3LLREJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 12:04:09 -0500
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:38910
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751530Ab3LLREH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 12:04:07 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(z579ehzbb2dI98dI9371Ic89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
+Date: Thu, 12 Dec 2013 09:01:18 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <monstr@monstr.eu>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/9] arm: dt: zynq: Remove 'clock-ranges' from TTC
+ nodes
+References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1385514296-26702-2-git-send-email-soren.brinkmann@xilinx.com>
+ <52A97979.1030205@monstr.eu>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.166.4.239]
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <52A97979.1030205@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <552285d2-8d57-4509-a014-d97065232376@DB8EHSMHS004.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal,
 
-From: Sougata Santra <sougata@tuxera.com>
+On Thu, Dec 12, 2013 at 09:53:13AM +0100, Michal Simek wrote:
+> On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
+> > The bindings for the TTC changed in commit 'arm: zynq: Use standard
+> > timer binding' (e932900a3279b5dbb6d8f43c7b369003620e137c). That change
+> > removed possible subnodes from this driver rendering the 'clock-ranges'
+> > property invalid for this node.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> > Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/zynq-7000.dtsi | 2 --
+> >  1 file changed, 2 deletions(-)
+> 
+> I think this is completely unrelated to cpufreq and should just go
+> directly via arm-soc tree.
+> If yes, I will add 1/9 and 2/9 to zynq/dt branch.
 
-HFS+ resource fork lookup breaks opendir() library function. Since
-opendir first calls open() with O_DIRECTORY flag set. O_DIRECTORY
-means "refuse to open if not a directory". The open system call
-in the kernel does a check for inode->i_op->lookup and returns
--ENOTDIR. So if hfsplus_file_lookup is set it allows opendir()
-for plain files.
+I agree. This is just clean up that I found during this work. The second
+patch could go in as well I think. cpufreq will need the CPU nodes
+later, but I think there is no real reason to not add them now.
 
-Also resource fork lookup in HFS+ does not work. Since it is never
-invoked after VFS permission checking. It will always return with
--EACCES.
-
-Acked-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Sougata Santra <sougata@tuxera.com>
----
-
-When we call opendir() on a file, it does not return NULL.
-opendir() library call is based on open with O_DIRECTORY flag
-passed and then layered on top of getdents() system call.
-O_DIRECTORY means "refuse to open if not a directory".
-
-The open() system call in the kernel does a check for:
-do_sys_open() -->..--> can_lookup() i.e it only checks
-inode->i_op->lookup and returns ENOTDIR if
-this function pointer is not set.
-"
-In OSX, we can open "file/rsrc" to get the resource fork of "file".
-This behavior is emulated inside hfsplus on Linux, which means that
-to some degree every file acts like a directory. That is the reason
-lookup() inode operations is supported for files, and it is possible
-to do a lookup on this specific name. As a result of this open succeeds
-without returning  ENOTDIR for HFS+
-"
-Please see the LKML discussion thread on this issue:
-http://marc.info/?l=linux-fsdevel&m=122823343730412&w=2 
-
-I tried to test file/rsrc lookup in HFS+ driver and the feature does not work.
->From OSX:
-$ touch test
-$ echo "1234" > test/..namedfork/rsrc
-$ ls -l test..namedfork/rsrc
---rw-r--r-- 1 tuxera staff 5 10 dec 12:59 test/..namedfork/rsrc
-
-[sougata@ultrabook tmp]$ id
-uid=1000(sougata) gid=1000(sougata) groups=1000(sougata),5(tty),18(dialout),1001(vboxusers)
-
-[sougata@ultrabook tmp]$ mount
-/dev/sdb1 on /mnt/tmp type hfsplus (rw,relatime,umask=0,uid=1000,gid=1000,nls=utf8)
-
-[sougata@ultrabook tmp]$ ls -l test/rsrc
-ls: cannot access test/rsrc: Permission denied
-
-According to this LKML thread it is expected behavior.
-http://marc.info/?t=121139033800008&r=1&w=4
-I guess now that permission checking happens in vfs generic_permission() ?
-So it turns out that even though the lookup() inode_operation exists for HFS+ files.
-It cannot really get invoked ?. So if we can disable this feature to make opendir()
-work for HFS+.
-
-Thanks,
-    Sougata
-
- fs/hfsplus/inode.c | 59 ------------------------------------------------------
- 1 file changed, 59 deletions(-)
-
-diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
-index 37213d0..3ebda92 100644
---- a/fs/hfsplus/inode.c
-+++ b/fs/hfsplus/inode.c
-@@ -178,64 +178,6 @@ const struct dentry_operations hfsplus_dentry_operations = {
- 	.d_compare    = hfsplus_compare_dentry,
- };
- 
--static struct dentry *hfsplus_file_lookup(struct inode *dir,
--		struct dentry *dentry, unsigned int flags)
--{
--	struct hfs_find_data fd;
--	struct super_block *sb = dir->i_sb;
--	struct inode *inode = NULL;
--	struct hfsplus_inode_info *hip;
--	int err;
--
--	if (HFSPLUS_IS_RSRC(dir) || strcmp(dentry->d_name.name, "rsrc"))
--		goto out;
--
--	inode = HFSPLUS_I(dir)->rsrc_inode;
--	if (inode)
--		goto out;
--
--	inode = new_inode(sb);
--	if (!inode)
--		return ERR_PTR(-ENOMEM);
--
--	hip = HFSPLUS_I(inode);
--	inode->i_ino = dir->i_ino;
--	INIT_LIST_HEAD(&hip->open_dir_list);
--	mutex_init(&hip->extents_lock);
--	hip->extent_state = 0;
--	hip->flags = 0;
--	hip->userflags = 0;
--	set_bit(HFSPLUS_I_RSRC, &hip->flags);
--
--	err = hfs_find_init(HFSPLUS_SB(sb)->cat_tree, &fd);
--	if (!err) {
--		err = hfsplus_find_cat(sb, dir->i_ino, &fd);
--		if (!err)
--			err = hfsplus_cat_read_inode(inode, &fd);
--		hfs_find_exit(&fd);
--	}
--	if (err) {
--		iput(inode);
--		return ERR_PTR(err);
--	}
--	hip->rsrc_inode = dir;
--	HFSPLUS_I(dir)->rsrc_inode = inode;
--	igrab(dir);
--
--	/*
--	 * __mark_inode_dirty expects inodes to be hashed.  Since we don't
--	 * want resource fork inodes in the regular inode space, we make them
--	 * appear hashed, but do not put on any lists.  hlist_del()
--	 * will work fine and require no locking.
--	 */
--	hlist_add_fake(&inode->i_hash);
--
--	mark_inode_dirty(inode);
--out:
--	d_add(dentry, inode);
--	return NULL;
--}
--
- static void hfsplus_get_perms(struct inode *inode,
- 		struct hfsplus_perm *perms, int dir)
- {
-@@ -385,7 +327,6 @@ int hfsplus_file_fsync(struct file *file, loff_t start, loff_t end,
- }
- 
- static const struct inode_operations hfsplus_file_inode_operations = {
--	.lookup		= hfsplus_file_lookup,
- 	.setattr	= hfsplus_setattr,
- 	.setxattr	= generic_setxattr,
- 	.getxattr	= generic_getxattr,
--- 
-1.8.1.4
-
-
+	Sören
 
 
