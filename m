@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab3LLUsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:48:09 -0500
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:50913 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab3LLUsE (ORCPT
+	id S1751990Ab3LLUsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:48:39 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32989 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751566Ab3LLUsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:48:04 -0500
+	Thu, 12 Dec 2013 15:48:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18Ajhu89UKLI/PiVKVxa2ARDPPS1h4SGnM=
+Date: Thu, 12 Dec 2013 15:48:16 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, Richard Zhu <r65037@freescale.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Simon Horman <horms@verge.net.au>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH v2] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car
+ PCI host maintainers
+Message-ID: <20131212204816.GA2609@titan.lakedaemon.net>
+References: <20131211183237.GI4699@google.com>
+ <20131212204610.GK4699@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20131210050005.GC31386@dastard>
-References: <cover.1386571280.git.vdavydov@parallels.com>
-	<0ca62dbfbf545edb22b86bd11c50e9017a3dc4db.1386571280.git.vdavydov@parallels.com>
-	<20131210050005.GC31386@dastard>
-Date: Fri, 13 Dec 2013 00:48:03 +0400
-Message-ID: <CAA6-i6rukbiu+_pnS1nkD45ViA0fnn9fQjhk74LWXOA+S=+7Tg@mail.gmail.com>
-Subject: Re: [PATCH v13 11/16] mm: list_lru: add per-memcg lists
-From: Glauber Costa <glommer@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, dchinner@redhat.com,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, devel@openvz.org,
-        Glauber Costa <glommer@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131212204610.GK4699@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK, as far as I can tell, this is introducing a per-node, per-memcg
-> LRU lists. Is that correct?
->
-> If so, then that is not what Glauber and I originally intended for
-> memcg LRUs. per-node LRUs are expensive in terms of memory and cross
-> multiplying them by the number of memcgs in a system was not a good
-> use of memory.
->
-> According to Glauber, most memcgs are small and typically confined
-> to a single node or two by external means and therefore don't need the
-> scalability numa aware LRUs provide. Hence the idea was that the
-> memcg LRUs would just be a single LRU list, just like a non-numa
-> aware list_lru instantiation. IOWs, this is the structure that we
-> had decided on as the best compromise between memory usage,
-> complexity and memcg awareness:
->
-Sorry for jumping late into this particular e-mail.
+On Thu, Dec 12, 2013 at 01:46:10PM -0700, Bjorn Helgaas wrote:
+> [+cc Thomas]
+> 
+> On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
+> > If this looks reasonable, I'll merge it via the PCI tree for v3.13.
+> 
+> OK, here's another try.  I'm not actually trying to nominate anybody; I
+> just tried to write down the list we came up with in an earlier discussion [1].
+> 
+> I'd like confirmation from the following people that they approve of being
+> listed here:
+> 
+>   Richard Zhu (IMX6)
+>   Thomas Petazzoni (MVEBU)
+>   Magnus Damm (R-CAR)
+> 
+> I think everybody else listed has already said they approve.
+> 
+> [1] http://lkml.kernel.org/r/CAErSpo5tN==4nSv2u3SUBe_L4VsWn4P7TN+LtrC172Qj1vhtog@mail.gmail.com
+> 
+> 
+> MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI host maintainers
+> 
+> From: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Add entries for PCI host controller drivers in drivers/pci/host/.
+> 
+> Signed-off-by: Mohit Kumar <mohit.kumar@st.com>		(DesignWare)
+> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>	(DesignWare)
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>	(R-CAR)
+> Acked-by: Jason Cooper <jason@lakedaemon.net>		(MVEBU)
 
-I just wanted to point out that the reason I adopted such matrix in my
-design was that
-it actually uses less memory this way. My reasoning for this was
-explained in the original
-patch that I posted that contained that implementation.
+If Thomas is ok with it:
 
-This is because whenever an object would go on a memcg list, it *would
-not* go on
-the global list. Therefore, to keep information about nodes for global
-reclaim, you
-have to put them in node-lists.
+Double-Plus-Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-memcg reclaim, however, would reclaim regardless of node information.
+for the mvebu bits.
 
-In global reclaim, the memcg lists would be scanned obeying the node structure
-in the lists.
+thx,
 
-Because that has a fixed cost, it ends up using less memory that having a second
-list pointer in the objects, which is something that scale with the
-number of objects.
-Not to mention, that cost would be incurred even with memcg not being in use,
-which is something that we would like to avoid.
+Jason.
