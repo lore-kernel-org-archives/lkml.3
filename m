@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3LLXsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:48:21 -0500
-Received: from smtprelay0008.hostedemail.com ([216.40.44.8]:54080 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752071Ab3LLXru (ORCPT
+	id S1752163Ab3LLXse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:48:34 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:38527 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3LLXs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:47:50 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:3868:3871:4321:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tray29_9dcaf1a99a29
-X-Filterd-Recvd-Size: 1980
-From: Joe Perches <joe@perches.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH -next 4/4] debugfs: Fix misuse of seq_printf return value
-Date: Thu, 12 Dec 2013 15:47:31 -0800
-Message-Id: <7220700ec0898782bf0b5f8c87b921a6de122358.1386891757.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1386819513.git.joe@perches.com>
-References: <cover.1386819513.git.joe@perches.com>
-In-Reply-To: <cover.1386891757.git.joe@perches.com>
-References: <cover.1386891757.git.joe@perches.com>
+	Thu, 12 Dec 2013 18:48:29 -0500
+X-IronPort-AV: E=Sophos;i="4.95,475,1384300800"; 
+   d="scan'208";a="81618481"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v2 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY instead of copy
+Date: Thu, 12 Dec 2013 23:48:08 +0000
+Message-ID: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding repeated -1 to the return is not correct.
+A long known problem of the upstream netback implementation that on the TX
+path (from guest to Dom0) it copies the whole packet from guest memory into
+Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+huge perfomance penalty. The classic kernel version of netback used grant
+mapping, and to get notified when the page can be unmapped, it used page
+destructors. Unfortunately that destructor is not an upstreamable solution.
+Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+problem, however it seems to be very invasive on the network stack's code,
+and therefore haven't progressed very well.
+This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+know when the skb is freed up. That is the way KVM solved the same problem,
+and based on my initial tests it can do the same for us. Avoiding the extra
+copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+switch)
+Based on my investigations the packet get only copied if it is delivered to
+Dom0 stack, which is due to this [2] patch. That's a bit unfortunate, but
+luckily it doesn't cause a major regression for this usecase. In the future
+we should try to eliminate that copy somehow.
+There are a few spinoff tasks which will be addressed in separate patches:
+- grant copy the header directly instead of map and memcpy. This should help
+  us avoiding TLB flushing
+- use something else than ballooned pages
+- fix grant map to use page->index properly
+I will run some more extensive tests, but some basic XenRT tests were already
+passed with good results.
+I've tried to broke it down to smaller patches, with mixed results, so I
+welcome suggestions on that part as well:
+1: Introduce TX grant map definitions
+2: Change TX path from grant copy to mapping
+3: Remove old TX grant copy definitons and fix indentations
+4: Change RX path for mapped SKB fragments
+5: Add stat counters for zerocopy
+6: Handle guests with too many frags
+7: Add stat counters for frag_list skbs
+8: Timeout packets in RX path
+9: Aggregate TX unmap operations
 
-Use seq_is_buf_full to test for unnecessary seq_printf uses
-and always return 0.
+v2: I've fixed some smaller things, see the individual patches. I've added a
+few new stat counters, and handling the important use case when an older guest
+sends lots of slots. Instead of delayed copy now we timeout packets on the RX
+path, based on the assumption that otherwise packets should get stucked
+anywhere else. Finally some unmap batching to avoid too much TLB flush
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/debugfs/file.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+[1] http://lwn.net/Articles/491522/
+[2] https://lkml.org/lkml/2012/7/20/363
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 6314629..da65fed 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -695,15 +695,17 @@ EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
- int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
- 			   int nregs, void __iomem *base, char *prefix)
- {
--	int i, ret = 0;
-+	int i;
- 
- 	for (i = 0; i < nregs; i++, regs++) {
--		if (prefix)
--			ret += seq_printf(s, "%s", prefix);
--		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
--				  readl(base + regs->offset));
-+		seq_printf(s, "%s%s = 0x%08x\n",
-+			   prefix ? prefix : "",
-+			   regs->name, readl(base + regs->offset));
-+		if (seq_is_buf_full(s))
-+			break;
- 	}
--	return ret;
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(debugfs_print_regs32);
- 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
