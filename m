@@ -1,650 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab3LLGtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 01:49:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52464 "EHLO
+	id S1752004Ab3LLGtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 01:49:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab3LLGtL (ORCPT
+	with ESMTP id S1751640Ab3LLGte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 01:49:11 -0500
-Date: Wed, 11 Dec 2013 22:50:58 -0800
+	Thu, 12 Dec 2013 01:49:34 -0500
+Date: Wed, 11 Dec 2013 22:51:20 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.74
-Message-ID: <20131212065058.GB13639@kroah.com>
-References: <20131212065045.GA13639@kroah.com>
+Subject: Linux 3.10.24
+Message-ID: <20131212065120.GA13723@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
 Content-Disposition: inline
-In-Reply-To: <20131212065045.GA13639@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Documentation/i2c/busses/i2c-i801 b/Documentation/i2c/busses/i2c-i801
-index 99d4e442b77d..8bb57d7c12ea 100644
---- a/Documentation/i2c/busses/i2c-i801
-+++ b/Documentation/i2c/busses/i2c-i801
-@@ -22,6 +22,7 @@ Supported adapters:
-   * Intel Panther Point (PCH)
-   * Intel Lynx Point (PCH)
-   * Intel Lynx Point-LP (PCH)
-+  * Intel Avoton (SOC)
-    Datasheets: Publicly available at the Intel website
- 
- On Intel Patsburg and later chipsets, both the normal host SMBus controller
-diff --git a/Makefile b/Makefile
-index 2ea579016292..ce277ff0fd72 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 73
-+SUBLEVEL = 74
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/um/os-Linux/start_up.c b/arch/um/os-Linux/start_up.c
-index 425162e22af5..2f53b892fd80 100644
---- a/arch/um/os-Linux/start_up.c
-+++ b/arch/um/os-Linux/start_up.c
-@@ -15,6 +15,8 @@
- #include <sys/mman.h>
- #include <sys/stat.h>
- #include <sys/wait.h>
-+#include <sys/time.h>
-+#include <sys/resource.h>
- #include <asm/unistd.h>
- #include "init.h"
- #include "os.h"
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-index 850246206b12..585c3b279feb 100644
---- a/crypto/algif_hash.c
-+++ b/crypto/algif_hash.c
-@@ -117,6 +117,9 @@ static ssize_t hash_sendpage(struct socket *sock, struct page *page,
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	sg_init_table(ctx->sgl.sg, 1);
- 	sg_set_page(ctx->sgl.sg, page, size, offset);
-diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
-index a19c027b29bd..918a3b4148b8 100644
---- a/crypto/algif_skcipher.c
-+++ b/crypto/algif_skcipher.c
-@@ -381,6 +381,9 @@ static ssize_t skcipher_sendpage(struct socket *sock, struct page *page,
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	lock_sock(sk);
- 	if (!ctx->more && ctx->used)
- 		goto unlock;
-diff --git a/crypto/authenc.c b/crypto/authenc.c
-index 5ef7ba6b6a76..d21da2f0f508 100644
---- a/crypto/authenc.c
-+++ b/crypto/authenc.c
-@@ -368,9 +368,10 @@ static void crypto_authenc_encrypt_done(struct crypto_async_request *req,
- 	if (!err) {
- 		struct crypto_aead *authenc = crypto_aead_reqtfm(areq);
- 		struct crypto_authenc_ctx *ctx = crypto_aead_ctx(authenc);
--		struct ablkcipher_request *abreq = aead_request_ctx(areq);
--		u8 *iv = (u8 *)(abreq + 1) +
--			 crypto_ablkcipher_reqsize(ctx->enc);
-+		struct authenc_request_ctx *areq_ctx = aead_request_ctx(areq);
-+		struct ablkcipher_request *abreq = (void *)(areq_ctx->tail
-+							    + ctx->reqoff);
-+		u8 *iv = (u8 *)abreq - crypto_ablkcipher_ivsize(ctx->enc);
- 
- 		err = crypto_authenc_genicv(areq, iv, 0);
- 	}
-diff --git a/crypto/ccm.c b/crypto/ccm.c
-index 32fe1bb5decb..18d64ad0433c 100644
---- a/crypto/ccm.c
-+++ b/crypto/ccm.c
-@@ -271,7 +271,8 @@ static int crypto_ccm_auth(struct aead_request *req, struct scatterlist *plain,
- 	}
- 
- 	/* compute plaintext into mac */
--	get_data_to_compute(cipher, pctx, plain, cryptlen);
-+	if (cryptlen)
-+		get_data_to_compute(cipher, pctx, plain, cryptlen);
- 
- out:
- 	return err;
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 60662545cd14..c20f1578d393 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -268,6 +268,30 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x8c07), board_ahci }, /* Lynx Point RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c0e), board_ahci }, /* Lynx Point RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c0f), board_ahci }, /* Lynx Point RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c02), board_ahci }, /* Lynx Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c03), board_ahci }, /* Lynx Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c04), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c05), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c06), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c07), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c0e), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c0f), board_ahci }, /* Lynx Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f22), board_ahci }, /* Avoton AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1f23), board_ahci }, /* Avoton AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1f24), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f25), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f26), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f27), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f2e), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f2f), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f32), board_ahci }, /* Avoton AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1f33), board_ahci }, /* Avoton AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x1f34), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f35), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f36), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f37), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f3e), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x1f3f), board_ahci }, /* Avoton RAID */
- 
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
-diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-index 40cc0cf2ded6..e6939e13e338 100644
---- a/drivers/char/i8k.c
-+++ b/drivers/char/i8k.c
-@@ -664,6 +664,13 @@ static struct dmi_system_id __initdata i8k_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro"),
- 		},
- 	},
-+	{
-+		.ident = "Dell XPS421",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS L421X"),
-+		},
-+	},
-         { }
- };
- 
-diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
-index 5a1817eedd1b..c81b8da669ea 100644
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -69,10 +69,14 @@ static int mpc8572_gpio_get(struct gpio_chip *gc, unsigned int gpio)
- 	u32 val;
- 	struct of_mm_gpio_chip *mm = to_of_mm_gpio_chip(gc);
- 	struct mpc8xxx_gpio_chip *mpc8xxx_gc = to_mpc8xxx_gpio_chip(mm);
-+	u32 out_mask, out_shadow;
- 
--	val = in_be32(mm->regs + GPIO_DAT) & ~in_be32(mm->regs + GPIO_DIR);
-+	out_mask = in_be32(mm->regs + GPIO_DIR);
- 
--	return (val | mpc8xxx_gc->data) & mpc8xxx_gpio2mask(gpio);
-+	val = in_be32(mm->regs + GPIO_DAT) & ~out_mask;
-+	out_shadow = mpc8xxx_gc->data & out_mask;
-+
-+	return (val | out_shadow) & mpc8xxx_gpio2mask(gpio);
- }
- 
- static int mpc8xxx_gpio_get(struct gpio_chip *gc, unsigned int gpio)
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index ea8736bc257d..bc625f6c5b4c 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -105,6 +105,7 @@ config I2C_I801
- 	    Panther Point (PCH)
- 	    Lynx Point (PCH)
- 	    Lynx Point-LP (PCH)
-+	    Avoton (SOC)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index d88ec812160e..d63e130690e9 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -53,6 +53,7 @@
-   Panther Point (PCH)   0x1e22     32     hard     yes     yes     yes
-   Lynx Point (PCH)      0x8c22     32     hard     yes     yes     yes
-   Lynx Point-LP (PCH)   0x9c22     32     hard     yes     yes     yes
-+  Avoton (SOC)          0x1f3c     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -145,6 +146,7 @@
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF1	0x1d71
- #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS_IDF2	0x1d72
- #define PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS	0x1e22
-+#define PCI_DEVICE_ID_INTEL_AVOTON_SMBUS	0x1f3c
- #define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
- #define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS	0x8c22
-@@ -639,6 +641,7 @@ static DEFINE_PCI_DEVICE_TABLE(i801_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PANTHERPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_AVOTON_SMBUS) },
- 	{ 0, }
- };
- 
-diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
-index 332597980817..20026e3a234a 100644
---- a/drivers/input/Kconfig
-+++ b/drivers/input/Kconfig
-@@ -71,7 +71,7 @@ config INPUT_SPARSEKMAP
- comment "Userland interfaces"
- 
- config INPUT_MOUSEDEV
--	tristate "Mouse interface" if EXPERT
-+	tristate "Mouse interface"
- 	default y
- 	help
- 	  Say Y here if you want your mouse to be accessible as char devices
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index f354813a13e8..69a45701d94a 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- menuconfig INPUT_KEYBOARD
--	bool "Keyboards" if EXPERT || !X86
-+	bool "Keyboards"
- 	default y
- 	help
- 	  Say Y here, and a list of supported keyboards will be displayed.
-@@ -67,7 +67,7 @@ config KEYBOARD_ATARI
- 	  module will be called atakbd.
- 
- config KEYBOARD_ATKBD
--	tristate "AT keyboard" if EXPERT || !X86
-+	tristate "AT keyboard"
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 55f2c2293ec6..93d4182a8916 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -2,7 +2,7 @@
- # Input core configuration
- #
- config SERIO
--	tristate "Serial I/O support" if EXPERT || !X86
-+	tristate "Serial I/O support"
- 	default y
- 	help
- 	  Say Yes here if you have any input device that uses serial I/O to
-@@ -19,7 +19,7 @@ config SERIO
- if SERIO
- 
- config SERIO_I8042
--	tristate "i8042 PC Keyboard controller" if EXPERT || !X86
-+	tristate "i8042 PC Keyboard controller"
- 	default y
- 	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
-@@ -168,7 +168,7 @@ config SERIO_MACEPS2
- 	  module will be called maceps2.
- 
- config SERIO_LIBPS2
--	tristate "PS/2 driver library" if EXPERT
-+	tristate "PS/2 driver library"
- 	depends on SERIO_I8042 || SERIO_I8042=n
- 	help
- 	  Say Y here if you are using a driver for device connected
-diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
-index 00e5fcac8fdf..cbee842f8b6b 100644
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -198,6 +198,13 @@ static void enclosure_remove_links(struct enclosure_component *cdev)
- {
- 	char name[ENCLOSURE_NAME_SIZE];
- 
-+	/*
-+	 * In odd circumstances, like multipath devices, something else may
-+	 * already have removed the links, so check for this condition first.
-+	 */
-+	if (!cdev->dev->kobj.sd)
-+		return;
-+
- 	enclosure_link_name(cdev, name);
- 	sysfs_remove_link(&cdev->dev->kobj, name);
- 	sysfs_remove_link(&cdev->cdev.kobj, "device");
-diff --git a/drivers/net/ethernet/smsc/smc91x.h b/drivers/net/ethernet/smsc/smc91x.h
-index 5f53fbbf67be..ff1af41e4b5d 100644
---- a/drivers/net/ethernet/smsc/smc91x.h
-+++ b/drivers/net/ethernet/smsc/smc91x.h
-@@ -46,7 +46,8 @@
-     defined(CONFIG_MACH_LITTLETON) ||\
-     defined(CONFIG_MACH_ZYLONITE2) ||\
-     defined(CONFIG_ARCH_VIPER) ||\
--    defined(CONFIG_MACH_STARGATE2)
-+    defined(CONFIG_MACH_STARGATE2) ||\
-+    defined(CONFIG_ARCH_VERSATILE)
- 
- #include <asm/mach-types.h>
- 
-@@ -154,6 +155,8 @@ static inline void SMC_outw(u16 val, void __iomem *ioaddr, int reg)
- #define SMC_outl(v, a, r)	writel(v, (a) + (r))
- #define SMC_insl(a, r, p, l)	readsl((a) + (r), p, l)
- #define SMC_outsl(a, r, p, l)	writesl((a) + (r), p, l)
-+#define SMC_insw(a, r, p, l)	readsw((a) + (r), p, l)
-+#define SMC_outsw(a, r, p, l)	writesw((a) + (r), p, l)
- #define SMC_IRQ_FLAGS		(-1)	/* from resource */
- 
- /* We actually can't write halfwords properly if not word aligned */
-@@ -206,23 +209,6 @@ SMC_outw(u16 val, void __iomem *ioaddr, int reg)
- #define RPC_LSA_DEFAULT		RPC_LED_TX_RX
- #define RPC_LSB_DEFAULT		RPC_LED_100_10
- 
--#elif	defined(CONFIG_ARCH_VERSATILE)
--
--#define SMC_CAN_USE_8BIT	1
--#define SMC_CAN_USE_16BIT	1
--#define SMC_CAN_USE_32BIT	1
--#define SMC_NOWAIT		1
--
--#define SMC_inb(a, r)		readb((a) + (r))
--#define SMC_inw(a, r)		readw((a) + (r))
--#define SMC_inl(a, r)		readl((a) + (r))
--#define SMC_outb(v, a, r)	writeb(v, (a) + (r))
--#define SMC_outw(v, a, r)	writew(v, (a) + (r))
--#define SMC_outl(v, a, r)	writel(v, (a) + (r))
--#define SMC_insl(a, r, p, l)	readsl((a) + (r), p, l)
--#define SMC_outsl(a, r, p, l)	writesl((a) + (r), p, l)
--#define SMC_IRQ_FLAGS		(-1)	/* from resource */
--
- #elif defined(CONFIG_MN10300)
- 
- /*
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index b0fefc435c03..599240af2244 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1219,7 +1219,7 @@ static void complete_scsi_command(struct CommandList *cp)
- 					"has check condition: aborted command: "
- 					"ASC: 0x%x, ASCQ: 0x%x\n",
- 					cp, asc, ascq);
--				cmd->result = DID_SOFT_ERROR << 16;
-+				cmd->result |= DID_SOFT_ERROR << 16;
- 				break;
- 			}
- 			/* Must be some other type of check condition */
-@@ -4466,7 +4466,7 @@ reinit_after_soft_reset:
- 	hpsa_hba_inquiry(h);
- 	hpsa_register_scsi(h);	/* hook ourselves into SCSI subsystem */
- 	start_controller_lockup_detector(h);
--	return 1;
-+	return 0;
- 
- clean4:
- 	hpsa_free_sg_chain_blocks(h);
-diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
-index d109cc3a17b6..51ee663c1310 100644
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -211,7 +211,7 @@ static unsigned int sas_ata_qc_issue(struct ata_queued_cmd *qc)
- 		qc->tf.nsect = 0;
- 	}
- 
--	ata_tf_to_fis(&qc->tf, 1, 0, (u8*)&task->ata_task.fis);
-+	ata_tf_to_fis(&qc->tf, qc->dev->link->pmp, 1, (u8 *)&task->ata_task.fis);
- 	task->uldd_task = qc;
- 	if (ata_is_atapi(qc->tf.protocol)) {
- 		memcpy(task->ata_task.atapi_packet, qc->cdb, qc->dev->cdb_len);
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index e411f1865298..4a9dd86bce8e 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1542,6 +1542,8 @@ static int acm_reset_resume(struct usb_interface *intf)
- 
- static const struct usb_device_id acm_ids[] = {
- 	/* quirky and broken devices */
-+	{ USB_DEVICE(0x17ef, 0x7000), /* Lenovo USB modem */
-+	.driver_info = NO_UNION_NORMAL, },/* has no union descriptor */
- 	{ USB_DEVICE(0x0870, 0x0001), /* Metricom GS Modem */
- 	.driver_info = NO_UNION_NORMAL, /* has no union descriptor */
- 	},
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 91293b68df5a..8ccbf5e6b549 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -1962,25 +1962,25 @@ static void mos7840_change_port_settings(struct tty_struct *tty,
- 	iflag = tty->termios->c_iflag;
- 
- 	/* Change the number of bits */
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			lData = LCR_BITS_5;
--			break;
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		lData = LCR_BITS_5;
-+		break;
- 
--		case CS6:
--			lData = LCR_BITS_6;
--			break;
-+	case CS6:
-+		lData = LCR_BITS_6;
-+		break;
- 
--		case CS7:
--			lData = LCR_BITS_7;
--			break;
--		default:
--		case CS8:
--			lData = LCR_BITS_8;
--			break;
--		}
-+	case CS7:
-+		lData = LCR_BITS_7;
-+		break;
-+
-+	default:
-+	case CS8:
-+		lData = LCR_BITS_8;
-+		break;
- 	}
-+
- 	/* Change the Parity bit */
- 	if (cflag & PARENB) {
- 		if (cflag & PARODD) {
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index a1a9062954c4..1dcccd43d629 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -290,24 +290,22 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 	dbg("0xa1:0x21:0:0  %d - %x %x %x %x %x %x %x", i,
- 	    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
- 
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			buf[6] = 5;
--			break;
--		case CS6:
--			buf[6] = 6;
--			break;
--		case CS7:
--			buf[6] = 7;
--			break;
--		default:
--		case CS8:
--			buf[6] = 8;
--			break;
--		}
--		dbg("%s - data bits = %d", __func__, buf[6]);
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		buf[6] = 5;
-+		break;
-+	case CS6:
-+		buf[6] = 6;
-+		break;
-+	case CS7:
-+		buf[6] = 7;
-+		break;
-+	default:
-+	case CS8:
-+		buf[6] = 8;
-+		break;
- 	}
-+	dbg("%s - data bits = %d", __func__, buf[6]);
- 
- 	/* For reference buf[0]:buf[3] baud rate value */
- 	/* NOTE: Only the values defined in baud_sup are supported !
-diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
-index f06c9a8f3d37..003ef9019ad8 100644
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -396,22 +396,20 @@ static void spcp8x5_set_termios(struct tty_struct *tty,
- 	}
- 
- 	/* Set Data Length : 00:5bit, 01:6bit, 10:7bit, 11:8bit */
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			buf[1] |= SET_UART_FORMAT_SIZE_5;
--			break;
--		case CS6:
--			buf[1] |= SET_UART_FORMAT_SIZE_6;
--			break;
--		case CS7:
--			buf[1] |= SET_UART_FORMAT_SIZE_7;
--			break;
--		default:
--		case CS8:
--			buf[1] |= SET_UART_FORMAT_SIZE_8;
--			break;
--		}
-+	switch (cflag & CSIZE) {
-+	case CS5:
-+		buf[1] |= SET_UART_FORMAT_SIZE_5;
-+		break;
-+	case CS6:
-+		buf[1] |= SET_UART_FORMAT_SIZE_6;
-+		break;
-+	case CS7:
-+		buf[1] |= SET_UART_FORMAT_SIZE_7;
-+		break;
-+	default:
-+	case CS8:
-+		buf[1] |= SET_UART_FORMAT_SIZE_8;
-+		break;
- 	}
- 
- 	/* Set Stop bit2 : 0:1bit 1:2bit */
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index cabddb5da071..a7ea637bf215 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4041,11 +4041,17 @@ static void nfs4_delegreturn_done(struct rpc_task *task, void *calldata)
- 		return;
- 
- 	switch (task->tk_status) {
--	case -NFS4ERR_STALE_STATEID:
--	case -NFS4ERR_EXPIRED:
- 	case 0:
- 		renew_lease(data->res.server, data->timestamp);
- 		break;
-+	case -NFS4ERR_ADMIN_REVOKED:
-+	case -NFS4ERR_DELEG_REVOKED:
-+	case -NFS4ERR_BAD_STATEID:
-+	case -NFS4ERR_OLD_STATEID:
-+	case -NFS4ERR_STALE_STATEID:
-+	case -NFS4ERR_EXPIRED:
-+		task->tk_status = 0;
-+		break;
- 	default:
- 		if (nfs4_async_handle_error(task, data->res.server, NULL) ==
- 				-EAGAIN) {
-diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
-index 3744d2a642df..2cddd2b92c19 100644
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -36,6 +36,7 @@ static inline void scatterwalk_sg_chain(struct scatterlist *sg1, int num,
- {
- 	sg_set_page(&sg1[num - 1], (void *)sg2, 0, 0);
- 	sg1[num - 1].page_link &= ~0x02;
-+	sg1[num - 1].page_link |= 0x01;
- }
- 
- static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
-@@ -43,7 +44,7 @@ static inline struct scatterlist *scatterwalk_sg_next(struct scatterlist *sg)
- 	if (sg_is_last(sg))
- 		return NULL;
- 
--	return (++sg)->length ? sg : (void *)sg_page(sg);
-+	return (++sg)->length ? sg : sg_chain_ptr(sg);
- }
- 
- static inline void scatterwalk_crypto_chain(struct scatterlist *head,
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index 15e53b1766a6..dcd3f9796817 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
- 
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 7949b5d1663f..19e784237f7a 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1042,6 +1042,9 @@ int udp_sendpage(struct sock *sk, struct page *page, int offset,
- 	if (flags & MSG_SENDPAGE_NOTLAST)
- 		flags |= MSG_MORE;
- 
-+	if (flags & MSG_SENDPAGE_NOTLAST)
-+		flags |= MSG_MORE;
-+
- 	if (!up->pending) {
- 		struct msghdr msg = {	.msg_flags = flags|MSG_MORE };
- 
-diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
-index a32caa72bd7d..8b5afc1d2e60 100644
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -406,10 +406,10 @@ static int wm8731_set_dai_fmt(struct snd_soc_dai *codec_dai,
- 		iface |= 0x0001;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
-+		iface |= 0x0013;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0013;
-+		iface |= 0x0003;
- 		break;
- 	default:
- 		return -EINVAL;
-diff --git a/sound/soc/codecs/wm8990.c b/sound/soc/codecs/wm8990.c
-index 9d242351e6e8..d5ab3351c2bc 100644
---- a/sound/soc/codecs/wm8990.c
-+++ b/sound/soc/codecs/wm8990.c
-@@ -1265,6 +1265,8 @@ static int wm8990_set_bias_level(struct snd_soc_codec *codec,
- 
- 		/* disable POBCTRL, SOFT_ST and BUFDCOPEN */
- 		snd_soc_write(codec, WM8990_ANTIPOP2, 0x0);
-+
-+		codec->cache_sync = 1;
- 		break;
- 	}
- 
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.24 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                  |    2=20
+ arch/arm/boot/dts/armada-370-xp.dtsi      |    2=20
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi  |   16 +++---
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi  |   78 ++++++++++++++++++++++++-=
+-----
+ arch/arm/include/asm/pgtable.h            |    2=20
+ arch/arm/mach-at91/sama5d3.c              |    6 +-
+ arch/arm/mach-footbridge/common.c         |    3 +
+ arch/arm/mach-footbridge/dc21285.c        |    2=20
+ arch/arm/mach-footbridge/ebsa285.c        |   22 +++++---
+ arch/arm/mm/mmap.c                        |    2=20
+ arch/arm/mm/pgd.c                         |    3 -
+ arch/parisc/kernel/sys_parisc.c           |   25 +++++----
+ arch/s390/crypto/aes_s390.c               |   31 ++++++-----
+ arch/x86/Makefile                         |    8 ++-
+ block/blk-cgroup.h                        |    8 +--
+ crypto/algif_hash.c                       |    3 +
+ crypto/algif_skcipher.c                   |    3 +
+ crypto/authenc.c                          |    7 +-
+ crypto/ccm.c                              |    3 -
+ drivers/ata/libata-scsi.c                 |    1=20
+ drivers/char/i8k.c                        |    7 ++
+ drivers/firewire/sbp2.c                   |    1=20
+ drivers/gpio/gpio-mpc8xxx.c               |    8 ++-
+ drivers/hid/hid-ids.h                     |    5 +
+ drivers/hid/usbhid/hid-quirks.c           |    3 +
+ drivers/input/Kconfig                     |    2=20
+ drivers/input/keyboard/Kconfig            |    4 -
+ drivers/input/serio/Kconfig               |    6 +-
+ drivers/misc/enclosure.c                  |    7 ++
+ drivers/misc/mei/hw-me-regs.h             |    6 +-
+ drivers/misc/mei/pci-me.c                 |    5 +
+ drivers/net/can/c_can/c_can.c             |   21 +++++---
+ drivers/net/can/sja1000/sja1000.c         |   17 +++---
+ drivers/net/ethernet/broadcom/tg3.c       |   12 ++--
+ drivers/net/ethernet/smsc/smc91x.h        |   22 +-------
+ drivers/net/wireless/iwlwifi/dvm/tx.c     |   14 +----
+ drivers/scsi/3w-9xxx.c                    |    3 -
+ drivers/scsi/3w-sas.c                     |    3 -
+ drivers/scsi/3w-xxxx.c                    |    3 -
+ drivers/scsi/aacraid/linit.c              |    1=20
+ drivers/scsi/arcmsr/arcmsr_hba.c          |    1=20
+ drivers/scsi/bfa/bfa_fcs.h                |    1=20
+ drivers/scsi/bfa/bfa_fcs_lport.c          |   14 ++++-
+ drivers/scsi/bfa/bfad_attr.c              |    7 --
+ drivers/scsi/gdth.c                       |    1=20
+ drivers/scsi/hosts.c                      |    1=20
+ drivers/scsi/hpsa.c                       |    5 +
+ drivers/scsi/ipr.c                        |    3 -
+ drivers/scsi/ips.c                        |    1=20
+ drivers/scsi/libsas/sas_ata.c             |    2=20
+ drivers/scsi/megaraid.c                   |    1=20
+ drivers/scsi/megaraid/megaraid_mbox.c     |    1=20
+ drivers/scsi/megaraid/megaraid_sas_base.c |    1=20
+ drivers/scsi/pmcraid.c                    |    1=20
+ drivers/scsi/sd.c                         |    6 ++
+ drivers/scsi/storvsc_drv.c                |    1=20
+ drivers/usb/class/cdc-acm.c               |    2=20
+ drivers/usb/serial/ftdi_sio.c             |   37 +++++++++-----
+ drivers/usb/serial/mos7840.c              |   32 ++++++------
+ drivers/usb/serial/pl2303.c               |   32 +++++-------
+ drivers/usb/serial/spcp8x5.c              |   30 +++++------
+ drivers/xen/grant-table.c                 |    6 +-
+ fs/nfs/nfs4proc.c                         |   10 +++
+ fs/pipe.c                                 |   39 +++++++--------
+ include/crypto/scatterwalk.h              |    3 -
+ include/linux/genalloc.h                  |    4 -
+ include/scsi/scsi_host.h                  |    6 ++
+ kernel/irq/pm.c                           |    2=20
+ kernel/time/timekeeping.c                 |    2=20
+ lib/genalloc.c                            |   19 ++++---
+ net/ipv4/udp.c                            |    3 +
+ sound/pci/hda/patch_realtek.c             |   55 ++++++++++++++++++---
+ sound/soc/codecs/wm8731.c                 |    4 -
+ sound/soc/codecs/wm8990.c                 |    2=20
+ 74 files changed, 456 insertions(+), 256 deletions(-)
+
+AceLan Kao (2):
+      HID: usbhid: quirk for Synaptics Large Touchccreen
+      HID: usbhid: quirk for SiS Touchscreen
+
+Alan Cox (1):
+      drivers/char/i8k.c: add Dell XPLS L421X
+
+Arnaud Ebalard (2):
+      ARM: mvebu: fix second and third PCIe unit of Armada XP mv78260
+      ARM: mvebu: second PCIe unit of Armada XP mv78230 is only x1 capable
+
+Bo Shen (1):
+      ASoC: wm8731: fix dsp mode configuration
+
+Colin Leitner (4):
+      USB: pl2303: fixed handling of CS5 setting
+      USB: ftdi_sio: fixed handling of unsupported CSIZE setting
+      USB: mos7840: correct handling of CS5 setting
+      USB: spcp8x5: correct handling of CS5 setting
+
+Dan Williams (1):
+      SCSI: libsas: fix usage of ata_tf_to_fis
+
+David Cluytens (1):
+      USB: cdc-acm: Added support for the Lenovo RD02-D400 USB Modem
+
+David Henningsson (2):
+      ALSA: hda - Fix headset mic input after muted internal mic (Dell/Real=
+tek)
+      ALSA: hda - Add mono speaker quirk for Dell Inspiron 5439
+
+Emmanuel Grumbach (1):
+      iwlwifi: dvm: don't override mac80211's queue setting
+
+Gerald Schaefer (1):
+      crypto: s390 - Fix aes-xts parameter corruption
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.24
+
+Gregory CLEMENT (1):
+      ARM: mvebu: use the virtual CPU registers to access coherency registe=
+rs
+
+H. Peter Anvin (1):
+      x86-64, build: Always pass in -mno-sse
+
+Helge Deller (1):
+      parisc: fix mmap(MAP_FIXED|MAP_SHARED) to already mmapped address
+
+Hong Zhiguo (1):
+      Update of blkg_stat and blkg_rwstat may happen in bh context. While u=
+64_stats_fetch_retry is only preempt_disable on 32bit UP system. This is no=
+t enough to avoid preemption by bh and may read strange 64 bit value.
+
+Horia Geanta (1):
+      crypto: ccm - Fix handling of zero plaintext when computing mac
+
+Ivan Vecera (1):
+      tg3: avoid double-freeing of rx data memory
+
+James Bottomley (1):
+      SCSI: enclosure: fix WARN_ON in dual path device removing
+
+Joonyoung Shim (1):
+      lib/genalloc.c: fix overflow of ending address of memory chunk
+
+Laxman Dewangan (1):
+      irq: Enable all irqs unconditionally in irq_resume
+
+Linus Torvalds (1):
+      vfs: fix subtle use-after-free of pipe_inode_info
+
+Linus Walleij (1):
+      net: smc91: fix crash regression on the versatile
+
+Liu Gang (1):
+      powerpc/gpio: Fix the wrong GPIO input data on MPC8572/MPC8536
+
+Ludovic Desroches (1):
+      ARM: at91: sama5d3: reduce TWI internal clock frequency
+
+Marc Kleine-Budde (1):
+      can: c_can: don't call pm_runtime_get_sync() from interrupt context
+
+Mark Brown (1):
+      ASoC: wm8990: Mark the register map as dirty when powering down
+
+Martin K. Petersen (1):
+      SCSI: Disable WRITE SAME for RAID and virtual host adapter drivers
+
+Martin Schwidefsky (1):
+      time: Fix 1ns/tick drift w/ GENERIC_TIME_VSYSCALL_OLD
+
+Matt Wilson (1):
+      xen/gnttab: leave lazy MMU mode in the case of a m2p override failure
+
+Oliver Hartkopp (1):
+      can: sja1000: fix {pre,post}_irq() handling and IRQ handler return va=
+lue
+
+Russell King (3):
+      ARM: fix booting low-vectors machines
+      ARM: footbridge: fix VGA initialisation
+      ARM: footbridge: fix EBSA285 LEDs
+
+Shawn Landden (1):
+      net: update consumers of MSG_MORE to recognize MSG_SENDPAGE_NOTLAST
+
+Stephen M. Cameron (2):
+      SCSI: hpsa: do not discard scsi status on aborted commands
+      SCSI: hpsa: return 0 from driver probe function on success, not 1
+
+Takashi Iwai (3):
+      ALSA: hda - Fix silent output on ASUS W7J laptop
+      ALSA: hda - Another fixup for ASUS laptop with ALC660 codec
+      ALSA: hda - Fix silent output on MacBook Air 2,1
+
+Tom Gundersen (2):
+      Input: allow deselecting serio drivers even without CONFIG_EXPERT
+      Input: mousedev - allow disabling even without CONFIG_EXPERT
+
+Tom Lendacky (3):
+      crypto: scatterwalk - Set the chain pointer indication bit
+      crypto: authenc - Find proper IV address in ablkcipher callback
+      crypto: scatterwalk - Use sg_chain_ptr on chain entries
+
+Tomas Winkler (2):
+      mei: me: add Lynx Point Wellsburg work station device id
+      mei: add 9 series PCH mei device ids
+
+Trond Myklebust (1):
+      NFSv4: Update list of irrecoverable errors on DELEGRETURN
+
+Vijaya Mohan Guvva (1):
+      SCSI: bfa: Fix crash when symb name set for offline vport
+
+
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqVzoAAoJEDjbvchgkmk+rtMP/0+IFgC2HnmnMDD0ns+6NvB6
+CDCXd8eE0bv5Mhozw9RCg0ReX5SgVklc9VSpaBH4xCRXSNY8ipSXqTzF6/0RSg9y
+mJSqlHxCQAABNCEPw5l3qzhkOt7GcZhpy4KoPDePE0WYYiCmd6pgtd4qqKuLGBjw
+f1r9V5mHdUBV+mQ2oq6/ZNiF7aKxzFe2TunYEa1s8V37TFw5YGd7dlwMLcbaogd2
+VzjY3q2Z/yVMkcnMYkG40JXauSIuTw+YT4q3uOca4S71EmvsVLoHIye6FbwglbBy
+Ub0F6OoYGnRyTylf3XvSnkbz/T+3Kw84ZYEvQxFbuiAxi9z1Z75ati1r0WKCeywS
+vsB/xtHbha9rS+9VFnd8rP1rJL8cGTKwfe9p2DSVja9y5gTXq3xhqP3jtURvetqx
+kCz0mWgViCbXBg6Oj5X00v33FISJQGN3dmrdTrq8qOHAzmq3OSbOFoAH0la1eFao
+qzAXdz+6nNjDU+syCeYSGCCXAF4DX/jz16mmwIcY/cBfSnSVCMr+upJnglle+FqF
+P4RALzjROGPcc66RVXdOQ17wX0NSTG/liYJgGNKJ5wFoQHM2IzsBMivR9Yxq87hx
+hrVfE5cRU4rZ0yAgBWKRTyogo6rhWOcRrem2+NTZYvOsX8sheoMAitOdtARQOlhT
+yUzKaKgPy9mMoecK7iTW
+=eDik
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
