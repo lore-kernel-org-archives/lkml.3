@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab3LLShG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:37:06 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45358 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3LLShD (ORCPT
+	id S1752113Ab3LLShl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:37:41 -0500
+Received: from relay.parallels.com ([195.214.232.42]:60845 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3LLShk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:37:03 -0500
-Message-ID: <52AA024B.20409@wwwdotorg.org>
-Date: Thu, 12 Dec 2013 11:36:59 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 12 Dec 2013 13:37:40 -0500
+Message-ID: <52AA026C.3040605@parallels.com>
+Date: Thu, 12 Dec 2013 22:37:32 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130922 Icedove/17.0.9
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>, linus.walleij@linaro.org
-CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, thierry.reding@gmail.com,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: tegra: select PINCTRL_TEGRA124 for Tegra124
- SoC
-References: <1386241070-4350-1-git-send-email-ldewangan@nvidia.com> <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1386241070-4350-4-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] cgroup: fix fail path in cgroup_load_subsys()
+References: <1386403085-24866-1-git-send-email-vdavydov@parallels.com> <20131212153536.GD32683@htj.dyndns.org> <20131212155523.GF32683@htj.dyndns.org>
+In-Reply-To: <20131212155523.GF32683@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.24.25.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 03:57 AM, Laxman Dewangan wrote:
-> The pincontrol driver for Tegra124 is build through config
-> PINCTRL_TEGRA124. Select this config option whenever Tegra124
-> SoC is enabled.
+On 12/12/2013 07:55 PM, Tejun Heo wrote:
+> On Thu, Dec 12, 2013 at 10:35:36AM -0500, Tejun Heo wrote:
+>> On Sat, Dec 07, 2013 at 11:58:05AM +0400, Vladimir Davydov wrote:
+>>> We should not call cgroup_unload_subsys() if online_css() fails, because
+>>> online_css() does not assign css to cgroup on failure, while
+>>> offline_css() called from cgroup_unload_subsys() expects it is assigned.
+>>> So let's call everything we need to rollback inline without involving
+>>> cgroup_unload_subsys().
+>>>
+>>> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+>>> Cc: Tejun Heo <tj@kernel.org>
+>>> Cc: Li Zefan <lizefan@huawei.com>
+>> Applied to cgroup/for-3.13-fixes.
+> Scrap that.  I don't think we can fail css_online for the root css in
+> 3.13-fixes and this would cause conflict with 3.14, so let's not
+> commit it to 3.13-fixes.  Vladimir, can you please respin the patch on
+> top of cgroup/for-3.14
 
-Applied to Tegra's for-3.14/soc branch.
+No problem.
 
-(I thought I had sent this before myself, but I'd only written the patch
-locally, and had not actually sent it out, hence I took your identical
-patch.)
+> but make cgroup_unload_subsys() check whether
+> css is actually there before calling offline so that it matches the
+> usual offline path better?
+
+You want me to add something like this to the patch, don't you?
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 402f7aa..bc03b97 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4680,6 +4680,7 @@ EXPORT_SYMBOL_GPL(cgroup_load_subsys);
+ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ {
+     struct cgrp_cset_link *link;
++    struct cgroup_subsys_state *css;
+ 
+     BUG_ON(ss->module == NULL);
+ 
+@@ -4693,7 +4694,9 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+     mutex_lock(&cgroup_mutex);
+     mutex_lock(&cgroup_root_mutex);
+ 
+-    offline_css(cgroup_css(cgroup_dummy_top, ss));
++    css = cgroup_css(cgroup_dummy_top, ss);
++    if (css)
++        offline_css(css);
+ 
+     /* deassign the subsys_id */
+     cgroup_subsys[ss->subsys_id] = NULL;
+
+
+If so, I don't mind, but why? cgroup_unload_subsys() should never be
+called without properly initialized css.
+
+Thanks.
