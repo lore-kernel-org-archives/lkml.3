@@ -1,215 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3LLIqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:46:40 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48034 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3LLIqj (ORCPT
+	id S1751512Ab3LLItJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:49:09 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:62415 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab3LLItG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:46:39 -0500
-Message-ID: <52A9779B.1030003@linux.vnet.ibm.com>
-Date: Thu, 12 Dec 2013 14:15:15 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 12 Dec 2013 03:49:06 -0500
+Message-ID: <52A97878.7050503@monstr.eu>
+Date: Thu, 12 Dec 2013 09:48:56 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>
-CC: mikey@neuling.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        eranian@google.com, linuxppc-dev@ozlabs.org, acme@ghostprotocols.net,
-        sukadev@linux.vnet.ibm.com, mingo@kernel.org
-Subject: Re: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch
- stack sampling framework
-References: <20131209062146.EABBE2C00C1@ozlabs.org> <52A6AD61.4050408@linux.vnet.ibm.com>
-In-Reply-To: <52A6AD61.4050408@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121208-1618-0000-0000-0000051F65DC
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Josh Cartwright <josh.cartwright@ni.com>
+Subject: Re: [PATCH] ARM: zynq: add gem support
+References: <1386782989-2720-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1386782989-2720-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 11:27 AM, Anshuman Khandual wrote:
-> On 12/09/2013 11:51 AM, Michael Ellerman wrote:
->> This code was already in need of some unindentation, and now it's just
->> ridiculous.
->>
->> To start with at the beginning of this routine we have:
->>
->> while (..) {
->> 	if (!val)
->> 		break;
->> 	else {
->> 		// Bulk of the logic
->> 		...
->> 	}
->> }
->>
->> That should almost always become:
->>
->> while (..) {
->> 	if (!val)
->> 		break;
->>
->> 	// Bulk of the logic
->> 	...
->> }
->>
->>
->> But in this case that's not enough. Please send a precursor patch which moves
->> this logic out into a helper function.
-> 
-> Hey Michael,
-> 
-> I believe this patch should be able to take care of this.
-> 
-> commit d66d729715cabe0cfd8e34861a6afa8ad639ddf3
-> Author: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> Date:   Tue Dec 10 11:10:06 2013 +0530
-> 
->     power, perf: Clean up BHRB processing
->     
->     This patch cleans up some indentation problem and re-organizes the
->     BHRB processing code with an additional helper function.
->     
->     Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> 
-> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-> index 29b89e8..9ae96c5 100644
-> --- a/arch/powerpc/perf/core-book3s.c
-> +++ b/arch/powerpc/perf/core-book3s.c
-> @@ -400,11 +400,20 @@ static __u64 power_pmu_bhrb_to(u64 addr)
->  	return target - (unsigned long)&instr + addr;
->  }
-> 
-> +void update_branch_entry(struct cpu_hw_events *cpuhw, int u_index, u64 from, u64 to, int pred)
-> +{
-> +	cpuhw->bhrb_entries[u_index].from = from;
-> +	cpuhw->bhrb_entries[u_index].to = to;
-> +	cpuhw->bhrb_entries[u_index].mispred = pred;
-> +	cpuhw->bhrb_entries[u_index].predicted = ~pred;
-> +	return;
-> +}
-> +
->  /* Processing BHRB entries */
->  void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
->  {
->  	u64 val;
-> -	u64 addr;
-> +	u64 addr, tmp;
->  	int r_index, u_index, pred;
-> 
->  	r_index = 0;
-> @@ -415,62 +424,54 @@ void power_pmu_bhrb_read(struct cpu_hw_events *cpuhw)
->  		if (!val)
->  			/* Terminal marker: End of valid BHRB entries */
->  			break;
-> -		else {
-> -			addr = val & BHRB_EA;
-> -			pred = val & BHRB_PREDICTION;
-> 
-> -			if (!addr)
-> -				/* invalid entry */
-> -				continue;
-> +		addr = val & BHRB_EA;
-> +		pred = val & BHRB_PREDICTION;
-> 
-> -			/* Branches are read most recent first (ie. mfbhrb 0 is
-> -			 * the most recent branch).
-> -			 * There are two types of valid entries:
-> -			 * 1) a target entry which is the to address of a
-> -			 *    computed goto like a blr,bctr,btar.  The next
-> -			 *    entry read from the bhrb will be branch
-> -			 *    corresponding to this target (ie. the actual
-> -			 *    blr/bctr/btar instruction).
-> -			 * 2) a from address which is an actual branch.  If a
-> -			 *    target entry proceeds this, then this is the
-> -			 *    matching branch for that target.  If this is not
-> -			 *    following a target entry, then this is a branch
-> -			 *    where the target is given as an immediate field
-> -			 *    in the instruction (ie. an i or b form branch).
-> -			 *    In this case we need to read the instruction from
-> -			 *    memory to determine the target/to address.
-> +		if (!addr)
-> +			/* invalid entry */
-> +			continue;
-> +
-> +		/* Branches are read most recent first (ie. mfbhrb 0 is
-> +		 * the most recent branch).
-> +		 * There are two types of valid entries:
-> +		 * 1) a target entry which is the to address of a
-> +		 *    computed goto like a blr,bctr,btar.  The next
-> +		 *    entry read from the bhrb will be branch
-> +		 *    corresponding to this target (ie. the actual
-> +		 *    blr/bctr/btar instruction).
-> +		 * 2) a from address which is an actual branch.  If a
-> +		 *    target entry proceeds this, then this is the
-> +		 *    matching branch for that target.  If this is not
-> +		 *    following a target entry, then this is a branch
-> +		 *    where the target is given as an immediate field
-> +		 *    in the instruction (ie. an i or b form branch).
-> +		 *    In this case we need to read the instruction from
-> +		 *    memory to determine the target/to address.
-> +		 */
-> +		if (val & BHRB_TARGET) {
-> +			/* Target branches use two entries
-> +			 * (ie. computed gotos/XL form)
->  			 */
-> +			tmp = addr;
-> 
-> +			/* Get from address in next entry */
-> +			val = read_bhrb(r_index++);
-> +			addr = val & BHRB_EA;
->  			if (val & BHRB_TARGET) {
-> -				/* Target branches use two entries
-> -				 * (ie. computed gotos/XL form)
-> -				 */
-> -				cpuhw->bhrb_entries[u_index].to = addr;
-> -				cpuhw->bhrb_entries[u_index].mispred = pred;
-> -				cpuhw->bhrb_entries[u_index].predicted = ~pred;
-> -
-> -				/* Get from address in next entry */
-> -				val = read_bhrb(r_index++);
-> -				addr = val & BHRB_EA;
-> -				if (val & BHRB_TARGET) {
-> -					/* Shouldn't have two targets in a
-> -					   row.. Reset index and try again */
-> -					r_index--;
-> -					addr = 0;
-> -				}
-> -				cpuhw->bhrb_entries[u_index].from = addr;
-> -			} else {
-> -				/* Branches to immediate field 
-> -				   (ie I or B form) */
-> -				cpuhw->bhrb_entries[u_index].from = addr;
-> -				cpuhw->bhrb_entries[u_index].to =
-> -					power_pmu_bhrb_to(addr);
-> -				cpuhw->bhrb_entries[u_index].mispred = pred;
-> -				cpuhw->bhrb_entries[u_index].predicted = ~pred;
-> +				/* Shouldn't have two targets in a
-> +				   row.. Reset index and try again */
-> +				r_index--;
-> +				addr = 0;
->  			}
-> -			u_index++;
-> -
-> +			update_branch_entry(cpuhw, u_index, addr, tmp, pred);
-> +		} else {
-> +			/* Branches to immediate field 
-> +			   (ie I or B form) */
-> +			tmp = power_pmu_bhrb_to(addr);
-> +			update_branch_entry(cpuhw, u_index, addr, tmp, pred);
->  		}
-> +		u_index++;
->  	}
->  	cpuhw->bhrb_stack.nr = u_index;
->  	return;
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Hey Michael,
+On 12/11/2013 06:29 PM, Soren Brinkmann wrote:
+> From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+>=20
+> The zynq includes a Cadence GEM IP core. This is compatible with the ma=
+cb driver.
+> Add it to the zynq-7000 DT.
+>=20
+> Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+> Cc: Michal Simek <michal.simek@xilinx.com>
+> Cc: Josh Cartwright <josh.cartwright@ni.com>
+> [soren: rebased to current Linus tree, added zc706 + zed support, moved=
+ phy-mode property to board level dtses]
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> This has a soft dependency on the net-next tree which has some patches =
+for the
+> macb driver which are required for full functionality. But adding this =
+patch to
+> any tree without net-next shouldn't do any harm, network might be
+> non-operational at the worst - I think.
+>=20
+> 	S=C3=B6ren
+>=20
+>  arch/arm/boot/dts/zynq-7000.dtsi | 18 ++++++++++++++++++
+>  arch/arm/boot/dts/zynq-zc702.dts |  5 +++++
+>  arch/arm/boot/dts/zynq-zc706.dts |  5 +++++
+>  arch/arm/boot/dts/zynq-zed.dts   |  5 +++++
+>  4 files changed, 33 insertions(+)
 
-Does the patch looks okay ? In which case will send it out separately. Do let
-me know. Thank you.
+Applied to zynq/dt branch.
 
-Regards
-Anshuman
+Thanks,
+Michal
 
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKpeHgACgkQykllyylKDCHYsQCfeFjLqxanXRX8VacNCpnBZtrW
+bT8AoIvyP4TDX+hqNOjKVq+nrv1MbQmp
+=zdAj
+-----END PGP SIGNATURE-----
+
+--hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8--
