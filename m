@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab3LLVvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:51:19 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54295 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab3LLVvR (ORCPT
+	id S1752005Ab3LLVvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:51:38 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:35401 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab3LLVvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:51:17 -0500
-Message-ID: <52AA2FD1.3020000@wwwdotorg.org>
-Date: Thu, 12 Dec 2013 14:51:13 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 12 Dec 2013 16:51:36 -0500
+Message-ID: <52AA2FE3.3060200@gmail.com>
+Date: Thu, 12 Dec 2013 15:51:31 -0600
+From: Dinh Nguyen <dinh.linux@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: thierry.reding@gmail.com, rob.herring@calxeda.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: tegra: enable ams AS3722 drivers
-References: <1386855064-10993-1-git-send-email-ldewangan@nvidia.com> <52AA2891.2020502@wwwdotorg.org>
-In-Reply-To: <52AA2891.2020502@wwwdotorg.org>
-X-Enigmail-Version: 1.5.2
+To: Matt Porter <mporter@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+CC: Devicetree List <devicetree@vger.kernel.org>,
+        Kamil Debski <k.debski@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Patches <patches@linaro.org>, Tomasz Figa <t.figa@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/9] usb: gadget: s3c-hsotg: enable build for other
+ platforms
+References: <1386854770-2173-1-git-send-email-mporter@linaro.org> <1386854770-2173-4-git-send-email-mporter@linaro.org>
+In-Reply-To: <1386854770-2173-4-git-send-email-mporter@linaro.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 02:20 PM, Stephen Warren wrote:
-> On 12/12/2013 06:31 AM, Laxman Dewangan wrote:
->> ams AS3722 is the system power manager module IC for the Tegra124 based
->> Venice2 platform. Enable configs for gpio, pincontrol, rtc, regulator
->> support from this device.
-> 
-> I've squashed patch 1/2 into Tegra's for-3.14/defconfig branch.
-> 
-> I've applied patch 2/2 to Tegra's for-3.14/dt branch.
+Hi Matt,
 
-Actually, I'm dropping patch 2/2 since it causes a whole bunch of error
-spew during boot:
+On 12/12/13 7:26 AM, Matt Porter wrote:
+> Remove unused Samsung-specific machine include and Kconfig
+> dependency on S3C.
+>
+> Signed-off-by: Matt Porter <mporter@linaro.org>
+> Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+> Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+> ---
+>  drivers/usb/gadget/Kconfig     | 7 +++----
+>  drivers/usb/gadget/s3c-hsotg.c | 2 --
+>  2 files changed, 3 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> index a91e642..970bd1a 100644
+> --- a/drivers/usb/gadget/Kconfig
+> +++ b/drivers/usb/gadget/Kconfig
+> @@ -294,11 +294,10 @@ config USB_PXA27X
+>  	   gadget drivers to also be dynamically linked.
+>  
+>  config USB_S3C_HSOTG
+> -	tristate "S3C HS/OtG USB Device controller"
+> -	depends on S3C_DEV_USB_HSOTG
+> +	tristate "Designware/S3C HS/OtG USB Device controller"
+>  	help
+> -	  The Samsung S3C64XX USB2.0 high-speed gadget controller
+> -	  integrated into the S3C64XX series SoC.
+> +	  The Designware USB2.0 high-speed gadget controller
+> +	  integrated into the S3C64XX and BCM281xx series SoC.
+Thanks for doing this. The SOCFPGA platform is also using this driver.
+So perhaps a
+more generic message here?
 
-> [    0.628315] tegra124-pinctrl 70000868.pinmux: invalid group "dap2_dout_pp2" for function "rsvd4"
-> [    0.635309] tegra124-pinctrl 70000868.pinmux: does not have pin group dap2_dout_pp2
-> [    0.642999] tegra124-pinctrl 70000868.pinmux: could not map group config for "dap2_dout_pp2"
-
-> [    0.731176] as3722-pinctrl as3722-pinctrl: pin gpio0 already requested by as3722-pinctrl; cannot claim for as3722-regulator
-> [    0.742312] as3722-pinctrl as3722-pinctrl: pin-0 (as3722-regulator) status -22
-> [    0.749526] as3722-pinctrl as3722-pinctrl: could not request pin 0 (gpio0) from group gpio0  on device as3722-pinctrl
-> [    0.760133] as3722-regulator as3722-regulator: Error applying setting, reverse things back
-
-> [    0.835838] as3722-regulator as3722-regulator: Failed to find supply vin-ldo1-6
-> [    0.843312] as3722-regulator as3722-regulator: regulator 8 register failed -517
-> [    0.852263] platform as3722-regulator: Driver as3722-regulator requests probe deferral
-
-> [    0.984920] as3722-pinctrl as3722-pinctrl: pin gpio0 already requested by as3722-pinctrl; cannot claim for as3722-rtc
-> [    0.995537] as3722-pinctrl as3722-pinctrl: pin-0 (as3722-rtc) status -22
-> [    1.002244] as3722-pinctrl as3722-pinctrl: could not request pin 0 (gpio0) from group gpio0  on device as3722-pinctrl
-> [    1.012848] as3722-rtc as3722-rtc: Error applying setting, reverse things back
+Dinh
+>  
+>  config USB_S3C2410
+>  	tristate "S3C2410 USB Device Controller"
+> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+> index 33eb690..8ceb5ef 100644
+> --- a/drivers/usb/gadget/s3c-hsotg.c
+> +++ b/drivers/usb/gadget/s3c-hsotg.c
+> @@ -37,8 +37,6 @@
+>  #include <linux/usb/phy.h>
+>  #include <linux/platform_data/s3c-hsotg.h>
+>  
+> -#include <mach/map.h>
+> -
+>  #include "s3c-hsotg.h"
+>  
+>  static const char * const s3c_hsotg_supply_names[] = {
 
