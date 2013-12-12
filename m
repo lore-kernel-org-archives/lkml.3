@@ -1,201 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab3LLSl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:41:56 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:37207 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab3LLSlz (ORCPT
+	id S1752016Ab3LLSmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:42:45 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:54531 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab3LLSml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:41:55 -0500
-Date: Thu, 12 Dec 2013 15:41:47 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 13/14] tools lib traceevent: Get rid of die() in some
- string conversion funcitons
-Message-ID: <20131212184147.GE8164@ghostprotocols.net>
-References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
- <1386833777-3790-14-git-send-email-namhyung@kernel.org>
+	Thu, 12 Dec 2013 13:42:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386833777-3790-14-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131212142156.GB32683@htj.dyndns.org>
+References: <20131204054533.GZ3556@cmpxchg.org> <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
+ <20131205025026.GA26777@htj.dyndns.org> <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
+ <20131206190105.GE13373@htj.dyndns.org> <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
+ <20131210215037.GB9143@htj.dyndns.org> <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
+ <20131211124240.GA24557@htj.dyndns.org> <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
+ <20131212142156.GB32683@htj.dyndns.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Thu, 12 Dec 2013 10:42:20 -0800
+X-Google-Sender-Auth: Rhjbq4zekU999j8ndKbBJVdpirY
+Message-ID: <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom notifications
+ to access reserves
+To: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 12, 2013 at 04:36:16PM +0900, Namhyung Kim escreveu:
-> Those functions are for stringify filter arguments.  As caller of
-> those functions handles NULL string properly, it seems that it's
-> enough to return NULL rather than calling die().
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/lib/traceevent/parse-filter.c | 58 +++++++++++++++++++++++--------------
->  1 file changed, 36 insertions(+), 22 deletions(-)
-> 
-> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-> index 9303c55128db..32ab4396653c 100644
-> --- a/tools/lib/traceevent/parse-filter.c
-> +++ b/tools/lib/traceevent/parse-filter.c
-> @@ -1361,8 +1361,10 @@ enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
->  		if (ret >= 0 && pevent->test_filters) {
->  			char *test;
->  			test = pevent_filter_make_string(filter, event->event->id);
-> -			printf(" '%s: %s'\n", event->event->name, test);
-> -			free(test);
-> +			if (test) {
-> +				printf(" '%s: %s'\n", event->event->name, test);
-> +				free(test);
-> +			}
->  		}
->  	}
->  
-> @@ -2097,7 +2099,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
->  				default:
->  					break;
->  				}
-> -				str = malloc_or_die(6);
-> +				str = malloc(6);
-> +				if (str == NULL)
-> +					break;
->  				if (val)
->  					strcpy(str, "TRUE");
->  				else
-> @@ -2120,7 +2124,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
->  		}
->  
->  		len = strlen(left) + strlen(right) + strlen(op) + 10;
-> -		str = malloc_or_die(len);
-> +		str = malloc(len);
-> +		if (str == NULL)
-> +			break;
->  		snprintf(str, len, "(%s) %s (%s)",
->  			 left, op, right);
+On Thu, Dec 12, 2013 at 6:21 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hey, Tim.
+>
+> Sidenote: Please don't top-post with the whole body quoted below
+> unless you're adding new cc's.  Please selectively quote the original
+> message's body to remind the readers of the context and reply below
+> it.  It's a basic lkml etiquette and one with good reasons.  If you
+> have to top-post for whatever reason - say you're typing from a
+> machine which doesn't allow easy editing of the original message,
+> explain so at the top of the message, or better yet, wait till you can
+> unless it's urgent.
 
-Why note:
+Yeah sorry.  Replying from my phone is awkward at best.  I know better :)
 
-		str = NULL;
-		if (asprintf(&str, "(%s) %s (%s)", left, op, right);
-			break;
+> On Wed, Dec 11, 2013 at 09:37:46PM -0800, Tim Hockin wrote:
+>> The immediate problem I see with setting aside reserves "off the top"
+>> is that we don't really know a priori how much memory the kernel
+>> itself is going to use, which could still land us in an overcommitted
+>> state.
+>>
+>> In other words, if I have your 128 MB machine, and I set aside 8 MB
+>> for OOM handling, and give 120 MB for jobs, I have not accounted for
+>> the kernel.  So I set aside 8 MB for OOM and 100 MB for jobs, leaving
+>> 20 MB for jobs.  That should be enough right?  Hell if I know, and
+>> nothing ensures that.
+>
+> Yes, sure thing, that's the reason why I mentioned "with some slack"
+> in the original message and also that it might not be completely the
+> same.  It doesn't allow you to aggressively use system level OOM
+> handling as the sizing estimator for the root cgroup; however, it's
+> more of an implementation details than something which should guide
+> the overall architecture - it's a problem which lessens in severity as
+> [k]memcg improves and its coverage becomes more complete, which is the
+> direction we should be headed no matter what.
 
-instead?
+In my mind, the ONLY point of pulling system-OOM handling into
+userspace is to make it easier for crazy people (Google) to implement
+bizarre system-OOM policies.  Example:
 
-Ditto for other places here, also there is a typo in the subject line.
+When we have a system OOM we want to do a walk of the administrative
+memcg tree (which is only a couple levels deep, users can make
+non-admin sub-memcgs), selecting the lowest priority entity at each
+step (where both tasks and memcgs have a priority and the priority
+range is much wider than the current OOM scores, and where memcg
+priority is sometimes a function of memcg usage), until we reach a
+leaf.
 
-I've applied all the previous patches, thanks!
+Once we reach a leaf, I want to log some info about the memcg doing
+the allocation, the memcg being terminated, and maybe some other bits
+about the system (depending on the priority of the selected victim,
+this may or may not be an "acceptable" situation).  Then I want to
+kill *everything* under that memcg.  Then I want to "publish" some
+information through a sane API (e.g. not dmesg scraping).
 
-- Arnaldo
+This is basically our policy as we understand it today.  This is
+notably different than it was a year ago, and it will probably evolve
+further in the next year.
 
->  		break;
-> @@ -2138,7 +2144,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
->  			right_val = 0;
->  		if (right_val >= 0) {
->  			/* just return the opposite */
-> -			str = malloc_or_die(6);
-> +			str = malloc(6);
-> +			if (str == NULL)
-> +				break;
->  			if (right_val)
->  				strcpy(str, "FALSE");
->  			else
-> @@ -2146,8 +2154,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
->  			break;
->  		}
->  		len = strlen(right) + strlen(op) + 3;
-> -		str = malloc_or_die(len);
-> -		snprintf(str, len, "%s(%s)", op, right);
-> +		str = malloc(len);
-> +		if (str)
-> +			snprintf(str, len, "%s(%s)", op, right);
->  		break;
->  
->  	default:
-> @@ -2163,9 +2172,9 @@ static char *val_to_str(struct event_filter *filter, struct filter_arg *arg)
->  {
->  	char *str;
->  
-> -	str = malloc_or_die(30);
-> -
-> -	snprintf(str, 30, "%lld", arg->value.val);
-> +	str = malloc(30);
-> +	if (str)
-> +		snprintf(str, 30, "%lld", arg->value.val);
->  
->  	return str;
->  }
-> @@ -2220,12 +2229,14 @@ static char *exp_to_str(struct event_filter *filter, struct filter_arg *arg)
->  		op = "^";
->  		break;
->  	default:
-> -		die("oops in exp");
-> +		op = "[ERROR IN EXPRESSION TYPE]";
-> +		break;
->  	}
->  
->  	len = strlen(op) + strlen(lstr) + strlen(rstr) + 4;
-> -	str = malloc_or_die(len);
-> -	snprintf(str, len, "%s %s %s", lstr, op, rstr);
-> +	str = malloc(len);
-> +	if (str)
-> +		snprintf(str, len, "%s %s %s", lstr, op, rstr);
->  out:
->  	free(lstr);
->  	free(rstr);
-> @@ -2271,9 +2282,9 @@ static char *num_to_str(struct event_filter *filter, struct filter_arg *arg)
->  			op = "<=";
->  
->  		len = strlen(lstr) + strlen(op) + strlen(rstr) + 4;
-> -		str = malloc_or_die(len);
-> -		sprintf(str, "%s %s %s", lstr, op, rstr);
-> -
-> +		str = malloc(len);
-> +		if (str)
-> +			sprintf(str, "%s %s %s", lstr, op, rstr);
->  		break;
->  
->  	default:
-> @@ -2311,10 +2322,11 @@ static char *str_to_str(struct event_filter *filter, struct filter_arg *arg)
->  
->  		len = strlen(arg->str.field->name) + strlen(op) +
->  			strlen(arg->str.val) + 6;
-> -		str = malloc_or_die(len);
-> -		snprintf(str, len, "%s %s \"%s\"",
-> -			 arg->str.field->name,
-> -			 op, arg->str.val);
-> +		str = malloc(len);
-> +		if (str) {
-> +			snprintf(str, len, "%s %s \"%s\"",
-> +				 arg->str.field->name, op, arg->str.val);
-> +		}
->  		break;
->  
->  	default:
-> @@ -2330,7 +2342,9 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
->  
->  	switch (arg->type) {
->  	case FILTER_ARG_BOOLEAN:
-> -		str = malloc_or_die(6);
-> +		str = malloc(6);
-> +		if (str == NULL)
-> +			return NULL;
->  		if (arg->boolean.value)
->  			strcpy(str, "TRUE");
->  		else
-> @@ -2369,7 +2383,7 @@ static char *arg_to_str(struct event_filter *filter, struct filter_arg *arg)
->   *
->   * Returns a string that displays the filter contents.
->   *  This string must be freed with free(str).
-> - *  NULL is returned if no filter is found.
-> + *  NULL is returned if no filter is found or allocation failed.
->   */
->  char *
->  pevent_filter_make_string(struct event_filter *filter, int event_id)
-> -- 
-> 1.7.11.7
+Teaching the kernel all of this stuff has proven to be sort of
+difficult to maintain and forward-port, and has been very slow to
+evolve because of how painful it is to test and deploy new kernels.
+
+Maybe we can find a way to push this level of policy down to the
+kernel OOM killer?  When this was mentioned internally I got shot down
+(gently, but shot down none the less).  Assuming we had
+nearly-reliable (it doesn't have to be 100% guaranteed to be useful)
+OOM-in-userspace, I can keep the adminstrative memcg metadata in
+memory, implement killing as cruelly as I need, and do all of the
+logging and publication after the OOM kill is done.  Most importantly
+I can test and deploy new policy changes pretty trivially.
+
+Handling per-memcg OOM is a different discussion.  Here is where we
+want to be able to extract things like heap profiles or take stats
+snapshots, grow memcgs (if so configured) etc.  Allowing our users to
+have a moment of mercy before we put a bullet in their brain enables a
+whole new realm of debugging, as well as a lot of valuable features.
+
+> It'd depend on the workload but with memcg fully configured it
+> shouldn't fluctuate wildly.  If it does, we need to hunt down whatever
+> is causing such fluctuatation and include it in kmemcg, right?  That
+> way, memcg as a whole improves for all use cases not just your niche
+> one and I strongly believe that aligning as many use cases as possible
+> along the same axis, rather than creating a large hole to stow away
+> the exceptions, is vastly more beneficial to *everyone* in the long
+> term.
+
+We have a long tail of kernel memory usage.  If we provision machines
+so that the "do work here" first-level memcg excludes the average
+kernel usage, we have a huge number of machines that will fail to
+apply OOM policy because of actual overcommitment.  If we provision
+for 95th or 99th percentile kernel usage, we're wasting large amounts
+of memory that could be used to schedule jobs.  This is the
+fundamental problem we face with static apportionment (and we face it
+in a dozen other situations, too).  Expressing this set-aside memory
+as "off-the-top" rather than absolute limits makes the whole system
+more flexible.
+
+> There'd still be all the bells and whistles to configure and monitor
+> system-level OOM and if there's justified need for improvements, we
+> surely can and should do that; however, with the heavy lifting / hot
+> path offloaded to the per-memcg userland OOM handlers, I believe it's
+> reasonable to expect the burden on system OOM handler being noticeably
+> less, which is the way it should be.  That's the last guard against
+> the whole system completely locking up and we can't extend its
+> capabilities beyond that easily and we most likely don't even want to.
+>
+> If I take back a step and look at the two options and their pros and
+> cons, which path we should take is rather obvious to me.  I hope you
+> see it too.
+>
+> Thanks.
+>
+> --
+> tejun
