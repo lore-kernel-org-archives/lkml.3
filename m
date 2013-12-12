@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab3LLOwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:52:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12586 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab3LLOwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:52:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,878,1378882800"; 
-   d="scan'208";a="423606737"
-Message-ID: <1386859952.6066.80.camel@tursulin-linux.isw.intel.com>
-Subject: Re: Potentially unbounded allocations in seq_read?
-From: Tvrtko Ursulin <tvrtko.ursulin@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 12 Dec 2013 14:52:32 +0000
-In-Reply-To: <20131212142157.GD10323@ZenIV.linux.org.uk>
-References: <1386781481.6066.55.camel@tursulin-linux.isw.intel.com>
-	 <20131211174909.GW10323@ZenIV.linux.org.uk>
-	 <1386784797.6066.63.camel@tursulin-linux.isw.intel.com>
-	 <20131211180703.GY10323@ZenIV.linux.org.uk>
-	 <1386855640.6066.73.camel@tursulin-linux.isw.intel.com>
-	 <20131212134956.GC10323@ZenIV.linux.org.uk>
-	 <1386856771.6066.77.camel@tursulin-linux.isw.intel.com>
-	 <20131212142157.GD10323@ZenIV.linux.org.uk>
-Organization: Intel Corporation UK Plc
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1751721Ab3LLOzg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:55:36 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:35164 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751374Ab3LLOzf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:55:35 -0500
+Date: Thu, 12 Dec 2013 09:55:33 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
+ implementation
+Message-ID: <20131212095533.1fab411f@gandalf.local.home>
+In-Reply-To: <52A9CCA6.6040806@windriver.com>
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
+	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+	<20131212080314.GA25783@infradead.org>
+	<alpine.DEB.2.02.1312121147130.28330@ionos.tec.linutronix.de>
+	<52A9CCA6.6040806@windriver.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 14:21 +0000, Al Viro wrote:
-> On Thu, Dec 12, 2013 at 01:59:31PM +0000, Tvrtko Ursulin wrote:
+On Thu, 12 Dec 2013 09:48:06 -0500
+Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+ 
+> 1) git mv wait.[ch] --- > cwait.[ch]
+>    make an empty wait.h include cwait.h temporarily
 > 
-> > > a) *what* errors other than -ENAMETOOLONG?
-> > 
-> > Is this your way of saying there can't be any other errors from d_path?
+> 2) rename all existing functions in cwait.[ch] to have an added
+>   "c" prefix (or similar)
+>    
+>    in wait.h, temporarily add a bunch of things like
+>           #define wait_xyz  cwait_xyz
+>    so that things still compile and link.
+
+What about instead change all users of wait_*() to cwait_*().
+
+Then the next steps would be to skip 3 and jump right to 4)
+
 > 
-> Check yourself...  It is the only error that makes sense there and yes,
-> it is the only one being returned.
-
-Cool then, thats why I e-mailed you in the first place, because you know
-this area very well. 
-
-> > > b) d_path() not fitting into 2Mb is definitely a bug.  If you really have
-> > > managed to get a dentry tree 1 million levels deep, you have much worse
-> > > problems.
-> > > c) which kernel version it is?
-> > 
-> > 3.10. I can't imagine this is an actual dentry tree somewhere, probably
-> > just a bug of some sort. I'll probably hunt it down completely some time
-> > next week, time permitting.
+> 3) track down the users who really need the extra complexity
+>    and have them use cwait calls and include cwait.h
 > 
-> Sounds like missing backport of 118b23 ("cope with potentially long ->d_dname()
-> output for shmem/hugetlb").  It *is* in -stable (linux-3.10.y has it since
-> 3.10.17 as commit ad4c3c), but if your tree doesn't have it, that's the one
-> to try first...
+> 4) bring in the simple wait queue support as wait.c and wait.h
+>    and delete the defines added in step two.  This will be the
+>    flag day commit.
 
-Yes that fixed it, thanks!
+Not a flag day commit, as no one is using it. Then start converting all
+users back to the wait_*() functions one at a time. If something
+breaks, we know which one it was.
 
-Regards,
+-- Steve
 
-Tvrtko
-
-
+> 
+> Is that what we want to do here?
+> 
