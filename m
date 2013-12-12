@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab3LLQ4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:56:35 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24796 "EHLO
+	id S1752123Ab3LLQ4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:56:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24814 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab3LLQyo (ORCPT
+	with ESMTP id S1751962Ab3LLQyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Dec 2013 11:54:44 -0500
 From: vegard.nossum@oracle.com
 To: linux-kernel@vger.kernel.org
-Cc: Vegard Nossum <vegard.nossum@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 5/9] hfsplus: Known exploit detection for CVE-2012-2319
-Date: Thu, 12 Dec 2013 17:52:28 +0100
-Message-Id: <1386867152-24072-5-git-send-email-vegard.nossum@oracle.com>
+Cc: Vegard Nossum <vegard.nossum@oracle.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 4/9] net: Known exploit detection for CVE-2012-2136
+Date: Thu, 12 Dec 2013 17:52:27 +0100
+Message-Id: <1386867152-24072-4-git-send-email-vegard.nossum@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
 References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
@@ -24,63 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vegard Nossum <vegard.nossum@oracle.com>
 
-See 6f24f892871acc47b40dd594c63606a17c714f77.
+See cc9b17ad29ecaa20bfe426a8d4dbfb94b13ff1cc.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
 ---
- fs/hfsplus/catalog.c |    2 ++
- fs/hfsplus/dir.c     |    3 +++
- 2 files changed, 5 insertions(+)
+ net/core/sock.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/hfsplus/catalog.c b/fs/hfsplus/catalog.c
-index 968ce41..5f47a1a 100644
---- a/fs/hfsplus/catalog.c
-+++ b/fs/hfsplus/catalog.c
-@@ -8,6 +8,7 @@
-  * Handling of catalog records
-  */
- 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 0b39e7a..c16246f 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -117,6 +117,7 @@
+ #include <linux/static_key.h>
+ #include <linux/memcontrol.h>
+ #include <linux/prefetch.h>
 +#include <linux/exploit.h>
  
- #include "hfsplus_fs.h"
- #include "hfsplus_raw.h"
-@@ -374,6 +375,7 @@ int hfsplus_rename_cat(u32 cnid,
- 	if (err)
- 		goto out;
- 	if (src_fd.entrylength > sizeof(entry) || src_fd.entrylength < 0) {
-+		exploit("CVE-2012-2319");
- 		err = -EIO;
- 		goto out;
- 	}
-diff --git a/fs/hfsplus/dir.c b/fs/hfsplus/dir.c
-index 4a4fea0..2d5e283 100644
---- a/fs/hfsplus/dir.c
-+++ b/fs/hfsplus/dir.c
-@@ -9,6 +9,7 @@
-  */
+ #include <asm/uaccess.h>
  
- #include <linux/errno.h>
-+#include <linux/exploit.h>
- #include <linux/fs.h>
- #include <linux/slab.h>
- #include <linux/random.h>
-@@ -152,6 +153,7 @@ static int hfsplus_readdir(struct file *file, struct dir_context *ctx)
- 	}
- 	if (ctx->pos == 1) {
- 		if (fd.entrylength > sizeof(entry) || fd.entrylength < 0) {
-+			exploit("CVE-2012-2319");
- 			err = -EIO;
- 			goto out;
- 		}
-@@ -186,6 +188,7 @@ static int hfsplus_readdir(struct file *file, struct dir_context *ctx)
- 		}
+@@ -1753,8 +1754,10 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 	int i;
  
- 		if (fd.entrylength > sizeof(entry) || fd.entrylength < 0) {
-+			exploit("CVE-2012-2319");
- 			err = -EIO;
- 			goto out;
- 		}
+ 	err = -EMSGSIZE;
+-	if (npages > MAX_SKB_FRAGS)
++	if (npages > MAX_SKB_FRAGS) {
++		exploit("CVE-2012-2136");
+ 		goto failure;
++	}
+ 
+ 	timeo = sock_sndtimeo(sk, noblock);
+ 	while (!skb) {
 -- 
 1.7.10.4
 
