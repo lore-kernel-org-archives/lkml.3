@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3LLANa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:13:30 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42850 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab3LLAMe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:12:34 -0500
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v7 1/4] sched/numa: drop sysctl_numa_balancing_settle_count sysctl
-Date: Thu, 12 Dec 2013 08:12:20 +0800
-Message-Id: <1386807143-15994-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1386807143-15994-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1386807143-15994-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121200-5564-0000-0000-00000B111DB0
+	id S1751976Ab3LLAPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:15:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:56872 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab3LLAPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:15:47 -0500
+Date: Thu, 12 Dec 2013 11:15:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20131212111539.cff1b2efe934c5cd7abbb822@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 887c290e (sched/numa: Decide whether to favour task or group weights
-based on swap candidate relationships) drop the check against
-sysctl_numa_balancing_settle_count, this patch remove the sysctl.
+--Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- include/linux/sched/sysctl.h | 1 -
- kernel/sched/fair.c          | 9 ---------
- kernel/sysctl.c              | 7 -------
- 3 files changed, 17 deletions(-)
+Hi all,
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index 41467f8..31e0193 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -48,7 +48,6 @@ extern unsigned int sysctl_numa_balancing_scan_delay;
- extern unsigned int sysctl_numa_balancing_scan_period_min;
- extern unsigned int sysctl_numa_balancing_scan_period_max;
- extern unsigned int sysctl_numa_balancing_scan_size;
--extern unsigned int sysctl_numa_balancing_settle_count;
- 
- #ifdef CONFIG_SCHED_DEBUG
- extern unsigned int sysctl_sched_migration_cost;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 49aa01f..cdceb8e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -886,15 +886,6 @@ static unsigned int task_scan_max(struct task_struct *p)
- 	return max(smin, smax);
- }
- 
--/*
-- * Once a preferred node is selected the scheduler balancer will prefer moving
-- * a task to that node for sysctl_numa_balancing_settle_count number of PTE
-- * scans. This will give the process the chance to accumulate more faults on
-- * the preferred node but still allow the scheduler to move the task again if
-- * the nodes CPUs are overloaded.
-- */
--unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
--
- static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
- {
- 	rq->nr_numa_running += (p->numa_preferred_nid != -1);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 34a6047..c8da99f 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -385,13 +385,6 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
--		.procname       = "numa_balancing_settle_count",
--		.data           = &sysctl_numa_balancing_settle_count,
--		.maxlen         = sizeof(unsigned int),
--		.mode           = 0644,
--		.proc_handler   = proc_dointvec,
--	},
--	{
- 		.procname       = "numa_balancing_migrate_deferred",
- 		.data           = &sysctl_numa_balancing_migrate_deferred,
- 		.maxlen         = sizeof(unsigned int),
--- 
-1.8.3.2
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/macvtap.c between commit ce232ce01d61 ("macvtap: signal
+truncated packets") from the net tree and commit 55ec8e25cd97 ("macvtap:
+remove unused parameter in macvtap_do_read()") from the net-next tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/macvtap.c
+index 2a89da080317,4a34bcb6549f..000000000000
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@@ -819,12 -813,13 +815,12 @@@ static ssize_t macvtap_put_user(struct=20
+  	}
+ =20
+  	ret =3D skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+ -	copied +=3D len;
+ =20
+  done:
+ -	return ret ? ret : copied;
+ +	return ret ? ret : total;
+  }
+ =20
+- static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *ioc=
+b,
++ static ssize_t macvtap_do_read(struct macvtap_queue *q,
+  			       const struct iovec *iv, unsigned long len,
+  			       int noblock)
+  {
+@@@ -875,8 -870,8 +871,8 @@@ static ssize_t macvtap_aio_read(struct=20
+  		goto out;
+  	}
+ =20
+- 	ret =3D macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
++ 	ret =3D macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
+ -	ret =3D min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
+ +	ret =3D min_t(ssize_t, ret, len);
+  	if (ret > 0)
+  		iocb->ki_pos =3D ret;
+  out:
+
+--Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSqQAvAAoJEMDTa8Ir7ZwVaQEP/jd7CyfJpxt4SVf9PkXubh51
+C2vHhwMq+fa5Xe7hsVohFXaK0bErgWGBdMfJm3e5TI7yguKY1v+uIEyAxQQl2nQG
+t74LRt7wio1F2kGp2O8K61pzScEyNU6EXZuzh/hLvXEbKufdceqVjdhe1P2ZZ9UX
+9S1xA760jPYwGVFb+H5IZoWjbt6mkvP6lRNcnkoXHX4CSl58bMfvsvocQ3oiK19x
+u/I0FbUmxnibweFfALK0ouJmSWej3xcclKKQ7dKaZLxmMTwa0fF5jdi0udukQWiJ
+C2av5GiHUbltQmqhHKTbdzmrLBvtOZ/DuBu8sYZbWCvN7GURJsZT/Yz2PKNyO7AL
+puOnO0aRHGNrqpbzR7At+m/e7kT7Ni9zMWVwxLnbViV5tfAw8aYO3cMkpotOY+ip
+QoxaJekwNOazXQwJq5bA3lpGW9Yaag5JQ9QBIQum/uLScPOAN0PnQOiUkH6sy3Sj
+LlicY10+U334A9b63Cpji1cEthr1wnlwHARdiCSp31Um7Wz/J0KA+c+3/Y5NoSQH
+ne4fc9cvEQy2SkS+N0ZtOJxfLAEJlmu00eW2lbRul0uFOHxIMRFI6ZPhFdu/haY5
+CGJSwiU0eppwNOGxYwkp2UKGKC4c0QosPHMyQYQcF0uqDorl+AqtZDDDvwDo97MH
+42AFm8hrmNDh/mgj1j/3
+=oEjt
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn--
