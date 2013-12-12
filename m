@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3LLVXk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:23:40 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:59621 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab3LLVXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:23:39 -0500
+	id S1751942Ab3LLVZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:25:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51200 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751600Ab3LLVZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 16:25:04 -0500
+Date: Thu, 12 Dec 2013 22:24:54 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Brecht Machiels <brecht@mos6581.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
+Message-ID: <20131212212454.GC30162@pd.tnic>
+References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org>
+ <529CF1D5.6010406@linaro.org>
+ <20131202211958.GE7380@pd.tnic>
+ <l7ppbg$brg$1@ger.gmane.org>
+ <52AA10F4.6070108@linaro.org>
+ <52AA27C7.3090206@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+Ln22EaSpzrSaW-TC1BMhnj8aPZMfK9pCTqBMnGXC3B-06FBQ@mail.gmail.com>
-References: <1386825152-398-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-	<26167386.hX5eWUjT6T@flatron>
-	<CACRpkdbGSXA8oT8L-0fzJx7esXn7GWQA+Wi7WCQKX9eiy-fYCQ@mail.gmail.com>
-	<CA+Ln22EaSpzrSaW-TC1BMhnj8aPZMfK9pCTqBMnGXC3B-06FBQ@mail.gmail.com>
-Date: Thu, 12 Dec 2013 22:23:38 +0100
-Message-ID: <CACRpkdYpQzue=_di1YhfvmQ47kdg0ydsZhKrWDyk9sJU9u_xHg@mail.gmail.com>
-Subject: Re: [PATCH CFT] ARM:S5P64X0: Enable ARM_PATCH_PHYS_VIRT and
- AUTO_ZRELADDR by default
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        panchaxari <panchaxari.prasannamurthy@linaro.org>,
-        Kgene Kim <kgene.kim@samsung.com>, Patch Tracking <patches@linaro.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52AA27C7.3090206@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 10:22 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> 2013/12/12 Linus Walleij <linus.walleij@linaro.org>:
->> On Thu, Dec 12, 2013 at 10:47 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->>
->>> This is actually quite a poor platform choice. As of today, the kernel
->>> is stuck with supporting just SMDK6440/6450 boards, which are proprietary
->>> development boards and it doesn't look like any further boards will show
->>> up in future. Kukjin has actually proposed removing support for this
->>> platform at all and I consider this reasonable.
->>>
->>> Kukjin, should we proceed with removal?
->>
->> Isn't Mark Brown using that platform for some various stuff?
->
-> Not as far as I know.
->
-> He's using Cragganmore board based on s3c6410, but this is a different
-> platform (s3c64xx).
+On Thu, Dec 12, 2013 at 01:16:55PM -0800, John Stultz wrote:
+> Borislav: I'd like to add your tested by too, if you've had the
+> chance.
 
-Ahhhh I see it now. So the S3C:s are actually in a lot of use
-and the S5P is one of those stepping stones to Exynos that
-never really was in any widespread use.
+Sorry John, I still see you on the todo list but haven't had a chance due to
+more pressing issues. :-\
 
-Yeah I'm all for deleteing that :-)
+Tell you what: I'll try to find some time over the weekend to reinstall
+the box which has the issue and will give it a run. You could go ahead
+and commit it but keep it on top of a branch in case it needs to be
+reverted. :-)
 
-Thanks!
-Linus Walleij
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
