@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab3LLUsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:48:39 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32989 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751566Ab3LLUsh (ORCPT
+	id S1752002Ab3LLUtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:49:17 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:11965 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3LLUtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:48:37 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Ajhu89UKLI/PiVKVxa2ARDPPS1h4SGnM=
-Date: Thu, 12 Dec 2013 15:48:16 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, Richard Zhu <r65037@freescale.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Simon Horman <horms@verge.net.au>,
-        Valentine Barshak <valentine.barshak@cogentembedded.com>,
-        Wei Yongjun <weiyj.lk@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [PATCH v2] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car
- PCI host maintainers
-Message-ID: <20131212204816.GA2609@titan.lakedaemon.net>
-References: <20131211183237.GI4699@google.com>
- <20131212204610.GK4699@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212204610.GK4699@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Dec 2013 15:49:14 -0500
+Message-ID: <1386881054.1791.316.camel@misato.fc.hp.com>
+Subject: Re: EFI tree kernel panic in phys_efi_set_virtual_address_map()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org
+Date: Thu, 12 Dec 2013 13:44:14 -0700
+In-Reply-To: <20131212203533.GB26927@pd.tnic>
+References: <1386806463.1791.295.camel@misato.fc.hp.com>
+	 <20131212002946.GF8863@pd.tnic>
+	 <1386808323.1791.299.camel@misato.fc.hp.com>
+	 <1386810484.1791.306.camel@misato.fc.hp.com>
+	 <1386810620.1791.307.camel@misato.fc.hp.com>
+	 <20131212162351.GA26927@pd.tnic>
+	 <1386866583.1791.310.camel@misato.fc.hp.com>
+	 <1386869221.1791.311.camel@misato.fc.hp.com>
+	 <1386869777.1791.314.camel@misato.fc.hp.com>
+	 <20131212203533.GB26927@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 01:46:10PM -0700, Bjorn Helgaas wrote:
-> [+cc Thomas]
+On Thu, 2013-12-12 at 21:35 +0100, Borislav Petkov wrote:
+> On Thu, Dec 12, 2013 at 10:36:17AM -0700, Toshi Kani wrote:
+> > BTW, the test system is shared and will be used by other test for a
+> > couple of hours or so. So, please take your time. :-)
 > 
-> On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
-> > If this looks reasonable, I'll merge it via the PCI tree for v3.13.
+> Yeah, ok :-)
 > 
-> OK, here's another try.  I'm not actually trying to nominate anybody; I
-> just tried to write down the list we came up with in an earlier discussion [1].
+> I went and polished the debugging patch a bit more - it seems we're
+> going to need it more often now, should probably send it up too :)
 > 
-> I'd like confirmation from the following people that they approve of being
-> listed here:
+> Right, so the pagetable dump shows that the new_memmap is not mapped in
+> it, thus the #PF.
 > 
->   Richard Zhu (IMX6)
->   Thomas Petazzoni (MVEBU)
->   Magnus Damm (R-CAR)
-> 
-> I think everybody else listed has already said they approve.
-> 
-> [1] http://lkml.kernel.org/r/CAErSpo5tN==4nSv2u3SUBe_L4VsWn4P7TN+LtrC172Qj1vhtog@mail.gmail.com
-> 
-> 
-> MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI host maintainers
-> 
-> From: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> Add entries for PCI host controller drivers in drivers/pci/host/.
-> 
-> Signed-off-by: Mohit Kumar <mohit.kumar@st.com>		(DesignWare)
-> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>	(DesignWare)
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> Acked-by: Simon Horman <horms+renesas@verge.net.au>	(R-CAR)
-> Acked-by: Jason Cooper <jason@lakedaemon.net>		(MVEBU)
+> Ok, so next try: let's dump the pagetable after we've copied the pgd
+> containing new_memmap. Same exercise as before, please.
 
-If Thomas is ok with it:
+Will do.
 
-Double-Plus-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Thanks,
+-Toshi
 
-for the mvebu bits.
 
-thx,
-
-Jason.
