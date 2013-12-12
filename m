@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3LKX5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 18:57:22 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57864 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab3LKX5S (ORCPT
+	id S1751492Ab3LLAER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:04:17 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51525 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3LLAEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 18:57:18 -0500
-From: Olof Johansson <olof@lixom.net>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] net: eth: cpsw: 64-bit phys_addr_t and sparse cleanup
-Date: Wed, 11 Dec 2013 15:58:07 -0800
-Message-Id: <1386806287-6564-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 11 Dec 2013 19:04:16 -0500
+X-AuditID: 9c930179-b7ce4ae000000e86-0b-52a8fd7e3c3e
+Date: Thu, 12 Dec 2013 09:07:14 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 7/7] mm/migrate: remove result argument on page
+ allocation function for migration
+Message-ID: <20131212000714.GA3634@lge.com>
+References: <1386580248-22431-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1386580248-22431-8-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000142d83adfc7-81b70cc9-c87b-4e7e-bd98-0a97ee21db31-000000@email.amazonses.com>
+ <20131211084719.GA2043@lge.com>
+ <00000142e263bbcd-65959fd3-eadc-4580-b55b-065c734a229e-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000142e263bbcd-65959fd3-eadc-4580-b55b-065c734a229e-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor fix for printk format of a phys_addr_t, and the switch of two local
-functions to static since they're not used outside of the file.
+On Wed, Dec 11, 2013 at 04:00:56PM +0000, Christoph Lameter wrote:
+> On Wed, 11 Dec 2013, Joonsoo Kim wrote:
+> 
+> > In do_move_pages(), if error occurs, 'goto out_pm' is executed and the
+> > page status doesn't back to userspace. So we don't need to store err number.
+> 
+> If a page cannot be moved then the error code is containing the number of
+> pages that could not be migrated. The check there is for err < 0.
+> So a positive number is not an error.
+> 
+> migrate_pages only returns an error code if we are running out of memory.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
+Ah... I missed it. I will drop this patch and send v3 for whole patchset.
 
-Missed this one with the previous 64-bit phys_addr_t fix. Feel free to
-fold it in, or apply separately.
-
-
--Olof
-
- drivers/net/ethernet/ti/cpsw.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index c8a54f9..915eca9 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -582,7 +582,7 @@ static void cpsw_intr_disable(struct cpsw_priv *priv)
- 	return;
- }
- 
--void cpsw_tx_handler(void *token, int len, int status)
-+static void cpsw_tx_handler(void *token, int len, int status)
- {
- 	struct sk_buff		*skb = token;
- 	struct net_device	*ndev = skb->dev;
-@@ -599,7 +599,7 @@ void cpsw_tx_handler(void *token, int len, int status)
- 	dev_kfree_skb_any(skb);
- }
- 
--void cpsw_rx_handler(void *token, int len, int status)
-+static void cpsw_rx_handler(void *token, int len, int status)
- {
- 	struct sk_buff		*skb = token;
- 	struct sk_buff		*new_skb;
-@@ -2142,8 +2142,8 @@ static int cpsw_probe(struct platform_device *pdev)
- 			  data->cpts_clock_mult, data->cpts_clock_shift))
- 		dev_err(priv->dev, "error registering cpts device\n");
- 
--	cpsw_notice(priv, probe, "initialized device (regs %x, irq %d)\n",
--		    ss_res->start, ndev->irq);
-+	cpsw_notice(priv, probe, "initialized device (regs %pa, irq %d)\n",
-+		    &ss_res->start, ndev->irq);
- 
- 	if (priv->data.dual_emac) {
- 		ret = cpsw_probe_dual_emac(pdev, priv);
--- 
-1.7.10.4
-
+Thanks.
