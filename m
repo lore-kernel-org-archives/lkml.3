@@ -1,145 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab3LLTXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:23:34 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:40920 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3LLTXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:23:31 -0500
-Date: Thu, 12 Dec 2013 14:23:19 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
- notifications to access reserves
-Message-ID: <20131212192319.GL32683@htj.dyndns.org>
-References: <20131205025026.GA26777@htj.dyndns.org>
- <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
- <20131206190105.GE13373@htj.dyndns.org>
- <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
- <20131210215037.GB9143@htj.dyndns.org>
- <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
- <20131211124240.GA24557@htj.dyndns.org>
- <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
- <20131212142156.GB32683@htj.dyndns.org>
- <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
+	id S1751761Ab3LLTYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:24:06 -0500
+Received: from muru.com ([72.249.23.125]:34947 "EHLO muru.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519Ab3LLTYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 14:24:01 -0500
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 14:24:01 EST
+Date: Thu, 12 Dec 2013 19:19:08 +0000
+From: Tony Lindgren <tony@atomide.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
+        NeilBrown <neilb@suse.de>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
+Message-ID: <20131212191908.GA29072@muru.com>
+References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
+ <1381784555-18344-2-git-send-email-marek@goldelico.com>
+ <20131111164917.GN15154@atomide.com>
+ <CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
+ <20131111233152.GR15154@atomide.com>
+ <CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
+ <20131210224659.GY13171@atomide.com>
+ <CAAfyv35wKAK2PNjcXcNan9GC0x-MmH5k4xmzj_vKKhPeztHV-A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
+In-Reply-To: <CAAfyv35wKAK2PNjcXcNan9GC0x-MmH5k4xmzj_vKKhPeztHV-A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tim.
-
-On Thu, Dec 12, 2013 at 10:42:20AM -0800, Tim Hockin wrote:
-> Yeah sorry.  Replying from my phone is awkward at best.  I know better :)
-
-Heh, sorry about being bitchy. :)
-
-> In my mind, the ONLY point of pulling system-OOM handling into
-> userspace is to make it easier for crazy people (Google) to implement
-> bizarre system-OOM policies.  Example:
-
-I think that's one of the places where we largely disagree.  If at all
-possible, I'd much prefer google's workload to be supported inside the
-general boundaries of the upstream kernel without having to punch a
-large hole in it.  To me, the general development history of memcg in
-general and this thread in particular seem to epitomize why it is a
-bad idea to have isolated, large and deep "crazy" use cases.  Punching
-the initial hole is the easy part; however, we all are quite limited
-in anticpating future needs and sooner or later that crazy use case is
-bound to evolve further towards the isolated extreme it departed
-towards and require more and larger holes and further contortions to
-accomodate such progress.
-
-The concern I have with the suggested solution is not necessarily that
-it's technically complex than it looks like on the surface - I'm sure
-it can be made to work one way or the other - but that it's a fairly
-large step toward an isolated extreme which memcg as a project
-probably should not head toward.
-
-There sure are cases where such exceptions can't be avoided and are
-good trade-offs but, here, we're talking about a major architectural
-decision which not only affects memcg but mm in general.  I'm afraid
-this doesn't sound like an no-brainer flexibility we can afford.
-
-> When we have a system OOM we want to do a walk of the administrative
-> memcg tree (which is only a couple levels deep, users can make
-> non-admin sub-memcgs), selecting the lowest priority entity at each
-> step (where both tasks and memcgs have a priority and the priority
-> range is much wider than the current OOM scores, and where memcg
-> priority is sometimes a function of memcg usage), until we reach a
-> leaf.
+On Thu, Dec 12, 2013 at 09:31:02AM +0100, Belisko Marek wrote:
+> Hi Tony,
 > 
-> Once we reach a leaf, I want to log some info about the memcg doing
-> the allocation, the memcg being terminated, and maybe some other bits
-> about the system (depending on the priority of the selected victim,
-> this may or may not be an "acceptable" situation).  Then I want to
-> kill *everything* under that memcg.  Then I want to "publish" some
-> information through a sane API (e.g. not dmesg scraping).
-> 
-> This is basically our policy as we understand it today.  This is
-> notably different than it was a year ago, and it will probably evolve
-> further in the next year.
+> On Tue, Dec 10, 2013 at 11:46 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Belisko Marek <marek.belisko@gmail.com> [131210 14:13]:
+> >> On Tue, Nov 12, 2013 at 12:31 AM, Tony Lindgren <tony@atomide.com> wrote:
+> >> >
+> >> > It would be best to set it up as omap-ctrl.c driver under drivers
+> >> > somewhere with few functions exported for DSS and MMC drivers.
+> >>
+> >> I create small dummy driver based on phy-omap-control which can be
+> >> used but before sending patch (with more updates) I would like to get
+> >> some feedback if my direction is correct.
+> >
+> > Cool thanks. Yeah what you have can easily be combined with the patches
+> > Balaji has posted to make HSMMC use drivers/mfd/syscon.c via regmap
+> > for the SCM register access. Maybe take a look at the work in progress
+> > patches in thread:
+> >
+> > [PATCH v4 0/7] mmc: omap_hsmmc: pbias dt and cleanup
+> >
+> > And also see my comments regarding using the SCM GENERAL register area
+> > as base for the syscon.c driver. That should work for your driver too,
+> > right? And then you can access the SYSCON1 register that way from your
+> > consumer driver ;)
+>
+> If I understand correclty I can use syscon driver (it will have in
+> range also devconf1 register) ad get rid of my custom driver
+> and then get regmap from syscon and update bits that I need for venc, right?
 
-I think per-memcg score and killing is something which makes
-fundamental sense.  In fact, killing a single process has never made
-much sense to me as that is a unit which ultimately is only meaningful
-to the kernel itself and not necessraily to userland, so no matter
-what I think we're gonna gain per-memcg behavior and it seems most,
-albeit not all, of what you described above should be implementable
-through that.
+Yeah something like that. Or since the sysconf1 register is shared, it might
+be best to still provide specific functions to access it if we cannot map
+just specific bits of it separately for drivers using regmap.
 
-Ultimately, if the use case calls for very fine level of control, I
-think the right thing to do is making nesting work properly which is
-likely to take some time.  In the meantime, even if such use case
-requires modifying the kernel to tailor the OOM behavior, I think
-sticking to kernel OOM provides a lot easier way to eventual
-convergence.  Userland system OOM basically means giving up and would
-lessen the motivation towards improving the shared infrastructures
-while adding significant pressure towards schizophreic diversion.
+But anyways this should for most part remove the need for a custom driver(s)
+unless the register is a regulator or a clock.
 
-> We have a long tail of kernel memory usage.  If we provision machines
-> so that the "do work here" first-level memcg excludes the average
-> kernel usage, we have a huge number of machines that will fail to
-> apply OOM policy because of actual overcommitment.  If we provision
-> for 95th or 99th percentile kernel usage, we're wasting large amounts
-> of memory that could be used to schedule jobs.  This is the
-> fundamental problem we face with static apportionment (and we face it
-> in a dozen other situations, too).  Expressing this set-aside memory
-> as "off-the-top" rather than absolute limits makes the whole system
-> more flexible.
+Regards,
 
-I agree that's pretty sad.  Maybe I shouldn't be surprised given the
-far-from-perfect coverage of kmemcg at this point, but, again,
-*everyone* wants [k]memcg coverage to be more complete and we have and
-are still building the infrastructures to make that possible, so I'm
-still of the opinion that making [k]memcg work better is the better
-direction to pursue and given the short development history of kmemcg
-I'm fairly sure there are quite a few low hanging fruits.
-
-Another thing which *might* be relevant is the rigidity of the upper
-limit and the vagueness of soft limit of the current implementation.
-I have a rather strong suspicion that the way memcg config knobs
-behave now - one finicky, the other whatever - is likely hindering the
-use cases to fan out more naturally.  I could be completely wrong on
-this but your mention of inflexibility of absolute limits reminds me
-of the issue.
-
-Thanks.
-
--- 
-tejun
+Tony
