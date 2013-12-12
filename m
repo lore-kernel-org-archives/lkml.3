@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab3LLAPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:15:49 -0500
-Received: from ozlabs.org ([203.10.76.45]:56872 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3LLAPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:15:47 -0500
-Date: Thu, 12 Dec 2013 11:15:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20131212111539.cff1b2efe934c5cd7abbb822@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn"
+	id S1751920Ab3LLAQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:16:48 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:36553 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3LLAQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:16:47 -0500
+Message-ID: <52A90069.4060401@linaro.org>
+Date: Thu, 12 Dec 2013 08:16:41 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@kernel.org>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>
+Subject: Re: nohz_full left a periodic tick cpu issue
+References: <52A845BD.5020801@linaro.org> <20131211152538.GR4208@linux.vnet.ibm.com> <20131211153114.GB7862@localhost.localdomain>
+In-Reply-To: <20131211153114.GB7862@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/11/2013 11:31 PM, Frederic Weisbecker wrote:
+>> > OK, I'll bite...  Why not just use CONFIG_NO_HZ_FULL_SYSIDLE=y with
+>> > CONFIG_NO_HZ_FULL_SYSIDLE_SMALL set to at least the number of CPUs on
+>> > your system?  The default for CONFIG_NO_HZ_FULL_SYSIDLE_SMALL is eight.
+>> > This stuff is in mainline, though Frederic's exploitation of it is
+>> > still in the works.
+>> > 
+>> > On smaller systems, with Frederic's latest work, this should allow CPU 0
+>> > to go idle quickly.
+>> > 
+>> > What are you needing that this would not provide?
+> Yeah I think that's what he needs, but we haven't much advertized that feature
+> yet. I mean there are good reasons, it's not yet working :o)
 
-Hi all,
+Many thanks for Paul and Frederic's comments!
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/macvtap.c between commit ce232ce01d61 ("macvtap: signal
-truncated packets") from the net tree and commit 55ec8e25cd97 ("macvtap:
-remove unused parameter in macvtap_do_read()") from the net-next tree.
+yes, I enabled FULL_SYSIDLE with FULL_SYSIDLE_SMALL=2, but as Frederic
+said they are not yet working.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> 
+> But yeah Alex, I'm working on plugging the full system idle detection (CONFIG_NO_HZ_FULL_SYSIDLE=y)
+> to shutdown the timekeeping CPUs adaptively.
+> 
+> I have the patches ready, I'm just polishing a few things, writing changelogs, then I'll send
+> to LKML with you Cc'ed :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I am very glad to hear this. looking forward to seeing your patch soon. :)
 
-diff --cc drivers/net/macvtap.c
-index 2a89da080317,4a34bcb6549f..000000000000
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@@ -819,12 -813,13 +815,12 @@@ static ssize_t macvtap_put_user(struct=20
-  	}
- =20
-  	ret =3D skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
- -	copied +=3D len;
- =20
-  done:
- -	return ret ? ret : copied;
- +	return ret ? ret : total;
-  }
- =20
-- static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *ioc=
-b,
-+ static ssize_t macvtap_do_read(struct macvtap_queue *q,
-  			       const struct iovec *iv, unsigned long len,
-  			       int noblock)
-  {
-@@@ -875,8 -870,8 +871,8 @@@ static ssize_t macvtap_aio_read(struct=20
-  		goto out;
-  	}
- =20
-- 	ret =3D macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
-+ 	ret =3D macvtap_do_read(q, iv, len, file->f_flags & O_NONBLOCK);
- -	ret =3D min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
- +	ret =3D min_t(ssize_t, ret, len);
-  	if (ret > 0)
-  		iocb->ki_pos =3D ret;
-  out:
-
---Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSqQAvAAoJEMDTa8Ir7ZwVaQEP/jd7CyfJpxt4SVf9PkXubh51
-C2vHhwMq+fa5Xe7hsVohFXaK0bErgWGBdMfJm3e5TI7yguKY1v+uIEyAxQQl2nQG
-t74LRt7wio1F2kGp2O8K61pzScEyNU6EXZuzh/hLvXEbKufdceqVjdhe1P2ZZ9UX
-9S1xA760jPYwGVFb+H5IZoWjbt6mkvP6lRNcnkoXHX4CSl58bMfvsvocQ3oiK19x
-u/I0FbUmxnibweFfALK0ouJmSWej3xcclKKQ7dKaZLxmMTwa0fF5jdi0udukQWiJ
-C2av5GiHUbltQmqhHKTbdzmrLBvtOZ/DuBu8sYZbWCvN7GURJsZT/Yz2PKNyO7AL
-puOnO0aRHGNrqpbzR7At+m/e7kT7Ni9zMWVwxLnbViV5tfAw8aYO3cMkpotOY+ip
-QoxaJekwNOazXQwJq5bA3lpGW9Yaag5JQ9QBIQum/uLScPOAN0PnQOiUkH6sy3Sj
-LlicY10+U334A9b63Cpji1cEthr1wnlwHARdiCSp31Um7Wz/J0KA+c+3/Y5NoSQH
-ne4fc9cvEQy2SkS+N0ZtOJxfLAEJlmu00eW2lbRul0uFOHxIMRFI6ZPhFdu/haY5
-CGJSwiU0eppwNOGxYwkp2UKGKC4c0QosPHMyQYQcF0uqDorl+AqtZDDDvwDo97MH
-42AFm8hrmNDh/mgj1j/3
-=oEjt
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Dec_2013_11_15_39_+1100_RfUABrleJpPNKvOn--
+-- 
+Thanks
+    Alex
