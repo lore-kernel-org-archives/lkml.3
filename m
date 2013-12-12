@@ -1,147 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222Ab3LLKuO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 05:50:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55040 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751415Ab3LLKuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 05:50:09 -0500
-Date: Thu, 12 Dec 2013 11:50:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131212105003.GC2630@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
- <20131204111318.GE8410@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
- <20131209124840.GC3597@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
- <20131210103827.GB20242@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
- <20131211095549.GA18741@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
- <20131212103159.GB2630@dhcp22.suse.cz>
+	id S1751489Ab3LLK4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 05:56:54 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55943 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab3LLK4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 05:56:51 -0500
+Date: Thu, 12 Dec 2013 11:56:47 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Dan Williams <dcbw@redhat.com>, Kalle Valo <kvalo@adurom.com>,
+        Luciano Coelho <luca@coelho.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, freemangordon@abv.bg,
+        aaro.koskinen@iki.fi, sre@ring0.de, joni.lapilainen@gmail.com,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: [PATCH v2 15/16] wl1251: Add sysfs file address for setting
+ permanent mac address
+Message-ID: <20131212105647.GA22471@amd.pavel.ucw.cz>
+References: <1382819655-30430-1-git-send-email-pali.rohar@gmail.com>
+ <201312101814.35112@pali>
+ <1386697762.30202.6.camel@dcbw.foobar.com>
+ <201312101852.17030@pali>
+ <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20131212103159.GB2630@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1386796654.1516.268.camel@bwh-desktop.uk.level5networks.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-12-13 11:31:59, Michal Hocko wrote:
-[...]
-> > > Anyway.
-> > > Does the reclaim make any sense for PF_EXITING tasks? Shouldn't we
-> > > simply bypass charges of these tasks automatically. Those tasks will
-> > > free some memory anyway so why to trigger reclaim and potentially OOM
-> > > in the first place? Do we need to go via TIF_MEMDIE loop in the first
-> > > place?
+On Wed 2013-12-11 21:17:34, Ben Hutchings wrote:
+> On Tue, 2013-12-10 at 18:52 +0100, Pali Rohár wrote:
+> > On Tuesday 10 December 2013 18:49:22 Dan Williams wrote:
+> > > On Tue, 2013-12-10 at 18:14 +0100, Pali Rohár wrote:
+> > > > On Tuesday 10 December 2013 17:10:50 Pali Rohár wrote:
+> > > > > On Tuesday 10 December 2013 16:49:23 Kalle Valo wrote:
+> > > > > > Pali Rohár <pali.rohar@gmail.com> writes:
+> > > > > > > Driver wl1251 generating mac address randomly at
+> > > > > > > startup and there is no way to set permanent mac
+> > > > > > > address via SET_IEEE80211_PERM_ADDR. This patch
+> > > > > > > export sysfs file which can set permanent mac address
+> > > > > > > by userspace helper program. Patch is needed for
+> > > > > > > devices which do not store mac address in internal
+> > > > > > > wl1251 eeprom.
+> > > > > > > 
+> > > > > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > > > > > 
+> > > > > > We have ioctl() command for setting the mac address.
+> > > > > 
+> > > > > Really? Is there ioctl for setting permanent mac address?
+> > > > > Can you show me it?
+> > > > 
+> > > > Now I looked at it again and I did not found any ioctl for
+> > > > it. There is only ioctl cmd for getting address, not
+> > > > setting it.
+> > > > 
+> > > > #define SIOCETHTOOL 0x8946
+> > > > 
+> > > > /* Get permanent hardware address */
+> > > > #define ETHTOOL_GPERMADDR 0x00000020
 > > > 
-> > 
-> > I don't see any reason to make an optimization there since they will get 
-> > TIF_MEMDIE set if reclaim has failed on one of their charges or if it 
-> > results in a system oom through the page allocator's oom killer.
+> > > Yeah, because it's supposed to be permanent and unchanging. 
+> > > Which means if there was an ioctl for it, that would be
+> > > contrary to the purpose of a permanent MAC address.
+> > > 
+> > > I realize the N900 stores the WiFi MAC address completely
+> > > differently than many other systems, and that's why this
+> > > sysfs file was created.  I don't really have a great
+> > > converged solution for that, other than what you've currently
+> > > got, or perhaps adding SPERMADDR to ethtool.  One thing I
+> > > *would* like though, is a restriction on the sysfs file such
+> > > that if the permanent MAC is already set, it cannot be set
+> > > again.  Otherwise the permanent MAC address isn't permanent
+> > > at all.
 > 
-> This all will happen after MEM_CGROUP_RECLAIM_RETRIES full reclaim
-> rounds. Is it really worth the addional overhead just to later say "OK
-> go ahead and skipp charges"?
-> And for the !oom memcg it might reclaim some pages which could have
-> stayed on LRUs just to free some memory little bit later and release the
-> memory pressure.
-> So I would rather go with
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c72b03bf9679..fee25c5934d2 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->  	 * MEMDIE process.
->  	 */
->  	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> -		     || fatal_signal_pending(current)))
-> +		     || fatal_signal_pending(current))
-> +		     || current->flags & PF_EXITING)
->  		goto bypass;
->  
->  	if (unlikely(task_in_memcg_oom(current)))
-> 
-> rather than the later checks down the oom_synchronize paths. The comment
-> already mentions dying process...
+> I'm really uncomfortable with the idea of involving userland in
+> establishing the 'permanent' MAC address.  (And from what I gather, the
+> Nokia software never did that but only used SIOCSIFHWADDR.)  It ought to
+> be set before the interface is ever registered.
 
-With the full changelog. I will repost it in a separate thread if you
-are OK with this.
----
->From 6e24846f531bb1cc2e68383abf9a6c63b4ee1f78 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 12 Dec 2013 11:37:27 +0100
-Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
+Which is hard to do on n900. What is the problem with userland setting
+permanent mac address?
 
-Eric has reported that he can see task(s) stuck in memcg OOM handler
-regularly. The only way out is to
-	echo 0 > $GROUP/memory.oom_controll
-His usecase is:
-- Setup a hierarchy with memory and the freezer
-  (disable kernel oom and have a process watch for oom).
-- In that memory cgroup add a process with one thread per cpu.
-- In one thread slowly allocate once per second I think it is 16M of ram
-  and mlock and dirty it (just to force the pages into ram and stay there).
-- When oom is achieved loop:
-  * attempt to freeze all of the tasks.
-  * if frozen send every task SIGKILL, unfreeze, remove the directory in
-    cgroupfs.
-
-Eric has then pinpointed the issue to be memcg specific.
-
-All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
-Those that have received fatal signal will bypass the charge and should
-continue on their way out. The tricky part is that the exit path might
-trigger a page fault (e.g. exit_robust_list) thus the memcg charge
-while its memcg is still under OOM because nobody has released any
-charges. Unlike with the in-kernel OOM handler the exiting task doesn't
-get TIF_MEMDIE set so it doesn't shortcut charges and falls to the
-memcg OOM again without any way out of it as there are no fatal signals
-pending anymore.
-
-This patch fixes the issue by checking PF_EXITING early in
-__mem_cgroup_try_charge and bypass the charge same as if it had fatal
-signal pending or TIF_MEMDIE set.
-
-Normally (not killed) exiting tasks will bypass the charge now but
-this should be OK as the task is leaving and will release memory and
-increasing the memory pressure just to release it in a moment seems
-dubious wasting of cycles. Besides that charges after exit_signals
-should be rare.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c72b03bf9679..98900c070045 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2692,7 +2692,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
- 	 * MEMDIE process.
- 	 */
- 	if (unlikely(test_thread_flag(TIF_MEMDIE)
--		     || fatal_signal_pending(current)))
-+		     || fatal_signal_pending(current))
-+		     || current->flags & PF_EXITING)
- 		goto bypass;
- 
- 	if (unlikely(task_in_memcg_oom(current)))
+It is not used for security or anything...
+									Pavel
 -- 
-1.8.4.4
-
-
--- 
-Michal Hocko
-SUSE Labs
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
