@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab3LLAGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:06:06 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:30880 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3LLAGD (ORCPT
+	id S1751669Ab3LLAKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:10:50 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:38812 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3LLAKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:06:03 -0500
-Message-ID: <1386806463.1791.295.camel@misato.fc.hp.com>
-Subject: EFI tree kernel panic in phys_efi_set_virtual_address_map()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org
-Date: Wed, 11 Dec 2013 17:01:03 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Dec 2013 19:10:45 -0500
+From: Olof Johansson <olof@lixom.net>
+To: cooloney@gmail.com
+Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] leds: pwm: Remove a warning on non-DT platforms
+Date: Wed, 11 Dec 2013 16:11:42 -0800
+Message-Id: <1386807102-15397-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+This removes a warning on non-DT-enabled platforms:
 
-An EFI tree kernel panic'd during boot on one of my systems.  It boots
-fine when efi=old_map option is specified.  So, I think it is caused by
-your EFI virtual mapping changes.
+drivers/leds/leds-pwm.c: In function 'led_pwm_create_of':
+drivers/leds/leds-pwm.c:88:22: warning: unused variable 'node'
 
-The panic message is as follows.  I added some printk's to log the
-arguments of phys_efi_set_virtual_address_map().  The fault address is
-__pa(new_memmap) + 0x20 (too high for the map?).
+Really caused by the local variable that is assigned to and then never
+used. Just do away with the local var, it's not needed.
 
-Thanks,
--Toshi
+Technically this code path can never be entered without DT enabled,
+since there's an earlier check about number of children in the calling
+function, but the compiler can't see that.
 
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ drivers/leds/leds-pwm.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-
-efi: >> Call phys_efi_set_virtual_address_map()
-efi:    count 29
-efi:    desc_size 0x30
-efi:    new_memmap 0xffff8a03fec16800
-efi:    __pa(new_memmap) 0x203fec16800
-
-BUG: unable to handle kernel paging request at 00000203fec16820
-IP: [<0000000072dcda76>] 0x72dcda75
-PGD 0 
-Oops: 0000 [#1] SMP 
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #52
-Hardware name: HP CB920s x1, BIOS Bundle: 005.028.018 SFW: 012.124.000
-10/28/2013
-task: ffffffff81a10480 ti: ffffffff81a00000 task.ti: ffffffff81a00000
-RIP: 0010:[<0000000072dcda76>]  [<0000000072dcda76>] 0x72dcda75
-RSP: 0000:ffffffff81a01e08  EFLAGS: 00010206
-RAX: 00000000725fee18 RBX: 00000000725feda0 RCX: 00000203fec16800
-RDX: 0000000072dfe070 RSI: 0000000060000202 RDI: 0000000072dcdac8
-RBP: 0000000072dd0560 R08: 0000000000000000 R09: 000000000000001d
-R10: 0000000000000030 R11: 8000000000000000 R12: ffff8a03fec16800
-R13: 0000000000000001 R14: 000000000000001d R15: 000000000009c000
-FS:  0000000000000000(0000) GS:ffff88087fa00000(0000)
-knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000203fec16820 CR3: 000000000009c000 CR4: 00000000000406b0
-Stack:
- 0000000072dfb88f 0000000000000001 0000000000000d08 0000000000000000
- ffffffff81d79a98 0000000072dcdac8 0000000072dcdb93 0000000000000001
- ffffffff81a01f80 0000000000000570 0000000000000000 0000000000000000
-Call Trace:
- [<ffffffff81045cec>] ? efi_call4+0x6c/0xf0
- [<ffffffff81b02f65>] ? efi_enter_virtual_mode+0x229/0x3f1
- [<ffffffff81aebdf2>] ? start_kernel+0x36c/0x407
- [<ffffffff81aeb88f>] ? repair_env_string+0x5c/0x5c
- [<ffffffff81aeb5a3>] ? x86_64_start_reservations+0x2a/0x2c
- [<ffffffff81aeb696>] ? x86_64_start_kernel+0xf1/0xf4
-Code:  Bad RIP value.
-RIP  [<0000000072dcda76>] 0x72dcda75
- RSP <ffffffff81a01e08>
-CR2: 00000203fec16820
----[ end trace e50b25032c120443 ]---
-
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index b31d8e99..bf49547 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -85,11 +85,10 @@ static inline size_t sizeof_pwm_leds_priv(int num_leds)
+ static int led_pwm_create_of(struct platform_device *pdev,
+ 			     struct led_pwm_priv *priv)
+ {
+-	struct device_node *node = pdev->dev.of_node;
+ 	struct device_node *child;
+ 	int ret;
+ 
+-	for_each_child_of_node(node, child) {
++	for_each_child_of_node(pdev->dev.of_node, child) {
+ 		struct led_pwm_data *led_dat = &priv->leds[priv->num_leds];
+ 
+ 		led_dat->cdev.name = of_get_property(child, "label",
+-- 
+1.7.10.4
 
