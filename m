@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab3LLN02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 08:26:28 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:49178 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab3LLN0W (ORCPT
+	id S1751920Ab3LLN0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 08:26:35 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:33067 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab3LLN03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 08:26:22 -0500
+	Thu, 12 Dec 2013 08:26:29 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -24,9 +24,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v5 2/9] staging: dwc2: update DT binding to add generic clock/phy properties
-Date: Thu, 12 Dec 2013 08:26:03 -0500
-Message-Id: <1386854770-2173-3-git-send-email-mporter@linaro.org>
+Subject: [PATCH v5 5/9] usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
+Date: Thu, 12 Dec 2013 08:26:06 -0500
+Message-Id: <1386854770-2173-6-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386854770-2173-1-git-send-email-mporter@linaro.org>
 References: <1386854770-2173-1-git-send-email-mporter@linaro.org>
@@ -34,44 +34,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dwc2/s3c-hsotg require a single clock to be specified and optionally
-a generic phy. On the s3c-hsotg driver old style USB phy support is
-present as a fallback so the generic phy properties are optional.
+If a generic phy is present, call phy_init()/phy_exit(). This supports
+generic phys that must be soft reset before power on.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- Documentation/devicetree/bindings/staging/dwc2.txt | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/usb/gadget/s3c-hsotg.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt b/Documentation/devicetree/bindings/staging/dwc2.txt
-index 1a1b7cf..a1753ed 100644
---- a/Documentation/devicetree/bindings/staging/dwc2.txt
-+++ b/Documentation/devicetree/bindings/staging/dwc2.txt
-@@ -5,6 +5,14 @@ Required properties:
- - compatible : "snps,dwc2"
- - reg : Should contain 1 register range (address and length)
- - interrupts : Should contain 1 interrupt
-+- clocks: clock provider specifier
-+- clock-names: shall be "otg"
-+Refer to clk/clock-bindings.txt for generic clock consumer properties
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index 7c5d8bd..e9683c2 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -3621,6 +3621,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		goto err_supplies;
+ 	}
+ 
++	if (hsotg->phy)
++		phy_init(hsotg->phy);
 +
-+Optional properties:
-+- phys: phy provider specifier
-+- phy-names: shall be "device"
-+Refer to phy/phy-bindings.txt for generic phy consumer properties
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
  
- Example:
+@@ -3714,6 +3717,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+ 	}
  
-@@ -12,4 +20,8 @@ Example:
-                 compatible = "ralink,rt3050-usb, snps,dwc2";
-                 reg = <0x101c0000 40000>;
-                 interrupts = <18>;
-+		clocks = <&usb_otg_ahb_clk>;
-+		clock-names = "otg";
-+		phys = <&usbphy>;
-+		phy-names = "usb2-phy";
-         };
+ 	s3c_hsotg_phy_disable(hsotg);
++	if (hsotg->phy)
++		phy_exit(hsotg->phy);
+ 	clk_disable_unprepare(hsotg->clk);
+ 
+ 	return 0;
 -- 
 1.8.4
 
