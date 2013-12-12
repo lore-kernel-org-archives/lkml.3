@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab3LLIt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:49:27 -0500
-Received: from 7of9.schinagl.nl ([88.159.158.68]:41688 "EHLO 7of9.schinagl.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab3LLItY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:49:24 -0500
-Message-ID: <52A97820.8020007@schinagl.nl>
-Date: Thu, 12 Dec 2013 09:47:28 +0100
-From: Olliver Schinagl <oliver@schinagl.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1751565Ab3LLIwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:52:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55632 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab3LLIwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 03:52:04 -0500
+Date: Thu, 12 Dec 2013 09:51:43 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
+Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
+Message-ID: <20131212085143.GC21999@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
+ <20131211113839.GF21683@pd.tnic>
+ <20131211115239.GA21999@twins.programming.kicks-ass.net>
+ <1386764955.12005.60.camel@marge.simpson.net>
+ <20131211124352.GB21999@twins.programming.kicks-ass.net>
+ <20131211134048.GH21683@pd.tnic>
+ <20131211145655.GB4510@gmail.com>
+ <20131211164318.GA2480@laptop.programming.kicks-ass.net>
+ <20131211175036.GC12431@gmail.com>
+ <52A8F073.9040500@zytor.com>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Tejun Heo <tj@kernel.org>, Olliver Schinagl <oliver+list@schinagl.nl>,
-        grant.likely@linaro.org,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, dev@linux-sunxi.org,
-        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
-        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
- driver for the Allwinner SUNXi series of SoCs
-References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-3-git-send-email-oliver@schinagl.nl> <20131204123708.GD3158@htj.dyndns.org> <529F2677.3070208@schinagl.nl> <20131204131402.GG3158@htj.dyndns.org> <529F2B41.8090009@schinagl.nl> <20131204132312.GH3158@htj.dyndns.org> <52A87C07.1020102@schinagl.nl> <20131212064025.GM18380@S2101-09.ap.freescale.net>
-In-Reply-To: <20131212064025.GM18380@S2101-09.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52A8F073.9040500@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 11, 2013 at 03:08:35PM -0800, H. Peter Anvin wrote:
+> On 12/11/2013 09:50 AM, Ingo Molnar wrote:
+> > 
+> > Well, availability could be a problem too, if some CPU (real or 
+> > virtual) implements MWAIT but not CLFLUSH.
+> > 
+> > In theory we could make mwait an alternatives variant and patch in the 
+> > right combination of instructions? The CLFLUSH goes to the same 
+> > address as on which the monitoring happens, so it could be considered 
+> > one meta-instruction.
+> > 
+> 
+> The first thing to do is probably to drop the use of thread_info as a
+> wakeup doorbell.  It seemed like a good idea at the time -- after all,
+> there is one for each thread -- but it is extremely likely to be dirty
+> in the cache, which is (presumably) what causes these kinds of bugs to
+> be maximally likely.  Even if we don't do the CLFLUSH it is likely that
+> the hardware has to do something expensive behind the scenes.
+> 
+> So I would like to propose that we switch to using a percpu variable
+> which is a single cache line of nothing at all.  It would only ever be
+> touched by MONITOR and for explicit wakeup.  Hopefully that will resolve
+> this problem without the need for the CLFLUSH.
 
-On 12-12-13 07:40, Shawn Guo wrote:
-> On Wed, Dec 11, 2013 at 03:51:51PM +0100, Olliver Schinagl wrote:
->> Working on this and studying the existing
->> ahci_platform/shci_platform drivers the last few days and was
->> figuring out why ahci_platform only supports 1 clock. IMX handles
->> this by having 3 clocks defined in the DT, the first one gets
->> enabled by default via ahci_platform, the other 2 get enabled in
->> IMX's probe function.
->>
->> Is it an idea to extend this to support all clocks that would be
->> required (via a callback)?
-> Not really.  We did this for ahci_imx driver only because we do not want
-> to churn generic ahci_platform driver with those imx specific setup
-> code.  Note, beside the additional two clocks, we have some PHY
-> parameters to set up in IMX IOMUXC general purpose registers, and vendor
-> specific register HOST_TIMER1MS to be set up as well.
-Well many SoC's have these specific things so we need a place to provide 
-for this.
+The reason we use thread_info::flags is because we need to write
+TIF_NEED_RESCHED into it to wake up anyhow.
 
-The the question then becomes, what do we define as being the common 
-clocks? Only the clock for the SATA IP? Or also the clock to which it 
-connects to the bus? Where is the line drawn etc.
+Using another cacheline would mean the wakeup path would need to write a
+second cross cpu cacheline -- that is badness too.
 
-E.g. a rewritten new ahci-pltfrm.c will support all clocks defined in 
-the DT for the ahci node.
->
->> Or do we prefer having the clocks
->> separated for other technical reasons? Or do we want to handle the
->> clocks via the ahci_platform framework and extend hpriv->clk to an
->> array of clocks?
-> The direction of the generic ahci platform driver will be having it be
-> a library providing helper functions, as discussed as below.
->
-> https://lkml.org/lkml/2013/12/6/153
-I know, I started this entire thread :p hence my question :)
-
-Oliver
->
-> We can ask the helper function to handle the common clocks and leave the
-> platform specific ones to platform driver.
->
-> Shawn
->
-
+So no, I don't think we want to listen to another line.
