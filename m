@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab3LLOZX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:25:23 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36023 "EHLO
+	id S1752356Ab3LLO0P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:26:15 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36016 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab3LLOVO (ORCPT
+	with ESMTP id S1751740Ab3LLOVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:21:14 -0500
-Message-Id: <20131212141654.816593653@infradead.org>
+	Thu, 12 Dec 2013 09:21:13 -0500
+Message-Id: <20131212141654.616820819@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 12 Dec 2013 15:08:39 +0100
+Date: Thu, 12 Dec 2013 15:08:36 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
@@ -20,199 +20,241 @@ To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         John Stultz <john.stultz@linaro.org>,
         Andy Lutomirski <luto@amacapital.net>,
         Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 04/15] locking: Optimize lock_bh functions
+Cc: linux-kernel@vger.kernel.org, Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: [PATCH 01/15] x86, acpi, idle: Restructure the mwait idle routines
 References: <20131212140835.729222186@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-remove_preempt_enable_no_sched-from-locks.patch
+Content-Disposition: inline; filename=peter_zijlstra-x86_acpi_idle-restructure_the_mwait_idle_routines.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently all _bh_ lock functions do two preempt_count operations:
+People seem to delight in writing wrong and broken mwait idle routines;
+collapse the lot.
 
-  local_bh_disable();
-  preempt_disable();
+This leaves mwait_play_dead() the sole remaining user of __mwait() and
+new __mwait() users are probably doing it wrong.
 
-and for the unlock:
+Also remove __sti_mwait() as its unused.
 
-  preempt_enable_no_resched();
-  local_bh_enable();
-
-Since its a waste of perfectly good cycles to modify the same variable
-twice when you can do it in one go; use the new
-__local_bh_{dis,en}able_ip() functions that allow us to provide a
-preempt_count value to add/sub.
-
-So define SOFTIRQ_LOCK_OFFSET as the offset a _bh_ lock needs to
-add/sub to be done in one go.
-
-As a bonus it gets rid of the preempt_enable_no_resched() usage.
-
-This reduces a 1000 loops of:
-
-  spin_lock_bh(&bh_lock);
-  spin_unlock_bh(&bh_lock);
-
-from 53596 cycles to 51995 cycles. I didn't do enough measurements to
-say for absolute sure that the result is significant but the the few
-runs I did for each suggest it is so.
-
-Cc: rjw@rjwysocki.net
-Cc: rui.zhang@intel.com
+Cc: arjan@linux.intel.com
 Cc: jacob.jun.pan@linux.intel.com
 Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: hpa@zytor.com
-Cc: Arjan van de Ven <arjan@linux.intel.com>
 Cc: lenb@kernel.org
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: rui.zhang@intel.com
+Acked-by: Rafael Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/preempt_mask.h     |   15 +++++++++++++++
- include/linux/rwlock_api_smp.h   |   12 ++++--------
- include/linux/spinlock_api_smp.h |   12 ++++--------
- include/linux/spinlock_api_up.h  |   16 +++++++++++-----
- 4 files changed, 34 insertions(+), 21 deletions(-)
+ arch/x86/include/asm/mwait.h       |   40 +++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/processor.h   |   23 ---------------------
+ arch/x86/kernel/acpi/cstate.c      |   23 ---------------------
+ drivers/acpi/acpi_pad.c            |    5 ----
+ drivers/acpi/processor_idle.c      |   15 -------------
+ drivers/idle/intel_idle.c          |    8 -------
+ drivers/thermal/intel_powerclamp.c |    4 ---
+ 7 files changed, 43 insertions(+), 75 deletions(-)
 
---- a/include/linux/preempt_mask.h
-+++ b/include/linux/preempt_mask.h
-@@ -78,6 +78,21 @@
- #endif
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_MWAIT_H
+ #define _ASM_X86_MWAIT_H
  
- /*
-+ * The preempt_count offset needed for things like:
-+ *
-+ *  spin_lock_bh()
-+ *
-+ * Which need to disable both preemption (CONFIG_PREEMPT_COUNT) and
-+ * softirqs, such that unlock sequences of:
-+ *
-+ *  spin_unlock();
-+ *  local_bh_enable();
-+ *
-+ * Work as expected.
-+ */
-+#define SOFTIRQ_LOCK_OFFSET (SOFTIRQ_DISABLE_OFFSET + PREEMPT_CHECK_OFFSET)
++#include <linux/sched.h>
++
+ #define MWAIT_SUBSTATE_MASK		0xf
+ #define MWAIT_CSTATE_MASK		0xf
+ #define MWAIT_SUBSTATE_SIZE		4
+@@ -13,4 +15,42 @@
+ 
+ #define MWAIT_ECX_INTERRUPT_BREAK	0x1
+ 
++static inline void __monitor(const void *eax, unsigned long ecx,
++			     unsigned long edx)
++{
++	/* "monitor %eax, %ecx, %edx;" */
++	asm volatile(".byte 0x0f, 0x01, 0xc8;"
++		     :: "a" (eax), "c" (ecx), "d"(edx));
++}
++
++static inline void __mwait(unsigned long eax, unsigned long ecx)
++{
++	/* "mwait %eax, %ecx;" */
++	asm volatile(".byte 0x0f, 0x01, 0xc9;"
++		     :: "a" (eax), "c" (ecx));
++}
 +
 +/*
-  * Are we running in atomic context?  WARNING: this macro cannot
-  * always detect atomic context; in particular, it cannot know about
-  * held spinlocks in non-preemptible kernels.  Thus it should not be
---- a/include/linux/rwlock_api_smp.h
-+++ b/include/linux/rwlock_api_smp.h
-@@ -172,8 +172,7 @@ static inline void __raw_read_lock_irq(r
- 
- static inline void __raw_read_lock_bh(rwlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	rwlock_acquire_read(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_read_trylock, do_raw_read_lock);
- }
-@@ -200,8 +199,7 @@ static inline void __raw_write_lock_irq(
- 
- static inline void __raw_write_lock_bh(rwlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	rwlock_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_write_trylock, do_raw_write_lock);
- }
-@@ -250,8 +248,7 @@ static inline void __raw_read_unlock_bh(
- {
- 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_read_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
++ * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
++ * which can obviate IPI to trigger checking of need_resched.
++ * We execute MONITOR against need_resched and enter optimized wait state
++ * through MWAIT. Whenever someone changes need_resched, we would be woken
++ * up from MWAIT (without an IPI).
++ *
++ * New with Core Duo processors, MWAIT can take some hints based on CPU
++ * capability.
++ */
++static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
++{
++	if (!current_set_polling_and_test()) {
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		if (!need_resched())
++			__mwait(eax, ecx);
++	}
++	__current_clr_polling();
++}
++
+ #endif /* _ASM_X86_MWAIT_H */
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -700,29 +700,6 @@ static inline void sync_core(void)
+ #endif
  }
  
- static inline void __raw_write_unlock_irqrestore(rwlock_t *lock,
-@@ -275,8 +272,7 @@ static inline void __raw_write_unlock_bh
- {
- 	rwlock_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_write_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
+-static inline void __monitor(const void *eax, unsigned long ecx,
+-			     unsigned long edx)
+-{
+-	/* "monitor %eax, %ecx, %edx;" */
+-	asm volatile(".byte 0x0f, 0x01, 0xc8;"
+-		     :: "a" (eax), "c" (ecx), "d"(edx));
+-}
+-
+-static inline void __mwait(unsigned long eax, unsigned long ecx)
+-{
+-	/* "mwait %eax, %ecx;" */
+-	asm volatile(".byte 0x0f, 0x01, 0xc9;"
+-		     :: "a" (eax), "c" (ecx));
+-}
+-
+-static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
+-{
+-	trace_hardirqs_on();
+-	/* "mwait %eax, %ecx;" */
+-	asm volatile("sti; .byte 0x0f, 0x01, 0xc9;"
+-		     :: "a" (eax), "c" (ecx));
+-}
+-
+ extern void select_idle_routine(const struct cpuinfo_x86 *c);
+ extern void init_amd_e400_c1e_mask(void);
  
- #endif /* __LINUX_RWLOCK_API_SMP_H */
---- a/include/linux/spinlock_api_smp.h
-+++ b/include/linux/spinlock_api_smp.h
-@@ -131,8 +131,7 @@ static inline void __raw_spin_lock_irq(r
- 
- static inline void __raw_spin_lock_bh(raw_spinlock_t *lock)
- {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
- 	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -150,29 +150,6 @@ int acpi_processor_ffh_cstate_probe(unsi
  }
-@@ -174,20 +173,17 @@ static inline void __raw_spin_unlock_bh(
- {
- 	spin_release(&lock->dep_map, 1, _RET_IP_);
- 	do_raw_spin_unlock(lock);
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- }
+ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
  
- static inline int __raw_spin_trylock_bh(raw_spinlock_t *lock)
+-/*
+- * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
+- * which can obviate IPI to trigger checking of need_resched.
+- * We execute MONITOR against need_resched and enter optimized wait state
+- * through MWAIT. Whenever someone changes need_resched, we would be woken
+- * up from MWAIT (without an IPI).
+- *
+- * New with Core Duo processors, MWAIT can take some hints based on CPU
+- * capability.
+- */
+-void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
+-{
+-	if (!need_resched()) {
+-		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(ax, cx);
+-	}
+-}
+-
+ void acpi_processor_ffh_cstate_enter(struct acpi_processor_cx *cx)
  {
--	local_bh_disable();
--	preempt_disable();
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	if (do_raw_spin_trylock(lock)) {
- 		spin_acquire(&lock->dep_map, 0, 1, _RET_IP_);
- 		return 1;
+ 	unsigned int cpu = smp_processor_id();
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -193,10 +193,7 @@ static int power_saving_thread(void *dat
+ 					CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 			stop_critical_timings();
+ 
+-			__monitor((void *)&current_thread_info()->flags, 0, 0);
+-			smp_mb();
+-			if (!need_resched())
+-				__mwait(power_saving_mwait_eax, 1);
++			mwait_idle_with_hints(power_saving_mwait_eax, 1);
+ 
+ 			start_critical_timings();
+ 			if (lapic_marked_unstable)
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -727,11 +727,6 @@ static int acpi_idle_enter_c1(struct cpu
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	lapic_timer_state_broadcast(pr, cx, 1);
+ 	acpi_idle_do_entry(cx);
+ 
+@@ -785,11 +780,6 @@ static int acpi_idle_enter_simple(struct
+ 	if (unlikely(!pr))
+ 		return -EINVAL;
+ 
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	/*
+ 	 * Must be done before busmaster disable as we might need to
+ 	 * access HPET !
+@@ -841,11 +831,6 @@ static int acpi_idle_enter_bm(struct cpu
+ 		}
  	}
--	preempt_enable_no_resched();
--	local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	__local_bh_enable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
- 	return 0;
- }
  
---- a/include/linux/spinlock_api_up.h
-+++ b/include/linux/spinlock_api_up.h
-@@ -24,11 +24,14 @@
-  * flags straight, to suppress compiler warnings of unused lock
-  * variables, and to add the proper checker annotations:
-  */
-+#define ___LOCK(lock) \
-+  do { __acquire(lock); (void)(lock); } while (0)
-+
- #define __LOCK(lock) \
--  do { preempt_disable(); __acquire(lock); (void)(lock); } while (0)
-+  do { preempt_disable(); ___LOCK(lock); } while (0);
+-	if (cx->entry_method == ACPI_CSTATE_FFH) {
+-		if (current_set_polling_and_test())
+-			return -EINVAL;
+-	}
+-
+ 	acpi_unlazy_tlb(smp_processor_id());
  
- #define __LOCK_BH(lock) \
--  do { local_bh_disable(); __LOCK(lock); } while (0)
-+  do { __local_bh_disable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); ___LOCK(lock); } while (0)
+ 	/* Tell the scheduler that we are going deep-idle: */
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -359,13 +359,7 @@ static int intel_idle(struct cpuidle_dev
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
  
- #define __LOCK_IRQ(lock) \
-   do { local_irq_disable(); __LOCK(lock); } while (0)
-@@ -36,12 +39,15 @@
- #define __LOCK_IRQSAVE(lock, flags) \
-   do { local_irq_save(flags); __LOCK(lock); } while (0)
+-	if (!current_set_polling_and_test()) {
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(eax, ecx);
+-	}
++	mwait_idle_with_hints(eax, ecx);
  
-+#define ___UNLOCK(lock) \
-+  do { __release(lock); (void)(lock); } while (0)
-+
- #define __UNLOCK(lock) \
--  do { preempt_enable(); __release(lock); (void)(lock); } while (0)
-+  do { preempt_enable(); ___UNLOCK(lock); } while (0)
- 
- #define __UNLOCK_BH(lock) \
--  do { preempt_enable_no_resched(); local_bh_enable(); \
--	  __release(lock); (void)(lock); } while (0)
-+  do { __local_bh_enable_ip(_THIS_IP_, SOFTIRQ_LOCK_OFFSET); \
-+       ___UNLOCK(lock); } while (0)
- 
- #define __UNLOCK_IRQ(lock) \
-   do { local_irq_enable(); __UNLOCK(lock); } while (0)
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -438,9 +438,7 @@ static int clamp_thread(void *arg)
+ 			 */
+ 			local_touch_nmi();
+ 			stop_critical_timings();
+-			__monitor((void *)&current_thread_info()->flags, 0, 0);
+-			cpu_relax(); /* allow HT sibling to run */
+-			__mwait(eax, ecx);
++			mwait_idle_with_hints(eax, ecx);
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
 
 
