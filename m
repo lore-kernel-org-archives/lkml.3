@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab3LLTcZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:32:25 -0500
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:49565 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751162Ab3LLTcY (ORCPT
+	id S1751773Ab3LLTed (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:34:33 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43499 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750989Ab3LLTec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:32:24 -0500
-Date: Thu, 12 Dec 2013 19:32:22 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Dave Hansen <dave@sr71.net>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC][PATCH 1/3] mm: slab: create helpers for slab ->freelist
- pointer
-In-Reply-To: <20131211224023.5F39AC88@viggo.jf.intel.com>
-Message-ID: <00000142e84bacf0-e6eeb332-e66b-48c6-95d8-d4a7cba0f24d-000000@email.amazonses.com>
-References: <20131211224022.AA8CF0B9@viggo.jf.intel.com> <20131211224023.5F39AC88@viggo.jf.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 12 Dec 2013 14:34:32 -0500
+Message-ID: <52AA0FC4.3090606@vmware.com>
+Date: Thu, 12 Dec 2013 20:34:28 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.12.12-54.240.9.70
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [RFC] dma-buf: Implement test module
+References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
+In-Reply-To: <1386858989-1487-1-git-send-email-treding@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Dec 2013, Dave Hansen wrote:
-
+On 12/12/2013 03:36 PM, Thierry Reding wrote:
+> This is a simple test module that can be used to allocate, export and
+> delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
+> systems that lack a real second driver.
 >
-> We have a need to move the ->freelist data around 'struct page'
-> in order to keep a cmpxchg aligned.  First step is to add an
-> accessor function which we will hook in to in the next patch.
 >
-> I'm not super-happy with how this looks.  It's a bit ugly, but it
-> does work.  I'm open to some better suggestions for how to do
-> this.
 
+Looks nice. I wonder whether this could be extended to create a 
+"streaming" dma-buf from a user space mapping. That could be used as a 
+generic way to implement streaming (user) buffer objects, rather than to 
+add explicit support for those in, for example, TTM.
 
-I think the mapping field is not used by SLUB and its ok to use since SLAB
-uses it for its memory pointer. Maybe you can use that to get the correct
-alignment? Do an and of address used for the cmpxchg with 0xffff
-.. ff0 to ensure proper aligment (the resulting address may overlap
-the mapping field).
-
+/Thomas
