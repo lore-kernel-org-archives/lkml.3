@@ -1,138 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab3LLLSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:18:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57969 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3LLLSZ (ORCPT
+	id S1751776Ab3LLLS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:18:59 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62474 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3LLLSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:18:25 -0500
-Date: Thu, 12 Dec 2013 12:18:09 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-Message-ID: <20131212111809.GF21999@twins.programming.kicks-ass.net>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
- <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 12 Dec 2013 06:18:53 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v4 2/9] staging: dwc2: update DT binding to add generic clock/phy properties
+Date: Thu, 12 Dec 2013 06:18:30 -0500
+Message-Id: <1386847117-21240-3-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386847117-21240-1-git-send-email-mporter@linaro.org>
+References: <1386847117-21240-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
-> +/*
-> + * Event API
-> + */
-> +#define __swait_event(wq, condition)					\
-> +do {									\
-> +	DEFINE_SWAITER(__wait);						\
-> +									\
-> +	for (;;) {							\
-> +		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-> +		if (condition)						\
-> +			break;						\
-> +		schedule();						\
-> +	}								\
-> +	swait_finish(&wq, &__wait);					\
-> +} while (0)
-> +
-> +#define __swait_event_interruptible(wq, condition, ret)			\
-> +do {									\
-> +	DEFINE_SWAITER(__wait);						\
-> +									\
-> +	for (;;) {							\
-> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-> +		if (condition)						\
-> +			break;						\
-> +		if (signal_pending(current)) {				\
-> +			ret = -ERESTARTSYS;				\
-> +			break;						\
-> +		}							\
-> +		schedule();						\
-> +	}								\
-> +	swait_finish(&wq, &__wait);					\
-> +} while (0)
-> +
-> +#define __swait_event_interruptible_timeout(wq, condition, ret)		\
-> +do {									\
-> +	DEFINE_SWAITER(__wait);						\
-> +									\
-> +	for (;;) {							\
-> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-> +		if (condition)						\
-> +			break;						\
-> +		if (signal_pending(current)) {				\
-> +			ret = -ERESTARTSYS;				\
-> +			break;						\
-> +		}							\
-> +		ret = schedule_timeout(ret);				\
-> +		if (!ret)						\
-> +			break;						\
-> +	}								\
-> +	swait_finish(&wq, &__wait);					\
-> +} while (0)
+dwc2/s3c-hsotg require a single clock to be specified and optionally
+a generic phy. On the s3c-hsotg driver old style USB phy support is
+present as a fallback so the generic phy properties are optional.
 
-Urgh, please have a look at ___wait_event() we just killed all the
-pointless replication for the normal waitqueues, please don't add more
-of it.
+Signed-off-by: Matt Porter <mporter@linaro.org>
+Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/staging/dwc2.txt | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-
-> +unsigned int
-> +__swake_up_locked(struct swait_queue_head *head, unsigned int state,
-> +		  unsigned int num)
-> +{
-> +	struct swaiter *curr, *next;
-> +	int woken = 0;
-> +
-> +	list_for_each_entry_safe(curr, next, &head->task_list, node) {
-> +		if (wake_up_state(curr->task, state)) {
-> +			__swait_dequeue(curr);
-> +			/*
-> +			 * The waiting task can free the waiter as
-> +			 * soon as curr->task = NULL is written,
-> +			 * without taking any locks. A memory barrier
-> +			 * is required here to prevent the following
-> +			 * store to curr->task from getting ahead of
-> +			 * the dequeue operation.
-> +			 */
-> +			smp_wmb();
-> +			curr->task = NULL;
-> +			if (++woken == num)
-> +				break;
-> +		}
-> +	}
-> +	return woken;
-> +}
-> +
-> +unsigned int
-> +__swake_up(struct swait_queue_head *head, unsigned int state, unsigned int num)
-> +{
-> +	unsigned long flags;
-> +	int woken;
-> +
-> +	if (!swaitqueue_active(head))
-> +		return 0;
-> +
-> +	raw_spin_lock_irqsave(&head->lock, flags);
-> +	woken = __swake_up_locked(head, state, num);
-> +	raw_spin_unlock_irqrestore(&head->lock, flags);
-> +	return woken;
-> +}
-> +EXPORT_SYMBOL(__swake_up);
-
-Urgh, fail. Do not put unbounded loops in raw_spin_lock.
-
-I think I posted a patch a while back to cure this.
-
+diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt b/Documentation/devicetree/bindings/staging/dwc2.txt
+index 1a1b7cf..a1753ed 100644
+--- a/Documentation/devicetree/bindings/staging/dwc2.txt
++++ b/Documentation/devicetree/bindings/staging/dwc2.txt
+@@ -5,6 +5,14 @@ Required properties:
+ - compatible : "snps,dwc2"
+ - reg : Should contain 1 register range (address and length)
+ - interrupts : Should contain 1 interrupt
++- clocks: clock provider specifier
++- clock-names: shall be "otg"
++Refer to clk/clock-bindings.txt for generic clock consumer properties
++
++Optional properties:
++- phys: phy provider specifier
++- phy-names: shall be "device"
++Refer to phy/phy-bindings.txt for generic phy consumer properties
+ 
+ Example:
+ 
+@@ -12,4 +20,8 @@ Example:
+                 compatible = "ralink,rt3050-usb, snps,dwc2";
+                 reg = <0x101c0000 40000>;
+                 interrupts = <18>;
++		clocks = <&usb_otg_ahb_clk>;
++		clock-names = "otg";
++		phys = <&usbphy>;
++		phy-names = "usb2-phy";
+         };
+-- 
+1.8.4
 
