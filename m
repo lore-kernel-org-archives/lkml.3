@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686Ab3LLLuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:50:12 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:44354 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab3LLLuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:50:09 -0500
-X-Greylist: delayed 1878 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 06:50:09 EST
-Date: Thu, 12 Dec 2013 06:50:03 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Kamil Debski <k.debski@samsung.com>,
-        Linaro Patches <patches@linaro.org>, Tomasz Figa <t.figa@samsung.com>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/9] phy: add phy_get_bus_width()/phy_set_bus_width()
- calls
-Message-ID: <20131212115003.GB20773@beef>
-References: <1386847117-21240-1-git-send-email-mporter@linaro.org>
- <1386847117-21240-2-git-send-email-mporter@linaro.org>
- <20131212112715.GK4360@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212112715.GK4360@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751519Ab3LLLzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:55:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56747 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415Ab3LLLzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 06:55:12 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: H Peter Anvin <hpa@zytor.com>, Linux-X86 <x86@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [RFC PATCH 0/3] Fix ebizzy performance regression on IvyBridge due to X86 TLB range flush
+Date: Thu, 12 Dec 2013 11:55:06 +0000
+Message-Id: <1386849309-22584-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 11:27:15AM +0000, Russell King wrote:
-> On Thu, Dec 12, 2013 at 06:18:29AM -0500, Matt Porter wrote:
-> >  /**
-> > + * struct phy_attrs - represents phy attributes
-> > + * @bus_width: Data path width implemented by PHY
-> > + */
-> > +struct phy_attrs {
-> > +	u32			bus_width;
-> 
-> Why u32?
+I found that ebizzy regressed between 3.4 and 3.10 while testing on a new
+machine. Bisection initially found at least two problems of which the
+first was commit 611ae8e3 (x86/tlb: enable tlb flush range support for
+x86). The second was related to ACPI cpufreq and so it was disabled for
+the purposes of this series.
 
-Kishon suggested it and I changed it on this rev...forgetting about the
-error path below.
+The intent of the TLB range flush patch appeared to be to preserve
+existing TLB entries which makes sense. The decision on whether to do a
+full mm flush or a number of single page flushes depends on the size of the
+relevant TLB and the CPU which is presuably taking the cost of a TLB refill.
+It is a gamble because the cost of the per-page flushes must be offset by a
+reduced TLB miss count. There are no indications what the cost of calling
+invlpg are if there are no TLB entries and it's also not taking into
+account how many CPUs it may have to execute these single TLB flushes on.
 
-> >  int phy_power_off(struct phy *phy);
-> > +static inline u32 phy_get_bus_width(struct phy *phy)
-> > +{
-> > +	return phy->attrs.bus_width;
-> ...
-> >  
-> > +static inline u32 phy_get_bus_width(struct phy *phy)
-> > +{
-> > +	return -ENOSYS;
-> 
-> Why u32, especially as you're returning a negative number here.
-> 
-> If the bus width is a small integer (I'm assuming you don't have up to
-> 2^30 bus signals) then what's wrong with it being an 'int' ?
+Ebizzy sees very little benefit as it discards newly allocated memory very
+quickly which is why it appeared to regress so badly. While I'm wary of
+optimising for such a benchmark, it's commonly tested and the defaults for
+Ivybridge may need to be re-examined.
 
-Yes, very correct...it's expected to always be a small positive integer
-value or zero (when not populated as it's optional). I agree it should
-go back to 'int' especially due to the negative value when GENERIC_PHY
-isn't enabled.
+The following small series restores ebizzy to 3.4-era performance. Is there a
+better way of doing this? Bear in mind that I'm testing on a single IvyBridge
+machine and there is no guarantee the gain is universal or even relevant.
 
--Matt
+kernel build was tested but it's uninteresting as TLB range is unimportant
+to it. A page fault benchmark was also tested but it does not hit the same paths
+impacted by commit 611ae8e3.
+
+ebizzy
+                       3.13.0-rc3                3.4.69            3.13.0-rc3
+                          vanilla               vanilla           newdefault-v1
+Mean     1      7353.60 (  0.00%)     6782.00 ( -7.77%)     7836.20 (  6.56%)
+Mean     2      8120.40 (  0.00%)     8278.80 (  1.95%)     9520.60 ( 17.24%)
+Mean     3      8087.80 (  0.00%)     8083.60 ( -0.05%)     9003.80 ( 11.33%)
+Mean     4      7919.20 (  0.00%)     7842.60 ( -0.97%)     8680.60 (  9.61%)
+Mean     5      7310.60 (  0.00%)     7740.60 (  5.88%)     8273.20 ( 13.17%)
+Mean     6      6798.00 (  0.00%)     7720.20 ( 13.57%)     8033.20 ( 18.17%)
+Mean     7      6759.40 (  0.00%)     7644.00 ( 13.09%)     7643.80 ( 13.08%)
+Mean     8      6501.80 (  0.00%)     7666.40 ( 17.91%)     6944.40 (  6.81%)
+Mean     12     6606.00 (  0.00%)     7523.20 ( 13.88%)     7035.80 (  6.51%)
+Mean     16     6655.40 (  0.00%)     7287.40 (  9.50%)     7099.20 (  6.67%)
+Mean     20     6703.80 (  0.00%)     7152.20 (  6.69%)     7116.60 (  6.16%)
+Mean     24     6705.80 (  0.00%)     7014.80 (  4.61%)     7113.60 (  6.08%)
+Mean     28     6706.60 (  0.00%)     6940.40 (  3.49%)     7115.20 (  6.09%)
+Mean     32     6727.20 (  0.00%)     6878.80 (  2.25%)     7110.80 (  5.70%)
+Stddev   1        42.71 (  0.00%)       53.16 (-24.46%)       39.80 (  6.82%)
+Stddev   2       250.26 (  0.00%)      150.57 ( 39.84%)       31.94 ( 87.24%)
+Stddev   3        71.67 (  0.00%)       69.38 (  3.19%)       84.13 (-17.39%)
+Stddev   4        30.25 (  0.00%)       87.06 (-187.82%)       31.80 ( -5.14%)
+Stddev   5        71.18 (  0.00%)       25.68 ( 63.92%)      125.24 (-75.95%)
+Stddev   6        34.22 (  0.00%)       23.35 ( 31.75%)      124.40 (-263.57%)
+Stddev   7       100.59 (  0.00%)      112.83 (-12.17%)       65.07 ( 35.31%)
+Stddev   8        20.26 (  0.00%)       43.43 (-114.32%)       48.26 (-138.16%)
+Stddev   12       19.43 (  0.00%)       19.73 ( -1.55%)       23.25 (-19.65%)
+Stddev   16       14.47 (  0.00%)       26.42 (-82.54%)       17.71 (-22.40%)
+Stddev   20       21.37 (  0.00%)       15.97 ( 25.27%)       14.87 ( 30.42%)
+Stddev   24       12.87 (  0.00%)       28.12 (-118.44%)       10.46 ( 18.75%)
+Stddev   28       13.89 (  0.00%)       17.97 (-29.36%)       12.22 ( 12.04%)
+Stddev   32       18.14 (  0.00%)       20.37 (-12.31%)       16.40 (  9.58%)
+
+          3.13.0-rc3      3.4.69  3.13.0-rc3
+             vanilla     vanilla newdefault-v1
+User          900.27      995.20      947.33
+System       1583.41     1680.76     1533.17
+Elapsed      2100.78     2100.81     2100.76
+
+This shows the ebizzy comparison between 3.13-rc3, 3.4.69-stable and this series.
+The series is not a universal win against 3.4 but the figure are generally better
+and system CPU usage is reduced.
+
+ arch/x86/kernel/cpu/intel.c |  2 +-
+ arch/x86/mm/tlb.c           | 15 +++++++++------
+ 2 files changed, 10 insertions(+), 7 deletions(-)
+
+-- 
+1.8.4
+
