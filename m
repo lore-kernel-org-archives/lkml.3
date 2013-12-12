@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab3LLIS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:18:58 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:47571 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab3LLISz (ORCPT
+	id S1751995Ab3LLIbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:31:06 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:49769 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab3LLIbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:18:55 -0500
-Date: Thu, 12 Dec 2013 00:18:45 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Anton Altaparmakov <aia21@cam.ac.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Sougata Santra <sougata@tuxera.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org Mailing List" 
-	<linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Szabolcs Szakacsits <szaka@tuxera.com>
-Subject: Re: [PATCH] hfsplus: Remove hfsplus_file_lookup
-Message-ID: <20131212081845.GB6754@infradead.org>
-References: <1386780980.9524.10.camel@ultrabook>
- <AE333CDA-DD74-42B8-92F4-551ACCAD8AFA@dubeyko.com>
- <20131211191153.GZ10323@ZenIV.linux.org.uk>
- <8B102D87-1A22-4ACA-9438-CA66133C2AB1@cam.ac.uk>
- <1386830101.3972.27.camel@slavad-ubuntu>
+	Thu, 12 Dec 2013 03:31:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386830101.3972.27.camel@slavad-ubuntu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20131210224659.GY13171@atomide.com>
+References: <1381784555-18344-1-git-send-email-marek@goldelico.com>
+	<1381784555-18344-2-git-send-email-marek@goldelico.com>
+	<20131111164917.GN15154@atomide.com>
+	<CAAfyv37LRb_Q=UZVgtKdOAz_r6_qThewAU90W7nrqHdB5fDA_g@mail.gmail.com>
+	<20131111233152.GR15154@atomide.com>
+	<CAAfyv36MaVqrmQxpqDu-ciO9GNJK3pJkFZohEvd1BOLOWWEOhw@mail.gmail.com>
+	<20131210224659.GY13171@atomide.com>
+Date: Thu, 12 Dec 2013 09:31:02 +0100
+Message-ID: <CAAfyv35wKAK2PNjcXcNan9GC0x-MmH5k4xmzj_vKKhPeztHV-A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] arm: omap2: Export devconf1 bypass and acbias.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org,
+        NeilBrown <neilb@suse.de>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 10:35:01AM +0400, Vyacheslav Dubeyko wrote:
-> I think that I can implement support of resource forks by means of xattr
-> way. Also, currently, I am implementing HFS+ compressed files support.
-> So, I can clean up old-fashioned way of resource forks support in HFS+
-> driver because of necessity to rework it anyway. The suggested patch
-> doesn't make all necessary cleanup, from my viewpoint.
-> 
-> Any comments?
+Hi Tony,
 
-The patch is required band aid to fix easily user visible and
-triggerable breakage.  As such it should go in ASAP and not be blocked
-by additional cleanups.  That doesn't mean that I wouldn't love to see
-your planned rework and additional cleanups later.
+On Tue, Dec 10, 2013 at 11:46 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Belisko Marek <marek.belisko@gmail.com> [131210 14:13]:
+>> On Tue, Nov 12, 2013 at 12:31 AM, Tony Lindgren <tony@atomide.com> wrote:
+>> >
+>> > It would be best to set it up as omap-ctrl.c driver under drivers
+>> > somewhere with few functions exported for DSS and MMC drivers.
+>>
+>> I create small dummy driver based on phy-omap-control which can be
+>> used but before sending patch (with more updates) I would like to get
+>> some feedback if my direction is correct.
+>
+> Cool thanks. Yeah what you have can easily be combined with the patches
+> Balaji has posted to make HSMMC use drivers/mfd/syscon.c via regmap
+> for the SCM register access. Maybe take a look at the work in progress
+> patches in thread:
+>
+> [PATCH v4 0/7] mmc: omap_hsmmc: pbias dt and cleanup
+>
+> And also see my comments regarding using the SCM GENERAL register area
+> as base for the syscon.c driver. That should work for your driver too,
+> right? And then you can access the SYSCON1 register that way from your
+> consumer driver ;)
+If I understand correclty I can use syscon driver (it will have in
+range also devconf1 register) ad get rid of my custom driver
+and then get regmap from syscon and update bits that I need for venc, right?
+>
+> Regards,
+>
+> Tony
 
+BR,
+
+marek
+
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
