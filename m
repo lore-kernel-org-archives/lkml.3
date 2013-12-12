@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab3LLIit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:38:49 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:52488 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab3LLIir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:38:47 -0500
-From: Olof Johansson <olof@lixom.net>
-To: davem@davemloft.net
-Cc: linux@arm.linux.org.uk, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tedheadster@gmail.com, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] net: eth: 8390: remove section warning in etherh.c
-Date: Thu, 12 Dec 2013 00:39:37 -0800
-Message-Id: <1386837577-15130-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751372Ab3LLIoZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:44:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51480 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873Ab3LLIoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 03:44:23 -0500
+Date: Thu, 12 Dec 2013 09:44:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg, oom: lock mem_cgroup_print_oom_info
+Message-ID: <20131212084420.GA2630@dhcp22.suse.cz>
+References: <1386776545-24916-1-git-send-email-mhocko@suse.cz>
+ <alpine.DEB.2.02.1312111421320.7354@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312111421320.7354@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c45f812f0280 ('8390 : Replace ei_debug with msg_enable/NETIF_MSG_*
-feature') ended up moving the printout of version[] from something that
-will be compiled out due to defines, to something that is now evaluated
-at runtime.
+On Wed 11-12-13 14:23:18, David Rientjes wrote:
+> On Wed, 11 Dec 2013, Michal Hocko wrote:
+> 
+> > mem_cgroup_print_oom_info uses a static buffer (memcg_name) to store the
+> > name of the cgroup. This is not safe as pointed out by David Rientjes
+> > because memcg oom is locked only for its hierarchy and nothing prevents
+> > another parallel hierarchy to trigger oom as well and overwrite the
+> > already in-use buffer.
+> > 
+> > This patch introduces oom_info_lock hidden inside mem_cgroup_print_oom_info
+> > which is held throughout the function. It make access to memcg_name safe
+> > and as a bonus it also prevents parallel memcg ooms to interleave their
+> > statistics which would make the printed data hard to analyze otherwise.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
 
-That means that what always used to be an access to an __initdata string
-from non-__init code started showing up as a section mismatch when it
-didn't before.
+Thanks
 
-All other 8390 versions skip __initdata on the version string, and
-starting to annotate the whole chain of callers with __init seems like
-more churn than it's worth on this driver, so remove it from etherh.c as well.
+> 
+> > ---
+> >  mm/memcontrol.c | 12 +++++++-----
+> >  1 file changed, 7 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 28c9221b74ea..c72b03bf9679 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1647,13 +1647,13 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+> >   */
+> >  void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+> >  {
+> > -	struct cgroup *task_cgrp;
+> > -	struct cgroup *mem_cgrp;
+> >  	/*
+> > -	 * Need a buffer in BSS, can't rely on allocations. The code relies
+> > -	 * on the assumption that OOM is serialized for memory controller.
+> > -	 * If this assumption is broken, revisit this code.
+> > +	 * protects memcg_name and makes sure that parallel ooms do not
+> > +	 * interleave
+> 
+> Parallel memcg oom kills can happen in disjoint memcg hierarchies, this 
+> just prevents the printing of the statistics from interleaving.  I'm not 
+> sure if that's clear from this comment.
 
-Fixes: c45f812f0280 ('8390 : Replace ei_debug with msg_enable/NETIF_MSG_* feature')
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/net/ethernet/8390/etherh.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/8390/etherh.c b/drivers/net/ethernet/8390/etherh.c
-index b15e482a..b36ee9e 100644
---- a/drivers/net/ethernet/8390/etherh.c
-+++ b/drivers/net/ethernet/8390/etherh.c
-@@ -59,7 +59,7 @@
- #define DRV_NAME	"etherh"
- #define DRV_VERSION	"1.11"
- 
--static char version[] __initdata =
-+static char version[] =
- 	"EtherH/EtherM Driver (c) 2002-2004 Russell King " DRV_VERSION "\n";
- 
- #include "lib8390.c"
+What about this instead:
+	* Protects memcg_name and makes sure that ooms from parallel
+	* hierarchies do not interleave.
+?
 -- 
-1.7.10.4
-
+Michal Hocko
+SUSE Labs
