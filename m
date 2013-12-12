@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3LLQxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:53:16 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:63998 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3LLQxJ (ORCPT
+	id S1751955Ab3LLQyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:54:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24743 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617Ab3LLQyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:53:09 -0500
-Message-ID: <52A9E9F3.4090801@gmail.com>
-Date: Thu, 12 Dec 2013 09:53:07 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] perf completion: complete 'perf kvm'
-References: <1386758056-24618-1-git-send-email-artagnon@gmail.com> <1386758056-24618-2-git-send-email-artagnon@gmail.com> <20131211195046.GA2295@infradead.org> <52A8C36A.9000501@gmail.com> <CALkWK0m=0pJQoCKx+Xc+Do_JwX=NjqwA_wjM8W=spTQm5h5DHQ@mail.gmail.com>
-In-Reply-To: <CALkWK0m=0pJQoCKx+Xc+Do_JwX=NjqwA_wjM8W=spTQm5h5DHQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Dec 2013 11:54:39 -0500
+From: vegard.nossum@oracle.com
+To: linux-kernel@vger.kernel.org
+Cc: Vegard Nossum <vegard.nossum@oracle.com>
+Subject: [PATCH 2/9] exploit: report to audit subsystem when available
+Date: Thu, 12 Dec 2013 17:52:25 +0100
+Message-Id: <1386867152-24072-2-git-send-email-vegard.nossum@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/13, 2:09 AM, Ramkumar Ramachandra wrote:
-> David Ahern wrote:
->> I don't like the command list being embedded in the completion script. It
->> will get outdated quickly.
->
-> I could introduce a
->
->    $ perf kvm --list-cmds
->
-> but that would mean a
->
->    printf("record report stat ..")
->
-> in builtin-kvm.c, because the commands aren't in any sort of array.
->
+From: Vegard Nossum <vegard.nossum@oracle.com>
 
-That would work -- perhaps a #define or string near
+Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+---
+ include/uapi/linux/audit.h |    1 +
+ security/exploit.c         |   16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
 
-    const char * const kvm_usage[] = {
-         "perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
-         NULL
-     };
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 75cef3f..65811d4 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -131,6 +131,7 @@
+ #define AUDIT_ANOM_PROMISCUOUS      1700 /* Device changed promiscuous mode */
+ #define AUDIT_ANOM_ABEND            1701 /* Process ended abnormally */
+ #define AUDIT_ANOM_LINK		    1702 /* Suspicious use of file links */
++#define AUDIT_ANOM_EXPLOIT          1703 /* Known exploit attempt */
+ #define AUDIT_INTEGRITY_DATA	    1800 /* Data integrity verification */
+ #define AUDIT_INTEGRITY_METADATA    1801 /* Metadata integrity verification */
+ #define AUDIT_INTEGRITY_STATUS	    1802 /* Integrity enable status */
+diff --git a/security/exploit.c b/security/exploit.c
+index a732613..3d8ee5b 100644
+--- a/security/exploit.c
++++ b/security/exploit.c
+@@ -1,3 +1,4 @@
++#include <linux/audit.h>
+ #include <linux/cred.h>
+ #include <linux/exploit.h>
+ #include <linux/printk.h>
+@@ -19,9 +20,24 @@ void _exploit(const char *id)
+ 	pid_t pid = task_pid_nr(task);
+ 	uid_t uid = from_kuid(&init_user_ns, current_uid());
+ 	char comm[sizeof(task->comm)];
++#ifdef CONFIG_AUDIT
++	struct audit_buffer *ab;
++#endif
+ 
+ 	get_task_comm(comm, task);
+ 
++#ifdef CONFIG_AUDIT
++	ab = audit_log_start(NULL, GFP_ATOMIC, AUDIT_ANOM_EXPLOIT);
++	if (ab) {
++		audit_log_format(ab, "exploit id=%s pid=%u uid=%u auid=%u ses=%u comm=",
++			id, pid, uid,
++			from_kuid(&init_user_ns, audit_get_loginuid(task)),
++			audit_get_sessionid(task));
++		audit_log_untrustedstring(ab, comm);
++		audit_log_end(ab);
++	}
++#endif
++
+ 	pr_warn_ratelimited("warning: possible %s exploit attempt by pid=%u uid=%u comm=%s\n",
+ 		id, pid, uid, comm);
+ }
+-- 
+1.7.10.4
 
-Building kvm_usage from the string would better - only 1 place listing 
-the commands.
-
-David
