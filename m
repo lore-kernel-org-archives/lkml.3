@@ -1,76 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab3LLUhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:37:43 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:61901 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab3LLUhh (ORCPT
+	id S1752139Ab3LLUiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:38:15 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:43997 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab3LLUhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:37:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <1386787041-6035-5-git-send-email-syin@broadcom.com>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-5-git-send-email-syin@broadcom.com>
-Date: Thu, 12 Dec 2013 21:37:36 +0100
-Message-ID: <CACRpkdY7s+eUFkg0AsaN5B9-1y_mTJ29Y-D9CkRG2GQ3JshP+w@mail.gmail.com>
-Subject: Re: [PATCH v3 4/6] pinctrl: Add pinctrl binding for Broadcom Capri SoCs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Dec 2013 15:37:17 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: gleb@redhat.com, kvm@vger.kernel.org, pmatouse@redhat.com,
+        Andy Honig <ahonig@google.com>, stable@vger.kernel.org
+Subject: [PATCH] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
+Date: Thu, 12 Dec 2013 21:36:53 +0100
+Message-Id: <1386880614-23300-3-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 7:37 PM, Sherman Yin <syin@broadcom.com> wrote:
+From: Andy Honig <ahonig@google.com>
 
-> Adds pinctrl driver devicetree binding for Broadcom Capri (BCM281xx) SoCs.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
-> v3: Use generic pin config properties instead of brcm-specific ones.  Clarified
->     pin types (standard, i2c, hdmi).
-> v2: Use hyphens instead of underscore in DT property names.
+In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
+potential to corrupt kernel memory if userspace provides an address that
+is at the end of a page.  This patches concerts those functions to use
+kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
+vapic_address specified by userspace during ioctl processing and returns
+an error to userspace if the address is not a valid GPA.
 
-Overall this is very nice!
+This is generally not guest triggerable, because the required write is
+done by firmware that runs before the guest.  Also, it only affects AMD
+processors and oldish Intel that do not have the FlexPriority feature
+(unless you disable FlexPriority, of course; then newer processors are
+also affected).
 
-> +- bias-pull-up:                        Integer. Pull up strength in Ohm:
-> +                                       1: 1.2 kOhm
-> +                                       2: 1.8 kOhm
-> +                                       3: 720 Ohm
-> +                                       4: 2.7 kOhm
-> +                                       5: 831 Ohm
-> +                                       6: 1.08 kOhm
-> +                                       7: 568 Ohm
+Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
 
-Please do not use these custom enumerators 1 thru 7.
-Instead say that the argument is given in ohms, so for
-example:
+Reported-by: Andrew Honig <ahonig@google.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/lapic.c | 27 +++++++++++++++------------
+ arch/x86/kvm/lapic.h |  4 ++--
+ arch/x86/kvm/x86.c   | 40 +---------------------------------------
+ 3 files changed, 18 insertions(+), 53 deletions(-)
 
-bias-pull-up = <12000>;
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 89b52ec7d09c..b8bec45c1610 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1692,7 +1692,6 @@ static void apic_sync_pv_eoi_from_guest(struct kvm_vcpu *vcpu,
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ {
+ 	u32 data;
+-	void *vapic;
+ 
+ 	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
+ 		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
+@@ -1700,9 +1699,8 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+ 	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+ 		return;
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
+-	kunmap_atomic(vapic);
++	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ 
+ 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+ }
+@@ -1738,7 +1736,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
+ 	u32 data, tpr;
+ 	int max_irr, max_isr;
+ 	struct kvm_lapic *apic = vcpu->arch.apic;
+-	void *vapic;
+ 
+ 	apic_sync_pv_eoi_to_guest(vcpu, apic);
+ 
+@@ -1754,18 +1751,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
+ 		max_isr = 0;
+ 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
+ 
+-	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
+-	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
+-	kunmap_atomic(vapic);
++	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
++				sizeof(u32));
+ }
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
+ {
+-	vcpu->arch.apic->vapic_addr = vapic_addr;
+-	if (vapic_addr)
++	if (vapic_addr) {
++		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
++					&vcpu->arch.apic->vapic_cache,
++					vapic_addr, sizeof(u32)))
++			return -EINVAL;
+ 		__set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
+-	else
++	} else {
+ 		__clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
++	}
++
++	vcpu->arch.apic->vapic_addr = vapic_addr;
++	return 0;
+ }
+ 
+ int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index c730ac9fe801..c8b0d0d2da5c 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,7 +34,7 @@ struct kvm_lapic {
+ 	 */
+ 	void *regs;
+ 	gpa_t vapic_addr;
+-	struct page *vapic_page;
++	struct gfn_to_hva_cache vapic_cache;
+ 	unsigned long pending_events;
+ 	unsigned int sipi_vector;
+ };
+@@ -76,7 +76,7 @@ void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
+ void kvm_apic_write_nodecode(struct kvm_vcpu *vcpu, u32 offset);
+ void kvm_apic_set_eoi_accelerated(struct kvm_vcpu *vcpu, int vector);
+ 
+-void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
++int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
+ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
+ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 21ef1ba184ae..5d004da1e35d 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3214,8 +3214,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+ 		r = -EFAULT;
+ 		if (copy_from_user(&va, argp, sizeof va))
+ 			goto out;
+-		r = 0;
+-		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
++		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
+ 		break;
+ 	}
+ 	case KVM_X86_SETUP_MCE: {
+@@ -5739,36 +5738,6 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
+ 			!kvm_event_needs_reinjection(vcpu);
+ }
+ 
+-static int vapic_enter(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	struct page *page;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return 0;
+-
+-	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	if (is_error_page(page))
+-		return -EFAULT;
+-
+-	vcpu->arch.apic->vapic_page = page;
+-	return 0;
+-}
+-
+-static void vapic_exit(struct kvm_vcpu *vcpu)
+-{
+-	struct kvm_lapic *apic = vcpu->arch.apic;
+-	int idx;
+-
+-	if (!apic || !apic->vapic_addr)
+-		return;
+-
+-	idx = srcu_read_lock(&vcpu->kvm->srcu);
+-	kvm_release_page_dirty(apic->vapic_page);
+-	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
+-	srcu_read_unlock(&vcpu->kvm->srcu, idx);
+-}
+-
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu)
+ {
+ 	int max_irr, tpr;
+@@ -6069,11 +6038,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 	struct kvm *kvm = vcpu->kvm;
+ 
+ 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
+-	r = vapic_enter(vcpu);
+-	if (r) {
+-		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+-		return r;
+-	}
+ 
+ 	r = 1;
+ 	while (r > 0) {
+@@ -6132,8 +6096,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 
+ 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+ 
+-	vapic_exit(vcpu);
+-
+ 	return r;
+ }
+ 
+-- 
+1.8.3.1
 
-Then translate this into the proper enumerator in your
-driver instead.
-
-No full example provided in the binding! This needs to
-be there for understanding.
-
-Yours,
-Linus Walleij
