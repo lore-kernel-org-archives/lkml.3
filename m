@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab3LLItJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:49:09 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:62415 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab3LLItG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:49:06 -0500
-Message-ID: <52A97878.7050503@monstr.eu>
-Date: Thu, 12 Dec 2013 09:48:56 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751543Ab3LLIt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:49:27 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:41688 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064Ab3LLItY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 03:49:24 -0500
+Message-ID: <52A97820.8020007@schinagl.nl>
+Date: Thu, 12 Dec 2013 09:47:28 +0100
+From: Olliver Schinagl <oliver@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Josh Cartwright <josh.cartwright@ni.com>
-Subject: Re: [PATCH] ARM: zynq: add gem support
-References: <1386782989-2720-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1386782989-2720-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8"
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Tejun Heo <tj@kernel.org>, Olliver Schinagl <oliver+list@schinagl.nl>,
+        grant.likely@linaro.org,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, dev@linux-sunxi.org,
+        maxime.ripard@free-electrons.com, ijc@hellion.org.uk,
+        hdegoede@redhat.com, Richard Zhu <r65037@freescale.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 2/3] ARM: sunxi: Add an ahci-platform compatible AHCI
+ driver for the Allwinner SUNXi series of SoCs
+References: <1386159055-10264-1-git-send-email-oliver@schinagl.nl> <1386159055-10264-3-git-send-email-oliver@schinagl.nl> <20131204123708.GD3158@htj.dyndns.org> <529F2677.3070208@schinagl.nl> <20131204131402.GG3158@htj.dyndns.org> <529F2B41.8090009@schinagl.nl> <20131204132312.GH3158@htj.dyndns.org> <52A87C07.1020102@schinagl.nl> <20131212064025.GM18380@S2101-09.ap.freescale.net>
+In-Reply-To: <20131212064025.GM18380@S2101-09.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 12/11/2013 06:29 PM, Soren Brinkmann wrote:
-> From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
->=20
-> The zynq includes a Cadence GEM IP core. This is compatible with the ma=
-cb driver.
-> Add it to the zynq-7000 DT.
->=20
-> Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-> Cc: Michal Simek <michal.simek@xilinx.com>
-> Cc: Josh Cartwright <josh.cartwright@ni.com>
-> [soren: rebased to current Linus tree, added zc706 + zed support, moved=
- phy-mode property to board level dtses]
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> This has a soft dependency on the net-next tree which has some patches =
-for the
-> macb driver which are required for full functionality. But adding this =
-patch to
-> any tree without net-next shouldn't do any harm, network might be
-> non-operational at the worst - I think.
->=20
-> 	S=C3=B6ren
->=20
->  arch/arm/boot/dts/zynq-7000.dtsi | 18 ++++++++++++++++++
->  arch/arm/boot/dts/zynq-zc702.dts |  5 +++++
->  arch/arm/boot/dts/zynq-zc706.dts |  5 +++++
->  arch/arm/boot/dts/zynq-zed.dts   |  5 +++++
->  4 files changed, 33 insertions(+)
+On 12-12-13 07:40, Shawn Guo wrote:
+> On Wed, Dec 11, 2013 at 03:51:51PM +0100, Olliver Schinagl wrote:
+>> Working on this and studying the existing
+>> ahci_platform/shci_platform drivers the last few days and was
+>> figuring out why ahci_platform only supports 1 clock. IMX handles
+>> this by having 3 clocks defined in the DT, the first one gets
+>> enabled by default via ahci_platform, the other 2 get enabled in
+>> IMX's probe function.
+>>
+>> Is it an idea to extend this to support all clocks that would be
+>> required (via a callback)?
+> Not really.  We did this for ahci_imx driver only because we do not want
+> to churn generic ahci_platform driver with those imx specific setup
+> code.  Note, beside the additional two clocks, we have some PHY
+> parameters to set up in IMX IOMUXC general purpose registers, and vendor
+> specific register HOST_TIMER1MS to be set up as well.
+Well many SoC's have these specific things so we need a place to provide 
+for this.
 
-Applied to zynq/dt branch.
+The the question then becomes, what do we define as being the common 
+clocks? Only the clock for the SATA IP? Or also the clock to which it 
+connects to the bus? Where is the line drawn etc.
 
-Thanks,
-Michal
+E.g. a rewritten new ahci-pltfrm.c will support all clocks defined in 
+the DT for the ahci node.
+>
+>> Or do we prefer having the clocks
+>> separated for other technical reasons? Or do we want to handle the
+>> clocks via the ahci_platform framework and extend hpriv->clk to an
+>> array of clocks?
+> The direction of the generic ahci platform driver will be having it be
+> a library providing helper functions, as discussed as below.
+>
+> https://lkml.org/lkml/2013/12/6/153
+I know, I started this entire thread :p hence my question :)
 
+Oliver
+>
+> We can ask the helper function to handle the common clocks and leave the
+> platform specific ones to platform driver.
+>
+> Shawn
+>
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKpeHgACgkQykllyylKDCHYsQCfeFjLqxanXRX8VacNCpnBZtrW
-bT8AoIvyP4TDX+hqNOjKVq+nrv1MbQmp
-=zdAj
------END PGP SIGNATURE-----
-
---hbahMkv0FhjLHKtsfaD5tmGvVEijacQL8--
