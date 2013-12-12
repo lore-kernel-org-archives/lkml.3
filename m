@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab3LLU2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:28:23 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:40087 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751841Ab3LLU2W convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:28:22 -0500
-Subject: Re: [PATCH 2/3] OF: Add a allnodes pointer back to the tree
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20131212112047.87B5BC40637@trevor.secretlab.ca>
-Date: Thu, 12 Dec 2013 22:28:14 +0200
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1F297430-16C1-406A-B93A-C39776FE16F6@antoniou-consulting.com>
-References: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com > <1386684833-24112-3-git-send-email-panto@antoniou-consulting.com> <20131212112047.87B5BC40637@trevor.secretlab.ca>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1085)
+	id S1751996Ab3LLU3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:29:25 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:64367 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3LLU3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 15:29:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20131212070045.GO18380@S2101-09.ap.freescale.net>
+References: <20131211183237.GI4699@google.com> <20131212070045.GO18380@S2101-09.ap.freescale.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 12 Dec 2013 13:29:00 -0700
+Message-ID: <CAErSpo5O1nSkKmWfHGGZiuVdvRxFjNNDS-8BWKFhnCgwVSdr8A@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
+ host maintainers
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        linux-sh@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Richard Zhu <r65037@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Thu, Dec 12, 2013 at 12:00 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> Hi Bjorn,
+>
+> On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
+>> +PCI DRIVER FOR IMX6
+>> +M:   Shawn Guo <shawn.guo@linaro.org>
+>
+> Thanks for the nomination.  But I think a better person for this
+> position would be Richard Zhu <r65037@freescale.com> (copied).  He knows
+> the driver and controller much better than myself, and most importantly
+> he is the driver owner for Freescale kernel and he has the contact to
+> Freescale PCIe hardware people.
 
-On Dec 12, 2013, at 1:20 PM, Grant Likely wrote:
-
-> On Tue, 10 Dec 2013 16:13:52 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
->> As it stands right now there's no way for a node to point back
->> to allnodes that the top level tree tracker for now.
->> 
->> This is problematic when using unflatten_dt_node more than once
->> because is leads to the nodes to be linked incorrectly.
->> 
->> Keep track of the root allnodes on each device_node and modify
->> unflaten_dt_node to match.
-> 
-> After our conversation on IRC and the decision to split unflattening the
-> tree from attaching it to be visible to the entire kernel, I'm going to
-> hold off on this patch. I suspect it will change in the process.
-> 
-
-OK,
-
-I'm taking a look right now; should have something done on the weekend.
-
-The whole idea is splitting unflattening from attaching to the live tree.
-
-Should be straight forward enough.
- 
-> .
-> 
-
-Regards
-
--- Pantelis
-
+Richard, are you OK with being listed here?  Shawn, do you want to be
+listed here in addition, if only to make sure you're copied on changes
+to pci-imx6.c?
