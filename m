@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab3LLV0w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:26:52 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:49256 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab3LLV0t (ORCPT
+	id S1751914Ab3LLVag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:30:36 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:56966 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab3LLVab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:26:49 -0500
+	Thu, 12 Dec 2013 16:30:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <1386659456-16887-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386659456-16887-2-git-send-email-ldewangan@nvidia.com>
 References: <1386659456-16887-1-git-send-email-ldewangan@nvidia.com>
-Date: Thu, 12 Dec 2013 22:26:48 +0100
-Message-ID: <CACRpkdbCkt3gm9YLW2B0=Ox4iw0Jdac1NrX0QcwwTL6uFCENZw@mail.gmail.com>
-Subject: Re: [PATCH V3 1/2] pinctrl: tegra: Add devicetree binding document
- for Tegra124
+	<1386659456-16887-2-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 12 Dec 2013 22:30:30 +0100
+Message-ID: <CACRpkdbv8r68r5Lz19sqVq8g7Yk__DbjLgW9c6P6HGtWNj6M=Q@mail.gmail.com>
+Subject: Re: [PATCH V3 2/2] pinctrl: tegra: add pinmux controller driver for Tegra124
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Laxman Dewangan <ldewangan@nvidia.com>
 Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
@@ -26,7 +26,8 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ashwini Ghuge <aghuge@nvidia.com>, Thierry Reding <treding@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,19 +35,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Dec 10, 2013 at 8:10 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 
-> This device tree binding document describes the Tegra124 pincontrol
-> DT bindings. This document lists all valid properties, names, mux
-> options of Tegra124 pins.
+> From: Ashwini Ghuge <aghuge@nvidia.com>
 >
+> This adds a driver for the Tegra124 pinmux, and required
+> parameterization data for Tegra124.
+>
+> The driver uses the common Tegra pincontrol driver utility
+> functions to implement the majority of the driver.
+>
+> This driver is not compatible with the earlier NVIDIA's SoCs,
+> hence add new compatibile as "nvidia,tegra124-pinmux".
+>
+> Originally written by Ashwini Gguhe.
+> Thierry:
+>         - Cleanups in patches.
+> ldewangan:
+>         - Fix some entries for groups.
+>         - Fix MUX enums and group sequence.
+>
+> Signed-off-by: Ashwini Ghuge <aghuge@nvidia.com>
 > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 > Acked-by: Stephen Warren <swarren@nvidia.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> CC: Thierry Reding <treding@nvidia.com>
 > ---
 > Changes from V1:
-> - Referred the dt-binding header file on describing the nodes.
->
+> - Lots of cleanups and fixes for string separator by Thierry.
+> - Fixes for some of group entries.
 > Changes from V2:
-> - Rewording reg properties.
-> - drop drv_type as it is not applicable.
+> - remove extra space.
+> - Added Ack and Tested by: Stephen and cc to Thierry.
 
 Applied this v3 version, thanks!
 
