@@ -1,621 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab3LLXvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:51:32 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:44467 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab3LLXsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:48:39 -0500
-X-IronPort-AV: E=Sophos;i="4.95,475,1384300800"; 
-   d="scan'208";a="83931365"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v2 2/9] xen-netback: Change TX path from grant copy to mapping
-Date: Thu, 12 Dec 2013 23:48:10 +0000
-Message-ID: <1386892097-15502-3-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+	id S1752569Ab3LLXwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:52:14 -0500
+Received: from smtprelay0012.hostedemail.com ([216.40.44.12]:41018 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752010Ab3LLXrj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 18:47:39 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:1:41:69:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2198:2199:2393:2559:2562:2639:3138:3139:3140:3141:3142:3865:3867:3868:3871:3872:4321:4605:5007:6119:6261:7903:10004:10026:10394:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12683:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: note51_84c0f3438d16
+X-Filterd-Recvd-Size: 14251
+From: Joe Perches <joe@perches.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -next 1/4] dlm: Use seq_is_buf_full - remove seq_printf returns
+Date: Thu, 12 Dec 2013 15:47:28 -0800
+Message-Id: <860a2dec4c3e5e590d6a30f655cc78953fb12510.1386891757.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1386819513.git.joe@perches.com>
+References: <cover.1386819513.git.joe@perches.com>
+In-Reply-To: <cover.1386891757.git.joe@perches.com>
+References: <cover.1386891757.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the grant copy on the TX patch to grant mapping
+The seq_printf return should be ignored and the
+seq_is_buf_full function should be tested instead.
 
-v2:
-- delete branch for handling fragmented packets fit PKT_PROT_LINE sized first
-  request
-- mark the effect of using ballooned pages in a comment
-- place setting of skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY right
-  before netif_receive_skb, and mark the importance of it
-- grab dealloc_lock before __napi_complete to avoid contention with the
-  callback's napi_schedule
-- handle fragmented packets where first request < PKT_PROT_LINE
-- fix up error path when checksum_setup failed
-- check before teardown for pending grants, and start complain if they are
-  there after 10 second
+Convert functions returning int to void where
+seq_printf is used.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/xen-netback/interface.c |   57 +++++++-
- drivers/net/xen-netback/netback.c   |  257 ++++++++++++++---------------------
- 2 files changed, 156 insertions(+), 158 deletions(-)
+ fs/dlm/debug_fs.c | 248 +++++++++++++++++++++++++-----------------------------
+ 1 file changed, 116 insertions(+), 132 deletions(-)
 
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 1c27e9e..42946de 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -122,7 +122,9 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	BUG_ON(skb->dev != dev);
- 
- 	/* Drop the packet if vif is not ready */
--	if (vif->task == NULL || !xenvif_schedulable(vif))
-+	if (vif->task == NULL ||
-+		vif->dealloc_task == NULL ||
-+		!xenvif_schedulable(vif))
- 		goto drop;
- 
- 	/* At best we'll need one slot for the header and one for each
-@@ -335,8 +337,25 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 	vif->pending_prod = MAX_PENDING_REQS;
- 	for (i = 0; i < MAX_PENDING_REQS; i++)
- 		vif->pending_ring[i] = i;
--	for (i = 0; i < MAX_PENDING_REQS; i++)
--		vif->mmap_pages[i] = NULL;
-+	/* If ballooning is disabled, this will consume real memory, so you
-+	 * better enable it. The long term solution would be to use just a
-+	 * bunch of valid page descriptors, without dependency on ballooning
-+	 */
-+	err = alloc_xenballooned_pages(MAX_PENDING_REQS,
-+		vif->mmap_pages,
-+		false);
-+	if (err) {
-+		netdev_err(dev, "Could not reserve mmap_pages\n");
-+		return NULL;
-+	}
-+	for (i = 0; i < MAX_PENDING_REQS; i++) {
-+		vif->pending_tx_info[i].callback_struct = (struct ubuf_info)
-+			{ .callback = xenvif_zerocopy_callback,
-+			  .ctx = NULL,
-+			  .desc = i };
-+		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
-+	}
-+	init_timer(&vif->dealloc_delay);
- 
- 	/*
- 	 * Initialise a dummy MAC address. We choose the numerically
-@@ -380,6 +399,7 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 		goto err;
- 
- 	init_waitqueue_head(&vif->wq);
-+	init_waitqueue_head(&vif->dealloc_wq);
- 
- 	if (tx_evtchn == rx_evtchn) {
- 		/* feature-split-event-channels == 0 */
-@@ -421,6 +441,14 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 		goto err_rx_unbind;
+diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
+index b969dee..eb26595 100644
+--- a/fs/dlm/debug_fs.c
++++ b/fs/dlm/debug_fs.c
+@@ -48,8 +48,8 @@ static char *print_lockmode(int mode)
  	}
- 
-+	vif->dealloc_task = kthread_create(xenvif_dealloc_kthread,
-+				   (void *)vif, "%s-dealloc", vif->dev->name);
-+	if (IS_ERR(vif->dealloc_task)) {
-+		pr_warn("Could not allocate kthread for %s\n", vif->dev->name);
-+		err = PTR_ERR(vif->dealloc_task);
-+		goto err_rx_unbind;
-+	}
-+
- 	vif->task = task;
- 
- 	rtnl_lock();
-@@ -433,6 +461,7 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 	rtnl_unlock();
- 
- 	wake_up_process(vif->task);
-+	wake_up_process(vif->dealloc_task);
- 
- 	return 0;
- 
-@@ -470,6 +499,12 @@ void xenvif_disconnect(struct xenvif *vif)
- 		vif->task = NULL;
- 	}
- 
-+	if (vif->dealloc_task) {
-+		del_timer_sync(&vif->dealloc_delay);
-+		kthread_stop(vif->dealloc_task);
-+		vif->dealloc_task = NULL;
-+	}
-+
- 	if (vif->tx_irq) {
- 		if (vif->tx_irq == vif->rx_irq)
- 			unbind_from_irqhandler(vif->tx_irq, vif);
-@@ -485,6 +520,22 @@ void xenvif_disconnect(struct xenvif *vif)
- 
- void xenvif_free(struct xenvif *vif)
- {
-+	int i, unmap_timeout = 0;
-+
-+	for (i = 0; i < MAX_PENDING_REQS; ++i) {
-+		if (vif->grant_tx_handle[i] != NETBACK_INVALID_HANDLE) {
-+			i = 0;
-+			unmap_timeout++;
-+			msleep(1000);
-+			if (unmap_timeout > 9 &&
-+				net_ratelimit())
-+				netdev_err(vif->dev,
-+					"Page still granted! Index: %x\n", i);
-+		}
-+	}
-+
-+	free_xenballooned_pages(MAX_PENDING_REQS, vif->mmap_pages);
-+
- 	netif_napi_del(&vif->napi);
- 
- 	unregister_netdev(vif->dev);
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 3ddc474..20352be 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -645,9 +645,12 @@ static void xenvif_tx_err(struct xenvif *vif,
- 			  struct xen_netif_tx_request *txp, RING_IDX end)
- {
- 	RING_IDX cons = vif->tx.req_cons;
-+	unsigned long flags;
- 
- 	do {
-+		spin_lock_irqsave(&vif->response_lock, flags);
- 		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
-+		spin_unlock_irqrestore(&vif->response_lock, flags);
- 		if (cons == end)
- 			break;
- 		txp = RING_GET_REQUEST(&vif->tx, cons++);
-@@ -786,10 +789,10 @@ static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
- 
  }
  
--static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
-+static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
- 					       struct sk_buff *skb,
- 					       struct xen_netif_tx_request *txp,
--					       struct gnttab_copy *gop)
-+					       struct gnttab_map_grant_ref *gop)
+-static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+-			      struct dlm_rsb *res)
++static void print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
++			       struct dlm_rsb *res)
  {
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	skb_frag_t *frags = shinfo->frags;
-@@ -810,83 +813,12 @@ static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
- 	/* Skip first skb fragment if it is on same page as header fragment. */
- 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+ 	seq_printf(s, "%08x %s", lkb->lkb_id, print_lockmode(lkb->lkb_grmode));
  
--	/* Coalesce tx requests, at this point the packet passed in
--	 * should be <= 64K. Any packets larger than 64K have been
--	 * handled in xenvif_count_requests().
--	 */
--	for (shinfo->nr_frags = slot = start; slot < nr_slots;
--	     shinfo->nr_frags++) {
--		struct pending_tx_info *pending_tx_info =
--			vif->pending_tx_info;
--
--		page = alloc_page(GFP_ATOMIC|__GFP_COLD);
--		if (!page)
--			goto err;
--
--		dst_offset = 0;
--		first = NULL;
--		while (dst_offset < PAGE_SIZE && slot < nr_slots) {
--			gop->flags = GNTCOPY_source_gref;
--
--			gop->source.u.ref = txp->gref;
--			gop->source.domid = vif->domid;
--			gop->source.offset = txp->offset;
--
--			gop->dest.domid = DOMID_SELF;
--
--			gop->dest.offset = dst_offset;
--			gop->dest.u.gmfn = virt_to_mfn(page_address(page));
--
--			if (dst_offset + txp->size > PAGE_SIZE) {
--				/* This page can only merge a portion
--				 * of tx request. Do not increment any
--				 * pointer / counter here. The txp
--				 * will be dealt with in future
--				 * rounds, eventually hitting the
--				 * `else` branch.
--				 */
--				gop->len = PAGE_SIZE - dst_offset;
--				txp->offset += gop->len;
--				txp->size -= gop->len;
--				dst_offset += gop->len; /* quit loop */
--			} else {
--				/* This tx request can be merged in the page */
--				gop->len = txp->size;
--				dst_offset += gop->len;
--
-+	for (shinfo->nr_frags = start; shinfo->nr_frags < nr_slots;
-+	     shinfo->nr_frags++, txp++, gop++) {
- 				index = pending_index(vif->pending_cons++);
--
- 				pending_idx = vif->pending_ring[index];
--
--				memcpy(&pending_tx_info[pending_idx].req, txp,
--				       sizeof(*txp));
--
--				/* Poison these fields, corresponding
--				 * fields for head tx req will be set
--				 * to correct values after the loop.
--				 */
--				vif->mmap_pages[pending_idx] = (void *)(~0UL);
--				pending_tx_info[pending_idx].head =
--					INVALID_PENDING_RING_IDX;
--
--				if (!first) {
--					first = &pending_tx_info[pending_idx];
--					start_idx = index;
--					head_idx = pending_idx;
--				}
--
--				txp++;
--				slot++;
--			}
--
--			gop++;
--		}
--
--		first->req.offset = 0;
--		first->req.size = dst_offset;
--		first->head = start_idx;
--		vif->mmap_pages[head_idx] = page;
--		frag_set_pending_idx(&frags[shinfo->nr_frags], head_idx);
-+		xenvif_tx_create_gop(vif, pending_idx, txp, gop);
-+		frag_set_pending_idx(&frags[shinfo->nr_frags], pending_idx);
- 	}
+@@ -68,21 +68,17 @@ static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 	if (lkb->lkb_wait_type)
+ 		seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
  
- 	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
-@@ -908,9 +840,9 @@ err:
- 
- static int xenvif_tx_check_gop(struct xenvif *vif,
- 			       struct sk_buff *skb,
--			       struct gnttab_copy **gopp)
-+			       struct gnttab_map_grant_ref **gopp)
- {
--	struct gnttab_copy *gop = *gopp;
-+	struct gnttab_map_grant_ref *gop = *gopp;
- 	u16 pending_idx = *((u16 *)skb->data);
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	struct pending_tx_info *tx_info;
-@@ -922,6 +854,16 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 	err = gop->status;
- 	if (unlikely(err))
- 		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
-+	else {
-+		if (vif->grant_tx_handle[pending_idx] !=
-+			NETBACK_INVALID_HANDLE) {
-+			netdev_err(vif->dev,
-+				"Stale mapped handle! pending_idx %x handle %x\n",
-+				pending_idx, vif->grant_tx_handle[pending_idx]);
-+			xenvif_fatal_tx_err(vif);
-+		}
-+		vif->grant_tx_handle[pending_idx] = gop->handle;
-+	}
- 
- 	/* Skip first skb fragment if it is on same page as header fragment. */
- 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
-@@ -935,18 +877,24 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 		head = tx_info->head;
- 
- 		/* Check error status: if okay then remember grant handle. */
--		do {
- 			newerr = (++gop)->status;
--			if (newerr)
--				break;
--			peek = vif->pending_ring[pending_index(++head)];
--		} while (!pending_tx_is_head(vif, peek));
- 
- 		if (likely(!newerr)) {
-+			if (vif->grant_tx_handle[pending_idx] !=
-+				NETBACK_INVALID_HANDLE) {
-+				netdev_err(vif->dev,
-+					"Stale mapped handle! pending_idx %x handle %x\n",
-+					pending_idx,
-+					vif->grant_tx_handle[pending_idx]);
-+				xenvif_fatal_tx_err(vif);
-+			}
-+			vif->grant_tx_handle[pending_idx] = gop->handle;
- 			/* Had a previous error? Invalidate this fragment. */
--			if (unlikely(err))
-+			if (unlikely(err)) {
-+				xenvif_idx_unmap(vif, pending_idx);
- 				xenvif_idx_release(vif, pending_idx,
- 						   XEN_NETIF_RSP_OKAY);
-+			}
- 			continue;
- 		}
- 
-@@ -959,9 +907,11 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 
- 		/* First error: invalidate header and preceding fragments. */
- 		pending_idx = *((u16 *)skb->data);
-+		xenvif_idx_unmap(vif, pending_idx);
- 		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
- 		for (j = start; j < i; j++) {
- 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
-+			xenvif_idx_unmap(vif, pending_idx);
- 			xenvif_idx_release(vif, pending_idx,
- 					   XEN_NETIF_RSP_OKAY);
- 		}
-@@ -974,7 +924,8 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 	return err;
+-	return seq_printf(s, "\n");
++	seq_puts(s, "\n");
  }
  
--static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
-+static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb,
-+		u16 prev_pending_idx)
+-static int print_format1(struct dlm_rsb *res, struct seq_file *s)
++static void print_format1(struct dlm_rsb *res, struct seq_file *s)
  {
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	int nr_frags = shinfo->nr_frags;
-@@ -988,6 +939,17 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
+ 	struct dlm_lkb *lkb;
+ 	int i, lvblen = res->res_ls->ls_lvblen, recover_list, root_list;
+-	int rv;
  
- 		pending_idx = frag_get_pending_idx(frag);
+ 	lock_rsb(res);
  
-+		/* If this is not the first frag, chain it to the previous*/
-+		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
-+			skb_shinfo(skb)->destructor_arg =
-+				&vif->pending_tx_info[pending_idx].callback_struct;
-+		else if (likely(pending_idx != prev_pending_idx))
-+			vif->pending_tx_info[prev_pending_idx].callback_struct.ctx =
-+				&(vif->pending_tx_info[pending_idx].callback_struct);
-+
-+		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
-+		prev_pending_idx = pending_idx;
-+
- 		txp = &vif->pending_tx_info[pending_idx].req;
- 		page = virt_to_page(idx_to_kaddr(vif, pending_idx));
- 		__skb_fill_page_desc(skb, i, page, txp->offset, txp->size);
-@@ -995,10 +957,15 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
- 		skb->data_len += txp->size;
- 		skb->truesize += txp->size;
+-	rv = seq_printf(s, "\nResource %p Name (len=%d) \"",
+-			res, res->res_length);
+-	if (rv)
+-		goto out;
++	seq_printf(s, "\nResource %p Name (len=%d) \"", res, res->res_length);
  
--		/* Take an extra reference to offset xenvif_idx_release */
-+		/* Take an extra reference to offset network stack's put_page */
- 		get_page(vif->mmap_pages[pending_idx]);
--		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
+ 	for (i = 0; i < res->res_length; i++) {
+ 		if (isprint(res->res_name[i]))
+@@ -92,17 +88,16 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
  	}
-+	/* FIXME: __skb_fill_page_desc set this to true because page->pfmemalloc
-+	 * overlaps with "index", and "mapping" is not set. I think mapping
-+	 * should be set. If delivered to local stack, it would drop this
-+	 * skb in sk_filter unless the socket has the right to use it.
-+	 */
-+	skb->pfmemalloc	= false;
+ 
+ 	if (res->res_nodeid > 0)
+-		rv = seq_printf(s, "\"  \nLocal Copy, Master is node %d\n",
+-				res->res_nodeid);
++		seq_printf(s, "\" \nLocal Copy, Master is node %d\n",
++			   res->res_nodeid);
+ 	else if (res->res_nodeid == 0)
+-		rv = seq_printf(s, "\"  \nMaster Copy\n");
++		seq_puts(s, "\" \nMaster Copy\n");
+ 	else if (res->res_nodeid == -1)
+-		rv = seq_printf(s, "\"  \nLooking up master (lkid %x)\n",
+-			   	res->res_first_lkid);
++		seq_printf(s, "\" \nLooking up master (lkid %x)\n",
++			   res->res_first_lkid);
+ 	else
+-		rv = seq_printf(s, "\"  \nInvalid master %d\n",
+-				res->res_nodeid);
+-	if (rv)
++		seq_printf(s, "\" \nInvalid master %d\n", res->res_nodeid);
++	if (seq_is_buf_full(s))
+ 		goto out;
+ 
+ 	/* Print the LVB: */
+@@ -116,8 +111,8 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 		}
+ 		if (rsb_flag(res, RSB_VALNOTVALID))
+ 			seq_printf(s, " (INVALID)");
+-		rv = seq_printf(s, "\n");
+-		if (rv)
++		seq_puts(s, "\n");
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+@@ -125,32 +120,30 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 	recover_list = !list_empty(&res->res_recover_list);
+ 
+ 	if (root_list || recover_list) {
+-		rv = seq_printf(s, "Recovery: root %d recover %d flags %lx "
+-				"count %d\n", root_list, recover_list,
+-			   	res->res_flags, res->res_recover_locks_count);
+-		if (rv)
+-			goto out;
++		seq_printf(s, "Recovery: root %d recover %d flags %lx count %d\n",
++			   root_list, recover_list,
++			   res->res_flags, res->res_recover_locks_count);
+ 	}
+ 
+ 	/* Print the locks attached to this resource */
+ 	seq_printf(s, "Granted Queue\n");
+ 	list_for_each_entry(lkb, &res->res_grantqueue, lkb_statequeue) {
+-		rv = print_format1_lock(s, lkb, res);
+-		if (rv)
++		print_format1_lock(s, lkb, res);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+ 	seq_printf(s, "Conversion Queue\n");
+ 	list_for_each_entry(lkb, &res->res_convertqueue, lkb_statequeue) {
+-		rv = print_format1_lock(s, lkb, res);
+-		if (rv)
++		print_format1_lock(s, lkb, res);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+ 	seq_printf(s, "Waiting Queue\n");
+ 	list_for_each_entry(lkb, &res->res_waitqueue, lkb_statequeue) {
+-		rv = print_format1_lock(s, lkb, res);
+-		if (rv)
++		print_format1_lock(s, lkb, res);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+@@ -159,23 +152,23 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 
+ 	seq_printf(s, "Lookup Queue\n");
+ 	list_for_each_entry(lkb, &res->res_lookup, lkb_rsb_lookup) {
+-		rv = seq_printf(s, "%08x %s", lkb->lkb_id,
+-				print_lockmode(lkb->lkb_rqmode));
++		seq_printf(s, "%08x %s",
++			   lkb->lkb_id, print_lockmode(lkb->lkb_rqmode));
+ 		if (lkb->lkb_wait_type)
+ 			seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+-		rv = seq_printf(s, "\n");
++		seq_puts(s, "\n");
++		if (seq_is_buf_full(s))
++			goto out;
+ 	}
+  out:
+ 	unlock_rsb(res);
+-	return rv;
  }
  
- static int xenvif_get_extras(struct xenvif *vif,
-@@ -1367,7 +1334,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
- 
- static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+-static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+-			      struct dlm_rsb *r)
++static void print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
++			       struct dlm_rsb *r)
  {
--	struct gnttab_copy *gop = vif->tx_copy_ops, *request_gop;
-+	struct gnttab_map_grant_ref *gop = vif->tx_map_ops, *request_gop;
- 	struct sk_buff *skb;
- 	int ret;
+ 	u64 xid = 0;
+ 	u64 us;
+-	int rv;
  
-@@ -1475,30 +1442,10 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- 			}
- 		}
+ 	if (lkb->lkb_flags & DLM_IFL_USER) {
+ 		if (lkb->lkb_ua)
+@@ -188,103 +181,97 @@ static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 	/* id nodeid remid pid xid exflags flags sts grmode rqmode time_us
+ 	   r_nodeid r_len r_name */
  
--		/* XXX could copy straight to head */
--		page = xenvif_alloc_page(vif, pending_idx);
--		if (!page) {
--			kfree_skb(skb);
--			xenvif_tx_err(vif, &txreq, idx);
--			break;
--		}
--
--		gop->source.u.ref = txreq.gref;
--		gop->source.domid = vif->domid;
--		gop->source.offset = txreq.offset;
--
--		gop->dest.u.gmfn = virt_to_mfn(page_address(page));
--		gop->dest.domid = DOMID_SELF;
--		gop->dest.offset = txreq.offset;
--
--		gop->len = txreq.size;
--		gop->flags = GNTCOPY_source_gref;
-+		xenvif_tx_create_gop(vif, pending_idx, &txreq, gop);
- 
- 		gop++;
- 
--		memcpy(&vif->pending_tx_info[pending_idx].req,
--		       &txreq, sizeof(txreq));
--		vif->pending_tx_info[pending_idx].head = index;
- 		*((u16 *)skb->data) = pending_idx;
- 
- 		__skb_put(skb, data_len);
-@@ -1527,17 +1474,17 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- 
- 		vif->tx.req_cons = idx;
- 
--		if ((gop-vif->tx_copy_ops) >= ARRAY_SIZE(vif->tx_copy_ops))
-+		if ((gop-vif->tx_map_ops) >= ARRAY_SIZE(vif->tx_map_ops))
- 			break;
- 	}
- 
--	return gop - vif->tx_copy_ops;
-+	return gop - vif->tx_map_ops;
+-	rv = seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
+-			lkb->lkb_id,
+-			lkb->lkb_nodeid,
+-			lkb->lkb_remid,
+-			lkb->lkb_ownpid,
+-			(unsigned long long)xid,
+-			lkb->lkb_exflags,
+-			lkb->lkb_flags,
+-			lkb->lkb_status,
+-			lkb->lkb_grmode,
+-			lkb->lkb_rqmode,
+-			(unsigned long long)us,
+-			r->res_nodeid,
+-			r->res_length,
+-			r->res_name);
+-	return rv;
++	seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
++		   lkb->lkb_id,
++		   lkb->lkb_nodeid,
++		   lkb->lkb_remid,
++		   lkb->lkb_ownpid,
++		   (unsigned long long)xid,
++		   lkb->lkb_exflags,
++		   lkb->lkb_flags,
++		   lkb->lkb_status,
++		   lkb->lkb_grmode,
++		   lkb->lkb_rqmode,
++		   (unsigned long long)us,
++		   r->res_nodeid,
++		   r->res_length,
++		   r->res_name);
  }
  
- 
- static int xenvif_tx_submit(struct xenvif *vif)
+-static int print_format2(struct dlm_rsb *r, struct seq_file *s)
++static void print_format2(struct dlm_rsb *r, struct seq_file *s)
  {
--	struct gnttab_copy *gop = vif->tx_copy_ops;
-+	struct gnttab_map_grant_ref *gop = vif->tx_map_ops;
- 	struct sk_buff *skb;
- 	int work_done = 0;
+ 	struct dlm_lkb *lkb;
+-	int rv = 0;
  
-@@ -1561,12 +1508,17 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		memcpy(skb->data,
- 		       (void *)(idx_to_kaddr(vif, pending_idx)|txp->offset),
- 		       data_len);
-+		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
- 		if (data_len < txp->size) {
- 			/* Append the packet payload as a fragment. */
- 			txp->offset += data_len;
- 			txp->size -= data_len;
-+			skb_shinfo(skb)->destructor_arg =
-+				&vif->pending_tx_info[pending_idx].callback_struct;
- 		} else {
- 			/* Schedule a response immediately. */
-+			skb_shinfo(skb)->destructor_arg = NULL;
-+			xenvif_idx_unmap(vif, pending_idx);
- 			xenvif_idx_release(vif, pending_idx,
- 					   XEN_NETIF_RSP_OKAY);
- 		}
-@@ -1576,7 +1528,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		else if (txp->flags & XEN_NETTXF_data_validated)
- 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 	lock_rsb(r);
  
--		xenvif_fill_frags(vif, skb);
-+		xenvif_fill_frags(vif,
-+			skb,
-+			skb_shinfo(skb)->destructor_arg ?
-+					pending_idx :
-+					INVALID_PENDING_IDX);
- 
- 		if (skb_is_nonlinear(skb) && skb_headlen(skb) < PKT_PROT_LEN) {
- 			int target = min_t(int, skb->len, PKT_PROT_LEN);
-@@ -1590,6 +1546,8 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		if (checksum_setup(vif, skb)) {
- 			netdev_dbg(vif->dev,
- 				   "Can't setup checksum in net_tx_action\n");
-+			if (skb_shinfo(skb)->destructor_arg)
-+				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
- 			kfree_skb(skb);
- 			continue;
- 		}
-@@ -1601,6 +1559,14 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 
- 		work_done++;
- 
-+		/* Set this flag right before netif_receive_skb, otherwise
-+		 * someone might think this packet already left netback, and
-+		 * do a skb_copy_ubufs while we are still in control of the
-+		 * skb. E.g. the __pskb_pull_tail earlier can do such thing.
-+		 */
-+		if (skb_shinfo(skb)->destructor_arg)
-+			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-+
- 		netif_receive_skb(skb);
+ 	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+-		rv = print_format2_lock(s, lkb, r);
+-		if (rv)
++		print_format2_lock(s, lkb, r);
++		if (seq_is_buf_full(s))
+ 			goto out;
  	}
  
-@@ -1711,7 +1677,7 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
- int xenvif_tx_action(struct xenvif *vif, int budget)
- {
- 	unsigned nr_gops;
--	int work_done;
-+	int work_done, ret;
+ 	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+-		rv = print_format2_lock(s, lkb, r);
+-		if (rv)
++		print_format2_lock(s, lkb, r);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
  
- 	if (unlikely(!tx_work_todo(vif)))
- 		return 0;
-@@ -1721,7 +1687,13 @@ int xenvif_tx_action(struct xenvif *vif, int budget)
- 	if (nr_gops == 0)
- 		return 0;
- 
--	gnttab_batch_copy(vif->tx_copy_ops, nr_gops);
-+	if (nr_gops) {
-+		ret = gnttab_map_refs(vif->tx_map_ops,
-+			NULL,
-+			vif->pages_to_map,
-+			nr_gops);
-+		BUG_ON(ret);
-+	}
- 
- 	work_done = xenvif_tx_submit(vif);
- 
-@@ -1732,61 +1704,37 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
- 			       u8 status)
- {
- 	struct pending_tx_info *pending_tx_info;
--	pending_ring_idx_t head;
-+	pending_ring_idx_t index;
- 	u16 peek; /* peek into next tx request */
-+	unsigned long flags;
- 
--	BUG_ON(vif->mmap_pages[pending_idx] == (void *)(~0UL));
--
--	/* Already complete? */
--	if (vif->mmap_pages[pending_idx] == NULL)
--		return;
--
--	pending_tx_info = &vif->pending_tx_info[pending_idx];
--
--	head = pending_tx_info->head;
--
--	BUG_ON(!pending_tx_is_head(vif, head));
--	BUG_ON(vif->pending_ring[pending_index(head)] != pending_idx);
--
--	do {
--		pending_ring_idx_t index;
--		pending_ring_idx_t idx = pending_index(head);
--		u16 info_idx = vif->pending_ring[idx];
--
--		pending_tx_info = &vif->pending_tx_info[info_idx];
-+		pending_tx_info = &vif->pending_tx_info[pending_idx];
-+		spin_lock_irqsave(&vif->response_lock, flags);
- 		make_tx_response(vif, &pending_tx_info->req, status);
--
--		/* Setting any number other than
--		 * INVALID_PENDING_RING_IDX indicates this slot is
--		 * starting a new packet / ending a previous packet.
--		 */
--		pending_tx_info->head = 0;
--
--		index = pending_index(vif->pending_prod++);
--		vif->pending_ring[index] = vif->pending_ring[info_idx];
--
--		peek = vif->pending_ring[pending_index(++head)];
--
--	} while (!pending_tx_is_head(vif, peek));
--
--	put_page(vif->mmap_pages[pending_idx]);
--	vif->mmap_pages[pending_idx] = NULL;
-+		index = pending_index(vif->pending_prod);
-+		vif->pending_ring[index] = pending_idx;
-+		/* TX shouldn't use the index before we give it back here */
-+		mb();
-+		vif->pending_prod++;
-+		spin_unlock_irqrestore(&vif->response_lock, flags);
+ 	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+-		rv = print_format2_lock(s, lkb, r);
+-		if (rv)
++		print_format2_lock(s, lkb, r);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+  out:
+ 	unlock_rsb(r);
+-	return rv;
  }
  
- void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+-static int print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
++static void print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 			      int rsb_lookup)
  {
- 	int ret;
-+	struct gnttab_unmap_grant_ref tx_unmap_op;
-+
- 	if (vif->grant_tx_handle[pending_idx] == NETBACK_INVALID_HANDLE) {
- 		netdev_err(vif->dev,
- 				"Trying to unmap invalid handle! pending_idx: %x\n",
- 				pending_idx);
- 		return;
- 	}
--	gnttab_set_unmap_op(&vif->tx_unmap_ops[0],
-+	gnttab_set_unmap_op(&tx_unmap_op,
- 			idx_to_kaddr(vif, pending_idx),
- 			GNTMAP_host_map,
- 			vif->grant_tx_handle[pending_idx]);
--	ret = gnttab_unmap_refs(vif->tx_unmap_ops,
-+	ret = gnttab_unmap_refs(&tx_unmap_op,
- 			NULL,
- 			&vif->mmap_pages[pending_idx],
- 			1);
-@@ -1845,7 +1793,6 @@ static inline int rx_work_todo(struct xenvif *vif)
+ 	u64 xid = 0;
+-	int rv;
  
- static inline int tx_work_todo(struct xenvif *vif)
+ 	if (lkb->lkb_flags & DLM_IFL_USER) {
+ 		if (lkb->lkb_ua)
+ 			xid = lkb->lkb_ua->xid;
+ 	}
+ 
+-	rv = seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
+-			lkb->lkb_id,
+-			lkb->lkb_nodeid,
+-			lkb->lkb_remid,
+-			lkb->lkb_ownpid,
+-			(unsigned long long)xid,
+-			lkb->lkb_exflags,
+-			lkb->lkb_flags,
+-			lkb->lkb_status,
+-			lkb->lkb_grmode,
+-			lkb->lkb_rqmode,
+-			lkb->lkb_last_bast.mode,
+-			rsb_lookup,
+-			lkb->lkb_wait_type,
+-			lkb->lkb_lvbseq,
+-			(unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
+-			(unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+-	return rv;
++	seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
++		   lkb->lkb_id,
++		   lkb->lkb_nodeid,
++		   lkb->lkb_remid,
++		   lkb->lkb_ownpid,
++		   (unsigned long long)xid,
++		   lkb->lkb_exflags,
++		   lkb->lkb_flags,
++		   lkb->lkb_status,
++		   lkb->lkb_grmode,
++		   lkb->lkb_rqmode,
++		   lkb->lkb_last_bast.mode,
++		   rsb_lookup,
++		   lkb->lkb_wait_type,
++		   lkb->lkb_lvbseq,
++		   (unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
++		   (unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+ }
+ 
+-static int print_format3(struct dlm_rsb *r, struct seq_file *s)
++static void print_format3(struct dlm_rsb *r, struct seq_file *s)
  {
--
- 	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
- 	    (nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
- 	     < MAX_PENDING_REQS))
+ 	struct dlm_lkb *lkb;
+ 	int i, lvblen = r->res_ls->ls_lvblen;
+ 	int print_name = 1;
+-	int rv;
+ 
+ 	lock_rsb(r);
+ 
+-	rv = seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
+-			r,
+-			r->res_nodeid,
+-			r->res_first_lkid,
+-			r->res_flags,
+-			!list_empty(&r->res_root_list),
+-			!list_empty(&r->res_recover_list),
+-			r->res_recover_locks_count,
+-			r->res_length);
+-	if (rv)
++	seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
++		   r,
++		   r->res_nodeid,
++		   r->res_first_lkid,
++		   r->res_flags,
++		   !list_empty(&r->res_root_list),
++		   !list_empty(&r->res_recover_list),
++		   r->res_recover_locks_count,
++		   r->res_length);
++	if (seq_is_buf_full(s))
+ 		goto out;
+ 
+ 	for (i = 0; i < r->res_length; i++) {
+@@ -300,8 +287,8 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+ 		else
+ 			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+ 	}
+-	rv = seq_printf(s, "\n");
+-	if (rv)
++	seq_puts(s, "\n");
++	if (seq_is_buf_full(s))
+ 		goto out;
+ 
+ 	if (!r->res_lvbptr)
+@@ -311,58 +298,55 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+ 
+ 	for (i = 0; i < lvblen; i++)
+ 		seq_printf(s, " %02x", (unsigned char)r->res_lvbptr[i]);
+-	rv = seq_printf(s, "\n");
+-	if (rv)
++	seq_puts(s, "\n");
++	if (seq_is_buf_full(s))
+ 		goto out;
+ 
+  do_locks:
+ 	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+-		rv = print_format3_lock(s, lkb, 0);
+-		if (rv)
++		print_format3_lock(s, lkb, 0);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+-		rv = print_format3_lock(s, lkb, 0);
+-		if (rv)
++		print_format3_lock(s, lkb, 0);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+-		rv = print_format3_lock(s, lkb, 0);
+-		if (rv)
++		print_format3_lock(s, lkb, 0);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_lookup, lkb_rsb_lookup) {
+-		rv = print_format3_lock(s, lkb, 1);
+-		if (rv)
++		print_format3_lock(s, lkb, 1);
++		if (seq_is_buf_full(s))
+ 			goto out;
+ 	}
+  out:
+ 	unlock_rsb(r);
+-	return rv;
+ }
+ 
+-static int print_format4(struct dlm_rsb *r, struct seq_file *s)
++static void print_format4(struct dlm_rsb *r, struct seq_file *s)
+ {
+ 	int our_nodeid = dlm_our_nodeid();
+ 	int print_name = 1;
+-	int i, rv;
++	int i;
+ 
+ 	lock_rsb(r);
+ 
+-	rv = seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
+-			r,
+-			r->res_nodeid,
+-			r->res_master_nodeid,
+-			r->res_dir_nodeid,
+-			our_nodeid,
+-			r->res_toss_time,
+-			r->res_flags,
+-			r->res_length);
+-	if (rv)
+-		goto out;
++	seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
++		   r,
++		   r->res_nodeid,
++		   r->res_master_nodeid,
++		   r->res_dir_nodeid,
++		   our_nodeid,
++		   r->res_toss_time,
++		   r->res_flags,
++		   r->res_length);
+ 
+ 	for (i = 0; i < r->res_length; i++) {
+ 		if (!isascii(r->res_name[i]) || !isprint(r->res_name[i]))
+@@ -377,10 +361,9 @@ static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+ 		else
+ 			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+ 	}
+-	rv = seq_printf(s, "\n");
+- out:
++	seq_puts(s, "\n");
++
+ 	unlock_rsb(r);
+-	return rv;
+ }
+ 
+ struct rsbtbl_iter {
+@@ -390,11 +373,12 @@ struct rsbtbl_iter {
+ 	int header;
+ };
+ 
+-/* seq_printf returns -1 if the buffer is full, and 0 otherwise.
+-   If the buffer is full, seq_printf can be called again, but it
+-   does nothing and just returns -1.  So, the these printing routines
+-   periodically check the return value to avoid wasting too much time
+-   trying to print to a full buffer. */
++/*
++ * If the buffer is full, seq_printf can be called again, but it
++ * does nothing.  So, the these printing routines periodically check
++ * seq_is_buf_full to avoid wasting too much time trying to print to
++ * a full buffer.
++ */
+ 
+ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+ {
+@@ -403,7 +387,7 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+ 
+ 	switch (ri->format) {
+ 	case 1:
+-		rv = print_format1(ri->rsb, seq);
++		print_format1(ri->rsb, seq);
+ 		break;
+ 	case 2:
+ 		if (ri->header) {
+@@ -412,21 +396,21 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+ 					"r_nodeid r_len r_name\n");
+ 			ri->header = 0;
+ 		}
+-		rv = print_format2(ri->rsb, seq);
++		print_format2(ri->rsb, seq);
+ 		break;
+ 	case 3:
+ 		if (ri->header) {
+ 			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
+ 			ri->header = 0;
+ 		}
+-		rv = print_format3(ri->rsb, seq);
++		print_format3(ri->rsb, seq);
+ 		break;
+ 	case 4:
+ 		if (ri->header) {
+ 			seq_printf(seq, "version 4 rsb 2\n");
+ 			ri->header = 0;
+ 		}
+-		rv = print_format4(ri->rsb, seq);
++		print_format4(ri->rsb, seq);
+ 		break;
+ 	}
+ 
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
