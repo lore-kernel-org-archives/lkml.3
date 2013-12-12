@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3LLCJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 21:09:11 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:7128 "EHLO
+	id S1751991Ab3LLCLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 21:11:45 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:8398 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751374Ab3LLCJI (ORCPT
+	by vger.kernel.org with ESMTP id S1750894Ab3LLCLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 21:09:08 -0500
-Date: Wed, 11 Dec 2013 21:09:03 -0500
+	Wed, 11 Dec 2013 21:11:44 -0500
+Date: Wed, 11 Dec 2013 21:11:42 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-Message-ID: <20131211210903.1e44ba39@gandalf.local.home>
-In-Reply-To: <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
-	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: Stephane Eranian <eranian@google.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, pawel.moll@arm.com
+Subject: Re: [RFC PATCH] drivers: char: Add a dynamic clock for the trace
+ clock
+Message-ID: <20131211211142.3120bd2a@gandalf.local.home>
+In-Reply-To: <CAPz6YkV0z6XBApD+hcSeaAuLGEZZEeuDM0Aq95Q3ySL89NMEzg@mail.gmail.com>
+References: <1386376451-24593-1-git-send-email-sonnyrao@chromium.org>
+	<20131209074933.GA2922@jtriplet-mobl1>
+	<CABPqkBTufgMk=iqXM87+psUeLd865QF9tCEVHT6hwT4=TtetfQ@mail.gmail.com>
+	<CAPz6YkU6-ccJ8eJwYUgs_Gjo5rYeSh3ftSgd_MzCXRTyzhPiiQ@mail.gmail.com>
+	<20131211204900.76993a7d@gandalf.local.home>
+	<CAPz6YkV0z6XBApD+hcSeaAuLGEZZEeuDM0Aq95Q3ySL89NMEzg@mail.gmail.com>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 11 Dec 2013 18:06:06 -0800
+Sonny Rao <sonnyrao@chromium.org> wrote:
 
-> --- /dev/null
-> +++ b/kernel/swait.c
-> @@ -0,0 +1,118 @@
-> +/*
-> + * Simple waitqueues without fancy flags and callbacks
 
-We should probably have a more detailed description of when to use
-simple wait queues verses normal wait queues. These are obviously much
-lighter wait, and should be the preferred method unless you need a
-feature of the more heavy weight wait queues.
+> > ftrace has several clocks that it uses:
+> >
+> > o local - basically sched_clock()
+> > o global - something like hpet that is monotonic across CPUs but slower
+> > o counter - a simple atomic counter (no time associated to it)
+> > o uptime - jiffy counter
+> > o perf  - trace_clock, which is what perf uses
+> > o x86_tsc - the raw tsc counter.
+> >
+> > # cat /sys/kernel/debug/trace_clock
+> > [local] global counter uptime perf x86-tsc
+> >
+> 
+> Ah ok sorry for the incorrect info there, thanks for clarifying.
+> So, If I wanted to make sure everything is synced up between ftrace
+> events and perf events I should say perf here instead of local.
+
+Correct, that's why I created that clock.
 
 -- Steve
-
-"weight wait" Ha! Don't get to use that very often ;-)
-
-
-> + *
-> + * (C) 2011 Thomas Gleixner <tglx@linutronix.de>
-> + *
-> + * Based on kernel/wait.c
-> + *
-> + * For licencing details see kernel-base/COPYING
-> + */
-> +#include <linux/init.h>
-> +#include <linux/export.h>
-> +#include <linux/sched.h>
-> +#include <linux/swait.h>
