@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab3LLL26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:28:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436Ab3LLL25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:28:57 -0500
-Message-ID: <52A99DD0.9030007@redhat.com>
-Date: Thu, 12 Dec 2013 12:28:16 +0100
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: hannes@stressinduktion.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, jpirko@redhat.com
-Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
-References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com> <20131211192138.GB4675@order.stressinduktion.org> <20131211.155452.558417595732985707.davem@davemloft.net>
-In-Reply-To: <20131211.155452.558417595732985707.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751802Ab3LLL3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:29:41 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:34959 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab3LLL3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 06:29:40 -0500
+X-AuditID: cbfec7f5-b7fd16d000007299-fa-52a99e226dde
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v2] kernel/locking: mutex: simplify access to the first entry
+ in the wait-list
+Date: Thu, 12 Dec 2013 12:29:32 +0100
+Message-id: <1386847772-8918-1-git-send-email-andrzej.p@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCJMWRmVeSWpSXmKPExsVy+t/xq7pK81YGGbQuYLeY9bKdxeJs0xt2
+	i8u75rBZrD1yl93i0oEFTBbHew8wObB5bF6h5fF+31U2j74tqxg9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mq4fvk3U8FsjoqOqxMZGxgfsnUxcnJICJhI/J3WyQRhi0lcuLceKM7FISSwlFHi5Y1N
+	UE4/k0RrzzawKjYBY4m9BzsYQWwRAQWJzb3PWEGKmAWuMUr8/LGEFSQhLJAg8bL/HDOIzSKg
+	KtGx8xlYM6+Ai8T/lk4WiHXyEk/v97FNYORewMiwilE0tTS5oDgpPddIrzgxt7g0L10vOT93
+	EyMkJL7uYFx6zOoQowAHoxIP74uDK4KEWBPLiitzDzFKcDArifC6pK4MEuJNSaysSi3Kjy8q
+	zUktPsTIxMEp1cDIbB/z81eULaOF0OETLxffmfFeV2iWuvr+/BMHUxMneC1ozml4sFb38aaG
+	yGnCfU9Xbtw/V8ziwoPYZW6unC1/WqKXzDjI+ND78IbFKn3GQb6/erj+uXZm8TF88vX+dary
+	9wyD0+s7RdoPF8mIxtzd/jHsipb9TuUt8jt8QxuY3DMiJBz8GhuUWIozEg21mIuKEwGxRQp3
+	5wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 09:54 PM, David Miller wrote:
-> From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Date: Wed, 11 Dec 2013 20:21:38 +0100
-> 
->> On Wed, Dec 11, 2013 at 12:45:14PM +0100, Denys Vlasenko wrote:
->>> If ipv6 auto-configuration does not work, currently it's hard
->>> to track what's going on. This change adds log messages
->>> (at debug level) on every code path where ipv6 autoconf fails.
->>>
->>> v2: fixed indentation in multi-line log output statements.
->>
->> Have you seen lots of those problems? Some of those seem like very
->> serious problems and maybe could also deserve a pr_warn or pr_err.
->>
->> I hope these are one-time errors, so I don't think counters would
->> be helpful.
-> 
-> I still think that statitics would better serve this issue.
-> 
-> You can make them part of the per-inet6_dev MIB, and therefore
-> implicitly letting the admin know what interface the events
-> occurred on.
+Use list_first_entry instead of explicitly accessing the first entry
+with "head".next. The comment one line above becomes obsolete.
 
-Putting myself in admin's boots...
+Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
 
-Admins want to know why ipv6 autoconf didn't work, not so much
-how many times it didn't work. This requires a text message.
+v1..v2:
 
-> For one thing, the event would always be counted, whereas with
-> pr_debug() someone has to turn on dynamic debugging in order
-> to see the message.
+- corrected the email address in the second Signed-off-by line
 
-Point taken wrt pr_debug being too gentle.
-I should have used pr_warn or at least pr_info...
+ kernel/locking/mutex.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index 4dd6e4c..4af4f9c 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -730,10 +730,9 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
+ 		atomic_set(&lock->count, 1);
+ 
+ 	if (!list_empty(&lock->wait_list)) {
+-		/* get the first entry from the wait-list: */
+ 		struct mutex_waiter *waiter =
+-				list_entry(lock->wait_list.next,
+-					   struct mutex_waiter, list);
++				list_first_entry(&lock->wait_list,
++						 struct mutex_waiter, list);
+ 
+ 		debug_mutex_wake_waiter(lock, waiter);
+ 
 -- 
-vda
-
+1.7.0.4
 
