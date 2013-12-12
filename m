@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab3LLWIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 17:08:21 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:40409 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3LLWIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 17:08:20 -0500
-X-IronPort-AV: E=Sophos;i="4.95,474,1384300800"; 
-   d="scan'208";a="81562028"
-Message-ID: <52AA33CF.6030004@citrix.com>
-Date: Thu, 12 Dec 2013 22:08:15 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1751836Ab3LLWI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 17:08:28 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:48318 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751761Ab3LLWIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 17:08:24 -0500
+Date: Thu, 12 Dec 2013 14:07:57 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, PaX Team <pageexec@freemail.hu>,
+        Dmitry Vyukov <dvyukov@google.com>
+Subject: [PATCH] mm: fix use-after-free in sys_remap_file_pages
+Message-ID: <20131212220757.GA14928@www.outflux.net>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next RFC 0/5] xen-netback: TX grant mapping instead
- of copy
-References: <1383094220-14775-1-git-send-email-zoltan.kiss@citrix.com>		 <1383303035.672.29.camel@kazak.uk.xensource.com>		 <5273FA37.6020903@citrix.com>	 <1383821563.26213.168.camel@kazak.uk.xensource.com>	 <52977F5C.7090703@citrix.com> <1385660592.20209.27.camel@kazak.uk.xensource.com>
-In-Reply-To: <1385660592.20209.27.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/11/13 17:43, Ian Campbell wrote:
-> On Thu, 2013-11-28 at 17:37 +0000, Zoltan Kiss wrote:
-> Routing/firewalling domUs is as valid as bridging. There is nothing in
-> the slightest bit suboptimal about it.
->
-> If this use case regresses with this approach then I'm afraid that
-> either needs to be addressed or a different approach considered.
->
->> Anyway, I will try this out, and see if it really copies everything, and
->> get some numbers as well.
->
-> Thanks.
+From: PaX Team <pageexec@freemail.hu>
 
-Now I managed to try it out. As I expected, Dom0 does copy the mapped 
-page. The peak throuhput I could get was 6.6 Gbps, however it could keep 
-that only for short periods, I guess when the unmapping was ideally 
-batched. The average was 5.53.
-On the same machine the same 10 min iperf session, without my patches 
-made the peak 5.9 while the average was 5.65. Do you think it is an 
-acceptable regression?
-I used 3.12 Dom0 and guest kernel, the guest transmitted though a 10Gb 
-card to a bare metal box.
-I plan to look further if we can avoid somehow this:
+http://lkml.org/lkml/2013/9/17/30
 
-https://lkml.org/lkml/2012/7/20/363
+SyS_remap_file_pages() calls mmap_region(), which calls remove_vma_list(),
+which calls remove_vma(), which frees the vma.  Later (after out label)
+SyS_remap_file_pages() accesses the freed vma in vm_flags = vma->vm_flags.
 
-So then this scenario can benefit from grant mapping.
+Reported-by: Dmitry Vyukov <dvyukov@google.com>
+Signed-off-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+---
+ mm/fremap.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Regards,
+diff --git a/mm/fremap.c b/mm/fremap.c
+index 5bff08147768..afad07b85ef2 100644
+--- a/mm/fremap.c
++++ b/mm/fremap.c
+@@ -218,6 +218,8 @@ get_write_lock:
+ 				BUG_ON(addr != start);
+ 				err = 0;
+ 			}
++			vm_flags = vma->vm_flags;
++			vma = NULL;
+ 			goto out;
+ 		}
+ 		mutex_lock(&mapping->i_mmap_mutex);
+-- 
+1.7.9.5
 
-Zoli
+
+-- 
+Kees Cook
+Chrome OS Security
