@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab3LLVJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:09:19 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:61601 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab3LLVJS (ORCPT
+	id S1751925Ab3LLVLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:11:35 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:47174 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3LLVLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:09:18 -0500
+	Thu, 12 Dec 2013 16:11:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <6e8200a86fb95c814f3f7211477547baab2efa73.1386855780.git.baruch@tkos.co.il>
-References: <6e8200a86fb95c814f3f7211477547baab2efa73.1386855780.git.baruch@tkos.co.il>
-Date: Thu, 12 Dec 2013 22:09:18 +0100
-Message-ID: <CACRpkdZsdqaNmhgivw9WAv5PbBLRfNx5_UzKwG1A-mD0M5EEBQ@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: add gpio subsystem git tree
+In-Reply-To: <26167386.hX5eWUjT6T@flatron>
+References: <1386825152-398-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+	<26167386.hX5eWUjT6T@flatron>
+Date: Thu, 12 Dec 2013 22:11:31 +0100
+Message-ID: <CACRpkdbGSXA8oT8L-0fzJx7esXn7GWQA+Wi7WCQKX9eiy-fYCQ@mail.gmail.com>
+Subject: Re: [PATCH CFT] ARM:S5P64X0: Enable ARM_PATCH_PHYS_VIRT and
+ AUTO_ZRELADDR by default
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: panchaxari <panchaxari.prasannamurthy@linaro.org>,
+        Kgene Kim <kgene.kim@samsung.com>, Patch Tracking <patches@linaro.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 2:43 PM, Baruch Siach <baruch@tkos.co.il> wrote:
+On Thu, Dec 12, 2013 at 10:47 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
+> This is actually quite a poor platform choice. As of today, the kernel
+> is stuck with supporting just SMDK6440/6450 boards, which are proprietary
+> development boards and it doesn't look like any further boards will show
+> up in future. Kukjin has actually proposed removing support for this
+> platform at all and I consider this reasonable.
 >
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 13c15c8..6e0c4eb 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3767,6 +3767,7 @@ GPIO SUBSYSTEM
->  M:     Linus Walleij <linus.walleij@linaro.org>
->  S:     Maintained
->  L:     linux-gpio@vger.kernel.org
-> +T:     git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+> Kukjin, should we proceed with removal?
 
-This was already added some days back:
-http://marc.info/?l=linux-gpio&m=138666513821506&w=2
-
-But thanks anyway!
+Isn't Mark Brown using that platform for some various stuff?
 
 Yours,
 Linus Walleij
