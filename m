@@ -1,118 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab3LLLSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:18:52 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:38190 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab3LLLSt (ORCPT
+	id S1751513Ab3LLLXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:23:33 -0500
+Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:41422 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab3LLLXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:18:49 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v4 0/9] USB Device Controller support for BCM281xx
-Date: Thu, 12 Dec 2013 06:18:28 -0500
-Message-Id: <1386847117-21240-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	Thu, 12 Dec 2013 06:23:32 -0500
+X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 06:23:31 EST
+Message-ID: <52A99CB3.50509@laposte.net>
+Date: Thu, 12 Dec 2013 12:23:31 +0100
+From: Marc Gilet <pw.marcus@laposte.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:25.0) Gecko/20100101 Firefox/25.0 SeaMonkey/2.22
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: tablet advices
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v3:
-	- Rebased on 3.13-rc3
-	- Move struct phy bus_width attribute back into struct phy_attrs
-	- Fix build issue on !GENERIC_PHY
-	- Update dwc2 binding to reflect optional phy properties
-	- Rename bcm-kona-phy.txt binding to bcm-phy.txt
-	- Reorder bcm kona phy includes and use bitops
-	- phy-names changed to "usb2-phy" to match updated s3c-hsotg
-	  generic phy-ification series
+Hello,
+I'm a happy owner of a Pengpod700 tablet (allwinner A10 CPU), on which I 
+spend most part of my free time to install and test Linux distributions 
+(on the microDS card).
+I'd like to find a more powerfull tablet like those one can find 
+actually on the market (Rockchip quad core CPU rk3188, bluetooth, GPS, 
+microSD slot, good battery, 10" screen ...)
 
-Changes since v2:
-	- Rebased on 3.13-rc1
-	- Fix braces in phy_get_bus_width()/phy_set_bus_width()
-	- Drop generic phy conversion to use the same support from
-	  the Exynos generic phy conversion series
-	- Modify dts support to match the "device" phy name required
-	  in the v3 Exynos generic phy conversion
-	- Add s3c-hsotg phy_init/phy_exit support
-	- Fix typo on reg property in kona phy binding
-	- Replace phy driver reg struct with offset defines
-	- Move phy soft reset to phy driver init
-	- Fix dts node names to match ePAPR conventions
+I've found the git repository of a community developping the kernel for 
+this kind of devices (https://github.com/dnkn/rk3188_tablet), but I 
+can't seem to find where to ask this question:
 
-Changes since v1:
-	- Convert USB phy driver to generic phy subsystem
-	- Add phy bus width apis
-	- Drop dwc2 phy bus width DT property in favor of querying the
-	  phy provider for bus width
-	- Add generic phy/clock properties to dwc2 DT binding
-	- Add generic phy subsystem support to s3c-hsotg with the
-	  existing usb phy and pdata phy methods as a fallback
-	- Split bindings out to separate patches to match the latest
-	  DT binding review guidelines
 
-This series adds USB Device Controller support for the Broadcom
-BCM281xx family of parts. BCM281xx contains a DWC2 OTG block and
-s3c-hsotg is used to support UDC operation.
+What models of tablet would you advise me to buy ?
 
-Part 1 adds phy bus width support to the generic phy subsystem
-
-Parts 2-6 allows s3c-hsotg to build on non-Samsung platforms, supports
-the dwc2 binding, adds phy_init/phy_exit support, and supports fetching
-phy bus width using the generic phy layer.
-
-Parts 7-8 add a generic phy binding and driver for the BCM Kona USB PHY.
-
-Part 9 adds the DT nodes to enable UDC support on both BCM281xx boards
-in the kernel.
-
-This series depends on:
-	- "Update Kona drivers to use clocks" v4 series
-	  https://lkml.org/lkml/2013/12/5/508
-	- "Add new Exynos USB 2.0 PHY driver" v4 series
-	  https://lkml.org/lkml/2013/12/5/166
-
-Matt Porter (9):
-  phy: add phy_get_bus_width()/phy_set_bus_width() calls
-  staging: dwc2: update DT binding to add generic clock/phy properties
-  usb: gadget: s3c-hsotg: enable build for other platforms
-  usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
-  usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
-  usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
-  phy: add Broadcom Kona USB2 PHY DT binding
-  phy: add Broadcom Kona USB2 PHY driver
-  ARM: dts: add usb udc support to bcm281xx
-
- Documentation/devicetree/bindings/phy/bcm-phy.txt  |  15 ++
- Documentation/devicetree/bindings/staging/dwc2.txt |  12 ++
- arch/arm/boot/dts/bcm11351-brt.dts                 |   6 +
- arch/arm/boot/dts/bcm11351.dtsi                    |  18 +++
- arch/arm/boot/dts/bcm28155-ap.dts                  |   8 ++
- drivers/phy/Kconfig                                |   6 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-bcm-kona-usb2.c                    | 158 +++++++++++++++++++++
- drivers/usb/gadget/Kconfig                         |   7 +-
- drivers/usb/gadget/s3c-hsotg.c                     |  22 ++-
- drivers/usb/gadget/s3c-hsotg.h                     |   1 +
- include/linux/phy/phy.h                            |  28 ++++
- 12 files changed, 275 insertions(+), 7 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/bcm-phy.txt
- create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
-
--- 
-1.8.4
+Thanks for answering
 
