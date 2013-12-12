@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3LLJ7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 04:59:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53373 "EHLO mx2.suse.de"
+	id S1751474Ab3LLKI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 05:08:29 -0500
+Received: from mga01.intel.com ([192.55.52.88]:37252 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3LLJ7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 04:59:41 -0500
-Date: Thu, 12 Dec 2013 10:59:34 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 6/6] [RFC] kprobes/x86: Call exception handlers
- directly from do_int3/do_debug
-In-Reply-To: <52A93E3A.9080600@hitachi.com>
-Message-ID: <alpine.LNX.2.00.1312121058220.1413@pobox.suse.cz>
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204012856.22118.91079.stgit@kbuild-fedora.novalocal> <20131203213904.5ff1794c@gandalf.local.home> <alpine.LRH.2.00.1312111418550.6318@twin.jikos.cz> <52A93E3A.9080600@hitachi.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751120Ab3LLKI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 05:08:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,877,1378882800"; 
+   d="scan'208";a="448864383"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: lenb@kernel.org, rjw@rjwysocki.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, aaron.lu@intel.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] ACPI/Button: Fix enable Button GPEs twice
+Date: Thu, 12 Dec 2013 18:08:17 +0800
+Message-Id: <1386842897-7954-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Dec 2013, Masami Hiramatsu wrote:
+Button GPEs have been enabled in the acpi_wake_device_init() during
+boot and Button driver enables these GPEs second time. This causes
+disabling these gpes via sysfs interface requires twice "echo disable
+> /sys/firmware/acpi/interrupts/gpeXXX". This patch is to remove
+related code in the Button driver.
 
-> > Yeah, it's broken. Obviously, if you happen to trigger int3 before the 
-> > notifier has been registered, it'd cause int3 exception to be unhandled. 
-> > See
-> > 
-> > 	commit 17f41571bb2c4a398785452ac2718a6c5d77180e
-> > 	Author: Jiri Kosina <jkosina@suse.cz>
-> > 	Date:   Tue Jul 23 10:09:28 2013 +0200
-> > 
-> > 	    kprobes/x86: Call out into INT3 handler directly instead of using notifier
-> > 
-> > for one such issue that happened with jump labels.
-> > 
-> >> Hmm, if there's no users of the int3 notifier, should we just remove it?
-> > 
-> > Hmm, there are still uprobes, right?
-> 
-> Right, uprobes still use it, however, since it only handles user-space
-> breakpoint, there is no problem.
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+Change since V1:
+	Remove wakeup_enabled flag and disable gpe operation
+in the acpi_button_remove().
 
-Agreed. But therefore the notifier can't just be removed, unless uprobes 
-are converted to direct call as well (but I don't think that'd be 
-beneficial, notifier is sufficient in this case).
+ drivers/acpi/button.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
 
+diff --git a/drivers/acpi/button.c b/drivers/acpi/button.c
+index 9e3a6cb..11c11f6 100644
+--- a/drivers/acpi/button.c
++++ b/drivers/acpi/button.c
+@@ -100,7 +100,6 @@ struct acpi_button {
+ 	struct input_dev *input;
+ 	char phys[32];			/* for input device */
+ 	unsigned long pushed;
+-	bool wakeup_enabled;
+ };
+ 
+ static BLOCKING_NOTIFIER_HEAD(acpi_lid_notifier);
+@@ -406,16 +405,6 @@ static int acpi_button_add(struct acpi_device *device)
+ 		lid_device = device;
+ 	}
+ 
+-	if (device->wakeup.flags.valid) {
+-		/* Button's GPE is run-wake GPE */
+-		acpi_enable_gpe(device->wakeup.gpe_device,
+-				device->wakeup.gpe_number);
+-		if (!device_may_wakeup(&device->dev)) {
+-			device_set_wakeup_enable(&device->dev, true);
+-			button->wakeup_enabled = true;
+-		}
+-	}
+-
+ 	printk(KERN_INFO PREFIX "%s [%s]\n", name, acpi_device_bid(device));
+ 	return 0;
+ 
+@@ -432,13 +421,6 @@ static int acpi_button_remove(struct acpi_device *device)
+ {
+ 	struct acpi_button *button = acpi_driver_data(device);
+ 
+-	if (device->wakeup.flags.valid) {
+-		acpi_disable_gpe(device->wakeup.gpe_device,
+-				device->wakeup.gpe_number);
+-		if (button->wakeup_enabled)
+-			device_set_wakeup_enable(&device->dev, false);
+-	}
+-
+ 	acpi_button_remove_fs(device);
+ 	input_unregister_device(button->input);
+ 	kfree(button);
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.2.1
+
