@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab3LLMPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:15:42 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:36333 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab3LLMPj (ORCPT
+	id S1751580Ab3LLMUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:20:07 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:14715 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3LLMUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:15:39 -0500
-Message-ID: <52A9A8EA.3080609@linaro.org>
-Date: Thu, 12 Dec 2013 13:15:38 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 12 Dec 2013 07:20:04 -0500
+Message-ID: <52A9A97F.20902@huawei.com>
+Date: Thu, 12 Dec 2013 20:18:07 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 5/9] clocksource/cadence_ttc: Adjust interval in clock
- notifier
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-6-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1385514296-26702-6-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: David Miller <davem@davemloft.net>, <kaber@trash.net>, <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>, <ebiederm@xmission.com>
+CC: <edumazet@google.com>, <fbl@redhat.com>, <ebiederm@xmission.com>,
+        <jeff@garzik.org>, <peterz@infradead.org>, <honkiko@gmail.com>,
+        <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        "Huang Qiang" <h.huangqiang@huawei.com>,
+        Wengmeiling <wengmeiling.weng@huawei.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <daniel.wagner@bmw-carit.de>, <nhorman@tuxdriver.com>
+Subject: Re: cgroup filter on physics interface can't control container
+References: <52A52BBF.6030105@huawei.com>
+In-Reply-To: <52A52BBF.6030105@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
-> The clockevent has to be reprogrammed if the timer's input
-> clock frequency changes and the timer is in periodic mode, in order to
-> maintain the correct timer interval.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> v2:
->   - adjust the timer interval while the timer interrupt is disabled
-> ---
->   drivers/clocksource/cadence_ttc_timer.c | 12 +++++++++---
->   1 file changed, 9 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-> index 246d018d1e63..77517675653e 100644
-> --- a/drivers/clocksource/cadence_ttc_timer.c
-> +++ b/drivers/clocksource/cadence_ttc_timer.c
-> @@ -322,6 +322,9 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
->   	switch (event) {
->   	case POST_RATE_CHANGE:
->   	{
-> +		/* update cached frequency */
-> +		ttc->freq = ndata->new_rate;
-> +
->   		/*
->   		 * clockevents_update_freq should be called with IRQ disabled on
->   		 * the CPU the timer provides events for. The timer we use is
-> @@ -329,12 +332,15 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
->   		 * cores.
->   		 */
->   		disable_irq(ttcce->ce.irq);
-> +
->   		clockevents_update_freq(&ttcce->ce,
->   				ndata->new_rate / PRESCALE);
-> -		enable_irq(ttcce->ce.irq);
->
-> -		/* update cached frequency */
-> -		ttc->freq = ndata->new_rate;
-> +		if (ttcce->ce.mode == CLOCK_EVT_MODE_PERIODIC)
-> +			ttc_set_interval(ttc, DIV_ROUND_CLOSEST(ttc->freq,
-> +						PRESCALE * HZ));
-> +
-> +		enable_irq(ttcce->ce.irq);
->
->   		/* fall through */
->   	}
+ping...
 
-When looking at the smp_twd.c, there is a similar need.
+On 2013/12/9 10:32, Libo Chen wrote:
+> hello network hackers,
+> 
+> 	A linux container was builded with veth pair(veth0 inside container, veth1 outside container),
+> 
+> the config as below:
+> 
+>   lxc.network.type = veth
+>   lxc.network.flags = up
+>   lxc.network.link = br0  // base on eth0
+>   lxc.network.name = eth0
+>   lxc.network.ipv4 = 128.5.130.26/24
+> 
+> then I use tc command with cgroup filter on veth0, it works well. But when setting on eth0, it doesn`t work.
+> 
+> The reason is dev_forward_skb() in veth_xmit will call skb_scrub_packet and clean all information including skb->sk
+> in the skb, so if cls_cgroup_classify is working in serving softirq state, it will return failer, see below:
+> 
+> 	if (in_serving_softirq()) {
+> 		/* If there is an sk_classid we'll use that. */
+> 		if (!skb->sk)
+> 			return -1;
+> 		classid = skb->sk->sk_classid;
+> 	}
+> 
+> 
+> Qdisc with cgroup filter on physics interface can not control a container network, it is disappointed.
+> 
+> we can save sk_classid before skb_scrub_packet and restore it after that. Is it reasonable?  or any way to achieve this?
+> 
+> thanks,
+> Libo
+> 
 
-There are a couple of notifier used on for cpufreq and one for clock 
-rate change.
-
-Wouldn't make sense to add the notifier calls and registration in the 
-time framework and add the callbacks in the dev ops ? The switch would 
-be in the timer framework and perhaps the irq disabling may be easier to 
-deal with ?
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
