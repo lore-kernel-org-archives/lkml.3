@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab3LLHSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 02:18:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54656 "EHLO mx1.redhat.com"
+	id S1751894Ab3LLHVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 02:21:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290Ab3LLHS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 02:18:27 -0500
-Date: Thu, 12 Dec 2013 15:17:43 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 09/14] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131212071743.GJ3751@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-10-git-send-email-dyoung@redhat.com>
- <20131211222057.GB8863@pd.tnic>
- <20131212030619.GG3751@dhcp-16-126.nay.redhat.com>
+	id S1751831Ab3LLHV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 02:21:28 -0500
+Date: Thu, 12 Dec 2013 12:51:13 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: Simon Guinot <simon.guinot@sequanux.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [Patch] Read CONFIG_RD_ variables for initramfs compression
+In-Reply-To: <20131211154626.GX16823@kw.sim.vm.gnt>
+Message-ID: <alpine.LFD.2.10.1312121228540.7044@wniryva.cad.erqung.pbz>
+References: <alpine.LFD.2.03.1310152002200.7552@erqung.pbz> <20131029151507.8f63dad8e7525e33431d9596@linux-foundation.org> <alpine.LFD.2.03.1310301226260.12975@erqung.pbz> <20131030150521.ff3fd577a6e506e4278db48c@linux-foundation.org>
+ <alpine.LFD.2.03.1310311222150.23774@erqung.pbz> <20131211154626.GX16823@kw.sim.vm.gnt>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212030619.GG3751@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >  
-> > > +void __init parse_efi_setup(u64 phys_addr)
-> > > +{
-> > > +	struct setup_data *sd;
-> > > +
-> > > +	if (!efi_enabled(EFI_64BIT)) {
-> > > +		pr_warn("SETUP_EFI not supported on 32-bit\n");
-> > > +		return;
-> > > +	}
-> > 
-> > Shouldn't this function be in two versions in efi_64.c and efi_32.c?
-> > This way you don't need this check with cryptic printk message.
-> 
-> Ok, will update.
+  Hello Simon, Andrew
 
-Rethink about this issue, moving them to efi_$(BITS).c I need move the
-efi_setup from a static variable to an extern, It looks not worth.
++-- On Wed, 11 Dec 2013, Simon Guinot wrote --+
+| IIUC this patch, the INITRAMFS_COMPRESSION_* options are now
+| ignored/useless. Don't you think we should remove them from the
+| usr/Kconfig file ?
 
-Thanks
-Dave
+  -> https://lkml.org/lkml/2013/11/25/21
+
+I'v pushed a patch from Mr Hristo to the same effect. I guess it's still in 
+the queue. I haven't received any review for it yet. (...Andrew?)
+
+| Actually, I think this patch makes the initramfs compression
+| configuration quite confusing. Consider the following configuration
+| for a 3.13-rc3 kernel:
+| 
+| CONFIG_RD_GZIP=y
+| CONFIG_RD_LZMA=y
+| CONFIG_INITRAMFS_COMPRESSION_LZMA=y
+| 
+| This now produces a gzipped initramfs_data.cpio against a lzma one
+| previously. 
+
+  That is because, when multiple options are set, CONFIG_RD_GZIP is checked 
+last in the usr/Makefile.
+  ...
+  # Gzip
+  suffix_$(CONFIG_RD_GZIP)   = .gz
+
+Hope it helps.
+--
+Prasad J Pandit / Red Hat Security Response Team
