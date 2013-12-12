@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab3LLWa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 17:30:26 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:42984 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab3LLWaY (ORCPT
+	id S1751807Ab3LLWfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 17:35:25 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:49022 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3LLWfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 17:30:24 -0500
+	Thu, 12 Dec 2013 17:35:23 -0500
+Message-ID: <52AA3A27.5010403@linaro.org>
+Date: Thu, 12 Dec 2013 14:35:19 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <52AA0FC4.3090606@vmware.com>
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
-	<52AA0FC4.3090606@vmware.com>
-Date: Thu, 12 Dec 2013 23:30:23 +0100
-X-Google-Sender-Auth: a9iju-CSC5hBCrhzMVWb7Vqhe8w
-Message-ID: <CAKMK7uGOt2CYCgyE5rnXE3wJJjJiRpoQMB_-+_+m_qhk3TH8QQ@mail.gmail.com>
-Subject: Re: [RFC] dma-buf: Implement test module
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>
+CC: Brecht Machiels <brecht@mos6581.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
+References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org> <529CF1D5.6010406@linaro.org> <20131202211958.GE7380@pd.tnic> <l7ppbg$brg$1@ger.gmane.org> <52AA10F4.6070108@linaro.org> <52AA27C7.3090206@linaro.org> <20131212212454.GC30162@pd.tnic>
+In-Reply-To: <20131212212454.GC30162@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 8:34 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
-> On 12/12/2013 03:36 PM, Thierry Reding wrote:
->>
->> This is a simple test module that can be used to allocate, export and
->> delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
->> systems that lack a real second driver.
->>
->>
->
-> Looks nice. I wonder whether this could be extended to create a "streaming"
-> dma-buf from a user space mapping. That could be used as a generic way to
-> implement streaming (user) buffer objects, rather than to add explicit
-> support for those in, for example, TTM.
+On 12/12/2013 01:24 PM, Borislav Petkov wrote:
+> On Thu, Dec 12, 2013 at 01:16:55PM -0800, John Stultz wrote:
+>> Borislav: I'd like to add your tested by too, if you've had the
+>> chance.
+> Sorry John, I still see you on the todo list but haven't had a chance due to
+> more pressing issues. :-\
 
-Atm there's no way to get gpus to unbind their dma-buf mappings, so
-their essentially pinned forever from first use on. Userptr won't
-really make this worse, but imo we should fix this first before
-expanding the use-cases too much. And getting dma-bufs to integrate
-better into existing memory mangers like ttm will be a lot of pain.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Understood. I don't mean to add extra pressure here, just want to make
+sure your testing effort doesn't go unrecognized.
+
+> Tell you what: I'll try to find some time over the weekend to reinstall
+> the box which has the issue and will give it a run. You could go ahead
+> and commit it but keep it on top of a branch in case it needs to be
+> reverted. :-)
+
+Will do. Thanks again, I appreciate your extra effort!
+
+thanks
+-john
