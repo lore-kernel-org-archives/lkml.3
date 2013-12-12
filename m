@@ -1,169 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab3LLMhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:37:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58025 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab3LLMhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:37:38 -0500
-Date: Thu, 12 Dec 2013 13:37:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131212123736.GE2630@dhcp22.suse.cz>
-References: <20131204111318.GE8410@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
- <20131209124840.GC3597@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
- <20131210103827.GB20242@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
- <20131211095549.GA18741@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
- <20131212103159.GB2630@dhcp22.suse.cz>
- <20131212121140.GD2630@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212121140.GD2630@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751831Ab3LLMiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:38:17 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:56151 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab3LLMiP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:38:15 -0500
+Date: Thu, 12 Dec 2013 13:38:07 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: =?UTF-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org
+Subject: Re: Resume regression on MBA2,1 triggered by
+ 2167e2399dc5e69c62db56d933e9c8cbe107620a
+Message-ID: <20131212133807.1c68707b@neptune.home>
+In-Reply-To: <20131211012529.GA6354@kroah.com>
+References: <20131211010852.09ddf512@neptune.home>
+	<20131211012529.GA6354@kroah.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-12-13 13:11:40, Michal Hocko wrote:
-> On Thu 12-12-13 11:31:59, Michal Hocko wrote:
-> [...]
-> > The semantic would be as simple as "notification is sent only when
-> > an action is due". It will be still racy as nothing prevents a task
-> > which is not under OOM to exit and release some memory but there is no
-> > sensible way to address that. On the other hand such a semantic would be
-> > sensible for oom_control listeners because they will know that an action
-> > has to be or will be taken (the line was drawn).
+Hi Greg,
+
+On Tue, 10 December 2013 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> On Wed, Dec 11, 2013 at 01:08:52AM +0100, Bruno Prémont wrote:
+> > I have bisected failing resume from S3 on my MBA2,1 to be caused by
+> > the following patch (introduced between 3.13-rc2 and 3.13-rc3 - rc2
+> > resuming as expected, rc3 failing to resume).
 > > 
-> > Can we agree on this, Johannes? Or you see the line drawn when
-> > mem_cgroup_oom_synchronize has been reached already no matter whether
-> > the action is to be done or not?
+> > Unfortunately I have no trace for the failing resume though CPU seems
+> > to not be busy as fan does not start blowing (even when waiting more
+> > than 10 minutes for the resume to eventually proceed which it does not).
+> > 
+> > Kernel config and dmesg are attached (gzip compressed).
+> > 
+> >   commit 2167e2399dc5e69c62db56d933e9c8cbe107620a
+> >   Author: Bjørn Mork <bjorn@mork.no>
+> >   Date:   Tue Dec 3 12:14:32 2013 +0100
+> >   Subject: cpufreq: fix garbage kobjects on errors during suspend/resume
 > 
-> Something like the following:
-
-I forgot to mention that this patch assumes "memcg: Do not hang on OOM
-when killed by userspace OOM"
-
-> From 5d9c01e2814a7ade49db7945ad3890f4f138855e Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 12 Dec 2013 11:50:17 +0100
-> Subject: [PATCH] memcg: notify userspace about OOM when and action is due
+> This has already been reverted in Linus's tree, see commit
+> d4faadd5d5b368a7051fef374ee933ec3606713b for the details.
 > 
-> Userspace is currently notified about OOM condition after fails
-> to reclaim any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
-> This usually means that the memcg is really in troubles and an
-> OOM action (either done by userspace or kernel) has to be taken.
-> The kernel OOM killer however bails out and doesn't kill anything
-> if it sees an already dying/exiting task in a good hope a memory
-> will be released and OOM situation will be resolved.
-> 
-> Therefore it makes sense to notify userspace only after really all
-> measures have been taken and an userspace action is required or
-> the kernel kills a task.
-> 
-> This patch also removes fatal_signal_pending and PF_EXITING check from
-> mem_cgroup_oom_synchronize because __mem_cgroup_try_charge already
-> checks for both and bypasses charge so we cannot end up in the oom path.
+> Does Linus's tree still have the same problem for you?
 
-Hmm, I have just noticed that oom_scan_process_thread aborts scanning
-only if it sees PF_EXITING or TIF_MEMDIE. Why the same is not done for 
-fatal_signal_pending tasks as well? Following the same logic as for the
-current we should do that no?
+The revert in Linus's tree does fix the resume problem,
+(tested commit: 9538e10086bd1301fe, merge of linux-watchdog).
 
-The different sets of checks is so confusing :/
+thanks,
+Bruno
 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c | 17 ++++-------------
->  mm/oom_kill.c   |  5 +++++
->  2 files changed, 9 insertions(+), 13 deletions(-)
+> thanks,
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 98900c070045..af7148c77bac 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2235,16 +2235,6 @@ bool mem_cgroup_oom_synchronize(bool handle)
->  	if (!handle)
->  		goto cleanup;
->  
-> -	/*
-> -	 * If current has a pending SIGKILL or is exiting, then automatically
-> -	 * select it.  The goal is to allow it to allocate so that it may
-> -	 * quickly exit and free its memory.
-> -	 */
-> -	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
-> -		set_thread_flag(TIF_MEMDIE);
-> -		goto cleanup;
-> -	}
-> -
->  	owait.memcg = memcg;
->  	owait.wait.flags = 0;
->  	owait.wait.func = memcg_oom_wake_function;
-> @@ -2256,15 +2246,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
->  
->  	locked = mem_cgroup_oom_trylock(memcg);
->  
-> -	if (locked)
-> -		mem_cgroup_oom_notify(memcg);
-> -
->  	if (locked && !memcg->oom_kill_disable) {
->  		mem_cgroup_unmark_under_oom(memcg);
->  		finish_wait(&memcg_oom_waitq, &owait.wait);
-> +		/* calls mem_cgroup_oom_notify if there is a task to kill */
->  		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
->  					 current->memcg_oom.order);
->  	} else {
-> +		if (locked && memcg->oom_kill_disable)
-> +			mem_cgroup_oom_notify(memcg);
-> +
->  		schedule();
->  		mem_cgroup_unmark_under_oom(memcg);
->  		finish_wait(&memcg_oom_waitq, &owait.wait);
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 1e4a600a6163..47c9de8da36d 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -394,6 +394,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
->  		dump_tasks(memcg, nodemask);
->  }
->  
-> +extern void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
-> +
->  #define K(x) ((x) << (PAGE_SHIFT-10))
->  /*
->   * Must be called while holding a reference to p, which will be released upon
-> @@ -470,6 +472,9 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  		victim = p;
->  	}
->  
-> +	if (memcg)
-> +		mem_cgroup_oom_notify(memcg);
-> +
->  	/* mm cannot safely be dereferenced after task_unlock(victim) */
->  	mm = victim->mm;
->  	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
-> -- 
-> 1.8.4.4
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
+> greg k-h
