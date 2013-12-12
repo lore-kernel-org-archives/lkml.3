@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3LLAZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:25:42 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:64804 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab3LLAZj (ORCPT
+	id S1751915Ab3LLA17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:27:59 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:48603 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3LLA16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:25:39 -0500
-Date: Wed, 11 Dec 2013 16:23:26 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Yanis Moreno <yanis.moreno63@gmail.com>
-Subject: Re: [PATCH] ARM: at91: remove redundant dependency
-Message-ID: <20131212002326.GA21531@quad.lixom.net>
-References: <1384932191-8967-1-git-send-email-michael.opdenacker@free-electrons.com>
- <1386259208-2239-1-git-send-email-nicolas.ferre@atmel.com>
+	Wed, 11 Dec 2013 19:27:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386259208-2239-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
+References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
+Date: Wed, 11 Dec 2013 16:21:09 -0800
+X-Google-Sender-Auth: 0vWRtS5n4kT0s6YP_dVfRBqb3gA
+Message-ID: <CAE9FiQUtqtBLx3_pdhs=CjgqViGrDL9xdCjLKgs66jA-apHdQA@mail.gmail.com>
+Subject: Re: How to reserve pci bus numbers for hotplug?
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 05:00:08PM +0100, Nicolas Ferre wrote:
-> From: Yanis Moreno <yanis.moreno63@gmail.com>
-> 
-> This removes the "depends on SOC_SAM_V7" statement
-> in a Kconfig section that's under an "if SOC_SAM_V7"
-> condition (same parameter).
-> 
-> Signed-off-by: Yanis Moreno <yanis.moreno63@gmail.com>
-> Reviewed-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Hi Olof,
-> 
-> This is an additional patch for cleanup. I didn't include it in my previous
-> "cleanup" branch as I had wanted to keep it focused on the move to CCF.
-> 
-> As you said that you are okay with applying patches and that I have only one
-> related to "cleanup" for the moment, I send it to you.
+On Wed, Dec 11, 2013 at 3:37 PM, Andreas Noever
+<andreas.noever@gmail.com> wrote:
 
-Applied. Thanks.
+> If I could get Linux to assign enough resources (bus numbers for now)
+> then I could drop the acpi_osi parameter and make thunderbolt work
+> after suspend... So, is there an easy way to fix this? (Quirks,
+> reconfiguring bus number assignments from a platform driver, ...?)
 
--Olof
+please check if busn_alloc at
+
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-pci-busn-alloc-3.14
+
+could help.
+
+  resources: Split out __allocate_resource()
+  resources: Add resource_shrink_parents_top()
+  resources: Add probe_resource()
+  resources: Replace registered resource in tree.
+  PCI: Add pci_bus_extend/shrink_top()
+  PCI: Probe safe range that we can use for unassigned bridge.
+  PCI: Add pci_bus_replace_busn_res()
+  PCI: Allocate bus range instead of use max blindly
+  PCI: Strict checking of valid range for bridge
+  PCI: Kill pci_fixup_parent_subordinate_busnr()
+  PCI: Seperate child bus scanning to two passes overall
+  pcmcia: Remove workaround for fixing pci parent bus subordinate
+  PCI, pciehp: Remove not needed bus number range checking
+  PCI: More strict checking of valid range for bridge
+  PCI: Don't shrink too much for hotplug bridge
+  expand_bus_for_sriov
