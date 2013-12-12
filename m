@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab3LLQyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:54:46 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24754 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab3LLQyl (ORCPT
+	id S1752004Ab3LLQyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:54:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:45672 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3LLQys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:54:41 -0500
+	Thu, 12 Dec 2013 11:54:48 -0500
 From: vegard.nossum@oracle.com
 To: linux-kernel@vger.kernel.org
 Cc: Vegard Nossum <vegard.nossum@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 3/9] hfs: Known exploit detection for CVE-2011-4330
-Date: Thu, 12 Dec 2013 17:52:26 +0100
-Message-Id: <1386867152-24072-3-git-send-email-vegard.nossum@oracle.com>
+        Kees Cook <keescook@chromium.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 7/9] drm/i915: Known exploit detection for CVE-2013-0913
+Date: Thu, 12 Dec 2013 17:52:30 +0100
+Message-Id: <1386867152-24072-7-git-send-email-vegard.nossum@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
 References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
@@ -24,38 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vegard Nossum <vegard.nossum@oracle.com>
 
-See bc5b8a9003132ae44559edd63a1623b7b99dfb68.
+See 3118a4f652c7b12c752f3222af0447008f9b2368.
 
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
 ---
- fs/hfs/trans.c |    5 ++++-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/hfs/trans.c b/fs/hfs/trans.c
-index b1ce4c7..2fe83f0 100644
---- a/fs/hfs/trans.c
-+++ b/fs/hfs/trans.c
-@@ -11,6 +11,7 @@
- 
- #include <linux/types.h>
- #include <linux/nls.h>
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index bf34577..48490c1 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -32,6 +32,7 @@
+ #include "i915_trace.h"
+ #include "intel_drv.h"
+ #include <linux/dma_remapping.h>
 +#include <linux/exploit.h>
  
- #include "hfs_fs.h"
+ struct eb_objects {
+ 	struct list_head objects;
+@@ -785,8 +786,10 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
+ 		 * the worst case where we need to allocate the entire
+ 		 * relocation tree as a single array.
+ 		 */
+-		if (exec[i].relocation_count > relocs_max - relocs_total)
++		if (exec[i].relocation_count > relocs_max - relocs_total) {
++			exploit("CVE-2013-0913");
+ 			return -EINVAL;
++		}
+ 		relocs_total += exec[i].relocation_count;
  
-@@ -40,8 +41,10 @@ int hfs_mac2asc(struct super_block *sb, char *out, const struct hfs_name *in)
- 
- 	src = in->name;
- 	srclen = in->len;
--	if (srclen > HFS_NAMELEN)
-+	if (srclen > HFS_NAMELEN) {
-+		exploit("CVE-2011-4330");
- 		srclen = HFS_NAMELEN;
-+	}
- 	dst = out;
- 	dstlen = HFS_MAX_NAMELEN;
- 	if (nls_io) {
+ 		length = exec[i].relocation_count *
 -- 
 1.7.10.4
 
