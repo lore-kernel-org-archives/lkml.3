@@ -1,109 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab3LLIpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 03:45:11 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:56768 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3LLIpG convert rfc822-to-8bit (ORCPT
+	id S1751488Ab3LLIpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 03:45:30 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:50309 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3LLIp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 03:45:06 -0500
+	Thu, 12 Dec 2013 03:45:27 -0500
+Date: Thu, 12 Dec 2013 00:43:13 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.13-rc
+Message-ID: <20131212084313.GA20698@quad.lixom.net>
 MIME-Version: 1.0
-In-Reply-To: <CAMP5Xgf=R_VuP=EvMFVuwx=XtTNwQ0Gx-+Fa63DoLH_073WiAQ@mail.gmail.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
-	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
-	<20131204183554.GA16693@kroah.com>
-	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
-	<20131204214325.GA19565@kroah.com>
-	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
-	<20131204220247.GA22031@kroah.com>
-	<CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
-	<CAMoF9u1W4-xUFjtMw+SuwR=wgnpfq4uMucKciqrqp81WK1aNmw@mail.gmail.com>
-	<CAMP5XgeGRjK5rPeMFv-LT3u+Bvc8WumtDgMdgnYDXO0t_C__Cw@mail.gmail.com>
-	<CAMoF9u2GN0GuD9azO3irU80tY+bnRhBFxUw3fhajEkFYH9ugmg@mail.gmail.com>
-	<CAMP5Xgf=R_VuP=EvMFVuwx=XtTNwQ0Gx-+Fa63DoLH_073WiAQ@mail.gmail.com>
-Date: Thu, 12 Dec 2013 10:45:04 +0200
-Message-ID: <CAE1zot+Vptdqt5jmfOd5TYehXJFhG3Cj7Xcq_dU8vY6H3TJ2VQ@mail.gmail.com>
-Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Rogers <irogers@google.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        David Butcher <Dave.Butcher@arm.com>,
-        Rom Lemarchand <romlem@android.com>,
-        Dianne Hackborn <hackbod@android.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 1:00 AM, Arve Hjønnevåg <arve@android.com> wrote:
-> On Wed, Dec 11, 2013 at 10:10 AM, Octavian Purdila
-> <octavian.purdila@intel.com> wrote:
->> On Wed, Dec 11, 2013 at 5:21 AM, Arve Hjønnevåg <arve@android.com> wrote:
->>>
->>> Assuming you are talking about a kernel compat layer that translates
->>> the flat_binder_object structs as they pass between 32 bit and 64 bit
->>> processes, that will not always work. The data portion of the message
->>> sometimes contain size values that are invisible to the kernel, but
->>> these values will be wrong if the kernel move data to make room for a
->>> different size flat_binder_object.
->>>
->>
->> Hi Arve,
->>
->> Yes, I was talking about translating flat_binder_objects.
->>
->> I understand the potential issue for the user data payload, however,
->> since most applications will use libbinder, the only problematic case
->> is readIntPtr/writeIntPtr, which we can deprecate and convert
->> applications that use it to readInt64. AFAICS there is only one user
->> in the AOSP for this API (libmedia).
->>
->> If you are referring to data blobs that application parses I don't
->> think there is anything we can do, even at libbinder level.
->>
->> Can you give me an example of the sort of problems you see?
->>
->> Thanks,
->> Tavi
->
-> The specific problem I was told about can be found in
-> frameworks/base/core/java/android/os/Bundle.java, but there could be
-> other. The size of the bundle is stored in the parcel so the end of
-> the bundle will be wrong if the bundle contains a flat_binder_object
-> that the driver changes the size of. However, since the sending
-> process gets the parcel size from libbinder, changing libbinder to
-> always use the 64 bit version of flat_binder_object should work with
-> this code.
->
+Hi Linus,
 
-AFAICS the bundle size is stored as an int32 so there is no bit width
-issues between the sending and receiving process.
+The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
 
-When I mentioned that flat_binder_objects will be translated, I meant
-the whole transaction will be translated to preserve its user payload
-intact. Something like this:
+  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
 
-        32bit                        64bit
-  +----------------+    +--------------------+
-  | o o oo  o    xx| -> | oo oooo  oo    yyyy|
-  +----------------+    +--------------------+
+are available in the git repository at:
 
-where o are binder objects, spaces are user data and x,y are offsets
-pointers to binder objects (they are size_t so they need translation
-as well).
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-As long as the application does not use absolute offsets in the
-payload and as long as the data types stored in the payload are fixed
-bit width across the 32bit/64bit ABI (e.g. int32, int64 instead of
-intptr) doing the translation in kernel should be fine. I checked
-libbinder and both assumptions seems to be true (except in a few cases
-for the later which I already mentioned)
+for you to fetch changes up to 6f97dc8d4663abed96fa30e3ea4a1d4cfd1c4276:
 
-So, what am I missing?
+  ARM: sun6i: dt: Fix interrupt trigger types (2013-12-11 17:15:24 -0800)
+
+----------------------------------------------------------------
+ARM: SoC fixes for 3.13-rc
+
+Another week, another batch of fixes.
+
+Again, OMAP regressions due to move to DT is the bulk of the changes here,
+but this should be the last of it for 3.13. There are also a handful of
+OMAP hwmod changes (power management, reset handling) for USB on OMAP3
+that fixes some longish-standing bugs around USB resets.
+
+There are a couple of other changes that also add up line count a bit:
+One is a long-standing bug with the keyboard layout on one of the
+PXA platforms. The other is a fix for highbank that moves their
+power-off/reset button handling to be done in-kernel since relying on
+userspace to handle it was fragile and awkward.
+
+----------------------------------------------------------------
+Dmitry Eremin-Solenikov (1):
+      ARM: pxa: tosa: fix keys mapping
+
+Kevin Hilman (2):
+      Merge tag 'omap-for-v3.13/yet-more-dt-regressions-take2' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge tag 'for-v3.13-rc/hwmod-fixes-a' of git://git.kernel.org/.../pjw/omap-pending into fixes
+
+Lad, Prabhakar (2):
+      gpio: davinci: fix check for unbanked gpio
+      ARM: davinci: fix number of resources passed to davinci_gpio_register()
+
+Maxime Ripard (2):
+      ARM: sun7i: dt: Fix interrupt trigger types
+      ARM: sun6i: dt: Fix interrupt trigger types
+
+Nishanth Menon (3):
+      ARM: OMAP2+: Fix the machine entry for am3517
+      ARM: OMAP2+: hwmod: Fix usage of invalid iclk / oclk when clock node is not present
+      ARM: OMAP2+: omap_device: add fail hook for runtime_pm when bad data is detected
+
+Olof Johansson (2):
+      Merge tag 'davinci-fixes-for-v3.13-rc1' of git://git.kernel.org/.../nsekhar/linux-davinci into fixes
+      Merge tag 'davinci-fixes-for-v3.13-rc3' of git://git.kernel.org/.../nsekhar/linux-davinci into fixes
+
+Peter Ujfalusi (1):
+      ARM: davinci: Fix McASP mem resource names
+
+Rob Herring (1):
+      ARM: highbank: handle soft poweroff and reset key events
+
+Roger Quadros (3):
+      ARM: OMAP4+: hwmod data: Don't prevent RESET of USB Host module
+      ARM: OMAP2+: hwmod: Fix SOFTRESET logic
+      ARM: OMAP3: hwmod data: Don't prevent RESET of USB Host module
+
+Sergei Ianovich (1):
+      ARM: pxa: prevent PXA270 occasional reboot freezes
+
+Shawn Guo (1):
+      MAINTAINERS: merge IMX6 entry into IMX
+
+Stephen Warren (1):
+      ARM: tegra: add missing break to fuse initialization code
+
+Tony Lindgren (3):
+      ARM: OMAP2+: Fix overwriting hwmod data with data from device tree
+      ARM: dts: Fix missing entries for am3517
+      ARM: dts: Fix booting for secure omaps
+
+ MAINTAINERS                                |  11 +--
+ arch/arm/boot/dts/am3517-evm.dts           |   6 +-
+ arch/arm/boot/dts/am3517.dtsi              |  63 +++++++++++++
+ arch/arm/boot/dts/omap3-n900.dts           |   2 +-
+ arch/arm/boot/dts/omap3-n950-n9.dtsi       |   2 +-
+ arch/arm/boot/dts/omap34xx-hs.dtsi         |  16 ++++
+ arch/arm/boot/dts/omap36xx-hs.dtsi         |  16 ++++
+ arch/arm/boot/dts/sun6i-a31.dtsi           |  27 +++---
+ arch/arm/boot/dts/sun7i-a20.dtsi           |  42 ++++-----
+ arch/arm/mach-davinci/devices-da8xx.c      |   4 +-
+ arch/arm/mach-davinci/dm355.c              |   3 +-
+ arch/arm/mach-davinci/dm365.c              |   3 +-
+ arch/arm/mach-davinci/dm644x.c             |   3 +-
+ arch/arm/mach-davinci/dm646x.c             |   6 +-
+ arch/arm/mach-highbank/highbank.c          |  23 +++++
+ arch/arm/mach-omap2/board-generic.c        |  18 ++++
+ arch/arm/mach-omap2/omap_device.c          |  24 +++++
+ arch/arm/mach-omap2/omap_device.h          |   1 +
+ arch/arm/mach-omap2/omap_hwmod.c           | 143 ++++++++++++++++++++++++-----
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  13 +--
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  12 +--
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c |  13 +--
+ arch/arm/mach-pxa/reset.c                  |   8 +-
+ arch/arm/mach-pxa/tosa.c                   | 102 ++++++++++----------
+ arch/arm/mach-tegra/fuse.c                 |   2 +
+ drivers/gpio/gpio-davinci.c                |   4 +-
+ 26 files changed, 409 insertions(+), 158 deletions(-)
+ create mode 100644 arch/arm/boot/dts/am3517.dtsi
+ create mode 100644 arch/arm/boot/dts/omap34xx-hs.dtsi
+ create mode 100644 arch/arm/boot/dts/omap36xx-hs.dtsi
