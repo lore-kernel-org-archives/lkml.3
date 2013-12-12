@@ -1,153 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab3LLSmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:42:45 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:54531 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3LLSml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:42:41 -0500
+	id S1752072Ab3LLSoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:44:20 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:24170
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751519Ab3LLSoS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 13:44:18 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(z579ehzbb2dI98dI9371Ic89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h906i1155h)
+Date: Thu, 12 Dec 2013 10:44:01 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 5/9] clocksource/cadence_ttc: Adjust interval in clock
+ notifier
+References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1385514296-26702-6-git-send-email-soren.brinkmann@xilinx.com>
+ <52A9A8EA.3080609@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20131212142156.GB32683@htj.dyndns.org>
-References: <20131204054533.GZ3556@cmpxchg.org> <alpine.DEB.2.02.1312041742560.20115@chino.kir.corp.google.com>
- <20131205025026.GA26777@htj.dyndns.org> <alpine.DEB.2.02.1312051537550.7717@chino.kir.corp.google.com>
- <20131206190105.GE13373@htj.dyndns.org> <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
- <20131210215037.GB9143@htj.dyndns.org> <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
- <20131211124240.GA24557@htj.dyndns.org> <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
- <20131212142156.GB32683@htj.dyndns.org>
-From: Tim Hockin <thockin@hockin.org>
-Date: Thu, 12 Dec 2013 10:42:20 -0800
-X-Google-Sender-Auth: Rhjbq4zekU999j8ndKbBJVdpirY
-Message-ID: <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
-Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom notifications
- to access reserves
-To: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <52A9A8EA.3080609@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <d0dac978-75a1-4df2-bd2b-b497e34b568a@AM1EHSMHS009.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 6:21 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hey, Tim.
->
-> Sidenote: Please don't top-post with the whole body quoted below
-> unless you're adding new cc's.  Please selectively quote the original
-> message's body to remind the readers of the context and reply below
-> it.  It's a basic lkml etiquette and one with good reasons.  If you
-> have to top-post for whatever reason - say you're typing from a
-> machine which doesn't allow easy editing of the original message,
-> explain so at the top of the message, or better yet, wait till you can
-> unless it's urgent.
+Hi Daniel,
 
-Yeah sorry.  Replying from my phone is awkward at best.  I know better :)
+On Thu, Dec 12, 2013 at 01:15:38PM +0100, Daniel Lezcano wrote:
+> On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
+> >The clockevent has to be reprogrammed if the timer's input
+> >clock frequency changes and the timer is in periodic mode, in order to
+> >maintain the correct timer interval.
+> >
+> >Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> >---
+> >v2:
+> >  - adjust the timer interval while the timer interrupt is disabled
+> >---
+> >  drivers/clocksource/cadence_ttc_timer.c | 12 +++++++++---
+> >  1 file changed, 9 insertions(+), 3 deletions(-)
+> >
+> >diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+> >index 246d018d1e63..77517675653e 100644
+> >--- a/drivers/clocksource/cadence_ttc_timer.c
+> >+++ b/drivers/clocksource/cadence_ttc_timer.c
+> >@@ -322,6 +322,9 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+> >  	switch (event) {
+> >  	case POST_RATE_CHANGE:
+> >  	{
+> >+		/* update cached frequency */
+> >+		ttc->freq = ndata->new_rate;
+> >+
+> >  		/*
+> >  		 * clockevents_update_freq should be called with IRQ disabled on
+> >  		 * the CPU the timer provides events for. The timer we use is
+> >@@ -329,12 +332,15 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+> >  		 * cores.
+> >  		 */
+> >  		disable_irq(ttcce->ce.irq);
+> >+
+> >  		clockevents_update_freq(&ttcce->ce,
+> >  				ndata->new_rate / PRESCALE);
+> >-		enable_irq(ttcce->ce.irq);
+> >
+> >-		/* update cached frequency */
+> >-		ttc->freq = ndata->new_rate;
+> >+		if (ttcce->ce.mode == CLOCK_EVT_MODE_PERIODIC)
+> >+			ttc_set_interval(ttc, DIV_ROUND_CLOSEST(ttc->freq,
+> >+						PRESCALE * HZ));
+> >+
+> >+		enable_irq(ttcce->ce.irq);
+> >
+> >  		/* fall through */
+> >  	}
+> 
+> When looking at the smp_twd.c, there is a similar need.
+Right, but with my proposed patches a call to clockevents_update_freq()
+should be all that is needed.
 
-> On Wed, Dec 11, 2013 at 09:37:46PM -0800, Tim Hockin wrote:
->> The immediate problem I see with setting aside reserves "off the top"
->> is that we don't really know a priori how much memory the kernel
->> itself is going to use, which could still land us in an overcommitted
->> state.
->>
->> In other words, if I have your 128 MB machine, and I set aside 8 MB
->> for OOM handling, and give 120 MB for jobs, I have not accounted for
->> the kernel.  So I set aside 8 MB for OOM and 100 MB for jobs, leaving
->> 20 MB for jobs.  That should be enough right?  Hell if I know, and
->> nothing ensures that.
->
-> Yes, sure thing, that's the reason why I mentioned "with some slack"
-> in the original message and also that it might not be completely the
-> same.  It doesn't allow you to aggressively use system level OOM
-> handling as the sizing estimator for the root cgroup; however, it's
-> more of an implementation details than something which should guide
-> the overall architecture - it's a problem which lessens in severity as
-> [k]memcg improves and its coverage becomes more complete, which is the
-> direction we should be headed no matter what.
+> 
+> There are a couple of notifier used on for cpufreq and one for clock
+> rate change.
+Only one is actually used I think, depending on what kernel
+infrastructure is available.
 
-In my mind, the ONLY point of pulling system-OOM handling into
-userspace is to make it easier for crazy people (Google) to implement
-bizarre system-OOM policies.  Example:
+> 
+> Wouldn't make sense to add the notifier calls and registration in
+> the time framework and add the callbacks in the dev ops ? The switch
+> would be in the timer framework and perhaps the irq disabling may be
+> easier to deal with ?
+I don't think that works - at least not that easy -  because timers could
+have all different input clocks. The twd is kind of special since it always
+uses the CPU clock.  And - unfortunately - our TTC implementation on Zynq
+does it similar. But that is not the generic case and I don't know if it
+makes sense/is possible to handle this in the timer core. It would mean the
+timer core would need to keep track of the timers + their input clocks.
+I was hoping that Zynq, twd and arm_global_timer are rather the
+exception and that the majority of timer HW is provided a fixed and stable
+input frequency - as the arm generic timer spec demands.
 
-When we have a system OOM we want to do a walk of the administrative
-memcg tree (which is only a couple levels deep, users can make
-non-admin sub-memcgs), selecting the lowest priority entity at each
-step (where both tasks and memcgs have a priority and the priority
-range is much wider than the current OOM scores, and where memcg
-priority is sometimes a function of memcg usage), until we reach a
-leaf.
+	Sören
 
-Once we reach a leaf, I want to log some info about the memcg doing
-the allocation, the memcg being terminated, and maybe some other bits
-about the system (depending on the priority of the selected victim,
-this may or may not be an "acceptable" situation).  Then I want to
-kill *everything* under that memcg.  Then I want to "publish" some
-information through a sane API (e.g. not dmesg scraping).
 
-This is basically our policy as we understand it today.  This is
-notably different than it was a year ago, and it will probably evolve
-further in the next year.
-
-Teaching the kernel all of this stuff has proven to be sort of
-difficult to maintain and forward-port, and has been very slow to
-evolve because of how painful it is to test and deploy new kernels.
-
-Maybe we can find a way to push this level of policy down to the
-kernel OOM killer?  When this was mentioned internally I got shot down
-(gently, but shot down none the less).  Assuming we had
-nearly-reliable (it doesn't have to be 100% guaranteed to be useful)
-OOM-in-userspace, I can keep the adminstrative memcg metadata in
-memory, implement killing as cruelly as I need, and do all of the
-logging and publication after the OOM kill is done.  Most importantly
-I can test and deploy new policy changes pretty trivially.
-
-Handling per-memcg OOM is a different discussion.  Here is where we
-want to be able to extract things like heap profiles or take stats
-snapshots, grow memcgs (if so configured) etc.  Allowing our users to
-have a moment of mercy before we put a bullet in their brain enables a
-whole new realm of debugging, as well as a lot of valuable features.
-
-> It'd depend on the workload but with memcg fully configured it
-> shouldn't fluctuate wildly.  If it does, we need to hunt down whatever
-> is causing such fluctuatation and include it in kmemcg, right?  That
-> way, memcg as a whole improves for all use cases not just your niche
-> one and I strongly believe that aligning as many use cases as possible
-> along the same axis, rather than creating a large hole to stow away
-> the exceptions, is vastly more beneficial to *everyone* in the long
-> term.
-
-We have a long tail of kernel memory usage.  If we provision machines
-so that the "do work here" first-level memcg excludes the average
-kernel usage, we have a huge number of machines that will fail to
-apply OOM policy because of actual overcommitment.  If we provision
-for 95th or 99th percentile kernel usage, we're wasting large amounts
-of memory that could be used to schedule jobs.  This is the
-fundamental problem we face with static apportionment (and we face it
-in a dozen other situations, too).  Expressing this set-aside memory
-as "off-the-top" rather than absolute limits makes the whole system
-more flexible.
-
-> There'd still be all the bells and whistles to configure and monitor
-> system-level OOM and if there's justified need for improvements, we
-> surely can and should do that; however, with the heavy lifting / hot
-> path offloaded to the per-memcg userland OOM handlers, I believe it's
-> reasonable to expect the burden on system OOM handler being noticeably
-> less, which is the way it should be.  That's the last guard against
-> the whole system completely locking up and we can't extend its
-> capabilities beyond that easily and we most likely don't even want to.
->
-> If I take back a step and look at the two options and their pros and
-> cons, which path we should take is rather obvious to me.  I hope you
-> see it too.
->
-> Thanks.
->
-> --
-> tejun
