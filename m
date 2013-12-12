@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab3LLLS7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:18:59 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:62474 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab3LLLSx (ORCPT
+	id S1751823Ab3LLLTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:19:08 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:50791 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab3LLLTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:18:53 -0500
+	Thu, 12 Dec 2013 06:19:02 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -23,9 +23,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v4 2/9] staging: dwc2: update DT binding to add generic clock/phy properties
-Date: Thu, 12 Dec 2013 06:18:30 -0500
-Message-Id: <1386847117-21240-3-git-send-email-mporter@linaro.org>
+Subject: [PATCH v4 6/9] usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
+Date: Thu, 12 Dec 2013 06:18:34 -0500
+Message-Id: <1386847117-21240-7-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386847117-21240-1-git-send-email-mporter@linaro.org>
 References: <1386847117-21240-1-git-send-email-mporter@linaro.org>
@@ -33,44 +33,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dwc2/s3c-hsotg require a single clock to be specified and optionally
-a generic phy. On the s3c-hsotg driver old style USB phy support is
-present as a fallback so the generic phy properties are optional.
+Adds support for querying the phy bus width from the generic phy
+subsystem. Configure UTMI bus width in GUSBCFG based on this value.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- Documentation/devicetree/bindings/staging/dwc2.txt | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/usb/gadget/s3c-hsotg.c | 14 +++++++++++++-
+ drivers/usb/gadget/s3c-hsotg.h |  1 +
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt b/Documentation/devicetree/bindings/staging/dwc2.txt
-index 1a1b7cf..a1753ed 100644
---- a/Documentation/devicetree/bindings/staging/dwc2.txt
-+++ b/Documentation/devicetree/bindings/staging/dwc2.txt
-@@ -5,6 +5,14 @@ Required properties:
- - compatible : "snps,dwc2"
- - reg : Should contain 1 register range (address and length)
- - interrupts : Should contain 1 interrupt
-+- clocks: clock provider specifier
-+- clock-names: shall be "otg"
-+Refer to clk/clock-bindings.txt for generic clock consumer properties
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index e9683c2..168aaa9 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -144,6 +144,7 @@ struct s3c_hsotg_ep {
+  * @regs: The memory area mapped for accessing registers.
+  * @irq: The IRQ number we are using
+  * @supplies: Definition of USB power supplies
++ * @phyif: PHY interface width
+  * @dedicated_fifos: Set if the hardware has dedicated IN-EP fifos.
+  * @num_of_eps: Number of available EPs (excluding EP0)
+  * @debug_root: root directrory for debugfs.
+@@ -171,6 +172,7 @@ struct s3c_hsotg {
+ 
+ 	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
+ 
++	u32			phyif;
+ 	unsigned int		dedicated_fifos:1;
+ 	unsigned char           num_of_eps;
+ 
+@@ -2276,7 +2278,7 @@ static void s3c_hsotg_core_init(struct s3c_hsotg *hsotg)
+ 	 */
+ 
+ 	/* set the PLL on, remove the HNP/SRP and set the PHY */
+-	writel(GUSBCFG_PHYIf16 | GUSBCFG_TOutCal(7) |
++	writel(hsotg->phyif | GUSBCFG_TOutCal(7) |
+ 	       (0x5 << 10), hsotg->regs + GUSBCFG);
+ 
+ 	s3c_hsotg_init_fifo(hsotg);
+@@ -3621,6 +3623,16 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		goto err_supplies;
+ 	}
+ 
++	/* Set default UTMI width */
++	hsotg->phyif = GUSBCFG_PHYIf16;
 +
-+Optional properties:
-+- phys: phy provider specifier
-+- phy-names: shall be "device"
-+Refer to phy/phy-bindings.txt for generic phy consumer properties
++	/*
++	 * If using the generic PHY framework, check if the PHY bus
++	 * width is 8-bit and set the phyif appropriately.
++	 */
++	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
++		hsotg->phyif = GUSBCFG_PHYIf8;
++
+ 	if (hsotg->phy)
+ 		phy_init(hsotg->phy);
  
- Example:
- 
-@@ -12,4 +20,8 @@ Example:
-                 compatible = "ralink,rt3050-usb, snps,dwc2";
-                 reg = <0x101c0000 40000>;
-                 interrupts = <18>;
-+		clocks = <&usb_otg_ahb_clk>;
-+		clock-names = "otg";
-+		phys = <&usbphy>;
-+		phy-names = "usb2-phy";
-         };
+diff --git a/drivers/usb/gadget/s3c-hsotg.h b/drivers/usb/gadget/s3c-hsotg.h
+index d650b12..85f549f 100644
+--- a/drivers/usb/gadget/s3c-hsotg.h
++++ b/drivers/usb/gadget/s3c-hsotg.h
+@@ -55,6 +55,7 @@
+ #define GUSBCFG_HNPCap				(1 << 9)
+ #define GUSBCFG_SRPCap				(1 << 8)
+ #define GUSBCFG_PHYIf16			(1 << 3)
++#define GUSBCFG_PHYIf8				(0 << 3)
+ #define GUSBCFG_TOutCal_MASK			(0x7 << 0)
+ #define GUSBCFG_TOutCal_SHIFT			(0)
+ #define GUSBCFG_TOutCal_LIMIT			(0x7)
 -- 
 1.8.4
 
