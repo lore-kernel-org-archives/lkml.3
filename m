@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab3LLOWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:22:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36062 "EHLO
+	id S1752172Ab3LLOXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:23:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36039 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab3LLOVS (ORCPT
+	with ESMTP id S1751474Ab3LLOVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:21:18 -0500
-Message-Id: <20131212141655.238445339@infradead.org>
+	Thu, 12 Dec 2013 09:21:16 -0500
+Message-Id: <20131212141655.118911949@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 12 Dec 2013 15:08:46 +0100
+Date: Thu, 12 Dec 2013 15:08:44 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
@@ -21,400 +21,111 @@ To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         Andy Lutomirski <luto@amacapital.net>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 11/15] x86: Rewrite cyc2ns to avoid the need to disable IRQs
+Subject: [PATCH 09/15] x86: Use mul_u64_u32_shr() for native_sched_clock()
 References: <20131212140835.729222186@infradead.org>
-Content-Disposition: inline; filename=peterz-tsc-latch.patch
+Content-Disposition: inline; filename=peterz-cycles2ns-math64.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a ring-buffer like multi-version object structure which allows
-always having a coherent object; we use this to avoid having to
-disable IRQs while reading sched_clock() and avoids a problem when
-getting an NMI while changing the cyc2ns data.
+Use mul_u64_u32_shr() so that x86_64 can use a single 64x64->128 mul.
 
-                        MAINLINE   PRE        POST
+before:
 
-    sched_clock_stable: 1          1          1
-    (cold) sched_clock: 329841     331312     257223
-    (cold) local_clock: 301773     310296     309889
-    (warm) sched_clock: 38375      38247      25280
-    (warm) local_clock: 100371     102713     85268
-    (warm) rdtsc:       27340      27289      24247
-    sched_clock_stable: 0          0          0
-    (cold) sched_clock: 382634     372706     301224
-    (cold) local_clock: 396890     399275     399870
-    (warm) sched_clock: 38194      38124      25630
-    (warm) local_clock: 143452     148698     129629
-    (warm) rdtsc:       27345      27365      24307
+0000000000000560 <native_sched_clock>:
+ 560:   44 8b 1d 00 00 00 00    mov    0x0(%rip),%r11d        # 567 <native_sched_clock+0x7>
+ 567:   55                      push   %rbp
+ 568:   48 89 e5                mov    %rsp,%rbp
+ 56b:   45 85 db                test   %r11d,%r11d
+ 56e:   75 4f                   jne    5bf <native_sched_clock+0x5f>
+ 570:   0f 31                   rdtsc  
+ 572:   89 c0                   mov    %eax,%eax
+ 574:   48 c1 e2 20             shl    $0x20,%rdx
+ 578:   48 c7 c1 00 00 00 00    mov    $0x0,%rcx
+ 57f:   48 09 c2                or     %rax,%rdx
+ 582:   48 c7 c7 00 00 00 00    mov    $0x0,%rdi
+ 589:   65 8b 04 25 00 00 00    mov    %gs:0x0,%eax
+ 590:   00 
+ 591:   48 98                   cltq   
+ 593:   48 8b 34 c5 00 00 00    mov    0x0(,%rax,8),%rsi
+ 59a:   00 
+ 59b:   48 89 d0                mov    %rdx,%rax
+ 59e:   81 e2 ff 03 00 00       and    $0x3ff,%edx
+ 5a4:   48 c1 e8 0a             shr    $0xa,%rax
+ 5a8:   48 0f af 14 0e          imul   (%rsi,%rcx,1),%rdx
+ 5ad:   48 0f af 04 0e          imul   (%rsi,%rcx,1),%rax
+ 5b2:   5d                      pop    %rbp
+ 5b3:   48 03 04 3e             add    (%rsi,%rdi,1),%rax
+ 5b7:   48 c1 ea 0a             shr    $0xa,%rdx
+ 5bb:   48 01 d0                add    %rdx,%rax
+ 5be:   c3                      retq 
+
+after:
+
+0000000000000550 <native_sched_clock>:
+ 550:   8b 3d 00 00 00 00       mov    0x0(%rip),%edi        # 556 <native_sched_clock+0x6>
+ 556:   55                      push   %rbp
+ 557:   48 89 e5                mov    %rsp,%rbp
+ 55a:   48 83 e4 f0             and    $0xfffffffffffffff0,%rsp
+ 55e:   85 ff                   test   %edi,%edi
+ 560:   75 2c                   jne    58e <native_sched_clock+0x3e>
+ 562:   0f 31                   rdtsc  
+ 564:   89 c0                   mov    %eax,%eax
+ 566:   48 c1 e2 20             shl    $0x20,%rdx
+ 56a:   48 09 c2                or     %rax,%rdx
+ 56d:   65 48 8b 04 25 00 00    mov    %gs:0x0,%rax
+ 574:   00 00 
+ 576:   89 c0                   mov    %eax,%eax
+ 578:   48 f7 e2                mul    %rdx
+ 57b:   65 48 8b 0c 25 00 00    mov    %gs:0x0,%rcx
+ 582:   00 00 
+ 584:   c9                      leaveq 
+ 585:   48 0f ac d0 0a          shrd   $0xa,%rdx,%rax
+ 58a:   48 01 c8                add    %rcx,%rax
+ 58d:   c3                      retq 
+
+                        MAINLINE   POST
+
+    sched_clock_stable: 1	   1
+    (cold) sched_clock: 329841     331312
+    (cold) local_clock: 301773     310296
+    (warm) sched_clock: 38375      38247
+    (warm) local_clock: 100371     102713
+    (warm) rdtsc:       27340      27289
+    sched_clock_stable: 0          0
+    (cold) sched_clock: 382634     372706
+    (cold) local_clock: 396890     399275
+    (warm) sched_clock: 38194      38124
+    (warm) local_clock: 143452     148698
+    (warm) rdtsc:       27345      27365
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/x86/include/asm/timer.h     |   23 +++
- arch/x86/kernel/cpu/perf_event.c |   14 +-
- arch/x86/kernel/tsc.c            |  229 ++++++++++++++++++++++++++++++++++-----
- 3 files changed, 236 insertions(+), 30 deletions(-)
+ arch/x86/include/asm/timer.h |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
 --- a/arch/x86/include/asm/timer.h
 +++ b/arch/x86/include/asm/timer.h
-@@ -13,7 +13,26 @@ extern int recalibrate_cpu_khz(void);
+@@ -4,6 +4,7 @@
+ #include <linux/pm.h>
+ #include <linux/percpu.h>
+ #include <linux/interrupt.h>
++#include <linux/math64.h>
  
- extern int no_timer_check;
+ #define TICK_SIZE (tick_nsec / 1000)
  
--DECLARE_PER_CPU(unsigned long, cyc2ns);
--DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
-+/*
-+ * We use the full linear equation: f(x) = a + b*x, in order to allow
-+ * a continuous function in the face of dynamic freq changes.
-+ *
-+ * Continuity means that when our frequency changes our slope (b); we want to
-+ * ensure that: f(t) == f'(t), which gives: a + b*t == a' + b'*t.
-+ *
-+ * Without an offset (a) the above would not be possible.
-+ *
-+ * See the comment near cycles_2_ns() for details on how we compute (b).
-+ */
-+struct cyc2ns_data {
-+	u32 cyc2ns_mul;
-+	u32 cyc2ns_shift;
-+	u64 cyc2ns_offset;
-+	u32 __count;
-+	/* u32 hole */
-+}; /* 24 bytes -- do not grow */
-+
-+extern struct cyc2ns_data *cyc2ns_read_begin(void);
-+extern void cyc2ns_read_end(struct cyc2ns_data *);
+@@ -57,10 +58,8 @@ DECLARE_PER_CPU(unsigned long long, cyc2
  
- #endif /* _ASM_X86_TIMER_H */
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1883,6 +1883,8 @@ static struct pmu pmu = {
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
  {
-+	struct cyc2ns_data *data;
-+
- 	userpg->cap_user_time = 0;
- 	userpg->cap_user_time_zero = 0;
- 	userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc;
-@@ -1891,13 +1893,17 @@ void arch_perf_update_userpage(struct pe
- 	if (!sched_clock_stable)
- 		return;
- 
-+	data = cyc2ns_read_begin();
-+
- 	userpg->cap_user_time = 1;
--	userpg->time_mult = this_cpu_read(cyc2ns);
--	userpg->time_shift = CYC2NS_SCALE_FACTOR;
--	userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
-+	userpg->time_mult = data->cyc2ns_mul;
-+	userpg->time_shift = data->cyc2ns_shift;
-+	userpg->time_offset = data->cyc2ns_offset - now;
- 
- 	userpg->cap_user_time_zero = 1;
--	userpg->time_zero = this_cpu_read(cyc2ns_offset);
-+	userpg->time_zero = data->cyc2ns_offset;
-+
-+	cyc2ns_read_end(data);
- }
- 
- /*
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -39,7 +39,119 @@ static int __read_mostly tsc_disabled =
- 
- int tsc_clocksource_reliable;
- 
--/* Accelerators for sched_clock()
-+/*
-+ * Use a ring-buffer like data structure, where a writer advances the head by
-+ * writing a new data entry and a reader advances the tail when it observes a
-+ * new entry.
-+ *
-+ * Writers are made to wait on readers until there's space to write a new
-+ * entry.
-+ *
-+ * This means that we can always use an {offset, mul} pair to compute a ns
-+ * value that is 'roughly' in the right direction, even if we're writing a new
-+ * {offset, mul} pair during the clock read.
-+ *
-+ * The down-side is that we can no longer guarantee strict monotonicity anymore
-+ * (assuming the TSC was that to begin with), because while we compute the
-+ * intersection point of the two clock slopes and make sure the time is
-+ * continuous at the point of switching; we can no longer guarantee a reader is
-+ * strictly before or after the switch point.
-+ *
-+ * It does mean a reader no longer needs to disable IRQs in order to avoid
-+ * CPU-Freq updates messing with his times, and similarly an NMI reader will
-+ * no longer run the risk of hitting half-written state.
-+ */
-+
-+struct cyc2ns {
-+	struct cyc2ns_data data[2];	/*  0 + 2*24 = 48 */
-+	struct cyc2ns_data *head;	/* 48 + 8    = 56 */
-+	struct cyc2ns_data *tail;	/* 56 + 8    = 64 */
-+}; /* exactly fits one cacheline */
-+
-+static DEFINE_PER_CPU_ALIGNED(struct cyc2ns, cyc2ns);
-+
-+struct cyc2ns_data *cyc2ns_read_begin(void)
-+{
-+	struct cyc2ns_data *head;
-+
-+	preempt_disable();
-+
-+	head = this_cpu_read(cyc2ns.head);
-+	/*
-+	 * Ensure we observe the entry when we observe the pointer to it.
-+	 * matches the wmb from cyc2ns_write_end().
-+	 */
-+	smp_read_barrier_depends();
-+	head->__count++;
-+	barrier();
-+
-+	return head;
-+}
-+
-+void cyc2ns_read_end(struct cyc2ns_data *head)
-+{
-+	barrier();
-+	/*
-+	 * If we're the outer most nested read; update the tail pointer
-+	 * when we're done. This notifies possible pending writers
-+	 * that we've observed the head pointer and that the other
-+	 * entry is now free.
-+	 */
-+	if (!--head->__count) {
-+		/*
-+		 * x86-TSO does not reorder writes with older reads;
-+		 * therefore once this write becomes visible to another
-+		 * cpu, we must be finished reading the cyc2ns_data.
-+		 *
-+		 * matches with cyc2ns_write_begin().
-+		 */
-+		this_cpu_write(cyc2ns.tail, head);
-+	}
-+	preempt_enable();
-+}
-+
-+/*
-+ * Begin writing a new @data entry for @cpu.
-+ *
-+ * Assumes some sort of write side lock; currently 'provided' by the assumption
-+ * that cpufreq will call its notifiers sequentially.
-+ */
-+static struct cyc2ns_data *cyc2ns_write_begin(int cpu)
-+{
-+	struct cyc2ns *c2n = &per_cpu(cyc2ns, cpu);
-+	struct cyc2ns_data *data = c2n->data;
-+
-+	if (data == c2n->head)
-+		data++;
-+
-+	/* XXX send an IPI to @cpu in order to guarantee a read? */
-+
-+	/*
-+	 * When we observe the tail write from cyc2ns_read_end(),
-+	 * the cpu must be done with that entry and its safe
-+	 * to start writing to it.
-+	 */
-+	while (c2n->tail == data)
-+		cpu_relax();
-+
-+	return data;
-+}
-+
-+static void cyc2ns_write_end(int cpu, struct cyc2ns_data *data)
-+{
-+	struct cyc2ns *c2n = &per_cpu(cyc2ns, cpu);
-+
-+	/*
-+	 * Ensure the @data writes are visible before we publish the
-+	 * entry. Matches the data-depencency in cyc2ns_read_begin().
-+	 */
-+	smp_wmb();
-+
-+	ACCESS_ONCE(c2n->head) = data;
-+}
-+
-+/*
-+ * Accelerators for sched_clock()
-  * convert from cycles(64bits) => nanoseconds (64bits)
-  *  basic equation:
-  *              ns = cycles / (freq / ns_per_sec)
-@@ -61,49 +173,106 @@ int tsc_clocksource_reliable;
-  *                      -johnstul@us.ibm.com "math is hard, lets go shopping!"
-  */
- 
--DEFINE_PER_CPU(unsigned long, cyc2ns);
--DEFINE_PER_CPU(unsigned long long, cyc2ns_offset);
--
- #define CYC2NS_SCALE_FACTOR 10 /* 2^10, carefully chosen */
- 
-+static void cyc2ns_data_init(struct cyc2ns_data *data)
-+{
-+	data->cyc2ns_mul = 1U << CYC2NS_SCALE_FACTOR;
-+	data->cyc2ns_shift = CYC2NS_SCALE_FACTOR;
-+	data->cyc2ns_offset = 0;
-+	data->__count = 0;
-+}
-+
-+static void cyc2ns_init(int cpu)
-+{
-+	struct cyc2ns *c2n = &per_cpu(cyc2ns, cpu);
-+
-+	cyc2ns_data_init(&c2n->data[0]);
-+	cyc2ns_data_init(&c2n->data[1]);
-+
-+	c2n->head = c2n->data;
-+	c2n->tail = c2n->data;
-+}
-+
- static inline unsigned long long cycles_2_ns(unsigned long long cyc)
- {
--	unsigned long long ns = this_cpu_read(cyc2ns_offset);
--	ns += mul_u64_u32_shr(cyc, this_cpu_read(cyc2ns), CYC2NS_SCALE_FACTOR);
-+	struct cyc2ns_data *data, *tail;
-+	unsigned long long ns;
-+
-+	/*
-+	 * See cyc2ns_read_*() for details; replicated in order to avoid
-+	 * an extra few instructions that came with the abstraction.
-+	 * Notable, it allows us to only do the __count and tail update
-+	 * dance when its actually needed.
-+	 */
-+
-+	preempt_disable();
-+	data = this_cpu_read(cyc2ns.head);
-+	tail = this_cpu_read(cyc2ns.tail);
-+
-+	if (likely(data == tail)) {
-+		ns = data->cyc2ns_offset;
-+		ns += mul_u64_u32_shr(cyc, data->cyc2ns_mul, CYC2NS_SCALE_FACTOR);
-+	} else {
-+		data->__count++;
-+
-+		barrier();
-+
-+		ns = data->cyc2ns_offset;
-+		ns += mul_u64_u32_shr(cyc, data->cyc2ns_mul, CYC2NS_SCALE_FACTOR);
-+
-+		barrier();
-+
-+		if (!--data->__count)
-+			this_cpu_write(cyc2ns.tail, data);
-+	}
-+	preempt_enable();
-+
+-	int cpu = smp_processor_id();
+-	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
+-			(1UL << CYC2NS_SCALE_FACTOR));
++	unsigned long long ns = this_cpu_read(cyc2ns_offset);
++	ns += mul_u64_u32_shr(cyc, this_cpu_read(cyc2ns), CYC2NS_SCALE_FACTOR);
  	return ns;
  }
  
-+/* XXX surely we already have this someplace in the kernel?! */
-+#define DIV_ROUND(n, d) (((n) + ((d) / 2)) / (d))
-+
- static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
- {
--	unsigned long long tsc_now, ns_now, *offset;
--	unsigned long flags, *scale;
-+	unsigned long long tsc_now, ns_now;
-+	struct cyc2ns_data *data;
-+	unsigned long flags;
- 
- 	local_irq_save(flags);
- 	sched_clock_idle_sleep_event();
- 
--	scale = &per_cpu(cyc2ns, cpu);
--	offset = &per_cpu(cyc2ns_offset, cpu);
-+	if (!cpu_khz)
-+		goto done;
-+
-+	data = cyc2ns_write_begin(cpu);
- 
- 	rdtscll(tsc_now);
- 	ns_now = cycles_2_ns(tsc_now);
- 
--	if (cpu_khz) {
--		*scale = ((NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR) +
--				cpu_khz / 2) / cpu_khz;
--		*offset = ns_now - mult_frac(tsc_now, *scale,
--					     (1UL << CYC2NS_SCALE_FACTOR));
--	}
-+	/*
-+	 * Compute a new multiplier as per the above comment and ensure our
-+	 * time function is continuous; see the comment near struct
-+	 * cyc2ns_data.
-+	 */
-+	data->cyc2ns_mul = DIV_ROUND(NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR, cpu_khz);
-+	data->cyc2ns_shift = CYC2NS_SCALE_FACTOR;
-+	data->cyc2ns_offset = ns_now -
-+		mul_u64_u32_shr(tsc_now, data->cyc2ns_mul, CYC2NS_SCALE_FACTOR);
-+
-+	cyc2ns_write_end(cpu, data);
- 
-+done:
- 	sched_clock_idle_wakeup_event(0);
- 	local_irq_restore(flags);
- }
--
- /*
-  * Scheduler clock - returns current time in nanosec units.
-  */
- u64 native_sched_clock(void)
- {
--	u64 this_offset;
-+	u64 tsc_now;
- 
- 	/*
- 	 * Fall back to jiffies if there's no TSC available:
-@@ -119,10 +288,10 @@ u64 native_sched_clock(void)
- 	}
- 
- 	/* read the Time Stamp Counter: */
--	rdtscll(this_offset);
-+	rdtscll(tsc_now);
- 
- 	/* return the value in ns */
--	return cycles_2_ns(this_offset);
-+	return cycles_2_ns(tsc_now);
- }
- 
- /* We need to define a real function for sched_clock, to override the
-@@ -678,11 +847,21 @@ void tsc_restore_sched_clock_state(void)
- 
- 	local_irq_save(flags);
- 
--	__this_cpu_write(cyc2ns_offset, 0);
-+	/*
-+	 * We're comming out of suspend, there's no concurrency yet; don't
-+	 * bother being nice about the RCU stuff, just write to both
-+	 * data fields.
-+	 */
-+
-+	this_cpu_write(cyc2ns.data[0].cyc2ns_offset, 0);
-+	this_cpu_write(cyc2ns.data[1].cyc2ns_offset, 0);
-+
- 	offset = cyc2ns_suspend - sched_clock();
- 
--	for_each_possible_cpu(cpu)
--		per_cpu(cyc2ns_offset, cpu) = offset;
-+	for_each_possible_cpu(cpu) {
-+		per_cpu(cyc2ns.data[0].cyc2ns_offset, cpu) = offset;
-+		per_cpu(cyc2ns.data[1].cyc2ns_offset, cpu) = offset;
-+	}
- 
- 	local_irq_restore(flags);
- }
-@@ -1005,8 +1184,10 @@ void __init tsc_init(void)
- 	 * speed as the bootup CPU. (cpufreq notifiers will fix this
- 	 * up if their speed diverges)
- 	 */
--	for_each_possible_cpu(cpu)
-+	for_each_possible_cpu(cpu) {
-+		cyc2ns_init(cpu);
- 		set_cyc2ns_scale(cpu_khz, cpu);
-+	}
- 
- 	if (tsc_disabled > 0)
- 		return;
 
 
