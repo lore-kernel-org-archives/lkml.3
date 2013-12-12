@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3LLUOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:14:41 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52175 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab3LLUOi (ORCPT
+	id S1751944Ab3LLUPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:15:18 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:52507 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3LLUPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:14:38 -0500
-Message-ID: <52AA192B.9090906@wwwdotorg.org>
-Date: Thu, 12 Dec 2013 13:14:35 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Thu, 12 Dec 2013 15:15:14 -0500
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: thierry.reding@gmail.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 0/4] ARM: tegra: convert dts files of all Tegra platforms
- to use pinctrl defines
-References: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <e24ec9c9-b250-4505-a534-4199202c9580@email.android.com>
+References: <CALCETrXUZe9xmUyDHgZRRe2TBP7CXSVpXkvH61qiLLxcANicUg@mail.gmail.com>
+ <e24ec9c9-b250-4505-a534-4199202c9580@email.android.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 12 Dec 2013 12:14:53 -0800
+Message-ID: <CALCETrWH9QbbHnctpBZiAPVV+CLqV4L9CbB8_T_-T7bJQAEOrg@mail.gmail.com>
+Subject: Re: Clock control algorithms (Re: [RFC][PATCH 5/7] x86: Use latch
+ data structure for cyc2ns)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2013 03:44 AM, Laxman Dewangan wrote:
-> This patch series convert dts files of all Tegra's platforms to use the pinctron
-> dt-binding macro for better readability.
+On Sat, Nov 30, 2013 at 9:34 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> There is a huge difference between something that breaks after 2^32 and 2^64 events.  Very few computers will ever be able to have 2^64 events of any kind in their lifetime, never mind a single boot.
 
-I've applied the series to Tegra's for-3.14/dt branch.
+Given that struct seqcount contains an "unsigned" counter, the 32-bit
+wraparound thing could be a problem in practice.  I hope there aren't
+security vulnerabilities in which userspace overflows a kernel
+refcount, seqcount, or other similar structure.
+
+--Andy
