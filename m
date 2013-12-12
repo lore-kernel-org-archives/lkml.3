@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab3LLHAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 02:00:42 -0500
-Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:29423
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751640Ab3LLHA0 (ORCPT
+	id S1751935Ab3LLHCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 02:02:01 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:38473 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3LLHB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 02:00:26 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1447Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 12 Dec 2013 15:00:47 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Valentine Barshak <valentine.barshak@cogentembedded.com>,
-        Wei Yongjun <weiyj.lk@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Richard Zhu <r65037@freescale.com>
-Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
- host maintainers
-Message-ID: <20131212070045.GO18380@S2101-09.ap.freescale.net>
-References: <20131211183237.GI4699@google.com>
+	Thu, 12 Dec 2013 02:01:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131211183237.GI4699@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <CAA9_cmc8b2rmp6hsgkLUEnFBmKqwdYCbdb_2rEycs-qVksAFpg@mail.gmail.com>
+References: <CAGm_ybgC6Ca0qz6zJL0PkEUiyUi=Ct0L5t2GJOt9ZU-buP+wBQ@mail.gmail.com>
+	<Pine.LNX.4.44L0.1312111204220.1531-100000@iolanthe.rowland.org>
+	<CAODwPW_ZUgHWymOF7Fzxh7sbhrvV0-g-pMXWQm=eSz2U8EBRtQ@mail.gmail.com>
+	<20131211193647.GA25483@xanatos>
+	<CAA9_cme4XmXqQfx9kTPEJWdx2XwBZk-G8s7pjSuZ5KWg3UZZ8Q@mail.gmail.com>
+	<CAA9_cmc8b2rmp6hsgkLUEnFBmKqwdYCbdb_2rEycs-qVksAFpg@mail.gmail.com>
+Date: Wed, 11 Dec 2013 23:01:57 -0800
+X-Google-Sender-Auth: faZzJQEPHK_39jMQtSW9gyc3JZg
+Message-ID: <CAODwPW8GqOcUadYD_jXdyFxJ0cdeLLRi6hs9jFODkQ1KuUr5FQ@mail.gmail.com>
+Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming SuperSpeed HUBs
+From: Julius Werner <jwerner@chromium.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Vikas Sajjan <sajjan.linux@gmail.com>,
+        Vikas Sajjan <vikas.sajjan@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Douglas Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        sunil joshi <joshi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+>> ...although, the spec says that it does not wait for the port resets
+>> to complete.  As far as I can see re-issuing a warm reset and waiting
+>> is the only way to guarantee the core times the recovery.  Presumably
+>> the portstatus debounce in hub_activate() mitigates this, but that
+>> 100ms is less than a full reset timeout.
 
-On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
-> +PCI DRIVER FOR IMX6
-> +M:	Shawn Guo <shawn.guo@linaro.org>
+It's definitely not just a timing issue for us. I can't reproduce all
+the same cases as Vikas, but when I attach a USB analyzer to the ones
+I do see the host controller doesn't even start sending a reset.
 
-Thanks for the nomination.  But I think a better person for this
-position would be Richard Zhu <r65037@freescale.com> (copied).  He knows
-the driver and controller much better than myself, and most importantly
-he is the driver owner for Freescale kernel and he has the contact to
-Freescale PCIe hardware people.
+>>> The xHCI spec requires that when the xHCI host is reset, a USB reset is
+>>> driven down the USB 3.0 ports.  If hot reset fails, the port may migrate
+>>> to warm reset.  See table 32 in the xHCI spec, in the definition of
+>>> HCRST.  It sounds like this host doesn't drive a USB reset down USB 3.0
+>>> ports at all on host controller reset?
 
-Shawn
+Oh, interesting, I hadn't seen that yet. So I guess the spec itself is
+fine if it were followed to the letter.
 
-> +L:	linux-pci@vger.kernel.org
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/pci/host/*imx6*
+I did some more tests about this on my Exynos machine: when I put a
+device to autosuspend (U3) and manually poke the xHC reset bit, I do
+see an automatic warm reset on the analyzer and the ports manage to
+retrain to U0. But after a system suspend/resume which calls
+xhci_reset() in the process, there is no reset on the wire. I also
+noticed that it doesn't drive a reset (even after manual poking) when
+there is no device connected on the other end of the analyzer.
 
+So this might be our problem: maybe these host controllers (Synopsys
+DesignWare) issue the spec-mandated warm reset only on ports where
+they think there is a device attached. But after a system
+suspend/resume (where the whole IP block on the SoC was powered down),
+the host controller cannot know that there is still a device with an
+active power session attached, and therefore doesn't drive the reset
+on its own.
+
+Even though this is a host controller bug, we still have to deal with
+it somehow. I guess we could move the code into xhci_plat_resume() and
+hide it behind a quirk to lessen the impact. But since reset_resume is
+not a common case for most host controllers, it's hard to say if this
+is DesignWare specific or a more widespread implementation mistake.
