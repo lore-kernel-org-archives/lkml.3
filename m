@@ -1,154 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab3LLXUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:20:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59744 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab3LLXUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:20:19 -0500
-Date: Thu, 12 Dec 2013 15:22:09 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-Message-ID: <20131212232209.GA8543@kroah.com>
-References: <20131127184652.GA1856@kroah.com>
- <CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
- <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
+	id S1751886Ab3LLX3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:29:51 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:20339 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751502Ab3LLX3s convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 18:29:48 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(z579ehz9371I103dK542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh109h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h1155h)
+X-WSS-ID: 0MXPVS2-07-66U-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: David Airlie <airlied@linux.ie>, Jerome Glisse <jglisse@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] radeon_pm: fix oops in hwmon_attributes_visible() and
+ radeon_hwmon_show_temp_thresh()
+Thread-Topic: [PATCH] radeon_pm: fix oops in hwmon_attributes_visible() and
+ radeon_hwmon_show_temp_thresh()
+Thread-Index: AQHO95He/lcnqf0OqE+x+8AZodd9GJpRNMEA
+Date: Thu, 12 Dec 2013 23:29:41 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D030AA1DFB@satlexdag05.amd.com>
+References: <20131212232557.GA2203@swordfish>
+In-Reply-To: <20131212232557.GA2203@swordfish>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.177.96.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 03:17:50PM -0800, Yinghai Lu wrote:
-> On Sat, Dec 7, 2013 at 12:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Wed, Nov 27, 2013 at 11:46 AM, Greg Kroah-Hartman
-> > <gregkh@linuxfoundation.org> wrote:
-> >> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>
-> >> The PCI MSI sysfs code is a mess with kobjects for things that don't
-> >> really need to be kobjects.  This patch creates attributes dynamically
-> >> for the MSI interrupts instead of using kobjects.
-> >>
-> >> Note, this removes a directory from the current MSI interrupt sysfs
-> >> code:
-> >>
-> >> old MSI kobjects:
-> >> pci_device
-> >>    └── msi_irqs
-> >>        └── 40
-> >>            └── mode
-> >>
-> >> new MSI attributes:
-> >> pci_device
-> >>    └── msi_irqs
-> >>        └── 40
-> >>
-> >> As there was only one file "mode" with the kobject model, the interrupt
-> >> number is now a file that returns the "mode" of the interrupt (msi vs.
-> >> msix).
-> >>
-> >> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> > I added the acks from Neil and Veaceslav, folded in the
-> > Documentation/ABI update, and applied the whole thing to my pci/misc
-> > branch for v3.14.  Thanks!
-> 
-> got:
-> [   71.429735] BUG: key ffff887fcf082a58 not in .data!
-> [   71.429737] ------------[ cut here ]------------
-> [   71.429742] WARNING: CPU: 0 PID: 4 at kernel/locking/lockdep.c:2987 lockdep_i
-> nit_map+0x127/0x5b0()
-> [   71.429743] DEBUG_LOCKS_WARN_ON(1)
-> [   71.429744] Modules linked in:
-> [   71.429747] CPU: 0 PID: 4 Comm: kworker/0:0 Tainted: G          I  3.13.0-rc3
-> -yh-01187-ge0e4e4e-dirty #45
-> [   71.429757] Workqueue: events work_for_cpu_fn
-> [   71.429792]  0000000000000009 ffff881fcf95da58 ffffffff82020475 ffff881fcf95d
-> aa0
-> [   71.429800]  ffff881fcf95da90 ffffffff81097c3d ffff887fcf082a58 ffff88dfcec1a
-> d28
-> [   71.429809]  0000000000000000 0000000000000000 ffff889fcf2eecd0 ffff881fcf95d
-> af0
-> [   71.429809] Call Trace:
-> [   71.429814]  [<ffffffff82020475>] dump_stack+0x45/0x56
-> [   71.429818]  [<ffffffff81097c3d>] warn_slowpath_common+0x7d/0xa0
-> [   71.429822]  [<ffffffff81097cac>] warn_slowpath_fmt+0x4c/0x50
-> [   71.429826]  [<ffffffff810e3d97>] lockdep_init_map+0x127/0x5b0
-> [   71.429835]  [<ffffffff81242fe8>] ? sysfs_new_dirent+0x98/0x140
-> [   71.429839]  [<ffffffff81242033>] sysfs_add_file_mode_ns+0x63/0xc0
-> [   71.429843]  [<ffffffff8124491d>] internal_create_group+0x18d/0x260
-> [   71.429853]  [<ffffffff81556345>] ? populate_msi_sysfs+0x185/0x1d0
-> [   71.429857]  [<ffffffff81244a52>] sysfs_create_groups+0x42/0xa0
-> [   71.429861]  [<ffffffff81556367>] populate_msi_sysfs+0x1a7/0x1d0
-> [   71.429865]  [<ffffffff81556b67>] pci_enable_msi_block+0x1f7/0x2a0
-> [   71.429870]  [<ffffffff81549795>] pcie_port_device_register+0x335/0x520
-> [   71.429874]  [<ffffffff81549f08>] pcie_portdrv_probe+0x68/0xa0
-> [   71.429883]  [<ffffffff8153cf75>] local_pci_probe+0x45/0xa0
-> [   71.429887]  [<ffffffff810b0af4>] work_for_cpu_fn+0x14/0x20
-> [   71.429891]  [<ffffffff810b431b>] process_one_work+0x28b/0x4a0
-> [   71.429895]  [<ffffffff810b4292>] ? process_one_work+0x202/0x4a0
-> [   71.429899]  [<ffffffff810b55db>] worker_thread+0x26b/0x3a0
-> [   71.429903]  [<ffffffff810e262d>] ? trace_hardirqs_on+0xd/0x10
-> [   71.429906]  [<ffffffff810b5370>] ? manage_workers.isra.17+0x340/0x340
-> [   71.429912]  [<ffffffff810bc031>] kthread+0x111/0x120
-> [   71.429919]  [<ffffffff810cddab>] ? local_clock+0x2b/0x40
-> [   71.429923]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
-> [   71.429927]  [<ffffffff8203842c>] ret_from_fork+0x7c/0xb0
-> [   71.429931]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
-> [   71.429933] ---[ end trace c511e3d74efea94e ]---
-> 
-> looks like Greg forgot adding attr init.
-> 
-> Can you fold attached patch into Greg's patch ?
-> 
-> Index: linux-2.6/drivers/pci/msi.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/msi.c
-> +++ linux-2.6/drivers/pci/msi.c
-> @@ -547,6 +547,7 @@ static int populate_msi_sysfs(struct pci
->                 msi_dev_attr = kzalloc(sizeof(*msi_dev_attr), GFP_KERNEL);
->                 if (!msi_dev_attr)
->                         return -ENOMEM;
-> +               sysfs_attr_init(&msi_dev_attr->attr);
->                 sprintf(name, "%d", entry->irq);
->                 msi_dev_attr->attr.name = name;
->                 msi_dev_attr->attr.mode = S_IRUGO;
+Fix is already queued in my next -fixes pull.  Thanks!
 
+Alex
+
+> -----Original Message-----
+> From: Sergey Senozhatsky [mailto:sergey.senozhatsky@gmail.com]
+> Sent: Thursday, December 12, 2013 6:26 PM
+> To: Deucher, Alexander
+> Cc: David Airlie; Jerome Glisse; dri-devel@lists.freedesktop.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH] radeon_pm: fix oops in hwmon_attributes_visible() and
+> radeon_hwmon_show_temp_thresh()
+> 
+> Since ec39f64bba radeon_hwmon_init() is using
+> hwmon_device_register_with_groups(), which sets `rdev' as a device
+> private driver_data, while hwmon_attributes_visible() and
+> radeon_hwmon_show_temp_thresh() are still waiting for `drm_device'.
+> fix them by using dev_get_drvdata():
+> 
+> BUG: unable to handle kernel paging request at 0000000000001e28
+> IP: [<ffffffffa02ae8b4>] hwmon_attributes_visible+0x18/0x3d [radeon]
+> PGD 15057e067 PUD 151a8e067 PMD 0
+> Oops: 0000 [#1] PREEMPT SMP
+> Call Trace:
+>  [<ffffffff81163ba7>] internal_create_group+0x114/0x1d9
+>  [<ffffffff81163c7a>] sysfs_create_group+0xe/0x10
+>  [<ffffffff81163ec7>] sysfs_create_groups+0x22/0x5f
+>  [<ffffffff812ceed8>] device_add+0x34f/0x501
+>  [<ffffffff812cf09f>] device_register+0x15/0x18
+>  [<ffffffff81317e5e>] hwmon_device_register_with_groups+0xb5/0xed
+>  [<ffffffffa02aec00>] radeon_hwmon_init+0x56/0x7c [radeon]
+>  [<ffffffffa02b020b>] radeon_pm_init+0x134/0x7e5 [radeon]
+>  [<ffffffff810f5c7c>] ? kmem_cache_alloc+0x63/0xe3
+>  [<ffffffffa0284ed1>] radeon_modeset_init+0x75f/0x8ed [radeon]
+>  [<ffffffffa02671b6>] radeon_driver_load_kms+0xc6/0x187 [radeon]
+>  [<ffffffffa021cb33>] drm_dev_register+0xf9/0x1b4 [drm]
+>  [<ffffffffa021ddf2>] drm_get_pci_dev+0x98/0x129 [drm]
+>  [<ffffffff810f602e>] ? kfree+0x10a/0x166
+>  [<ffffffffa0264345>] ? radeon_pci_probe+0x91/0xac [radeon]
+>  [<ffffffffa0264357>] radeon_pci_probe+0xa3/0xac [radeon]
+>  [<ffffffff8125b90c>] pci_device_probe+0x6e/0xcf
+>  [<ffffffff812d13e4>] driver_probe_device+0x98/0x1c4
+>  [<ffffffff812d15a4>] __driver_attach+0x5c/0x7e
+>  [<ffffffff812d1548>] ? __device_attach+0x38/0x38
+>  [<ffffffff812cfac9>] bus_for_each_dev+0x7b/0x85
+>  [<ffffffff812d0f69>] driver_attach+0x19/0x1b
+>  [<ffffffff812d0c27>] bus_add_driver+0x104/0x1ce
+>  [<ffffffff812d1b23>] driver_register+0x89/0xc5
+>  [<ffffffff8125b033>] __pci_register_driver+0x58/0x5b
+>  [<ffffffffa037f000>] ? 0xffffffffa037efff
+>  [<ffffffffa021df09>] drm_pci_init+0x86/0xea [drm]
+>  [<ffffffffa037f000>] ? 0xffffffffa037efff
+>  [<ffffffffa037f097>] radeon_init+0x97/0x1000 [radeon]
+>  [<ffffffff81000290>] do_one_initcall+0x7f/0x117
+>  [<ffffffff810323bc>] ? set_memory_nx+0x3b/0x3d
+>  [<ffffffff810a002a>] load_module+0x1583/0x1bb4
+>  [<ffffffff8109d602>] ? store_uevent+0x35/0x35
+>  [<ffffffff8106121a>] ? finish_task_switch+0x3b/0x10c
+>  [<ffffffff813e818b>] ? preempt_schedule_irq+0x5d/0x99
+>  [<ffffffff813ecdf7>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff810a06fb>] SyS_init_module+0xa0/0xaf
+>  [<ffffffff813ed7e6>] tracesys+0xd4/0xd9
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
 > ---
->  drivers/pci/msi.c |    1 +
->  1 file changed, 1 insertion(+)
 > 
-> Index: linux-2.6/drivers/pci/msi.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/msi.c
-> +++ linux-2.6/drivers/pci/msi.c
-> @@ -547,6 +547,7 @@ static int populate_msi_sysfs(struct pci
->  		msi_dev_attr = kzalloc(sizeof(*msi_dev_attr), GFP_KERNEL);
->  		if (!msi_dev_attr)
->  			return -ENOMEM;
-> +		sysfs_attr_init(&msi_dev_attr->attr);
->  		sprintf(name, "%d", entry->irq);
->  		msi_dev_attr->attr.name = name;
->  		msi_dev_attr->attr.mode = S_IRUGO;
+>  drivers/gpu/drm/radeon/radeon_pm.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/radeon/radeon_pm.c
+> b/drivers/gpu/drm/radeon/radeon_pm.c
+> index dc75bb6..984097b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_pm.c
+> +++ b/drivers/gpu/drm/radeon/radeon_pm.c
+> @@ -552,8 +552,7 @@ static ssize_t
+> radeon_hwmon_show_temp_thresh(struct device *dev,
+>  					     struct device_attribute *attr,
+>  					     char *buf)
+>  {
+> -	struct drm_device *ddev = dev_get_drvdata(dev);
+> -	struct radeon_device *rdev = ddev->dev_private;
+> +	struct radeon_device *rdev = dev_get_drvdata(dev);
+>  	int hyst = to_sensor_dev_attr(attr)->index;
+>  	int temp;
+> 
+> @@ -580,8 +579,7 @@ static umode_t hwmon_attributes_visible(struct
+> kobject *kobj,
+>  					struct attribute *attr, int index)
+>  {
+>  	struct device *dev = container_of(kobj, struct device, kobj);
+> -	struct drm_device *ddev = dev_get_drvdata(dev);
+> -	struct radeon_device *rdev = ddev->dev_private;
+> +	struct radeon_device *rdev = dev_get_drvdata(dev);
+> 
+>  	/* Skip limit attributes if DPM is not enabled */
+>  	if (rdev->pm.pm_method != PM_METHOD_DPM &&
+> 
 
-Ah, crap, yes, you are right, my fault, very nice catch.
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-greg k-h
