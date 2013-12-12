@@ -1,198 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab3LLWKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 17:10:37 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:43643 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922Ab3LLWKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 17:10:31 -0500
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH] driver core/platform: don't leak memory allocated for dma_mask
-Date: Thu, 12 Dec 2013 23:10:07 +0100
-Message-Id: <1386886207-2735-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1752004Ab3LLWLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 17:11:18 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:57602 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751018Ab3LLWLQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 17:11:16 -0500
+Date: Thu, 12 Dec 2013 23:11:03 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, Richard Zhu <r65037@freescale.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Simon Horman <horms@verge.net.au>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH v2] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car
+ PCI host maintainers
+Message-ID: <20131212231103.3ceeb3bb@skate>
+In-Reply-To: <20131212204610.GK4699@google.com>
+References: <20131211183237.GI4699@google.com>
+	<20131212204610.GK4699@google.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a dma_mask is provided as part of platform_device_info,
-platform_device_register_full() allocate memory for a u64
-using kmalloc().
+Dear Bjorn Helgaas,
 
-A comment in the code state that "[t]his memory isn't freed
-when the device is put".
+On Thu, 12 Dec 2013 13:46:10 -0700, Bjorn Helgaas wrote:
+> [+cc Thomas]
+> 
+> On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
+> > If this looks reasonable, I'll merge it via the PCI tree for v3.13.
+> 
+> OK, here's another try.  I'm not actually trying to nominate anybody; I
+> just tried to write down the list we came up with in an earlier discussion [1].
+> 
+> I'd like confirmation from the following people that they approve of being
+> listed here:
+> 
+>   Richard Zhu (IMX6)
+>   Thomas Petazzoni (MVEBU)
+>   Magnus Damm (R-CAR)
+> 
+> I think everybody else listed has already said they approve.
+> 
+> [1] http://lkml.kernel.org/r/CAErSpo5tN==4nSv2u3SUBe_L4VsWn4P7TN+LtrC172Qj1vhtog@mail.gmail.com
+> 
+> 
+> MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI host maintainers
+> 
+> From: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Add entries for PCI host controller drivers in drivers/pci/host/.
+> 
+> Signed-off-by: Mohit Kumar <mohit.kumar@st.com>		(DesignWare)
+> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>	(DesignWare)
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>	(R-CAR)
+> Acked-by: Jason Cooper <jason@lakedaemon.net>		(MVEBU)
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  MAINTAINERS |   34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 8285ed4676b6..1c5dc36ec522 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6449,19 +6449,53 @@ F:	drivers/pci/
+>  F:	include/linux/pci*
+>  F:	arch/x86/pci/
+>  
+> +PCI DRIVER FOR IMX6
+> +M:	Richard Zhu <r65037@freescale.com>
+> +M:	Shawn Guo <shawn.guo@linaro.org>
+> +L:	linux-pci@vger.kernel.org
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/pci/host/*imx6*
+> +
+> +PCI DRIVER FOR MVEBU (Marvell Armada 370 and Armada XP SOC support)
+> +M:	Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> +M:	Jason Cooper <jason@lakedaemon.net>
+> +L:	linux-pci@vger.kernel.org
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/pci/host/*mvebu*
 
-It's never a good thing to leak memory, but there's only very
-few users of platform_device_info's dma_mask, and those are mostly
-"static" devices that are not going to be plugged/unplugged.
+Acked-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-So memory leak is not really an issue, but allocating 8 bytes
-through kmalloc() seems overkill, so this patch moves dma_mask
-after the platform_device struct, dynamically allocated along
-the name buffer.
+Thanks for doing this!
 
-With dma_mask part of the memory allocated for the platform_device
-struct, like name buffer, it will be released with it:
-no memory leak, no small allocation.
+Best regards,
 
-The draw back is the additional code needed to handle
-dma_mask allocation:
-
-Before:
-   text	   data	    bss	    dec	    hex	filename
-   5927	    532	     32	   6491	   195b	obj-i386/drivers/base/platform.o
-   7038	    960	     48	   8046	   1f6e	obj-x86_64/drivers/base/platform.o
-
-After:
-   text	   data	    bss	    dec	    hex	filename
-   6007	    532	     32	   6571	   19ab	obj-i386/drivers/base/platform.o
-   7134	    960	     48	   8142	   1fce	obj-x86_64/drivers/base/platform.o
-
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- drivers/base/platform.c | 93 +++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 67 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 3a94b799f166..95f4cbafe1d7 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -157,7 +157,7 @@ EXPORT_SYMBOL_GPL(platform_add_devices);
- 
- struct platform_object {
- 	struct platform_device pdev;
--	char name[1];
-+	char payload[0];
- };
- 
- /**
-@@ -186,6 +186,25 @@ static void platform_device_release(struct device *dev)
- 	kfree(pa);
- }
- 
-+static struct platform_object *platform_object_alloc(size_t payload)
-+{
-+	struct platform_object *pa;
-+
-+	pa = kzalloc(sizeof(*pa) + payload, GFP_KERNEL);
-+
-+	return pa;
-+}
-+
-+static void platform_object_init(struct platform_object *pa,
-+				 const char *name, int id)
-+{
-+	pa->pdev.name = name;
-+	pa->pdev.id = id;
-+	device_initialize(&pa->pdev.dev);
-+	pa->pdev.dev.release = platform_device_release;
-+	arch_setup_pdev_archdata(&pa->pdev);
-+}
-+
- /**
-  * platform_device_alloc - create a platform device
-  * @name: base name of the device we're adding
-@@ -198,14 +217,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
- {
- 	struct platform_object *pa;
- 
--	pa = kzalloc(sizeof(struct platform_object) + strlen(name), GFP_KERNEL);
-+	pa = platform_object_alloc(strlen(name) + 1);
- 	if (pa) {
--		strcpy(pa->name, name);
--		pa->pdev.name = pa->name;
--		pa->pdev.id = id;
--		device_initialize(&pa->pdev.dev);
--		pa->pdev.dev.release = platform_device_release;
--		arch_setup_pdev_archdata(&pa->pdev);
-+		strcpy(pa->payload, name);
-+		platform_object_init(pa, pa->payload, id);
- 	}
- 
- 	return pa ? &pa->pdev : NULL;
-@@ -213,6 +228,38 @@ struct platform_device *platform_device_alloc(const char *name, int id)
- EXPORT_SYMBOL_GPL(platform_device_alloc);
- 
- /**
-+ * platform_device_dmamask_alloc - create a platform device suitable to hold a dmamask
-+ * @name: base name of the device we're adding
-+ * @id: instance id
-+ *
-+ * Create a platform device object which can have other objects attached
-+ * to it, and which will have attached objects freed when it is released.
-+ */
-+static struct platform_device *platform_device_dmamask_alloc(const char *name,
-+							     int id)
-+{
-+	struct platform_object *pa;
-+	const size_t padding = (((offsetof(struct platform_object, payload) +
-+				  (__alignof__(u64) - 1)) &
-+				 ~(__alignof__(u64) - 1)) -
-+				offsetof(struct platform_object, payload));
-+
-+	pa = platform_object_alloc(padding + sizeof(u64) + strlen(name) + 1);
-+	if (pa) {
-+		char *payload = pa->payload + padding;
-+		strcpy(payload + sizeof(u64), name);
-+		/*
-+		 * Conceptually dma_mask in struct device should not be a pointer.
-+		 * See http://thread.gmane.org/gmane.linux.kernel.pci/9081
-+		 */
-+		pa->pdev.dev.dma_mask = (void *)payload;
-+		platform_object_init(pa, payload + sizeof(u64), id);
-+	}
-+
-+	return pa ? &pa->pdev : NULL;
-+}
-+
-+/**
-  * platform_device_add_resources - add resources to a platform device
-  * @pdev: platform device allocated by platform_device_alloc to add resources to
-  * @res: set of resources that needs to be allocated for the device
-@@ -427,29 +474,23 @@ struct platform_device *platform_device_register_full(
- 	int ret = -ENOMEM;
- 	struct platform_device *pdev;
- 
--	pdev = platform_device_alloc(pdevinfo->name, pdevinfo->id);
--	if (!pdev)
--		goto err_alloc;
--
--	pdev->dev.parent = pdevinfo->parent;
--	ACPI_COMPANION_SET(&pdev->dev, pdevinfo->acpi_node.companion);
--
--	if (pdevinfo->dma_mask) {
--		/*
--		 * This memory isn't freed when the device is put,
--		 * I don't have a nice idea for that though.  Conceptually
--		 * dma_mask in struct device should not be a pointer.
--		 * See http://thread.gmane.org/gmane.linux.kernel.pci/9081
--		 */
--		pdev->dev.dma_mask =
--			kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
--		if (!pdev->dev.dma_mask)
--			goto err;
-+	if (!pdevinfo->dma_mask) {
-+		pdev = platform_device_alloc(pdevinfo->name, pdevinfo->id);
-+		if (!pdev)
-+			goto err_alloc;
-+	} else {
-+		pdev = platform_device_dmamask_alloc(pdevinfo->name,
-+						     pdevinfo->id);
-+		if (!pdev)
-+			goto err_alloc;
- 
- 		*pdev->dev.dma_mask = pdevinfo->dma_mask;
- 		pdev->dev.coherent_dma_mask = pdevinfo->dma_mask;
- 	}
- 
-+	pdev->dev.parent = pdevinfo->parent;
-+	ACPI_COMPANION_SET(&pdev->dev, pdevinfo->acpi_node.companion);
-+
- 	ret = platform_device_add_resources(pdev,
- 			pdevinfo->res, pdevinfo->num_res);
- 	if (ret)
+Thomas
 -- 
-1.8.4.2
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
