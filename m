@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab3LLB4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 20:56:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51057 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab3LLB4N (ORCPT
+	id S1751749Ab3LLB6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 20:58:07 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:50882 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751364Ab3LLB6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 20:56:13 -0500
-Date: Wed, 11 Dec 2013 17:57:52 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>, devel@driverdev.osuosl.org,
-        fabs@goesec.de, tony@atomide.com, linux-kernel@vger.kernel.org,
-        Steven Luo <steven@steven676.net>, pavel@ucw.cz, pali.rohar@gmail.com,
-        Joe Perches <joe@perches.com>, nico@ngolde.de
-Subject: Re: [PATCH] Staging: TIDSPBRIDGE: Use vm_iomap_memory for mmap-ing
- instead of remap_pfn_range
-Message-ID: <20131212015752.GA14254@kroah.com>
-References: <1386014416-4556-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
- <20131207234912.GA1245@steven676.net>
- <52A81830.3000305@gmail.com>
- <20131211083359.GU28413@mwanda>
- <52A836F0.9070500@gmail.com>
- <20131211102717.GV28413@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211102717.GV28413@mwanda>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 11 Dec 2013 20:58:03 -0500
+Date: Wed, 11 Dec 2013 20:58:01 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
+ implementation
+Message-ID: <20131211205801.68e9b7db@gandalf.local.home>
+In-Reply-To: <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
+	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 01:27:17PM +0300, Dan Carpenter wrote:
-> On Wed, Dec 11, 2013 at 11:57:04AM +0200, Ivaylo Dimitrov wrote:
-> > On 11.12.2013 10:33, Dan Carpenter wrote:
-> > >On Wed, Dec 11, 2013 at 09:45:52AM +0200, Ivajlo Dimitrov wrote:
-> > >>I can pick your changes and re-send the original patch with them
-> > >>incorporated if there are no objections. Are you fine with that?
-> > >>
-> > >Do it on top of staging-next, don't redo the original.
-> > >
-> > >regards,
-> > >dan carpenter
-> > 
-> > I don't see the original patch in the staging-next tree [0], how to
-> > proceed? Isn't it better to resend the original patch with Steven's
-> > changes included?
-> > 
-> > [0] http://git.kernel.org/cgit/linux/kernel/git/gregkh/staging.git/log/drivers/staging/tidspbridge?h=staging-next
-> > 
+On Wed, 11 Dec 2013 20:06:37 -0500
+Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+
+> From: Thomas Gleixner <tglx@linutronix.de>
 > 
-> Oops.  It's in staging-linus not staging-next.  I don't know how Greg
-> handles that tree.
+> The wait_queue is a swiss army knife and in most of the cases the
+> full complexity is not needed.  Here we provide a slim version, as
+> it lowers memory consumption and runtime overhead.
+> 
+> The concept originated from RT, where waitqueues are a constant
+> source of trouble, as we can't convert the head lock to a raw
+> spinlock due to fancy and long lasting callbacks.
+> 
+> The smp_mb() was added (by Steven Rostedt) to fix a race condition
+> with swait wakeups vs. adding items to the list.
 
-The same way I do my others:
-	*-next : for the "next" kernel merge window
-	*-linus : for Linus's tree now before the -final release comes out.
+For this part, you can also add my:
 
-The original patch here went to Linus, so it was in staging-linus and
-it's already in Linus's tree.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-thanks,
+I'll also look at these and test them a bit against mainline.
 
-greg k-h
+Thanks for doing this!
+
+-- Steve
+
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> [PG: carry forward from multiple v3.10-rt patches to mainline, align
+>  function names with "normal" wait queue names, update commit log.]
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+
