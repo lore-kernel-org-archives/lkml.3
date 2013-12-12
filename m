@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab3LLBKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 20:10:45 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:52422 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751820Ab3LLBKl (ORCPT
+	id S1751656Ab3LLBMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 20:12:24 -0500
+Received: from alt-proxy11.mail.unifiedlayer.com ([74.220.211.241]:33716 "HELO
+	alt-proxy11.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751155Ab3LLBMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 20:10:41 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtAHALEMqVJ5LHyk/2dsb2JhbABZgweDOrBZhi+BGxd0giUBAQQBOhwjBQsIAxgJJQ8FJQMhE4d8BcI/FxaOG1cHgyGBEwSYE4pMh0iBa4FSKIEt
-Date: Thu, 12 Dec 2013 12:10:38 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, page_alloc: allow __GFP_NOFAIL to allocate below
- watermarks after reclaim
-Message-ID: <20131212011038.GF31386@dastard>
-References: <alpine.DEB.2.02.1312091402580.11026@chino.kir.corp.google.com>
- <20131210075059.GA11295@suse.de>
- <alpine.DEB.2.02.1312101453020.22701@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1312101453020.22701@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Dec 2013 20:12:21 -0500
+Date: Wed, 11 Dec 2013 17:14:07 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: Resume regression in 5a87182aa21d6d5d306840feab9321818dd3e2a3
+Message-ID: <20131211171407.1b1b01b2@jbarnes-desktop>
+In-Reply-To: <1905118.1iBkDjFnLH@vostro.rjw.lan>
+References: <20131211163812.297d4c81@jbarnes-desktop>
+	<1905118.1iBkDjFnLH@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:03:39PM -0800, David Rientjes wrote:
-> On Tue, 10 Dec 2013, Mel Gorman wrote:
-> 
-> > > If direct reclaim has failed to free memory, __GFP_NOFAIL allocations
-> > > can potentially loop forever in the page allocator.  In this case, it's
-> > > better to give them the ability to access below watermarks so that they
-> > > may allocate similar to the same privilege given to GFP_ATOMIC
-> > > allocations.
-> > > 
-> > > We're careful to ensure this is only done after direct reclaim has had
-> > > the chance to free memory, however.
-> > > 
-> > > Signed-off-by: David Rientjes <rientjes@google.com>
+On Thu, 12 Dec 2013 02:22:52 +0100
+"Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+
+> On Wednesday, December 11, 2013 04:38:12 PM Jesse Barnes wrote:
+> > On one of my BYT systems, I see a hang at resume.  Based on my bisect,
+> > it looks like this commit is the culprit:
 > > 
-> > The main problem with doing something like this is that it just smacks
-> > into the adjusted watermark if there are a number of __GFP_NOFAIL. Who
-> > was the user of __GFP_NOFAIL that was fixed by this patch?
+> > commit 5a87182aa21d6d5d306840feab9321818dd3e2a3
+> > Author: Viresh Kumar <viresh.kumar@linaro.org>
+> > Date:   Wed Nov 27 09:09:42 2013 +0530
 > > 
+> >     cpufreq: suspend governors on system suspend/hibernate
+> > 
+> > Is this a known issue?
 > 
-> Nobody, it comes out of a memcg discussion where __GFP_NOFAIL were 
-> recently given the ability to bypass charges to the root memcg when the 
-> memcg has hit its limit since we disallow the oom killer to kill a process 
-> (for the same reason that the vast majority of __GFP_NOFAIL users, those 
-> that do GFP_NOFS | __GFP_NOFAIL, disallow the oom killer in the page 
-> allocator).
+> Yes.
 > 
-> Without some other thread freeing memory, these allocations simply loop 
-> forever.
+> > If so, is there a fix somewhere already?
+> 
+> The commit has been reverted (in the Linus' tree).
 
-So what is kswapd doing in this situation?
+Great, thanks.
 
-> Since there are comments in both gfp.h and page_alloc.c that say no new 
-> users will be added, it seems legitimate to ensure that the allocation 
-> will at least have a chance of succeeding, but not the point of depleting 
-> memory reserves entirely.
-
-As it said before, the filesystem will then simply keep allocating
-memory until it hits the next limit, and then you're back in the
-same situation. Moving the limit at which it fails does not solve
-the problem at all.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jesse Barnes, Intel Open Source Technology Center
