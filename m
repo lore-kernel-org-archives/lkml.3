@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab3LLAzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:55:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51328 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894Ab3LLAzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:55:45 -0500
-Date: Wed, 11 Dec 2013 19:55:40 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] speedstep-smi: enable interrupts when waiting
-In-Reply-To: <alpine.LRH.2.02.1312111938580.23022@file01.intranet.prod.int.rdu2.redhat.com>
-Message-ID: <alpine.LRH.2.02.1312111954320.25512@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1312111751180.9686@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1312111937570.23022@file01.intranet.prod.int.rdu2.redhat.com> <alpine.LRH.2.02.1312111938370.23022@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.LRH.2.02.1312111938580.23022@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751674Ab3LLA6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:58:55 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60824 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab3LLA6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:58:54 -0500
+Date: Wed, 11 Dec 2013 19:58:52 -0500 (EST)
+Message-Id: <20131211.195852.780453472852893891.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jasowang@redhat.com,
+        wuzhy@linux.vnet.ibm.com
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20131212114959.b08ea67fe5624ed6fb392c52@canb.auug.org.au>
+References: <20131212111539.cff1b2efe934c5cd7abbb822@canb.auug.org.au>
+	<20131211.193639.2058525533631918382.davem@davemloft.net>
+	<20131212114959.b08ea67fe5624ed6fb392c52@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 16:58:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dell Latitude C600 laptop with Pentium 3 850MHz processor, the
-speedstep-smi driver sometimes loads and sometimes doesn't load with
-"change to state X failed" message.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 12 Dec 2013 11:49:59 +1100
 
-I found out that we need to enable interrupts while waiting. When we
-enable interrupts, the blockage that prevents frequency transition
-resolves and the transition is possible. With disabled interrupts, the
-blockage doesn't resolve (no matter how long do we wait).
+> Hi Dave,
+> 
+> On Wed, 11 Dec 2013 19:36:39 -0500 (EST) David Miller <davem@davemloft.net> wrote:
+>>
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Thu, 12 Dec 2013 11:15:39 +1100
+>> 
+>> > Today's linux-next merge of the net-next tree got a conflict in
+>> > drivers/net/macvtap.c between commit ce232ce01d61 ("macvtap: signal
+>> > truncated packets") from the net tree and commit 55ec8e25cd97 ("macvtap:
+>> > remove unused parameter in macvtap_do_read()") from the net-next tree.
+>> > 
+>> > I fixed it up (see below) and can carry the fix as necessary (no action
+>> > is required).
+>> 
+>> The net-next commit in question was reverted last night.
+> 
+> Actually, the only relevant revert in the net-next tree I fetched this
+> morning is commit de2aa4760b45 (Revert "macvtap: remove useless codes in
+> macvtap_aio_read() and macvtap_recvmsg()") which reverts 41e4af69a598,
+> not the commit mentioned above.  Unless you haven't pushed out the
+> net-next tree with a later revert ...
 
-This patch enables interrupts in the function speedstep_set_state that can
-be called with disabled interrupts. However, this function is called with
-disabled interrupts only from speedstep_get_freqs, so it shouldn't cause
-any problem.
+Indeed, I was confusing those two commits.  Ok I should probably
+revert that one too.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com
-Cc: stable@kernel.org
+I'll go ahead and do that now, because it's the most straightforward
+way to avoid this merge conflict.
 
----
- drivers/cpufreq/speedstep-lib.c |    1 +
- drivers/cpufreq/speedstep-smi.c |   13 +++++++++++++
- 2 files changed, 14 insertions(+)
-
-Index: linux-3.13-rc3/drivers/cpufreq/speedstep-smi.c
-===================================================================
---- linux-3.13-rc3.orig/drivers/cpufreq/speedstep-smi.c	2013-12-12 01:32:37.769060946 +0100
-+++ linux-3.13-rc3/drivers/cpufreq/speedstep-smi.c	2013-12-12 01:42:29.240216311 +0100
-@@ -200,7 +200,19 @@ static void speedstep_set_state(unsigned
- 		if (retry) {
- 			pr_debug("retry %u, previous result %u, waiting...\n",
- 					retry, result);
-+			/*
-+			 * We need to enable interrupts, otherwise the blockage
-+			 * won't resolve.
-+			 *
-+			 * We disable preemption so that other processes don't
-+			 * run. If other processes were running, they could
-+			 * submit more DMA requests, making the blockage worse.
-+			 */
-+			preempt_disable();
-+			local_irq_enable();
- 			mdelay(retry * 50);
-+			local_irq_disable();
-+			preempt_enable_no_resched();
- 		}
- 		retry++;
- 		__asm__ __volatile__(
-@@ -217,6 +229,7 @@ static void speedstep_set_state(unsigned
- 
- 	/* enable IRQs */
- 	local_irq_restore(flags);
-+	preempt_check_resched();
- 
- 	if (new_state == state)
- 		pr_debug("change to %u MHz succeeded after %u tries "
-Index: linux-3.13-rc3/drivers/cpufreq/speedstep-lib.c
-===================================================================
---- linux-3.13-rc3.orig/drivers/cpufreq/speedstep-lib.c	2013-10-18 20:24:16.000000000 +0200
-+++ linux-3.13-rc3/drivers/cpufreq/speedstep-lib.c	2013-12-12 01:42:41.435120321 +0100
-@@ -464,6 +464,7 @@ unsigned int speedstep_get_freqs(enum sp
- 
- out:
- 	local_irq_restore(flags);
-+	preempt_check_resched();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(speedstep_get_freqs);
+Thanks!
