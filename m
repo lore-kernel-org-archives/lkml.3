@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab3LLOW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:22:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36057 "EHLO
+	id S1751830Ab3LLOWx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:22:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36060 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab3LLOVS (ORCPT
+	with ESMTP id S1751947Ab3LLOVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Dec 2013 09:21:18 -0500
-Message-Id: <20131212141654.757388820@infradead.org>
+Message-Id: <20131212141654.688298423@infradead.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 12 Dec 2013 15:08:38 +0100
+Date: Thu, 12 Dec 2013 15:08:37 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
@@ -21,187 +21,135 @@ To: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
         Andy Lutomirski <luto@amacapital.net>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/15] preempt, locking: Rework local_bh_{dis,en}able()
+Subject: [PATCH 02/15] sched, preempt: Fixup missed PREEMPT_NEED_RESCHED folding
 References: <20131212140835.729222186@infradead.org>
-Content-Disposition: inline; filename=peter_zijlstra-inline-local_bh_disable.patch
+Content-Disposition: inline; filename=peterz-preempt_fold_need_resched.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently local_bh_disable() is out-of-line for no apparent reason.
-So inline it to save a few cycles on call/return nonsense, the
-function body is a single add on x86 (a few loads and store extra on
-load/store archs).
+With various drivers wanting to inject idle time; we get people
+calling idle routines outside of the idle loop proper.
 
-Also expose two new local_bh functions:
+Therefore we need to be extra careful about not missing
+TIF_NEED_RESCHED -> PREEMPT_NEED_RESCHED propagations.
 
-  __local_bh_{dis,en}able_ip(unsigned long ip, unsigned int cnt);
+While looking at this, I also realized there's a small window in the
+existing idle loop where we can miss TIF_NEED_RESCHED; when it hits
+right after the tif_need_resched() test at the end of the loop but
+right before the need_resched() test at the start of the loop.
 
-Which implement the actual local_bh_{dis,en}able() behaviour.
+So move preempt_fold_need_resched() out of the loop where we're
+guaranteed to have TIF_NEED_RESCHED set.
 
-The next patch uses the exposed @cnt argument to optimize bh lock
-functions.
-
-With build fixes from Jacob Pan.
-
-Cc: rjw@rjwysocki.net
-Cc: rui.zhang@intel.com
-Cc: jacob.jun.pan@linux.intel.com
-Cc: Mike Galbraith <bitbucket@online.de>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: hpa@zytor.com
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: lenb@kernel.org
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/bottom_half.h  |   32 +++++++++++++++++++++++++++++---
- include/linux/hardirq.h      |    1 +
- include/linux/preempt_mask.h |    1 -
- kernel/softirq.c             |   35 ++++++-----------------------------
- 4 files changed, 36 insertions(+), 33 deletions(-)
+ arch/x86/include/asm/mwait.h |    2 +-
+ include/linux/preempt.h      |   15 +++++++++++++++
+ include/linux/sched.h        |   15 +++++++++++++++
+ kernel/cpu/idle.c            |   17 ++++++++++-------
+ kernel/sched/core.c          |    3 +--
+ 5 files changed, 42 insertions(+), 10 deletions(-)
 
---- a/include/linux/bottom_half.h
-+++ b/include/linux/bottom_half.h
-@@ -1,9 +1,35 @@
- #ifndef _LINUX_BH_H
- #define _LINUX_BH_H
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -50,7 +50,7 @@ static inline void mwait_idle_with_hints
+ 		if (!need_resched())
+ 			__mwait(eax, ecx);
+ 	}
+-	__current_clr_polling();
++	current_clr_polling();
+ }
  
--extern void local_bh_disable(void);
-+#include <linux/preempt.h>
-+#include <linux/preempt_mask.h>
-+
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+extern void __local_bh_disable_ip(unsigned long ip, unsigned int cnt);
+ #endif /* _ASM_X86_MWAIT_H */
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -116,6 +116,21 @@ do { \
+ 
+ #endif /* CONFIG_PREEMPT_COUNT */
+ 
++#ifdef CONFIG_PREEMPT
++#define preempt_set_need_resched() \
++do { \
++	set_preempt_need_resched(); \
++} while (0)
++#define preempt_fold_need_resched() \
++do { \
++	if (tif_need_resched()) \
++		set_preempt_need_resched(); \
++} while (0)
 +#else
-+static __always_inline void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
-+{
-+	preempt_count_add(cnt);
-+	barrier();
-+}
++#define preempt_set_need_resched() do { } while (0)
++#define preempt_fold_need_resched() do { } while (0)
 +#endif
 +
-+static inline void local_bh_disable(void)
-+{
-+	__local_bh_disable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
-+}
-+
- extern void _local_bh_enable(void);
--extern void local_bh_enable(void);
--extern void local_bh_enable_ip(unsigned long ip);
-+extern void __local_bh_enable_ip(unsigned long ip, unsigned int cnt);
-+
-+static inline void local_bh_enable_ip(unsigned long ip)
-+{
-+	__local_bh_enable_ip(ip, SOFTIRQ_DISABLE_OFFSET);
-+}
-+
-+static inline void local_bh_enable(void)
-+{
-+	__local_bh_enable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
-+}
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
  
- #endif /* _LINUX_BH_H */
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -5,6 +5,7 @@
- #include <linux/lockdep.h>
- #include <linux/ftrace_irq.h>
- #include <linux/vtime.h>
-+#include <asm/hardirq.h>
- 
- 
- extern void synchronize_irq(unsigned int irq);
---- a/include/linux/preempt_mask.h
-+++ b/include/linux/preempt_mask.h
-@@ -2,7 +2,6 @@
- #define LINUX_PREEMPT_MASK_H
- 
- #include <linux/preempt.h>
--#include <asm/hardirq.h>
- 
- /*
-  * We put the hardirq and softirq counter into the preemption
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -89,7 +89,7 @@ static void wakeup_softirqd(void)
-  * where hardirqs are disabled legitimately:
-  */
- #ifdef CONFIG_TRACE_IRQFLAGS
--static void __local_bh_disable(unsigned long ip, unsigned int cnt)
-+void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
- {
- 	unsigned long flags;
- 
-@@ -114,21 +114,9 @@ static void __local_bh_disable(unsigned
- 	if (preempt_count() == cnt)
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+ struct preempt_notifier;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2628,6 +2628,21 @@ static inline bool __must_check current_
  }
--#else /* !CONFIG_TRACE_IRQFLAGS */
--static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
--{
--	preempt_count_add(cnt);
--	barrier();
--}
-+EXPORT_SYMBOL(__local_bh_disable_ip);
- #endif /* CONFIG_TRACE_IRQFLAGS */
- 
--void local_bh_disable(void)
--{
--	__local_bh_disable(_RET_IP_, SOFTIRQ_DISABLE_OFFSET);
--}
--
--EXPORT_SYMBOL(local_bh_disable);
--
- static void __local_bh_enable(unsigned int cnt)
- {
- 	WARN_ON_ONCE(!irqs_disabled());
-@@ -151,7 +139,7 @@ void _local_bh_enable(void)
- 
- EXPORT_SYMBOL(_local_bh_enable);
- 
--static inline void _local_bh_enable_ip(unsigned long ip)
-+void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
- {
- 	WARN_ON_ONCE(in_irq() || irqs_disabled());
- #ifdef CONFIG_TRACE_IRQFLAGS
-@@ -166,7 +154,7 @@ static inline void _local_bh_enable_ip(u
- 	 * Keep preemption disabled until we are done with
- 	 * softirq processing:
-  	 */
--	preempt_count_sub(SOFTIRQ_DISABLE_OFFSET - 1);
-+	preempt_count_sub(cnt - 1);
- 
- 	if (unlikely(!in_interrupt() && local_softirq_pending())) {
- 		/*
-@@ -182,18 +170,7 @@ static inline void _local_bh_enable_ip(u
  #endif
- 	preempt_check_resched();
- }
--
--void local_bh_enable(void)
--{
--	_local_bh_enable_ip(_RET_IP_);
--}
--EXPORT_SYMBOL(local_bh_enable);
--
--void local_bh_enable_ip(unsigned long ip)
--{
--	_local_bh_enable_ip(ip);
--}
--EXPORT_SYMBOL(local_bh_enable_ip);
-+EXPORT_SYMBOL(__local_bh_enable_ip);
  
- /*
-  * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
-@@ -264,7 +241,7 @@ asmlinkage void __do_softirq(void)
- 	pending = local_softirq_pending();
- 	account_irq_enter_time(current);
++static inline void current_clr_polling(void)
++{
++	__current_clr_polling();
++
++	/*
++	 * Ensure we check TIF_NEED_RESCHED after we clear the polling bit.
++	 * Once the bit is cleared, we'll get IPIs with every new
++	 * TIF_NEED_RESCHED and the IPI handler, scheduler_ipi(), will also
++	 * fold.
++	 */
++	smp_mb(); /* paired with resched_task() */
++
++	preempt_fold_need_resched();
++}
++
+ static __always_inline bool need_resched(void)
+ {
+ 	return unlikely(tif_need_resched());
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -105,14 +105,17 @@ static void cpu_idle_loop(void)
+ 				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
+-			/*
+-			 * We need to test and propagate the TIF_NEED_RESCHED
+-			 * bit here because we might not have send the
+-			 * reschedule IPI to idle tasks.
+-			 */
+-			if (tif_need_resched())
+-				set_preempt_need_resched();
+ 		}
++
++		/*
++		 * Since we fell out of the loop above, we know
++		 * TIF_NEED_RESCHED must be set, propagate it into
++		 * PREEMPT_NEED_RESCHED.
++		 *
++		 * This is required because for polling idle loops we will
++		 * not have had an IPI to fold the state for us.
++		 */
++		preempt_set_need_resched();
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1499,8 +1499,7 @@ void scheduler_ipi(void)
+ 	 * TIF_NEED_RESCHED remotely (for the first time) will also send
+ 	 * this IPI.
+ 	 */
+-	if (tif_need_resched())
+-		set_preempt_need_resched();
++	preempt_fold_need_resched();
  
--	__local_bh_disable(_RET_IP_, SOFTIRQ_OFFSET);
-+	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);
- 	in_hardirq = lockdep_softirq_start();
- 
- 	cpu = smp_processor_id();
+ 	if (llist_empty(&this_rq()->wake_list)
+ 			&& !tick_nohz_full_cpu(smp_processor_id())
 
 
