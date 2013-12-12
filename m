@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab3LLPdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:33:44 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:55392 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751452Ab3LLPdl (ORCPT
+	id S1751791Ab3LLPdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:33:53 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:36934 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab3LLPdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:33:41 -0500
-Message-ID: <52A9D751.9080804@free-electrons.com>
-Date: Thu, 12 Dec 2013 16:33:37 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] pinctrl: at91: initialize config parameter to 0
-References: <1386421734-10240-1-git-send-email-alexandre.belloni@free-electrons.com>	<1386421734-10240-2-git-send-email-alexandre.belloni@free-electrons.com>	<52A57E55.40808@atmel.com>	<52A5938E.40201@free-electrons.com> <CACRpkdbxq-w8KquMjQVSbkEZcsMLsSRc3BqfuLLDM7c1P3UOxw@mail.gmail.com>
-In-Reply-To: <CACRpkdbxq-w8KquMjQVSbkEZcsMLsSRc3BqfuLLDM7c1P3UOxw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Dec 2013 10:33:44 -0500
+Message-ID: <1386862421.19078.67.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity
+ protection
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christian Grothoff <grothoff@in.tum.de>
+Cc: Jacob Appelbaum <jacob@appelbaum.net>, Andi Kleen <andi@firstfloor.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, knock@gnunet.org
+Date: Thu, 12 Dec 2013 07:33:41 -0800
+In-Reply-To: <52A9D125.9080701@in.tum.de>
+References: <52A75EF8.3010308@in.tum.de>
+	  <20131211.150137.368953964178408437.davem@davemloft.net>
+	  <52A8C8B4.4060109@in.tum.de>
+	  <20131211122637.75b09074@nehalam.linuxnetplumber.net>
+	  <87bo0nulkt.fsf@tassilo.jf.intel.com> <52A8ECF5.3070604@in.tum.de>
+	  <20131212012317.GL21717@two.firstfloor.org>
+	  <52A98DBF.4090702@appelbaum.net> <52A9A17F.6050505@in.tum.de>
+	 <1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <52A9D125.9080701@in.tum.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 15:40, Linus Walleij wrote:
-> Mail it out with a [CFT: ] "call for testing" prefix.
->
+On Thu, 2013-12-12 at 16:07 +0100, Christian Grothoff wrote:
 
-I actually already sent it but without the CFT. Do you want me to resend ?
-Regards,
+> I'm already having fun with IETF and pTLDs right now, one war at a time
+> ;-).  I also figured it might be easier to have a reasonable working
+> reference implementation first and then standardize.  After all, with my
+> recent draft some people at IETF suggested I should get 1,000,000+ users
+> first and then ask again.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Honestly, breaking the detection of old packets (PAWS) is not going to
+fly. Its not even mentioned in your doc.
+
+If a client uses the same ISN for two consecutive connexions to a
+server, how the server can decide the 2nd SYN is not a duplicate ?
+
+You really need more than 3 pages to fully investigate all the pros/cons
+of this idea.
+
 
