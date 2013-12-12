@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab3LLMiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:38:17 -0500
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:56151 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab3LLMiP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:38:15 -0500
-Date: Thu, 12 Dec 2013 13:38:07 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: =?UTF-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org
-Subject: Re: Resume regression on MBA2,1 triggered by
- 2167e2399dc5e69c62db56d933e9c8cbe107620a
-Message-ID: <20131212133807.1c68707b@neptune.home>
-In-Reply-To: <20131211012529.GA6354@kroah.com>
-References: <20131211010852.09ddf512@neptune.home>
-	<20131211012529.GA6354@kroah.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751867Ab3LLMjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:39:10 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:7221 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751570Ab3LLMjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:39:08 -0500
+From: Qais Yousef <qais.yousef@imgtec.com>
+To: Yang Yingliang <yangyingliang@huawei.com>
+CC: Qais Yousef <qais.yousef@imgtec.com>, Eric Dumazet <edumazet@google.com>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>
+Subject: [PATCH] net/sched/sch_tbf.c: fix linking error
+Date: Thu, 12 Dec 2013 12:38:56 +0000
+Message-ID: <1386851936-1582-1-git-send-email-qais.yousef@imgtec.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.36]
+X-SEF-Processed: 7_3_0_01192__2013_12_12_12_39_05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+ERROR: "__udivdi3" [net/sched/sch_tbf.ko] undefined!
 
-On Tue, 10 December 2013 Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> On Wed, Dec 11, 2013 at 01:08:52AM +0100, Bruno Prémont wrote:
-> > I have bisected failing resume from S3 on my MBA2,1 to be caused by
-> > the following patch (introduced between 3.13-rc2 and 3.13-rc3 - rc2
-> > resuming as expected, rc3 failing to resume).
-> > 
-> > Unfortunately I have no trace for the failing resume though CPU seems
-> > to not be busy as fan does not start blowing (even when waiting more
-> > than 10 minutes for the resume to eventually proceed which it does not).
-> > 
-> > Kernel config and dmesg are attached (gzip compressed).
-> > 
-> >   commit 2167e2399dc5e69c62db56d933e9c8cbe107620a
-> >   Author: Bjørn Mork <bjorn@mork.no>
-> >   Date:   Tue Dec 3 12:14:32 2013 +0100
-> >   Subject: cpufreq: fix garbage kobjects on errors during suspend/resume
-> 
-> This has already been reverted in Linus's tree, see commit
-> d4faadd5d5b368a7051fef374ee933ec3606713b for the details.
-> 
-> Does Linus's tree still have the same problem for you?
+introduced by: cc106e441a63 (net: sched: tbf: fix the calculation of max_size)
 
-The revert in Linus's tree does fix the resume problem,
-(tested commit: 9538e10086bd1301fe, merge of linux-watchdog).
+which adds a 64 by 32 bit division without using do_div().
+Fix it by using do_div(len/ 53) instead of len/53.
 
-thanks,
-Bruno
+Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-next@vger.kernel.org
+---
+We caught this error on linux-next today. This is my quick attemp of a fix.
+If it's not appropriate or doesn't make sense my apologies and feel free to
+resend a better fix :)
 
-> thanks,
-> 
-> greg k-h
+ net/sched/sch_tbf.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/net/sched/sch_tbf.c b/net/sched/sch_tbf.c
+index a44928c..771cbec 100644
+--- a/net/sched/sch_tbf.c
++++ b/net/sched/sch_tbf.c
+@@ -131,8 +131,10 @@ static u64 psched_ns_t2l(const struct psched_ratecfg *r,
+ 
+ 	do_div(len, NSEC_PER_SEC);
+ 
+-	if (unlikely(r->linklayer == TC_LINKLAYER_ATM))
+-		len = (len / 53) * 48;
++	if (unlikely(r->linklayer == TC_LINKLAYER_ATM)) {
++		do_div(len, 53);
++		len *= 48;
++	}
+ 
+ 	if (len > r->overhead)
+ 		len -= r->overhead;
+-- 
+1.7.1
+
+
