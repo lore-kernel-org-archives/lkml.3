@@ -1,172 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab3LLUyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:54:53 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:65256 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab3LLUyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:54:51 -0500
+	id S1751730Ab3LLVEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:04:37 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:59032 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751526Ab3LLVEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 16:04:34 -0500
+Date: Thu, 12 Dec 2013 15:04:32 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/3] Add tunable to control THP behavior
+Message-ID: <20131212210432.GB6034@sgi.com>
+References: <cover.1386790423.git.athorlton@sgi.com>
+ <20131212180050.GC134240@sgi.com>
+ <CALCETrWfFRhjuoK8T9G8hecxsRxFPQ+qA0x7azoof1X5tuxruA@mail.gmail.com>
+ <20131212204950.GA6034@sgi.com>
+ <CALCETrWgVViOK8mp5wort9T6VWBAAN_MCGmoAGddudsWfr2Ypw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1386787041-6035-6-git-send-email-syin@broadcom.com>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-6-git-send-email-syin@broadcom.com>
-Date: Thu, 12 Dec 2013 21:54:50 +0100
-Message-ID: <CACRpkdaeZCodKv6R+4ZS3o-5u=QQuV3JidEp7uaLsN9aYG7bqA@mail.gmail.com>
-Subject: Re: [PATCH v3 5/6] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sherman Yin <syin@broadcom.com>, Mark Brown <broonie@kernel.org>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWgVViOK8mp5wort9T6VWBAAN_MCGmoAGddudsWfr2Ypw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 7:37 PM, Sherman Yin <syin@broadcom.com> wrote:
+> Right.  I like that behavior for my workload.  (Although I currently
+> allocate huge pages -- when I wrote that code, THP interacted so badly
+> with pagecache that it was a non-starter.  I think it's fixed now,
+> though.)
 
-> Adds pinctrl driver for Broadcom Capri (BCM281xx) SoCs.
->
-> Signed-off-by: Sherman Yin <syin@broadcom.com>
-> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
-> v3: Re-work driver to be based on generic pin config. Moved config selection
->     from Kconfig to bcm_defconfig.
+In that case, it's probably best to just stick with current behavior,
+and leave the threshold at 1, unless we implement something like I
+discuss below.
 
-(...)
+> In that case, I guess I misunderstood your description.  Are saying
+> that, once any node accesses this many pages in the potential THP,
+> then the whole THP will be mapped?
 
-> +#define CAPRI_PIN_SHIFT(type, param) \
-> +       (CAPRI_ ## type ## _PIN_REG_ ## param ## _SHIFT)
-> +
-> +#define CAPRI_PIN_MASK(type, param) \
-> +       (CAPRI_ ## type ## _PIN_REG_ ## param ## _MASK)
-> +
-> +/* Macro to update reg with new pin config param */
-> +#define CAPRI_PIN_UPDATE(reg, type, param, val)                                \
-> +       (((reg) & ~CAPRI_PIN_MASK(type, param)) |                       \
-> +       (((val) << CAPRI_PIN_SHIFT(type, param)) & CAPRI_PIN_MASK(type, param)))
+Well, right now, this patch completely gives up on mapping a THP if two
+different nodes take a page from our chunk before the threshold is hit,
+so I think you're mostly understanding it correctly.
 
-Yuck! Are you sure you cannot convert these to static inlines and
-make them much simpler in the process?
+One thing we could consider is adding an option to map the THP on
+the node with the *most* references to the potential THP, instead of
+giving up on mapping the THP when multiple nodes reference it.  That
+might be a good middle ground, but I can see some performance issues
+coming into play there if the threshold is set too high, since we'll
+have to move all the pages in the chunk to the node that hit the
+threshold.
 
-We do have an optimizing compiler, you don't need to do
-everything on one line... besides we're not on the hotpath.
-
-> +/*
-> + * Write to the register using the value and mask if current value is different
-> + */
-> +static void capri_reg_write(struct pinctrl_dev *pctldev,
-> +                           void __iomem *reg,
-> +                           u32 val,
-> +                           u32 mask)
-> +{
-> +       u32 old_val;
-> +       u32 new_val;
-> +
-> +       old_val = readl(reg);
-> +       new_val = (old_val & ~mask) | (val & mask);
-> +
-> +       if (new_val == old_val) {
-> +               dev_dbg(pctldev->dev,
-> +                       "Reg 0x%p=0x%x (no change)\n",
-> +                       reg, old_val);
-> +               return;
-> +       }
-> +
-> +       dev_dbg(pctldev->dev,
-> +               "Reg 0x%p change from 0x%x to 0x%x\n",
-> +               reg, old_val, new_val);
-> +       writel(new_val, reg);
-> +}
-
-This is a reimplementation of regmap for MMIO.
-See drivers/base/regmap/regmap-mmio.c
-Notice how regmap_update_bits() is used throughout the
-kernel.
-
-If you want to do this, use regmap.
-
-> +               case PIN_CONFIG_DRIVE_STRENGTH:
-> +                       /* Valid range is 2-16 mA, even numbers only */
-> +                       if ((arg < 2) || (arg > 16) || (arg % 2)) {
-> +                               dev_err(pctldev->dev,
-> +                                       "Invalid Drive Strength value (%d) for "
-> +                                       "pin %s (%d). Valid values are "
-> +                                       "(2..16) mA, even numbers only.\n",
-> +                                       arg, pdata->pins[pin].name, pin);
-> +                               return -EINVAL;
-> +                       }
-> +                       *val = CAPRI_PIN_UPDATE(*val, STD, DRV_STR, (arg/2)-1);
-> +                       *mask |= CAPRI_STD_PIN_REG_DRV_STR_MASK;
-> +                       break;
-
-Hm rather nice integer math...
-
-> +/* Goes through the configs and update register val/mask */
-> +static int capri_i2c_pin_update(struct pinctrl_dev *pctldev,
-> +                               unsigned pin,
-> +                               unsigned long *configs,
-> +                               unsigned num_configs,
-> +                               u32 *val,
-> +                               u32 *mask)
-> +{
-> +       struct capri_pinctrl_data *pdata = pinctrl_dev_get_drvdata(pctldev);
-> +       int i;
-> +       enum pin_config_param param;
-> +       u16 arg;
-> +
-> +       for (i = 0; i < num_configs; i++) {
-> +               param = pinconf_to_config_param(configs[i]);
-> +               arg = pinconf_to_config_argument(configs[i]);
-> +
-> +               switch (param) {
-> +               case PIN_CONFIG_BIAS_PULL_UP:
-> +                       if ((arg < 1) || (arg > 7)) {
-> +                               dev_err(pctldev->dev,
-> +                                       "Invalid Pull Up value (%d) for pin %s "
-> +                                       "(%d). Valid values are (1..7).\n",
-> +                                       arg, pdata->pins[pin].name, pin);
-> +                               return -EINVAL;
-> +                       }
-
-No don't do that as mentioned in the other patch. Pass pull up strength
-in Ohms.
-
-Then have a translation table here, and do some best-effort fuzzy match.
-
-> +       /* Different pins have different configuration options */
-> +       switch (pin_type) {
-> +       case CAPRI_PIN_TYPE_STD:
-> +               rc = capri_std_pin_update(pctldev, pin, configs, num_configs,
-> +                       &cfg_val, &cfg_mask);
-> +               break;
-> +
-> +       case CAPRI_PIN_TYPE_I2C:
-> +               rc = capri_i2c_pin_update(pctldev, pin, configs, num_configs,
-> +                       &cfg_val, &cfg_mask);
-> +               break;
-> +
-> +       case CAPRI_PIN_TYPE_HDMI:
-> +               rc = capri_hdmi_pin_update(pctldev, pin, configs, num_configs,
-> +                       &cfg_val, &cfg_mask);
-> +               break;
-
-This is really nice and elegant.
-
-Yours,
-Linus Walleij
+- Alex
