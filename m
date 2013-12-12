@@ -1,137 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab3LLNVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 08:21:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59421 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab3LLNVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 08:21:15 -0500
-Date: Thu, 12 Dec 2013 14:21:13 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Glauber Costa <glommer@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, cgroups@vger.kernel.org,
-        devel@openvz.org, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: Race in memcg kmem?
-Message-ID: <20131212132113.GG2630@dhcp22.suse.cz>
-References: <52A71E43.9040200@parallels.com>
- <CAA6-i6oyraHQ7_1GBKxgupS12_QFx708Niu93nyNFLrbQBXE5A@mail.gmail.com>
- <52A8048E.4020806@parallels.com>
+	id S1751767Ab3LLNXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 08:23:22 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:45570 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab3LLNXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 08:23:18 -0500
+Date: Thu, 12 Dec 2013 14:23:13 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, stable <stable@vger.kernel.org>
+Subject: Re: [RFC][PATCH 3/5] timekeeping: Avoid possible deadlock from
+ clock_was_set_delayed
+Message-ID: <20131212132313.GA16360@gmail.com>
+References: <1386789098-17391-1-git-send-email-john.stultz@linaro.org>
+ <1386789098-17391-4-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52A8048E.4020806@parallels.com>
+In-Reply-To: <1386789098-17391-4-git-send-email-john.stultz@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-12-13 10:22:06, Vladimir Davydov wrote:
-> On 12/11/2013 03:13 AM, Glauber Costa wrote:
-> > On Tue, Dec 10, 2013 at 5:59 PM, Vladimir Davydov
-[...]
-> >> -- memcg_update_cache_size(s, num_groups) --
-> >> grows s->memcg_params to accomodate data for num_groups memcg's
-> >> @s is the root cache whose memcg_params we want to grow
-> >> @num_groups is the new number of kmem-active cgroups (defines the new
-> >> size of memcg_params array).
-> >>
-> >> The function:
-> >>
-> >> B1) allocates and assigns a new cache:
-> >>     cur_params = s->memcg_params;
-> >>     s->memcg_params = kzalloc(size, GFP_KERNEL);
-> >>
-> >> B2) copies per-memcg cache ptrs from the old memcg_params array to the
-> >> new one:
-> >>     for (i = 0; i < memcg_limited_groups_array_size; i++) {
-> >>         if (!cur_params->memcg_caches[i])
-> >>             continue;
-> >>         s->memcg_params->memcg_caches[i] =
-> >>                     cur_params->memcg_caches[i];
-> >>     }
-> >>
-> >> B3) frees the old array:
-> >>     kfree(cur_params);
-> >>
-> >>
-> >> Since these two functions do not share any mutexes, we can get the
-> > They do share a mutex, the slab mutex.
 
-Worth sticking in a lock_dep_assert?
+* John Stultz <john.stultz@linaro.org> wrote:
 
-> >
-> >> following race:
-> >>
-> >> Assume, by the time Cpu0 gets to memcg_create_kmem_cache(), the memcg
-> >> cache has already been created by another thread, so this function
-> >> should do nothing.
-> >>
-> >> Cpu0    Cpu1
-> >> ----    ----
-> >>         B1
-> >> A1              we haven't initialized memcg_params yet so Cpu0 will
-> >>                 proceed to A2 to alloc and assign a new cache
-> >> A2
-> >>         B2      Cpu1 rewrites the memcg cache ptr set by Cpu0 at A2
-> >>                 - a memory leak?
-> >>         B3
-> >>
-> >> I'd like to add that even if I'm right about the race, this is rather
-> >> not critical, because memcg_update_cache_sizes() is called very rarely.
-> >>
-> > Every race is critical.
-> >
-> > So, I am a bit lost by your description. Get back to me if I got anything wrong,
-> > but I am think that the point that you're missing is that all heavy
-> > slab operations
-> > take the slab_mutex underneath, and that includes cache creation and update.
-> >
-> >
-> >> BTW, it seems to me that the way we update memcg_params in
-> >> memcg_update_cache_size() make cache_from_memcg_idx() prone to
-> >> use-after-free:
-> >>
-> >>> static inline struct kmem_cache *
-> >>> cache_from_memcg_idx(struct kmem_cache *s, int idx)
-> >>> {
-> >>>     if (!s->memcg_params)
-> >>>         return NULL;
-> >>>     return s->memcg_params->memcg_caches[idx];
-> >>> }
-> >> This is equivalent to
-> >>
-> >> 1) struct memcg_cache_params *params = s->memcg_params;
-> >> 2) return params->memcg_caches[idx];
-> >>
-> >> If memcg_update_cache_size() is executed between steps 1 and 2 on
-> >> another CPU, at step 2 we will dereference memcg_params that has already
-> >> been freed. This is very unlikely, but still possible. Perhaps, we
-> >> should free old memcg params only after a sync_rcu()?
-> >>
-> > You seem to be right in this one. Indeed, if my mind does not betray
-> > me, That is how I freed
-> > the LRUs. (with synchronize_rcus).
+> As part of normal operaions, the hrtimer subsystem frequently calls
+> into the timekeeping code, creating a locking order of
+>   hrtimer locks -> timekeeping locks
 > 
-> Yes, you freed LRUs only after a sync_rcu, that's why the way
-> memcg_params is updated looks suspicious to me. I'll try to fix it then.
+> clock_was_set_delayed() was suppoed to allow us to avoid deadlocks
+> between the timekeeping the hrtimer subsystem, so that we could
+> notify the hrtimer subsytem the time had changed while holding
+> the timekeeping locks. This was done by scheduling delayed work
+> that would run later once we were out of the timekeeing code.
+> 
+> But unfortunately the lock chains are complex enoguh that in
+> scheduling delayed work, we end up eventually trying to grab
+> an hrtimer lock.
+> 
+> Sasha Levin noticed this in testing when the new seqlock lockdep
+> enablement triggered the following (somewhat abrieviated) message:
+> 
+> [  251.100221] ======================================================
+> [  251.100221] [ INFO: possible circular locking dependency detected ]
+> [  251.100221] 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053 Not tainted
+> [  251.101967] -------------------------------------------------------
+> [  251.101967] kworker/10:1/4506 is trying to acquire lock:
+> [  251.101967]  (timekeeper_seq){----..}, at: [<ffffffff81160e96>] retrigger_next_event+0x56/0x70
+> [  251.101967]
+> [  251.101967] but task is already holding lock:
+> [  251.101967]  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
+> [  251.101967]
+> [  251.101967] which lock already depends on the new lock.
+> [  251.101967]
+> [  251.101967]
+> [  251.101967] the existing dependency chain (in reverse order) is:
+> [  251.101967]
+> -> #5 (hrtimer_bases.lock#11){-.-...}:
+> [snipped]
+> -> #4 (&rt_b->rt_runtime_lock){-.-...}:
+> [snipped]
+> -> #3 (&rq->lock){-.-.-.}:
+> [snipped]
+> -> #2 (&p->pi_lock){-.-.-.}:
+> [snipped]
+> -> #1 (&(&pool->lock)->rlock){-.-...}:
+> [  251.101967]        [<ffffffff81194803>] validate_chain+0x6c3/0x7b0
+> [  251.101967]        [<ffffffff81194d9d>] __lock_acquire+0x4ad/0x580
+> [  251.101967]        [<ffffffff81194ff2>] lock_acquire+0x182/0x1d0
+> [  251.101967]        [<ffffffff84398500>] _raw_spin_lock+0x40/0x80
+> [  251.101967]        [<ffffffff81153e69>] __queue_work+0x1a9/0x3f0
+> [  251.101967]        [<ffffffff81154168>] queue_work_on+0x98/0x120
+> [  251.101967]        [<ffffffff81161351>] clock_was_set_delayed+0x21/0x30
+> [  251.101967]        [<ffffffff811c4bd1>] do_adjtimex+0x111/0x160
+> [  251.101967]        [<ffffffff811e2711>] compat_sys_adjtimex+0x41/0x70
+> [  251.101967]        [<ffffffff843a4b49>] ia32_sysret+0x0/0x5
+> [  251.101967]
+> -> #0 (timekeeper_seq){----..}:
+> [snipped]
+> [  251.101967] other info that might help us debug this:
+> [  251.101967]
+> [  251.101967] Chain exists of:
+>   timekeeper_seq --> &rt_b->rt_runtime_lock --> hrtimer_bases.lock#11
+> 
+> [  251.101967]  Possible unsafe locking scenario:
+> [  251.101967]
+> [  251.101967]        CPU0                    CPU1
+> [  251.101967]        ----                    ----
+> [  251.101967]   lock(hrtimer_bases.lock#11);
+> [  251.101967]                                lock(&rt_b->rt_runtime_lock);
+> [  251.101967]                                lock(hrtimer_bases.lock#11);
+> [  251.101967]   lock(timekeeper_seq);
+> [  251.101967]
+> [  251.101967]  *** DEADLOCK ***
+> [  251.101967]
+> [  251.101967] 3 locks held by kworker/10:1/4506:
+> [  251.101967]  #0:  (events){.+.+.+}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
+> [  251.101967]  #1:  (hrtimer_work){+.+...}, at: [<ffffffff81154960>] process_one_work+0x200/0x530
+> [  251.101967]  #2:  (hrtimer_bases.lock#11){-.-...}, at: [<ffffffff81160e7c>] retrigger_next_event+0x3c/0x70
+> [  251.101967]
+> [  251.101967] stack backtrace:
+> [  251.101967] CPU: 10 PID: 4506 Comm: kworker/10:1 Not tainted 3.13.0-rc2-next-20131206-sasha-00005-g8be2375-dirty #4053
+> [  251.101967] Workqueue: events clock_was_set_work
+> 
+> So the best solution is to avoid calling clock_was_set_delayed() while
+> holding the timekeeping lock, and instead using a flag variable to
+> decide if we should call clock_was_set() once we've released the locks.
+> 
+> This works for the case here, where the do_adjtimex() was the deadlock
+> trigger point. Unfortuantely, in update_wall_time() we still hold
+> the jiffies lock, which would deadlock with the ipi triggered by
+> clock_was_set(), preventing us from calling it even after we drop the
+> timekeeping lock. So instead call clock_was_set_delayed() at that point.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Prarit Bhargava <prarit@redhat.com>
+> Cc: Richard Cochran <richardcochran@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Cc: stable <stable@vger.kernel.org> #3.10+
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  kernel/time/timekeeping.c | 18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 998ec751..c1d36b6 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1278,7 +1278,6 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
+>  
+>  			__timekeeping_set_tai_offset(tk, tk->tai_offset - leap);
+>  
+> -			clock_was_set_delayed();
+>  			action = TK_CLOCK_WAS_SET;
+>  		}
+>  	}
+> @@ -1440,6 +1439,19 @@ static void update_wall_time(void)
+>  	write_seqcount_end(&timekeeper_seq);
+>  out:
+>  	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+> +	if (action & TK_CLOCK_WAS_SET) {
+> +		/*
+> +		 * XXX -  I'd rather we just call clock_was_set(), but
+> +		 * since we're currently holding the jiffies lock, calling
+> +		 * clock_was_set would trigger an ipi which would then grab
+> +		 * the jiffies lock and we'd deadlock. :(
+> +		 * The right solution should probably be droping
+> +		 * the jiffies lock before calling update_wall_time
+> +		 * but that requires some rework of the tick sched
+> +		 * code.
 
-I have quickly glanced through cache_from_memcg_idx users and the
-locking is quite inconsistent.
-* mem_cgroup_slabinfo_read - memcg->slab_caches_mutex
-* memcg_create_kmem_cache - memcg_cache_mutex
-* kmem_cache_destroy_memcg_children - set_limit_mutex
-* __memcg_kmem_get_cache - RCU read lock
+s/droping/
+  dropping
 
-I was afraid to go further...
+> +		 */
+> +		clock_was_set_delayed();
 
-memcg_update_cache_size and kmem_cache_create_memcg seem to be the only
-who touch memcg_params and they rely on slab_mutex. The later one is
-touching a cache which is not visible yet so it should be safe.
+Hm, this feels like a hack. Is the 'rework of the tick sched code' 
+going to happen too?
 
-I didn't look closer at all the callers of cache_from_memcg_idx but I
-guess we want to use RCU here.
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+
+	Ingo
