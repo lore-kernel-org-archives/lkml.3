@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709Ab3LLAYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:24:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43668 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab3LLAYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:24:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
-   d="scan'208";a="448649115"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Jones <davej@redhat.com>, akpm@linux-foundation.org
-Cc: Vlastimil Babka <vbabka@suse.cz>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        kirill.shutemov@linux.intel.com, Sasha Levin <sasha.levin@oracle.com>
-In-Reply-To: <20131211163809.GA26342@redhat.com>
-References: <20131206210254.GA7962@redhat.com>
- <52A8877A.10209@suse.cz>
- <20131211163809.GA26342@redhat.com>
-Subject: Re: oops in pgtable_trans_huge_withdraw
-Content-Transfer-Encoding: 7bit
-Message-Id: <20131212002422.98262E0090@blue.fi.intel.com>
-Date: Thu, 12 Dec 2013 02:24:22 +0200 (EET)
+	id S1751827Ab3LLAZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:25:39 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:44593 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab3LLAZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:25:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <1386269247-32401-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1386269247-32401-1-git-send-email-boris.ostrovsky@oracle.com>
+Date: Wed, 11 Dec 2013 16:25:36 -0800
+Message-ID: <CA+8MBbKRfV6K4GhhGrNQt4okQZgkV=gR7xw=NH6-VLMoX_--GA@mail.gmail.com>
+Subject: Re: [PATCH] ia64/xen: Remove Xen support for ia64
+From: Tony Luck <tony.luck@gmail.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xenproject.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones wrote:
-> On Wed, Dec 11, 2013 at 04:40:42PM +0100, Vlastimil Babka wrote:
->  > On 12/06/2013 10:02 PM, Dave Jones wrote:
->  > > I've spent a few days enhancing trinity's use of mmap's, trying to make it
->  > > reproduce https://lkml.org/lkml/2013/12/4/499
->  > 
->  > FYI, I managed to reproduce that using trinity today,
->  > trinity was from git at commit e8912cc which is from Dec 09 so I guess 
->  > your enhancements were already there?
-> 
-> yep, everything I had pending is in HEAD now.
-> 
->  > kernel was linux-next-20131209
->  > I was running trinity -c mmap -c munmap -c mremap -c remap_file_pages -c 
->  > mlock -c munlock
->  
-> A shorthand for all those -c's is '-G vm'. (Though there might be a couple
-> extra syscalls in the list too, madvise, mprotect etc).
-> 
->  > Now I'm running with Kirill's patch, will post results later.
->  
-> Seemed to fix it for me, I've not reproduced that particular bug since applying it.
-> Kirill, is that on its way to Linus soon ?
+On Thu, Dec 5, 2013 at 10:47 AM, Boris Ostrovsky
+<boris.ostrovsky@oracle.com> wrote:
+> ia64 has not been supported by Xen since 4.2 so it's time to drop
+> Xen/ia64 from Linux as well.
+>
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> ---
+>
+> This is only compile-tested.
 
-It's in -mm tree for a week already.
+Boot tested on a couple of different ia64 machines with no surprises.
 
-Andrew, could you push it to Linus? More people steps on the bug.
+Will apply - thanks.
 
--- 
- Kirill A. Shutemov
+-Tony
