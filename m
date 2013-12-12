@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab3LLSAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:00:47 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:42841 "EHLO relay.sgi.com"
+	id S1752080Ab3LLSA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:00:56 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:42893 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751530Ab3LLSAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:00:43 -0500
-Date: Thu, 12 Dec 2013 12:00:37 -0600
+	id S1751530Ab3LLSAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 13:00:52 -0500
+Date: Thu, 12 Dec 2013 12:00:50 -0600
 From: Alex Thorlton <athorlton@sgi.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -28,119 +28,22 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [RFC PATCH 0/3] Change how we determine when to hand out THPs
-Message-ID: <20131212180037.GA134240@sgi.com>
+Subject: [RFC PATCH 2/3] Add tunable to control THP behavior
+Message-ID: <20131212180050.GC134240@sgi.com>
+References: <cover.1386790423.git.athorlton@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1386790423.git.athorlton@sgi.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the way we decide whether or not to give out THPs to
-processes when they fault in pages.  The way things are right now,
-touching one byte in a 2M chunk where no pages have been faulted in
-results in a process being handed a 2M hugepage, which, in some cases,
-is undesirable.  The most common issue seems to arise when a process
-uses many cores to work on small portions of an allocated chunk of
-memory.
-
-Here are some results from a test that I wrote, which allocates memory
-in a way that doesn't benefit from the use of THPs:
-
-# echo always > /sys/kernel/mm/transparent_hugepage/enabled
-# perf stat -a -r 5 ./thp_pthread -C 0 -m 0 -c 64 -b 128g
-
- Performance counter stats for './thp_pthread -C 0 -m 0 -c 64 -b 128g' (5 runs):
-
-   61971685.470621 task-clock                #  662.557 CPUs utilized            ( +-  0.68% ) [100.00%]
-           200,365 context-switches          #    0.000 M/sec                    ( +-  0.64% ) [100.00%]
-                94 CPU-migrations            #    0.000 M/sec                    ( +-  3.76% ) [100.00%]
-            61,644 page-faults               #    0.000 M/sec                    ( +-  0.00% )
-11,771,748,145,744 cycles                    #    0.190 GHz                      ( +-  0.78% ) [100.00%]
-17,958,073,323,609 stalled-cycles-frontend   #  152.55% frontend cycles idle     ( +-  0.97% ) [100.00%]
-     <not counted> stalled-cycles-backend
-10,691,478,094,935 instructions              #    0.91  insns per cycle
-                                             #    1.68  stalled cycles per insn  ( +-  0.66% ) [100.00%]
- 1,593,798,555,131 branches                  #   25.718 M/sec                    ( +-  0.62% ) [100.00%]
-       102,473,582 branch-misses             #    0.01% of all branches          ( +-  0.43% )
-
-      93.534078104 seconds time elapsed                                          ( +-  0.68% )
-
-# echo never > /sys/kernel/mm/transparent_hugepage/enabled
-# perf stat -a -r 5 ./thp_pthread -C 0 -m 0 -c 64 -b 128g
-
- Performance counter stats for './thp_pthread -C 0 -m 0 -c 64 -b 128g' (5 runs):
-
-   50703784.027438 task-clock                #  663.073 CPUs utilized            ( +-  0.18% ) [100.00%]
-           162,324 context-switches          #    0.000 M/sec                    ( +-  0.22% ) [100.00%]
-                91 CPU-migrations            #    0.000 M/sec                    ( +-  9.22% ) [100.00%]
-        31,250,840 page-faults               #    0.001 M/sec                    ( +-  0.00% )
- 7,962,585,261,769 cycles                    #    0.157 GHz                      ( +-  0.21% ) [100.00%]
- 9,230,610,615,208 stalled-cycles-frontend   #  115.92% frontend cycles idle     ( +-  0.23% ) [100.00%]
-     <not counted> stalled-cycles-backend
-16,899,387,283,411 instructions              #    2.12  insns per cycle
-                                             #    0.55  stalled cycles per insn  ( +-  0.16% ) [100.00%]
- 2,422,269,260,013 branches                  #   47.773 M/sec                    ( +-  0.16% ) [100.00%]
-        99,419,683 branch-misses             #    0.00% of all branches          ( +-  0.22% )
-
-      76.467835263 seconds time elapsed                                          ( +-  0.18% )
-
-As you can see there's a significant performance increase when running
-this test with THP off.  Here's a pointer to the test, for those who are
-interested:
-
-http://oss.sgi.com/projects/memtests/thp_pthread.tar.gz
-
-My proposed solution to the problem is to allow users to set a
-threshold at which THPs will be handed out.  The idea here is that, when
-a user faults in a page in an area where they would usually be handed a
-THP, we pull 512 pages off the free list, as we would with a regular
-THP, but we only fault in single pages from that chunk, until the user
-has faulted in enough pages to pass the threshold we've set.  Once they
-pass the threshold, we do the necessary work to turn our 512 page chunk
-into a proper THP.  As it stands now, if the user tries to fault in
-pages from different nodes, we completely give up on ever turning a
-particular chunk into a THP, and just fault in the 4K pages as they're
-requested.  We may want to make this tunable in the future (i.e. allow
-them to fault in from only 2 different nodes).
-
-This patch is still a work in progress, and it has a few known issues
-that I've yet to sort out:
-
-- Bad page state bug resulting from pages being added to the pagevecs
-  improperly
-    + This bug doesn't seem to hit when allocating small amounts of
-      memory on 32 or less cores, but it becomes an issue on larger test
-      runs.
-    + I believe the best way to avoid this is to make sure we don't
-      lru_cache_add any of the pages in our chunk until we decide
-      whether or not we'll turn the chunk into a THP.  Haven't quite
-      gotten this working yet.
-- A few small accounting issues with some of the mm counters
-- Some spots are still pretty hacky, need to be cleaned up a bit
-
-Just to let people know, I've been doing most of my testing with the
-memscale test:
-
-http://oss.sgi.com/projects/memtests/thp_memscale.tar.gz
-
-The pthread test hits the first bug I mentioned here much more often,
-but the patch seems to be more stable when tested with memscale.  I
-typically run something like this to test:
-
-# ./thp_memscale -C 0 -m 0 -c 32 -b 16m
-
-As you increase the amount of memory/number of cores, you become more
-likely to run into issues.
-
-Although there's still work to be done here, I wanted to get an early
-version of the patch out so that everyone could give their
-opinions/suggestions.  The patch should apply cleanly to the 3.12
-kernel.  I'll rebase it as soon as some of the remaining issues have
-been sorted out, this will also mean changing over to the split PTL
-where appropriate.
+This part of the patch adds a tunable to
+/sys/kernel/mm/transparent_hugepage called threshold.  This threshold
+determines how many pages a user must fault in from a single node before
+a temporary compound page is turned into a THP.
 
 Signed-off-by: Alex Thorlton <athorlton@sgi.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -171,21 +74,100 @@ Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org
 
-Alex Thorlton (3):
-  Add flags for temporary compound pages
-  Add tunable to control THP behavior
-  Change THP behavior
+---
+ include/linux/huge_mm.h  |  2 ++
+ include/linux/mm_types.h |  1 +
+ mm/huge_memory.c         | 30 ++++++++++++++++++++++++++++++
+ 3 files changed, 33 insertions(+)
 
- include/linux/gfp.h      |   5 +
- include/linux/huge_mm.h  |   8 ++
- include/linux/mm_types.h |  14 +++
- kernel/fork.c            |   1 +
- mm/huge_memory.c         | 313 +++++++++++++++++++++++++++++++++++++++++++++++
- mm/internal.h            |   1 +
- mm/memory.c              |  29 ++++-
- mm/page_alloc.c          |  66 +++++++++-
- 8 files changed, 430 insertions(+), 7 deletions(-)
-
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 3935428..0943b1b6 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -177,6 +177,8 @@ static inline struct page *compound_trans_head(struct page *page)
+ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 				unsigned long addr, pmd_t pmd, pmd_t *pmdp);
+ 
++extern int thp_threshold_check(void);
++
+ #else /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
+ #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index d9851ee..b5efa23 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -408,6 +408,7 @@ struct mm_struct {
+ #endif
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
++	int thp_threshold;
+ #endif
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+ 	struct cpumask cpumask_allocation;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index cca80d9..5d388e4 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -44,6 +44,9 @@ unsigned long transparent_hugepage_flags __read_mostly =
+ 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG)|
+ 	(1<<TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG);
+ 
++/* default to 1 page threshold for handing out thps; maintains old behavior */
++static int transparent_hugepage_threshold = 1;
++
+ /* default scan 8*512 pte (or vmas) every 30 second */
+ static unsigned int khugepaged_pages_to_scan __read_mostly = HPAGE_PMD_NR*8;
+ static unsigned int khugepaged_pages_collapsed;
+@@ -237,6 +240,11 @@ static struct shrinker huge_zero_page_shrinker = {
+ 	.seeks = DEFAULT_SEEKS,
+ };
+ 
++int thp_threshold_check()
++{
++	return transparent_hugepage_threshold;
++}
++
+ #ifdef CONFIG_SYSFS
+ 
+ static ssize_t double_flag_show(struct kobject *kobj,
+@@ -376,6 +384,27 @@ static ssize_t use_zero_page_store(struct kobject *kobj,
+ }
+ static struct kobj_attribute use_zero_page_attr =
+ 	__ATTR(use_zero_page, 0644, use_zero_page_show, use_zero_page_store);
++static ssize_t threshold_show(struct kobject *kobj,
++			      struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", transparent_hugepage_threshold);
++}
++static ssize_t threshold_store(struct kobject *kobj,
++			       struct kobj_attribute *attr,
++			       const char *buf, size_t count)
++{
++	int err, value;
++
++	err = kstrtoint(buf, 10, &value);
++	if (err || value < 1 || value > HPAGE_PMD_NR)
++		return -EINVAL;
++
++	transparent_hugepage_threshold = value;
++
++	return count;
++}
++static struct kobj_attribute threshold_attr =
++	__ATTR(threshold, 0644, threshold_show, threshold_store);
+ #ifdef CONFIG_DEBUG_VM
+ static ssize_t debug_cow_show(struct kobject *kobj,
+ 				struct kobj_attribute *attr, char *buf)
+@@ -397,6 +426,7 @@ static struct kobj_attribute debug_cow_attr =
+ static struct attribute *hugepage_attr[] = {
+ 	&enabled_attr.attr,
+ 	&defrag_attr.attr,
++	&threshold_attr.attr,
+ 	&use_zero_page_attr.attr,
+ #ifdef CONFIG_DEBUG_VM
+ 	&debug_cow_attr.attr,
 -- 
 1.7.12.4
+
 
