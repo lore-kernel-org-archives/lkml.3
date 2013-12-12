@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab3LLBRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 20:17:55 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:43775 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab3LLBRw (ORCPT
+	id S1751743Ab3LLBUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 20:20:16 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:60945 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab3LLBUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 20:17:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBTufgMk=iqXM87+psUeLd865QF9tCEVHT6hwT4=TtetfQ@mail.gmail.com>
-References: <1386376451-24593-1-git-send-email-sonnyrao@chromium.org>
- <20131209074933.GA2922@jtriplet-mobl1> <CABPqkBTufgMk=iqXM87+psUeLd865QF9tCEVHT6hwT4=TtetfQ@mail.gmail.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Wed, 11 Dec 2013 17:17:30 -0800
-X-Google-Sender-Auth: wZX_Pptpg7bBbjJZBjjm7yfWGqU
-Message-ID: <CAPz6YkU6-ccJ8eJwYUgs_Gjo5rYeSh3ftSgd_MzCXRTyzhPiiQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] drivers: char: Add a dynamic clock for the trace clock
-To: Stephane Eranian <eranian@google.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, pawel.moll@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Dec 2013 20:20:14 -0500
+Date: Wed, 11 Dec 2013 20:20:12 -0500 (EST)
+Message-Id: <20131211.202012.451563413045710135.davem@davemloft.net>
+To: phdm@macqel.be
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        frank.li@freescale.net
+Subject: Re: [PATCH] net:fec: remove duplicate lines in comment about
+ errata ERR006358
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1386802252-5817-1-git-send-email-phdm@macqel.be>
+References: <1386802252-5817-1-git-send-email-phdm@macqel.be>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Dec 2013 17:20:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 11:30 AM, Stephane Eranian <eranian@google.com> wrote:
-> Sonny,
->
-> Your patch has a couple of problems for me:
->  - requires CONFIG_TRACING
->
-> You should directly invoke getrawmonotonic()
->  and inline the code from trace_clock_getres().
->
-> That's how I managed to compile your kernel module on my system.
+From: phdm@macqel.be
+Date: Wed, 11 Dec 2013 23:50:52 +0100
 
-You need the changes in kernel/trace/trace.c which is why it's
-dependent on CONFIG_TRACING.
-If we put those functions elsewhere we could remove that dependency,
-but it sounds like people want to just fix the clock that perf uses so
-that it's exportable and not handle this with something like this
-patch, which is better.
+> From: Philippe De Muyter <phdm@macqel.be>
+> 
+> commit 031916568a1aa2ef1809f86d26f0bcfa215ff5c0 worked around
+> errata ERR006358, but comment contains duplicated lines, impairing
+> the readability.  Remove them.
+> 
+> Signed-off-by: Philippe De Muyter <phdm@macqel.be>
 
-Also, we should ensure that perf and ftrace are guaranteed to use the
-same clock, I think it just happens to be the same right now.
-
->
->
-> On Mon, Dec 9, 2013 at 8:49 AM, Josh Triplett <josh@joshtriplett.org> wrote:
->> On Fri, Dec 06, 2013 at 04:34:11PM -0800, Sonny Rao wrote:
->>> Based on a suggestion from John Stultz.
->>>
->>> This adds a dynamic clock device which can be used with clock_gettime
->>> to sample the clock source used for time stamping trace events in the
->>> kernel.  The only use for this clock source is to associate user space
->>> events with kernel events on a given kernel.  It is explicitly not
->>> supposed to be used as a generic time source and won't necessarily be
->>> consistent between kernels.
->>>
->>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
->>
->> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Applied, thanks.
