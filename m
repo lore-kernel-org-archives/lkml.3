@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab3LLGCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 01:02:14 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51494 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab3LLGCN (ORCPT
+	id S1751675Ab3LLGFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 01:05:32 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58865 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab3LLGFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 01:02:13 -0500
-Message-ID: <52A9515E.5050505@hitachi.com>
-Date: Thu, 12 Dec 2013 15:02:06 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        systemtap@sourceware.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v4 0/6] kprobes: introduce NOKPROBE_SYMBOL() and
- fixes crash bugs
-References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204084551.GA31772@gmail.com> <529FBA71.6070107@hitachi.com> <20131205102127.GA19923@gmail.com> <52A137B6.6030307@hitachi.com> <20131210152811.GA1195@gmail.com> <52A7CA0A.9060009@hitachi.com> <20131211133423.GB3101@gmail.com>
-In-Reply-To: <20131211133423.GB3101@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Dec 2013 01:05:31 -0500
+Message-ID: <1386828303.6056.40.camel@marge.simpson.net>
+Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
+From: Mike Galbraith <bitbucket@online.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
+Date: Thu, 12 Dec 2013 07:05:03 +0100
+In-Reply-To: <1386827824.6056.36.camel@marge.simpson.net>
+References: <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>
+	 <20131211113839.GF21683@pd.tnic>
+	 <20131211115239.GA21999@twins.programming.kicks-ass.net>
+	 <1386764955.12005.60.camel@marge.simpson.net>
+	 <20131211124352.GB21999@twins.programming.kicks-ass.net>
+	 <20131211134048.GH21683@pd.tnic> <20131211145655.GB4510@gmail.com>
+	 <20131211164318.GA2480@laptop.programming.kicks-ass.net>
+	 <20131211175036.GC12431@gmail.com> <52A8F073.9040500@zytor.com>
+	 <20131211231425.GD8863@pd.tnic> <52A908DB.60902@zytor.com>
+	 <1386822357.6056.12.camel@marge.simpson.net> <52A94065.1050103@zytor.com>
+	 <1386826641.6056.31.camel@marge.simpson.net>
+	 <6e4b858b-fcad-4231-8351-d2f473bf6ba6@email.android.com>
+	 <1386827824.6056.36.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:lZGqQ6fKq7p/Icm8BDQIi0EzwHrpxyfinYiJRO+mOg3
+ cZsy4djuCBZWf7cBVUbpmEwEPhcxQ4IFPrKaqqjAjC5KBee9jh
+ +ZtVDeuguphM38vL/QcV/mt6/36fl2YGXapejkUio0u11aNtqe
+ 3kjehcQ3P32EQRgzSp7k6feJvJGNV3pljYoxw/ZGYNzDNNqKHE
+ 3MqARgKZBu6TKxMHMaNdQzUyM7qqllALMZ0cUWGUyMedSoJSBA
+ LSP4wFydkfGFoU0nhJYWidrmATsuT9ANSGzKNm8vD2359KkoHi
+ wURJ1V3Lsq5V6dq/9yplCjW9K+A8LSDuEw0e/C+6JAky7qMeSe
+ e88onRWAJQ1vB9KsZQtMpvxYHCqVocC22L86pzV9tm8/P3pySX
+ 5UWQrpt4u7ozA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/12/11 22:34), Ingo Molnar wrote:
+On Thu, 2013-12-12 at 06:57 +0100, Mike Galbraith wrote: 
+> On Wed, 2013-12-11 at 21:45 -0800, H. Peter Anvin wrote: 
+> > As in it hangs at that point?
 > 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> Nope, it's still going.
 > 
->>> So why are annotations needed at all? What can happen if an 
->>> annotation is missing and a piece of code is probed which is also 
->>> used by the kprobes code internally - do we crash, lock up, 
->>> misbehave or handle it safely?
->>
->> The kprobe has recursion detector, [...]
+> [1567.578340] pcc-cpufreq: (v1.10.00) driver loaded with frequency limits: 1064 MHz, 2266 MHz
 > 
-> It's the 'current_kprobe' percpu variable, checked via 
-> kprobe_running(), right?
+> Funny, continents move faster :)  Maybe missing a write or two.
 
-Right. :)
+When I get back it may be done booting.  I'm gonna let it try for grins
+while I'm away, then take a peek, see if I can spot it.
 
->> [...] but it is detected in the kprobe exception(int3) handler, this 
->> means that if we put a probe before detecting the recursion, we'll 
->> do an infinite recursion.
-> 
-> So only the (presumably rather narrow) code path leading to the 
-> recursion detection code has to be annotated, correct?
+[ 1567.578340] pcc-cpufreq: (v1.10.00) driver loaded with frequency limits: 1064 MHz, 2266 MHz
+                                                                      done
+Starting HAL daemon                                                   done
 
-Yes, correct.
 
->> And also, even if we can detect the recursion, we can't stop the 
->> kernel, we need to skip the probe. This means that we need to 
->> recover to the main execution path by doing single step. As you may 
->> know, since the single stepping involves the debug exception, we 
->> have to avoid proving on that path too. Or we'll have an infinite 
->> recursion again.
-> 
-> I don't see why this is needed: if a "probing is disabled" recursion 
-> flag is set the moment the first probe fires, and if it's only cleared 
-> once all processing is finished, then any intermediate probes should 
-> simply return early from int3 and not fire.
-
-No, because the int3 already changes the original instruction.
-This means that you cannot skip singlestep(or emulate) the
-instruction which is copied to execution buffer (ainsn->insn),
-even if you have such the flag.
-So, kprobe requires the annotations on the singlestep path.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Setting up (localfs) network interfaces:
+    lo        
+    lo        IP address: 127.0.0.1/8   
+              IP address: 127.0.0.2/8                                 done
+    eth0      device: Broadcom Corporation NetXtreme II BCM5709 Gig
+              No configuration found for eth0                         unused
+    eth1      device: Broadcom Corporation NetXtreme II BCM5709 Gig
+              No configuration found for eth1                         unused
+    eth2      device: NetXen Incorporated NX3031 Multifunction 1/10
+[ 2457.114007] IPv6: ADDRCONF(NETDEV_UP): eth2: link is not ready
+[ 2457.114455] netxen_nic: eth2 NIC Link is up
+[ 2457.223582] IPv6: ADDRCONF(NETDEV_CHANGE): eth2: link becomes ready
+    eth2      IP address: 0.0.0.0/32
 
