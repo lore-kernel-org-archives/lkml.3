@@ -1,95 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab3LLBJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 20:09:17 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:46236 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab3LLBJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 20:09:14 -0500
-Date: Wed, 11 Dec 2013 20:09:03 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: page_alloc: exclude unreclaimable allocations from
- zone fairness policy
-Message-ID: <20131212010903.GP21724@cmpxchg.org>
-References: <1386785356-19911-1-git-send-email-hannes@cmpxchg.org>
- <20131211224719.GE11295@suse.de>
+	id S1751902Ab3LLBJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 20:09:07 -0500
+Received: from mail.windriver.com ([147.11.1.11]:43145 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab3LLBJC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 20:09:02 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH 3/3] rcu: use simple wait queues where possible in rcutree
+Date: Wed, 11 Dec 2013 20:06:39 -0500
+Message-ID: <1386810399-8973-4-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211224719.GE11295@suse.de>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 10:47:19PM +0000, Mel Gorman wrote:
-> On Wed, Dec 11, 2013 at 01:09:16PM -0500, Johannes Weiner wrote:
-> > Dave Hansen noted a regression in a microbenchmark that loops around
-> > open() and close() on an 8-node NUMA machine and bisected it down to
-> > 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy").  That
-> > change forces the slab allocations of the file descriptor to spread
-> > out to all 8 nodes, causing remote references in the page allocator
-> > and slab.
-> > 
-> 
-> The original patch was primarily concerned with the fair aging of LRU pages
-> of zones within a node. This patch uses GFP_MOVABLE_MASK which includes
-> __GFP_RECLAIMABLE meaning any slab created with SLAB_RECLAIM_ACCOUNT is still
-> getting the round-robin treatment. Those pages have a different lifecycle
-> to LRU pages and the shrinkers are only node aware, not zone aware.
-> While I get this patch probably helps this specific benchmark, was the
-> use of GFP_MOVABLE_MASK intentional or did you mean to use __GFP_MOVABLE?
+From: Thomas Gleixner <tglx@linutronix.de>
 
-It was intentional to spread SLAB_RECLAIM_ACCOUNT pages across all
-allowed nodes evenly for the same aging fairness reason.
+As of commit dae6e64d2bcfd4b06304ab864c7e3a4f6b5fedf4 ("rcu: Introduce
+proper blocking to no-CBs kthreads GP waits") the rcu subsystem started
+making use of wait queues.
 
-> Looking at the original patch again I think I made a major mistake when
-> reviewing it. Considering the effect of the following for NUMA machines
-> 
->         for_each_zone_zonelist_nodemask(zone, z, zonelist,
->                                                 high_zoneidx, nodemask) {
-> 		....
->                 if (alloc_flags & ALLOC_WMARK_LOW) {
->                         if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-> 				continue;
->                         if (zone_reclaim_mode &&
->                             !zone_local(preferred_zone, zone))
->                                 continue;
-> 		}
-> 
-> 
-> Enabling zone_reclaim_mode sucks badly for workloads that are not paritioned
-> to fit within NUMA nodes. Consequently, I expect the common case it that
-> it's disabled by default due to small NUMA distances or manually disabled.
-> 
-> However, the effect of that block is that we allocate NR_ALLOC_BATCH
-> from local zones then fallback to batch allocating remote nodes! I bet
-> the numa_hit stats in /proc/vmstat have sucked recently. The original
-> problem was because the page allocator would try allocating from the
-> highest zone while kswapd reclaimed from it causing LRU-aging problems.
-> The problem is not the same between nodes. How do you feel about dropping
-> the zone_reclaim_mode check above and only round-robin in batches between
-> zones on the local node?
+Here we convert all additions of rcu wait queues to use simple wait queues,
+since they don't need the extra overhead of the full wait queue features.
 
-It might not be for anon but it's the same problem for cache.  The
-page allocator will fill all the nodes in the system before waking up
-the kswapds.  It will utilize all nodes, just not evenly.
+Originally this was done for RT kernels, since we would get things like...
 
-I know that on the node-level staying local is often preferrable over
-full memory utilization but I was under the assumption that
-zone_reclaim_mode is there to express this preference.
+  BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
+  in_atomic(): 1, irqs_disabled(): 1, pid: 8, name: rcu_preempt
+  Pid: 8, comm: rcu_preempt Not tainted
+  Call Trace:
+   [<ffffffff8106c8d0>] __might_sleep+0xd0/0xf0
+   [<ffffffff817d77b4>] rt_spin_lock+0x24/0x50
+   [<ffffffff8106fcf6>] __wake_up+0x36/0x70
+   [<ffffffff810c4542>] rcu_gp_kthread+0x4d2/0x680
+   [<ffffffff8105f910>] ? __init_waitqueue_head+0x50/0x50
+   [<ffffffff810c4070>] ? rcu_gp_fqs+0x80/0x80
+   [<ffffffff8105eabb>] kthread+0xdb/0xe0
+   [<ffffffff8106b912>] ? finish_task_switch+0x52/0x100
+   [<ffffffff817e0754>] kernel_thread_helper+0x4/0x10
+   [<ffffffff8105e9e0>] ? __init_kthread_worker+0x60/0x60
+   [<ffffffff817e0750>] ? gs_change+0xb/0xb
 
-My patch certainly makes this preference more aggressive in the sense
-that there is no grayzone anymore.  There is no try to stay local.
-There is either not using a block of memory at all, or using it to the
-same extent as any other block of the same size; that's the
-requirement for fair aging.
+...and hence simple wait queues were deployed on RT out of necessity
+(as simple wait uses a raw lock), but mainline might as well take
+advantage of the more streamline support as well.
 
-That being said, the fairness concerns are primarily about file pages.
-Should we exclude anon and slab pages entirely?  I'd still account for
-them in the batches but only apply placement rules to page cache.
-That should still leave us with roughly equal cache aging speeds in
-all zones and nodes.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[PG: adapt from multiple v3.10-rt patches and add a commit log.]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ kernel/rcu/tree.c        | 16 ++++++++--------
+ kernel/rcu/tree.h        |  7 ++++---
+ kernel/rcu/tree_plugin.h | 14 +++++++-------
+ 3 files changed, 19 insertions(+), 18 deletions(-)
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index dd08198..b35babb 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1550,9 +1550,9 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 			trace_rcu_grace_period(rsp->name,
+ 					       ACCESS_ONCE(rsp->gpnum),
+ 					       TPS("reqwait"));
+-			wait_event_interruptible(rsp->gp_wq,
+-						 ACCESS_ONCE(rsp->gp_flags) &
+-						 RCU_GP_FLAG_INIT);
++			swait_event_interruptible(rsp->gp_wq,
++						  ACCESS_ONCE(rsp->gp_flags) &
++						  RCU_GP_FLAG_INIT);
+ 			if (rcu_gp_init(rsp))
+ 				break;
+ 			cond_resched();
+@@ -1576,7 +1576,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 			trace_rcu_grace_period(rsp->name,
+ 					       ACCESS_ONCE(rsp->gpnum),
+ 					       TPS("fqswait"));
+-			ret = wait_event_interruptible_timeout(rsp->gp_wq,
++			ret = swait_event_interruptible_timeout(rsp->gp_wq,
+ 					((gf = ACCESS_ONCE(rsp->gp_flags)) &
+ 					 RCU_GP_FLAG_FQS) ||
+ 					(!ACCESS_ONCE(rnp->qsmask) &&
+@@ -1625,7 +1625,7 @@ static void rsp_wakeup(struct irq_work *work)
+ 	struct rcu_state *rsp = container_of(work, struct rcu_state, wakeup_work);
+ 
+ 	/* Wake up rcu_gp_kthread() to start the grace period. */
+-	wake_up(&rsp->gp_wq);
++	swake_up(&rsp->gp_wq);
+ }
+ 
+ /*
+@@ -1701,7 +1701,7 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ {
+ 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+ 	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
+-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
++	swake_up(&rsp->gp_wq);  /* Memory barrier implied by swake_up() path. */
+ }
+ 
+ /*
+@@ -2271,7 +2271,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
+ 	}
+ 	rsp->gp_flags |= RCU_GP_FLAG_FQS;
+ 	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
+-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
++	swake_up(&rsp->gp_wq); /* Memory barrier implied by swake_up() path. */
+ }
+ 
+ /*
+@@ -3304,7 +3304,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+ 	}
+ 
+ 	rsp->rda = rda;
+-	init_waitqueue_head(&rsp->gp_wq);
++	init_swaitqueue_head(&rsp->gp_wq);
+ 	init_irq_work(&rsp->wakeup_work, rsp_wakeup);
+ 	rnp = rsp->level[rcu_num_lvls - 1];
+ 	for_each_possible_cpu(i) {
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 52be957..01476e1 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -28,6 +28,7 @@
+ #include <linux/cpumask.h>
+ #include <linux/seqlock.h>
+ #include <linux/irq_work.h>
++#include <linux/swait.h>
+ 
+ /*
+  * Define shape of hierarchy based on NR_CPUS, CONFIG_RCU_FANOUT, and
+@@ -200,7 +201,7 @@ struct rcu_node {
+ 				/*  This can happen due to race conditions. */
+ #endif /* #ifdef CONFIG_RCU_BOOST */
+ #ifdef CONFIG_RCU_NOCB_CPU
+-	wait_queue_head_t nocb_gp_wq[2];
++	swait_queue_head_t nocb_gp_wq[2];
+ 				/* Place for rcu_nocb_kthread() to wait GP. */
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 	int need_future_gp[2];
+@@ -333,7 +334,7 @@ struct rcu_data {
+ 	atomic_long_t nocb_q_count_lazy; /*  (approximate). */
+ 	int nocb_p_count;		/* # CBs being invoked by kthread */
+ 	int nocb_p_count_lazy;		/*  (approximate). */
+-	wait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
++	swait_queue_head_t nocb_wq;	/* For nocb kthreads to sleep on. */
+ 	struct task_struct *nocb_kthread;
+ #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 
+@@ -403,7 +404,7 @@ struct rcu_state {
+ 	unsigned long gpnum;			/* Current gp number. */
+ 	unsigned long completed;		/* # of last completed gp. */
+ 	struct task_struct *gp_kthread;		/* Task for grace periods. */
+-	wait_queue_head_t gp_wq;		/* Where GP task waits. */
++	swait_queue_head_t gp_wq;		/* Where GP task waits. */
+ 	int gp_flags;				/* Commands for GP task. */
+ 
+ 	/* End of fields guarded by root rcu_node's lock. */
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 08a7652..b565ebd 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2060,7 +2060,7 @@ static int rcu_nocb_needs_gp(struct rcu_state *rsp)
+  */
+ static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+ {
+-	wake_up_all(&rnp->nocb_gp_wq[rnp->completed & 0x1]);
++	swake_up_all(&rnp->nocb_gp_wq[rnp->completed & 0x1]);
+ }
+ 
+ /*
+@@ -2078,8 +2078,8 @@ static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq)
+ 
+ static void rcu_init_one_nocb(struct rcu_node *rnp)
+ {
+-	init_waitqueue_head(&rnp->nocb_gp_wq[0]);
+-	init_waitqueue_head(&rnp->nocb_gp_wq[1]);
++	init_swaitqueue_head(&rnp->nocb_gp_wq[0]);
++	init_swaitqueue_head(&rnp->nocb_gp_wq[1]);
+ }
+ 
+ /* Is the specified CPU a no-CPUs CPU? */
+@@ -2122,7 +2122,7 @@ static void __call_rcu_nocb_enqueue(struct rcu_data *rdp,
+ 	}
+ 	len = atomic_long_read(&rdp->nocb_q_count);
+ 	if (old_rhpp == &rdp->nocb_head) {
+-		wake_up(&rdp->nocb_wq); /* ... only if queue was empty ... */
++		swake_up(&rdp->nocb_wq); /* ... only if queue was empty ... */
+ 		rdp->qlen_last_fqs_check = 0;
+ 		trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu, TPS("WakeEmpty"));
+ 	} else if (len > rdp->qlen_last_fqs_check + qhimark) {
+@@ -2218,7 +2218,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 	 */
+ 	trace_rcu_future_gp(rnp, rdp, c, TPS("StartWait"));
+ 	for (;;) {
+-		wait_event_interruptible(
++		swait_event_interruptible(
+ 			rnp->nocb_gp_wq[c & 0x1],
+ 			(d = ULONG_CMP_GE(ACCESS_ONCE(rnp->completed), c)));
+ 		if (likely(d))
+@@ -2249,7 +2249,7 @@ static int rcu_nocb_kthread(void *arg)
+ 		if (!rcu_nocb_poll) {
+ 			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+ 					    TPS("Sleep"));
+-			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
++			swait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
+ 		} else if (firsttime) {
+ 			firsttime = 0;
+ 			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+@@ -2314,7 +2314,7 @@ static int rcu_nocb_kthread(void *arg)
+ static void __init rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp)
+ {
+ 	rdp->nocb_tail = &rdp->nocb_head;
+-	init_waitqueue_head(&rdp->nocb_wq);
++	init_swaitqueue_head(&rdp->nocb_wq);
+ }
+ 
+ /* Create a kthread for each RCU flavor for each no-CBs CPU. */
+-- 
+1.8.5.1
+
