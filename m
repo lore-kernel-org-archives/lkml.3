@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab3LLLUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:20:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58181 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab3LLLUf (ORCPT
+	id S1751987Ab3LLLU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:20:58 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:63805 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab3LLLUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:20:35 -0500
-Date: Thu, 12 Dec 2013 12:20:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-Message-ID: <20131212112020.GO3694@twins.programming.kicks-ass.net>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
- <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
- <20131212111809.GF21999@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212111809.GF21999@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 12 Dec 2013 06:20:53 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/3] OF: Add a allnodes pointer back to the tree
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <1386684833-24112-3-git-send-email-panto@antoniou-consulting.com>
+References: <1386684833-24112-1-git-send-email-panto@antoniou-consulting.com > <1386684833-24112-3-git-send-email-panto@antoniou-consulting.com>
+Date: Thu, 12 Dec 2013 11:20:47 +0000
+Message-Id: <20131212112047.87B5BC40637@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 12:18:09PM +0100, Peter Zijlstra wrote:
-> On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
-> > +unsigned int
-> > +__swake_up_locked(struct swait_queue_head *head, unsigned int state,
-> > +		  unsigned int num)
-> > +{
-> > +	struct swaiter *curr, *next;
-> > +	int woken = 0;
-> > +
-> > +	list_for_each_entry_safe(curr, next, &head->task_list, node) {
-> > +		if (wake_up_state(curr->task, state)) {
-> > +			__swait_dequeue(curr);
-> > +			/*
-> > +			 * The waiting task can free the waiter as
-> > +			 * soon as curr->task = NULL is written,
-> > +			 * without taking any locks. A memory barrier
-> > +			 * is required here to prevent the following
-> > +			 * store to curr->task from getting ahead of
-> > +			 * the dequeue operation.
-> > +			 */
-> > +			smp_wmb();
-> > +			curr->task = NULL;
-> > +			if (++woken == num)
-> > +				break;
-> > +		}
-> > +	}
-> > +	return woken;
-> > +}
-> > +
-> > +unsigned int
-> > +__swake_up(struct swait_queue_head *head, unsigned int state, unsigned int num)
-> > +{
-> > +	unsigned long flags;
-> > +	int woken;
-> > +
-> > +	if (!swaitqueue_active(head))
-> > +		return 0;
-> > +
-> > +	raw_spin_lock_irqsave(&head->lock, flags);
-> > +	woken = __swake_up_locked(head, state, num);
-> > +	raw_spin_unlock_irqrestore(&head->lock, flags);
-> > +	return woken;
-> > +}
-> > +EXPORT_SYMBOL(__swake_up);
+On Tue, 10 Dec 2013 16:13:52 +0200, Pantelis Antoniou <panto@antoniou-consulting.com> wrote:
+> As it stands right now there's no way for a node to point back
+> to allnodes that the top level tree tracker for now.
 > 
-> Urgh, fail. Do not put unbounded loops in raw_spin_lock.
+> This is problematic when using unflatten_dt_node more than once
+> because is leads to the nodes to be linked incorrectly.
 > 
-> I think I posted a patch a while back to cure this.
+> Keep track of the root allnodes on each device_node and modify
+> unflaten_dt_node to match.
 
-tada!
+After our conversation on IRC and the decision to split unflattening the
+tree from attaching it to be visible to the entire kernel, I'm going to
+hold off on this patch. I suspect it will change in the process.
 
-lkml.kernel.org/r/20131004145625.GN3081@twins.programming.kicks-ass.net
+g.
+
