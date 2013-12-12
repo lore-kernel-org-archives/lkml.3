@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab3LLVfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:35:37 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:52436 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab3LLVfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:35:34 -0500
+	id S1751797Ab3LLVit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:38:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751496Ab3LLVir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 16:38:47 -0500
+Message-ID: <52AA2C87.5040509@redhat.com>
+Date: Thu, 12 Dec 2013 16:37:11 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdauqYNiby-ta3c_he2ovG__0e6ubmzZ8Bx1cP_OzK4=LQ@mail.gmail.com>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-1-git-send-email-syin@broadcom.com>
-	<1386787041-6035-4-git-send-email-syin@broadcom.com>
-	<CACRpkdauqYNiby-ta3c_he2ovG__0e6ubmzZ8Bx1cP_OzK4=LQ@mail.gmail.com>
-Date: Thu, 12 Dec 2013 13:35:29 -0800
-Message-ID: <CAEPRUYpsp_FVobY_DeEQU2+rCD7q7T=p7k++XvG-22x-OWHY8Q@mail.gmail.com>
-Subject: Re: [PATCH v3 3/6] pinctrl: Make PINCTRL selectable by defconfig/menuconfig
-From: Christian Daudt <bcm@fixthebug.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sherman Yin <syin@broadcom.com>, Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Thorlton <athorlton@sgi.com>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC PATCH 2/3] Add tunable to control THP behavior
+References: <cover.1386790423.git.athorlton@sgi.com> <20131212180050.GC134240@sgi.com>
+In-Reply-To: <20131212180050.GC134240@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 12:39 PM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Wed, Dec 11, 2013 at 7:37 PM, Sherman Yin <syin@broadcom.com> wrote:
->
->> Adds a string to the PINCTRL config option so that 1) CONFIG_PINCTRL=y would
->> not be erased by make config, and 2) PINCTRL option would show up in menuconfig.
->>
->> Signed-off-by: Sherman Yin <syin@broadcom.com>
->> ---
->> v3: added to patchset
->
-> NAK. The pin control subsystem has been designed so that
-> you should select the pin controller through select statements
-> from the SoC using it.
->
-> This was requested at one time by Linus (Torvalds).
->
-> You need to convince me that this is really needed.
->
-> Yours,
-> Linus Walleij
-Hi Linus,
- I had requested this from Sherman. The reason is so that pinctrl can
-be selectable through defconfig, instead of through SoC select
-statements. And the reason for that is so that, in the future, some of
-these can be switched into loadable modules (which can't be done from
-Kconfig). This will become necessary with the move to multiplatform -
-we won't be able to have everything static anymore.
+On 12/12/2013 01:00 PM, Alex Thorlton wrote:
+> This part of the patch adds a tunable to
+> /sys/kernel/mm/transparent_hugepage called threshold.  This threshold
+> determines how many pages a user must fault in from a single node before
+> a temporary compound page is turned into a THP.
 
- Thanks,
-   csd
+> +++ b/mm/huge_memory.c
+> @@ -44,6 +44,9 @@ unsigned long transparent_hugepage_flags __read_mostly =
+>   	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG)|
+>   	(1<<TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG);
+>
+> +/* default to 1 page threshold for handing out thps; maintains old behavior */
+> +static int transparent_hugepage_threshold = 1;
+
+I assume the motivation for writing all this code is that "1"
+was not a good value in your tests.
+
+That makes me wonder, why should 1 be the default value with
+your patches?
+
+If there is a better value, why should we not use that?
+
+What is the upside of using a better value?
+
+What is the downside?
+
+Is there a value that would to bound the downside, so it
+is almost always smaller than the upside?
