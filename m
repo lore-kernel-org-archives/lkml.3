@@ -1,87 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab3LLMIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:08:11 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54633 "EHLO mga02.intel.com"
+	id S1751562Ab3LLMLo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:11:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57267 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482Ab3LLMIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:08:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,877,1378882800"; 
-   d="scan'208";a="423531006"
-Message-ID: <52A9A71C.50004@intel.com>
-Date: Thu, 12 Dec 2013 14:07:56 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751415Ab3LLMLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:11:43 -0500
+Date: Thu, 12 Dec 2013 13:11:40 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131212121140.GD2630@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+ <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+ <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+ <20131210103827.GB20242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
+ <20131211095549.GA18741@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
+ <20131212103159.GB2630@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: David Ahern <dsahern@gmail.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 07/71] perf tools: Record whether a dso is 64-bit
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-8-git-send-email-alexander.shishkin@linux.intel.com> <52A8BC5D.2030603@gmail.com> <20131211195419.GF1458@ghostprotocols.net>
-In-Reply-To: <20131211195419.GF1458@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131212103159.GB2630@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13 21:54, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Dec 11, 2013 at 12:26:21PM -0700, David Ahern escreveu:
->> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
->>> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
->>> index a0c7c59..80817ec 100644
->>> --- a/tools/perf/util/dso.c
->>> +++ b/tools/perf/util/dso.c
->>> @@ -446,6 +446,7 @@ struct dso *dso__new(const char *name)
->>>  		dso->cache = RB_ROOT;
->>>  		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
->>>  		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
->>> +		dso->is_64_bit = (sizeof(void *) == 8);
->>
->> Isnt' that going to record the bitness of perf when it is compiled?
+On Thu 12-12-13 11:31:59, Michal Hocko wrote:
+[...]
+> The semantic would be as simple as "notification is sent only when
+> an action is due". It will be still racy as nothing prevents a task
+> which is not under OOM to exit and release some memory but there is no
+> sensible way to address that. On the other hand such a semantic would be
+> sensible for oom_control listeners because they will know that an action
+> has to be or will be taken (the line was drawn).
 > 
-> Right, it will. Its just a default, I assume this will be reset after
-> the DSO is loaded, i.e. the ELF file gets accessed, no?
+> Can we agree on this, Johannes? Or you see the line drawn when
+> mem_cgroup_oom_synchronize has been reached already no matter whether
+> the action is to be done or not?
 
-Yes
+Something like the following:
 
-> 
-> Which then would make this init to be just a distraction, no?
+>From 5d9c01e2814a7ade49db7945ad3890f4f138855e Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 12 Dec 2013 11:50:17 +0100
+Subject: [PATCH] memcg: notify userspace about OOM when and action is due
 
-Yes
+Userspace is currently notified about OOM condition after fails
+to reclaim any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
+This usually means that the memcg is really in troubles and an
+OOM action (either done by userspace or kernel) has to be taken.
+The kernel OOM killer however bails out and doesn't kill anything
+if it sees an already dying/exiting task in a good hope a memory
+will be released and OOM situation will be resolved.
 
-> 
-> I wonder if we couldn't extern PERF_RECORD_MMAP to have the binary type
-> encoded there somehow...
-> 
->>>  		dso->loaded = 0;
->>>  		dso->rel = 0;
->>>  		dso->sorted_by_name = 0;
->>> diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
->>> index 384f2d9..62680e1 100644
->>> --- a/tools/perf/util/dso.h
->>> +++ b/tools/perf/util/dso.h
->>> @@ -91,6 +91,7 @@ struct dso {
->>>  	u8		 annotate_warned:1;
->>>  	u8		 sname_alloc:1;
->>>  	u8		 lname_alloc:1;
->>> +	u8		 is_64_bit:1;
->>
->> The is_64_bit name seems a bit hardcoded. We need something similar
->> for perf-trace to set the audit machine type for resolving syscalls.
->> How about having this field set a machine type rather than a
->> "64-bit" flag?
->>
->> David
-> 
-> 
+Therefore it makes sense to notify userspace only after really all
+measures have been taken and an userspace action is required or
+the kernel kills a task.
 
+This patch also removes fatal_signal_pending and PF_EXITING check from
+mem_cgroup_oom_synchronize because __mem_cgroup_try_charge already
+checks for both and bypasses charge so we cannot end up in the oom path.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c | 17 ++++-------------
+ mm/oom_kill.c   |  5 +++++
+ 2 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 98900c070045..af7148c77bac 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2235,16 +2235,6 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 	if (!handle)
+ 		goto cleanup;
+ 
+-	/*
+-	 * If current has a pending SIGKILL or is exiting, then automatically
+-	 * select it.  The goal is to allow it to allocate so that it may
+-	 * quickly exit and free its memory.
+-	 */
+-	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
+-		set_thread_flag(TIF_MEMDIE);
+-		goto cleanup;
+-	}
+-
+ 	owait.memcg = memcg;
+ 	owait.wait.flags = 0;
+ 	owait.wait.func = memcg_oom_wake_function;
+@@ -2256,15 +2246,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 
+ 	locked = mem_cgroup_oom_trylock(memcg);
+ 
+-	if (locked)
+-		mem_cgroup_oom_notify(memcg);
+-
+ 	if (locked && !memcg->oom_kill_disable) {
+ 		mem_cgroup_unmark_under_oom(memcg);
+ 		finish_wait(&memcg_oom_waitq, &owait.wait);
++		/* calls mem_cgroup_oom_notify if there is a task to kill */
+ 		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
+ 					 current->memcg_oom.order);
+ 	} else {
++		if (locked && memcg->oom_kill_disable)
++			mem_cgroup_oom_notify(memcg);
++
+ 		schedule();
+ 		mem_cgroup_unmark_under_oom(memcg);
+ 		finish_wait(&memcg_oom_waitq, &owait.wait);
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 1e4a600a6163..47c9de8da36d 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -394,6 +394,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		dump_tasks(memcg, nodemask);
+ }
+ 
++extern void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
++
+ #define K(x) ((x) << (PAGE_SHIFT-10))
+ /*
+  * Must be called while holding a reference to p, which will be released upon
+@@ -470,6 +472,9 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		victim = p;
+ 	}
+ 
++	if (memcg)
++		mem_cgroup_oom_notify(memcg);
++
+ 	/* mm cannot safely be dereferenced after task_unlock(victim) */
+ 	mm = victim->mm;
+ 	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
+-- 
+1.8.4.4
+
+-- 
+Michal Hocko
+SUSE Labs
