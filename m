@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab3LLTHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:07:17 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:41088 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3LLTHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:07:14 -0500
-Message-ID: <52AA095D.4020707@monstr.eu>
-Date: Thu, 12 Dec 2013 20:07:09 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752430Ab3LLTHm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:07:42 -0500
+Received: from imap.thunk.org ([74.207.234.97]:39482 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519Ab3LLTHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 14:07:16 -0500
+Date: Thu, 12 Dec 2013 14:06:59 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: vegard.nossum@oracle.com
+Cc: linux-kernel@vger.kernel.org, Tommi Rantala <tt.rantala@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Kees Cook <keescook@chromium.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+Message-ID: <20131212190659.GG13547@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, vegard.nossum@oracle.com,
+	linux-kernel@vger.kernel.org, Tommi Rantala <tt.rantala@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Kees Cook <keescook@chromium.org>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Alan Cox <alan@linux.intel.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Jason Wang <jasowang@redhat.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	Dan Carpenter <dan.carpenter@oracle.com>,
+	James Morris <james.l.morris@oracle.com>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/9] arm: dt: zynq: Remove 'clock-ranges' from TTC
- nodes
-References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-2-git-send-email-soren.brinkmann@xilinx.com> <52A97979.1030205@monstr.eu> <552285d2-8d57-4509-a014-d97065232376@DB8EHSMHS004.ehs.local>
-In-Reply-To: <552285d2-8d57-4509-a014-d97065232376@DB8EHSMHS004.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="so7JksuqHhjCfBKkHf34sCI51cxPQFvDD"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---so7JksuqHhjCfBKkHf34sCI51cxPQFvDD
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
+> From: Vegard Nossum <vegard.nossum@oracle.com>
+> 
+> The idea is simple -- since different kernel versions are vulnerable to
+> different root exploits, hackers most likely try multiple exploits before
+> they actually succeed.
 
-On 12/12/2013 06:01 PM, S=C3=B6ren Brinkmann wrote:
-> Hi Michal,
->=20
-> On Thu, Dec 12, 2013 at 09:53:13AM +0100, Michal Simek wrote:
->> On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
->>> The bindings for the TTC changed in commit 'arm: zynq: Use standard
->>> timer binding' (e932900a3279b5dbb6d8f43c7b369003620e137c). That chang=
-e
->>> removed possible subnodes from this driver rendering the 'clock-range=
-s'
->>> property invalid for this node.
->>>
->>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
->>> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>> ---
->>>  arch/arm/boot/dts/zynq-7000.dtsi | 2 --
->>>  1 file changed, 2 deletions(-)
->>
->> I think this is completely unrelated to cpufreq and should just go
->> directly via arm-soc tree.
->> If yes, I will add 1/9 and 2/9 to zynq/dt branch.
->=20
-> I agree. This is just clean up that I found during this work. The secon=
-d
-> patch could go in as well I think. cpufreq will need the CPU nodes
-> later, but I think there is no real reason to not add them now.
+Suppose we put put this into the mainstream kernel.  Wouldn't writers
+of root kit adapt by checking for the kernel version to avoid checking
+for exploits that are known not work?  So the question is whether the
+additional complexity in the kernel is going to be worth it, since
+once the attackers adapt, the benefits of trying to detect attacks for
+mitigated exploits will be minimal.
 
-ok then. 1/9 and 2/9 applied to zynq/dt branch.
+Regards,
 
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---so7JksuqHhjCfBKkHf34sCI51cxPQFvDD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlKqCV0ACgkQykllyylKDCFghwCfXr0ypRzJemhq17qm27Qmk9Ig
-Ai0An3hX4bFsRTYpuF4AreZcxVj1E2Sg
-=NVbt
------END PGP SIGNATURE-----
-
---so7JksuqHhjCfBKkHf34sCI51cxPQFvDD--
+							- Ted
