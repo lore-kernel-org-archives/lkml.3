@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3LLUtR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:49:17 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:11965 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab3LLUtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:49:14 -0500
-Message-ID: <1386881054.1791.316.camel@misato.fc.hp.com>
-Subject: Re: EFI tree kernel panic in phys_efi_set_virtual_address_map()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org
-Date: Thu, 12 Dec 2013 13:44:14 -0700
-In-Reply-To: <20131212203533.GB26927@pd.tnic>
-References: <1386806463.1791.295.camel@misato.fc.hp.com>
-	 <20131212002946.GF8863@pd.tnic>
-	 <1386808323.1791.299.camel@misato.fc.hp.com>
-	 <1386810484.1791.306.camel@misato.fc.hp.com>
-	 <1386810620.1791.307.camel@misato.fc.hp.com>
-	 <20131212162351.GA26927@pd.tnic>
-	 <1386866583.1791.310.camel@misato.fc.hp.com>
-	 <1386869221.1791.311.camel@misato.fc.hp.com>
-	 <1386869777.1791.314.camel@misato.fc.hp.com>
-	 <20131212203533.GB26927@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752020Ab3LLUt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:49:57 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:44659 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751554Ab3LLUty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 15:49:54 -0500
+Date: Thu, 12 Dec 2013 14:49:50 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/3] Add tunable to control THP behavior
+Message-ID: <20131212204950.GA6034@sgi.com>
+References: <cover.1386790423.git.athorlton@sgi.com>
+ <20131212180050.GC134240@sgi.com>
+ <CALCETrWfFRhjuoK8T9G8hecxsRxFPQ+qA0x7azoof1X5tuxruA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWfFRhjuoK8T9G8hecxsRxFPQ+qA0x7azoof1X5tuxruA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 21:35 +0100, Borislav Petkov wrote:
-> On Thu, Dec 12, 2013 at 10:36:17AM -0700, Toshi Kani wrote:
-> > BTW, the test system is shared and will be used by other test for a
-> > couple of hours or so. So, please take your time. :-)
-> 
-> Yeah, ok :-)
-> 
-> I went and polished the debugging patch a bit more - it seems we're
-> going to need it more often now, should probably send it up too :)
-> 
-> Right, so the pagetable dump shows that the new_memmap is not mapped in
-> it, thus the #PF.
-> 
-> Ok, so next try: let's dump the pagetable after we've copied the pgd
-> containing new_memmap. Same exercise as before, please.
+> Is there a setting that will turn off the must-be-the-same-node
+> behavior?  There are workloads where TLB matters more than cross-node
+> traffic (or where all the pages are hopelessly shared between nodes,
+> but hugepages are still useful).
 
-Will do.
+That's pretty much how THPs already behave in the kernel, so if you want
+to allow THPs to be handed out to one node, but referenced from many
+others, you'd just set the threshold to 1, and let the existing code
+take over.
 
-Thanks,
--Toshi
+As for the must-be-the-same-node behavior:  I'd actually say it's more
+like a "must have so much on one node" behavior, in that, if you set the
+threshold to 16, for example, 16 4K pages must be faulted in on the same
+node, in the same contiguous 2M chunk, before a THP will be created.
+What happens after that THP is created is out of our control, it could
+be referenced from anywhere.
 
+The idea here is that we can tune things so that jobs that behave poorly
+with THP on will not be given THPs, but the jobs that like THPs can
+still get them.  Granted, there are still issues with this approach, but
+I think it's a bit better than just handing out a THP because we touched
+one byte in a 2M chunk.
 
+- Alex
