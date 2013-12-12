@@ -1,146 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3LLQSI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:18:08 -0500
-Received: from mail.windriver.com ([147.11.1.11]:38446 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab3LLQSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:18:05 -0500
-Message-ID: <52A9E1AC.7070001@windriver.com>
-Date: Thu, 12 Dec 2013 11:17:48 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751614Ab3LLQYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:24:04 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49590 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab3LLQYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 11:24:01 -0500
+Date: Thu, 12 Dec 2013 17:23:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org
+Subject: Re: EFI tree kernel panic in phys_efi_set_virtual_address_map()
+Message-ID: <20131212162351.GA26927@pd.tnic>
+References: <1386806463.1791.295.camel@misato.fc.hp.com>
+ <20131212002946.GF8863@pd.tnic>
+ <1386808323.1791.299.camel@misato.fc.hp.com>
+ <1386810484.1791.306.camel@misato.fc.hp.com>
+ <1386810620.1791.307.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue implementation
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com> <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com> <20131212111809.GF21999@twins.programming.kicks-ass.net>
-In-Reply-To: <20131212111809.GF21999@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1386810620.1791.307.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-12-12 06:18 AM, Peter Zijlstra wrote:
-> On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
->> +/*
->> + * Event API
->> + */
->> +#define __swait_event(wq, condition)					\
->> +do {									\
->> +	DEFINE_SWAITER(__wait);						\
->> +									\
->> +	for (;;) {							\
->> +		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
->> +		if (condition)						\
->> +			break;						\
->> +		schedule();						\
->> +	}								\
->> +	swait_finish(&wq, &__wait);					\
->> +} while (0)
->> +
->> +#define __swait_event_interruptible(wq, condition, ret)			\
->> +do {									\
->> +	DEFINE_SWAITER(__wait);						\
->> +									\
->> +	for (;;) {							\
->> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
->> +		if (condition)						\
->> +			break;						\
->> +		if (signal_pending(current)) {				\
->> +			ret = -ERESTARTSYS;				\
->> +			break;						\
->> +		}							\
->> +		schedule();						\
->> +	}								\
->> +	swait_finish(&wq, &__wait);					\
->> +} while (0)
->> +
->> +#define __swait_event_interruptible_timeout(wq, condition, ret)		\
->> +do {									\
->> +	DEFINE_SWAITER(__wait);						\
->> +									\
->> +	for (;;) {							\
->> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
->> +		if (condition)						\
->> +			break;						\
->> +		if (signal_pending(current)) {				\
->> +			ret = -ERESTARTSYS;				\
->> +			break;						\
->> +		}							\
->> +		ret = schedule_timeout(ret);				\
->> +		if (!ret)						\
->> +			break;						\
->> +	}								\
->> +	swait_finish(&wq, &__wait);					\
->> +} while (0)
+On Wed, Dec 11, 2013 at 06:10:20PM -0700, Toshi Kani wrote:
+> > Unfortunately, it did not work.  Hit the same panic again.
 > 
-> Urgh, please have a look at ___wait_event() we just killed all the
-> pointless replication for the normal waitqueues, please don't add more
-> of it.
+> dmesg output attached.
 
-Right, I recall seeing that series go by in October ; thanks for
-the reminder, I'll clean this up to match what was done in commit
-41a1431b178c3b73 and its follow-on commits.
+Ok, thanks.
 
-Paul.
+Let's have a look at the EFI pagetable then. Please apply the attached
+patch, make sure CONFIG_X86_PTDUMP is enabled, build, boot and catch
+full dmesg again and send it to me.
+
+Thanks.
+
+---
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 3d1999458709..39022e488c5d 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -15,6 +15,7 @@
+ 	 : (prot))
+ 
+ #ifndef __ASSEMBLY__
++int ptdump_show(struct seq_file *m, void *v);
+ 
+ #include <asm/x86_init.h>
+ 
+diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
+index 0002a3a33081..744dc0dea3c9 100644
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -99,47 +99,47 @@ static void printk_prot(struct seq_file *m, pgprot_t prot, int level)
+ 
+ 	if (!pgprot_val(prot)) {
+ 		/* Not present */
+-		seq_printf(m, "                          ");
++		pr_cont("                          ");
+ 	} else {
+ 		if (pr & _PAGE_USER)
+-			seq_printf(m, "USR ");
++			pr_cont("USR ");
+ 		else
+-			seq_printf(m, "    ");
++			pr_cont("    ");
+ 		if (pr & _PAGE_RW)
+-			seq_printf(m, "RW ");
++			pr_cont("RW ");
+ 		else
+-			seq_printf(m, "ro ");
++			pr_cont("ro ");
+ 		if (pr & _PAGE_PWT)
+-			seq_printf(m, "PWT ");
++			pr_cont("PWT ");
+ 		else
+-			seq_printf(m, "    ");
++			pr_cont("    ");
+ 		if (pr & _PAGE_PCD)
+-			seq_printf(m, "PCD ");
++			pr_cont("PCD ");
+ 		else
+-			seq_printf(m, "    ");
++			pr_cont("    ");
+ 
+ 		/* Bit 9 has a different meaning on level 3 vs 4 */
+ 		if (level <= 3) {
+ 			if (pr & _PAGE_PSE)
+-				seq_printf(m, "PSE ");
++				pr_cont("PSE ");
+ 			else
+-				seq_printf(m, "    ");
++				pr_cont("    ");
+ 		} else {
+ 			if (pr & _PAGE_PAT)
+-				seq_printf(m, "pat ");
++				pr_cont("pat ");
+ 			else
+-				seq_printf(m, "    ");
++				pr_cont("    ");
+ 		}
+ 		if (pr & _PAGE_GLOBAL)
+-			seq_printf(m, "GLB ");
++			pr_cont("GLB ");
+ 		else
+-			seq_printf(m, "    ");
++			pr_cont("    ");
+ 		if (pr & _PAGE_NX)
+-			seq_printf(m, "NX ");
++			pr_cont("NX ");
+ 		else
+-			seq_printf(m, "x  ");
++			pr_cont("x  ");
+ 	}
+-	seq_printf(m, "%s\n", level_name[level]);
++	pr_cont("%s\n", level_name[level]);
+ }
+ 
+ /*
+@@ -178,7 +178,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		st->current_prot = new_prot;
+ 		st->level = level;
+ 		st->marker = address_markers;
+-		seq_printf(m, "---[ %s ]---\n", st->marker->name);
++		pr_info("---[ %s ]---\n", st->marker->name);
+ 	} else if (prot != cur || level != st->level ||
+ 		   st->current_address >= st->marker[1].start_address) {
+ 		const char *unit = units;
+@@ -188,7 +188,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		/*
+ 		 * Now print the actual finished series
+ 		 */
+-		seq_printf(m, "0x%0*lx-0x%0*lx   ",
++		pr_info("0x%0*lx-0x%0*lx   ",
+ 			   width, st->start_address,
+ 			   width, st->current_address);
+ 
+@@ -197,7 +197,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 			delta >>= 10;
+ 			unit++;
+ 		}
+-		seq_printf(m, "%9lu%c ", delta, *unit);
++		pr_cont("%9lu%c ", delta, *unit);
+ 		printk_prot(m, st->current_prot, st->level);
+ 
+ 		/*
+@@ -207,7 +207,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		 */
+ 		if (st->current_address >= st->marker[1].start_address) {
+ 			st->marker++;
+-			seq_printf(m, "---[ %s ]---\n", st->marker->name);
++			pr_info("---[ %s ]---\n", st->marker->name);
+ 		}
+ 
+ 		st->start_address = st->current_address;
+@@ -298,14 +298,11 @@ static void walk_pud_level(struct seq_file *m, struct pg_state *st, pgd_t addr,
+ 
+ static void walk_pgd_level(struct seq_file *m)
+ {
+-#ifdef CONFIG_X86_64
+-	pgd_t *start = (pgd_t *) &init_level4_pgt;
+-#else
+-	pgd_t *start = swapper_pg_dir;
+-#endif
+ 	int i;
+ 	struct pg_state st;
+ 
++	pgd_t *start = (pgd_t *)__va(real_mode_header->trampoline_pgd);
++
+ 	memset(&st, 0, sizeof(st));
+ 
+ 	for (i = 0; i < PTRS_PER_PGD; i++) {
+@@ -329,7 +326,7 @@ static void walk_pgd_level(struct seq_file *m)
+ 	note_page(m, &st, __pgprot(0), 0);
+ }
+ 
+-static int ptdump_show(struct seq_file *m, void *v)
++int ptdump_show(struct seq_file *m, void *v)
+ {
+ 	walk_pgd_level(m);
+ 	return 0;
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index f8ec4dafc74e..f4920191ff8b 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -876,6 +876,11 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_setup_page_tables();
+ 	efi_sync_low_kernel_mappings();
+ 
++	pr_info("desc_size: %lu, count: %d, new_memmap: %p, pa: 0x%lx\n",
++		memmap.desc_size, count, new_memmap, __pa(new_memmap));
++
++	ptdump_show(NULL, NULL);
++
+ 	status = phys_efi_set_virtual_address_map(
+ 		memmap.desc_size * count,
+ 		memmap.desc_size,
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index bf286c386d33..0e2ccca2c7ce 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -160,6 +160,9 @@ static void __init __map_region(efi_memory_desc_t *md, u64 va)
+ 	if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
+ 		pr_warn("Error mapping PA 0x%llx -> VA 0x%llx!\n",
+ 			   md->phys_addr, va);
++	else
++		pr_info("PA: 0x%llx -> VA: 0x%llx\n",
++			 md->phys_addr, va);
+ }
+ 
+ void __init efi_map_region(efi_memory_desc_t *md)
+
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-
-> 
-> 
->> +unsigned int
->> +__swake_up_locked(struct swait_queue_head *head, unsigned int state,
->> +		  unsigned int num)
->> +{
->> +	struct swaiter *curr, *next;
->> +	int woken = 0;
->> +
->> +	list_for_each_entry_safe(curr, next, &head->task_list, node) {
->> +		if (wake_up_state(curr->task, state)) {
->> +			__swait_dequeue(curr);
->> +			/*
->> +			 * The waiting task can free the waiter as
->> +			 * soon as curr->task = NULL is written,
->> +			 * without taking any locks. A memory barrier
->> +			 * is required here to prevent the following
->> +			 * store to curr->task from getting ahead of
->> +			 * the dequeue operation.
->> +			 */
->> +			smp_wmb();
->> +			curr->task = NULL;
->> +			if (++woken == num)
->> +				break;
->> +		}
->> +	}
->> +	return woken;
->> +}
->> +
->> +unsigned int
->> +__swake_up(struct swait_queue_head *head, unsigned int state, unsigned int num)
->> +{
->> +	unsigned long flags;
->> +	int woken;
->> +
->> +	if (!swaitqueue_active(head))
->> +		return 0;
->> +
->> +	raw_spin_lock_irqsave(&head->lock, flags);
->> +	woken = __swake_up_locked(head, state, num);
->> +	raw_spin_unlock_irqrestore(&head->lock, flags);
->> +	return woken;
->> +}
->> +EXPORT_SYMBOL(__swake_up);
-> 
-> Urgh, fail. Do not put unbounded loops in raw_spin_lock.
-> 
-> I think I posted a patch a while back to cure this.
-> 
-> 
