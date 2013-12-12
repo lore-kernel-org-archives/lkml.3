@@ -1,52 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3LLQLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:11:21 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:61268 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3LLQLT (ORCPT
+	id S1751585Ab3LLQSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:18:08 -0500
+Received: from mail.windriver.com ([147.11.1.11]:38446 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3LLQSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:11:19 -0500
-Date: Thu, 12 Dec 2013 11:11:07 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 11/11] PCI/MSI: Introduce pcim_enable_msi*() family
- helpers
-Message-ID: <20131212161107.GI32683@htj.dyndns.org>
-References: <cover.1385399393.git.agordeev@redhat.com>
- <086bc30b22688c629911d02e230d1bc876fb946f.1385399393.git.agordeev@redhat.com>
- <20131210231602.GH4699@google.com>
- <20131212161100.GB14655@dhcp-26-207.brq.redhat.com>
+	Thu, 12 Dec 2013 11:18:05 -0500
+Message-ID: <52A9E1AC.7070001@windriver.com>
+Date: Thu, 12 Dec 2013 11:17:48 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212161100.GB14655@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue implementation
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com> <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com> <20131212111809.GF21999@twins.programming.kicks-ass.net>
+In-Reply-To: <20131212111809.GF21999@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 05:11:01PM +0100, Alexander Gordeev wrote:
-> On Tue, Dec 10, 2013 at 04:16:02PM -0700, Bjorn Helgaas wrote:
-> > What's the reason for using the "pcim_" prefix?  To me, that suggests that
-> > this is a "managed" interface in the sense described in
-> > Documentation/driver-model/devres.txt, where resources are automatically
-> > deallocated when the driver detaches.  But I don't see anything like that
-> > happening in this patch.
+On 13-12-12 06:18 AM, Peter Zijlstra wrote:
+> On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
+>> +/*
+>> + * Event API
+>> + */
+>> +#define __swait_event(wq, condition)					\
+>> +do {									\
+>> +	DEFINE_SWAITER(__wait);						\
+>> +									\
+>> +	for (;;) {							\
+>> +		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+>> +		if (condition)						\
+>> +			break;						\
+>> +		schedule();						\
+>> +	}								\
+>> +	swait_finish(&wq, &__wait);					\
+>> +} while (0)
+>> +
+>> +#define __swait_event_interruptible(wq, condition, ret)			\
+>> +do {									\
+>> +	DEFINE_SWAITER(__wait);						\
+>> +									\
+>> +	for (;;) {							\
+>> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+>> +		if (condition)						\
+>> +			break;						\
+>> +		if (signal_pending(current)) {				\
+>> +			ret = -ERESTARTSYS;				\
+>> +			break;						\
+>> +		}							\
+>> +		schedule();						\
+>> +	}								\
+>> +	swait_finish(&wq, &__wait);					\
+>> +} while (0)
+>> +
+>> +#define __swait_event_interruptible_timeout(wq, condition, ret)		\
+>> +do {									\
+>> +	DEFINE_SWAITER(__wait);						\
+>> +									\
+>> +	for (;;) {							\
+>> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+>> +		if (condition)						\
+>> +			break;						\
+>> +		if (signal_pending(current)) {				\
+>> +			ret = -ERESTARTSYS;				\
+>> +			break;						\
+>> +		}							\
+>> +		ret = schedule_timeout(ret);				\
+>> +		if (!ret)						\
+>> +			break;						\
+>> +	}								\
+>> +	swait_finish(&wq, &__wait);					\
+>> +} while (0)
 > 
-> Oh.. right. What about pci_auto_ prefix to indicate automatic fallback
-> logic? Or may be even pcia_ ?
+> Urgh, please have a look at ___wait_event() we just killed all the
+> pointless replication for the normal waitqueues, please don't add more
+> of it.
 
-I'd vote for pci_auto, one-off single char pre/postfixes usually get
-pretty confusing.
+Right, I recall seeing that series go by in October ; thanks for
+the reminder, I'll clean this up to match what was done in commit
+41a1431b178c3b73 and its follow-on commits.
 
-Thanks.
+Paul.
+--
 
--- 
-tejun
+> 
+> 
+>> +unsigned int
+>> +__swake_up_locked(struct swait_queue_head *head, unsigned int state,
+>> +		  unsigned int num)
+>> +{
+>> +	struct swaiter *curr, *next;
+>> +	int woken = 0;
+>> +
+>> +	list_for_each_entry_safe(curr, next, &head->task_list, node) {
+>> +		if (wake_up_state(curr->task, state)) {
+>> +			__swait_dequeue(curr);
+>> +			/*
+>> +			 * The waiting task can free the waiter as
+>> +			 * soon as curr->task = NULL is written,
+>> +			 * without taking any locks. A memory barrier
+>> +			 * is required here to prevent the following
+>> +			 * store to curr->task from getting ahead of
+>> +			 * the dequeue operation.
+>> +			 */
+>> +			smp_wmb();
+>> +			curr->task = NULL;
+>> +			if (++woken == num)
+>> +				break;
+>> +		}
+>> +	}
+>> +	return woken;
+>> +}
+>> +
+>> +unsigned int
+>> +__swake_up(struct swait_queue_head *head, unsigned int state, unsigned int num)
+>> +{
+>> +	unsigned long flags;
+>> +	int woken;
+>> +
+>> +	if (!swaitqueue_active(head))
+>> +		return 0;
+>> +
+>> +	raw_spin_lock_irqsave(&head->lock, flags);
+>> +	woken = __swake_up_locked(head, state, num);
+>> +	raw_spin_unlock_irqrestore(&head->lock, flags);
+>> +	return woken;
+>> +}
+>> +EXPORT_SYMBOL(__swake_up);
+> 
+> Urgh, fail. Do not put unbounded loops in raw_spin_lock.
+> 
+> I think I posted a patch a while back to cure this.
+> 
+> 
