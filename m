@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab3LLMUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:20:07 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:14715 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab3LLMUE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:20:04 -0500
-Message-ID: <52A9A97F.20902@huawei.com>
-Date: Thu, 12 Dec 2013 20:18:07 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751734Ab3LLMWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:22:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12924 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686Ab3LLMWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:22:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,877,1378882800"; 
+   d="scan'208";a="451143936"
+Message-ID: <52A9AA72.1010601@intel.com>
+Date: Thu, 12 Dec 2013 14:22:10 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <kaber@trash.net>, <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, <ebiederm@xmission.com>
-CC: <edumazet@google.com>, <fbl@redhat.com>, <ebiederm@xmission.com>,
-        <jeff@garzik.org>, <peterz@infradead.org>, <honkiko@gmail.com>,
-        <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        "Huang Qiang" <h.huangqiang@huawei.com>,
-        Wengmeiling <wengmeiling.weng@huawei.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <daniel.wagner@bmw-carit.de>, <nhorman@tuxdriver.com>
-Subject: Re: cgroup filter on physics interface can't control container
-References: <52A52BBF.6030105@huawei.com>
-In-Reply-To: <52A52BBF.6030105@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: David Ahern <dsahern@gmail.com>
+CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH v0 27/71] perf evlist: Add 'system_wide' option
+References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-28-git-send-email-alexander.shishkin@linux.intel.com> <52A8BEEB.1040203@gmail.com>
+In-Reply-To: <52A8BEEB.1040203@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping...
+On 11/12/13 21:37, David Ahern wrote:
+> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
+>> From: Adrian Hunter <adrian.hunter@intel.com>
+>>
+>> Add an option to cause a selected event
+>> to be opened always without a pid when
+>> configured by perf_evsel__config().
+>>
+>> This is needed when using the sched_switch
+>> tracepoint to follow object code execution.
+>> sched_switch occurs before the task
+>> switch and so it cannot record it in a
+>> context limited to that task.  Note
+>> that also means that sched_switch is
+>> useless when capturing data per-thread,
+>> as is the 'context-switches' software
+>> event for the same reason.
+> 
+> This seems like a tailored solution for what is really a generic problem:
+> you need events to have different attributes -- a mix of system wide, task
+> based, with or without callchains and other sample options.
 
-On 2013/12/9 10:32, Libo Chen wrote:
-> hello network hackers,
-> 
-> 	A linux container was builded with veth pair(veth0 inside container, veth1 outside container),
-> 
-> the config as below:
-> 
->   lxc.network.type = veth
->   lxc.network.flags = up
->   lxc.network.link = br0  // base on eth0
->   lxc.network.name = eth0
->   lxc.network.ipv4 = 128.5.130.26/24
-> 
-> then I use tc command with cgroup filter on veth0, it works well. But when setting on eth0, it doesn`t work.
-> 
-> The reason is dev_forward_skb() in veth_xmit will call skb_scrub_packet and clean all information including skb->sk
-> in the skb, so if cls_cgroup_classify is working in serving softirq state, it will return failer, see below:
-> 
-> 	if (in_serving_softirq()) {
-> 		/* If there is an sk_classid we'll use that. */
-> 		if (!skb->sk)
-> 			return -1;
-> 		classid = skb->sk->sk_classid;
-> 	}
-> 
-> 
-> Qdisc with cgroup filter on physics interface can not control a container network, it is disappointed.
-> 
-> we can save sk_classid before skb_scrub_packet and restore it after that. Is it reasonable?  or any way to achieve this?
-> 
-> thanks,
-> Libo
-> 
+Actually in this case it is not the attribute but another parameter of the
+perf_event_open syscall, namely the pid.  The effect of that is that there
+are potentially fewer file descriptors needed for that event i.e. just 1 per
+cpu compared with 1 per cpu per thread.
 
+This is a generic solution for the case where you want to mix an event that
+is not tied to a process, with other events that are.
+
+If it were the attribute it would be easy because 'attr' is a member of
+'struct evsel' so it can simply be changed directly.
 
