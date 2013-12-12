@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab3LLXr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:47:57 -0500
-Received: from gate.crashing.org ([63.228.1.57]:44710 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab3LLXrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:47:53 -0500
-Message-ID: <1386892059.15730.58.camel@pasglop>
-Subject: Re: [PATCH v2 1/2] dcache: allow word-at-a-time name hashing with
- big-endian CPUs
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Fri, 13 Dec 2013 10:47:39 +1100
-In-Reply-To: <CA+55aFz1RwjjbdauN+Y3hbk079KTbeoXb__BHAbO+vOOb5qD6w@mail.gmail.com>
-References: <1386870022-31525-1-git-send-email-will.deacon@arm.com>
-	 <CA+55aFz1RwjjbdauN+Y3hbk079KTbeoXb__BHAbO+vOOb5qD6w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752130Ab3LLXsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:48:21 -0500
+Received: from smtprelay0008.hostedemail.com ([216.40.44.8]:54080 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752071Ab3LLXru (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 18:47:50 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:3868:3871:4321:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tray29_9dcaf1a99a29
+X-Filterd-Recvd-Size: 1980
+From: Joe Perches <joe@perches.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -next 4/4] debugfs: Fix misuse of seq_printf return value
+Date: Thu, 12 Dec 2013 15:47:31 -0800
+Message-Id: <7220700ec0898782bf0b5f8c87b921a6de122358.1386891757.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1386819513.git.joe@perches.com>
+References: <cover.1386819513.git.joe@perches.com>
+In-Reply-To: <cover.1386891757.git.joe@perches.com>
+References: <cover.1386891757.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 10:38 -0800, Linus Torvalds wrote:
-> Ok, looks good. So I'm taking these even though it's outside the merge
-> window - they're small, and until you enable DCACHE_WORD_ACCESS on
-> big-endian they don't actually do anything.
-> 
-> Ben - you might want to check if this makes DCACHE_WORD_ACCESS useful
-> on PowerPC too. Right now that requires an efficient fls()
-> implementation, but I think you have "cntlz" like ARM does.
+Adding repeated -1 to the return is not correct.
 
-Thanks. I'll see if I can get somebody to measure it. It should be good
-though.
+Use seq_is_buf_full to test for unnecessary seq_printf uses
+and always return 0.
 
-Cheers,
-Ben.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/debugfs/file.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 6314629..da65fed 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -695,15 +695,17 @@ EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
+ int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+ 			   int nregs, void __iomem *base, char *prefix)
+ {
+-	int i, ret = 0;
++	int i;
+ 
+ 	for (i = 0; i < nregs; i++, regs++) {
+-		if (prefix)
+-			ret += seq_printf(s, "%s", prefix);
+-		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
+-				  readl(base + regs->offset));
++		seq_printf(s, "%s%s = 0x%08x\n",
++			   prefix ? prefix : "",
++			   regs->name, readl(base + regs->offset));
++		if (seq_is_buf_full(s))
++			break;
+ 	}
+-	return ret;
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(debugfs_print_regs32);
+ 
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
