@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3LLVtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:49:43 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:32790 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab3LLVtl (ORCPT
+	id S1751962Ab3LLVvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:51:19 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54295 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3LLVvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:49:41 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Cc: kvm@vger.kernel.org, gleb@kernel.org
-Subject: [GIT PULL] KVM fixes for 3.13-rc4
-Date: Thu, 12 Dec 2013 22:49:32 +0100
-Message-Id: <1386884972-16292-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Thu, 12 Dec 2013 16:51:17 -0500
+Message-ID: <52AA2FD1.3020000@wwwdotorg.org>
+Date: Thu, 12 Dec 2013 14:51:13 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: thierry.reding@gmail.com, rob.herring@calxeda.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: tegra: enable ams AS3722 drivers
+References: <1386855064-10993-1-git-send-email-ldewangan@nvidia.com> <52AA2891.2020502@wwwdotorg.org>
+In-Reply-To: <52AA2891.2020502@wwwdotorg.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 12/12/2013 02:20 PM, Stephen Warren wrote:
+> On 12/12/2013 06:31 AM, Laxman Dewangan wrote:
+>> ams AS3722 is the system power manager module IC for the Tegra124 based
+>> Venice2 platform. Enable configs for gpio, pincontrol, rtc, regulator
+>> support from this device.
+> 
+> I've squashed patch 1/2 into Tegra's for-3.14/defconfig branch.
+> 
+> I've applied patch 2/2 to Tegra's for-3.14/dt branch.
 
-The following changes since commit 2e7babfa892a55588467ef03b545002e32f31528:
+Actually, I'm dropping patch 2/2 since it causes a whole bunch of error
+spew during boot:
 
-  Merge branch 'for_linus' of git://cavan.codon.org.uk/platform-drivers-x86 (2013-11-22 16:47:28 -0800)
+> [    0.628315] tegra124-pinctrl 70000868.pinmux: invalid group "dap2_dout_pp2" for function "rsvd4"
+> [    0.635309] tegra124-pinctrl 70000868.pinmux: does not have pin group dap2_dout_pp2
+> [    0.642999] tegra124-pinctrl 70000868.pinmux: could not map group config for "dap2_dout_pp2"
 
-are available in the git repository at:
+> [    0.731176] as3722-pinctrl as3722-pinctrl: pin gpio0 already requested by as3722-pinctrl; cannot claim for as3722-regulator
+> [    0.742312] as3722-pinctrl as3722-pinctrl: pin-0 (as3722-regulator) status -22
+> [    0.749526] as3722-pinctrl as3722-pinctrl: could not request pin 0 (gpio0) from group gpio0  on device as3722-pinctrl
+> [    0.760133] as3722-regulator as3722-regulator: Error applying setting, reverse things back
 
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+> [    0.835838] as3722-regulator as3722-regulator: Failed to find supply vin-ldo1-6
+> [    0.843312] as3722-regulator as3722-regulator: regulator 8 register failed -517
+> [    0.852263] platform as3722-regulator: Driver as3722-regulator requests probe deferral
 
-for you to fetch changes up to 17d68b763f09a9ce824ae23eb62c9efc57b69271:
+> [    0.984920] as3722-pinctrl as3722-pinctrl: pin gpio0 already requested by as3722-pinctrl; cannot claim for as3722-rtc
+> [    0.995537] as3722-pinctrl as3722-pinctrl: pin-0 (as3722-rtc) status -22
+> [    1.002244] as3722-pinctrl as3722-pinctrl: could not request pin 0 (gpio0) from group gpio0  on device as3722-pinctrl
+> [    1.012848] as3722-rtc as3722-rtc: Error applying setting, reverse things back
 
-  KVM: x86: fix guest-initiated crash with x2apic (CVE-2013-6376) (2013-12-12 22:46:18 +0100)
-
-----------------------------------------------------------------
-Four security fixes for KVM on x86.  Thanks to Andrew Honig and Lars Bull
-from Google for reporting them.
-
-----------------------------------------------------------------
-Andy Honig (3):
-      KVM: Improve create VCPU parameter (CVE-2013-4587)
-      KVM: x86: Fix potential divide by 0 in lapic (CVE-2013-6367)
-      KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
-
-Gleb Natapov (1):
-      KVM: x86: fix guest-initiated crash with x2apic (CVE-2013-6376)
-
- arch/x86/kvm/lapic.c | 35 +++++++++++++++++++++--------------
- arch/x86/kvm/lapic.h |  4 ++--
- arch/x86/kvm/x86.c   | 40 +---------------------------------------
- virt/kvm/kvm_main.c  |  3 +++
- 4 files changed, 27 insertions(+), 55 deletions(-)
