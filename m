@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab3LLQzm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:55:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24961 "EHLO
+	id S1752144Ab3LLQ4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:56:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24796 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab3LLQyz (ORCPT
+	with ESMTP id S1751959Ab3LLQyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:54:55 -0500
+	Thu, 12 Dec 2013 11:54:44 -0500
 From: vegard.nossum@oracle.com
 To: linux-kernel@vger.kernel.org
 Cc: Vegard Nossum <vegard.nossum@oracle.com>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 9/9] perf: Known exploit detection for CVE-2013-2094
-Date: Thu, 12 Dec 2013 17:52:32 +0100
-Message-Id: <1386867152-24072-9-git-send-email-vegard.nossum@oracle.com>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 5/9] hfsplus: Known exploit detection for CVE-2012-2319
+Date: Thu, 12 Dec 2013 17:52:28 +0100
+Message-Id: <1386867152-24072-5-git-send-email-vegard.nossum@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
 References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
@@ -24,35 +24,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vegard Nossum <vegard.nossum@oracle.com>
 
-See 8176cced706b5e5d15887584150764894e94e02f.
+See 6f24f892871acc47b40dd594c63606a17c714f77.
 
-Cc: Tommi Rantala <tt.rantala@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
 ---
- kernel/events/core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/hfsplus/catalog.c |    2 ++
+ fs/hfsplus/dir.c     |    3 +++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 953c143..32b9383 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -39,6 +39,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/mm_types.h>
- #include <linux/cgroup.h>
+diff --git a/fs/hfsplus/catalog.c b/fs/hfsplus/catalog.c
+index 968ce41..5f47a1a 100644
+--- a/fs/hfsplus/catalog.c
++++ b/fs/hfsplus/catalog.c
+@@ -8,6 +8,7 @@
+  * Handling of catalog records
+  */
+ 
 +#include <linux/exploit.h>
  
- #include "internal.h"
+ #include "hfsplus_fs.h"
+ #include "hfsplus_raw.h"
+@@ -374,6 +375,7 @@ int hfsplus_rename_cat(u32 cnid,
+ 	if (err)
+ 		goto out;
+ 	if (src_fd.entrylength > sizeof(entry) || src_fd.entrylength < 0) {
++		exploit("CVE-2012-2319");
+ 		err = -EIO;
+ 		goto out;
+ 	}
+diff --git a/fs/hfsplus/dir.c b/fs/hfsplus/dir.c
+index 4a4fea0..2d5e283 100644
+--- a/fs/hfsplus/dir.c
++++ b/fs/hfsplus/dir.c
+@@ -9,6 +9,7 @@
+  */
  
-@@ -5721,6 +5722,7 @@ static void sw_perf_event_destroy(struct perf_event *event)
- static int perf_swevent_init(struct perf_event *event)
- {
- 	u64 event_id = event->attr.config;
-+	exploit_on((int) event_id < 0, "CVE-2013-2094");
+ #include <linux/errno.h>
++#include <linux/exploit.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
+ #include <linux/random.h>
+@@ -152,6 +153,7 @@ static int hfsplus_readdir(struct file *file, struct dir_context *ctx)
+ 	}
+ 	if (ctx->pos == 1) {
+ 		if (fd.entrylength > sizeof(entry) || fd.entrylength < 0) {
++			exploit("CVE-2012-2319");
+ 			err = -EIO;
+ 			goto out;
+ 		}
+@@ -186,6 +188,7 @@ static int hfsplus_readdir(struct file *file, struct dir_context *ctx)
+ 		}
  
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
+ 		if (fd.entrylength > sizeof(entry) || fd.entrylength < 0) {
++			exploit("CVE-2012-2319");
+ 			err = -EIO;
+ 			goto out;
+ 		}
 -- 
 1.7.10.4
 
