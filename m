@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab3LLBHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 20:07:20 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51404 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab3LLBHQ (ORCPT
+	id S1751663Ab3LLBIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 20:08:01 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:14901 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751203Ab3LLBIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 20:07:16 -0500
-Date: Wed, 11 Dec 2013 17:05:03 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, khilman@linaro.org, arnd@arndb.de,
-        linux-sh@vger.kernel.org, daniel.lezcano@linaro.org,
-        horms@verge.net.au, john.stultz@linaro.org, tglx@linutronix.de
-Subject: Re: [PATCH v4 01/03] clocksource: Add Kconfig entries for CMT, MTU2,
- TMU and STI
-Message-ID: <20131212010503.GI21531@quad.lixom.net>
-References: <20131211235616.12661.19702.sendpatchset@w520>
- <20131211235626.12661.8865.sendpatchset@w520>
+	Wed, 11 Dec 2013 20:08:00 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtAHAIULqVJ5LHyk/2dsb2JhbABZgweDOrBhhi+BGxd0giUBAQU6HCMQCAMOCgklDwUlAyETiAHCOxcWjnIHgyGBEwSYE4pMh0iDPSg
+Date: Thu, 12 Dec 2013 12:07:54 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, page_alloc: make __GFP_NOFAIL really not fail
+Message-ID: <20131212010754.GE31386@dastard>
+References: <alpine.DEB.2.02.1312091355360.11026@chino.kir.corp.google.com>
+ <20131209152202.df3d4051d7dc61ada7c420a9@linux-foundation.org>
+ <alpine.DEB.2.02.1312101504120.22701@chino.kir.corp.google.com>
+ <20131210153909.8b4bfa1d643e5f8582eff7c9@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131211235626.12661.8865.sendpatchset@w520>
+In-Reply-To: <20131210153909.8b4bfa1d643e5f8582eff7c9@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-A couple of small comments below.
-
-On Thu, Dec 12, 2013 at 08:56:26AM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
+On Tue, Dec 10, 2013 at 03:39:09PM -0800, Andrew Morton wrote:
+> On Tue, 10 Dec 2013 15:20:17 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
 > 
-> Add Kconfig entries for CMT, MTU2, TMU and STI to
-> drivers/clocksource/Kconfig. This will allow us to
-> get rid of duplicated entires in architecture code
-> such as arch/sh and arch/arm/mach-shmobile.
+> > On Mon, 9 Dec 2013, Andrew Morton wrote:
+> > 
+> > > > __GFP_NOFAIL specifies that the page allocator cannot fail to return
+> > > > memory.  Allocators that call it may not even check for NULL upon
+> > > > returning.
+> > > > 
+> > > > It turns out GFP_NOWAIT | __GFP_NOFAIL or GFP_ATOMIC | __GFP_NOFAIL can
+> > > > actually return NULL.  More interestingly, processes that are doing
+> > > > direct reclaim and have PF_MEMALLOC set may also return NULL for any
+> > > > __GFP_NOFAIL allocation.
+> > > 
+> > > __GFP_NOFAIL is a nasty thing and making it pretend to work even better
+> > > is heading in the wrong direction, surely?  It would be saner to just
+> > > disallow these even-sillier combinations.  Can we fix up the current
+> > > callers then stick a WARN_ON() in there?
+> > > 
+> > 
+> > Heh, it's difficult to remove __GFP_NOFAIL when new users get added: 
+> > 84235de394d9 ("fs: buffer: move allocation failure loop into the 
+> > allocator") added a new user
 > 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> ---
+> That wasn't reeeeealy a new user - it was "convert an existing
+> open-coded retry-for-ever loop".  Which is what __GFP_NOFAIL is for.
 > 
->  drivers/clocksource/Kconfig |   44 +++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 44 insertions(+)
-> 
-> --- 0001/drivers/clocksource/Kconfig
-> +++ work/drivers/clocksource/Kconfig	2013-12-12 08:41:55.000000000 +0900
-> @@ -134,3 +134,47 @@ config VF_PIT_TIMER
->  	bool
->  	help
->  	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
-> +
-> +config SYS_SUPPORTS_CMT
-> +        bool
-> +
-> +config SYS_SUPPORTS_TMU
-> +        bool
-> +
-> +config SYS_SUPPORTS_MTU2
-> +        bool
-> +
-> +config SYS_SUPPORTS_STI
-> +        bool
+> I don't think I've ever seen anyone actually fix one of these things
+> (by teaching the caller to handle ENOMEM), so it obviously isn't
+> working...
 
-Maybe a prefix to avoid namespace collissions here?
+Right, because most of the loops are deep within filesystem
+transaction code where the only thing to do with a memory allocation
+failure is to abort the transaction, shutdown the filesystem and
+deny user access (i.e. DOS the system) because the filesystem is
+inconsistent in memory and the only way it can be recovered is
+toosing everything in memory away and recovering the last valid
+on disk state from the journal. i.e. umount, mount.
 
-> +
-> +config SH_TIMER_CMT
-> +	bool "Renesas CMT timer driver" if COMPILE_TEST
-> +	default SYS_SUPPORTS_CMT
+IOWs, the "fix" is far worse than current behaviour and so there is
+absolutely no motivation for the people who own these __GFP_NOFAIL
+allocations to fix them. Indeed, when you consider that the amount of
+work to fix the filesystems to robustly handle ENOMEM is a *massive*
+undertaking that adds significant overhead and complexity to each
+filesystem, the cost/benefit analysis comes down so far on the side
+of "just use __GFP_NOFAIL" that doing anything else is sheer lunacy.
 
-It might be useful to have an explicit depends on ARCH_SH || ARCH_SHMOBILE
-|| COMPILE_TEST on these, just to make it easier for someone reading
-the code later on.
+Cheers,
 
-
--Olof
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
