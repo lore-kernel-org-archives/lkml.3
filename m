@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab3LLHAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 02:00:20 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:36047 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab3LLHAR (ORCPT
+	id S1751851Ab3LLHAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 02:00:42 -0500
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:29423
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751640Ab3LLHA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 02:00:17 -0500
+	Thu, 12 Dec 2013 02:00:26 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1447Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 12 Dec 2013 15:00:47 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Richard Zhu <r65037@freescale.com>
+Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
+ host maintainers
+Message-ID: <20131212070045.GO18380@S2101-09.ap.freescale.net>
+References: <20131211183237.GI4699@google.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com>
-Date: Wed, 11 Dec 2013 23:00:16 -0800
-Message-ID: <CAOesGMjcmeiBfc=EOvWazebg-9vnMuQtRC0aeHJy7Q=02RdRPA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] net: macb updates
-From: Olof Johansson <olof@lixom.net>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20131211183237.GI4699@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Soren,
+Hi Bjorn,
 
-On Tue, Dec 10, 2013 at 4:07 PM, Soren Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
+On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
+> +PCI DRIVER FOR IMX6
+> +M:	Shawn Guo <shawn.guo@linaro.org>
 
-> Soren Brinkmann (5):
->   net: macb: Adjust tx_clk when link speed changes
+Thanks for the nomination.  But I think a better person for this
+position would be Richard Zhu <r65037@freescale.com> (copied).  He knows
+the driver and controller much better than myself, and most importantly
+he is the driver owner for Freescale kernel and he has the contact to
+Freescale PCIe hardware people.
 
-This patch causes build issues on some at91 platforms, namely
-at91sam9263 that lacks programmable clocks. So it doesn't implement
-clk_set_rate() and clk_round_rate().
+Shawn
 
-I don't know if there's any reasonable config option to check for
-(that wouldn't add at91-specific stuff to the driver which we don't
-want). So I suspect the best way would be to implement dummy versions
-for at91 when CONFIG_AT91_PROGRAMMABLE_CLOCKS isn't set.
+> +L:	linux-pci@vger.kernel.org
+> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> +S:	Maintained
+> +F:	drivers/pci/host/*imx6*
 
-Nicolas, you OK with that? It'd be something like the below
-(copy-paste, whitespace damage, just RFC):
-
-diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-index 6b2630a..17c52a7 100644
---- a/arch/arm/mach-at91/clock.c
-+++ b/arch/arm/mach-at91/clock.c
-@@ -459,6 +459,22 @@ static void __init init_programmable_clock(struct clk *clk)
-        clk->rate_hz = parent->rate_hz / pmc_prescaler_divider(pckr);
- }
-
-+#else  /* CONFIG_AT91_PROGRAMMABLE_CLOCKS */
-+
-+int clk_set_rate(struct clk *clk, unsigned long rate)
-+{
-+       if (rate == clk_get_rate(clk))
-+               return 0;
-+
-+       return -EINVAL;
-+}
-+
-+long clk_round_rate(struct clk *clk, unsigned long rate)
-+{
-+       /* There's really nothing sane to return here. */
-+       return clk_get_rate(clk);
-+}
-+
- #endif /* CONFIG_AT91_PROGRAMMABLE_CLOCKS */
