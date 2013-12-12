@@ -1,53 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab3LLLSZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1751634Ab3LLLSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:18:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57969 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3LLLSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Dec 2013 06:18:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64957 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab3LLLSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:18:22 -0500
-Message-ID: <52A99B56.1070503@redhat.com>
-Date: Thu, 12 Dec 2013 12:17:42 +0100
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+Date: Thu, 12 Dec 2013 12:18:09 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
+ implementation
+Message-ID: <20131212111809.GF21999@twins.programming.kicks-ass.net>
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
+ <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, jpirko@redhat.com
-Subject: Re: [patch net-next v2] ipv6: log autoconfiguration failures
-References: <1386762314-5149-1-git-send-email-dvlasenk@redhat.com> <20131211192138.GB4675@order.stressinduktion.org>
-In-Reply-To: <20131211192138.GB4675@order.stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 08:21 PM, Hannes Frederic Sowa wrote:
-> On Wed, Dec 11, 2013 at 12:45:14PM +0100, Denys Vlasenko wrote:
->> If ipv6 auto-configuration does not work, currently it's hard
->> to track what's going on. This change adds log messages
->> (at debug level) on every code path where ipv6 autoconf fails.
->>
->> v2: fixed indentation in multi-line log output statements.
-> 
-> Have you seen lots of those problems? Some of those seem like very
-> serious problems and maybe could also deserve a pr_warn or pr_err.
+On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
+> +/*
+> + * Event API
+> + */
+> +#define __swait_event(wq, condition)					\
+> +do {									\
+> +	DEFINE_SWAITER(__wait);						\
+> +									\
+> +	for (;;) {							\
+> +		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+> +		if (condition)						\
+> +			break;						\
+> +		schedule();						\
+> +	}								\
+> +	swait_finish(&wq, &__wait);					\
+> +} while (0)
+> +
+> +#define __swait_event_interruptible(wq, condition, ret)			\
+> +do {									\
+> +	DEFINE_SWAITER(__wait);						\
+> +									\
+> +	for (;;) {							\
+> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+> +		if (condition)						\
+> +			break;						\
+> +		if (signal_pending(current)) {				\
+> +			ret = -ERESTARTSYS;				\
+> +			break;						\
+> +		}							\
+> +		schedule();						\
+> +	}								\
+> +	swait_finish(&wq, &__wait);					\
+> +} while (0)
+> +
+> +#define __swait_event_interruptible_timeout(wq, condition, ret)		\
+> +do {									\
+> +	DEFINE_SWAITER(__wait);						\
+> +									\
+> +	for (;;) {							\
+> +		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+> +		if (condition)						\
+> +			break;						\
+> +		if (signal_pending(current)) {				\
+> +			ret = -ERESTARTSYS;				\
+> +			break;						\
+> +		}							\
+> +		ret = schedule_timeout(ret);				\
+> +		if (!ret)						\
+> +			break;						\
+> +	}								\
+> +	swait_finish(&wq, &__wait);					\
+> +} while (0)
 
-I personally wasn't bitten by this problem, but our admins were.
+Urgh, please have a look at ___wait_event() we just killed all the
+pointless replication for the normal waitqueues, please don't add more
+of it.
 
-They say that when they notice that ipv6 auconf didn't work
-(i.e. they see no auconfigured addresses on the interfaces),
-they usually see no useful messages in dmesg or /var/log/messages,
-which makes them to try to fix the problem blind.
 
-I can easily imagine their frustration. Kernel _knows_ why
-it didn't work, and it's not expected to normally pappen,
-why didn't it tell anything about it?
+> +unsigned int
+> +__swake_up_locked(struct swait_queue_head *head, unsigned int state,
+> +		  unsigned int num)
+> +{
+> +	struct swaiter *curr, *next;
+> +	int woken = 0;
+> +
+> +	list_for_each_entry_safe(curr, next, &head->task_list, node) {
+> +		if (wake_up_state(curr->task, state)) {
+> +			__swait_dequeue(curr);
+> +			/*
+> +			 * The waiting task can free the waiter as
+> +			 * soon as curr->task = NULL is written,
+> +			 * without taking any locks. A memory barrier
+> +			 * is required here to prevent the following
+> +			 * store to curr->task from getting ahead of
+> +			 * the dequeue operation.
+> +			 */
+> +			smp_wmb();
+> +			curr->task = NULL;
+> +			if (++woken == num)
+> +				break;
+> +		}
+> +	}
+> +	return woken;
+> +}
+> +
+> +unsigned int
+> +__swake_up(struct swait_queue_head *head, unsigned int state, unsigned int num)
+> +{
+> +	unsigned long flags;
+> +	int woken;
+> +
+> +	if (!swaitqueue_active(head))
+> +		return 0;
+> +
+> +	raw_spin_lock_irqsave(&head->lock, flags);
+> +	woken = __swake_up_locked(head, state, num);
+> +	raw_spin_unlock_irqrestore(&head->lock, flags);
+> +	return woken;
+> +}
+> +EXPORT_SYMBOL(__swake_up);
 
--- 
-vda
+Urgh, fail. Do not put unbounded loops in raw_spin_lock.
+
+I think I posted a patch a while back to cure this.
 
 
