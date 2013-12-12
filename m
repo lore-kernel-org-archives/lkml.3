@@ -1,150 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab3LLMLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:11:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57267 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751415Ab3LLMLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:11:43 -0500
-Date: Thu, 12 Dec 2013 13:11:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20131212121140.GD2630@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
- <20131204111318.GE8410@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
- <20131209124840.GC3597@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
- <20131210103827.GB20242@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
- <20131211095549.GA18741@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
- <20131212103159.GB2630@dhcp22.suse.cz>
+	id S1751631Ab3LLMPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:15:22 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:19436 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab3LLMPR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:15:17 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 12 Dec 2013 04:17:56 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 12 Dec 2013 13:14:04 +0100
+Subject: Re: [PATCHv6+ 01/13] of: introduce
+ of_property_for_earch_phandle_with_args()
+Thread-Topic: [PATCHv6+ 01/13] of: introduce
+ of_property_for_earch_phandle_with_args()
+Thread-Index: Ac73M6xBtzD4c4etRZeCfL/c7F0lZg==
+Message-ID: <20131212.141404.684884000513445038.hdoyu@nvidia.com>
+References: <20131211132845.5461FC4061A@trevor.secretlab.ca><20131211.153338.2186623380643957232.hdoyu@nvidia.com><20131212113417.BDCD0C40637@trevor.secretlab.ca>
+In-Reply-To: <20131212113417.BDCD0C40637@trevor.secretlab.ca>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212103159.GB2630@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-12-13 11:31:59, Michal Hocko wrote:
-[...]
-> The semantic would be as simple as "notification is sent only when
-> an action is due". It will be still racy as nothing prevents a task
-> which is not under OOM to exit and release some memory but there is no
-> sensible way to address that. On the other hand such a semantic would be
-> sensible for oom_control listeners because they will know that an action
-> has to be or will be taken (the line was drawn).
+Grant Likely <grant.likely@linaro.org> wrote @ Thu, 12 Dec 2013 12:34:17 +0100:
+
+> On Wed, 11 Dec 2013 14:33:38 +0100, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+> > Hi Grant,
+> >
+> > Grant Likely <grant.likely@linaro.org> wrote @ Wed, 11 Dec 2013 14:28:45 +0100:
+> >
+> > > On Thu, 21 Nov 2013 11:57:00 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> > > > On 11/21/2013 10:17 AM, Hiroshi Doyu wrote:
+> > > > > Iterating over a property containing a list of phandles with arguments
+> > > > > is a common operation for device drivers. This patch adds a new
+> > > > > of_property_for_each_phandle_with_args() macro to make the iteration
+> > > > > simpler.
+> > > > >
+> > > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > > > > ---
+> > > > > v6+:
+> > > > > Use the description, which Grant Likely proposed, to be full enough
+> > > > > that a future reader can figure out why a patch was written.
+> > > > >   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007062.html
+> > ...
+> >
+> > > That's right, I forgot I said that. Yes please fix the implementation.
+> >
+> > Here's the latest. I'll include this with the next v7 series.
+> >
+> > Can I get your Acked-by with this?
+> >
+> > --8<----
+> >
+> > From 8f7c0404aa68f0e8dbe0babc240590f6528ecc1f Mon Sep 17 00:00:00 2001
+> > From: Hiroshi Doyu <hdoyu@nvidia.com>
+> > Date: Fri, 15 Nov 2013 10:52:53 +0200
+> > Subject: [PATCH] of: introduce of_property_for_each_phandle_with_args()
+> >
+> > Iterating over a property containing a list of phandles with arguments
+> > is a common operation for device drivers. This patch adds a new
+> > of_property_for_each_phandle_with_args() macro to make the iteration
+> > simpler.
+> >
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > Cc: Rob Herring <robherring2@gmail.com>
+> > ---
+> > v7:
+> > Fixed some minors pointed by Rob and Stephen.
+> >
+> > v6++++:
+> > Iterate without intrducing a new struct.
+> >
+> > v6+++:
+> > Introduced a new struct "of_phandle_iter" to keep the state when
+> > iterating over the list.
+> >
+> > v6++:
+> > Optimized to avoid O(n^2), suggested by Stephen Warren.
+> > http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007066.html
+> >
+> > I didn't introduce any struct to hold params and state here.
+> >
+> > v6+:
+> > Use the description, which Grant Likely proposed, to be full enough
+> > that a future reader can figure out why a patch was written.
+> >
+> > v5:
+> > New patch for v5.
+> >
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > ---
+> >  drivers/of/base.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/of.h | 32 ++++++++++++++++++++++++++++++++
+> >  2 files changed, 78 insertions(+)
+> >
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index f807d0e..cd4ab05 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -1201,6 +1201,52 @@ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
+> >       printk("\n");
+> >  }
+> >
+> > +const __be32 *of_phandle_iter_next(const char *cells_name, int cell_count,
+> > +                                const __be32 *cur, const __be32 *end,
+> > +                                struct of_phandle_args *out_args)
 > 
-> Can we agree on this, Johannes? Or you see the line drawn when
-> mem_cgroup_oom_synchronize has been reached already no matter whether
-> the action is to be done or not?
+> Having to pass in cells_name, cell_count, cur and end each time seems a
+> little odd. Can a state structure be used instead?
+> 
+> struct of_phandle_iter_state {
+>         const char *cells_name;
+>         int cells_count;
+>         const __be32 *cur;
+>         const __be32 *end;
+>         struct of_phandle_args out_args;
+> }
+> 
+> Make the caller provide one of those and fill it in with the init
+> function.
 
-Something like the following:
+I rewrote this a few times and so now I have a few version of this
+implementations :-) The above proposal is similar to the version v6+++
+mentioned in the above patch note:
 
->From 5d9c01e2814a7ade49db7945ad3890f4f138855e Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 12 Dec 2013 11:50:17 +0100
-Subject: [PATCH] memcg: notify userspace about OOM when and action is due
+> > v6+++:
+> > Introduced a new struct "of_phandle_iter" to keep the state when
+> > iterating over the list.
 
-Userspace is currently notified about OOM condition after fails
-to reclaim any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
-This usually means that the memcg is really in troubles and an
-OOM action (either done by userspace or kernel) has to be taken.
-The kernel OOM killer however bails out and doesn't kill anything
-if it sees an already dying/exiting task in a good hope a memory
-will be released and OOM situation will be resolved.
+which is:
 
-Therefore it makes sense to notify userspace only after really all
-measures have been taken and an userspace action is required or
-the kernel kills a task.
+  [RFC][PATCHv6+++ 01/13] of: introduce of_property_for_earch_phandle_with_args()
+    http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007087.html
 
-This patch also removes fatal_signal_pending and PF_EXITING check from
-mem_cgroup_oom_synchronize because __mem_cgroup_try_charge already
-checks for both and bypasses charge so we cannot end up in the oom path.
+Stephen seemed to prefer the version without state struct. I like the
+idea to not pass the same arguments repeatly. Instead, wrapping them
+in a struct with state may look better.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 17 ++++-------------
- mm/oom_kill.c   |  5 +++++
- 2 files changed, 9 insertions(+), 13 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 98900c070045..af7148c77bac 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2235,16 +2235,6 @@ bool mem_cgroup_oom_synchronize(bool handle)
- 	if (!handle)
- 		goto cleanup;
- 
--	/*
--	 * If current has a pending SIGKILL or is exiting, then automatically
--	 * select it.  The goal is to allow it to allocate so that it may
--	 * quickly exit and free its memory.
--	 */
--	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
--		set_thread_flag(TIF_MEMDIE);
--		goto cleanup;
--	}
--
- 	owait.memcg = memcg;
- 	owait.wait.flags = 0;
- 	owait.wait.func = memcg_oom_wake_function;
-@@ -2256,15 +2246,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
- 
- 	locked = mem_cgroup_oom_trylock(memcg);
- 
--	if (locked)
--		mem_cgroup_oom_notify(memcg);
--
- 	if (locked && !memcg->oom_kill_disable) {
- 		mem_cgroup_unmark_under_oom(memcg);
- 		finish_wait(&memcg_oom_waitq, &owait.wait);
-+		/* calls mem_cgroup_oom_notify if there is a task to kill */
- 		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
- 					 current->memcg_oom.order);
- 	} else {
-+		if (locked && memcg->oom_kill_disable)
-+			mem_cgroup_oom_notify(memcg);
-+
- 		schedule();
- 		mem_cgroup_unmark_under_oom(memcg);
- 		finish_wait(&memcg_oom_waitq, &owait.wait);
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 1e4a600a6163..47c9de8da36d 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -394,6 +394,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
- 		dump_tasks(memcg, nodemask);
- }
- 
-+extern void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
-+
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /*
-  * Must be called while holding a reference to p, which will be released upon
-@@ -470,6 +472,9 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 		victim = p;
- 	}
- 
-+	if (memcg)
-+		mem_cgroup_oom_notify(memcg);
-+
- 	/* mm cannot safely be dereferenced after task_unlock(victim) */
- 	mm = victim->mm;
- 	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
--- 
-1.8.4.4
-
--- 
-Michal Hocko
-SUSE Labs
+So if Stephen agrees, I'll rewrite the version with state struct
+again.
