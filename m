@@ -1,166 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631Ab3LLMPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:15:22 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19436 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab3LLMPR convert rfc822-to-8bit (ORCPT
+	id S1751742Ab3LLMPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:15:42 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:36333 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab3LLMPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:15:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 12 Dec 2013 04:17:56 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lorenzo.pieralisi@arm.com" <lorenzo.pieralisi@arm.com>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 12 Dec 2013 13:14:04 +0100
-Subject: Re: [PATCHv6+ 01/13] of: introduce
- of_property_for_earch_phandle_with_args()
-Thread-Topic: [PATCHv6+ 01/13] of: introduce
- of_property_for_earch_phandle_with_args()
-Thread-Index: Ac73M6xBtzD4c4etRZeCfL/c7F0lZg==
-Message-ID: <20131212.141404.684884000513445038.hdoyu@nvidia.com>
-References: <20131211132845.5461FC4061A@trevor.secretlab.ca><20131211.153338.2186623380643957232.hdoyu@nvidia.com><20131212113417.BDCD0C40637@trevor.secretlab.ca>
-In-Reply-To: <20131212113417.BDCD0C40637@trevor.secretlab.ca>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 12 Dec 2013 07:15:39 -0500
+Message-ID: <52A9A8EA.3080609@linaro.org>
+Date: Thu, 12 Dec 2013 13:15:38 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 5/9] clocksource/cadence_ttc: Adjust interval in clock
+ notifier
+References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-6-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1385514296-26702-6-git-send-email-soren.brinkmann@xilinx.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@linaro.org> wrote @ Thu, 12 Dec 2013 12:34:17 +0100:
+On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
+> The clockevent has to be reprogrammed if the timer's input
+> clock frequency changes and the timer is in periodic mode, in order to
+> maintain the correct timer interval.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> v2:
+>   - adjust the timer interval while the timer interrupt is disabled
+> ---
+>   drivers/clocksource/cadence_ttc_timer.c | 12 +++++++++---
+>   1 file changed, 9 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+> index 246d018d1e63..77517675653e 100644
+> --- a/drivers/clocksource/cadence_ttc_timer.c
+> +++ b/drivers/clocksource/cadence_ttc_timer.c
+> @@ -322,6 +322,9 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+>   	switch (event) {
+>   	case POST_RATE_CHANGE:
+>   	{
+> +		/* update cached frequency */
+> +		ttc->freq = ndata->new_rate;
+> +
+>   		/*
+>   		 * clockevents_update_freq should be called with IRQ disabled on
+>   		 * the CPU the timer provides events for. The timer we use is
+> @@ -329,12 +332,15 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+>   		 * cores.
+>   		 */
+>   		disable_irq(ttcce->ce.irq);
+> +
+>   		clockevents_update_freq(&ttcce->ce,
+>   				ndata->new_rate / PRESCALE);
+> -		enable_irq(ttcce->ce.irq);
+>
+> -		/* update cached frequency */
+> -		ttc->freq = ndata->new_rate;
+> +		if (ttcce->ce.mode == CLOCK_EVT_MODE_PERIODIC)
+> +			ttc_set_interval(ttc, DIV_ROUND_CLOSEST(ttc->freq,
+> +						PRESCALE * HZ));
+> +
+> +		enable_irq(ttcce->ce.irq);
+>
+>   		/* fall through */
+>   	}
 
-> On Wed, 11 Dec 2013 14:33:38 +0100, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> > Hi Grant,
-> >
-> > Grant Likely <grant.likely@linaro.org> wrote @ Wed, 11 Dec 2013 14:28:45 +0100:
-> >
-> > > On Thu, 21 Nov 2013 11:57:00 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > > > On 11/21/2013 10:17 AM, Hiroshi Doyu wrote:
-> > > > > Iterating over a property containing a list of phandles with arguments
-> > > > > is a common operation for device drivers. This patch adds a new
-> > > > > of_property_for_each_phandle_with_args() macro to make the iteration
-> > > > > simpler.
-> > > > >
-> > > > > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > > > > ---
-> > > > > v6+:
-> > > > > Use the description, which Grant Likely proposed, to be full enough
-> > > > > that a future reader can figure out why a patch was written.
-> > > > >   http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007062.html
-> > ...
-> >
-> > > That's right, I forgot I said that. Yes please fix the implementation.
-> >
-> > Here's the latest. I'll include this with the next v7 series.
-> >
-> > Can I get your Acked-by with this?
-> >
-> > --8<----
-> >
-> > From 8f7c0404aa68f0e8dbe0babc240590f6528ecc1f Mon Sep 17 00:00:00 2001
-> > From: Hiroshi Doyu <hdoyu@nvidia.com>
-> > Date: Fri, 15 Nov 2013 10:52:53 +0200
-> > Subject: [PATCH] of: introduce of_property_for_each_phandle_with_args()
-> >
-> > Iterating over a property containing a list of phandles with arguments
-> > is a common operation for device drivers. This patch adds a new
-> > of_property_for_each_phandle_with_args() macro to make the iteration
-> > simpler.
-> >
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > Cc: Rob Herring <robherring2@gmail.com>
-> > ---
-> > v7:
-> > Fixed some minors pointed by Rob and Stephen.
-> >
-> > v6++++:
-> > Iterate without intrducing a new struct.
-> >
-> > v6+++:
-> > Introduced a new struct "of_phandle_iter" to keep the state when
-> > iterating over the list.
-> >
-> > v6++:
-> > Optimized to avoid O(n^2), suggested by Stephen Warren.
-> > http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007066.html
-> >
-> > I didn't introduce any struct to hold params and state here.
-> >
-> > v6+:
-> > Use the description, which Grant Likely proposed, to be full enough
-> > that a future reader can figure out why a patch was written.
-> >
-> > v5:
-> > New patch for v5.
-> >
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > ---
-> >  drivers/of/base.c  | 46 ++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/of.h | 32 ++++++++++++++++++++++++++++++++
-> >  2 files changed, 78 insertions(+)
-> >
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index f807d0e..cd4ab05 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -1201,6 +1201,52 @@ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
-> >       printk("\n");
-> >  }
-> >
-> > +const __be32 *of_phandle_iter_next(const char *cells_name, int cell_count,
-> > +                                const __be32 *cur, const __be32 *end,
-> > +                                struct of_phandle_args *out_args)
-> 
-> Having to pass in cells_name, cell_count, cur and end each time seems a
-> little odd. Can a state structure be used instead?
-> 
-> struct of_phandle_iter_state {
->         const char *cells_name;
->         int cells_count;
->         const __be32 *cur;
->         const __be32 *end;
->         struct of_phandle_args out_args;
-> }
-> 
-> Make the caller provide one of those and fill it in with the init
-> function.
+When looking at the smp_twd.c, there is a similar need.
 
-I rewrote this a few times and so now I have a few version of this
-implementations :-) The above proposal is similar to the version v6+++
-mentioned in the above patch note:
+There are a couple of notifier used on for cpufreq and one for clock 
+rate change.
 
-> > v6+++:
-> > Introduced a new struct "of_phandle_iter" to keep the state when
-> > iterating over the list.
+Wouldn't make sense to add the notifier calls and registration in the 
+time framework and add the callbacks in the dev ops ? The switch would 
+be in the timer framework and perhaps the irq disabling may be easier to 
+deal with ?
 
-which is:
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-  [RFC][PATCHv6+++ 01/13] of: introduce of_property_for_earch_phandle_with_args()
-    http://lists.linuxfoundation.org/pipermail/iommu/2013-November/007087.html
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-Stephen seemed to prefer the version without state struct. I like the
-idea to not pass the same arguments repeatly. Instead, wrapping them
-in a struct with state may look better.
-
-So if Stephen agrees, I'll rewrite the version with state struct
-again.
