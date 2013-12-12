@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3LLLgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:36:45 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:42381 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab3LLLgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:36:43 -0500
-Message-ID: <1386848190.9959.12.camel@localhost.localdomain>
-Subject: Re: [PATCH] fs: clear close-on-exec flag as part of put_unused_fd()
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Mateusz Guzik <mguzik@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>
-Date: Thu, 12 Dec 2013 12:36:30 +0100
-In-Reply-To: <20131211233011.GA10323@ZenIV.linux.org.uk>
-References: <1386796107-4197-1-git-send-email-ydroneaud@opteya.com>
-	 <20131211223634.GA13828@mguzik.redhat.com>
-	 <20131211233011.GA10323@ZenIV.linux.org.uk>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751549Ab3LLLjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:39:01 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:24532 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751348Ab3LLLi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 06:38:57 -0500
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2fh95h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh2327h2336h906i1155h)
+From: Jagannadha Sutradharudu Teki 
+	<jagannadha.sutradharudu-teki@xilinx.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Rob Landley <rob@landley.net>, <linux-pci@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jagannadha Sutradharudu Teki <jaganna@xilinx.com>
+Subject: [PATCH v2 1/2] Documentation: pci: Minor cleanup
+Date: Thu, 12 Dec 2013 17:08:44 +0530
+X-Mailer: git-send-email 1.8.3
+X-RCIS-Action: ALLOW
+MIME-Version: 1.0
+Content-Type: text/plain
+Message-ID: <ce61b66d-a2e9-4b0d-8000-852f27606294@TX2EHSMHS027.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+- Used small letters for file names
+- Renamed few pcie txt files
+- Re-arranged file names in 00-INDEX
+- Removed PCI-DMA-mapping.txt from 00-INDEX
 
-Le mercredi 11 décembre 2013 à 23:30 +0000, Al Viro a écrit :
-> On Wed, Dec 11, 2013 at 11:36:35PM +0100, Mateusz Guzik wrote:
-> 
-> > >From my reading this will break at least the following:
-> > fd = open(..., .. | O_CLOEXEC);
-> > dup2(whatever, fd);
-> > 
-> > now fd has O_CLOEXEC even though it should not
-> 
-> Moreover, consider fork() done by a thread that shares descriptor
-> table with somebody else.  Suppose it happens in the middle of
-> open() with O_CLOEXEC being done by another thread.  We copy descriptor
-> table after descriptor had been reserved (and marked close-on-exec),
-> but before a reference to struct file has actually been inserted there.
-> This code
->         for (i = open_files; i != 0; i--) {
->                 struct file *f = *old_fds++;
->                 if (f) {
->                         get_file(f);
->                 } else {
->                         /*    
->                          * The fd may be claimed in the fd bitmap but not yet
->                          * instantiated in the files array if a sibling thread
->                          * is partway through open().  So make sure that this
->                          * fd is available to the new process.
->                          */
->                         __clear_open_fd(open_files - i, new_fdt);
->                 }
->                 rcu_assign_pointer(*new_fds++, f);
->         }
->         spin_unlock(&oldf->file_lock);
-> in dup_fd() will clear the corresponding bit in open_fds, leaving close_on_exec
-> alone.  Currently that's fine (we will override whatever had been in
-> close_on_exec when we reserve that descriptor again), but AFAICS with this
-> patch it will break.
-> 
+Signed-off-by: Jagannadha Sutradharudu Teki <jaganna@xilinx.com>
+---
+Changes for v2:
+	- none
 
-That's a terrible subtle case. it will indeed break with the patch.
+ Documentation/PCI/00-INDEX                         | 22 +++++++++++-----------
+ .../PCI/{pcieaer-howto.txt => pcie-aer-howto.txt}  |  0
+ .../PCI/{pci-iov-howto.txt => pcie-iov-howto.txt}  |  0
+ .../{PCIEBUS-HOWTO.txt => pcie-portbus-howto.txt}  |  0
+ 4 files changed, 11 insertions(+), 11 deletions(-)
+ rename Documentation/PCI/{pcieaer-howto.txt => pcie-aer-howto.txt} (100%)
+ rename Documentation/PCI/{pci-iov-howto.txt => pcie-iov-howto.txt} (100%)
+ rename Documentation/PCI/{PCIEBUS-HOWTO.txt => pcie-portbus-howto.txt} (100%)
 
-> Sure, it can be fixed up (ditto with dup2(), etc.), but what's the point?
-
-It was only an attempt at making close-on-exec handling "simpler".
-
-> Result will require more subtle reasoning to prove correctness and will
-> be more prone to breakage.  Does that really yield visible performance
-> improvements that would be worth the extra complexity?  After all, you
-> trade some writes to close_on_exec on descriptor reservation for unconditional
-> write on descriptor freeing; if anything, I would expect that you'll get
-> minor _loss_ from that change, assuming they'll be measurable in the first
-> place...
-
-Since it's not so straightforward to get it correct, and the only
-advantage I was trying to address is aesthetic, I will discard it.
-
-Thanks a lot for the review and the comments.
-
-Regards.
-
+diff --git a/Documentation/PCI/00-INDEX b/Documentation/PCI/00-INDEX
+index 812b17f..b8b7721 100644
+--- a/Documentation/PCI/00-INDEX
++++ b/Documentation/PCI/00-INDEX
+@@ -1,14 +1,14 @@
+ 00-INDEX
+ 	- this file
+-MSI-HOWTO.txt
+-	- the Message Signaled Interrupts (MSI) Driver Guide HOWTO and FAQ.
+-PCI-DMA-mapping.txt
+-	- info for PCI drivers using DMA portably across all platforms
+-PCIEBUS-HOWTO.txt
+-	- a guide describing the PCI Express Port Bus driver
+-pci-error-recovery.txt
+-	- info on PCI error recovery
+ pci.txt
+-	- info on the PCI subsystem for device driver authors
+-pcieaer-howto.txt
+-	- the PCI Express Advanced Error Reporting Driver Guide HOWTO
++	- Info on the PCI subsystem for device driver authors
++pci-error-recovery.txt
++	- Info on PCI error recovery
++MSI-HOWTO.txt
++	- The Message Signaled Interrupts (MSI) Driver Guide HOWTO and FAQ
++pcie-portbus-howto.txt
++	- A guide describing the PCI Express Port Bus driver
++pcie-aer-howto.txt
++	- The PCI Express Advanced Error Reporting Driver Guide HOWTO
++pcie-iov-howto.txt
++	- Info on PCI Express I/O Virtualization
+diff --git a/Documentation/PCI/pcieaer-howto.txt b/Documentation/PCI/pcie-aer-howto.txt
+similarity index 100%
+rename from Documentation/PCI/pcieaer-howto.txt
+rename to Documentation/PCI/pcie-aer-howto.txt
+diff --git a/Documentation/PCI/pci-iov-howto.txt b/Documentation/PCI/pcie-iov-howto.txt
+similarity index 100%
+rename from Documentation/PCI/pci-iov-howto.txt
+rename to Documentation/PCI/pcie-iov-howto.txt
+diff --git a/Documentation/PCI/PCIEBUS-HOWTO.txt b/Documentation/PCI/pcie-portbus-howto.txt
+similarity index 100%
+rename from Documentation/PCI/PCIEBUS-HOWTO.txt
+rename to Documentation/PCI/pcie-portbus-howto.txt
 -- 
-Yann Droneaud
-OPTEYA
+1.8.3
 
 
