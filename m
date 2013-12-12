@@ -1,349 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab3LLDHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 22:07:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab3LLDHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 22:07:18 -0500
-Date: Thu, 12 Dec 2013 11:06:19 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 09/14] efi: passing kexec necessary efi data via
- setup_data
-Message-ID: <20131212030619.GG3751@dhcp-16-126.nay.redhat.com>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-10-git-send-email-dyoung@redhat.com>
- <20131211222057.GB8863@pd.tnic>
+	id S1751368Ab3LLDQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 22:16:48 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21039 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab3LLDQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 22:16:47 -0500
+Message-ID: <52A92A8D.20603@oracle.com>
+Date: Wed, 11 Dec 2013 22:16:29 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131211222057.GB8863@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: joern@logfs.org, mgorman@suse.de, Michel Lespinasse <walken@google.com>,
+        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: kernel BUG in munlock_vma_pages_range
+References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz> <52A6275F.4040007@oracle.com> <52A8EE38.2060004@suse.cz>
+In-Reply-To: <52A8EE38.2060004@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/13 at 11:20pm, Borislav Petkov wrote:
-> On Mon, Dec 09, 2013 at 05:42:22PM +0800, Dave Young wrote:
-> > Add a new setup_data type SETUP_EFI for kexec use.
-> > Passing the saved fw_vendor, runtime, config tables and efi runtime mappings.
-> > 
-> > When entering virtual mode, directly mapping the efi runtime ragions which
-> > we passed in previously. And skip the step to call SetVirtualAddressMap.
-> > 
-> > Specially for HP z420 workstation we need save the smbios physical address.
-> > The kernel boot sequence proceeds in the following order.  Step 2
-> > requires efi.smbios to be the physical address.  However, I found that on
-> > HP z420 EFI system table has a virtual address of SMBIOS in step 1.  Hence,
-> > we need set it back to the physical address with the smbios in
-> > efi_setup_data.  (When it is still the physical address, it simply sets
-> > the same value.)
-> > 
-> > 1. efi_init() - Set efi.smbios from EFI system table
-> > 2. dmi_scan_machine() - Temporary map efi.smbios to access SMBIOS table
-> > 3. efi_enter_virtual_mode() - Map EFI ranges
-> > 
-> > Tested on ovmf+qemu, lenovo thinkpad, a dell laptop and an
-> > HP z420 workstation.
-> > 
-> > v2: refresh based on previous patch changes, code cleanup.
-> > v3: use ioremap instead of phys_to_virt for efi_setup
-> > v5: improve some code structure per comments from Matt
-> >     Boris: improve code structure, spell fix, etc.
-> >     Improve changelog from Toshi.
-> >     change the variable efi_setup to the physical address of efi setup_data
-> >     instead of the ioremapped virt address
-> > 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> >  arch/x86/include/asm/efi.h            |  11 ++
-> >  arch/x86/include/uapi/asm/bootparam.h |   1 +
-> >  arch/x86/kernel/setup.c               |   3 +
-> >  arch/x86/platform/efi/efi.c           | 195 ++++++++++++++++++++++++++++++----
-> >  4 files changed, 187 insertions(+), 23 deletions(-)
-> 
-> ...
-> 
-> > @@ -115,6 +116,25 @@ static int __init setup_storage_paranoia(char *arg)
-> >  }
-> >  early_param("efi_no_storage_paranoia", setup_storage_paranoia);
-> >  
-> > +void __init parse_efi_setup(u64 phys_addr)
-> > +{
-> > +	struct setup_data *sd;
-> > +
-> > +	if (!efi_enabled(EFI_64BIT)) {
-> > +		pr_warn("SETUP_EFI not supported on 32-bit\n");
-> > +		return;
-> > +	}
-> 
-> Shouldn't this function be in two versions in efi_64.c and efi_32.c?
-> This way you don't need this check with cryptic printk message.
+On 12/11/2013 05:59 PM, Vlastimil Babka wrote:
+> On 12/09/2013 09:26 PM, Sasha Levin wrote:
+>> On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
+>>> On 12/09/2013 06:05 PM, Sasha Levin wrote:
+>>>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
+>>>>> Hello, I will look at it, thanks.
+>>>>> Do you have specific reproduction instructions?
+>>>>
+>>>> Not really, the fuzzer hit it once and I've been unable to trigger it again. Looking at
+>>>> the piece of code involved it might have had something to do with hugetlbfs, so I'll crank
+>>>> up testing on that part.
+>>>
+>>> Thanks. Do you have trinity log and the .config file? I'm currently unable to even boot linux-next
+>>> with my config/setup due to a GPF.
+>>> Looking at code I wouldn't expect that it could encounter a tail page, without first encountering a
+>>> head page and skipping the whole huge page. At least in THP case, as TLB pages should be split when
+>>> a vma is split. As for hugetlbfs, it should be skipped for mlock/munlock operations completely. One
+>>> of these assumptions is probably failing here...
+>>
+>> If it helps, I've added a dump_page() in case we hit a tail page there and got:
+>>
+>> [  980.172299] page:ffffea003e5e8040 count:0 mapcount:1 mapping:          (null) index:0
+>> x0
+>> [  980.173412] page flags: 0x2fffff80008000(tail)
+>>
+>> I can also add anything else in there to get other debug output if you think of something else useful.
+>
+> Please try the following. Thanks in advance.
 
-Ok, will update.
+[  428.499889] page:ffffea003e5c0040 count:0 mapcount:4 mapping:          (null) index:0x0
+[  428.499889] page flags: 0x2fffff80008000(tail)
+[  428.499889] start=140117131923456 pfn=16347137 orig_start=140117130543104 page_increm
+=1 vm_start=140117130543104 vm_end=140117134688256 vm_flags=135266419
+[  428.499889] first_page pfn=16347136
+[  428.499889] page:ffffea003e5c0000 count:204 mapcount:44 mapping:ffff880fb5c466c1 inde
+x:0x7f6f8fe00
+[  428.499889] page flags: 0x2fffff80084068(uptodate|lru|active|head|swapbacked)
+[  428.499889] pc:ffff880fcfb70000 pc->flags:2 pc->mem_cgroup:ffffc90006034000
+[  428.374171]  0000000000000000
+[  428.374171]  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+[  428.374171] Call Trace:
+[  428.374171]  [<ffffffff81283df9>] exit_mmap+0x59/0x170
+[  428.374171]  [<ffffffff812b72d0>] ? __khugepaged_exit+0xe0/0x150
+[  428.374171]  [<ffffffff812af89b>] ? kmem_cache_free+0x26b/0x370
+[  428.374171]  [<ffffffff812b72d0>] ? __khugepaged_exit+0xe0/0x150
+[  428.374171]  [<ffffffff8112e440>] mmput+0x70/0xe0
+[  428.374171]  [<ffffffff8113246d>] exit_mm+0x18d/0x1a0
+[  428.374171]  [<ffffffff811df625>] ? acct_collect+0x175/0x1b0
+[  428.374171]  [<ffffffff811348df>] do_exit+0x26f/0x520
+[  428.374171]  [<ffffffff81134c39>] do_group_exit+0xa9/0xe0
+[  428.374171]  [<ffffffff81149d72>] get_signal_to_deliver+0x4e2/0x570
+[  428.374171]  [<ffffffff8106cc3b>] do_signal+0x4b/0x120
+[  428.374171]  [<ffffffff81176346>] ? vtime_account_user+0x96/0xb0
+[  428.374171]  [<ffffffff843b0475>] ? _raw_spin_unlock+0x35/0x60
+[  428.374171]  [<ffffffff81176346>] ? vtime_account_user+0x96/0xb0
+[  428.374171]  [<ffffffff81249a58>] ? context_tracking_user_exit+0xb8/0x1d0
+[  428.374171]  [<ffffffff8119376d>] ? trace_hardirqs_on+0xd/0x10
+[  428.374171]  [<ffffffff8106cf9a>] do_notify_resume+0x5a/0xe0
+[  428.374171]  [<ffffffff843b9d22>] int_signal+0x12/0x17
+[  428.374171] Code: 46 85 31 c0 e8 f9 60 12 03 48 8b 5b 30 48 c7 c7 b0 92 46 85 4a 8d 34 33 31 c0 
+48 c1 fe 06 e8 df 60 12 03 48 89 df e8 97 e1 fc ff <0f> 0b 0f 1f 44 00 00 eb fe 66 0f 1f 44 00 00 48 
+8b 03 66 85 c0
+[  428.374171] RIP  [<ffffffff81282829>] munlock_vma_pages_range+0x109/0x240
+[  428.374171]  RSP <ffff880f928edb38>
 
-> 
-> > +
-> > +	sd = early_memremap(phys_addr, sizeof(struct setup_data));
-> > +	if (!sd) {
-> > +		pr_warn("efi: early_memremap setup_data failed\n");
-> > +		return;
-> > +	}
-> > +	efi_setup = phys_addr + sizeof(struct setup_data);
-> > +	nr_efi_runtime_map = (sd->len - sizeof(struct efi_setup_data)) /
-> > +			     sizeof(efi_memory_desc_t);
-> > +	early_memunmap(sd, sizeof(struct setup_data));
-> > +}
-> >  
-> >  static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
-> >  {
-> > @@ -494,18 +514,28 @@ static int __init efi_systab_init(void *phys)
-> >  {
-> >  	if (efi_enabled(EFI_64BIT)) {
-> >  		efi_system_table_64_t *systab64;
-> > +		struct efi_setup_data *data = NULL;
-> >  		u64 tmp = 0;
-> >  
-> > +		if (efi_setup) {
-> > +			data = early_memremap(efi_setup, sizeof(*data));
-> > +			if (!data)
-> > +				return -ENOMEM;
-> > +		}
-> >  		systab64 = early_memremap((unsigned long)phys,
-> >  					 sizeof(*systab64));
-> >  		if (systab64 == NULL) {
-> >  			pr_err("Couldn't map the system table!\n");
-> > +			if (data)
-> > +				early_memunmap(data, sizeof(*data));
-> >  			return -ENOMEM;
-> >  		}
-> >  
-> >  		efi_systab.hdr = systab64->hdr;
-> > -		efi_systab.fw_vendor = systab64->fw_vendor;
-> > -		tmp |= systab64->fw_vendor;
-> > +
-> > +		efi_systab.fw_vendor = data ? (unsigned long)data->fw_vendor :
-> > +					      systab64->fw_vendor;
-> > +		tmp |= efi_systab.fw_vendor;
-> >  		efi_systab.fw_revision = systab64->fw_revision;
-> >  		efi_systab.con_in_handle = systab64->con_in_handle;
-> >  		tmp |= systab64->con_in_handle;
-> > @@ -519,15 +549,20 @@ static int __init efi_systab_init(void *phys)
-> >  		tmp |= systab64->stderr_handle;
-> >  		efi_systab.stderr = systab64->stderr;
-> >  		tmp |= systab64->stderr;
-> > -		efi_systab.runtime = (void *)(unsigned long)systab64->runtime;
-> > -		tmp |= systab64->runtime;
-> > +		efi_systab.runtime = data ?
-> > +				     (void *)(unsigned long)data->runtime :
-> > +				     (void *)(unsigned long)systab64->runtime;
-> > +		tmp |= (unsigned long)efi_systab.runtime;
-> >  		efi_systab.boottime = (void *)(unsigned long)systab64->boottime;
-> >  		tmp |= systab64->boottime;
-> >  		efi_systab.nr_tables = systab64->nr_tables;
-> > -		efi_systab.tables = systab64->tables;
-> > -		tmp |= systab64->tables;
-> > +		efi_systab.tables = data ? (unsigned long)data->tables :
-> > +					   systab64->tables;
-> > +		tmp |= efi_systab.tables;
-> >  
-> >  		early_memunmap(systab64, sizeof(*systab64));
-> > +		if (data)
-> > +			early_memunmap(data, sizeof(*data));
-> >  #ifdef CONFIG_X86_32
-> >  		if (tmp >> 32) {
-> >  			pr_err("EFI data located above 4GB, disabling EFI.\n");
-> > @@ -631,6 +666,61 @@ static int __init efi_memmap_init(void)
-> >  	return 0;
-> >  }
-> >  
-> > +/*
-> > + * For kexec kernel there's some special config table entries which could be
-> > + * converted to virtual addresses after entering virtual mode. In kexec kernel
-> > + * we need the physical addresses instead, thus passing them via setup_data
-> > + * and update the entries to physical addresses in this function.
-> 
-> Rewrite:
-> 
-> "A number of config table entries get remapped to virtual addresses
-> after entering EFI virtual mode. However, the kexec kernel requires
-> their physical addresses therefore we pass them via setup_data and
-> correct those entries to their respective physical addresses here."
-
-Thanks for the rewriting. Will use.
-
-> 
-> > + *
-> > + * Currently only handles smbios which is necessary for HP z420.
-> 
-> Didn't we say that this behavior is coming from a generic UEFI fw
-> implementation and if so, no need to mention z420?
-
-Yes, but till now I only reproduced this on z420 so how about below:
-"Currently only handles smbios which is necessary for some firmware
-implementation." 
-
-It might be general but also might only related to some version of
-the general firmware implementation, it's hard to say...
-
-> 
-> > + */
-> > +static int __init efi_reuse_config(u64 tables, int nr_tables)
-> > +{
-> > +	int i, sz, ret = 0;
-> > +	void *p, *tablep;
-> > +	struct efi_setup_data *data;
-> > +
-> > +	if (!efi_setup)
-> > +		return 0;
-> > +
-> > +	if (!efi_enabled(EFI_64BIT))
-> > +		return 0;
-> > +
-> > +	data = early_memremap(efi_setup, sizeof(*data));
-> > +	if (!data) {
-> > +		ret = -ENOMEM;
-> > +		goto out;
-> > +	}
-> > +
-> > +	if (!data->smbios)
-> > +		goto out_memremap;
-> > +
-> > +	sz = sizeof(efi_config_table_64_t);
-> > +
-> > +	p = tablep = early_memremap(tables, nr_tables * sz);
-> > +	if (!p) {
-> > +		pr_err("Could not map Configuration table!\n");
-> > +		ret = -ENOMEM;
-> > +		goto out_memremap;
-> > +	}
-> > +
-> > +	for (i = 0; i < efi.systab->nr_tables; i++) {
-> > +		efi_guid_t guid;
-> > +
-> > +		guid = ((efi_config_table_64_t *)p)->guid;
-> > +
-> > +		if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID))
-> > +			((efi_config_table_64_t *)p)->table = data->smbios;
-> > +		p += sz;
-> > +	}
-> > +	early_memunmap(tablep, nr_tables * sz);
-> > +
-> > +out_memremap:
-> > +	early_memunmap(data, sizeof(*data));
-> > +out:
-> > +	return ret;
-> > +}
-> > +
-> >  void __init efi_init(void)
-> >  {
-> >  	efi_char16_t *c16;
-> > @@ -676,6 +766,8 @@ void __init efi_init(void)
-> >  		efi.systab->hdr.revision >> 16,
-> >  		efi.systab->hdr.revision & 0xffff, vendor);
-> >  
-> > +	efi_reuse_config(efi.systab->tables, efi.systab->nr_tables);
-> > +
-> >  	if (efi_config_init(arch_tables))
-> >  		return;
-> >  
-> > @@ -886,6 +978,50 @@ out_krealloc:
-> >  }
-> >  
-> >  /*
-> > + * Map efi regions which was passed via setup_data. The virt_addr is a fixed
-> 
-> 			   were
-
-Will update
-
-> 
-> > + * addr which was used in first kernel in case kexec boot.
-> 						 ^
-> 						of a
-
-Will update
-
-> 
-> > + */
-> > +static int __init map_regions_fixed(void)
-> > +{
-> > +	int i, s, ret = 0;
-> > +	u64 end, systab;
-> > +	unsigned long size;
-> > +	efi_memory_desc_t *md;
-> > +	struct efi_setup_data *data;
-> > +
-> > +	s = sizeof(*data) + nr_efi_runtime_map * sizeof(data->map[0]);
-> > +	data = early_memremap(efi_setup, s);
-> > +	if (!data) {
-> > +		ret = -ENOMEM;
-> > +		goto out;
-> > +	}
-> 
-> newline.
-
-Will remove
-
-> 
-> > +	for (i = 0, md = data->map; i < nr_efi_runtime_map; i++, md++) {
-> > +		efi_map_region_fixed(md); /* FIXME: add error handling */
-> > +		size = md->num_pages << PAGE_SHIFT;
-> > +		end = md->phys_addr + size;
-> > +
-> > +		systab = (u64) (unsigned long) efi_phys.systab;
-> > +		if (md->phys_addr <= systab && systab < end) {
-> > +			systab += md->virt_addr - md->phys_addr;
-> > +			efi.systab = (efi_system_table_t *)(unsigned long)systab;
-> > +		}
-> > +		ret = save_runtime_map(md, i);
-> 
-> Wait a minute, this is executed in the second, kexec-ed kernel, right?
-> Why do we need to save the map there too?
-
-Yes, nested kexec need this.
-
-> 
-> > +		if (ret)
-> > +			goto out_save_runtime;
-> > +	}
-> > +
-> > +	early_memunmap(data, s);
-> > +	return 0;
-> > +
-> > +out_save_runtime:
-> > +	kfree(efi_runtime_map);
-> > +	nr_efi_runtime_map = 0;
-> > +	early_memunmap(data, s);
-> > +out:
-> > +	return ret;
-> > +}
-> > +
-> > +/*
-> >   * This function will switch the EFI runtime services to virtual mode.
-> >   * Essentially, we look through the EFI memmap and map every region that
-> >   * has the runtime attribute bit set in its memory descriptor into the
-> > @@ -901,12 +1037,16 @@ out_krealloc:
-> >   * so that we're in a different address space when calling a runtime
-> >   * function. For function arguments passing we do copy the PGDs of the
-> >   * kernel page table into ->trampoline_pgd prior to each call.
-> > + *
-> > + * Specially for kexec boot, efi runtime maps in previous kernel should
-> > + * be passed in via setup_data. In that case runtime ranges will be mapped
-> > + * to the same virtual addresses exactly same as the ones in previous kernel.
-> 
-> "... to the same ..exactly same as ... " sounds funny. What's wrong with
-> 
-> "... to the same virtual addresses as the first kernel."
-
-Will use above one. 
-
---
-Thanks for review
-Dave
+Thanks,
+Sasha
