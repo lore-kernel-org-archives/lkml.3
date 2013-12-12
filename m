@@ -1,46 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab3LLT6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:58:23 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:46586 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3LLT6V (ORCPT
+	id S1751892Ab3LLUBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:01:06 -0500
+Received: from mail1.umlub.pl ([212.182.57.13]:59444 "EHLO mail1.umlub.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751512Ab3LLUBE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:58:21 -0500
+	Thu, 12 Dec 2013 15:01:04 -0500
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 15:01:04 EST
+Date: Thu, 12 Dec 2013 20:47:49 +0100 (CET)
+From: BFI <piotrflieger@umlub.pl>
+Reply-To: BFI <bficredithome@gmail.com>
+Message-ID: <656768128.489587.1386877668708.JavaMail.root@umlub.pl>
+Subject: Hallo
 MIME-Version: 1.0
-In-Reply-To: <1386679620.7152.226.camel@host5.omatika.ru>
-References: <1385879185-22455-3-git-send-email-ynvich@gmail.com>
-	<1386348542-9584-1-git-send-email-ynvich@gmail.com>
-	<CACRpkdYVsGSyMS6sSTqqJ4XrE3GqpWkJsY7GDazi5ix7xjKQ=Q@mail.gmail.com>
-	<1386679620.7152.226.camel@host5.omatika.ru>
-Date: Thu, 12 Dec 2013 20:58:21 +0100
-Message-ID: <CACRpkda2qpHbRKu3WuHs9wApMZ83BW8etBc5Uz095pyvBsWWOQ@mail.gmail.com>
-Subject: Re: [PATCH v2 02/11] arm: pxa27x: support ICP DAS LP-8x4x
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [185.19.85.139]
+X-Mailer: Zimbra 7.2.1_GA_2790 (zclient/7.2.1_GA_2790)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 1:47 PM, Sergei Ianovich <ynvich@gmail.com> wrote:
-> On Tue, 2013-12-10 at 13:43 +0100, Linus Walleij wrote:
->> Argh! Now you're adding another user for a legacy custom pin control
->> implementation. But if noone is going to modernize PXA2xx what
->> can we do :-/
->
-> I've rewritten the device to use device tree and posted patch series for
-> that.
 
-THANKS! For doing this.
 
-Yours,
-Linus Walleij
+Sie benötigen die Finanzierung? Wir bieten direkte Finanzierung zu erschwinglichen Preisen. Unsere zuverlässige und bequeme Finanzierung Dienstleistungen umfassen: - Konventionelle und Personal Finanzierung für Einzelpersonen; Handelsregister Darlehen für mittlere und große Unternehmen Ventures; Small Business Administration (SBA) Darlehen für kleine Unternehmen Ventures & Start-up-Unternehmen Darlehen, Investitionen
+Darlehen und Immobilienfinanzierung. Kontaktieren Sie uns für weitere Details.
