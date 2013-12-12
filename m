@@ -1,102 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3LLO3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:29:41 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:8477 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395Ab3LLO3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:29:38 -0500
-From: Qais Yousef <Qais.Yousef@imgtec.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Yang Yingliang <yangyingliang@huawei.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: RE: [PATCH] net/sched/sch_tbf.c: fix linking error
-Thread-Topic: [PATCH] net/sched/sch_tbf.c: fix linking error
-Thread-Index: AQHO9zck2dE04dBQo0atJfoWgkVHfZpQm5SAgAAC88A=
-Date: Thu, 12 Dec 2013 14:29:35 +0000
-Message-ID: <392C4BDEFF12D14FA57A3F30B283D7D13C8A24@LEMAIL01.le.imgtec.org>
-References: <1386851936-1582-1-git-send-email-qais.yousef@imgtec.com>
- <1386857899.19078.49.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1386857899.19078.49.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.154.35]
-Content-Type: text/plain; charset="utf-8"
+	id S1751802Ab3LLObx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:31:53 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:64063 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3LLObv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:31:51 -0500
+Date: Thu, 12 Dec 2013 15:31:50 +0100
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel>, <linux-arm-kernel@lists.infradead.org>
+CC: <ludovic.desroches@atmel.com>, <iamjoonsoo.kim@lge.com>
+Subject: possible regression on 3.13 when calling flush_dcache_page
+Message-ID: <20131212143149.GI12099@ldesroches-Latitude-E6320>
+Mail-Followup-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+	linux-mmc@vger.kernel, linux-arm-kernel@lists.infradead.org,
+	iamjoonsoo.kim@lge.com
 MIME-Version: 1.0
-X-SEF-Processed: 7_3_0_01192__2013_12_12_14_29_37
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBCETl9S001354
 
-> -----Original Message-----
-> From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
-> Sent: 12 December 2013 14:18
-> To: Qais Yousef
-> Cc: Yang Yingliang; Eric Dumazet; Jamal Hadi Salim; David S. Miller;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> next@vger.kernel.org
-> Subject: Re: [PATCH] net/sched/sch_tbf.c: fix linking error
-> 
-> On Thu, 2013-12-12 at 12:38 +0000, Qais Yousef wrote:
-> > ERROR: "__udivdi3" [net/sched/sch_tbf.ko] undefined!
-> >
-> > introduced by: cc106e441a63 (net: sched: tbf: fix the calculation of
-> > max_size)
-> >
-> > which adds a 64 by 32 bit division without using do_div().
-> > Fix it by using do_div(len/ 53) instead of len/53.
-> >
-> > Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Cc: Jamal Hadi Salim <jhs@mojatatu.com>
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Cc: netdev@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: linux-next@vger.kernel.org
-> > ---
-> > We caught this error on linux-next today. This is my quick attemp of a fix.
-> > If it's not appropriate or doesn't make sense my apologies and feel
-> > free to resend a better fix :)
-> >
-> >  net/sched/sch_tbf.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/net/sched/sch_tbf.c b/net/sched/sch_tbf.c index
-> > a44928c..771cbec 100644
-> > --- a/net/sched/sch_tbf.c
-> > +++ b/net/sched/sch_tbf.c
-> > @@ -131,8 +131,10 @@ static u64 psched_ns_t2l(const struct
-> > psched_ratecfg *r,
-> >
-> >  	do_div(len, NSEC_PER_SEC);
-> >
-> > -	if (unlikely(r->linklayer == TC_LINKLAYER_ATM))
-> > -		len = (len / 53) * 48;
-> > +	if (unlikely(r->linklayer == TC_LINKLAYER_ATM)) {
-> > +		do_div(len, 53);
-> > +		len *= 48;
-> > +	}
-> >
-> >  	if (len > r->overhead)
-> >  		len -= r->overhead;
-> 
-> This looks like this was already fixed yesterday in David net tree :
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=d55d282e6
-> af88120ad90e93a88f70e3116dc0e3d
-> 
+Hi,
 
-Ah, ok. Thanks for checking this and sorry about the noise.
+With v3.13-rc3 I have an error when the atmel-mci driver calls
+flush_dcache_page (log at the end of the message).
 
-Qais
+Since I didn't have it before, I did a git bisect and the commit introducing
+the error is the following one:
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+106a74e slab: replace free and inuse in struct slab with newly introduced active
+
+I don't know if this commit has introduced a bug or if it has revealed a bug
+in the atmel-mci driver.
+
+I'll investigate on atmel-mci driver side but if someone has also this issue or
+see what is wrong in the driver, please tell me all about it.
+
+Thanks
+
+Regards
+
+Ludovic
+
+
+# mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
+mmc0: queuing unknown CIS tuple 0x01 (3 bytes)
+mmc0: queuing unknown CIS tuple 0x1a (5 bytes)
+mmc0: queuing unknown CIS tuple 0x1b (8 bytes)
+mmc0: queuing unknown CIS tuple 0x14 (0 bytes)
+mmc0: queuing unknown CIS tuple 0x80 (1 bytes)
+mmc0: queuing unknown CIS tuple 0x81 (1 bytes)
+mmc0: queuing unknown CIS tuple 0x82 (1 bytes)
+mmc0: new SDIO card at address 0001
+Unable to handle kernel paging request at virtual address 0a00000c
+pgd = c0004000
+[0a00000c] *pgd=00000000
+Internal error: Oops: 5 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 9 Comm: kworker/u2:1 Not tainted 3.11.0+ #68
+Workqueue: kmmcd mmc_rescan
+task: c384e800 ti: c385e000 task.ti: c385e000
+PC is at vma_interval_tree_subtree_search+0x18/0x74
+LR is at flush_dcache_page+0x90/0x12c
+pc : [<c0064a50>]    lr : [<c000f00c>]    psr: 20000093
+sp : c385fab8  ip : 00000000  fp : c10ca400
+r10: c385fc64  r9 : c12f92fc  r8 : 00000000
+r7 : c2ace640  r6 : c0cc5be0  r5 : c0cd0000  r4 : c1323a00
+r3 : 0a000000  r2 : c0cc5be0  r1 : c0cc5be0  r0 : c034ae48
+Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 0005317f  Table: 22b7c000  DAC: 00000017
+Process kworker/u2:1 (pid: 9, stack limit = 0xc385e1b8)
+Stack: (0xc385fab8 to 0xc3860000)
+faa0:                                                       c1323a00 c000f00c
+fac0: c0cd02d0 c2b0cb40 c385fc30 00000003 00000004 c0281380 44006d72 43495645
+fae0: 0000c0ef 00000000 3a6d726f 00000000 30303038 c2b42ec0 c3868b80 0000001e
+fb00: 00000000 00000000 c10f26ed 00000200 0008a000 c0049d3c c3868b80 c2b42ec0
+fb20: c3868b80 00000000 ffffffff c385fb9c c0cd02d0 1408a004 00000200 c0049ed8
+fb40: c3868b80 c004c384 0000001e c0049718 0000001e c0009cc8 c10f2a60 c001d7ec
+fb60: 20000013 c000bf20 c10f3900 c2b0cbd8 0000184a a0000013 c2b0cbd8 ffff824a
+fb80: c10f30e0 00000000 c0cd02d0 1408a004 00000200 0008a000 ffff814a c385fbb0
+fba0: c001d560 c001d7ec 20000013 ffffffff c2b0cbd8 a0000013 f7cedc96 c2b07400
+fbc0: c2b0cb40 c385fc40 00000001 c028207c c385fc40 c2b07400 00000004 c0270e28
+fbe0: 00000200 000003e8 00000000 61666666 30303038 c2b07400 c385fc50 c385fc40
+fc00: 00001000 c027100c c1323a02 00000004 c2b48000 00000001 00001000 c027a06c
+fc20: 00000015 c38f2800 c2ace7c0 c002f804 c1323a02 000002d0 00000004 00000000
+fc40: 00000000 c385fc94 c385fc64 00000000 00000000 c385fc54 c385fc54 c0270c3c
+fc60: 00000000 3b9aca00 00000000 00000004 00000001 ffffff8d 00000200 00000000
+fc80: 00000000 c385fc40 00000001 c385fc30 00000000 00000035 1408a004 00000000
+fca0: 00000000 00000000 00000000 000001b5 00000000 ffffff8d 00000000 00000000
+fcc0: c385fc64 c385fc40 00000007 00000004 c2bfb400 c0cd02d0 00000450 00000001
+fce0: 00000000 00000004 000001ff c027af0c 00000001 c0cd02d0 00000000 00000004
+fd00: 00000000 00000000 c10cf4f0 00000450 00000004 c2bfb400 c0cd02d0 00000251
+fd20: 00000450 c0cd02d0 00000251 c027b010 c0cd02d0 00000004 00000450 c022d0e8
+fd40: c0cd02d0 c3859000 00000004 00000251 00000000 c022d6ac 00000004 00000450
+fd60: c0cd02c0 c10ce7e8 c0cd02d0 00000004 c385fdb4 c10ce7e8 ffff81c9 c022da4c
+fd80: 00000251 c385fdb4 00000004 c385fddc 00000000 c0cd02c0 c03b5ccc 00000001
+fda0: 00000000 c2b48008 c2bfb400 c021bb1c c0cd02c0 00000008 c385fd84 c0cd02c0
+fdc0: 00000000 00000000 c03b5ccc c022c37c 00000000 c0476909 00000000 00000000
+fde0: 00000000 c385fd7c c3859000 c0cd02c0 00000000 c022e010 c022de8c c2bfb400
+fe00: 00000000 c10e18f0 c03b5ccc c027a32c c027a2d4 c2bfb408 00000000 c10e18f0
+fe20: c01cafc8 c01cadf4 00000000 c385fe38 c2bfb408 c01c966c c38d7a1c c2ad6f34
+fe40: c2bfb408 c2bfb408 c2bfb43c c2bfb408 00000000 c01cad10 c2bfb408 c10eb49c
+fe60: c2bfb408 c01ca398 c2bfb408 00000000 c2bfb410 c01c898c c2bfb410 00000000
+fe80: 00000000 c01818b0 00000001 c2bfb400 c2bfb408 c2bfb400 c2bfb408 00000000
+fea0: c2b48000 00000001 00000000 c385fed3 c2bfb400 c027a4c4 c2b48000 c2b07400
+fec0: 00000000 c0279b8c 00000000 c385fed3 00000000 10ffff00 00000000 c2b0757c
+fee0: c2b07400 00000000 00061a80 c03b9d90 00000000 00000000 00000089 c0272fb8
+ff00: c385df60 c2b0757c c3817200 c10f26b5 c3849c00 c00270e0 c385df60 c2b0757c
+ff20: 00000081 c385df60 c3817200 c385e000 c10f26b5 c385df78 c3817200 c3817210
+ff40: 00000089 c00276d0 c384e800 c384debc 00000000 c385df60 c00274c0 00000000
+ff60: 00000000 00000000 00000000 c002c130 00000000 00000000 00000000 c385df60
+ff80: 00000000 c385ff84 c385ff84 00000000 c385ff90 c385ff90 c385ffac c384debc
+ffa0: c002c090 00000000 00000000 c00094b0 00000000 00000000 00000000 00000000
+ffc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+ffe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
+[<c0064a50>] (vma_interval_tree_subtree_search+0x18/0x74) from [<c000f00c>] (flush_dcache_page+0x90/0x12c)
+[<c000f00c>] (flush_dcache_page+0x90/0x12c) from [<c0281380>] (atmci_interrupt+0x3cc/0x900)
+[<c0281380>] (atmci_interrupt+0x3cc/0x900) from [<c0049d3c>] (handle_irq_event_percpu+0x2c/0x1a0)
+[<c0049d3c>] (handle_irq_event_percpu+0x2c/0x1a0) from [<c0049ed8>] (handle_irq_event+0x28/0x38)
+[<c0049ed8>] (handle_irq_event+0x28/0x38) from [<c004c384>] (handle_fasteoi_irq+0xa4/0xe4)
+[<c004c384>] (handle_fasteoi_irq+0xa4/0xe4) from [<c0049718>] (generic_handle_irq+0x20/0x30)
+[<c0049718>] (generic_handle_irq+0x20/0x30) from [<c0009cc8>] (handle_IRQ+0x60/0x84)
+[<c0009cc8>] (handle_IRQ+0x60/0x84) from [<c000bf20>] (__irq_svc+0x40/0x4c)
+[<c000bf20>] (__irq_svc+0x40/0x4c) from [<c001d7ec>] (mod_timer+0xf8/0x110)
+[<c001d7ec>] (mod_timer+0xf8/0x110) from [<c028207c>] (atmci_request+0xd0/0x120)
+[<c028207c>] (atmci_request+0xd0/0x120) from [<c0270e28>] (mmc_start_request+0x1e4/0x204)
+[<c0270e28>] (mmc_start_request+0x1e4/0x204) from [<c027100c>] (mmc_wait_for_req+0x6c/0x16c)
+[<c027100c>] (mmc_wait_for_req+0x6c/0x16c) from [<c027a06c>] (mmc_io_rw_extended+0x214/0x290)
+[<c027a06c>] (mmc_io_rw_extended+0x214/0x290) from [<c027af0c>] (sdio_io_rw_ext_helper+0x160/0x1a0)
+[<c027af0c>] (sdio_io_rw_ext_helper+0x160/0x1a0) from [<c027b010>] (sdio_memcpy_fromio+0x14/0x18)
+[<c027b010>] (sdio_memcpy_fromio+0x14/0x18) from [<c022d0e8>] (ath6kl_sdio_io+0x88/0x9c)
+[<c022d0e8>] (ath6kl_sdio_io+0x88/0x9c) from [<c022d6ac>] (ath6kl_sdio_read_write_sync+0xb0/0x100)
+[<c022d6ac>] (ath6kl_sdio_read_write_sync+0xb0/0x100) from [<c022da4c>] (ath6kl_sdio_bmi_write+0x54/0xf8)
+[<c022da4c>] (ath6kl_sdio_bmi_write+0x54/0xf8) from [<c021bb1c>] (ath6kl_bmi_get_target_info+0x44/0x190)
+[<c021bb1c>] (ath6kl_bmi_get_target_info+0x44/0x190) from [<c022c37c>] (ath6kl_core_init+0xa4/0x404)
+[<c022c37c>] (ath6kl_core_init+0xa4/0x404) from [<c022e010>] (ath6kl_sdio_probe+0x184/0x1ec)
+[<c022e010>] (ath6kl_sdio_probe+0x184/0x1ec) from [<c027a32c>] (sdio_bus_probe+0x58/0x6c)
+[<c027a32c>] (sdio_bus_probe+0x58/0x6c) from [<c01cadf4>] (driver_probe_device+0xac/0x1f4)
+[<c01cadf4>] (driver_probe_device+0xac/0x1f4) from [<c01c966c>] (bus_for_each_drv+0x48/0x8c)
+[<c01c966c>] (bus_for_each_drv+0x48/0x8c) from [<c01cad10>] (device_attach+0x68/0x80)
+[<c01cad10>] (device_attach+0x68/0x80) from [<c01ca398>] (bus_probe_device+0x28/0x98)
+[<c01ca398>] (bus_probe_device+0x28/0x98) from [<c01c898c>] (device_add+0x424/0x5fc)
+[<c01c898c>] (device_add+0x424/0x5fc) from [<c027a4c4>] (sdio_add_func+0x34/0x4c)
+[<c027a4c4>] (sdio_add_func+0x34/0x4c) from [<c0279b8c>] (mmc_attach_sdio+0x260/0x314)
+[<c0279b8c>] (mmc_attach_sdio+0x260/0x314) from [<c0272fb8>] (mmc_rescan+0x22c/0x2b4)
+[<c0272fb8>] (mmc_rescan+0x22c/0x2b4) from [<c00270e0>] (process_one_work+0x1f4/0x348)
+[<c00270e0>] (process_one_work+0x1f4/0x348) from [<c00276d0>] (worker_thread+0x210/0x36c)
+[<c00276d0>] (worker_thread+0x210/0x36c) from [<c002c130>] (kthread+0xa0/0xb0)
+[<c002c130>] (kthread+0xa0/0xb0) from [<c00094b0>] (ret_from_fork+0x14/0x24)
+Code: e243002c e5903034 e3530000 0a000002 (e593c00c) 
+---[ end trace 3f7f9bc3f451e9c9 ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+
