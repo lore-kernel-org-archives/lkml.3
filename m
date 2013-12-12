@@ -1,87 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab3LLKfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 05:35:47 -0500
-Received: from forward15.mail.yandex.net ([95.108.130.119]:47550 "EHLO
-	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab3LLKfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 05:35:45 -0500
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 05:35:44 EST
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-In-Reply-To: <49231385567953@web4m.yandex.ru>
-References: <49231385567953@web4m.yandex.ru>
-Subject: Re: [PATCH] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
-MIME-Version: 1.0
-Message-Id: <305941386844203@web21j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 12 Dec 2013 14:30:03 +0400
+	id S1751476Ab3LLKn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 05:43:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3723 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120Ab3LLKnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 05:43:24 -0500
+Date: Thu, 12 Dec 2013 05:43:08 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org
+Subject: Re: [PATCH v3 1/6] locks: consolidate common code in the
+ flock_to_posix_lock routines
+Message-ID: <20131212054308.76aa0d37@tlielax.poochiereds.net>
+In-Reply-To: <20131211225724.GB3483@fieldses.org>
+References: <1386703055-22308-1-git-send-email-jlayton@redhat.com>
+	<1386703055-22308-2-git-send-email-jlayton@redhat.com>
+	<20131210212253.GC20831@fieldses.org>
+	<20131210232204.GD20831@fieldses.org>
+	<20131211061856.615c39ba@tlielax.poochiereds.net>
+	<20131211143724.GA29300@fieldses.org>
+	<20131211151931.GC29300@fieldses.org>
+	<20131211140741.292028e8@tlielax.poochiereds.net>
+	<20131211225616.GA3483@fieldses.org>
+	<20131211225724.GB3483@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+On Wed, 11 Dec 2013 17:57:24 -0500
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-27.11.2013, 19:59, "Kirill Tkhai" <tkhai@yandex.ru>:
-> This patch touches RT group scheduling case.
->
-> Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's priority,
-> while rt_rq passed to them may be not the top-level rt_rq. This is wrong, because
-> changing of priority on a child level does not guarantee that the priority is
-> the highest all over the rq. So, this leak makes RT balancing unusable.
->
-> The short example: the task having the highest priority among all rq's RT tasks
-> (no one other task has the same priority) are waking on a throttle rt_rq.
-> The rq's cpupri is set to the task's priority equivalent, but real
-> rq->rt.highest_prio.curr is less.
->
-> The patch below fixes the problem.
->
-> It looks like all version have this bug, so I CC'ed stable mailing list.
->
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: stable@vger.kernel.org
->---
-> kernel/sched/rt.c |   14 ++++++++++++++
-> 1 files changed, 14 insertions(+), 0 deletions(-)
->diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
->index 7d57275..1c40655 100644
->--- a/kernel/sched/rt.c
->+++ b/kernel/sched/rt.c
->@@ -901,6 +901,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
-> {
-> 	struct rq *rq = rq_of_rt_rq(rt_rq);
+> On Wed, Dec 11, 2013 at 05:56:16PM -0500, J. Bruce Fields wrote:
+> > On Wed, Dec 11, 2013 at 02:07:41PM -0500, Jeff Layton wrote:
+> > > On Wed, 11 Dec 2013 10:19:31 -0500
+> > > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > ...
+> > > > +	if (l->l_len > 0)
+> > > > +		fl->fl_end = fl->fl_start + l->l_len - 1;
+> > > > +	else if (l->l_len < 0) {
+> > > > +		fl->fl_end = start - 1;
+> > > 
+> > > Erm... I think this is not quite right...
+> > > 
+> > > "start" is uninitialized here. I think this should be:
+> > > 
+> > >     fl->fl_end = fl->fl_start - 1
+> > > 
+> > > With that too, we can get rid of the local "start" variable. I think
+> > > this may explain why I'm tripping over the BUG() in locks_remove_file.
+> > 
+> > Yep.
+> > 
+> > One other bug: I think l_start < 0 is actually fine in the
+> > SEEK_CUR/SEEK_END cases.
+> > 
+> > With that fixed and another comment (though I don't know how much it
+> > helps), it looks like the below.
 > 
->+#ifdef CONFIG_RT_GROUP_SCHED
->+	/*
->+	 * Change rq's cpupri only if rt_rq is the top queue.
->+	 */
->+	if (&rq->rt != rt_rq)
->+		return;
->+#endif
-> 	if (rq->online && prio < prev_prio)
-> 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
-> }
->@@ -910,6 +917,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
-> {
-> 	struct rq *rq = rq_of_rt_rq(rt_rq);
+> Alternatively, maybe we could simplify?  (On top of the previous):
 > 
->+#ifdef CONFIG_RT_GROUP_SCHED
->+	/*
->+	 * Change rq's cpupri only if rt_rq is the top queue.
->+	 */
->+	if (&rq->rt != rt_rq)
->+		return;
->+#endif
-> 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
-> 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
-> }
+> commit d4bf5cb021a3ac1ec07530ebda904e262cc89d11
+> Author: J. Bruce Fields <bfields@redhat.com>
+> Date:   Wed Dec 11 17:42:32 2013 -0500
+> 
+>     locks: simplify overflow checking
+>     
+>     Or maybe we don't actually care about indicating overflow in the 32-bit
+>     case: sure we could fail if e.g. f_pos+start or f_pos+start+len would
+>     exceed 32-bits, but do we really need to?
+>     
+>     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 39f2ca9..efbf577 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -344,8 +344,8 @@ static int assign_type(struct file_lock *fl, long type)
+>  	return 0;
+>  }
+>  
+> -static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
+> -					struct flock64 *l, loff_t offset_max)
+> +static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
+> +				 struct flock64 *l)
+>  {
+>  	switch (l->l_whence) {
+>  	case SEEK_SET:
+> @@ -360,12 +360,12 @@ static int flock_to_posix_lock_common(struct file *filp, struct file_lock *fl,
+>  	default:
+>  		return -EINVAL;
+>  	}
+> -	if (l->l_start > offset_max - fl->fl_start)
+> +	if (l->l_start > OFFSET_MAX - fl->fl_start)
+>  		return -EOVERFLOW;
+>  	fl->fl_start += l->l_start;
+>  	if (fl->fl_start < 0)
+>  		return -EINVAL;
+> -	if (l->l_len > offset_max - fl->fl_start)
+> +	if (l->l_len > OFFSET_MAX - fl->fl_start)
+>  		return -EOVERFLOW;
+>  	if (fl->fl_start + l->l_len < 0)
+>  		return -EINVAL;
+> @@ -403,22 +403,9 @@ static int flock_to_posix_lock(struct file *filp, struct file_lock *fl,
+>  		.l_len = l->l_len,
+>  	};
+>  
+> -	/*
+> -	 * The use of OFFT_OFFSET_MAX here ensures we return -EOVERFLOW
+> -	 * if the start or end of the lock could not be represented as
+> -	 * an off_t, following SUSv3.
+> -	 */
+> -	return flock_to_posix_lock_common(filp, fl, &ll, OFFT_OFFSET_MAX);
+> +	return flock64_to_posix_lock(filp, fl, &ll);
+>  }
+>  
+> -#if BITS_PER_LONG == 32
+> -static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
+> -				 struct flock64 *l)
+> -{
+> -	return flock_to_posix_lock_common(filp, fl, l, OFFSET_MAX);
+> -}
+> -#endif
+> -
+>  /* default lease lock manager operations */
+>  static void lease_break_callback(struct file_lock *fl)
+>  {
+
+Makes sense to me -- be liberal in what you accept and all that...
+
+It might be problematic for 32-bit apps that then later try to do
+F_GETLK against such a lock, I doubt that'll be any worse than the
+current situation. I'll toss this one onto the pile...
+
+Thanks!
+-- 
+Jeff Layton <jlayton@redhat.com>
