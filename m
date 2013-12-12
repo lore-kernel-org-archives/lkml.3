@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab3LLT3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:29:36 -0500
-Received: from www.sr71.net ([198.145.64.142]:44821 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079Ab3LLT3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:29:35 -0500
-Message-ID: <52AA0E5D.30903@sr71.net>
-Date: Thu, 12 Dec 2013 11:28:29 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	id S1751750Ab3LLTcZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:32:25 -0500
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:49565 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751162Ab3LLTcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 14:32:24 -0500
+Date: Thu, 12 Dec 2013 19:32:22 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Dave Hansen <dave@sr71.net>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         kirill.shutemov@linux.intel.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] [RFC] mm: slab: separate slab_page from 'struct page'
-References: <20131210204641.3CB515AE@viggo.jf.intel.com> <00000142de5634af-f92870a7-efe2-45cd-b50d-a6fbdf3b353c-000000@email.amazonses.com> <52A78B55.8050500@sr71.net> <00000142de866123-cf1406b5-b7a3-4688-b46f-80e338a622a1-000000@email.amazonses.com> <52A793D0.4020306@sr71.net> <00000142e7e23135-20f346b1-a880-47b0-946c-122323669ec1-000000@email.amazonses.com>
-In-Reply-To: <00000142e7e23135-20f346b1-a880-47b0-946c-122323669ec1-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC][PATCH 1/3] mm: slab: create helpers for slab ->freelist
+ pointer
+In-Reply-To: <20131211224023.5F39AC88@viggo.jf.intel.com>
+Message-ID: <00000142e84bacf0-e6eeb332-e66b-48c6-95d8-d4a7cba0f24d-000000@email.amazonses.com>
+References: <20131211224022.AA8CF0B9@viggo.jf.intel.com> <20131211224023.5F39AC88@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.12.12-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 09:37 AM, Christoph Lameter wrote:
-> On Tue, 10 Dec 2013, Dave Hansen wrote:
->> See? *EVERYTHING* is overridden by at least one of the sl?b allocators
->> except ->flags.  In other words, there *ARE* no relationships when it
->> comes to the sl?bs, except for page->flags.
-> 
-> Slab objects can be used for I/O and then the page fields become
-> important.
+On Wed, 11 Dec 2013, Dave Hansen wrote:
 
-OK, which fields?  How are they important?  Looking at 'struct page', I
-don't see any fields other than ->flags that the slab allocators leave
-alone.
+>
+> We have a need to move the ->freelist data around 'struct page'
+> in order to keep a cmpxchg aligned.  First step is to add an
+> accessor function which we will hook in to in the next patch.
+>
+> I'm not super-happy with how this looks.  It's a bit ugly, but it
+> does work.  I'm open to some better suggestions for how to do
+> this.
 
-I do see some refcounting (page->_count) done on
-request_queue->dma_drain_buffer which is kmalloc()'d.  Although, I'm a
-bit skeptical that this is correct or has been audited because the slabs
-do seem to write over this storage.  Anything needing to do per-page
-could probably be converted over to a raw alloc_pages() anyway because
-it couldn't possibly be doing sub-page-size allocations.
 
-What other cases were you thinking of?
+I think the mapping field is not used by SLUB and its ok to use since SLAB
+uses it for its memory pointer. Maybe you can use that to get the correct
+alignment? Do an and of address used for the cmpxchg with 0xffff
+.. ff0 to ensure proper aligment (the resulting address may overlap
+the mapping field).
+
