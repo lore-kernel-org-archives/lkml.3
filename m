@@ -1,407 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602Ab3LLOwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:52:16 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:51262 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab3LLOwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:52:15 -0500
-Date: Thu, 12 Dec 2013 15:53:05 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [RFC] dma-buf: Implement test module
-Message-ID: <20131212145305.GK9804@phenom.ffwll.local>
-Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Sumit Semwal <sumit.semwal@linaro.org>,
-	linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386858989-1487-1-git-send-email-treding@nvidia.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751871Ab3LLOwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:52:37 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12586 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab3LLOwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:52:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,878,1378882800"; 
+   d="scan'208";a="423606737"
+Message-ID: <1386859952.6066.80.camel@tursulin-linux.isw.intel.com>
+Subject: Re: Potentially unbounded allocations in seq_read?
+From: Tvrtko Ursulin <tvrtko.ursulin@linux.intel.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 12 Dec 2013 14:52:32 +0000
+In-Reply-To: <20131212142157.GD10323@ZenIV.linux.org.uk>
+References: <1386781481.6066.55.camel@tursulin-linux.isw.intel.com>
+	 <20131211174909.GW10323@ZenIV.linux.org.uk>
+	 <1386784797.6066.63.camel@tursulin-linux.isw.intel.com>
+	 <20131211180703.GY10323@ZenIV.linux.org.uk>
+	 <1386855640.6066.73.camel@tursulin-linux.isw.intel.com>
+	 <20131212134956.GC10323@ZenIV.linux.org.uk>
+	 <1386856771.6066.77.camel@tursulin-linux.isw.intel.com>
+	 <20131212142157.GD10323@ZenIV.linux.org.uk>
+Organization: Intel Corporation UK Plc
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 03:36:29PM +0100, Thierry Reding wrote:
-> This is a simple test module that can be used to allocate, export and
-> delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
-> systems that lack a real second driver.
+On Thu, 2013-12-12 at 14:21 +0000, Al Viro wrote:
+> On Thu, Dec 12, 2013 at 01:59:31PM +0000, Tvrtko Ursulin wrote:
 > 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/base/Kconfig        |   4 +
->  drivers/base/Makefile       |   1 +
->  drivers/base/dma-buf-test.c | 308 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 313 insertions(+)
->  create mode 100644 drivers/base/dma-buf-test.c
+> > > a) *what* errors other than -ENAMETOOLONG?
+> > 
+> > Is this your way of saying there can't be any other errors from d_path?
 > 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index e373671652b0..bed2abb9491b 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -200,6 +200,10 @@ config DMA_SHARED_BUFFER
->  	  APIs extension; the file's descriptor can then be passed on to other
->  	  driver.
->  
-> +config DMA_BUF_TEST
-> +	tristate "DMA-BUF test module"
-> +	depends on DMA_SHARED_BUFFER
-> +
->  config DMA_CMA
->  	bool "DMA Contiguous Memory Allocator"
->  	depends on HAVE_DMA_CONTIGUOUS && CMA
-> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-> index 94e8a80e87f8..cad983b6626f 100644
-> --- a/drivers/base/Makefile
-> +++ b/drivers/base/Makefile
-> @@ -25,3 +25,4 @@ obj-$(CONFIG_PINCTRL) += pinctrl.o
->  
->  ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
->  
-> +obj-$(CONFIG_DMA_BUF_TEST) += dma-buf-test.o
-> diff --git a/drivers/base/dma-buf-test.c b/drivers/base/dma-buf-test.c
-> new file mode 100644
-> index 000000000000..f5498b74a09b
-> --- /dev/null
-> +++ b/drivers/base/dma-buf-test.c
-> @@ -0,0 +1,308 @@
-> +#include <linux/dma-buf.h>
-> +#include <linux/err.h>
-> +#include <linux/fs.h>
-> +#include <linux/miscdevice.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/uaccess.h>
-> +
-> +struct dmabuf_create {
-> +	__u32 flags;
-> +	__u32 size;
-> +};
-> +
-> +#define DMABUF_IOCTL_BASE	'D'
-> +#define DMABUF_IOCTL_CREATE	_IOWR(DMABUF_IOCTL_BASE, 0, struct dmabuf_create)
-> +#define DMABUF_IOCTL_DELETE	_IOWR(DMABUF_IOCTL_BASE, 1, int)
-> +#define DMABUF_IOCTL_EXPORT	_IOWR(DMABUF_IOCTL_BASE, 2, int)
+> Check yourself...  It is the only error that makes sense there and yes,
+> it is the only one being returned.
 
-Shouldn't we put this into an uapi header somewhere? Also I think the
-ioctl interface is a bit convoluted - I'd just make one single interface
-which directly returns a new dma-buf fd. Removing it can be handled with
-close, no other ioctls required imo. The explicit export step is kinda
-only for subsystems that already have an existing buffer handle space, but
-we don't have this here.
+Cool then, thats why I e-mailed you in the first place, because you know
+this area very well. 
 
-Otherwise very much wanted.
--Daniel
-
-> +
-> +struct dmabuf_file {
-> +	struct dma_buf *buf;
-> +	dma_addr_t phys;
-> +	size_t size;
-> +	void *virt;
-> +};
-> +
-> +static int dmabuf_attach(struct dma_buf *buf, struct device *dev,
-> +			 struct dma_buf_attachment *attach)
-> +{
-> +	return 0;
-> +}
-> +
-> +static void dmabuf_detach(struct dma_buf *buf,
-> +			  struct dma_buf_attachment *attach)
-> +{
-> +}
-> +
-> +static struct sg_table *dmabuf_map_dma_buf(struct dma_buf_attachment *attach,
-> +					   enum dma_data_direction dir)
-> +{
-> +	struct dmabuf_file *priv = attach->dmabuf->priv;
-> +	struct sg_table *sgt;
-> +
-> +	sgt = kmalloc(sizeof(*sgt), GFP_KERNEL);
-> +	if (!sgt)
-> +		return NULL;
-> +
-> +	if (sg_alloc_table(sgt, 1, GFP_KERNEL)) {
-> +		kfree(sgt);
-> +		return NULL;
-> +	}
-> +
-> +	sg_dma_address(sgt->sgl) = priv->phys;
-> +	sg_dma_len(sgt->sgl) = priv->size;
-> +
-> +	return sgt;
-> +}
-> +
-> +static void dmabuf_unmap_dma_buf(struct dma_buf_attachment *attach,
-> +				 struct sg_table *sgt,
-> +				 enum dma_data_direction dir)
-> +{
-> +	sg_free_table(sgt);
-> +	kfree(sgt);
-> +}
-> +
-> +static void dmabuf_release(struct dma_buf *buf)
-> +{
-> +}
-> +
-> +static int dmabuf_begin_cpu_access(struct dma_buf *buf, size_t size,
-> +				   size_t length,
-> +				   enum dma_data_direction direction)
-> +{
-> +	return 0;
-> +}
-> +
-> +static void dmabuf_end_cpu_access(struct dma_buf *buf, size_t size,
-> +				  size_t length,
-> +				  enum dma_data_direction direction)
-> +{
-> +}
-> +
-> +static void *dmabuf_kmap_atomic(struct dma_buf *buf, unsigned long page)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static void dmabuf_kunmap_atomic(struct dma_buf *buf, unsigned long page,
-> +				 void *vaddr)
-> +{
-> +}
-> +
-> +static void *dmabuf_kmap(struct dma_buf *buf, unsigned long page)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static void dmabuf_kunmap(struct dma_buf *buf, unsigned long page, void *vaddr)
-> +{
-> +}
-> +
-> +static void dmabuf_vm_open(struct vm_area_struct *vma)
-> +{
-> +}
-> +
-> +static void dmabuf_vm_close(struct vm_area_struct *vma)
-> +{
-> +}
-> +
-> +static int dmabuf_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> +{
-> +	return 0;
-> +}
-> +
-> +static const struct vm_operations_struct dmabuf_vm_ops = {
-> +	.open = dmabuf_vm_open,
-> +	.close = dmabuf_vm_close,
-> +	.fault = dmabuf_vm_fault,
-> +};
-> +
-> +static int dmabuf_mmap(struct dma_buf *buf, struct vm_area_struct *vma)
-> +{
-> +	pgprot_t prot = vm_get_page_prot(vma->vm_flags);
-> +	struct dmabuf_file *priv = buf->priv;
-> +
-> +	vma->vm_flags |= VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP;
-> +	vma->vm_ops = &dmabuf_vm_ops;
-> +	vma->vm_private_data = priv;
-> +	vma->vm_page_prot = pgprot_writecombine(prot);
-> +
-> +	return remap_pfn_range(vma, vma->vm_start, priv->phys >> PAGE_SHIFT,
-> +			       vma->vm_end - vma->vm_start, vma->vm_page_prot);
-> +}
-> +
-> +static void *dmabuf_vmap(struct dma_buf *buf)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static void dmabuf_vunmap(struct dma_buf *buf, void *vaddr)
-> +{
-> +}
-> +
-> +static const struct dma_buf_ops dmabuf_ops = {
-> +	.attach = dmabuf_attach,
-> +	.detach = dmabuf_detach,
-> +	.map_dma_buf = dmabuf_map_dma_buf,
-> +	.unmap_dma_buf = dmabuf_unmap_dma_buf,
-> +	.release = dmabuf_release,
-> +	.begin_cpu_access = dmabuf_begin_cpu_access,
-> +	.end_cpu_access = dmabuf_end_cpu_access,
-> +	.kmap_atomic = dmabuf_kmap_atomic,
-> +	.kunmap_atomic = dmabuf_kunmap_atomic,
-> +	.kmap = dmabuf_kmap,
-> +	.kunmap = dmabuf_kunmap,
-> +	.mmap = dmabuf_mmap,
-> +	.vmap = dmabuf_vmap,
-> +	.vunmap = dmabuf_vunmap,
-> +};
-> +
-> +static int dmabuf_file_open(struct inode *inode, struct file *file)
-> +{
-> +	struct dmabuf_file *priv;
-> +	int ret = 0;
-> +
-> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	file->private_data = priv;
-> +
-> +	return ret;
-> +}
-> +
-> +static int dmabuf_file_release(struct inode *inode, struct file *file)
-> +{
-> +	struct dmabuf_file *priv = file->private_data;
-> +	int ret = 0;
-> +
-> +	if (priv->virt)
-> +		dma_free_writecombine(NULL, priv->size, priv->virt, priv->phys);
-> +
-> +	if (priv->buf)
-> +		dma_buf_put(priv->buf);
-> +
-> +	kfree(priv);
-> +
-> +	return ret;
-> +}
-> +
-> +static int dmabuf_ioctl_create(struct dmabuf_file *priv, const void __user *data)
-> +{
-> +	struct dmabuf_create args;
-> +	int ret = 0;
-> +
-> +	if (priv->buf || priv->virt)
-> +		return -EBUSY;
-> +
-> +	if (copy_from_user(&args, data, sizeof(args)))
-> +		return -EFAULT;
-> +
-> +	priv->virt = dma_alloc_writecombine(NULL, args.size, &priv->phys,
-> +					    GFP_KERNEL | __GFP_NOWARN);
-> +	if (!priv->virt)
-> +		return -ENOMEM;
-> +
-> +	priv->buf = dma_buf_export(priv, &dmabuf_ops, args.size, args.flags);
-> +	if (!priv->buf) {
-> +		ret = -ENOMEM;
-> +		goto free;
-> +	}
-> +
-> +	if (IS_ERR(priv->buf)) {
-> +		ret = PTR_ERR(priv->buf);
-> +		goto free;
-> +	}
-> +
-> +	priv->size = args.size;
-> +
-> +	return 0;
-> +
-> +free:
-> +	dma_free_writecombine(NULL, priv->size, priv->virt, priv->phys);
-> +	priv->virt = NULL;
-> +	return ret;
-> +}
-> +
-> +static int dmabuf_ioctl_delete(struct dmabuf_file *priv, unsigned long flags)
-> +{
-> +	dma_free_writecombine(NULL, priv->size, priv->virt, priv->phys);
-> +	priv->virt = NULL;
-> +	priv->phys = 0;
-> +	priv->size = 0;
-> +
-> +	dma_buf_put(priv->buf);
-> +	priv->buf = NULL;
-> +
-> +	return 0;
-> +}
-> +
-> +static int dmabuf_ioctl_export(struct dmabuf_file *priv, unsigned long flags)
-> +{
-> +	int err;
-> +
-> +	get_dma_buf(priv->buf);
-> +
-> +	err = dma_buf_fd(priv->buf, flags);
-> +	if (err < 0)
-> +		dma_buf_put(priv->buf);
-> +
-> +	return err;
-> +}
-> +
-> +static long dmabuf_file_ioctl(struct file *file, unsigned int cmd,
-> +			      unsigned long arg)
-> +{
-> +	struct dmabuf_file *priv = file->private_data;
-> +	long ret = 0;
-> +
-> +	switch (cmd) {
-> +	case DMABUF_IOCTL_CREATE:
-> +		ret = dmabuf_ioctl_create(priv, (const void __user *)arg);
-> +		break;
-> +
-> +	case DMABUF_IOCTL_DELETE:
-> +		ret = dmabuf_ioctl_delete(priv, arg);
-> +		break;
-> +
-> +	case DMABUF_IOCTL_EXPORT:
-> +		ret = dmabuf_ioctl_export(priv, arg);
-> +		break;
-> +
-> +	default:
-> +		ret = -ENOTTY;
-> +		break;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static const struct file_operations dmabuf_fops = {
-> +	.owner = THIS_MODULE,
-> +	.open = dmabuf_file_open,
-> +	.release = dmabuf_file_release,
-> +	.unlocked_ioctl = dmabuf_file_ioctl,
-> +};
-> +
-> +static struct miscdevice dmabuf_device = {
-> +	.minor = 128,
-> +	.name = "dmabuf",
-> +	.fops = &dmabuf_fops,
-> +};
-> +
-> +static int __init dmabuf_init(void)
-> +{
-> +	return misc_register(&dmabuf_device);
-> +}
-> +module_init(dmabuf_init);
-> +
-> +static void __exit dmabuf_exit(void)
-> +{
-> +	misc_deregister(&dmabuf_device);
-> +}
-> +module_exit(dmabuf_exit);
-> +
-> +MODULE_AUTHOR("Thierry Reding <treding@nvidia.com>");
-> +MODULE_DESCRIPTION("DMA-BUF test driver");
-> +MODULE_LICENSE("GPL v2");
-> -- 
-> 1.8.4.2
+> > > b) d_path() not fitting into 2Mb is definitely a bug.  If you really have
+> > > managed to get a dentry tree 1 million levels deep, you have much worse
+> > > problems.
+> > > c) which kernel version it is?
+> > 
+> > 3.10. I can't imagine this is an actual dentry tree somewhere, probably
+> > just a bug of some sort. I'll probably hunt it down completely some time
+> > next week, time permitting.
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> Sounds like missing backport of 118b23 ("cope with potentially long ->d_dname()
+> output for shmem/hugetlb").  It *is* in -stable (linux-3.10.y has it since
+> 3.10.17 as commit ad4c3c), but if your tree doesn't have it, that's the one
+> to try first...
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Yes that fixed it, thanks!
+
+Regards,
+
+Tvrtko
+
+
