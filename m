@@ -1,53 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab3LLUL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:11:58 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:45960 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab3LLUL4 (ORCPT
+	id S1751929Ab3LLUOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:14:41 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:52175 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab3LLUOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:11:56 -0500
+	Thu, 12 Dec 2013 15:14:38 -0500
+Message-ID: <52AA192B.9090906@wwwdotorg.org>
+Date: Thu, 12 Dec 2013 13:14:35 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131212180050.GC134240@sgi.com>
-References: <cover.1386790423.git.athorlton@sgi.com> <20131212180050.GC134240@sgi.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Dec 2013 12:11:34 -0800
-Message-ID: <CALCETrWfFRhjuoK8T9G8hecxsRxFPQ+qA0x7azoof1X5tuxruA@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] Add tunable to control THP behavior
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: thierry.reding@gmail.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 0/4] ARM: tegra: convert dts files of all Tegra platforms
+ to use pinctrl defines
+References: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1386240249-30786-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 10:00 AM, Alex Thorlton <athorlton@sgi.com> wrote:
-> This part of the patch adds a tunable to
-> /sys/kernel/mm/transparent_hugepage called threshold.  This threshold
-> determines how many pages a user must fault in from a single node before
-> a temporary compound page is turned into a THP.
+On 12/05/2013 03:44 AM, Laxman Dewangan wrote:
+> This patch series convert dts files of all Tegra's platforms to use the pinctron
+> dt-binding macro for better readability.
 
-Is there a setting that will turn off the must-be-the-same-node
-behavior?  There are workloads where TLB matters more than cross-node
-traffic (or where all the pages are hopelessly shared between nodes,
-but hugepages are still useful).
-
---Andy
+I've applied the series to Tegra's for-3.14/dt branch.
