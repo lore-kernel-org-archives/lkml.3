@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab3LLJq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 04:46:57 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:28769 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab3LLJqy (ORCPT
+	id S1751523Ab3LLJsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 04:48:11 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:53115 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab3LLJsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 04:46:54 -0500
-X-AuditID: cbfec7f4-b7f966d0000003d9-63-52a9860c5c3c
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH] kernel/locking: mutex: simplify access to the first entry in
- the wait-list
-Date: Thu, 12 Dec 2013 10:45:41 +0100
-Message-id: <1386841541-32244-1-git-send-email-andrzej.p@samsung.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCJMWRmVeSWpSXmKPExsVy+t/xa7o8bSuDDG4c5rOY9bKdxeJs0xt2
-	i8u75rBZrD1yl93i0oEFTBbHew8wObB5bF6h5fF+31U2j74tqxg9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4MrYNf0UW8EJ9op7N1ezNjAuZOti5OSQEDCRWDVjLxOELSZx4d56oDgXh5DAUkaJ/reX
-	mCCcfiaJMy3nWEGq2ASMJfYe7GAEsUUEFCQ29z5jBSliFrjGKPHzxxKwImGBWIn2niXMIDaL
-	gKrExG9LwRp4BVwlVj1fywyxTl7i6f0+tgmM3AsYGVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn
-	525ihITElx2Mi49ZHWIU4GBU4uF9cXBFkBBrYllxZe4hRgkOZiURXpfUlUFCvCmJlVWpRfnx
-	RaU5qcWHGJk4OKUaGCf8ta0v2MWvuZ4r3oTx26u30T79+xSPntB5uvTB847P9TV7VBfFJ5XI
-	rM2ZN3u7zk81q9q/8zTLnyZc7XxnsydV5IlC+b1IBYl9xuYlfxQnSRuHcux6va9DZNqe0Mt+
-	DMFLTz/eyGfy8vWVrP9qIt8MMm4zHIrVkr8XUJH/y2bdmrorsW+3b1ZiKc5INNRiLipOBAB8
-	/Yh55wEAAA==
+	Thu, 12 Dec 2013 04:48:06 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: panchaxari <panchaxari.prasannamurthy@linaro.org>, kgene.kim@samsung.com
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH CFT] ARM:S5P64X0: Enable ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR by default
+Date: Thu, 12 Dec 2013 10:47:58 +0100
+Message-ID: <26167386.hX5eWUjT6T@flatron>
+User-Agent: KMail/4.11.4 (Linux/3.12.2-gentoo; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <1386825152-398-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+References: <1386825152-398-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use list_first_entry instead of explicitly accessing the first entry
-with "head".next. The comment one line above becomes obsolete.
+Hi panchaxari,
 
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Kyungmin Park <andrzej.p@samsung.com>
----
- kernel/locking/mutex.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+On Thursday 12 of December 2013 10:42:32 panchaxari wrote:
+> ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR have been enabled as default configs
+> to S5P64X0 platforms.
+> 
+> Introduction of PHYS_VIRT config as default would enable phy-to-virt and
+> virt-to-phy translation function at boot and module loading time
+> and enforce dynamic reallocation of memory. AUTO_ZRELADDR config would
+> enable calculation of kernel load address at run time.
+> 
+> PHYS_VIRT config is mutually exclusive to XIP_KERNEL, XIP_KERNEL is used in
+> systems with NOR flash devices, and ZRELADDR config is mutually exclusive
+> to ZBOOT_ROM.
+> 
+> CFT::Call For Testing
+> 
+> Requesting maintainers of S5P64X0 platforms to evaluate the changes on the
+> board and comment, as I dont have the board for testing and also requesting
+> an ACK
 
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 4dd6e4c..4af4f9c 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -730,10 +730,9 @@ __mutex_unlock_common_slowpath(atomic_t *lock_count, int nested)
- 		atomic_set(&lock->count, 1);
- 
- 	if (!list_empty(&lock->wait_list)) {
--		/* get the first entry from the wait-list: */
- 		struct mutex_waiter *waiter =
--				list_entry(lock->wait_list.next,
--					   struct mutex_waiter, list);
-+				list_first_entry(&lock->wait_list,
-+						 struct mutex_waiter, list);
- 
- 		debug_mutex_wake_waiter(lock, waiter);
- 
--- 
-1.7.0.4
+Could you explain the purpose of this change on S5P64x0?
+
+This is actually quite a poor platform choice. As of today, the kernel
+is stuck with supporting just SMDK6440/6450 boards, which are proprietary
+development boards and it doesn't look like any further boards will show
+up in future. Kukjin has actually proposed removing support for this
+platform at all and I consider this reasonable.
+
+Kukjin, should we proceed with removal?
+
+Best regards,
+Tomasz
 
