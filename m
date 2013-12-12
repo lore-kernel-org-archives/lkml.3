@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab3LLPoa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:44:30 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38962 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab3LLPo1 (ORCPT
+	id S1751715Ab3LLPov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:44:51 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56397 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751674Ab3LLPou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:44:27 -0500
-Date: Thu, 12 Dec 2013 15:44:20 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH tty-next 0/4] tty: Fix ^C echo
-Message-ID: <20131212154420.6f8036a2@alan.etchedpixels.co.uk>
-In-Reply-To: <52A93498.4030803@hurleysoftware.com>
-References: <1386018725-4781-1-git-send-email-peter@hurleysoftware.com>
-	<20131203000116.0d512b59@alan.etchedpixels.co.uk>
-	<529D4E58.9020101@hurleysoftware.com>
-	<20131203142011.371067ea@alan.etchedpixels.co.uk>
-	<529F698C.6040603@hurleysoftware.com>
-	<20131205001315.3ac390d6@alan.etchedpixels.co.uk>
-	<52A93498.4030803@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Thu, 12 Dec 2013 10:44:50 -0500
+Date: Thu, 12 Dec 2013 10:44:46 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
+ implementation
+Message-ID: <20131212104446.40b616c3@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1312121600020.28330@ionos.tec.linutronix.de>
+References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
+	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
+	<20131212080314.GA25783@infradead.org>
+	<alpine.DEB.2.02.1312121147130.28330@ionos.tec.linutronix.de>
+	<52A9CCA6.6040806@windriver.com>
+	<20131212095533.1fab411f@gandalf.local.home>
+	<alpine.DEB.2.02.1312121600020.28330@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Worth me looking into ?
+On Thu, 12 Dec 2013 16:25:42 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> On Thu, 12 Dec 2013, Steven Rostedt wrote:
+> > On Thu, 12 Dec 2013 09:48:06 -0500
+> > Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+> >  
+> > > 1) git mv wait.[ch] --- > cwait.[ch]
+> > >    make an empty wait.h include cwait.h temporarily
+> > > 
+> > > 2) rename all existing functions in cwait.[ch] to have an added
+> > >   "c" prefix (or similar)
+> > >    
+> > >    in wait.h, temporarily add a bunch of things like
+> > >           #define wait_xyz  cwait_xyz
+> > >    so that things still compile and link.
+> > 
+> > What about instead change all users of wait_*() to cwait_*().
+> > 
+> > Then the next steps would be to skip 3 and jump right to 4)
+> > 
+> > > 
+> > > 3) track down the users who really need the extra complexity
+> > >    and have them use cwait calls and include cwait.h
+> > > 
+> > > 4) bring in the simple wait queue support as wait.c and wait.h
+> > >    and delete the defines added in step two.  This will be the
+> > >    flag day commit.
+> > 
+> > Not a flag day commit, as no one is using it. Then start converting all
+> > users back to the wait_*() functions one at a time. If something
+> > breaks, we know which one it was.
 > 
-> I have to give this a lot more thought.
+> I don't think its a good idea to flip the name spaces.
 > 
-> The universality of n_tty is important, and costs real cycles on servers and
-> such. It's not just about typing speed.
+> We should rather convert the existing stuff over to cwait or whatever
+> and keep the swait for the new facility. So it breaks everything which
+> is trying to use wait*
+> 
+>        - out of tree code
+>        - students copying from ldd3
+>        - ...
+>        [ not that I care much about any of that ]
+> 
+> in a very obvious way.
+> 
 
-For most systems its about ppp performance and nothing much else in real
-use. I'm not arguing for this as an alternative to making n_tty better,
-but that it's a far better way to deal with a lot of the other stuff.
+That still happens in my approach too, in the same step. When the
+simple wait queue is added, everything will break that uses it when it
+should not have. That includes, out of tree code, students copying
+from ldd3, etc.
 
-If the GPU is allocating and freeing GEM objects a lot to do console then
-it's probably doing it wrong. Several of the drivers don't accelerate
-console (because of the locking issues) and others use the GPU to do
-blits because they don't implement memory management based tricks like
-double mapping the framebuffer and shifting offsets.
+And it too will break in a very obvious way.
 
-Some of the userspace is also not really optimised for modern 3D graphics
-either - a text terminal is after all just a big texture that moves
-offset and gets the content updated now and then.
-
-For low speed devices its also generally broken because the framebuffer
-layer is obsessed with printing *everything* and scrolling everything,
-not blasting through the text data and reconstructing the framebuffer
-level changes once per vblank. The result of doing an ugly hack on that
-is quite extra-ordinary even on vesafb.
-
-Alan
+-- Steve
