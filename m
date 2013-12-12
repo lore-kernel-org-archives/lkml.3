@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab3LLUhY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:37:24 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45843 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab3LLUhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:37:05 -0500
-Date: Thu, 12 Dec 2013 21:36:56 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
-        mjg59@srcf.ucam.org, hpa@zytor.com,
-        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
-        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
-        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
-Subject: Re: [PATCH v5 08/14] efi: export efi runtime memory mapping to sysfs
-Message-ID: <20131212203656.GC26927@pd.tnic>
-References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
- <1386582147-9802-9-git-send-email-dyoung@redhat.com>
- <20131211185520.GG23793@pd.tnic>
- <20131212023617.GF3751@dhcp-16-126.nay.redhat.com>
- <20131212071337.GI3751@dhcp-16-126.nay.redhat.com>
+	id S1752104Ab3LLUhn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:37:43 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:61901 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab3LLUhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 15:37:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20131212071337.GI3751@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386787041-6035-5-git-send-email-syin@broadcom.com>
+References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
+	<1386787041-6035-1-git-send-email-syin@broadcom.com>
+	<1386787041-6035-5-git-send-email-syin@broadcom.com>
+Date: Thu, 12 Dec 2013 21:37:36 +0100
+Message-ID: <CACRpkdY7s+eUFkg0AsaN5B9-1y_mTJ29Y-D9CkRG2GQ3JshP+w@mail.gmail.com>
+Subject: Re: [PATCH v3 4/6] pinctrl: Add pinctrl binding for Broadcom Capri SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 03:13:37PM +0800, Dave Young wrote:
-> BTW, I will restructure the whole code when I move them to
-> efi_kexec.c, so no worry about it? If you have strong opinion I can
-> move them though.
+On Wed, Dec 11, 2013 at 7:37 PM, Sherman Yin <syin@broadcom.com> wrote:
 
-Well, if it were me, I'd do it now so that it'll see more testing.
-Later, it will be only a mechanical move of those functions which belong
-to efi_kexec.c and won't need a second testing.
+> Adds pinctrl driver devicetree binding for Broadcom Capri (BCM281xx) SoCs.
+>
+> Signed-off-by: Sherman Yin <syin@broadcom.com>
+> Reviewed-by: Christian Daudt <bcm@fixthebug.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
+> ---
+> v3: Use generic pin config properties instead of brcm-specific ones.  Clarified
+>     pin types (standard, i2c, hdmi).
+> v2: Use hyphens instead of underscore in DT property names.
 
-:-)
+Overall this is very nice!
 
--- 
-Regards/Gruss,
-    Boris.
+> +- bias-pull-up:                        Integer. Pull up strength in Ohm:
+> +                                       1: 1.2 kOhm
+> +                                       2: 1.8 kOhm
+> +                                       3: 720 Ohm
+> +                                       4: 2.7 kOhm
+> +                                       5: 831 Ohm
+> +                                       6: 1.08 kOhm
+> +                                       7: 568 Ohm
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Please do not use these custom enumerators 1 thru 7.
+Instead say that the argument is given in ohms, so for
+example:
+
+bias-pull-up = <12000>;
+
+Then translate this into the proper enumerator in your
+driver instead.
+
+No full example provided in the binding! This needs to
+be there for understanding.
+
+Yours,
+Linus Walleij
