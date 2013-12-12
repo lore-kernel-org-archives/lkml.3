@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431Ab3LLAnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:43:10 -0500
-Received: from alt-proxy11.mail.unifiedlayer.com ([74.220.211.241]:58027 "HELO
-	alt-proxy11.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750894Ab3LLAnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:43:07 -0500
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Dec 2013 19:43:07 EST
-Date: Wed, 11 Dec 2013 16:38:12 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Resume regression in 5a87182aa21d6d5d306840feab9321818dd3e2a3
-Message-ID: <20131211163812.297d4c81@jbarnes-desktop>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1751475Ab3LLAuJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:50:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:57516 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751000Ab3LLAuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:50:07 -0500
+Date: Thu, 12 Dec 2013 11:49:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jasowang@redhat.com,
+        wuzhy@linux.vnet.ibm.com
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20131212114959.b08ea67fe5624ed6fb392c52@canb.auug.org.au>
+In-Reply-To: <20131211.193639.2058525533631918382.davem@davemloft.net>
+References: <20131212111539.cff1b2efe934c5cd7abbb822@canb.auug.org.au>
+	<20131211.193639.2058525533631918382.davem@davemloft.net>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__12_Dec_2013_11_49_59_+1100_l7Ft+cYyYJQzS3ag"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On one of my BYT systems, I see a hang at resume.  Based on my bisect,
-it looks like this commit is the culprit:
+--Signature=_Thu__12_Dec_2013_11_49_59_+1100_l7Ft+cYyYJQzS3ag
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-commit 5a87182aa21d6d5d306840feab9321818dd3e2a3
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Wed Nov 27 09:09:42 2013 +0530
+Hi Dave,
 
-    cpufreq: suspend governors on system suspend/hibernate
+On Wed, 11 Dec 2013 19:36:39 -0500 (EST) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 12 Dec 2013 11:15:39 +1100
+>=20
+> > Today's linux-next merge of the net-next tree got a conflict in
+> > drivers/net/macvtap.c between commit ce232ce01d61 ("macvtap: signal
+> > truncated packets") from the net tree and commit 55ec8e25cd97 ("macvtap:
+> > remove unused parameter in macvtap_do_read()") from the net-next tree.
+> >=20
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+>=20
+> The net-next commit in question was reverted last night.
 
-Is this a known issue?  If so, is there a fix somewhere already?
+Actually, the only relevant revert in the net-next tree I fetched this
+morning is commit de2aa4760b45 (Revert "macvtap: remove useless codes in
+macvtap_aio_read() and macvtap_recvmsg()") which reverts 41e4af69a598,
+not the commit mentioned above.  Unless you haven't pushed out the
+net-next tree with a later revert ...
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__12_Dec_2013_11_49_59_+1100_l7Ft+cYyYJQzS3ag
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSqQg7AAoJEMDTa8Ir7ZwVjpAP/AyN0v9W5YtbUqPpOlQvIUAB
+OjX+lGyujzgnTtXx9yK6iydMe/w7UfIr6DpZJEZmvHLWtpokloVub0XAJ7ryIFKz
+2O5t45imCX5PWkydKif6hs3/6TkHvpCZJ2pXmiYisci44RhcuGyfNfQ8vDPkjteQ
+N4ToUNLGJKuzvccxiufesygOBdbcrAtCIJNw/IiyRClxjGzi7pUcwgWigLf8W3bT
+p/xOhFPO8A5Ny2KjtOGEuxxZTg2ecqrOf1oO2TB5GL7qpnInf/dNjE0nQgxq/HPW
+aRPbZUHJUbXC+2JZ9M1zaV3atW3o8Ely1+puIeLPM6csLuDEuEiFn22upVcwjraw
+aeL9yXq6B7S/sil65I/e5vGxuYj0xCwimEIqm7OHXBVx8LxSNivk3MTTnc556FjF
+rPjVx+meG3z7zumODmAl3jDQhVkBTgqj0D7YmjisRLWyC1fx6Im65Ae/dhuBtfm2
+Ma8Y1vrXSLdjNOBkhKNyZK+TRG9hUv5jwHF+AW9TOFRbXn8vMD5/VUxA8ZkTGpNA
+F1OXpRCyh/C8+2DoAaChC8M98ryzJzsB7yWmYOyHMUjSlmoM/2rIPvefO4tN93VA
+ve6VbXzFDk7Jcx/skRzdrJ81nPZMCDNnyD+yb6HKtA0N8DxzGETuKoJj5oTayx5V
+GJl0KnBAhN2KzYUrvhyr
+=WM7r
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__12_Dec_2013_11_49_59_+1100_l7Ft+cYyYJQzS3ag--
