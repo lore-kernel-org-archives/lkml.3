@@ -1,113 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab3LLKrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 05:47:51 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:8347 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab3LLKro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 05:47:44 -0500
-X-AuditID: cbfee68d-b7f5c6d000004aff-e4-52a994267931
-Sun-Java-System-SMTP-Warning: Lines longer than SMTP allows found and wrapped.
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Shawn Guo'" <shawn.guo@linaro.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "'Jason Cooper'" <jason@lakedaemon.net>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'Simon Horman'" <horms@verge.net.au>,
-        "'Magnus Damm'" <magnus.damm@gmail.com>,
-        "'Valentine Barshak'" <valentine.barshak@cogentembedded.com>,
-        "'Wei Yongjun'" <weiyj.lk@gmail.com>,
-        "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
-        "'Kuninori Morimoto'" <kuninori.morimoto.gx@renesas.com>,
-        "'Richard Zhu'" <r65037@freescale.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20131211183237.GI4699@google.com>
- <20131212070045.GO18380@S2101-09.ap.freescale.net>
-In-reply-to: <20131212070045.GO18380@S2101-09.ap.freescale.net>
-Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada,
- R-Car PCI host maintainers
-Date: Thu, 12 Dec 2013 19:47:02 +0900
-Message-id: <000001cef727$7da93730$78fba590$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac73B95+D+q0LgTVQsqSi56IVEJ94QAHrlAA
-Content-language: ko
-x-cr-hashedpuzzle: NMmu T99r oEbd ucm2 1kC0 +2dK AGoflw== AJcMfg== AJu0iw==
- AMspug== ASARwg== AVCWQg== Aa5G4g== AbG/Ow== Acck4g==
- AdhLcA==;18;YgBoAGUAbABnAGEAYQBzAEAAZwBvAG8AZwBsAGUALgBjAG8AbQA7AGgAbwByAG0AcwBAAHYAZQByAGcAZQAuAG4AZQB0AC4AYQB1ADsAagBhAHMAbwBuAEAAbABhAGsAZQBkAGEAZQBtAG8AbgAuAG4AZQB0ADsAagBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGsAdQBuAGkAbgBvAHIAaQAuAG0AbwByAGkAbQBvAHQAbwAuAGcAeABAAHIAZQBuAGUAcwBhAHMALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGEAcgBtAC0AawBlAHIAbgBlAGwAQABsAGkAcwB0AHMALgBpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHAAYwBpAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBzAGEAbQBzAHUAbgBnAC0AcwBvAGMAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHMAaABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AdABlAGcAcgBhAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAGEAZwBuAHUAcwAuAGQAYQBtAG0AQABnAG0AYQBpAGwALgBjAG8AbQA7AHIANgA1ADAAMwA3AEAAZgByAGUAZQBzAGMAYQBsA
-	GUALgBjAG8AbQA7AHMAaABhAHcAbgAuAGcAdQBvAEAAbABpAG4AYQByAG8ALgBvAHIAZwA7AHQAaABpAGUAcgByAHkALgByAGUAZABpAG4AZwBAAGcAbQBhAGkAbAAuAGMAbwBtADsAdgBhAGwAZQBuAHQAaQBuAGUALgBiAGEAcgBzAGgAYQBrAEAAYwBvAGcAZQBuAHQAZQBtAGIAZQBkAGQAZQBkAC4AYwBvAG0AOwB3AGUAaQB5AGoALgBsAGsAQABnAG0AYQBpAGwALgBjAG8AbQA7AHkAbwBuAGcAagB1AG4AXwB3AGUAaQBAAHQAcgBlAG4AZABtAGkAYwByAG8ALgBjAG8AbQAuAGMAbgA=;Sosha1_v1;7;{50875A60-8A19-4619-B587-36DE4738979F};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 12 Dec 2013 10:46:34
- GMT;UgBlADoAIABbAFAAQQBUAEMASABdACAATQBBAEkATgBUAEEASQBOAEUAUgBTADoAIABBAGQAZAAgAEQAZQBzAGkAZwBuAFcAYQByAGUALAAgAGkALgBNAFgANgAsACAAQQByAG0AYQBkAGEALAAgAFIALQBDAGEAcgAgAFAAQwBJACAAaABvAHMAdAAgAG0AYQBpAG4AdABhAGkAbgBlAHIAcwA=
-x-cr-puzzleid: {50875A60-8A19-4619-B587-36DE4738979F}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEKsWRmVeSWpSXmKPExsVy+t8zY121KSuDDB6d0rdY0pRh8fKQpkXz
-	1q+MFo1LLrNYXF54idXi1eFdjBabHl9jtbi8aw6bxdl5x9ksZpzfx2Qx588UZovOL7PYLB6s
-	fstm8XiWsMXTdUuYLX7umsdisfzeSSaLD5eOMlvsXNfJ7iDs8WDqfyaPf4f7mTx2zrrL7rFg
-	U6lHw4HzLB53ru1h89i8pN7j25mJLB59W1Yxeiy9d5TRY87PbywenzfJBfBEcdmkpOZklqUW
-	6dslcGVcavrBWnCAvWLN/X7GBsYmti5GTg4JAROJ3x13mSBsMYkL99YDxbk4hASWMUr82/WX
-	Babo+/NjTBCJ6YwSLQvPQ1X9YpQ4P3Ea2ChhAT+JpjmTmEFsNgE1iS9fDrOD2CICvhI3+i4w
-	gjQwCzSwSlz6uRlsn5BAssSaFz/AmjkF7CXuf3nKBDEoVuJtwxuwOIuAqsTeZdvBbF4BW4nm
-	Xx+gbEGJH5PvgZ3HLKAlsX7ncSYIW15i85q3QEdwAJ2tLvHory7EDUYSd378ZIcoEZHY9+Id
-	2D0SAjd4JV6v+MEO8aapxNPdd9khEtM5JX69X84EcYSAxLfJh1gghspKbDrADFEvKXFwxQ2W
-	CYzSs5CcNAvJSbOQnDQLye4FjCyrGEVTC5ILipPSiwz1ihNzi0vz0vWS83M3MULSV+8OxtsH
-	rA8xJgOtn8gsJZqcD0x/eSXxhsZmRhamJqbGRuaWZqQJK4nzJj1MChISSE8sSc1OTS1ILYov
-	Ks1JLT7EyMTBKdXAeEQ1g3V1O4fu8jv1n00SAvQuWaXJvohetNHc2bXVzIlbwtj9Uk9wxJnk
-	E1fj9K+JvvvoNT+RNeBnZ1CZxO2LD21OTOnR4OVSP8ySz+RrqrC7hcO2qiTLd7dOwrNZqQrq
-	Hp32KiVRL7NyhbnLJ7tN47zwJHW6mf+Bm//qGzVeSsw72f7F3EyJpTgj0VCLuag4EQBB5YzJ
-	dQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPJsWRmVeSWpSXmKPExsVy+t9jQV21KSuDDP5e1bRY0pRh8fKQpkXz
-	1q+MFo1LLrNYXF54idXi1eFdjBabHl9jtbi8aw6bxdl5x9ksZpzfx2Qx588UZovOL7PYLB6s
-	fstm8XiWsMXTdUuYLX7umsdisfzeSSaLD5eOMlvsXNfJ7iDs8WDqfyaPf4f7mTx2zrrL7rFg
-	U6lHw4HzLB53ru1h89i8pN7j25mJLB59W1Yxeiy9d5TRY87PbywenzfJBfBENTDaZKQmpqQW
-	KaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gB9qKRQlphTChQKSCwu
-	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuNT0g7XgAHvFmvv9jA2MTWxdjJwcEgImEt+f
-	H2OCsMUkLtxbDxTn4hASmM4o0bLwPJTzi1Hi/MRpYB3CAn4STXMmMYPYbAJqEl++HGYHsUUE
-	fCVu9F1gBGlgFmhglbj0czPYWCGBZIk1L36ANXMK2Evc//KUCWJQrMTbhjdgcRYBVYm9y7aD
-	2bwCthLNvz5A2YISPybfYwGxmQW0JNbvPM4EYctLbF7zFugIDqCz1SUe/dWFuMFI4s6Pn+wQ
-	JSIS+168A7tHQuAGr8TrFT/YId40lXi6+y77BEbRWUhWzEKyYhaSFbOQzFrAyLKKUTS1ILmg
-	OCk910ivODG3uDQvXS85P3cTIzg5PpPewbiqweIQowAHoxIP74uDK4KEWBPLiitzDzFKcDAr
-	ifC6pK4MEuJNSaysSi3Kjy8qzUktPsSYDAyBicxSosn5wMSdVxJvaGxiZmRpZGZhZGJuTpqw
-	kjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MLbOD9gb2cd90Mby57rnCxAWzo/0SYy4Zi8t0
-	60/7XiDUPXfx4pWsxodCttukfvxukXGmSfHmS9ECgU8rpT7tnbtKzUmb23929PE3fS7b44SM
-	jzJVzjbpV9ml3X7s+ZFeReunmUdPq3lM1zE7W1l0MmEzx+eCa5M8Dq5Ky9HJ0Vx612SbscBh
-	JZbijERDLeai4kQA5f88z9IDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751222Ab3LLKuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 05:50:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55040 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415Ab3LLKuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 05:50:09 -0500
+Date: Thu, 12 Dec 2013 11:50:03 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+Message-ID: <20131212105003.GC2630@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com>
+ <20131204111318.GE8410@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com>
+ <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+ <20131210103827.GB20242@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
+ <20131211095549.GA18741@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
+ <20131212103159.GB2630@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131212103159.GB2630@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 12, 2013 4:01 PM, Shawn Guo wrote:
-> On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
-> > +PCI DRIVER FOR IMX6
-> > +M:	Shawn Guo <shawn.guo@linaro.org>
+On Thu 12-12-13 11:31:59, Michal Hocko wrote:
+[...]
+> > > Anyway.
+> > > Does the reclaim make any sense for PF_EXITING tasks? Shouldn't we
+> > > simply bypass charges of these tasks automatically. Those tasks will
+> > > free some memory anyway so why to trigger reclaim and potentially OOM
+> > > in the first place? Do we need to go via TIF_MEMDIE loop in the first
+> > > place?
+> > > 
+> > 
+> > I don't see any reason to make an optimization there since they will get 
+> > TIF_MEMDIE set if reclaim has failed on one of their charges or if it 
+> > results in a system oom through the page allocator's oom killer.
 > 
-> Thanks for the nomination.  But I think a better person for this
-> position would be Richard Zhu <r65037@freescale.com> (copied).  He knows
-> the driver and controller much better than myself, and most importantly
-> he is the driver owner for Freescale kernel and he has the contact to
-> Freescale PCIe hardware people.
-
-I agree with Shawn Guo's opinion. :-)
-
-Richard Zhu has been maintaining i.MX6 PCIe driver. Also he can contact
-Freescale PCIe hardware engineers. Thus, he is the appropriate person
-for the Maintainer of i.MX PCIe.
-
-Best regards,
-Jingoo Han
-
+> This all will happen after MEM_CGROUP_RECLAIM_RETRIES full reclaim
+> rounds. Is it really worth the addional overhead just to later say "OK
+> go ahead and skipp charges"?
+> And for the !oom memcg it might reclaim some pages which could have
+> stayed on LRUs just to free some memory little bit later and release the
+> memory pressure.
+> So I would rather go with
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c72b03bf9679..fee25c5934d2 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+>  	 * MEMDIE process.
+>  	 */
+>  	if (unlikely(test_thread_flag(TIF_MEMDIE)
+> -		     || fatal_signal_pending(current)))
+> +		     || fatal_signal_pending(current))
+> +		     || current->flags & PF_EXITING)
+>  		goto bypass;
+>  
+>  	if (unlikely(task_in_memcg_oom(current)))
 > 
-> Shawn
-> 
-> > +L:	linux-pci@vger.kernel.org
-> > +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> > +S:	Maintained
-> > +F:	drivers/pci/host/*imx6*
+> rather than the later checks down the oom_synchronize paths. The comment
+> already mentions dying process...
 
+With the full changelog. I will repost it in a separate thread if you
+are OK with this.
+---
+>From 6e24846f531bb1cc2e68383abf9a6c63b4ee1f78 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 12 Dec 2013 11:37:27 +0100
+Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
+
+Eric has reported that he can see task(s) stuck in memcg OOM handler
+regularly. The only way out is to
+	echo 0 > $GROUP/memory.oom_controll
+His usecase is:
+- Setup a hierarchy with memory and the freezer
+  (disable kernel oom and have a process watch for oom).
+- In that memory cgroup add a process with one thread per cpu.
+- In one thread slowly allocate once per second I think it is 16M of ram
+  and mlock and dirty it (just to force the pages into ram and stay there).
+- When oom is achieved loop:
+  * attempt to freeze all of the tasks.
+  * if frozen send every task SIGKILL, unfreeze, remove the directory in
+    cgroupfs.
+
+Eric has then pinpointed the issue to be memcg specific.
+
+All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+Those that have received fatal signal will bypass the charge and should
+continue on their way out. The tricky part is that the exit path might
+trigger a page fault (e.g. exit_robust_list) thus the memcg charge
+while its memcg is still under OOM because nobody has released any
+charges. Unlike with the in-kernel OOM handler the exiting task doesn't
+get TIF_MEMDIE set so it doesn't shortcut charges and falls to the
+memcg OOM again without any way out of it as there are no fatal signals
+pending anymore.
+
+This patch fixes the issue by checking PF_EXITING early in
+__mem_cgroup_try_charge and bypass the charge same as if it had fatal
+signal pending or TIF_MEMDIE set.
+
+Normally (not killed) exiting tasks will bypass the charge now but
+this should be OK as the task is leaving and will release memory and
+increasing the memory pressure just to release it in a moment seems
+dubious wasting of cycles. Besides that charges after exit_signals
+should be rare.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c72b03bf9679..98900c070045 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2692,7 +2692,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 	 * MEMDIE process.
+ 	 */
+ 	if (unlikely(test_thread_flag(TIF_MEMDIE)
+-		     || fatal_signal_pending(current)))
++		     || fatal_signal_pending(current))
++		     || current->flags & PF_EXITING)
+ 		goto bypass;
+ 
+ 	if (unlikely(task_in_memcg_oom(current)))
+-- 
+1.8.4.4
+
+
+-- 
+Michal Hocko
+SUSE Labs
