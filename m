@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab3LLVZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 16:25:08 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51200 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751600Ab3LLVZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 16:25:04 -0500
-Date: Thu, 12 Dec 2013 22:24:54 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Brecht Machiels <brecht@mos6581.org>, linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
-Message-ID: <20131212212454.GC30162@pd.tnic>
-References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org>
- <529CF1D5.6010406@linaro.org>
- <20131202211958.GE7380@pd.tnic>
- <l7ppbg$brg$1@ger.gmane.org>
- <52AA10F4.6070108@linaro.org>
- <52AA27C7.3090206@linaro.org>
+	id S1751971Ab3LLV0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 16:26:52 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:49256 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3LLV0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 16:26:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52AA27C7.3090206@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386659456-16887-1-git-send-email-ldewangan@nvidia.com>
+References: <1386659456-16887-1-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 12 Dec 2013 22:26:48 +0100
+Message-ID: <CACRpkdbCkt3gm9YLW2B0=Ox4iw0Jdac1NrX0QcwwTL6uFCENZw@mail.gmail.com>
+Subject: Re: [PATCH V3 1/2] pinctrl: tegra: Add devicetree binding document
+ for Tegra124
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 01:16:55PM -0800, John Stultz wrote:
-> Borislav: I'd like to add your tested by too, if you've had the
-> chance.
+On Tue, Dec 10, 2013 at 8:10 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 
-Sorry John, I still see you on the todo list but haven't had a chance due to
-more pressing issues. :-\
+> This device tree binding document describes the Tegra124 pincontrol
+> DT bindings. This document lists all valid properties, names, mux
+> options of Tegra124 pins.
+>
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes from V1:
+> - Referred the dt-binding header file on describing the nodes.
+>
+> Changes from V2:
+> - Rewording reg properties.
+> - drop drv_type as it is not applicable.
 
-Tell you what: I'll try to find some time over the weekend to reinstall
-the box which has the issue and will give it a run. You could go ahead
-and commit it but keep it on top of a branch in case it needs to be
-reverted. :-)
+Applied this v3 version, thanks!
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yours,
+Linus Walleij
