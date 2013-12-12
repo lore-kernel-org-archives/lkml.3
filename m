@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802Ab3LLPMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:12:05 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:28793 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab3LLPMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:12:03 -0500
-X-IronPort-AV: E=Sophos;i="4.93,878,1378857600"; 
-   d="scan'208";a="81368906"
-Message-ID: <52A9D23F.3010005@citrix.com>
-Date: Thu, 12 Dec 2013 16:11:59 +0100
-From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        Julien Grall <julien.grall@linaro.org>
-CC: <xen-devel@lists.xenproject.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>, David Vrabel <david.vrabel@citrix.com>,
-        <patches@linaro.org>, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH v2] xen/block: Correctly define structures
- in public headers on ARM32 and ARM64
-References: <1386085237-8334-1-git-send-email-julien.grall@linaro.org> <1386857960.11201.57.camel@kazak.uk.xensource.com>
-In-Reply-To: <1386857960.11201.57.camel@kazak.uk.xensource.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-DLP: MIA1
+	id S1751776Ab3LLPOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:14:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751452Ab3LLPO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 10:14:29 -0500
+Date: Thu, 12 Dec 2013 09:14:22 -0600
+From: Clark Williams <williams@redhat.com>
+To: Ciprian Barbu <ciprian.barbu@linaro.org>
+Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linaro Networking <linaro-networking@linaro.org>
+Subject: Re: [PATCH] rt-tests: hackbench: fix for uninitialized start time
+Message-ID: <20131212091422.3b909d99@sluggy>
+In-Reply-To: <52A9CC77.20904@linaro.org>
+References: <52A9CC77.20904@linaro.org>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/gkPuJVomdyUk_aqQsKsKgqF"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/13 15:19, Ian Campbell wrote:
-> On Tue, 2013-12-03 at 15:40 +0000, Julien Grall wrote:
->> On ARM (32 bits and 64 bits), the double-word is 8-bytes aligned. This will
->> result on different structure from Xen and Linux repositories.
->>
->> As Linux is using __packed__ attribute, it must have a 4-bytes padding before
->> each "id" field.
->>
->> This change breaks guest block support with older kernel. IMHO, it's acceptable
->> because Xen on ARM is still on Tech Preview and the hypercall ABI is not yet
->> freezed.
->>
->> Only one architecture (x86_32) doesn't have 64-bit ABI for the block interface.
->> Don't add padding if Linux is compiled for this architecture.
-> 
-> Konrad asked for confirmation that this didn't change x86.
+--Sig_/gkPuJVomdyUk_aqQsKsKgqF
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I've also tested this using various combinations of kernels, and it
-seems to be perfectly fine, so:
+On Thu, 12 Dec 2013 16:47:19 +0200
+Ciprian Barbu <ciprian.barbu@linaro.org> wrote:
 
-Acked-by: Roger Pau Monné <roger.pau@citrix.com>
+> Hello,
+>=20
+> While playing around with hackbench I discovered that I would sometimes=20
+> get an enormous time reported, even if the run time would be less than a=
+=20
+> second or so. The problem was that the struct timeval start was not=20
+> initialized until after all children have been created. But if the=20
+> program receives a signal before this is done, the start time is left=20
+> uninitialized.
+>=20
+> I propose that in such situations an error message be displayed, like=20
+> the following patch does.
+>=20
+> Please let me know if this is acceptable.
+>=20
+> Regards,
+> /Ciprian
 
+Looks good to me. I've pulled it in for the next release.
+
+Clark
+
+--Sig_/gkPuJVomdyUk_aqQsKsKgqF
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iEYEARECAAYFAlKp0s4ACgkQHyuj/+TTEp1YWwCgx4Mc0kMgY4KfKEPsAQhcGT8+
+zJAAoMGiTCqYLYWm8cV+qg/D3aEaVONx
+=ED79
+-----END PGP SIGNATURE-----
+
+--Sig_/gkPuJVomdyUk_aqQsKsKgqF--
