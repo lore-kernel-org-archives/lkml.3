@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3LLXuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:50:23 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:46743 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab3LLXss (ORCPT
+	id S1752522Ab3LLXuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:50:46 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:42319 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab3LLXum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:48:48 -0500
-X-IronPort-AV: E=Sophos;i="4.95,475,1384300800"; 
-   d="scan'208";a="81618539"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v2 5/9] xen-netback: Add stat counters for zerocopy
-Date: Thu, 12 Dec 2013 23:48:13 +0000
-Message-ID: <1386892097-15502-6-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+	Thu, 12 Dec 2013 18:50:42 -0500
+Message-ID: <52AA4BC8.1080207@gmail.com>
+Date: Fri, 13 Dec 2013 10:50:32 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+To: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>	<20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+In-Reply-To: <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These counters help determine how often the buffers had to be copied. Also
-they help find out if packets are leaked, as if "sent != success + fail",
-there are probably packets never freed up properly.
+On 13/12/13 08:13, Kees Cook wrote:
+> On Thu, Dec 12, 2013 at 11:06 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
+>>> From: Vegard Nossum <vegard.nossum@oracle.com>
+>>>
+>>> The idea is simple -- since different kernel versions are vulnerable to
+>>> different root exploits, hackers most likely try multiple exploits before
+>>> they actually succeed.
+> 
+> I like this idea. It serves a few purposes, not the least of which is
+> very clearly marking in code where we've had problems, regardless of
+> the fact that it reports badness to the system owner. And I think
+> getting any additional notifications about bad behavior is a nice idea
+> too.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/common.h    |    3 +++
- drivers/net/xen-netback/interface.c |   15 +++++++++++++++
- drivers/net/xen-netback/netback.c   |    9 ++++++++-
- 3 files changed, 26 insertions(+), 1 deletion(-)
+Though, if an attacker is running through a series of exploits, and one
+eventually succeeds then the first thing to do would be to clean traces
+of the _exploit() notifications from the syslog. Since running through a
+series of exploits is pretty quick, this can probably all be done before
+the sysadmin ever notices.
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 419e63c..e3c28ff 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -155,6 +155,9 @@ struct xenvif {
- 
- 	/* Statistics */
- 	unsigned long rx_gso_checksum_fixup;
-+	unsigned long tx_zerocopy_sent;
-+	unsigned long tx_zerocopy_success;
-+	unsigned long tx_zerocopy_fail;
- 
- 	/* Miscellaneous private stuff. */
- 	struct net_device *dev;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index af5216f..75fe683 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -239,6 +239,21 @@ static const struct xenvif_stat {
- 		"rx_gso_checksum_fixup",
- 		offsetof(struct xenvif, rx_gso_checksum_fixup)
- 	},
-+	/* If (sent != success + fail), there are probably packets never
-+	 * freed up properly!
-+	 */
-+	{
-+		"tx_zerocopy_sent",
-+		offsetof(struct xenvif, tx_zerocopy_sent),
-+	},
-+	{
-+		"tx_zerocopy_success",
-+		offsetof(struct xenvif, tx_zerocopy_success),
-+	},
-+	{
-+		"tx_zerocopy_fail",
-+		offsetof(struct xenvif, tx_zerocopy_fail)
-+	},
- };
- 
- static int xenvif_get_sset_count(struct net_device *dev, int string_set)
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index a1b03e4..e2dd565 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1611,8 +1611,10 @@ static int xenvif_tx_submit(struct xenvif *vif, int budget)
- 		 * skb_copy_ubufs while we are still in control of the skb. E.g.
- 		 * the __pskb_pull_tail earlier can do such thing.
- 		 */
--		if (skb_shinfo(skb)->destructor_arg)
-+		if (skb_shinfo(skb)->destructor_arg) {
- 			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-+			vif->tx_zerocopy_sent++;
-+		}
- 
- 		netif_receive_skb(skb);
- 	}
-@@ -1645,6 +1647,11 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
- 		napi_schedule(&vif->napi);
- 	} while (ubuf);
- 	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
-+
-+	if (likely(zerocopy_success))
-+		vif->tx_zerocopy_success++;
-+	else
-+		vif->tx_zerocopy_fail++;
- }
- 
- static inline void xenvif_tx_action_dealloc(struct xenvif *vif)
+The _exploit() notifications could also be used to spam the syslogs.
+Although they are individually ratelimited, if there are enough
+_exploit() markers in the kernel then an annoying person can cycle
+through them all to generate large amounts of useless syslog.
+
+~Ryan
+
