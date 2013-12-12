@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3LLUCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:02:07 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8719 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751941Ab3LLUCC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:02:02 -0500
-Date: Thu, 12 Dec 2013 19:58:46 -0800
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
+	id S1751842Ab3LLUHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:07:17 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:39718 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3LLUHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 15:07:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+E=qVc4pNU_e5YjUZX7hG21FzS3omdd1XvgwFcHQy2z_Mnm8A@mail.gmail.com>
+References: <1385879185-22455-3-git-send-email-ynvich@gmail.com>
+	<1386348542-9584-1-git-send-email-ynvich@gmail.com>
+	<CACRpkdYVsGSyMS6sSTqqJ4XrE3GqpWkJsY7GDazi5ix7xjKQ=Q@mail.gmail.com>
+	<CA+E=qVc4pNU_e5YjUZX7hG21FzS3omdd1XvgwFcHQy2z_Mnm8A@mail.gmail.com>
+Date: Thu, 12 Dec 2013 21:07:13 +0100
+Message-ID: <CACRpkdZpwPhscWG_j-BM9bRZL-J7dRoX4=Q+Eo5Td9We6qvH0w@mail.gmail.com>
+Subject: Re: [PATCH v2 02/11] arm: pxa27x: support ICP DAS LP-8x4x
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: Sergei Ianovich <ynvich@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 1/2] gpio: msm: Fix irq mask/unmask by writing bits
- instead of numbers
-Message-ID: <20131213035845.GK11990@sonymobile.com>
-References: <1386717544-478-1-git-send-email-sboyd@codeaurora.org>
- <CACRpkdY8W8tGVH-Os5neeFfHWjojdB5fBbjgWcsWkiMyJj=YAA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CACRpkdY8W8tGVH-Os5neeFfHWjojdB5fBbjgWcsWkiMyJj=YAA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12 Dec 11:02 PST 2013, Linus Walleij wrote:
+On Tue, Dec 10, 2013 at 1:54 PM, Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+> On Tue, Dec 10, 2013 at 3:43 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-> On Wed, Dec 11, 2013 at 12:19 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> 
-> > We should be writing bits here but instead we're writing the
-> > numbers that correspond to the bits we want to write. Fix it by
-> > wrapping the numbers in the BIT() macro. This fixes gpios acting
-> > as interrupts.
-> >
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> I've applied this for fixes and tagged for stable.
-> Björn, Rohit: OK?
+>> Argh! Now you're adding another user for a legacy custom pin control
+>> implementation. But if noone is going to modernize PXA2xx what
+>> can we do :-/
+>
+> I tried a ~year ago, but it's not so trivial. PXA2xx has no separate
+> pin control module, it's
+> highly integrated into GPIO controller. I've asked the maillist what
+> should I do for that case, but AFAIR no one answered.
 
-This looks good.
+It is very common for pin controllers and GPIO blocks to
+be integrated.
 
-JFYI; the pinctrl-msm is written with gpio-msm-v2 in mind as well, so replacing
-it with pinctrl is on my todo list...
+The usual solution is to make a combined driver that registers
+both pinctrl and GPIO interfaces and put that into
+drivers/pinctrl.
 
-Regards,
-Bjorn
+Here is a recent example that can be used as inspiration:
+http://marc.info/?l=linux-doc&m=138629591206248&w=2
+
+Yours,
+Linus Walleij
