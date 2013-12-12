@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab3LLKIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 05:08:43 -0500
-Received: from mga03.intel.com ([143.182.124.21]:35832 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab3LLKIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 05:08:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,877,1378882800"; 
-   d="scan'208";a="442994504"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: lenb@kernel.org, rjw@rjwysocki.net
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI/EC: disable gpe before removing gpe handler
-Date: Thu, 12 Dec 2013 18:08:52 +0800
-Message-Id: <1386842932-8057-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S1751469Ab3LLKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 05:31:57 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:44826 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3LLKby (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 05:31:54 -0500
+Message-ID: <52A99092.6080305@hitachi.com>
+Date: Thu, 12 Dec 2013 19:31:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v4 6/6] [RFC] kprobes/x86: Call exception handlers
+ directly from do_int3/do_debug
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204012856.22118.91079.stgit@kbuild-fedora.novalocal> <20131203213904.5ff1794c@gandalf.local.home> <alpine.LRH.2.00.1312111418550.6318@twin.jikos.cz> <52A93E3A.9080600@hitachi.com> <alpine.LNX.2.00.1312121058220.1413@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1312121058220.1413@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the order of disabling gpe and removing gpe handler to
-make sure no gpe after removing gpe handler.
+(2013/12/12 18:59), Jiri Kosina wrote:
+> On Thu, 12 Dec 2013, Masami Hiramatsu wrote:
+> 
+>>> Yeah, it's broken. Obviously, if you happen to trigger int3 before the 
+>>> notifier has been registered, it'd cause int3 exception to be unhandled. 
+>>> See
+>>>
+>>> 	commit 17f41571bb2c4a398785452ac2718a6c5d77180e
+>>> 	Author: Jiri Kosina <jkosina@suse.cz>
+>>> 	Date:   Tue Jul 23 10:09:28 2013 +0200
+>>>
+>>> 	    kprobes/x86: Call out into INT3 handler directly instead of using notifier
+>>>
+>>> for one such issue that happened with jump labels.
+>>>
+>>>> Hmm, if there's no users of the int3 notifier, should we just remove it?
+>>>
+>>> Hmm, there are still uprobes, right?
+>>
+>> Right, uprobes still use it, however, since it only handles user-space
+>> breakpoint, there is no problem.
+> 
+> Agreed. But therefore the notifier can't just be removed, unless uprobes 
+> are converted to direct call as well (but I don't think that'd be 
+> beneficial, notifier is sufficient in this case).
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- drivers/acpi/ec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Ah, I don't intended to remove notify_die from do_int3, since
+notify_die notifies many other exceptions too. :)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index ff40120..172a124 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -778,9 +778,9 @@ static int ec_install_handlers(struct acpi_ec *ec)
- 			pr_err("Fail in evaluating the _REG object"
- 				" of EC device. Broken bios is suspected.\n");
- 		} else {
-+			acpi_disable_gpe(NULL, ec->gpe);
- 			acpi_remove_gpe_handler(NULL, ec->gpe,
- 				&acpi_ec_gpe_handler);
--			acpi_disable_gpe(NULL, ec->gpe);
- 			return -ENODEV;
- 		}
- 	}
+Thank you,
+
 -- 
-1.8.2.1
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
