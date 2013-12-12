@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab3LLLXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:23:33 -0500
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:41422 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3LLLXc (ORCPT
+	id S1751585Ab3LLLYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:24:24 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62886 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab3LLLYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:23:32 -0500
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Dec 2013 06:23:31 EST
-Message-ID: <52A99CB3.50509@laposte.net>
-Date: Thu, 12 Dec 2013 12:23:31 +0100
-From: Marc Gilet <pw.marcus@laposte.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:25.0) Gecko/20100101 Firefox/25.0 SeaMonkey/2.22
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: tablet advices
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Dec 2013 06:24:23 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v4 5/9] usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
+Date: Thu, 12 Dec 2013 06:18:33 -0500
+Message-Id: <1386847117-21240-6-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386847117-21240-1-git-send-email-mporter@linaro.org>
+References: <1386847117-21240-1-git-send-email-mporter@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I'm a happy owner of a Pengpod700 tablet (allwinner A10 CPU), on which I 
-spend most part of my free time to install and test Linux distributions 
-(on the microDS card).
-I'd like to find a more powerfull tablet like those one can find 
-actually on the market (Rockchip quad core CPU rk3188, bluetooth, GPS, 
-microSD slot, good battery, 10" screen ...)
+If a generic phy is present, call phy_init()/phy_exit(). This supports
+generic phys that must be soft reset before power on.
 
-I've found the git repository of a community developping the kernel for 
-this kind of devices (https://github.com/dnkn/rk3188_tablet), but I 
-can't seem to find where to ask this question:
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+ drivers/usb/gadget/s3c-hsotg.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-
-What models of tablet would you advise me to buy ?
-
-Thanks for answering
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index 7c5d8bd..e9683c2 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -3621,6 +3621,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
+ 		goto err_supplies;
+ 	}
+ 
++	if (hsotg->phy)
++		phy_init(hsotg->phy);
++
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
+ 
+@@ -3714,6 +3717,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+ 	}
+ 
+ 	s3c_hsotg_phy_disable(hsotg);
++	if (hsotg->phy)
++		phy_exit(hsotg->phy);
+ 	clk_disable_unprepare(hsotg->clk);
+ 
+ 	return 0;
+-- 
+1.8.4
 
