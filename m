@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3LLHVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 02:21:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab3LLHV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 02:21:28 -0500
-Date: Thu, 12 Dec 2013 12:51:13 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Simon Guinot <simon.guinot@sequanux.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [Patch] Read CONFIG_RD_ variables for initramfs compression
-In-Reply-To: <20131211154626.GX16823@kw.sim.vm.gnt>
-Message-ID: <alpine.LFD.2.10.1312121228540.7044@wniryva.cad.erqung.pbz>
-References: <alpine.LFD.2.03.1310152002200.7552@erqung.pbz> <20131029151507.8f63dad8e7525e33431d9596@linux-foundation.org> <alpine.LFD.2.03.1310301226260.12975@erqung.pbz> <20131030150521.ff3fd577a6e506e4278db48c@linux-foundation.org>
- <alpine.LFD.2.03.1310311222150.23774@erqung.pbz> <20131211154626.GX16823@kw.sim.vm.gnt>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751928Ab3LLHYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 02:24:08 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:35331 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab3LLHYD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 02:24:03 -0500
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v8 4/4] sched/numa: fix period_slot recalculation
+Date: Thu, 12 Dec 2013 15:23:26 +0800
+Message-Id: <1386833006-6600-4-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1386833006-6600-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1386833006-6600-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13121207-1618-0000-0000-0000051F4C84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Simon, Andrew
+Changelog:
+ v3 -> v4:
+  * remove period_slot recalculation
 
-+-- On Wed, 11 Dec 2013, Simon Guinot wrote --+
-| IIUC this patch, the INITRAMFS_COMPRESSION_* options are now
-| ignored/useless. Don't you think we should remove them from the
-| usr/Kconfig file ?
+The original code is as intended and was meant to scale the difference
+between the NUMA_PERIOD_THRESHOLD and local/remote ratio when adjusting
+the scan period. The period_slot recalculation can be dropped.
 
-  -> https://lkml.org/lkml/2013/11/25/21
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ kernel/sched/fair.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-I'v pushed a patch from Mr Hristo to the same effect. I guess it's still in 
-the queue. I haven't received any review for it yet. (...Andrew?)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8a00879..e7ca79a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1356,7 +1356,6 @@ static void update_task_scan_period(struct task_struct *p,
+ 		 * scanning faster if shared accesses dominate as it may
+ 		 * simply bounce migrations uselessly
+ 		 */
+-		period_slot = DIV_ROUND_UP(diff, NUMA_PERIOD_SLOTS);
+ 		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+ 		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+ 	}
+-- 
+1.7.7.6
 
-| Actually, I think this patch makes the initramfs compression
-| configuration quite confusing. Consider the following configuration
-| for a 3.13-rc3 kernel:
-| 
-| CONFIG_RD_GZIP=y
-| CONFIG_RD_LZMA=y
-| CONFIG_INITRAMFS_COMPRESSION_LZMA=y
-| 
-| This now produces a gzipped initramfs_data.cpio against a lzma one
-| previously. 
-
-  That is because, when multiple options are set, CONFIG_RD_GZIP is checked 
-last in the usr/Makefile.
-  ...
-  # Gzip
-  suffix_$(CONFIG_RD_GZIP)   = .gz
-
-Hope it helps.
---
-Prasad J Pandit / Red Hat Security Response Team
