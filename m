@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab3LLPzj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:55:39 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:39805 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab3LLPzf (ORCPT
+	id S1751782Ab3LLP4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:56:49 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:51778 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab3LLP4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:55:35 -0500
-Date: Thu, 12 Dec 2013 10:55:23 -0500
+	Thu, 12 Dec 2013 10:56:48 -0500
+Date: Thu, 12 Dec 2013 10:56:35 -0500
 From: Tejun Heo <tj@kernel.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] cgroup: fix fail path in cgroup_load_subsys()
-Message-ID: <20131212155523.GF32683@htj.dyndns.org>
-References: <1386403085-24866-1-git-send-email-vdavydov@parallels.com>
- <20131212153536.GD32683@htj.dyndns.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] sysfs, kernfs: remove duplicated include from
+ file.c
+Message-ID: <20131212155635.GG32683@htj.dyndns.org>
+References: <CAPgLHd8YaiM_VQZ=6N_ujfJJKWeYVK6S96w5Kv3ikj1b3jyoLA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131212153536.GD32683@htj.dyndns.org>
+In-Reply-To: <CAPgLHd8YaiM_VQZ=6N_ujfJJKWeYVK6S96w5Kv3ikj1b3jyoLA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 10:35:36AM -0500, Tejun Heo wrote:
-> On Sat, Dec 07, 2013 at 11:58:05AM +0400, Vladimir Davydov wrote:
-> > We should not call cgroup_unload_subsys() if online_css() fails, because
-> > online_css() does not assign css to cgroup on failure, while
-> > offline_css() called from cgroup_unload_subsys() expects it is assigned.
-> > So let's call everything we need to rollback inline without involving
-> > cgroup_unload_subsys().
-> > 
-> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> > Cc: Tejun Heo <tj@kernel.org>
-> > Cc: Li Zefan <lizefan@huawei.com>
+On Sat, Dec 07, 2013 at 02:07:36PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Applied to cgroup/for-3.13-fixes.
+> Remove duplicated include.
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Scrap that.  I don't think we can fail css_online for the root css in
-3.13-fixes and this would cause conflict with 3.14, so let's not
-commit it to 3.13-fixes.  Vladimir, can you please respin the patch on
-top of cgroup/for-3.14 but make cgroup_unload_subsys() check whether
-css is actually there before calling offline so that it matches the
-usual offline path better?
+Acked-by: Tejun Heo <tj@kernel.org>
 
 Thanks.
 
