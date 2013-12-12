@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab3LLUiL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:38:11 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:48290 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab3LLUhS (ORCPT
+	id S1752164Ab3LLUiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:38:51 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:47138 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3LLUhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:37:18 -0500
+	Thu, 12 Dec 2013 15:37:15 -0500
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gleb@redhat.com, kvm@vger.kernel.org, pmatouse@redhat.com,
-        stable@vger.kernel.org
-Subject: [PATCH] KVM: x86: fix guest-initiated crash with x2apic (CVE-2013-6376)
-Date: Thu, 12 Dec 2013 21:36:54 +0100
-Message-Id: <1386880614-23300-4-git-send-email-pbonzini@redhat.com>
+        Andy Honig <ahonig@google.com>, stable@vger.kernel.org
+Subject: [PATCH] KVM: x86: Fix potential divide by 0 in lapic (CVE-2013-6367)
+Date: Thu, 12 Dec 2013 21:36:52 +0100
+Message-Id: <1386880614-23300-2-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Andy Honig <ahonig@google.com>
 
-A guest can cause a BUG_ON() leading to a host kernel crash.
-When the guest writes to the ICR to request an IPI, while in x2apic
-mode the following things happen, the destination is read from
-ICR2, which is a register that the guest can control.
+Under guest controllable circumstances apic_get_tmcct will execute a
+divide by zero and cause a crash.  If the guest cpuid support
+tsc deadline timers and performs the following sequence of requests
+the host will crash.
+- Set the mode to periodic
+- Set the TMICT to 0
+- Set the mode bits to 11 (neither periodic, nor one shot, nor tsc deadline)
+- Set the TMICT to non-zero.
+Then the lapic_timer.period will be 0, but the TMICT will not be.  If the
+guest then reads from the TMCCT then the host will perform a divide by 0.
 
-kvm_irq_delivery_to_apic_fast uses the high 16 bits of ICR2 as the
-cluster id.  A BUG_ON is triggered, which is a protection against
-accessing map->logical_map with an out-of-bounds access and manages
-to avoid that anything really unsafe occurs.
+This patch ensures that if the lapic_timer.period is 0, then the division
+does not occur.
 
-The logic in the code is correct from real HW point of view. The problem
-is that KVM supports only one cluster with ID 0 in clustered mode, but
-the code that has the bug does not take this into account.
-
-Reported-by: Lars Bull <larsbull@google.com>
+Reported-by: Andrew Honig <ahonig@google.com>
 Cc: stable@vger.kernel.org
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/lapic.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/kvm/lapic.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index b8bec45c1610..801dc3fd66e1 100644
+index 5439117d5c4c..89b52ec7d09c 100644
 --- a/arch/x86/kvm/lapic.c
 +++ b/arch/x86/kvm/lapic.c
-@@ -143,6 +143,8 @@ static inline int kvm_apic_id(struct kvm_lapic *apic)
- 	return (kvm_apic_get_reg(apic, APIC_ID) >> 24) & 0xff;
- }
+@@ -841,7 +841,8 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+ 	ASSERT(apic != NULL);
  
-+#define KMV_X2APIC_CID_BITS 0
-+
- static void recalculate_apic_map(struct kvm *kvm)
- {
- 	struct kvm_apic_map *new, *old = NULL;
-@@ -180,7 +182,8 @@ static void recalculate_apic_map(struct kvm *kvm)
- 		if (apic_x2apic_mode(apic)) {
- 			new->ldr_bits = 32;
- 			new->cid_shift = 16;
--			new->cid_mask = new->lid_mask = 0xffff;
-+			new->cid_mask = (1 << KMV_X2APIC_CID_BITS) - 1;
-+			new->lid_mask = 0xffff;
- 		} else if (kvm_apic_sw_enabled(apic) &&
- 				!new->cid_mask /* flat mode */ &&
- 				kvm_apic_get_reg(apic, APIC_DFR) == APIC_DFR_CLUSTER) {
+ 	/* if initial count is 0, current count should also be 0 */
+-	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
++	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0 ||
++		apic->lapic_timer.period == 0)
+ 		return 0;
+ 
+ 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
 -- 
 1.8.3.1
 
