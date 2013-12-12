@@ -1,114 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab3LLL6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:58:07 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:58428 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab3LLL6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:58:04 -0500
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH] fs: bits in .close_on_exec are only defined for matching bits in .open_fds bits
-Date: Thu, 12 Dec 2013 12:57:24 +0100
-Message-Id: <1386849444-15751-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1386848190.9959.12.camel@localhost.localdomain>
-References: <1386796107-4197-1-git-send-email-ydroneaud@opteya.com> <20131211223634.GA13828@mguzik.redhat.com> <20131211233011.GA10323@ZenIV.linux.org.uk> <1386845150.9959.3.camel@localhost.localdomain> <1386848190.9959.12.camel@localhost.localdomain>
+	id S1751513Ab3LLMCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:02:14 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:16259 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab3LLMCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:02:09 -0500
+X-AuditID: cbfee691-b7fd26d000003f7b-6b-52a9a5bf3c51
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Andrzej Pietrasiewicz'" <andrzej.p@samsung.com>
+Cc: linux-kernel@vger.kernel.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Ingo Molnar'" <mingo@redhat.com>
+References: <1386847772-8918-1-git-send-email-andrzej.p@samsung.com>
+ <20131212113511.GG21999@twins.programming.kicks-ass.net>
+In-reply-to: <20131212113511.GG21999@twins.programming.kicks-ass.net>
+Subject: RE: [PATCH v2] kernel/locking: mutex: simplify access to the first
+ entry in the wait-list
+Date: Thu, 12 Dec 2013 21:02:07 +0900
+Message-id: <23bd01cef731$fb052680$f10f7380$%park@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac73Lj6IRVO1gU/aR7iriNY5wWSdEAAA5aSA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t8zLd39S1cGGRy9Jm8x62U7i8XlXXPY
+	LNYeuctucenAAiaL470HmBxYPTav0PJ4v+8qm0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
+	XGs/zFJwiqPiyd8fTA2M39m6GDk4JARMJOZ9yu9i5AQyxSQu3FsPFObiEBJYxijxfe0fZoiE
+	icS/e39YQWwhgemMEqdOJUMU/WWUeHDjIBNIgk1AX2LHtPXsILaIQJxE+46FjCA2s0CxxNqV
+	S5ghmuslzve9ABvEKeAqsfkkRL2wQIrEnO+fwOpZBFQlvjw7xgJi8wrYSXw6Po8ZwhaU+DH5
+	HgvETC2J9TuPM0HY8hKb17xlhnhGXeLRX12IE4wknn7+BVUuIrHvxTtGkJslBM6xS9xaeIId
+	YpeAxLfJh1ggemUlNh2A+ldS4uCKGywTGCVmIdk8C8nmWUg2z0KyYgEjyypG0dSC5ILipPQi
+	U73ixNzi0rx0veT83E2MkNicuIPx/gHrQ4zJQOsnMkuJJucDYzuvJN7Q2MzIwtTE1NjI3NKM
+	NGElcd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhgnO/rtS52ev3XHvTv7ks69cM4M
+	Ez/9KTErUC7r3IsWA83LNi/yXoaGdicpLz16Myd281mNzLKs7+2nOfaf9jotGHl+Xbez8TV+
+	K+f1+rcnWQvVLWD8FD3houEy42SnRUxHhKpaTk++yNy42DVyzd33jU1CjF77vJLT7UJ+Fjoq
+	HP+6tOwjj4kSS3FGoqEWc1FxIgBIYHfS4wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd39S1cGGZw7J20x62U7i8XlXXPY
+	LNYeuctucenAAiaL470HmBxYPTav0PJ4v+8qm0ffllWMHp83yQWwRDUw2mSkJqakFimk5iXn
+	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZlxrP8xScIqj4snfH0wNjN/Zuhg5OSQETCT+3fvDCmGL
+	SVy4tx4sLiQwnVHi1KnkLkYuIPsvo8SDGweZQBJsAvoSO6atZwexRQTiJNp3LGQEsZkFiiXW
+	rlzCDNFcL3G+7wXYUE4BV4nNJyHqhQVSJOZ8/wRWzyKgKvHl2TEWEJtXwE7i0/F5zBC2oMSP
+	yfdYIGZqSazfeZwJwpaX2LzmLVANB9Ch6hKP/upCnGAk8fTzL6hyEYl9L94xTmAUmoVk0iwk
+	k2YhmTQLScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMGx/0x6B+OqBotDjAIcjEo8
+	vC8OrggSYk0sK67MPcQowcGsJMLrkroySIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgWkp
+	ryTe0NjEzMjSyMzYxNzYmDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYg6oUYjjqKwOs
+	9W6sbJhy9+6XzY2FR5Iu/F8Q5ni4JOzGGoX3m3X+P7Z22hvdkzjLc+PGiQ1XpKylohcyXU1m
+	+N2YXn/owgQ+zQ37HVgqj664df/3C+Hddh08y+P+SL740JtdvSDSWy0xJE9KTlzdsVt6xoVn
+	F1TCEmfYBe/Pt0/IPqFkKOujxFKckWioxVxUnAgAA+CmZUEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Flag close-on-exec can only be set on an allocated (but perhaps not yet
-installed) file descriptor. So if the bit in struct fdtable .open_fds array
-is not set, then value of matching bit in the .close_on_exec array is
-meaningless.
 
-This patch rely on this property to
-- remove initialization of unused part of .close_on_exec array;
-- remove clear of .close_on_exec bit when releasing a file descriptor.
-The patch takes care of adding the required check on .open_fds bit
-before looking for .close_on_exec bit.
-
-Link: http://lkml.kernel.org/r/1386796107-4197-1-git-send-email-ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
-
-Hi Al and Mateusz,
-
-First of all, thank you for reviewing my previous patch and pointing out
-the error I've missed.
-
-Please consider this new patch which take the opposite approach:
-my previous patch assumed that .close_on_exec bit where defaulting to 0,
-but you prove this was a wrong assumption. This new patch assume that
-.close_on_exec bit are in a unknown, meaningless value when the file
-descriptor is not allocated. This way, there's no need to clear the value
-when releasing a file descriptor, and there's no need to initialize the
-.close_on_exec array.
-
-Unlike my previous patch, I haven't yet tested it. It's known to compile.
-
-Please try to find some corner cases I've missed in this other attempt.
-
-Regards.
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Thursday, December 12, 2013 8:35 PM
+> To: Andrzej Pietrasiewicz
+> Cc: linux-kernel@vger.kernel.org; Kyungmin Park; Marek Szyprowski; Ingo
+> Molnar
+> Subject: Re: [PATCH v2] kernel/locking: mutex: simplify access to the
+> first entry in the wait-list
+> 
+> On Thu, Dec 12, 2013 at 12:29:32PM +0100, Andrzej Pietrasiewicz wrote:
+> > Use list_first_entry instead of explicitly accessing the first entry
+> > with "head".next. The comment one line above becomes obsolete.
+> >
+> > Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >
+> > v1..v2:
+> >
+> > - corrected the email address in the second Signed-off-by line
+> 
+> Still invalid; the problem is that you appear to have written the patch
+> (you send it and you have first sob).
 
 
- fs/file.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+> So what is Kyungmin doing in the line? He did not send me your patch.
 
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f981557a..3016e09d0290 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -78,7 +78,7 @@ static void copy_fdtable(struct fdtable *nfdt, struct fdtable *ofdt)
- 	memcpy(nfdt->open_fds, ofdt->open_fds, cpy);
- 	memset((char *)(nfdt->open_fds) + cpy, 0, set);
- 	memcpy(nfdt->close_on_exec, ofdt->close_on_exec, cpy);
--	memset((char *)(nfdt->close_on_exec) + cpy, 0, set);
-+	/* remaining portion of close_on_exec left uninitialized */
- }
- 
- static struct fdtable * alloc_fdtable(unsigned int nr)
-@@ -335,7 +335,7 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
- 		int start = open_files / BITS_PER_LONG;
- 
- 		memset(&new_fdt->open_fds[start], 0, left);
--		memset(&new_fdt->close_on_exec[start], 0, left);
-+		/* remaining portion of close_on_exec left uninitialized */
- 	}
- 
- 	rcu_assign_pointer(newf->fdt, new_fdt);
-@@ -599,7 +599,6 @@ int __close_fd(struct files_struct *files, unsigned fd)
- 	if (!file)
- 		goto out_unlock;
- 	rcu_assign_pointer(fdt->fd[fd], NULL);
--	__clear_close_on_exec(fd, fdt);
- 	__put_unused_fd(files, fd);
- 	spin_unlock(&files->file_lock);
- 	return filp_close(file, files);
-@@ -622,10 +621,9 @@ void do_close_on_exec(struct files_struct *files)
- 		fdt = files_fdtable(files);
- 		if (fd >= fdt->max_fds)
- 			break;
--		set = fdt->close_on_exec[i];
-+		set = fdt->close_on_exec[i] & fdt->open_fds[i];
- 		if (!set)
- 			continue;
--		fdt->close_on_exec[i] = 0;
- 		for ( ; set ; fd++, set >>= 1) {
- 			struct file *file;
- 			if (!(set & 1))
-@@ -772,7 +770,7 @@ bool get_close_on_exec(unsigned int fd)
- 	bool res;
- 	rcu_read_lock();
- 	fdt = files_fdtable(files);
--	res = close_on_exec(fd, fdt);
-+	res = fd_is_open(fd, fdt) && close_on_exec(fd, fdt);
- 	rcu_read_unlock();
- 	return res;
- }
--- 
-1.8.4.2
+Internal review process, and it represents this patch comes from.
+
+Thank you,
+Kyungmin Park
 
