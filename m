@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab3LLUwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:52:45 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:34080 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3LLUwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:52:41 -0500
+	id S1751915Ab3LLUx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:53:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57817 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751608Ab3LLUxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 15:53:55 -0500
+Date: Thu, 12 Dec 2013 21:53:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v5 08/14] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131212205346.GA30162@pd.tnic>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-9-git-send-email-dyoung@redhat.com>
+ <20131211185520.GG23793@pd.tnic>
+ <20131212023617.GF3751@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20131212204950.GA6034@sgi.com>
-References: <cover.1386790423.git.athorlton@sgi.com> <20131212180050.GC134240@sgi.com>
- <CALCETrWfFRhjuoK8T9G8hecxsRxFPQ+qA0x7azoof1X5tuxruA@mail.gmail.com> <20131212204950.GA6034@sgi.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Dec 2013 12:52:18 -0800
-Message-ID: <CALCETrWgVViOK8mp5wort9T6VWBAAN_MCGmoAGddudsWfr2Ypw@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] Add tunable to control THP behavior
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Benjamin LaHaise <bcrl@kvack.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131212023617.GF3751@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 12:49 PM, Alex Thorlton <athorlton@sgi.com> wrote:
->
-> > Is there a setting that will turn off the must-be-the-same-node
-> > behavior?  There are workloads where TLB matters more than cross-node
-> > traffic (or where all the pages are hopelessly shared between nodes,
-> > but hugepages are still useful).
->
-> That's pretty much how THPs already behave in the kernel, so if you want
-> to allow THPs to be handed out to one node, but referenced from many
-> others, you'd just set the threshold to 1, and let the existing code
-> take over.
->
+On Thu, Dec 12, 2013 at 10:36:17AM +0800, Dave Young wrote:
+> Sorry that I forgot to explain this in changelog, should ask you before.
+> 
+> I did try moving it to efisubsys_init but it need add extern declaration
 
-Right.  I like that behavior for my workload.  (Although I currently
-allocate huge pages -- when I wrote that code, THP interacted so badly
-with pagecache that it was a non-starter.  I think it's fixed now,
-though.)
+So what? Add it.
 
+> for efi_runtime_map_init. Since link order will ensure it being called after
+> efisubsys_init I think it's fine with this static function.
 
->
-> As for the must-be-the-same-node behavior:  I'd actually say it's more
-> like a "must have so much on one node" behavior, in that, if you set the
-> threshold to 16, for example, 16 4K pages must be faulted in on the same
-> node, in the same contiguous 2M chunk, before a THP will be created.
-> What happens after that THP is created is out of our control, it could
-> be referenced from anywhere.
+This is actually exactly the reason why it shouldn't be another
+subsys_initcall() if it can be helped. People would need to go have a
+look at drivers/firmware/efi/Makefile to realize that the link order is
+ok.
 
-In that case, I guess I misunderstood your description.  Are saying
-that, once any node accesses this many pages in the potential THP,
-then the whole THP will be mapped?
+And, this is prone to future breakage if people go and move code around
+and thereby change the link order.
 
---Andy
+Please call efi_runtime_map_init from efisubsys_init.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
