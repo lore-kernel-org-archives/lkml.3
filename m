@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab3LLTGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:06:24 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54132 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab3LLTGT (ORCPT
+	id S1752382Ab3LLTHR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:07:17 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:41088 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab3LLTHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:06:19 -0500
-Message-ID: <52AA092A.3040605@codeaurora.org>
-Date: Thu, 12 Dec 2013 11:06:18 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Thu, 12 Dec 2013 14:07:14 -0500
+Message-ID: <52AA095D.4020707@monstr.eu>
+Date: Thu, 12 Dec 2013 20:07:09 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 5/8] mfd: Move pm8xxx-irq.c contents into only driver
- that uses it
-References: <1386718523-2587-1-git-send-email-sboyd@codeaurora.org> <1386718523-2587-6-git-send-email-sboyd@codeaurora.org> <20131211093552.GG16780@lee--X1>
-In-Reply-To: <20131211093552.GG16780@lee--X1>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/9] arm: dt: zynq: Remove 'clock-ranges' from TTC
+ nodes
+References: <1385514296-26702-1-git-send-email-soren.brinkmann@xilinx.com> <1385514296-26702-2-git-send-email-soren.brinkmann@xilinx.com> <52A97979.1030205@monstr.eu> <552285d2-8d57-4509-a014-d97065232376@DB8EHSMHS004.ehs.local>
+In-Reply-To: <552285d2-8d57-4509-a014-d97065232376@DB8EHSMHS004.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="so7JksuqHhjCfBKkHf34sCI51cxPQFvDD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/13 01:35, Lee Jones wrote:
-> On Tue, 10 Dec 2013, Stephen Boyd wrote:
->
->> The pm8xxx-irq.c code is practically mandatory given that the
->> pm8921-core driver will WARN about it missing and the Kconfig
->> marks it as default y when a PM8xxx chips is enabled. The only
->> reason the file was split out was because we planned to support
->> other pm8xxx chips with different pm8xxx-core.c files. Now that
->> we have DT on ARM this isn't necessary because we should be able
->> to support all the ssbi based PM8xxx chips in one driver and one
->> file with no data bloat. Let's move this code into the only
->> driver that uses it right now (pm8921) so that it's always compiled when
->> needed. In the future we can rename pm8921-core.c to something
->> more generic.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--so7JksuqHhjCfBKkHf34sCI51cxPQFvDD
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 12/12/2013 06:01 PM, S=C3=B6ren Brinkmann wrote:
+> Hi Michal,
+>=20
+> On Thu, Dec 12, 2013 at 09:53:13AM +0100, Michal Simek wrote:
+>> On 11/27/2013 02:04 AM, Soren Brinkmann wrote:
+>>> The bindings for the TTC changed in commit 'arm: zynq: Use standard
+>>> timer binding' (e932900a3279b5dbb6d8f43c7b369003620e137c). That chang=
+e
+>>> removed possible subnodes from this driver rendering the 'clock-range=
+s'
+>>> property invalid for this node.
+>>>
+>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>>> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+>>> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>> ---
+>>>  arch/arm/boot/dts/zynq-7000.dtsi | 2 --
+>>>  1 file changed, 2 deletions(-)
 >>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  drivers/mfd/Kconfig       |  10 --
->>  drivers/mfd/pm8921-core.c | 349 +++++++++++++++++++++++++++++++++++++++++++
->>  drivers/mfd/pm8xxx-irq.c  | 371 ----------------------------------------------
-> If you're going to take this approach (which I'm fine with unless
-> there are likely to be anymore incarnations of pm8xxx chips?), I think
-> you should also clean-up the header in this patch.
->
->   include/linux/mfd/pm8xxx/irq.h
->
+>> I think this is completely unrelated to cpufreq and should just go
+>> directly via arm-soc tree.
+>> If yes, I will add 1/9 and 2/9 to zynq/dt branch.
+>=20
+> I agree. This is just clean up that I found during this work. The secon=
+d
+> patch could go in as well I think. cpufreq will need the CPU nodes
+> later, but I think there is no real reason to not add them now.
 
-Thanks. I'll remove the header and resend.
+ok then. 1/9 and 2/9 applied to zynq/dt branch.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks,
+Michal
 
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--so7JksuqHhjCfBKkHf34sCI51cxPQFvDD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlKqCV0ACgkQykllyylKDCFghwCfXr0ypRzJemhq17qm27Qmk9Ig
+Ai0An3hX4bFsRTYpuF4AreZcxVj1E2Sg
+=NVbt
+-----END PGP SIGNATURE-----
+
+--so7JksuqHhjCfBKkHf34sCI51cxPQFvDD--
