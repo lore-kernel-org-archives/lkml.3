@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab3LLPcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:32:22 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:33539 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab3LLPcT (ORCPT
+	id S1751358Ab3LLPdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:33:44 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:55392 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751452Ab3LLPdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:32:19 -0500
-Message-ID: <1386862039.1791.308.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] Driver core: Fix device_add_attrs() error code path
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 12 Dec 2013 08:27:19 -0700
-In-Reply-To: <1902491.UTh5DYb76O@vostro.rjw.lan>
-References: <1902491.UTh5DYb76O@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Thu, 12 Dec 2013 10:33:41 -0500
+Message-ID: <52A9D751.9080804@free-electrons.com>
+Date: Thu, 12 Dec 2013 16:33:37 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/3] pinctrl: at91: initialize config parameter to 0
+References: <1386421734-10240-1-git-send-email-alexandre.belloni@free-electrons.com>	<1386421734-10240-2-git-send-email-alexandre.belloni@free-electrons.com>	<52A57E55.40808@atmel.com>	<52A5938E.40201@free-electrons.com> <CACRpkdbxq-w8KquMjQVSbkEZcsMLsSRc3BqfuLLDM7c1P3UOxw@mail.gmail.com>
+In-Reply-To: <CACRpkdbxq-w8KquMjQVSbkEZcsMLsSRc3BqfuLLDM7c1P3UOxw@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 06:11 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> If the addition of dev_attr_online fails, device_add_attrs() should
-> remove device attribute groups as well as type and class attribute
-> groups before returning an error code.  Make that happen.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 12/12/2013 15:40, Linus Walleij wrote:
+> Mail it out with a [CFT: ] "call for testing" prefix.
+>
 
-Nice catch!
+I actually already sent it but without the CFT. Do you want me to resend ?
+Regards,
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-
--Toshi
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
