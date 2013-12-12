@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067Ab3LLO2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:28:48 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:63832 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab3LLO2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:28:46 -0500
-Message-ID: <52A9C81B.7050007@atmel.com>
-Date: Thu, 12 Dec 2013 15:28:43 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        boris brezillon <b.brezillon@overkiz.com>
-CC: David Miller <davem@davemloft.net>,
+	id S1751934Ab3LLO3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:29:41 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:8477 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395Ab3LLO3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:29:38 -0500
+From: Qais Yousef <Qais.Yousef@imgtec.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Yang Yingliang <yangyingliang@huawei.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Jamal Hadi Salim <jhs@mojatatu.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH v2 0/5] net: macb updates
-References: <1386720443-24100-1-git-send-email-soren.brinkmann@xilinx.com> <CAOesGMjcmeiBfc=EOvWazebg-9vnMuQtRC0aeHJy7Q=02RdRPA@mail.gmail.com>
-In-Reply-To: <CAOesGMjcmeiBfc=EOvWazebg-9vnMuQtRC0aeHJy7Q=02RdRPA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: RE: [PATCH] net/sched/sch_tbf.c: fix linking error
+Thread-Topic: [PATCH] net/sched/sch_tbf.c: fix linking error
+Thread-Index: AQHO9zck2dE04dBQo0atJfoWgkVHfZpQm5SAgAAC88A=
+Date: Thu, 12 Dec 2013 14:29:35 +0000
+Message-ID: <392C4BDEFF12D14FA57A3F30B283D7D13C8A24@LEMAIL01.le.imgtec.org>
+References: <1386851936-1582-1-git-send-email-qais.yousef@imgtec.com>
+ <1386857899.19078.49.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1386857899.19078.49.camel@edumazet-glaptop2.roam.corp.google.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.154.35]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-SEF-Processed: 7_3_0_01192__2013_12_12_14_29_37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id rBCETl9S001354
 
-On 12/12/2013 08:00, Olof Johansson :
-> Hi Soren,
->
-> On Tue, Dec 10, 2013 at 4:07 PM, Soren Brinkmann
-> <soren.brinkmann@xilinx.com> wrote:
->
->> Soren Brinkmann (5):
->>    net: macb: Adjust tx_clk when link speed changes
->
-> This patch causes build issues on some at91 platforms, namely
-> at91sam9263 that lacks programmable clocks. So it doesn't implement
-> clk_set_rate() and clk_round_rate().
->
-> I don't know if there's any reasonable config option to check for
-> (that wouldn't add at91-specific stuff to the driver which we don't
-> want). So I suspect the best way would be to implement dummy versions
-> for at91 when CONFIG_AT91_PROGRAMMABLE_CLOCKS isn't set.
->
-> Nicolas, you OK with that? It'd be something like the below
-> (copy-paste, whitespace damage, just RFC):
+> -----Original Message-----
+> From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
+> Sent: 12 December 2013 14:18
+> To: Qais Yousef
+> Cc: Yang Yingliang; Eric Dumazet; Jamal Hadi Salim; David S. Miller;
+> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
+> next@vger.kernel.org
+> Subject: Re: [PATCH] net/sched/sch_tbf.c: fix linking error
+> 
+> On Thu, 2013-12-12 at 12:38 +0000, Qais Yousef wrote:
+> > ERROR: "__udivdi3" [net/sched/sch_tbf.ko] undefined!
+> >
+> > introduced by: cc106e441a63 (net: sched: tbf: fix the calculation of
+> > max_size)
+> >
+> > which adds a 64 by 32 bit division without using do_div().
+> > Fix it by using do_div(len/ 53) instead of len/53.
+> >
+> > Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+> > Cc: Eric Dumazet <edumazet@google.com>
+> > Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Cc: netdev@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: linux-next@vger.kernel.org
+> > ---
+> > We caught this error on linux-next today. This is my quick attemp of a fix.
+> > If it's not appropriate or doesn't make sense my apologies and feel
+> > free to resend a better fix :)
+> >
+> >  net/sched/sch_tbf.c |    6 ++++--
+> >  1 files changed, 4 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/net/sched/sch_tbf.c b/net/sched/sch_tbf.c index
+> > a44928c..771cbec 100644
+> > --- a/net/sched/sch_tbf.c
+> > +++ b/net/sched/sch_tbf.c
+> > @@ -131,8 +131,10 @@ static u64 psched_ns_t2l(const struct
+> > psched_ratecfg *r,
+> >
+> >  	do_div(len, NSEC_PER_SEC);
+> >
+> > -	if (unlikely(r->linklayer == TC_LINKLAYER_ATM))
+> > -		len = (len / 53) * 48;
+> > +	if (unlikely(r->linklayer == TC_LINKLAYER_ATM)) {
+> > +		do_div(len, 53);
+> > +		len *= 48;
+> > +	}
+> >
+> >  	if (len > r->overhead)
+> >  		len -= r->overhead;
+> 
+> This looks like this was already fixed yesterday in David net tree :
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=d55d282e6
+> af88120ad90e93a88f70e3116dc0e3d
+> 
 
-Well, in fact I am thinking about simply removing this 
-AT91_PROGRAMMABLE_CLOCKS option out of the AT91 Kconfig.
+Ah, ok. Thanks for checking this and sorry about the noise.
 
-After all, when not specified, it only removes a few lines of code... 
-and that's it! For a so little benefit, I suspect it is sensible to 
-remove this option.
-I continue to discuss with AT91 active developers and write a patch soon.
+Qais
 
-Thanks for the heads-up on this issue Olof.
-
-Bye,
-
-
-> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-> index 6b2630a..17c52a7 100644
-> --- a/arch/arm/mach-at91/clock.c
-> +++ b/arch/arm/mach-at91/clock.c
-> @@ -459,6 +459,22 @@ static void __init init_programmable_clock(struct clk *clk)
->          clk->rate_hz = parent->rate_hz / pmc_prescaler_divider(pckr);
->   }
->
-> +#else  /* CONFIG_AT91_PROGRAMMABLE_CLOCKS */
-> +
-> +int clk_set_rate(struct clk *clk, unsigned long rate)
-> +{
-> +       if (rate == clk_get_rate(clk))
-> +               return 0;
-> +
-> +       return -EINVAL;
-> +}
-> +
-> +long clk_round_rate(struct clk *clk, unsigned long rate)
-> +{
-> +       /* There's really nothing sane to return here. */
-> +       return clk_get_rate(clk);
-> +}
-> +
->   #endif /* CONFIG_AT91_PROGRAMMABLE_CLOCKS */
->
-
-
--- 
-Nicolas Ferre
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
