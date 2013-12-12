@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3LLXq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:46:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36305 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab3LLXqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:46:53 -0500
-Date: Thu, 12 Dec 2013 17:51:19 -0500
-From: Dave Jones <davej@redhat.com>
-To: linux-mm@kvack.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: kernel BUG at mm/mempolicy.c:1204!
-Message-ID: <20131212225119.GA18718@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752045Ab3LLXrk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:47:40 -0500
+Received: from smtprelay0175.hostedemail.com ([216.40.44.175]:54060 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751571Ab3LLXrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 18:47:36 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:967:968:973:988:989:1260:1345:1359:1437:1534:1539:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3350:3865:3866:3867:3868:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4605:5007:6261:7875:7903:9025:10004:10026:10848:11026:11658:11854:11914:12043:12291:12296:12517:12519:12679:12683:12740:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: lake39_7e8728b30612
+X-Filterd-Recvd-Size: 1487
+From: Joe Perches <joe@perches.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH -next 0/4] fs: Use seq_is_buf_full
+Date: Thu, 12 Dec 2013 15:47:27 -0800
+Message-Id: <cover.1386891757.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1386819513.git.joe@perches.com>
+References: <cover.1386819513.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this with my fuzz tester.
+Convert the fs uses and misuses of seq_printf to void
 
-kernel BUG at mm/mempolicy.c:1204!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-CPU: 3 PID: 7056 Comm: trinity-child3 Not tainted 3.13.0-rc3+ #2
-task: ffff8801ca5295d0 ti: ffff88005ab20000 task.ti: ffff88005ab20000
-RIP: 0010:[<ffffffff8119f200>]  [<ffffffff8119f200>] new_vma_page+0x70/0x90
-RSP: 0000:ffff88005ab21db0  EFLAGS: 00010246
-RAX: fffffffffffffff2 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 0000000008040075 RSI: ffff8801c3d74600 RDI: ffffea00079a8b80
-RBP: ffff88005ab21dc8 R08: 0000000000000004 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000000 R12: fffffffffffffff2
-R13: ffffea00079a8b80 R14: 0000000000400000 R15: 0000000000400000
-FS:  00007ff49c6f4740(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007ff49c68f994 CR3: 000000005a205000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-Stack:
- ffffea00079a8b80 ffffea00079a8bc0 ffffea00079a8ba0 ffff88005ab21e50
- ffffffff811adc7a 0000000000000000 ffff8801ca5295d0 0000000464e224f8
- 0000000000000000 0000000000000002 0000000000000000 ffff88020ce75c00
-Call Trace:
- [<ffffffff811adc7a>] migrate_pages+0x12a/0x850
- [<ffffffff8119f190>] ? alloc_pages_vma+0x1b0/0x1b0
- [<ffffffff8119fa13>] SYSC_mbind+0x513/0x6a0
- [<ffffffff810aa7de>] ? lock_release_holdtime.part.29+0xee/0x170
- [<ffffffff8119fbae>] SyS_mbind+0xe/0x10
- [<ffffffff817626a9>] ia32_do_call+0x13/0x13
-Code: 85 c0 75 2f 4c 89 e1 48 89 da 31 f6 bf da 00 02 00 65 44 8b 04 25 08 f7 1c 00 e8 ec fd ff ff 5b 41 5c 41 5d 5d c3 0f 1f 44 00 00 <0f> 0b 66 0f 1f 44 00 00 4c 89 e6 48 89 df ba 01 00 00 00 e8 48 
-RIP  [<ffffffff8119f200>] new_vma_page+0x70/0x90
- RSP <ffff88005ab21db0>
+These patches depend on https://lkml.org/lkml/2013/12/11/714
 
+Joe Perches (4):
+  dlm: Use seq_is_buf_full - remove seq_printf returns
+  dlm: Use seq_puts, remove unnecessary trailing spaces
+  fs: Convert show_fdinfo functions to void
+  debugfs: Fix misuse of seq_printf return value
 
-That's..
+ fs/debugfs/file.c  |  14 +--
+ fs/dlm/debug_fs.c  | 274 +++++++++++++++++++++++++----------------------------
+ fs/eventfd.c       |  15 +--
+ fs/eventpoll.c     |  19 ++--
+ fs/notify/fdinfo.c |  68 ++++++-------
+ fs/notify/fdinfo.h |   4 +-
+ fs/proc/fd.c       |   2 +-
+ fs/signalfd.c      |  10 +-
+ include/linux/fs.h |   2 +-
+ 9 files changed, 184 insertions(+), 224 deletions(-)
 
-1200         /*
-1201          * queue_pages_range() confirms that @page belongs to some vma,
-1202          * so vma shouldn't be NULL.
-1203          */
-1204         BUG_ON(!vma);
-1205 
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
