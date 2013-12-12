@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675Ab3LLPwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:52:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39338 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452Ab3LLPwP (ORCPT
+	id S1751736Ab3LLPzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:55:39 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:39805 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab3LLPzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:52:15 -0500
-Date: Thu, 12 Dec 2013 16:51:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-Message-ID: <20131212155153.GK13532@twins.programming.kicks-ass.net>
-References: <1386764955.12005.60.camel@marge.simpson.net>
- <20131211124352.GB21999@twins.programming.kicks-ass.net>
- <20131211134048.GH21683@pd.tnic>
- <20131211145655.GB4510@gmail.com>
- <20131211164318.GA2480@laptop.programming.kicks-ass.net>
- <20131211175036.GC12431@gmail.com>
- <52A8F073.9040500@zytor.com>
- <20131212085143.GC21999@twins.programming.kicks-ass.net>
- <20131212132846.GA16750@gmail.com>
- <52A9D111.3090409@zytor.com>
+	Thu, 12 Dec 2013 10:55:35 -0500
+Date: Thu, 12 Dec 2013 10:55:23 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] cgroup: fix fail path in cgroup_load_subsys()
+Message-ID: <20131212155523.GF32683@htj.dyndns.org>
+References: <1386403085-24866-1-git-send-email-vdavydov@parallels.com>
+ <20131212153536.GD32683@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52A9D111.3090409@zytor.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131212153536.GD32683@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 07:06:57AM -0800, H. Peter Anvin wrote:
-> On 12/12/2013 05:28 AM, Ingo Molnar wrote:
-> >>
-> >> The reason we use thread_info::flags is because we need to write
-> >> TIF_NEED_RESCHED into it to wake up anyhow.
-> >>
-> >> Using another cacheline would mean the wakeup path would need to write a
-> >> second cross cpu cacheline -- that is badness too.
-> >>
-> >> So no, I don't think we want to listen to another line.
+On Thu, Dec 12, 2013 at 10:35:36AM -0500, Tejun Heo wrote:
+> On Sat, Dec 07, 2013 at 11:58:05AM +0400, Vladimir Davydov wrote:
+> > We should not call cgroup_unload_subsys() if online_css() fails, because
+> > online_css() does not assign css to cgroup on failure, while
+> > offline_css() called from cgroup_unload_subsys() expects it is assigned.
+> > So let's call everything we need to rollback inline without involving
+> > cgroup_unload_subsys().
 > > 
+> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: Li Zefan <lizefan@huawei.com>
 > 
-> Right, okay, so that's the implicit wakeup.  However, I would think the
-> CLFLUSH would hurt a lot more.
+> Applied to cgroup/for-3.13-fixes.
 
-Maybe, but still, who cares? Its only a few broken cpus that actually
-need the clflush, normal cpus do not. We should not optimize for the
-broken case.
+Scrap that.  I don't think we can fail css_online for the root css in
+3.13-fixes and this would cause conflict with 3.14, so let's not
+commit it to 3.13-fixes.  Vladimir, can you please respin the patch on
+top of cgroup/for-3.14 but make cgroup_unload_subsys() check whether
+css is actually there before calling offline so that it matches the
+usual offline path better?
 
+Thanks.
 
+-- 
+tejun
