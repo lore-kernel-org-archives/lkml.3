@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab3LLUhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 15:37:20 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:43785 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3LLUhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 15:37:13 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: gleb@redhat.com, kvm@vger.kernel.org, pmatouse@redhat.com,
-        Andy Honig <ahonig@google.com>, stable@vger.kernel.org
-Subject: [PATCH] KVM: Improve create VCPU parameter
-Date: Thu, 12 Dec 2013 21:36:51 +0100
-Message-Id: <1386880614-23300-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752081Ab3LLUhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 15:37:24 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45843 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752005Ab3LLUhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 15:37:05 -0500
+Date: Thu, 12 Dec 2013 21:36:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org, x86@kernel.org,
+        mjg59@srcf.ucam.org, hpa@zytor.com,
+        James.Bottomley@HansenPartnership.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, horms@verge.net.au, kexec@lists.infradead.org,
+        greg@kroah.com, matt@console-pimps.org, toshi.kani@hp.com
+Subject: Re: [PATCH v5 08/14] efi: export efi runtime memory mapping to sysfs
+Message-ID: <20131212203656.GC26927@pd.tnic>
+References: <1386582147-9802-1-git-send-email-dyoung@redhat.com>
+ <1386582147-9802-9-git-send-email-dyoung@redhat.com>
+ <20131211185520.GG23793@pd.tnic>
+ <20131212023617.GF3751@dhcp-16-126.nay.redhat.com>
+ <20131212071337.GI3751@dhcp-16-126.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20131212071337.GI3751@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Honig <ahonig@google.com>
+On Thu, Dec 12, 2013 at 03:13:37PM +0800, Dave Young wrote:
+> BTW, I will restructure the whole code when I move them to
+> efi_kexec.c, so no worry about it? If you have strong opinion I can
+> move them though.
 
-In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
-malicious user could specify a vcpu_id greater than 255 in order to set or
-clear bits in kernel memory.  This could be used to elevate priveges in the
-kernel.  This patch verifies that the vcpu_id provided is less than 255.
-The api documentation already specifies that the vcpu_id must be less than
-max_vcpus, but this is currently not checked.
+Well, if it were me, I'd do it now so that it'll see more testing.
+Later, it will be only a mechanical move of those functions which belong
+to efi_kexec.c and won't need a second testing.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- virt/kvm/kvm_main.c | 3 +++
- 1 file changed, 3 insertions(+)
+:-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index a0aa84b5941a..4f588bc94186 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1898,6 +1898,9 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 	int r;
- 	struct kvm_vcpu *vcpu, *v;
- 
-+	if (id >= KVM_MAX_VCPUS)
-+		return -EINVAL;
-+
- 	vcpu = kvm_arch_vcpu_create(kvm, id);
- 	if (IS_ERR(vcpu))
- 		return PTR_ERR(vcpu);
 -- 
-1.8.3.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
