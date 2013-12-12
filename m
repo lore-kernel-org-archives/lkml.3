@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab3LLJcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 04:32:09 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4551 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3LLJcE (ORCPT
+	id S1751552Ab3LLJdy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 04:33:54 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19390 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab3LLJdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 04:32:04 -0500
+	Thu, 12 Dec 2013 04:33:49 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 12 Dec 2013 01:33:43 -0800
+	by hqnvupgp08.nvidia.com on Thu, 12 Dec 2013 01:35:28 -0800
 From: Bill Huang <bilhuang@nvidia.com>
-To: <swarren@wwwdotorg.org>, <rjw@rjwysocki.net>, <viresh.kumar@linario.org>,
+To: <swarren@wwwdotorg.org>, <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>,
         <thierry.reding@gmail.com>
 CC: <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
         Bill Huang <bilhuang@nvidia.com>
 Subject: [PATCH v4 1/1] cpufreq: tegra: Re-model Tegra20 cpufreq driver
-Date: Thu, 12 Dec 2013 17:32:07 +0800
-Message-ID: <1386840727-28716-1-git-send-email-bilhuang@nvidia.com>
+Date: Thu, 12 Dec 2013 17:33:55 +0800
+Message-ID: <1386840835-28751-1-git-send-email-bilhuang@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 X-NVConfidentiality: public
 MIME-Version: 1.0
