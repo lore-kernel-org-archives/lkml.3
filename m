@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab3LLTHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:07:42 -0500
-Received: from imap.thunk.org ([74.207.234.97]:39482 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519Ab3LLTHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:07:16 -0500
-Date: Thu, 12 Dec 2013 14:06:59 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: vegard.nossum@oracle.com
-Cc: linux-kernel@vger.kernel.org, Tommi Rantala <tt.rantala@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Kees Cook <keescook@chromium.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-Message-ID: <20131212190659.GG13547@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, vegard.nossum@oracle.com,
-	linux-kernel@vger.kernel.org, Tommi Rantala <tt.rantala@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Kees Cook <keescook@chromium.org>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jason Wang <jasowang@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	James Morris <james.l.morris@oracle.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+	id S1752215Ab3LLTJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:09:33 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:52031 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab3LLTJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 14:09:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <52A7C313.8090208@codeaurora.org>
+References: <1386295805-13708-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1386295805-13708-2-git-send-email-bjorn.andersson@sonymobile.com>
+	<52A24438.4000908@codeaurora.org>
+	<20131210081031.GD11990@sonymobile.com>
+	<52A7C313.8090208@codeaurora.org>
+Date: Thu, 12 Dec 2013 20:09:30 +0100
+Message-ID: <CACRpkdbEKUibOBk=iUi-CrHdmgV46GetyNUgomyngFAwrb=biQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] pinctrl: Add Qualcomm TLMM driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
-> From: Vegard Nossum <vegard.nossum@oracle.com>
-> 
-> The idea is simple -- since different kernel versions are vulnerable to
-> different root exploits, hackers most likely try multiple exploits before
-> they actually succeed.
+On Wed, Dec 11, 2013 at 2:42 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 12/10/13 00:10, Bjorn Andersson wrote:
+>> On Fri 06 Dec 13:40 PST 2013, Stephen Boyd wrote:
+>>>> +config PINCTRL_MSM
+>>>> +     bool
+>>> Why not tristate?
+>>>
+>> I have a hard time seeing an situation where you would like to build a system
+>> with this driver as a module; it would force almost the entire system to be
+>> loaded at a later time...
+>
+> We're going to need to build everything but the essentials as modules
+> for the multi-platform kernel because we're going to run into the
+> problem where the kernel can't link anymore. Data heavy drivers such as
+> this are  targets for that because they waste more space being built-in
+> and they're not absolutely necessary to boot into an initrd that holds
+> the modules for a particular device.
 
-Suppose we put put this into the mainstream kernel.  Wouldn't writers
-of root kit adapt by checking for the kernel version to avoid checking
-for exploits that are known not work?  So the question is whether the
-additional complexity in the kernel is going to be worth it, since
-once the attackers adapt, the benefits of trying to detect attacks for
-mitigated exploits will be minimal.
+This is a quite generic problem rather than a pin control problem.
 
-Regards,
+We're actually going to have to compile quite a few drivers into the
+kernel as well, like all irqchips and all clock sources...
 
-							- Ted
+I think we have toyed with the idea of tagging code and data so
+that it will be discarded on non-matched platforms, I have no
+idea how that would look in practice :-(
+
+There are quite a few pin control drivers compiled into any
+present multiplatform kernels, so I wouldn't say that one
+more or less hurts us today.
+
+>>>> +#include <linux/pinctrl/pinctrl.h>
+>>>> +#include <linux/pinctrl/pinmux.h>
+>>>> +#include <linux/pinctrl/pinconf.h>
+>>>> +#include <linux/pinctrl/machine.h>
+>>> Are any of these includes actually necessary? Can't we just forward
+>>> declare struct pinctrl_pin_desc?
+>>>
+>> None of them are needed in the current set of patches, as these are already
+>> included in the c-files before including this.
+>>
+>> But the right set should be: platform_device.h and pinctrl.h.
+>
+> We should be able to get away with forward declaring the structs we care
+> about. C files that include this header should be including the
+> pinctrl.h header file anyway, no?
+
+Patches accepted...
+
+Yours,
+Linus Walleij
