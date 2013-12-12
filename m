@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab3LLEcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 23:32:16 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:60472 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab3LLEcO (ORCPT
+	id S1751423Ab3LLEkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 23:40:35 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:34006 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab3LLEke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 23:32:14 -0500
+	Wed, 11 Dec 2013 23:40:34 -0500
+Message-ID: <52A93E3A.9080600@hitachi.com>
+Date: Thu, 12 Dec 2013 13:40:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131210200529.GD3651@lukather>
-References: <1386350983-13281-1-git-send-email-wens@csie.org>
- <1386350983-13281-2-git-send-email-wens@csie.org> <20131207103335.GL24519@lukather>
- <CAGb2v65YOSq_BMWSzSHX8w_hbo+0vwquBT2pnLuwNVZkWRfLvA@mail.gmail.com> <20131210200529.GD3651@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Thu, 12 Dec 2013 12:31:53 +0800
-X-Google-Sender-Auth: Vusdti7lGmiCBIolUn1O8jKndlE
-Message-ID: <CAGb2v67TkxcMSrFsMtAy8TaMG_VZWt73xZZcuqkJ71VO4y=7_w@mail.gmail.com>
-Subject: Re: [PATCH 01/10] net: stmmac: Enable stmmac main clock when probing hardware
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        netdev <netdev@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v4 6/6] [RFC] kprobes/x86: Call exception handlers
+ directly from do_int3/do_debug
+References: <20131204012841.22118.82992.stgit@kbuild-fedora.novalocal> <20131204012856.22118.91079.stgit@kbuild-fedora.novalocal> <20131203213904.5ff1794c@gandalf.local.home> <alpine.LRH.2.00.1312111418550.6318@twin.jikos.cz>
+In-Reply-To: <alpine.LRH.2.00.1312111418550.6318@twin.jikos.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Dec 11, 2013 at 4:05 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Hi,
->
-> On Mon, Dec 09, 2013 at 10:43:29AM +0800, Chen-Yu Tsai wrote:
->> >> @@ -2759,15 +2760,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
->> >>               }
->> >>       }
->> >>
->> >> +     clk_disable_unprepare(priv->stmmac_clk);
->> >> +
->> >
->> > Hu? Why do you disable the clock? don't you need it afterwards?
+(2013/12/11 22:31), Jiri Kosina wrote:
+> On Tue, 3 Dec 2013, Steven Rostedt wrote:
+> 
+>>> To avoid a kernel crash by probing on lockdep code, call
+>>> kprobe_int3_handler and kprobe_debug_handler directly
+>>> from do_int3 and do_debug. Since there is a locking code
+>>> in notify_die, lockdep code can be invoked. And because
+>>> the lockdep involves printk() related things, theoretically,
+>>> we need to prohibit probing on much more code...
+>>>
+>>> Anyway, most of the int3 handlers in the kernel are already
+>>> called from do_int3 directly, e.g. ftrace_int3_handler,
+>>> poke_int3_handler, kgdb_ll_trap. Actually only
+>>> kprobe_exceptions_notify is on the notifier_call_chain.
+>>>
+>>> So I think this is not a crazy thing.
 >>
->> The clock is enabled in *_open (when the network interface is used),
->> and disabled in *_close.
->
-> Maybe it is the real issue then.
->
-> Why don't you move the clk_disable to _remove then?
+>> What? Oh, yeah. No, using notifiers in int3 handler is the crazy
+>> thing ;-)
+> 
+> Yeah, it's broken. Obviously, if you happen to trigger int3 before the 
+> notifier has been registered, it'd cause int3 exception to be unhandled. 
+> See
+> 
+> 	commit 17f41571bb2c4a398785452ac2718a6c5d77180e
+> 	Author: Jiri Kosina <jkosina@suse.cz>
+> 	Date:   Tue Jul 23 10:09:28 2013 +0200
+> 
+> 	    kprobes/x86: Call out into INT3 handler directly instead of using notifier
+> 
+> for one such issue that happened with jump labels.
+> 
+>> Hmm, if there's no users of the int3 notifier, should we just remove it?
+> 
+> Hmm, there are still uprobes, right?
 
-I wasn't sure this was the proper way. However, looking around, it
-seems other drivers enable the clock in, _probe, and disable it in
-_remove. I will modify stmmac to do so as well.
+Right, uprobes still use it, however, since it only handles user-space
+breakpoint, there is no problem.
+
+Thank you!
 
 
-ChenYu
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
