@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab3LLSP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:15:59 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:61479 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab3LLSP6 (ORCPT
+	id S1752060Ab3LLSTi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:19:38 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:41641 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3LLSTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:15:58 -0500
+	Thu, 12 Dec 2013 13:19:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <1386585509-12495-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1386585509-12495-1-git-send-email-alexandre.belloni@free-electrons.com>
-Date: Thu, 12 Dec 2013 19:15:57 +0100
-Message-ID: <CACRpkdbjo-E2=V3yyxJ2ofwhj_JPT0=txy9JtS0yb2RWSK51ZA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: pinconf: remove checks on ops->pin_config_get
+In-Reply-To: <1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
+References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
+	<1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
+Date: Thu, 12 Dec 2013 19:19:35 +0100
+Message-ID: <CACRpkdaD13JnGetD-GLpxSoaf_LkRKYFjis7Tftc6U38E1ES5A@mail.gmail.com>
+Subject: Re: [RFC/RFT/PATCH V3] gpio: omap: refresh patch "be more aggressive
+ with pm_runtime" against v3.12-rc5
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
+To: Chao Xu <caesarxuchao@gmail.com>
+Cc: Linux-OMAP <linux-omap@vger.kernel.org>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        ext Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+        ext Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Nishanth Menon <nm@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 9, 2013 at 11:38 AM, Alexandre Belloni
-<alexandre.belloni@free-electrons.com> wrote:
+On Sun, Dec 8, 2013 at 5:40 AM, Chao Xu <caesarxuchao@gmail.com> wrote:
 
-> ops->pin_config_get() is only used in one specific path that will only be taken
-> for generic pinconf drivers (ops->is_generic == true) when dumping the pinconf
-> by using debugfs.
+> From: Felipe Balbi <balbi@ti.com>
 >
-> By removing the check in pinconf_check_ops(), let's stop pressuring people to
-> write a pin_config_get() function that will never be used and so will probably
-> never be tested.
+> try to keep gpio block suspended as much as possible.
 >
-> Removing the check in pinconf_pins_show() allows driver to not implement
-> pin_config_get() but still get a dump of the pinconf in debugfs by implementing
-> pin_config_dbg_show().
+> Tested with pandaboard and a sysfs exported gpio.
 >
-> Finally, not implementing pin_config_get() now results in returning -ENOTSUPP
-> instead of -EINVAL. While this doesn't have any real impact for now, this feels
-> more right.
+> Signed-off-by: Felipe Balbi <balbi at ti.com>
 >
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> [caesarxuchao@gmail.com : Refreshed against v3.12-rc5, and added
+> revision check to enable aggressive pm_runtime on OMAP4-only. Because
+> am33xx_gpio_sysc.idlemodes seems to be wrongly marked as
+> SIDLE_SMART_WKUP, which might cause missed interrupts with this patch.
+> Tested on Pandaboard rev A2.]
+> Signed-off-by: Chao Xu <caesarxuchao@gmail.com>
+> ---
+> changes since v2:
+> *add wrapper function to avoid 'is_aggressive_pm' check everywhere, as
+> suggested by Santosh Shilimkar
+> *fix format issue in commit log
 
-Yeah hm, OK patch applied.
+I'm dropping this until you convince Kevin/Tony that this is
+the way to go.
 
-For non-generic pinconf drivers this is more helpful.
+One thing caught my eye, you add:
 
-Getting pin config or pin multiplexing from the hardware is
-somewhat unimplemented in many drivers, that is one of the
-holes we need to work on...
+> +static void _aggressive_pm_runtime_get_sync(struct gpio_bank *bank)
+> +static void _aggressive_pm_runtime_put(struct gpio_bank *bank)
+(..)
+
+Then everywhere:
+
+> +       _aggressive_pm_runtime_get_sync(bank);
+(...)
+> +       _aggressive_pm_runtime_put(bank);
+
+Aggressive, argh, runtime PM is agressive by definition. If you
+want to switch this on and off use the compile option
+to enable/disable runtime PM altogether and do not wrap it
+like this.
 
 Yours,
 Linus Walleij
