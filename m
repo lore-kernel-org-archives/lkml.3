@@ -1,132 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3LLX4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 18:56:43 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46553 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab3LLX4l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 18:56:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
-References: <20131127184652.GA1856@kroah.com> <CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
- <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 12 Dec 2013 16:56:20 -0700
-Message-ID: <CAErSpo6_s6-Dc__-AzausBVDvOAY5beh7ivng2dWHUN1iRyj+g@mail.gmail.com>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752020Ab3LLX5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 18:57:51 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7997 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751343Ab3LLX5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 18:57:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,475,1384329600"; 
+   d="scan'208";a="451491973"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] x86, microcode: Do Intel microcode revision check signed v2
+Date: Thu, 12 Dec 2013 15:57:47 -0800
+Message-Id: <1386892668-22256-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 4:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sat, Dec 7, 2013 at 12:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Nov 27, 2013 at 11:46 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->>> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>
->>> The PCI MSI sysfs code is a mess with kobjects for things that don't
->>> really need to be kobjects.  This patch creates attributes dynamically
->>> for the MSI interrupts instead of using kobjects.
->>>
->>> Note, this removes a directory from the current MSI interrupt sysfs
->>> code:
->>>
->>> old MSI kobjects:
->>> pci_device
->>>    └── msi_irqs
->>>        └── 40
->>>            └── mode
->>>
->>> new MSI attributes:
->>> pci_device
->>>    └── msi_irqs
->>>        └── 40
->>>
->>> As there was only one file "mode" with the kobject model, the interrupt
->>> number is now a file that returns the "mode" of the interrupt (msi vs.
->>> msix).
->>>
->>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>
->> I added the acks from Neil and Veaceslav, folded in the
->> Documentation/ABI update, and applied the whole thing to my pci/misc
->> branch for v3.14.  Thanks!
->
-> got:
-> [   71.429735] BUG: key ffff887fcf082a58 not in .data!
-> [   71.429737] ------------[ cut here ]------------
-> [   71.429742] WARNING: CPU: 0 PID: 4 at kernel/locking/lockdep.c:2987 lockdep_i
-> nit_map+0x127/0x5b0()
-> [   71.429743] DEBUG_LOCKS_WARN_ON(1)
-> [   71.429744] Modules linked in:
-> [   71.429747] CPU: 0 PID: 4 Comm: kworker/0:0 Tainted: G          I  3.13.0-rc3
-> -yh-01187-ge0e4e4e-dirty #45
-> [   71.429757] Workqueue: events work_for_cpu_fn
-> [   71.429792]  0000000000000009 ffff881fcf95da58 ffffffff82020475 ffff881fcf95d
-> aa0
-> [   71.429800]  ffff881fcf95da90 ffffffff81097c3d ffff887fcf082a58 ffff88dfcec1a
-> d28
-> [   71.429809]  0000000000000000 0000000000000000 ffff889fcf2eecd0 ffff881fcf95d
-> af0
-> [   71.429809] Call Trace:
-> [   71.429814]  [<ffffffff82020475>] dump_stack+0x45/0x56
-> [   71.429818]  [<ffffffff81097c3d>] warn_slowpath_common+0x7d/0xa0
-> [   71.429822]  [<ffffffff81097cac>] warn_slowpath_fmt+0x4c/0x50
-> [   71.429826]  [<ffffffff810e3d97>] lockdep_init_map+0x127/0x5b0
-> [   71.429835]  [<ffffffff81242fe8>] ? sysfs_new_dirent+0x98/0x140
-> [   71.429839]  [<ffffffff81242033>] sysfs_add_file_mode_ns+0x63/0xc0
-> [   71.429843]  [<ffffffff8124491d>] internal_create_group+0x18d/0x260
-> [   71.429853]  [<ffffffff81556345>] ? populate_msi_sysfs+0x185/0x1d0
-> [   71.429857]  [<ffffffff81244a52>] sysfs_create_groups+0x42/0xa0
-> [   71.429861]  [<ffffffff81556367>] populate_msi_sysfs+0x1a7/0x1d0
-> [   71.429865]  [<ffffffff81556b67>] pci_enable_msi_block+0x1f7/0x2a0
-> [   71.429870]  [<ffffffff81549795>] pcie_port_device_register+0x335/0x520
-> [   71.429874]  [<ffffffff81549f08>] pcie_portdrv_probe+0x68/0xa0
-> [   71.429883]  [<ffffffff8153cf75>] local_pci_probe+0x45/0xa0
-> [   71.429887]  [<ffffffff810b0af4>] work_for_cpu_fn+0x14/0x20
-> [   71.429891]  [<ffffffff810b431b>] process_one_work+0x28b/0x4a0
-> [   71.429895]  [<ffffffff810b4292>] ? process_one_work+0x202/0x4a0
-> [   71.429899]  [<ffffffff810b55db>] worker_thread+0x26b/0x3a0
-> [   71.429903]  [<ffffffff810e262d>] ? trace_hardirqs_on+0xd/0x10
-> [   71.429906]  [<ffffffff810b5370>] ? manage_workers.isra.17+0x340/0x340
-> [   71.429912]  [<ffffffff810bc031>] kthread+0x111/0x120
-> [   71.429919]  [<ffffffff810cddab>] ? local_clock+0x2b/0x40
-> [   71.429923]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
-> [   71.429927]  [<ffffffff8203842c>] ret_from_fork+0x7c/0xb0
-> [   71.429931]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
-> [   71.429933] ---[ end trace c511e3d74efea94e ]---
->
-> looks like Greg forgot adding attr init.
->
-> Can you fold attached patch into Greg's patch ?
+From: Andi Kleen <ak@linux.intel.com>
 
-Sure.  I don't know how to reproduce it, so I couldn't verify the fix,
-but I added it to Greg's patch.  Thanks!
+The Intel SDM Vol 3 9.11.1 Microcode update states that
+the update revision field is signed. However we do the comparison
+unsigned, as the comparison gets promoted. Change the field
+to be signed, so that comparision is really signed.
 
-> Index: linux-2.6/drivers/pci/msi.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/msi.c
-> +++ linux-2.6/drivers/pci/msi.c
-> @@ -547,6 +547,7 @@ static int populate_msi_sysfs(struct pci
->                 msi_dev_attr = kzalloc(sizeof(*msi_dev_attr), GFP_KERNEL);
->                 if (!msi_dev_attr)
->                         return -ENOMEM;
-> +               sysfs_attr_init(&msi_dev_attr->attr);
->                 sprintf(name, "%d", entry->irq);
->                 msi_dev_attr->attr.name = name;
->                 msi_dev_attr->attr.mode = S_IRUGO;
+v2: Change field.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/microcode_intel.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index 9067166..ed1884b 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -5,7 +5,7 @@
+ 
+ struct microcode_header_intel {
+ 	unsigned int            hdrver;
+-	unsigned int            rev;
++	int	                rev;
+ 	unsigned int            date;
+ 	unsigned int            sig;
+ 	unsigned int            cksum;
+-- 
+1.8.3.1
+
