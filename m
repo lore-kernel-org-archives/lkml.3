@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab3LLPov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 10:44:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:56397 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751674Ab3LLPou (ORCPT
+	id S1751798Ab3LLPpn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 10:45:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40851 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab3LLPpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:44:50 -0500
-Date: Thu, 12 Dec 2013 10:44:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+	Thu, 12 Dec 2013 10:45:40 -0500
+Date: Thu, 12 Dec 2013 09:44:58 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+CC: Felipe Balbi <balbi@ti.com>, <davem@davemloft.net>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-Message-ID: <20131212104446.40b616c3@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.02.1312121600020.28330@ionos.tec.linutronix.de>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
-	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
-	<20131212080314.GA25783@infradead.org>
-	<alpine.DEB.2.02.1312121147130.28330@ionos.tec.linutronix.de>
-	<52A9CCA6.6040806@windriver.com>
-	<20131212095533.1fab411f@gandalf.local.home>
-	<alpine.DEB.2.02.1312121600020.28330@ionos.tec.linutronix.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+        <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 1/2] drivers: net: cpsw: fix dt probe for one port
+ ethernet
+Message-ID: <20131212154458.GA31694@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1386821345-30555-1-git-send-email-balbi@ti.com>
+ <52A96F9F.7060801@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="82I3+IH0IqGh5yIs"
+Content-Disposition: inline
+In-Reply-To: <52A96F9F.7060801@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Dec 2013 16:25:42 +0100 (CET)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 12 Dec 2013, Steven Rostedt wrote:
-> > On Thu, 12 Dec 2013 09:48:06 -0500
-> > Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >  
-> > > 1) git mv wait.[ch] --- > cwait.[ch]
-> > >    make an empty wait.h include cwait.h temporarily
-> > > 
-> > > 2) rename all existing functions in cwait.[ch] to have an added
-> > >   "c" prefix (or similar)
-> > >    
-> > >    in wait.h, temporarily add a bunch of things like
-> > >           #define wait_xyz  cwait_xyz
-> > >    so that things still compile and link.
-> > 
-> > What about instead change all users of wait_*() to cwait_*().
-> > 
-> > Then the next steps would be to skip 3 and jump right to 4)
-> > 
-> > > 
-> > > 3) track down the users who really need the extra complexity
-> > >    and have them use cwait calls and include cwait.h
-> > > 
-> > > 4) bring in the simple wait queue support as wait.c and wait.h
-> > >    and delete the defines added in step two.  This will be the
-> > >    flag day commit.
-> > 
-> > Not a flag day commit, as no one is using it. Then start converting all
-> > users back to the wait_*() functions one at a time. If something
-> > breaks, we know which one it was.
-> 
-> I don't think its a good idea to flip the name spaces.
-> 
-> We should rather convert the existing stuff over to cwait or whatever
-> and keep the swait for the new facility. So it breaks everything which
-> is trying to use wait*
-> 
->        - out of tree code
->        - students copying from ldd3
->        - ...
->        [ not that I care much about any of that ]
-> 
-> in a very obvious way.
-> 
+Hi,
 
-That still happens in my approach too, in the same step. When the
-simple wait queue is added, everything will break that uses it when it
-should not have. That includes, out of tree code, students copying
-from ldd3, etc.
+On Thu, Dec 12, 2013 at 01:41:11PM +0530, Mugunthan V N wrote:
+> On Thursday 12 December 2013 09:39 AM, Felipe Balbi wrote:
+> > From: Mugunthan V N <mugunthanvnm@ti.com>
+> >
+> > When only one port of the two port is pinned out, then dt probe is fail=
+ing
+> > because second port phy is not found. fixing this by checking the numbe=
+r of
+> > slaves and breaking the loop.
+> >
+> > Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+>=20
+> This patch is already applied to net branch and its commit id is
+> 3a27bfac17fe375539c4e0a53478679645eb5ae2.
 
-And it too will break in a very obvious way.
+Ok, cool. Should it be backported to v3.12 stable tree ? I can see it's
+applicable there too.
 
--- Steve
+--=20
+balbi
+
+--82I3+IH0IqGh5yIs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqdn6AAoJEIaOsuA1yqREhIEQAJ2Tr3WJhAsFUixl41XBCl3+
+KM6nm+IeZY1tlnDFoTpGQu7q0J2k099q0xeUOE7/OMdcWk1bw9Jc1Ii3MiCno+d5
+IvLDWJ+ixFS1T9cLqn+e4QYxqCBf10ZaCpq/3OE2e9Nb9ya2wNNq7iEEnOFl2RHi
+rAY8RgQF5bXQ5e6TS8/5qydupsp9RglOa12k8T7ja+IA/+z4HB9n1PTO0Q8mXFIb
+Y6455R5DGwsxfVFRJemoK9pi2MXPvNS3Np7q26jhFZy9InJEKWEz8CM0rfw2Wj93
+4nbo2HG3ps/VrRmLIGNPRcZCTs6oE4ev1G8buFdDYuEamuiUAT3SaIn8BtTPJSZb
+yn26oaDmuEW4I53IMzKC3f3pKtzgIGw7NfbZBwOJO/bd4KxPi6KjIT3cdSJOLCPV
++ENtPEsXLEe8M1L/e1MG4uf1kNVFA9qY4lOysITVtf5/stxIHOZbhIPPEdYZfDAl
+NzF4wp9iDdQlDAh8xirovr+Fd4NTuLYmPeXMzkk5DJixyhjYE6juf2B4/rCKbK4d
+YpOepvLTTBHLb8tDTkZSAIHYhbKL4f84gMfR4DmBTfWv5pnOVPl25+JngT9zL+TI
+/tjySoB/bg3XtyMVQzZ8POVo2zJbLri+vY0qYQgxUGNWHnOD2ZV6ev5GdCTsA/HH
+7pOL+6WXSU37B6d8Qpqg
+=3Hjl
+-----END PGP SIGNATURE-----
+
+--82I3+IH0IqGh5yIs--
