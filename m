@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab3LLN3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 08:29:39 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:41703 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab3LLN0Y (ORCPT
+	id S1751554Ab3LLNeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 08:34:25 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2466 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3LLNeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 08:26:24 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v5 3/9] usb: gadget: s3c-hsotg: enable build for other platforms
-Date: Thu, 12 Dec 2013 08:26:04 -0500
-Message-Id: <1386854770-2173-4-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1386854770-2173-1-git-send-email-mporter@linaro.org>
-References: <1386854770-2173-1-git-send-email-mporter@linaro.org>
+	Thu, 12 Dec 2013 08:34:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 12 Dec 2013 05:36:02 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <thierry.reding@gmail.com>, <rob.herring@calxeda.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 1/2] ARM: tegra: enable ams AS3722 drivers
+Date: Thu, 12 Dec 2013 19:01:03 +0530
+Message-ID: <1386855064-10993-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused Samsung-specific machine include and Kconfig
-dependency on S3C.
+ams AS3722 is the system power manager module IC for the Tegra124 based
+Venice2 platform. Enable configs for gpio, pincontrol, rtc, regulator
+support from this device.
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/usb/gadget/Kconfig     | 7 +++----
- drivers/usb/gadget/s3c-hsotg.c | 2 --
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ arch/arm/configs/tegra_defconfig |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index a91e642..970bd1a 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -294,11 +294,10 @@ config USB_PXA27X
- 	   gadget drivers to also be dynamically linked.
- 
- config USB_S3C_HSOTG
--	tristate "S3C HS/OtG USB Device controller"
--	depends on S3C_DEV_USB_HSOTG
-+	tristate "Designware/S3C HS/OtG USB Device controller"
- 	help
--	  The Samsung S3C64XX USB2.0 high-speed gadget controller
--	  integrated into the S3C64XX series SoC.
-+	  The Designware USB2.0 high-speed gadget controller
-+	  integrated into the S3C64XX and BCM281xx series SoC.
- 
- config USB_S3C2410
- 	tristate "S3C2410 USB Device Controller"
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 33eb690..8ceb5ef 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -37,8 +37,6 @@
- #include <linux/usb/phy.h>
- #include <linux/platform_data/s3c-hsotg.h>
- 
--#include <mach/map.h>
--
- #include "s3c-hsotg.h"
- 
- static const char * const s3c_hsotg_supply_names[] = {
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index 4461185..5cf4a48 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -137,6 +137,7 @@ CONFIG_SPI=y
+ CONFIG_SPI_TEGRA114=y
+ CONFIG_SPI_TEGRA20_SFLASH=y
+ CONFIG_SPI_TEGRA20_SLINK=y
++CONFIG_PINCTRL_AS3722=y
+ CONFIG_PINCTRL_PALMAS=y
+ CONFIG_GPIO_SYSFS=y
+ CONFIG_GPIO_PCA953X_IRQ=y
+@@ -149,6 +150,7 @@ CONFIG_CHARGER_TPS65090=y
+ CONFIG_POWER_RESET=y
+ CONFIG_POWER_RESET_GPIO=y
+ CONFIG_SENSORS_LM90=y
++CONFIG_MFD_AS3722=y
+ CONFIG_MFD_MAX8907=y
+ CONFIG_MFD_PALMAS=y
+ CONFIG_MFD_TPS65090=y
+@@ -157,6 +159,7 @@ CONFIG_MFD_TPS65910=y
+ CONFIG_REGULATOR=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_VIRTUAL_CONSUMER=y
++CONFIG_REGULATOR_AS3722=y
+ CONFIG_REGULATOR_GPIO=y
+ CONFIG_REGULATOR_MAX8907=y
+ CONFIG_REGULATOR_PALMAS=y
+@@ -218,6 +221,7 @@ CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
+ CONFIG_LEDS_TRIGGER_TRANSIENT=y
+ CONFIG_LEDS_TRIGGER_CAMERA=y
+ CONFIG_RTC_CLASS=y
++CONFIG_RTC_DRV_AS3722=y
+ CONFIG_RTC_DRV_MAX8907=y
+ CONFIG_RTC_DRV_PALMAS=y
+ CONFIG_RTC_DRV_TPS6586X=y
 -- 
-1.8.4
+1.7.1.1
 
