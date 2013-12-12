@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3LLOp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:45:26 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:35502 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856Ab3LLOpW (ORCPT
+	id S1752095Ab3LLOpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:45:47 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:46895 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab3LLOpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:45:22 -0500
-Date: Thu, 12 Dec 2013 11:21:21 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Anton Blanchard <anton@samba.org>
-Cc: cody@linux.vnet.ibm.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, mpe@ellerman.id.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf symbols: symbol-minimal.c causes random fd to be
- closed
-Message-ID: <20131212142121.GA8164@ghostprotocols.net>
-References: <20131212134725.4dacdd06@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212134725.4dacdd06@kryten>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Dec 2013 09:45:19 -0500
+From: Thierry Reding <thierry.reding@gmail.com>
+To: David Airlie <airlied@linux.ie>
+Cc: Arnd Bergmann <arnd@arndb.de>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drm: Implement dummies for debugfs helpers
+Date: Thu, 12 Dec 2013 15:44:04 +0100
+Message-Id: <1386859444-1693-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 12, 2013 at 01:47:25PM +1100, Anton Blanchard escreveu:
-> 
-> I hit a cryptic failure when testing a recent version
-> of perf:
-> 
->   # perf report
->   write failure on standard output: Bad file descriptor
-> 
-> The issue is in commit b68e2f91 (perf symbols: Introduce symsrc
-> structure). symsrc__destroy() does a close(ss->fd) but
-> ss->fd is only initialised in the symbol-elf.c case and
-> not for symbol-minimal.c.
-> 
-> The issue has been around for a while however most people
-> will build with libelf which wont use the symbol-minimal.c
-> code.
-> 
-> Cc: stable@vger.kernel.org # v3.8+
-> Signed-off-by: Anton Blanchard <anton@samba.org>
+In case where debugfs support is disabled, define dummy functions to
+avoid the need for #ifdefery in drivers.
 
-This was fixed recently, yeah, should go to stable as well:
+Based on an earlier patch by Arnd Bergmann.
 
-commit 779e24e2c777bffa9a6e3d5e821859e67008c98b
-Author: Adrian Hunter <adrian.hunter@intel.com>
-Date:   Wed Dec 4 16:23:01 2013 +0200
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ include/drm/drmP.h | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-    perf symbols: Fix random fd closing with no libelf
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 1d4a920ef7ff..28beb385380c 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1461,6 +1461,30 @@ extern int drm_debugfs_create_files(const struct drm_info_list *files,
+ extern int drm_debugfs_remove_files(const struct drm_info_list *files,
+ 				    int count, struct drm_minor *minor);
+ extern int drm_debugfs_cleanup(struct drm_minor *minor);
++#else
++static inline int drm_debugfs_init(struct drm_minor *minor, int minor_id,
++				   struct dentry *root)
++{
++	return 0;
++}
++
++static inline int drm_debugfs_create_files(const struct drm_info_list *files,
++					   int count, struct dentry *root,
++					   struct drm_minor *minor)
++{
++	return 0;
++}
++
++static inline int drm_debugfs_remove_files(const struct drm_info_list *files,
++					   int count, struct drm_minor *minor)
++{
++	return 0;
++}
++
++static inline int drm_debugfs_cleanup(struct drm_minor *minor)
++{
++	return 0;
++}
+ #endif
+ 
+ 				/* Info file support */
+-- 
+1.8.4.2
 
-> ---
-> 
-> diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-> index 2d2dd05..3528204 100644
-> --- a/tools/perf/util/symbol-minimal.c
-> +++ b/tools/perf/util/symbol-minimal.c
-> @@ -254,6 +254,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso __maybe_unused,
->  		goto out_close;
->  
->  	ss->type = type;
-> +	ss->fd = fd;
->  
->  	return 0;
->  out_close:
