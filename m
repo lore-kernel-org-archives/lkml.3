@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3LLAQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 19:16:48 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:36553 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3LLAQr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 19:16:47 -0500
-Message-ID: <52A90069.4060401@linaro.org>
-Date: Thu, 12 Dec 2013 08:16:41 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@kernel.org>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>
-Subject: Re: nohz_full left a periodic tick cpu issue
-References: <52A845BD.5020801@linaro.org> <20131211152538.GR4208@linux.vnet.ibm.com> <20131211153114.GB7862@localhost.localdomain>
-In-Reply-To: <20131211153114.GB7862@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751709Ab3LLAYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 19:24:35 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43668 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507Ab3LLAYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 19:24:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,874,1378882800"; 
+   d="scan'208";a="448649115"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Jones <davej@redhat.com>, akpm@linux-foundation.org
+Cc: Vlastimil Babka <vbabka@suse.cz>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        kirill.shutemov@linux.intel.com, Sasha Levin <sasha.levin@oracle.com>
+In-Reply-To: <20131211163809.GA26342@redhat.com>
+References: <20131206210254.GA7962@redhat.com>
+ <52A8877A.10209@suse.cz>
+ <20131211163809.GA26342@redhat.com>
+Subject: Re: oops in pgtable_trans_huge_withdraw
 Content-Transfer-Encoding: 7bit
+Message-Id: <20131212002422.98262E0090@blue.fi.intel.com>
+Date: Thu, 12 Dec 2013 02:24:22 +0200 (EET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 11:31 PM, Frederic Weisbecker wrote:
->> > OK, I'll bite...  Why not just use CONFIG_NO_HZ_FULL_SYSIDLE=y with
->> > CONFIG_NO_HZ_FULL_SYSIDLE_SMALL set to at least the number of CPUs on
->> > your system?  The default for CONFIG_NO_HZ_FULL_SYSIDLE_SMALL is eight.
->> > This stuff is in mainline, though Frederic's exploitation of it is
->> > still in the works.
->> > 
->> > On smaller systems, with Frederic's latest work, this should allow CPU 0
->> > to go idle quickly.
->> > 
->> > What are you needing that this would not provide?
-> Yeah I think that's what he needs, but we haven't much advertized that feature
-> yet. I mean there are good reasons, it's not yet working :o)
-
-Many thanks for Paul and Frederic's comments!
-
-yes, I enabled FULL_SYSIDLE with FULL_SYSIDLE_SMALL=2, but as Frederic
-said they are not yet working.
-
+Dave Jones wrote:
+> On Wed, Dec 11, 2013 at 04:40:42PM +0100, Vlastimil Babka wrote:
+>  > On 12/06/2013 10:02 PM, Dave Jones wrote:
+>  > > I've spent a few days enhancing trinity's use of mmap's, trying to make it
+>  > > reproduce https://lkml.org/lkml/2013/12/4/499
+>  > 
+>  > FYI, I managed to reproduce that using trinity today,
+>  > trinity was from git at commit e8912cc which is from Dec 09 so I guess 
+>  > your enhancements were already there?
 > 
-> But yeah Alex, I'm working on plugging the full system idle detection (CONFIG_NO_HZ_FULL_SYSIDLE=y)
-> to shutdown the timekeeping CPUs adaptively.
+> yep, everything I had pending is in HEAD now.
 > 
-> I have the patches ready, I'm just polishing a few things, writing changelogs, then I'll send
-> to LKML with you Cc'ed :)
+>  > kernel was linux-next-20131209
+>  > I was running trinity -c mmap -c munmap -c mremap -c remap_file_pages -c 
+>  > mlock -c munlock
+>  
+> A shorthand for all those -c's is '-G vm'. (Though there might be a couple
+> extra syscalls in the list too, madvise, mprotect etc).
+> 
+>  > Now I'm running with Kirill's patch, will post results later.
+>  
+> Seemed to fix it for me, I've not reproduced that particular bug since applying it.
+> Kirill, is that on its way to Linus soon ?
 
-I am very glad to hear this. looking forward to seeing your patch soon. :)
+It's in -mm tree for a week already.
+
+Andrew, could you push it to Linus? More people steps on the bug.
 
 -- 
-Thanks
-    Alex
+ Kirill A. Shutemov
