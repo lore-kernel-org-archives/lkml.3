@@ -1,40 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab3LLTed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 14:34:33 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43499 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750989Ab3LLTec (ORCPT
+	id S1751730Ab3LLTji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 14:39:38 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46749 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3LLTjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 14:34:32 -0500
-Message-ID: <52AA0FC4.3090606@vmware.com>
-Date: Thu, 12 Dec 2013 20:34:28 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 12 Dec 2013 14:39:35 -0500
+Message-ID: <52AA10F4.6070108@linaro.org>
+Date: Thu, 12 Dec 2013 11:39:32 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>, linaro-mm-sig@lists.linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [RFC] dma-buf: Implement test module
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
-In-Reply-To: <1386858989-1487-1-git-send-email-treding@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Brecht Machiels <brecht@mos6581.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] 41c7f74 rtc: Disable the alarm in the hardware (v2)
+References: <20131201220343.2285b12ee1c1e54252dc7dd9@mos6581.org> <529CF1D5.	6010406@linaro.org> <20131202211958.GE7380@pd.tnic> <l7ppbg$brg$1@ger.gmane.org>
+In-Reply-To: <l7ppbg$brg$1@ger.gmane.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2013 03:36 PM, Thierry Reding wrote:
-> This is a simple test module that can be used to allocate, export and
-> delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
-> systems that lack a real second driver.
+On 12/05/2013 03:51 AM, Brecht Machiels wrote:
+> On Mon, 02 Dec 2013 22:19:58 +0100, Borislav Petkov wrote:
 >
+>> On Mon, Dec 02, 2013 at 12:47:17PM -0800, John Stultz wrote:
+>>> Ok, sorry about this. I've been hoping we'd get some better insight
+>>> into what's actually happening on these strange BIOSes where disabling
+>>> the irq seems to cause it to scream (powering the system back on when
+>>> its shutdown), in the hopes of having a proper workaround. But despite
+>>> Borislav's efforts, he didn't seem to be able to root cause the issue.
+>> Right, this bug is too nasty - you could generate good random numbers
+>> just from how the hardware behaves. :) And I've been trying to make
+>> sense of what happens but I failed, as you know. :(
+>>
+>> I consider it a huge waste of time and efforts having to deal with such
+>> b0rked hardware instead of throwing it out of the window into the poring
+>> rain while it is still powered.
+>>
+>>> Borislav, could you double check this patch still works on your
+>>> hardware as well?
+>> Well, we have the patch in SLES11:
+>>
+>> http://kernel.opensuse.org/cgit/kernel/commit/?h=SLE11-
+> SP3&id=835398eb94dca7d55acd1a2628372e602ae3252a
+>> and it passed testing.
+>>
+>> From what I see below, your version is equivalent to the one above with
+>> the logic reversed so it should work. I'll still try to get that
+>> affected box and run your version on it but it'll take a while.
+> Hello John and Boris,
 >
+> Thank you for your quick response. And no need for an apology, I can 
+> understand your frustration with the way some hardware behaves.
+>
+> I ran with John's patch for a couple of days, and it seems to work. 
+> Curiously, the laptop did spontaneously boot the first time that I shut 
+> it down with the patched kernel. I have no conclusive explanation for 
+> this, but I have noticed that a manual power down is necessary after 
+> booting with an unpatched kernel. Simply rebooting with a patched kernel 
+> is not enough to stop the spontaneous boots. As far as I can remember, I 
+> went directly from my custom kernel (with the v2 patch reverted) to a 
+> kernel with your patch applied, so I'm not 100% convinced everything is 
+> all right. I should say that I did experience some spontaneous boots when 
+> running only Windows XP in the past, so there may be occasions where 
+> drivers might not be able to help at all.
 
-Looks nice. I wonder whether this could be extended to create a 
-"streaming" dma-buf from a user space mapping. That could be used as a 
-generic way to implement streaming (user) buffer objects, rather than to 
-add explicit support for those in, for example, TTM.
+Yea. It seems almost like the RTC_AIE bit is inverted in the hardware or
+something.
 
-/Thomas
+> Thankfully, after other shutdowns/hibernates (about 6 in total) the 
+> laptop never booted spontaneously.
+>
+> As for killing alarm functionality on the affected systems, I did some 
+> quick tests. With the patched kernel, I can set the RTC alarm by echoing 
+> to /sys/class/rtc/rtc0/wakealarm, and the machine will boot at the 
+> specified time. I have also tried setting the RTC alarm, and then 
+> disabling it again by echoing '0' to /sys/class/rtc/rtc0/wakealarm. While 
+> this sets the alrm_time to five minutes in the future, alarm_IRQ is set 
+> to 'no' and the machine does *not* boot spontaneously 5 minutes after 
+> shutting down. So, all seems well, as far as I can see. Unfortunately, I 
+> don't know enough about the RTC driver to draw any conclusions from this.
+
+Ok. Sounds like the patch works fairly well then. I'll go ahead and
+queue it for 3.14 and -stable.
+
+thanks
+-john
+
