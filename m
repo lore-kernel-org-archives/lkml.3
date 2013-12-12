@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab3LLLOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:14:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55700 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab3LLLOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:14:34 -0500
-Date: Thu, 12 Dec 2013 12:14:29 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC] mm readahead: Fix the readahead fail in case of
- empty numa node
-Message-ID: <20131212111429.GA4312@quack.suse.cz>
-References: <1386066977-17368-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <20131203143841.11b71e387dc1db3a8ab0974c@linux-foundation.org>
- <529EE811.5050306@linux.vnet.ibm.com>
- <20131204004125.a06f7dfc.akpm@linux-foundation.org>
- <529EF0FB.2050808@linux.vnet.ibm.com>
- <20131204134838.a048880a1db9e9acd14a39e4@linux-foundation.org>
- <20131211224917.GF1163@quack.suse.cz>
- <20131211150522.4b853323e8b82f342f81b64d@linux-foundation.org>
+	id S1751535Ab3LLLRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:17:17 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:48120 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3LLLRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 06:17:14 -0500
+Date: Thu, 12 Dec 2013 12:15:57 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Valentine Barshak <valentine.barshak@cogentembedded.com>,
+        Wei Yongjun <weiyj.lk@gmail.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
+ host maintainers
+Message-ID: <20131212111556.GB11524@ulmo.nvidia.com>
+References: <20131211183237.GI4699@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/NkBOFFp2J2Af1nK"
 Content-Disposition: inline
-In-Reply-To: <20131211150522.4b853323e8b82f342f81b64d@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131211183237.GI4699@google.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-12-13 15:05:22, Andrew Morton wrote:
-> On Wed, 11 Dec 2013 23:49:17 +0100 Jan Kara <jack@suse.cz> wrote:
-> 
-> > >  /*
-> > > - * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
-> > > - * sensible upper limit.
-> > > + * max_sane_readahead() is disabled.  It can later be removed altogether, but
-> > > + * let's keep a skeleton in place for now, in case disabling was the wrong call.
-> > >   */
-> > >  unsigned long max_sane_readahead(unsigned long nr)
-> > >  {
-> > > -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
-> > > -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-> > > +	return nr;
-> > >  }
-> > >  
-> > >  /*
-> > > 
-> > > Can anyone see a problem with this?
-> >   Well, the downside seems to be that if userspace previously issued
-> > MADV/FADV_WILLNEED on a huge file, we trimmed the request to a sensible
-> > size. Now we try to read the whole huge file which is pretty much
-> > guaranteed to be useless (as we'll be pushing out of cache data we just
-> > read a while ago). And guessing the right readahead size from userspace
-> > isn't trivial so it would make WILLNEED advice less useful. What do you
-> > think?
-> 
-> OK, yes, there is conceivably a back-compatibility issue there.  There
-> indeed might be applications which decide the chuck the whole thing at
-> the kernel and let the kernel work out what is a sensible readahead
-> size to perform.
->
-> But I'm really struggling to think up an implementation!  The current
-> code looks only at the caller's node and doesn't seem to make much
-> sense.  Should we look at all nodes?  Hard to say without prior
-> knowledge of where those pages will be coming from.
-  Well, I believe that we might have some compatibility issues only for
-non-NUMA machines - there the current logic makes sense. For NUMA machines
-I believe we are free to do basically anything because results of the
-current logic are pretty random.
 
-Thinking about proper implementation for NUMA - max_sane_readahead() is
-really interesting for madvise() and fadvise() calls (standard on demand
-readahead is bounded by bdi->ra_pages which tends to be pretty low anyway
-(like 512K or so)). For these calls we will do the reads from the process
-issuing the [fm]advise() call and thus we will allocate pages depending on
-the NUMA policy. So depending on this policy we should be able to pick some
-estimate on the number of available pages, shouldn't we?
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BTW, the fact that [fm]advise() calls submit all reads synchronously is
-another reason why we should bound the readahead requests to a sensible
-size.
+On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
+> If this looks reasonable, I'll merge it via the PCI tree for v3.13.
+>=20
+> Bjorn
+>=20
+>=20
+> MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI host maintainers
+>=20
+> Add entries for PCI host controller drivers in drivers/pci/host/.
+>=20
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  MAINTAINERS |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Looks good to me:
+
+Acked-by: Thierry Reding <treding@nvidia.com>
+
+--/NkBOFFp2J2Af1nK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqZrsAAoJEN0jrNd/PrOhoGAP/Rwv5Hl1kzl2/sl6eHcZ5ejn
+weIUFpPMDI9nlrXDrB6WLC7AeUa2ZiK6VIyg2gn+ORxqtSxlzb9o4X0CQmqvhK91
+RK8cXNasIqNUp5cTzihzvRvPlPmYhElSmqgoAV35BHh14hhaVNxtbnKqTNGUjQUR
+JX+0SWNllb2wG6Bc2kA/mIk2HU4OugQmIIFsZ+Kh8rFNKFYW/gh2b76fkZwAi9Ra
+ncRoXec7XZkC9cVgxiCQwlifwgzNzMzbmTz1LvqUkxN5shBebaBvRJbcfST9ILEg
+JoVTDzJCmhtRt5ugJX7nAXvJmIdwZaTGl1rUtDKWs5fFPT3LPDCqcdUl+nyBIuSL
+wZ4z9S5ya2hYdOUQzvDzY91n6BCiquNVqoJNEPMj23A8EqrrpfDPfn4wChwLJtxK
+QyxCbfQwchhLVQeZBrOtEaTMJaZXl14zbM4YzkPCBndyoOzDc0jD3paf21wilVo/
+ogBUcVdeQcgm3H+EFueJSBlhVsmwmJHGKbgmLJp0F6wpeAFeBph/0mKTf2yyD0TJ
+WJ3Xs9y1E4DxcaUPnx9VSuijo4OEkGrXZKd+2AtXjjRNV6ZU4tbYlts9ecYZ3A6V
+dmZZKg0hhyVkT2H5VkPCkb3PuZVpMEuvN6jofe34/KmD0vtyGj4ZguZvmW8EAzAN
+6wY+t8q6F2A6ZfhotLqG
+=Y3ls
+-----END PGP SIGNATURE-----
+
+--/NkBOFFp2J2Af1nK--
