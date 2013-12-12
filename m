@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3LLMWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:22:36 -0500
-Received: from mga02.intel.com ([134.134.136.20]:12924 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab3LLMWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:22:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.93,877,1378882800"; 
-   d="scan'208";a="451143936"
-Message-ID: <52A9AA72.1010601@intel.com>
-Date: Thu, 12 Dec 2013 14:22:10 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751579Ab3LLM2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:28:10 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:49596 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab3LLM2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 07:28:08 -0500
+Message-ID: <52A9AADA.5090603@appelbaum.net>
+Date: Thu, 12 Dec 2013 12:23:54 +0000
+From: Jacob Appelbaum <jacob@appelbaum.net>
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 27/71] perf evlist: Add 'system_wide' option
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com> <1386765443-26966-28-git-send-email-alexander.shishkin@linux.intel.com> <52A8BEEB.1040203@gmail.com>
-In-Reply-To: <52A8BEEB.1040203@gmail.com>
+To: Christian Grothoff <grothoff@in.tum.de>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, knock@gnunet.org
+Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity
+ protection
+References: <52A75EF8.3010308@in.tum.de> <20131211.150137.368953964178408437.davem@davemloft.net> <52A8C8B4.4060109@in.tum.de> <20131211122637.75b09074@nehalam.linuxnetplumber.net> <87bo0nulkt.fsf@tassilo.jf.intel.com> <52A8ECF5.3070604@in.tum.de> <20131212012317.GL21717@two.firstfloor.org> <52A98DBF.4090702@appelbaum.net> <52A9A17F.6050505@in.tum.de>
+In-Reply-To: <52A9A17F.6050505@in.tum.de>
+OpenPGP: id=4193A197
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/13 21:37, David Ahern wrote:
-> On 12/11/13, 5:36 AM, Alexander Shishkin wrote:
->> From: Adrian Hunter <adrian.hunter@intel.com>
+Christian Grothoff:
+> On 12/12/2013 11:19 AM, Jacob Appelbaum wrote:
+>> I think that generally, I would prefer if the code didn't use MD5 but
+>> otherwise, I don't see any real risk of adding an exploitable hole. It
+>> seems silly to disable it by default though - ideally, I'd like a sysctl
+>> to ensure that Tor could use this without making the user recompile
+>> their kernel. That is more of a pain than running a userspace helper, I
+>> think.
 >>
->> Add an option to cause a selected event
->> to be opened always without a pid when
->> configured by perf_evsel__config().
->>
->> This is needed when using the sched_switch
->> tracepoint to follow object code execution.
->> sched_switch occurs before the task
->> switch and so it cannot record it in a
->> context limited to that task.  Note
->> that also means that sched_switch is
->> useless when capturing data per-thread,
->> as is the 'context-switches' software
->> event for the same reason.
+>> All the best,
+>> Jacob
 > 
-> This seems like a tailored solution for what is really a generic problem:
-> you need events to have different attributes -- a mix of system wide, task
-> based, with or without callchains and other sample options.
+> Given that the output is truncated to 32 bits and that performance (SYN
+> flood) is also a concern, AND that the original TCP SQN generation is
+> also MD5-based (and we want to look the same), what disadvantage do you
+> see over MD5?  Given the truncation to 32 bits, I don't think a stronger
+> hash would do anything for us.
 
-Actually in this case it is not the attribute but another parameter of the
-perf_event_open syscall, namely the pid.  The effect of that is that there
-are potentially fewer file descriptors needed for that event i.e. just 1 per
-cpu compared with 1 per cpu per thread.
+If we believe that MD5 is not secure, we should not use it. That others
+use it is not a strong reason to use it. Everyone should stop using MD5
+- especially truncated MD5. :)
 
-This is a generic solution for the case where you want to mix an event that
-is not tied to a process, with other events that are.
+> 
+> As for it being disabled by default, we did this with respect to
+> kernel submission guidelines which we understood said that features
+> should _initially_ always be submitted with disabled-by-default
+> (presumably so that until they have stabilized, nobody is harmed
+> unless they explicitly activate the code).
+> 
 
-If it were the attribute it would be easy because 'attr' is a member of
-'struct evsel' so it can simply be changed directly.
+I think that is a fine reason at submission time but this should not be
+the default state for very long.
 
+> I don't see the point in having a sysctl, as applications have to
+> explicitly request it anyway.
+
+To have it supported and to have it enabled in the kernel are not
+exactly the same thing. It would be nice if it was available to everyone
+by default (likely with some CAP) and to enable it on a systemwide
+basis, one could simply flip a sysctl. One also needs to use it in an
+application, obviously.
+
+All the best,
+Jacob
