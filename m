@@ -1,526 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3LLGGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 01:06:54 -0500
-Received: from ozlabs.org ([203.10.76.45]:50696 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382Ab3LLGGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 01:06:49 -0500
-Date: Thu, 12 Dec 2013 17:06:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Dec 12
-Message-Id: <20131212170642.5681be47485a74903855402f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Dec_2013_17_06_42_+1100_5Z/.CSvjAN9D0kPa"
+	id S1751511Ab3LLGOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 01:14:53 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:53352 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab3LLGOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 01:14:50 -0500
+X-AuditID: 9c93017e-b7bb9ae000000ec8-2a-52a95314a9e8
+Date: Thu, 12 Dec 2013 15:12:24 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH V2 0/6] Memory compaction efficiency improvements
+Message-ID: <20131212061223.GA5912@lge.com>
+References: <1386757477-10333-1-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386757477-10333-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Dec_2013_17_06_42_+1100_5Z/.CSvjAN9D0kPa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Dec 11, 2013 at 11:24:31AM +0100, Vlastimil Babka wrote:
+> Changelog since V1 (thanks to the reviewers!)
+> o Included "trace compaction being and end" patch in the series     (mgorman)
+> o Changed variable names and comments in patches 2 and 5            (mgorman)
+> o More thorough measurements, based on v3.13-rc2
+> 
+> The broad goal of the series is to improve allocation success rates for huge
+> pages through memory compaction, while trying not to increase the compaction
+> overhead. The original objective was to reintroduce capturing of high-order
+> pages freed by the compaction, before they are split by concurrent activity.
+> However, several bugs and opportunities for simple improvements were found in
+> the current implementation, mostly through extra tracepoints (which are however
+> too ugly for now to be considered for sending).
+> 
+> The patches mostly deal with two mechanisms that reduce compaction overhead,
+> which is caching the progress of migrate and free scanners, and marking
+> pageblocks where isolation failed to be skipped during further scans.
+> 
+> Patch 1 (from mgorman) adds tracepoints that allow calculate time spent in
+>         compaction and potentially debug scanner pfn values.
+> 
+> Patch 2 encapsulates the some functionality for handling deferred compactions
+>         for better maintainability, without a functional change
+>         type is not determined without being actually needed.
+> 
+> Patch 3 fixes a bug where cached scanner pfn's are sometimes reset only after
+>         they have been read to initialize a compaction run.
+> 
+> Patch 4 fixes a bug where scanners meeting is sometimes not properly detected
+>         and can lead to multiple compaction attempts quitting early without
+>         doing any work.
+> 
+> Patch 5 improves the chances of sync compaction to process pageblocks that
+>         async compaction has skipped due to being !MIGRATE_MOVABLE.
+> 
+> Patch 6 improves the chances of sync direct compaction to actually do anything
+>         when called after async compaction fails during allocation slowpath.
+> 
+> The impact of patches were validated using mmtests's stress-highalloc benchmark
+> with mmtests's stress-highalloc benchmark on a x86_64 machine with 4GB memory.
+> 
+> Due to instability of the results (mostly related to the bugs fixed by patches
+> 2 and 3), 10 iterations were performed, taking min,mean,max values for success
+> rates and mean values for time and vmstat-based metrics.
+> 
+> First, the default GFP_HIGHUSER_MOVABLE allocations were tested with the patches
+> stacked on top of v3.13-rc2. Patch 2 is OK to serve as baseline due to no
+> functional changes in 1 and 2. Comments below.
+> 
+> stress-highalloc
+>                              3.13-rc2              3.13-rc2              3.13-rc2              3.13-rc2              3.13-rc2
+>                               2-nothp               3-nothp               4-nothp               5-nothp               6-nothp
+> Success 1 Min          9.00 (  0.00%)       10.00 (-11.11%)       43.00 (-377.78%)       43.00 (-377.78%)       33.00 (-266.67%)
+> Success 1 Mean        27.50 (  0.00%)       25.30 (  8.00%)       45.50 (-65.45%)       45.90 (-66.91%)       46.30 (-68.36%)
+> Success 1 Max         36.00 (  0.00%)       36.00 (  0.00%)       47.00 (-30.56%)       48.00 (-33.33%)       52.00 (-44.44%)
+> Success 2 Min         10.00 (  0.00%)        8.00 ( 20.00%)       46.00 (-360.00%)       45.00 (-350.00%)       35.00 (-250.00%)
+> Success 2 Mean        26.40 (  0.00%)       23.50 ( 10.98%)       47.30 (-79.17%)       47.60 (-80.30%)       48.10 (-82.20%)
+> Success 2 Max         34.00 (  0.00%)       33.00 (  2.94%)       48.00 (-41.18%)       50.00 (-47.06%)       54.00 (-58.82%)
+> Success 3 Min         65.00 (  0.00%)       63.00 (  3.08%)       85.00 (-30.77%)       84.00 (-29.23%)       85.00 (-30.77%)
+> Success 3 Mean        76.70 (  0.00%)       70.50 (  8.08%)       86.20 (-12.39%)       85.50 (-11.47%)       86.00 (-12.13%)
+> Success 3 Max         87.00 (  0.00%)       86.00 (  1.15%)       88.00 ( -1.15%)       87.00 (  0.00%)       87.00 (  0.00%)
+> 
+>             3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2
+>              2-nothp     3-nothp     4-nothp     5-nothp     6-nothp
+> User         6437.72     6459.76     5960.32     5974.55     6019.67
+> System       1049.65     1049.09     1029.32     1031.47     1032.31
+> Elapsed      1856.77     1874.48     1949.97     1994.22     1983.15
+> 
+>                               3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2
+>                                2-nothp     3-nothp     4-nothp     5-nothp     6-nothp
+> Minor Faults                 253952267   254581900   250030122   250507333   250157829
+> Major Faults                       420         407         506         530         530
+> Swap Ins                             4           9           9           6           6
+> Swap Outs                          398         375         345         346         333
+> Direct pages scanned            197538      189017      298574      287019      299063
+> Kswapd pages scanned           1809843     1801308     1846674     1873184     1861089
+> Kswapd pages reclaimed         1806972     1798684     1844219     1870509     1858622
+> Direct pages reclaimed          197227      188829      298380      286822      298835
+> Kswapd efficiency                  99%         99%         99%         99%         99%
+> Kswapd velocity                953.382     970.449     952.243     934.569     922.286
+> Direct efficiency                  99%         99%         99%         99%         99%
+> Direct velocity                104.058     101.832     153.961     143.200     148.205
+> Percentage direct scans             9%          9%         13%         13%         13%
+> Zone normal velocity           347.289     359.676     348.063     339.933     332.983
+> Zone dma32 velocity            710.151     712.605     758.140     737.835     737.507
+> Zone dma velocity                0.000       0.000       0.000       0.000       0.000
+> Page writes by reclaim         557.600     429.000     353.600     426.400     381.800
+> Page writes file                   159          53           7          79          48
+> Page writes anon                   398         375         345         346         333
+> Page reclaim immediate             825         644         411         575         420
+> Sector Reads                   2781750     2769780     2878547     2939128     2910483
+> Sector Writes                 12080843    12083351    12012892    12002132    12010745
+> Page rescued immediate               0           0           0           0           0
+> Slabs scanned                  1575654     1545344     1778406     1786700     1794073
+> Direct inode steals               9657       10037       15795       14104       14645
+> Kswapd inode steals              46857       46335       50543       50716       51796
+> Kswapd skipped wait                  0           0           0           0           0
+> THP fault alloc                     97          91          81          71          77
+> THP collapse alloc                 456         506         546         544         565
+> THP splits                           6           5           5           4           4
+> THP fault fallback                   0           1           0           0           0
+> THP collapse fail                   14          14          12          13          12
+> Compaction stalls                 1006         980        1537        1536        1548
+> Compaction success                 303         284         562         559         578
+> Compaction failures                702         696         974         976         969
+> Page migrate success           1177325     1070077     3927538     3781870     3877057
+> Page migrate failure                 0           0           0           0           0
+> Compaction pages isolated      2547248     2306457     8301218     8008500     8200674
+> Compaction migrate scanned    42290478    38832618   153961130   154143900   159141197
+> Compaction free scanned       89199429    79189151   356529027   351943166   356326727
+> Compaction cost                   1566        1426        5312        5156        5294
+> NUMA PTE updates                     0           0           0           0           0
+> NUMA hint faults                     0           0           0           0           0
+> NUMA hint local faults               0           0           0           0           0
+> NUMA hint local percent            100         100         100         100         100
+> NUMA pages migrated                  0           0           0           0           0
+> AutoNUMA cost                        0           0           0           0           0
+> 
+> 
+> Observations:
+> - The "Success 3" line is allocation success rate with system idle (phases 1
+>   and 2 are with background interference). I used to get stable values around
+>   85% with vanilla 3.11. The lower min and mean values came with 3.12.
+>   This was bisected to commit 81c0a2bb ("mm: page_alloc:  fair zone allocator
+>   policy") As explained in comment for patch 3, I don't think the commit is
+>   wrong, but that it makes the effect of compaction bugs worse. From patch 3
+>   onwards, the results are OK and match the 3.11 results.
+> - Patch 4 also clearly helps phases 1 and 2, and exceeds any results I've
+>   seen with 3.11 (I didn't measure it that thoroughly then, but it was never
+>   above 40%).
+> - Compaction cost and number of scanned pages is higher, especially due to
+>   patch 4. However, keep in mind that patches 3 and 4 fix existing bugs in the
+>   current design of compaction overhead mitigation, they do not change it.
+>   If overhead is found unacceptable, then it should be decreased differently
+>   (and consistently, not due to random conditions) than the current implementation
+>   does. In contrast, patches 5 and 6 (which are not strictly bug fixes) do not
+>   increase the overhead (but also not success rates). This might be a limitation
+>   of the stress-highalloc benchmark as it's quite uniform.
+> 
+> Another set of results is when configuring stress-highalloc t allocate
+> with similar flags as THP uses:
+>  (GFP_HIGHUSER_MOVABLE|__GFP_NOMEMALLOC|__GFP_NORETRY|__GFP_NO_KSWAPD)
+> 
+> stress-highalloc
+>                              3.13-rc2              3.13-rc2              3.13-rc2              3.13-rc2              3.13-rc2
+>                                 2-thp                 3-thp                 4-thp                 5-thp                 6-thp
+> Success 1 Min          2.00 (  0.00%)        7.00 (-250.00%)       18.00 (-800.00%)       19.00 (-850.00%)       26.00 (-1200.00%)
+> Success 1 Mean        19.20 (  0.00%)       17.80 (  7.29%)       29.20 (-52.08%)       29.90 (-55.73%)       32.80 (-70.83%)
+> Success 1 Max         27.00 (  0.00%)       29.00 ( -7.41%)       35.00 (-29.63%)       36.00 (-33.33%)       37.00 (-37.04%)
+> Success 2 Min          3.00 (  0.00%)        8.00 (-166.67%)       21.00 (-600.00%)       21.00 (-600.00%)       32.00 (-966.67%)
+> Success 2 Mean        19.30 (  0.00%)       17.90 (  7.25%)       32.20 (-66.84%)       32.60 (-68.91%)       35.70 (-84.97%)
+> Success 2 Max         27.00 (  0.00%)       30.00 (-11.11%)       36.00 (-33.33%)       37.00 (-37.04%)       39.00 (-44.44%)
+> Success 3 Min         62.00 (  0.00%)       62.00 (  0.00%)       85.00 (-37.10%)       75.00 (-20.97%)       64.00 ( -3.23%)
+> Success 3 Mean        66.30 (  0.00%)       65.50 (  1.21%)       85.60 (-29.11%)       83.40 (-25.79%)       83.50 (-25.94%)
+> Success 3 Max         70.00 (  0.00%)       69.00 (  1.43%)       87.00 (-24.29%)       86.00 (-22.86%)       87.00 (-24.29%)
+> 
+>             3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2
+>                2-thp       3-thp       4-thp       5-thp       6-thp
+> User         6547.93     6475.85     6265.54     6289.46     6189.96
+> System       1053.42     1047.28     1043.23     1042.73     1038.73
+> Elapsed      1835.43     1821.96     1908.67     1912.74     1956.38
 
-Hi all,
+Hello, Vlastimil.
 
-Changes since 20131211:
+I have some questions related to your stat, not your patchset,
+just for curiosity. :)
 
-The powerpc tree still had its build failure for which I applied a
-supplied patch.
+Are these results, "elapsed time" and "vmstat", for Success 3 line scenario?
+If so, could you show me others?
+I wonder why thp case consumes more system time rather than no-thp case.
 
-The net-next tree gained a conflict against the net tree.
+And I found that elapsed time has no big difference between both cases,
+roughly less than 2%. In this situation, do we get more benefits with
+aggressive allocation like no-thp case?
 
-The block tree gained a conflict against the f2fs tree.
+Thanks.
 
-The usb-gadget tree still has its build failure so I used the version from
-next-20131206.
-
-Non-merge commits (relative to Linus' tree): 3588
- 4076 files changed, 171238 insertions(+), 96653 deletions(-)
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (minus CONFIG_PROFILE_ALL_BRANCHES - this fails its final
-link) and i386, sparc, sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-I am currently merging 209 trees (counting Linus' and 29 trees of patches
-pending for Linus' tree).
-
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (9538e10086bd Merge git://www.linux-watchdog.org/linu=
-x-watchdog)
-Merging fixes/master (8ae516aa8b81 Merge tag 'trace-fixes-v3.13-rc1' of git=
-://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace)
-Merging kbuild-current/rc-fixes (19514fc665ff arm, kbuild: make "make insta=
-ll" not depend on vmlinux)
-Merging arc-current/for-curr (da990a4f2d5a ARC: [perf] Fix a few thinkos)
-Merging arm-current/fixes (b31459adeab0 ARM: 7917/1: cacheflush: correctly =
-limit range of memory region being flushed)
-Merging m68k-current/for-linus (77a42796786c m68k: Remove deprecated IRQF_D=
-ISABLED)
-Merging metag-fixes/fixes (3b2f64d00c46 Linux 3.11-rc2)
-Merging powerpc-merge/merge (e641eb03ab2b powerpc: Fix up the kdump base ca=
-p to 128M)
-Merging sparc/master (1de425c7b271 sparc64: Fix build regression)
-Merging net/master (9508fdde4d53 Revert "8390 : Replace ei_debug with msg_e=
-nable/NETIF_MSG_* feature")
-Merging ipsec/master (239c78db9c41 net: clear local_df when passing skb bet=
-ween namespaces)
-Merging sound-current/for-linus (3690739b0135 ALSA: hda - Add static DAC/pi=
-n mapping for AD1986A codec)
-Merging pci-current/for-linus (4fc9bbf98fd6 PCI: Disable Bus Master only on=
- kexec reboot)
-Merging wireless/master (bbf807bc0697 ath9k: fix duration calculation for n=
-on-aggregated packets)
-Merging driver-core.current/driver-core-linus (a8b14744429f sysfs: give dif=
-ferent locking key to regular and bin files)
-Merging tty.current/tty-linus (39434abd942c n_tty: Fix missing newline echo)
-Merging usb.current/usb-linus (8820784203ac phy: kconfig: add depends on "U=
-SB_PHY" to OMAP_USB2 and TWL4030_USB)
-Merging staging.current/staging-linus (55ef003e4ae6 Merge tag 'iio-fixes-fo=
-r-3.13b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into st=
-aging-linus)
-Merging char-misc.current/char-misc-linus (76a9635979e5 mei: add 9 series P=
-CH mei device ids)
-Merging input-current/for-linus (241ecf1ce528 Input: adxl34x - Fix bug in d=
-efinition of ADXL346_2D_ORIENT)
-Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
-tripe)
-Merging crypto-current/master (389a5390583a crypto: scatterwalk - Use sg_ch=
-ain_ptr on chain entries)
-Merging ide/master (c2f7d1e103ef ide: pmac: remove unnecessary pci_set_drvd=
-ata())
-Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
-Merging sh-current/sh-fixes-for-linus (44033109e99c SH: Convert out[bwl] ma=
-cros to inline functions)
-Merging devicetree-current/devicetree/merge (1931ee143b0a Revert "drivers: =
-of: add initialization code for dma reserved memory")
-Merging rr-fixes/fixes (3459f11a8b16 virtio_balloon: update_balloon_size():=
- update correct field)
-Merging mfd-fixes/master (73beb63d290f mfd: rtsx_pcr: Disable interrupts be=
-fore cancelling delayed works)
-Merging vfio-fixes/for-linus (239a87020b26 Merge branch 'for-joerg/arm-smmu=
-/fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into fo=
-r-linus)
-Merging drm-intel-fixes/for-linux-next-fixes (a6b2666f7f83 drm/i915: Preven=
-t double unref following alloc failure during execbuffer)
-Merging asm-generic/master (fb9de7ebc3a2 xtensa: Use generic asm/mmu.h for =
-nommu)
-Merging arc/for-next (035a20627b46 ARC: [SMP] optimize IPI send and receive)
-Merging arm/for-next (f464ce8ba7ef Merge branches 'amba', 'fixes', 'kees' a=
-nd 'misc' into for-next)
-Merging arm-perf/for-next/perf (6ce4eac1f600 Linux 3.13-rc1)
-Merging arm-soc/for-next (72913fe2e10f Merge branch 'next/dt' into for-next)
-Merging bcm2835/for-next (5cc686267845 Merge branch 'for-3.14/defconfig' in=
-to for-next)
-Merging cortex-m/for-next (9c031a483646 ARM: v7-M: drop using mach/entry-ma=
-cro.S)
-Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
-to ep93xx-for-next)
-Merging imx-mxs/for-next (d8da618d5273 Merge branches 'imx/soc' and 'imx/dt=
-' into for-next)
-Merging ixp4xx/next (19f949f52599 Linux 3.8)
-Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
- standard 'qcom' prefix)
-Merging mvebu/for-next (3054cde59b01 Merge branch 'mvebu/dt' into for-next)
-Merging renesas/next (3b1263bf7001 Merge branches 'heads/fixes-for-v3.13', =
-'heads/defconfig', 'heads/usb-r8a66597-hcd', 'heads/boards' and 'heads/dt' =
-into devel)
-Merging samsung/for-next (8465d57097ce Merge branch 'v3.14-next/samsung-def=
-config' into for-next)
-Merging tegra/for-next (850500ad1edd Merge branch for-3.14/dt into for-next)
-Merging arm64/upstream (db4ed53cfe9f arm64: mm: Fix PMD_SECT_PROT_NONE defi=
-nition)
-Merging blackfin/for-linus (36855dcfc980 blackfin: fix build warning for un=
-used variable)
-Merging c6x/for-linux-next (546153d75a48 c6x: fix build failure caused by c=
-ache.h)
-Merging cris/for-next (be8cb7f42ab9 CRIS: drop unused Kconfig symbols)
-Merging hexagon/linux-next (de44443a45e3 HEXAGON: Remove non existent refer=
-ence to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD)
-Merging ia64/next (959f58544b7f Linux 3.12-rc7)
-Merging m68k/for-next (27d632d27c4f m68k/atari: Hide RTC_PORT() macro from =
-rtc-cmos)
-Merging m68knommu/for-next (d4d80b54a862 m68k : Kill CONFIG_MTD_PARTITIONS)
-Merging metag/for-next (1d61cf121d7d smp, metag: kill SMP single function c=
-all interrupt)
-Merging microblaze/next (a1dd107fcafa microblaze: Remove duplicate declarat=
-ions of _stext[] and _etext[])
-Merging mips/mips-for-linux-next (6ca0bf323c14 Merge branch '3.13-fixes' in=
-to mips-for-linux-next)
-Merging openrisc/for-upstream (60a9dd5a10a1 openrisc: Use get_signal() sign=
-al_setup_done())
-Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
-arameter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (dc1ccc48159d Linux 3.13-rc2)
-Merging powerpc/next (75eb3d9b60c2 powerpc/powernv: Get FSP memory errors a=
-nd plumb into memory poison infrastructure.)
-Applying: powerpc: Fix "attempt to move .org backwards" error
-Merging mpc5xxx/next (17a76e3ca7c9 clk: mpc512x: remove migration support w=
-orkarounds)
-Merging galak/next (9e2ecdbba3b0 powerpc/fsl-booke: add the reg prop for pc=
-i bridge device node for T4/B4)
-Merging s390/features (c9b851905dba s390/blacklist: Perform subchannel scan=
- only when needed)
-Merging sh/sh-latest (37284bd93103 Merge branches 'sh/hw-breakpoints' and '=
-sh/serial-of' into sh-latest)
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-CONFLICT (content): Merge conflict in drivers/tty/serial/sh-sci.c
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/Makefile
-Merging sparc-next/master (049ffa8ab33a Merge branch 'drm-next' of git://pe=
-ople.freedesktop.org/~airlied/linux)
-Merging tile/master (5e01dc7b26d9 Linux 3.12)
-Merging unicore32/unicore32 (c284464658ac arch/unicore32: remove CONFIG_EXP=
-ERIMENTAL)
-Merging xtensa/for_next (3bf4c10bb2e3 xtensa: implement CPU hotplug)
-Merging btrfs/next (91aef86f3b8a Btrfs: rename btrfs_start_all_delalloc_ino=
-des)
-Merging ceph/master (9fb9d5b2ace4 ceph: implement readv/preadv for sync ope=
-ration)
-Merging cifs/for-next (7f07d4db6ad9 cifs: We do not drop reference to tlink=
- in CIFSCheckMFSymlink())
-Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (2000f5beabc9 eCryptfs: file->private_data is always =
-valid)
-Merging ext3/for_next (df4e7ac0bb70 ext2: Fix oops in ext2_get_block() call=
-ed from ext2_quota_write())
-Merging ext4/dev (c25625a1b6a5 ext4: enable punch hole for bigalloc)
-Merging f2fs/dev (8f692033eb75 f2fs: missing kmem_cache_destroy for discard=
-_entry)
-Merging fscache/fscache (7c604e5d6e56 FS-Cache: Fix handling of an attempt =
-to store a page that is now beyond EOF)
-Merging fuse/for-next (ce128de6260f fuse: writepages: protect secondary req=
-uests from fuse file release)
-Merging gfs2/master (f46afaeb3a44 GFS2: Fix use-after-free race when callin=
-g gfs2_remove_from_ail)
-Merging jfs/jfs-next (8660998608cf jfs: fix error path in ialloc)
-Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
-segment found)
-Merging nfs/linux-next (e2f0c83a9de3 sunrpc: add an "info" file for the dum=
-my gssd pipe)
-Merging nfsd/nfsd-next (a0ef5e19684f nfsd: don't try to reuse an expired DR=
-C entry off the list)
-Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
-Merging squashfs/master (6d565409503f Squashfs: fix failure to unlock pages=
- on decompress error)
-Merging v9fs/for-next (f94741fd2832 net/9p: remove virtio default hack and =
-set appropriate bits instead)
-Merging ubifs/linux-next (58a4e23703b2 UBIFS: correct data corruption range)
-Merging xfs/for-next (f9b395a8ef8f xfs: align initial file allocations corr=
-ectly)
-Merging vfs/for-next (27ac0ffeac80 locks: break delegations on any attribut=
-e modification)
-Merging pci/next (6ce4eac1f600 Linux 3.13-rc1)
-Merging hid/for-next (074fb898390b Merge branch 'for-3.14/upstream' into fo=
-r-next)
-Merging i2c/i2c/for-next (af91706d5dde ima: store address of template_fmt_c=
-opy in a pointer before calling strsep)
-Merging jdelvare-hwmon/master (3c59362a1094 hwmon: (it87) Print proper name=
-s for the IT8771E and IT8772E)
-Merging hwmon-staging/hwmon-next (e0425401acaa hwmon: (coretemp) Refine TjM=
-ax detection)
-Merging v4l-dvb/master (c4f181f1efc5 Merge branch 'v4l_for_linus' into temp)
-Merging kbuild/for-next (e6483a58eca6 Merge branch 'kbuild/misc' into kbuil=
-d/for-next)
-Merging kconfig/for-next (4eae518d4b01 localmodconfig: Fix localyesconfig t=
-o set to 'y' not 'm')
-Merging libata/for-next (c5fd0781fbae Merge branch 'for-3.14' into for-next)
-Merging pstore/master (bd08ec33b5c2 pstore/ram: Restore ecc information blo=
-ck)
-Merging pm/linux-next (efef6dba5277 Merge branch 'master' into linux-next)
-Merging idle/next (1ae2a8af4228 tools/power turbostat: run on HSX)
-Merging apm/for-next (fb9d78aca709 Merge branch 'for-linus' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/jikos/apm)
-Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
-et to the debug tools' makefiles)
-Merging thermal/next (86e0a0bdf81c Merge branches 'intel_powerclamp', 'tmon=
-' and 'misc' of .git into next)
-Merging ieee1394/for-next (db9ae8fec7b1 firewire: ohci: Fix deadlock at bus=
- reset)
-Merging ubi/linux-next (ae0d14695566 UBI: Add some asserts to ubi_attach_fa=
-stmap())
-Merging dlm/next (af74ec9e4292 dlm: set zero linger time on sctp socket)
-Merging swiotlb/linux-next (af51a9f1848f swiotlb: Do not export swiotlb_bou=
-nce since there are no external consumers)
-Merging slave-dma/next (3f8002139678 Merge branch 'topic/of' into next)
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/imx53.dtsi
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/imx51.dtsi
-Merging dmaengine/next (9e70a236fc69 dmaengine: fix enable for high order u=
-nmap pools)
-Merging net-next/master (c45f812f0280 8390 : Replace ei_debug with msg_enab=
-le/NETIF_MSG_* feature)
-CONFLICT (content): Merge conflict in drivers/net/macvtap.c
-Merging ipsec-next/master (0e0d44ab4275 net: Remove FLOWI_FLAG_CAN_SLEEP)
-Merging wireless-next/master (55957fb7a0b6 ath9k: initialize retry chain fl=
-ags in tx99 code)
-Merging bluetooth/master (89863109e3dd Bluetooth: Manually enable or disabl=
-e 6LoWPAN between devices)
-Merging infiniband/for-next (b1819c455542 IB/usnic: Add Cisco VIC low-level=
- hardware driver)
-Merging mtd/master (6ce4eac1f600 Linux 3.13-rc1)
-Merging l2-mtd/master (13356e2c05c3 mtd: denali: remove DEFINE_PCI_DEVICE_T=
-ABLE macro)
-Merging crypto/master (e37b94ebffdd crypto: memneq - fix for archs without =
-efficient unaligned access)
-Merging drm/drm-next (a3483353ca4e drm: check for !kdev in drm_unplug_minor=
-())
-Merging drm-intel/for-linux-next (660f670c4cd2 drm/i915: Parametrize the dp=
-hy and other spec specific parameters)
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_display.c
-Merging drm-tegra/drm/for-next (977386a04bae drm/tegra: Reserve syncpoint b=
-ase for gr3d)
-Merging sound/for-next (337bb336b95b ALSA: atmel_abdac: clk_round_rate() ca=
-n return a zero upon error)
-Merging sound-asoc/for-next (7c8473814a56 Merge remote-tracking branches 'a=
-soc/topic/ad193x', 'asoc/topic/adav80x', 'asoc/topic/adsp', 'asoc/topic/ak4=
-641', 'asoc/topic/ak4642', 'asoc/topic/arizona', 'asoc/topic/axi', 'asoc/to=
-pic/bcm2835', 'asoc/topic/cs4271', 'asoc/topic/cs42l52', 'asoc/topic/da7210=
-', 'asoc/topic/davinci', 'asoc/topic/ep93xx', 'asoc/topic/fsl', 'asoc/topic=
-/hdmi', 'asoc/topic/jack', 'asoc/topic/jz4740', 'asoc/topic/max98090', 'aso=
-c/topic/mxs', 'asoc/topic/omap', 'asoc/topic/rcar', 'asoc/topic/samsung', '=
-asoc/topic/spear', 'asoc/topic/ssm2602', 'asoc/topic/tegra', 'asoc/topic/tl=
-v320aic3x', 'asoc/topic/uda1380', 'asoc/topic/wm8510', 'asoc/topic/wm8523',=
- 'asoc/topic/wm8580', 'asoc/topic/wm8711', 'asoc/topic/wm8728', 'asoc/topic=
-/wm8731', 'asoc/topic/wm8741', 'asoc/topic/wm8750', 'asoc/topic/wm8753', 'a=
-soc/topic/wm8776', 'asoc/topic/wm8804', 'asoc/topic/wm8900', 'asoc/topic/wm=
-8901', 'asoc/topic/wm8940', 'asoc/topic/wm8962', 'asoc/topic/wm8974', 'asoc=
-/topic/wm8985', 'asoc/topic/wm8988', 'asoc/topic/wm8990', 'asoc/topic/wm899=
-1', 'asoc/topic/wm8994', 'asoc/topic/wm8995', 'asoc/topic/wm9081' and 'asoc=
-/topic/x86' into asoc-next)
-CONFLICT (content): Merge conflict in sound/soc/fsl/fsl_ssi.c
-Merging modules/modules-next (74e22fac8858 module.h: Remove unnecessary sem=
-icolon)
-Merging virtio/virtio-next (7d2dddda5c92 virtio: pci: remove unnecessary pc=
-i_set_drvdata())
-Merging input/next (670d20725e4f Input: samsung-keypad - favor platform dat=
-a if present)
-Merging input-mt/for-next (5e01dc7b26d9 Linux 3.12)
-Merging cgroup/for-next (4d75ee4f3e9c Merge branch 'for-3.14' into for-next)
-Merging block/for-next (391b7a7bfb52 Merge branch 'for-3.14/drivers' into f=
-or-next)
-CONFLICT (content): Merge conflict in include/trace/events/f2fs.h
-CONFLICT (content): Merge conflict in fs/logfs/dev_bdev.c
-CONFLICT (content): Merge conflict in fs/f2fs/segment.c
-CONFLICT (content): Merge conflict in fs/f2fs/data.c
-CONFLICT (content): Merge conflict in fs/btrfs/scrub.c
-CONFLICT (content): Merge conflict in fs/btrfs/extent_io.c
-CONFLICT (content): Merge conflict in fs/btrfs/check-integrity.c
-CONFLICT (content): Merge conflict in block/blk-flush.c
-Merging device-mapper/for-next (76f5bee5c3b4 dm stats: initialize read-only=
- module parameter)
-Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
-recedence)
-Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
-, v3)
-Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
-ge)
-Merging mmc/mmc-next (e395c4387c74 mmc: wbsd: Silence compiler warning)
-Merging kgdb/kgdb-next (6bedf31c25dd kdb: Remove unhandled ssb command)
-CONFLICT (content): Merge conflict in kernel/debug/debug_core.h
-Merging slab/for-next (a8c0b0837359 Merge branch 'slab/next' into for-next)
-Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
-Merging md/for-next (6d183de40771 md/raid5: fix newly-broken locking in get=
-_active_stripe.)
-Merging mfd/master (90b128ed1557 Merge tag 'mfd-lee-3.13-3' of git://git.li=
-naro.org/people/ljones/mfd)
-Merging mfd-lj/for-mfd-next (15eb2cd74221 mfd: cros ec: spi: Depend on OF)
-Merging battery/master (d36240d26025 power_supply: Add power_supply notifie=
-r)
-Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
-Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
- in set_par)
-Merging omap_dss2/for-next (46ac29568e63 video: vt8500: fix error handling =
-in probe())
-Merging regulator/for-next (3d8165b1cea0 Merge remote-tracking branches 're=
-gulator/topic/ab8500', 'regulator/topic/arizona', 'regulator/topic/db8500',=
- 'regulator/topic/gpio', 'regulator/topic/lp3971', 'regulator/topic/lp3972'=
-, 'regulator/topic/pcf50633', 'regulator/topic/pfuze100', 'regulator/topic/=
-stw481x-vmmc' and 'regulator/topic/tps51632' into regulator-next)
-Merging security/next (217091dd7a7a ima: define '_ima' as a builtin 'truste=
-d' keyring)
-Merging selinux/master (598cdbcf8618 selinux: fix broken peer recv check)
-Merging lblnet/master (07bc9dc1b01b Merge branch 'merge' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging watchdog/master (28748defa512 watchdog: remove DEFINE_PCI_DEVICE_TA=
-BLE macro)
-Merging dwmw2-iommu/master (e5d0c874391a Merge tag 'iommu-updates-v3.12' of=
- git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu)
-Merging iommu/next (e6ca48d995e4 Merge branches 'iommu/fixes', 'tracing', '=
-core', 'arm/tegra' and 'x86/vt-d' into next)
-Merging vfio/next (15c03dd4859a Linux 3.12-rc3)
-Merging osd/linux-next (861d66601acd exofs: don't leak io_state and pages o=
-n read error)
-Merging jc_docs/docs-next (5c050fb96380 docs: update the development proces=
-s document)
-Merging trivial/for-next (6bbdc3984efb vio: remove dangly makefile bits)
-Merging audit/master (fc582aef7dcc Merge tag 'v3.12')
-Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
-alls)
-Merging devicetree/devicetree/next (355e62f5ad12 of/irq: Fix potential buff=
-er overflow)
-Merging dt-rh/for-next (1b50b0c3330e Merge branch 'for-3.14' into for-next)
-Merging spi/for-next (e4a1b7a009bc Merge remote-tracking branches 'spi/topi=
-c/atmel', 'spi/topic/bcm63xx-hsspi', 'spi/topic/coldfire', 'spi/topic/davin=
-ci', 'spi/topic/falcon', 'spi/topic/fsl-espi', 'spi/topic/gpio', 'spi/topic=
-/msiof', 'spi/topic/omap', 'spi/topic/orion', 'spi/topic/pci', 'spi/topic/r=
-car', 'spi/topic/s3c64xx', 'spi/topic/sc18is602', 'spi/topic/tegra114', 'sp=
-i/topic/tegra20-sflash', 'spi/topic/tegra20-slink' and 'spi/topic/xcomm' in=
-to spi-next)
-Merging tip/auto-latest (c4372b1b29f2 Merge branch 'x86/urgent')
-Merging edac/linux_next (3e45588825c1 cell_edac: fix missing of_node_put)
-Merging edac-amd/for-next (c97986837cc6 Merge branch 'ras-fixes' into for-n=
-ext)
-Merging ftrace/for-next (3ccb01239201 tracing: Only run synchronize_sched()=
- at instance deletion time)
-Merging rcu/rcu/next (5bf73c6001d8 Merge branches 'doc.2013.12.03a', 'fixes=
-.2013.12.09a', 'rcutorture.2013.12.03a' and 'sparse.2013.12.09b' into HEAD)
-Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
-singlestep exceptions)
-Merging kvm/linux-next (d6d63b51fe3b Merge tag 'kvm-s390-20131128' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/kvms390/linux into kvm-next)
-Merging kvm-arm/kvm-arm-next (4fda342cc7f5 arm/arm64: kvm: Use virt_to_idma=
-p instead of virt_to_phys for idmap mappings)
-Merging kvm-ppc/kvm-ppc-next (27025a602cb9 powerpc: kvm: optimize "sc 1" as=
- fast return)
-Merging oprofile/for-next (6ce4eac1f600 Linux 3.13-rc1)
-Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
-k)
-Merging xen-tip/linux-next (a5d28b2c565f Merge branch 'xentip/stable/for-li=
-nus-3.13' into linux-next)
-Merging percpu/for-next (b1a0fbfdde65 percpu: fix spurious sparse warnings =
-from DEFINE_PER_CPU())
-Merging workqueues/for-next (4e8b22bd1a37 workqueue: fix pool ID allocation=
- leakage and remove BUILD_BUG_ON() in init_workqueues)
-Merging drivers-x86/linux-next (a80e1053aaa3 x86, wmi fix modalias_show ret=
-urn values)
-Merging chrome-platform/for-next (2b8454a75b90 platform/chrome: unregister =
-platform driver/device when module exit)
-Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
-may go away)
-Merging regmap/for-next (d929555edfba Merge remote-tracking branch 'regmap/=
-topic/core' into regmap-next)
-Merging hsi/for-next (43139a61fc68 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (56fd34d353b6 leds: leds-pwm: fix duty time overflow.)
-Merging driver-core/driver-core-next (a8b1c0193602 Documentation: start doc=
-umenting driver design patterns)
-Merging tty/tty-next (b46d0c46ccaa init.h: add missing initcall variants)
-Merging usb/usb-next (3d724fa513cd USB: emi62: Provide the correct bitstrea=
-m firmware)
-Merging usb-gadget/next (c6d7641470fe usb: dwc3: omap: remove unnecessary l=
-ock)
-$ git reset --hard HEAD^
-Merging next-20131206 version of usb-gadget
-Merging staging/staging-next (530376bfb7c8 staging: comedi: ni_at_a2150: fi=
-x an always true condition test)
-CONFLICT (content): Merge conflict in include/linux/hid-sensor-ids.h
-Merging char-misc/char-misc-next (4fc6069e7df8 Documentation: ja_JP: Update=
- broken link to tpp)
-Merging scsi/for-next (ef5cb624a9b2 Merge branch 'fixes' into for-next)
-Merging target-updates/for-next (86784c6bdeee iscsi-target: chap auth shoul=
-dn't match username with trailing garbage)
-Merging target-merge/for-next-merge (15c03dd4859a Linux 3.12-rc3)
-Merging writeback/writeback-for-next (a8855990e382 writeback: Do not sort b=
-_io list only because of block device inode)
-Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
-ries)
-Merging pinctrl/for-next (daa706de0f5e Merge branch 'pinmux/next/pfc' of gi=
-t://linuxtv.org/pinchartl/fbdev into devel)
-Merging vhost/linux-next (d3d665a654a3 vhost-scsi: whitespace tweak)
-Merging remoteproc/for-next (b9777859ec01 remoteproc: fix kconfig dependenc=
-ies for VIRTIO)
-Merging rpmsg/for-next (397944df3290 rpmsg: fix kconfig dependencies for VI=
-RTIO)
-Merging gpio/for-next (ab5e224b1364 Merge branch 'devel' into for-next)
-Merging dma-mapping/dma-mapping-next (5e01dc7b26d9 Linux 3.12)
-Merging pwm/for-next (6ca142ad0d1b pwm: sysfs: Convert to use ATTRIBUTE_GRO=
-UPS macro)
-Merging dma-buf/for-next (17b2112f332d Merge branch 'merge' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/benh/powerpc)
-Merging userns/for-next (41301ae78a99 vfs: Fix a regression in mounting pro=
-c)
-Merging ktest/for-next (298a0d1d5750 ktest: Add documentation of CLOSE_CONS=
-OLE_SIGNAL)
-Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (cdf64eeeb0d7 clk: exynos5420: fix cpll clock register=
- offsets)
-Merging random/dev (8ea43ef26598 random: clarify bits/bytes in wakeup thres=
-holds)
-Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
- speedup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484863e0 ARM64: mm: THP sup=
-port.)
-Merging aio/master (374b105797c3 Linux 3.13-rc3)
-Merging akpm-current/current (6e7ebeb1cb49 lib/decompress_unlz4.c: always s=
-et an error return code on failures)
-CONFLICT (content): Merge conflict in kernel/params.c
-CONFLICT (content): Merge conflict in arch/um/kernel/sysrq.c
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: mm: add strictlimit knob
-Merging akpm/master (42b6d4b70e03 mm: add strictlimit knob)
-
---Signature=_Thu__12_Dec_2013_17_06_42_+1100_5Z/.CSvjAN9D0kPa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSqVJ2AAoJEMDTa8Ir7ZwVL18QAIcVdlReE3ybLcNWjbrEpv1B
-7pz6hWqEefBZov8n7e22b4PNBEhsLOzoFkMirG2qxlJbUwroNzdwGV0KWLjnXwOh
-3V7WmDczxUOUVhCBjBK3lJXauDGNt6/T8EEpuqSzqxmP5y3s2BOKETBRvFAS2SEY
-IuAFQ20+wLUyJgAIqVtOTJMxTO4X+y6mcKMYWFZDL6CVDU74hCxQMkFv5U3iTNx8
-d+bxa2Sz1/0+9YM4EtmX/Bw/rmo8qfJWF8uTsvYmbjPRZaxNF/lq/e5WlNfGzMNO
-PSrlQn8xUF/nq2FjmcuXWIC16rkj5B/eNM9cv9YpbaUPKWXi4z9oiq1mDdfEZB6g
-tfB29kZaUToxRQWM/xoN9DMyoEyLKM0BJ8L/r/xgQKfvgTDmKmUxdQo4eM6Czp+m
-M2NHVOQCZB54zMIucbk9ECX5aej5wauw757wLW316/Ihc/MdZeGYhbWkBRZDYk44
-BRsXAsyIK9A0NSPOxIMaSPBNuRBZ5KIkI2qyfS3gVud2VzIyPb4mYGJBhHKb09oh
-W1rRnysMK/G+oEzkw3+BtovDjvsYM7NLdgGbGyjmh39qNonMpdeg1WKAiVTE52Rv
-taTCw6qjIJK2JwEU16vGmGw9Rua1Zl0xINfuccvoih3vbI2PR5fIkYmc375YJPIQ
-auEV7DQUAm+NtNJRWC+b
-=nfhn
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Dec_2013_17_06_42_+1100_5Z/.CSvjAN9D0kPa--
+> 
+>                               3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2    3.13-rc2
+>                                  2-thp       3-thp       4-thp       5-thp       6-thp
+> Minor Faults                 256805673   253106328   253222299   249830289   251184418
+> Major Faults                       395         375         423         434         448
+> Swap Ins                            12          10          10          12           9
+> Swap Outs                          530         537         487         455         415
+> Direct pages scanned             71859       86046      153244      152764      190713
+> Kswapd pages scanned           1900994     1870240     1898012     1892864     1880520
+> Kswapd pages reclaimed         1897814     1867428     1894939     1890125     1877924
+> Direct pages reclaimed           71766       85908      153167      152643      190600
+> Kswapd efficiency                  99%         99%         99%         99%         99%
+> Kswapd velocity               1029.000    1067.782    1000.091     991.049     951.218
+> Direct efficiency                  99%         99%         99%         99%         99%
+> Direct velocity                 38.897      49.127      80.747      79.983      96.468
+> Percentage direct scans             3%          4%          7%          7%          9%
+> Zone normal velocity           351.377     372.494     348.910     341.689     335.310
+> Zone dma32 velocity            716.520     744.414     731.928     729.343     712.377
+> Zone dma velocity                0.000       0.000       0.000       0.000       0.000
+> Page writes by reclaim         669.300     604.000     545.700     538.900     429.900
+> Page writes file                   138          66          58          83          14
+> Page writes anon                   530         537         487         455         415
+> Page reclaim immediate             806         655         772         548         517
+> Sector Reads                   2711956     2703239     2811602     2818248     2839459
+> Sector Writes                 12163238    12018662    12038248    11954736    11994892
+> Page rescued immediate               0           0           0           0           0
+> Slabs scanned                  1385088     1388364     1507968     1513292     1558656
+> Direct inode steals               1739        2564        4622        5496        6007
+> Kswapd inode steals              47461       46406       47804       48013       48466
+> Kswapd skipped wait                  0           0           0           0           0
+> THP fault alloc                    110          82          84          69          70
+> THP collapse alloc                 445         482         467         462         539
+> THP splits                           6           5           4           5           3
+> THP fault fallback                   3           0           0           0           0
+> THP collapse fail                   15          14          14          14          13
+> Compaction stalls                  659         685        1033        1073        1111
+> Compaction success                 222         225         410         427         456
+> Compaction failures                436         460         622         646         655
+> Page migrate success            446594      439978     1085640     1095062     1131716
+> Page migrate failure                 0           0           0           0           0
+> Compaction pages isolated      1029475     1013490     2453074     2482698     2565400
+> Compaction migrate scanned     9955461    11344259    24375202    27978356    30494204
+> Compaction free scanned       27715272    28544654    80150615    82898631    85756132
+> Compaction cost                    552         555        1344        1379        1436
+> NUMA PTE updates                     0           0           0           0           0
+> NUMA hint faults                     0           0           0           0           0
+> NUMA hint local faults               0           0           0           0           0
+> NUMA hint local percent            100         100         100         100         100
+> NUMA pages migrated                  0           0           0           0           0
+> AutoNUMA cost                        0           0           0           0           0
+> 
+> There are some differences from the previous results for THP-like allocations:
+>  - Here, the bad result for unpatched kernel in phase 3 is much more consistent
+>    to be between 65-70% and not related to the "regression" in 3.12. Still there is
+>    the improvement from patch 4 onwards, which brings it on par with simple
+>    GFP_HIGHUSER_MOVABLE allocations.
+>  - Compaction costs have increased, but nowhere near as much as the non-THP case. Again,
+>    the patches should be worth the gained determininsm.
+>  - Patches 5 and 6 somewhat increase the number of migrate-scanned pages. This is most likely
+>    due to __GFP_NO_KSWAPD flag, which means the cached pfn's and pageblock skip bits are not
+>    reset by kswapd that often (at least in phase 3 where no concurrent activity would wake
+>    up kswapd) and the patches thus help the sync-after-async compaction. It doesn't however
+>    show that the sync compaction would help so much with success rates, which can be again
+>    seen as a limitation of the benchmark scenario.
+> 
+> 
+> 
+> Mel Gorman (1):
+>   mm: compaction: trace compaction begin and end
+> 
+> Vlastimil Babka (5):
+>   mm: compaction: encapsulate defer reset logic
+>   mm: compaction: reset cached scanner pfn's before reading them
+>   mm: compaction: detect when scanners meet in isolate_freepages
+>   mm: compaction: do not mark unmovable pageblocks as skipped in async
+>     compaction
+>   mm: compaction: reset scanner positions immediately when they meet
+> 
+>  include/linux/compaction.h        | 16 ++++++++++
+>  include/trace/events/compaction.h | 42 +++++++++++++++++++++++++++
+>  mm/compaction.c                   | 61 +++++++++++++++++++++++++++------------
+>  mm/page_alloc.c                   |  5 +---
+>  4 files changed, 102 insertions(+), 22 deletions(-)
+> 
+> -- 
+> 1.8.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
