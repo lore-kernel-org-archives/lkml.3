@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab3LLNsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 08:48:01 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:51139 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab3LLNr6 (ORCPT
+	id S1751874Ab3LLNuC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 08:50:02 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46819 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab3LLNt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 08:47:58 -0500
-Date: Thu, 12 Dec 2013 08:47:53 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Robert Baldyga <r.baldyga@samsung.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        b.zolnierkie@samsung.com, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>,
-        Matt Porter <matt.porter@linaro.org>
-Subject: Re: [PATCH 1/2] USB: gadget: s3c-hsotg: fix maxpacket size in
- s3c_hsotg_irq_enumdone
-Message-ID: <20131212134753.GC20773@beef>
-References: <1386331425-16594-1-git-send-email-r.baldyga@samsung.com>
- <1386331425-16594-2-git-send-email-r.baldyga@samsung.com>
- <20131206203523.GK21086@saruman.home>
+	Thu, 12 Dec 2013 08:49:59 -0500
+Date: Thu, 12 Dec 2013 13:49:56 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tvrtko Ursulin <tvrtko.ursulin@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Potentially unbounded allocations in seq_read?
+Message-ID: <20131212134956.GC10323@ZenIV.linux.org.uk>
+References: <1386781481.6066.55.camel@tursulin-linux.isw.intel.com>
+ <20131211174909.GW10323@ZenIV.linux.org.uk>
+ <1386784797.6066.63.camel@tursulin-linux.isw.intel.com>
+ <20131211180703.GY10323@ZenIV.linux.org.uk>
+ <1386855640.6066.73.camel@tursulin-linux.isw.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20131206203523.GK21086@saruman.home>
+In-Reply-To: <1386855640.6066.73.camel@tursulin-linux.isw.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 06, 2013 at 02:35:23PM -0600, Felipe Balbi wrote:
-> Hi,
+On Thu, Dec 12, 2013 at 01:40:40PM +0000, Tvrtko Ursulin wrote:
+
+> So this is the story... task_mmu.c:show_map_vma() calls seq_path. There
+> we have a d_path call which returns -ENAMETOOLONG and keeps doing so
+> even though the buffer grows to huge proportions. It is something on
+> tmpfs, don't know what.
 > 
-> On Fri, Dec 06, 2013 at 01:03:44PM +0100, Robert Baldyga wrote:
-> > This patch set maximum possible maxpacket value for each speed. Previous
-> > values didn't allow to use maxpacket sizes greater than 64 in full speed
-> > and 512 in high speed, although hardware is able to handle up to 1023 in fs
-> > and 1024 in hs.
-> > 
-> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> But in the meantime, shouldn't seq_path be a bit more considerate on
+> this particular error and not mark the state as "could not fit" forever?
+> Perhaps it would make sense to limit it a bit?
 > 
-> Matt, will this cause any problems for your efforts on Bcom ?
+> Or even more so, on errors _other_ than -ENAMETOOLONG it will at the
+> moment mark the result as "need more space". That also sounds broken to
+> me.
 
-I tested this patch in both full and high speed mode on my Capri board
-and it works fine for me in both cases.
-
-Tested-by: Matt Porter <mporter@linaro.org>
-
-Thanks,
-Matt
+a) *what* errors other than -ENAMETOOLONG?
+b) d_path() not fitting into 2Mb is definitely a bug.  If you really have
+managed to get a dentry tree 1 million levels deep, you have much worse
+problems.
+c) which kernel version it is?
