@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab3LLMwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 07:52:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60759 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab3LLMwO (ORCPT
+	id S1751921Ab3LLMwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 07:52:45 -0500
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:44799 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751820Ab3LLMwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 07:52:14 -0500
-Date: Thu, 12 Dec 2013 13:52:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: "'Andrzej Pietrasiewicz'" <andrzej.p@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Ingo Molnar'" <mingo@redhat.com>
-Subject: Re: [PATCH v2] kernel/locking: mutex: simplify access to the first
- entry in the wait-list
-Message-ID: <20131212125203.GI21999@twins.programming.kicks-ass.net>
-References: <1386847772-8918-1-git-send-email-andrzej.p@samsung.com>
- <20131212113511.GG21999@twins.programming.kicks-ass.net>
- <23bd01cef731$fb052680$f10f7380$%park@samsung.com>
+	Thu, 12 Dec 2013 07:52:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23bd01cef731$fb052680$f10f7380$%park@samsung.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131212114610.GA23971@mudshark.cambridge.arm.com>
+References: <1386151791-4881-1-git-send-email-vkale@apm.com>
+	<1386151791-4881-3-git-send-email-vkale@apm.com>
+	<20131209165003.GJ13908@mudshark.cambridge.arm.com>
+	<CAPrCYkfS9h_yoQMcrQDXpW_3FcSfiPz0aeNX+_gc=G4exSEVWg@mail.gmail.com>
+	<CAPrCYkct6XePhYEEC=x0yNQoS-z=fcp2_WKxU1Zk0eO=9+ZaLA@mail.gmail.com>
+	<20131212114610.GA23971@mudshark.cambridge.arm.com>
+Date: Thu, 12 Dec 2013 18:22:42 +0530
+Message-ID: <CAPrCYkdy6uMmxGUkMfeMD65YCjrMYVRCzJoHt6uSOyCNoS0Zaw@mail.gmail.com>
+Subject: Re: [PATCH V7 2/2] arm64: perf: add support for percpu pmu interrupt
+From: Vinayak Kale <vkale@apm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Tuan Phan <tphan@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 09:02:07PM +0900, Kyungmin Park wrote:
-> 
-> > -----Original Message-----
-> > From: Peter Zijlstra [mailto:peterz@infradead.org]
-> > Sent: Thursday, December 12, 2013 8:35 PM
-> > To: Andrzej Pietrasiewicz
-> > Cc: linux-kernel@vger.kernel.org; Kyungmin Park; Marek Szyprowski; Ingo
-> > Molnar
-> > Subject: Re: [PATCH v2] kernel/locking: mutex: simplify access to the
-> > first entry in the wait-list
-> > 
-> > On Thu, Dec 12, 2013 at 12:29:32PM +0100, Andrzej Pietrasiewicz wrote:
-> > > Use list_first_entry instead of explicitly accessing the first entry
-> > > with "head".next. The comment one line above becomes obsolete.
-> > >
-> > > Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > > ---
-> > >
-> > > v1..v2:
-> > >
-> > > - corrected the email address in the second Signed-off-by line
-> > 
-> > Still invalid; the problem is that you appear to have written the patch
-> > (you send it and you have first sob).
-> 
-> 
-> > So what is Kyungmin doing in the line? He did not send me your patch.
-> 
-> Internal review process, and it represents this patch comes from.
+On Thu, Dec 12, 2013 at 5:16 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Thu, Dec 12, 2013 at 06:33:59AM +0000, Vinayak Kale wrote:
+>> > Below fixup works fine on APM platform.
+>> > Do you want me to send this fixup as part of next revision of the
+>> > patch or will you apply it yourself? (For later case, you have my ack)
+>>
+>> Any comments? Do I need to send the fix-up in next revision of patch?
+>
+> Looks fine to me; I've folded in my changes and applied it to my aarch64
+> branch. I'll queue it for 3.14 when Catalin and I start putting that
+> together.
 
-For review we have this specific tag, oddly called: 'Reviewed-by'.
+Okay. Thanks :-)
