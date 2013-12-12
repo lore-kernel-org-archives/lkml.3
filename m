@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab3LLEu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Dec 2013 23:50:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42911 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab3LLEuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Dec 2013 23:50:52 -0500
-Message-ID: <52A94065.1050103@zytor.com>
-Date: Wed, 11 Dec 2013 20:49:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751408Ab3LLE54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Dec 2013 23:57:56 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64806 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750917Ab3LLE5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Dec 2013 23:57:55 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] Driver core: Fix device_add_attrs() error code path
+Date: Thu, 12 Dec 2013 06:11:02 +0100
+Message-ID: <1902491.UTh5DYb76O@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>
-CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-References: <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de>	 <20131211113839.GF21683@pd.tnic>	 <20131211115239.GA21999@twins.programming.kicks-ass.net>	 <1386764955.12005.60.camel@marge.simpson.net>	 <20131211124352.GB21999@twins.programming.kicks-ass.net>	 <20131211134048.GH21683@pd.tnic> <20131211145655.GB4510@gmail.com>	 <20131211164318.GA2480@laptop.programming.kicks-ass.net>	 <20131211175036.GC12431@gmail.com> <52A8F073.9040500@zytor.com>	 <20131211231425.GD8863@pd.tnic> <52A908DB.60902@zytor.com> <1386822357.6056.12.camel@marge.simpson.net>
-In-Reply-To: <1386822357.6056.12.camel@marge.simpson.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 08:25 PM, Mike Galbraith wrote:
->  arch/x86/include/asm/mwait.h   |    4 ++--
->  arch/x86/kernel/cpu/common.c   |    7 ++++---
->  arch/x86/kernel/setup_percpu.c |    1 +
->  3 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/cpu/common.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/common.c
-> +++ linux-2.6/arch/x86/kernel/cpu/common.c
-> @@ -65,13 +65,14 @@ void __init setup_cpu_local_masks(void)
->  }
->  
->  /* allocate percpu area for mwait doorbell */
-> -char __percpu *mwait_doorbell;
-> +DEFINE_PER_CPU(char *, mwait_doorbell);
-> +EXPORT_PER_CPU_SYMBOL(mwait_doorbell);
->  
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Sorry, this is wrong.  This is NOT a percpu variable, it is a pointer to
-a percpu allocation, but the variable itself is not a percpu variable.
-This explains your boom.
+If the addition of dev_attr_online fails, device_add_attrs() should
+remove device attribute groups as well as type and class attribute
+groups before returning an error code.  Make that happen.
 
->  void __init setup_mwait_doorbell(void)
->  {
->  	if (boot_cpu_has(X86_FEATURE_MWAIT)) {
-> -		mwait_doorbell = __alloc_percpu(boot_cpu_data.clflush_size,
-> -						boot_cpu_data.clflush_size);
-> +		mwait_doorbell = __alloc_percpu(boot_cpu_data.x86_clflush_size,
-> +						boot_cpu_data.x86_clflush_size);
->  
->  		if (!mwait_doorbell) {
->  			/* This should never happen... */
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/base/core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-	-hpa
-
+Index: linux-pm/drivers/base/core.c
+===================================================================
+--- linux-pm.orig/drivers/base/core.c
++++ linux-pm/drivers/base/core.c
+@@ -491,11 +491,13 @@ static int device_add_attrs(struct devic
+ 	if (device_supports_offline(dev) && !dev->offline_disabled) {
+ 		error = device_create_file(dev, &dev_attr_online);
+ 		if (error)
+-			goto err_remove_type_groups;
++			goto err_remove_dev_groups;
+ 	}
+ 
+ 	return 0;
+ 
++ err_remove_dev_groups:
++ 	device_remove_groups(dev, dev->groups);
+  err_remove_type_groups:
+ 	if (type)
+ 		device_remove_groups(dev, type->groups);
 
