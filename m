@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120Ab3LLSi1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 13:38:27 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:64278 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab3LLSiX (ORCPT
+	id S1752028Ab3LLSig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 13:38:36 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40772 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab3LLSi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 13:38:23 -0500
+	Thu, 12 Dec 2013 13:38:26 -0500
+Message-ID: <52AA029D.6040103@wwwdotorg.org>
+Date: Thu, 12 Dec 2013 11:38:21 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20131212182831.GM1939@saruman.home>
-References: <1385506004-14943-1-git-send-email-caesarxuchao@gmail.com>
-	<1386477638-6331-1-git-send-email-caesarxuchao@gmail.com>
-	<CACRpkdaD13JnGetD-GLpxSoaf_LkRKYFjis7Tftc6U38E1ES5A@mail.gmail.com>
-	<20131212182831.GM1939@saruman.home>
-Date: Thu, 12 Dec 2013 19:38:22 +0100
-Message-ID: <CACRpkdb4pF9-rB_zzXgzOnuAc_z=ZN+XHRq6i_Dd76FK08wdkg@mail.gmail.com>
-Subject: Re: [RFC/RFT/PATCH V3] gpio: omap: refresh patch "be more aggressive
- with pm_runtime" against v3.12-rc5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Chao Xu <caesarxuchao@gmail.com>, Linux-OMAP <linux-omap@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@linaro.org>, Nishanth Menon <nm@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/2] pinctrl: tegra: Add devicetree binding document
+ for Tegra124
+References: <1386585140-1137-1-git-send-email-ldewangan@nvidia.com> <CACRpkdagtueyzxRqVDWT+x8Sfrf7qR83aYj8oQfrc7Q5qSCjHg@mail.gmail.com>
+In-Reply-To: <CACRpkdagtueyzxRqVDWT+x8Sfrf7qR83aYj8oQfrc7Q5qSCjHg@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 7:28 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Dec 12, 2013 at 07:19:35PM +0100, Linus Walleij wrote:
+On 12/12/2013 11:22 AM, Linus Walleij wrote:
+> On Mon, Dec 9, 2013 at 11:32 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> 
+>> This device tree binding document describes the Tegra124 pincontrol
+>> DT bindings. This document lists all valid properties, names, mux
+>> options of Tegra124 pins.
+>>
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>> ---
+>> Changes from V1:
+>> - Referred the dt-binding header file on describing the nodes.
+> 
+> I couldn't quite figure out if this is still under discussion or
+> not, I'm holding this off until I have an explicit ACK from
+> one of the DT binding people.
 
->> One thing caught my eye, you add:
->>
->> > +static void _aggressive_pm_runtime_get_sync(struct gpio_bank *bank)
->> > +static void _aggressive_pm_runtime_put(struct gpio_bank *bank)
->> (..)
->>
->> Then everywhere:
->>
->> > +       _aggressive_pm_runtime_get_sync(bank);
->> (...)
->> > +       _aggressive_pm_runtime_put(bank);
->>
->> Aggressive, argh, runtime PM is agressive by definition. If you
->> want to switch this on and off use the compile option
->> to enable/disable runtime PM altogether and do not wrap it
->> like this.
->
-> heh, OMAP doesn't work without pm_runtime.
+Laxman has since sent V3 of this series.
 
-Hm then maybe that needs to be fixed ... or the runtime PM
-people need to be convinced to support different levels of
-aggressiveness in the core?
-
-Yours,
-Linus Walleij
