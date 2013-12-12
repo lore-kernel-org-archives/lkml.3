@@ -1,123 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab3LLQvm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 11:51:42 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:42968 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751497Ab3LLQvj (ORCPT
+	id S1751889Ab3LLQwU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 11:52:20 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47926 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3LLQwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 11:51:39 -0500
-Date: Thu, 12 Dec 2013 11:51:37 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue
- implementation
-Message-ID: <20131212115137.4e5d156f@gandalf.local.home>
-In-Reply-To: <20131212160323.GJ21999@twins.programming.kicks-ass.net>
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com>
-	<1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com>
-	<20131212114447.GH21999@twins.programming.kicks-ass.net>
-	<20131212094227.0a227f6f@gandalf.local.home>
-	<20131212160323.GJ21999@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Thu, 12 Dec 2013 11:52:18 -0500
+Date: Thu, 12 Dec 2013 16:51:49 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: lgirdwood@gmail.com, grant.likely@linaro.org, rob.herring@calxeda.com,
+        vpalatin@chromium.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        nicolas.ferre@atmel.com
+Message-ID: <20131212165149.GO11044@sirena.org.uk>
+References: <1386811131-2720-1-git-send-email-wenyou.yang@atmel.com>
+ <1386811131-2720-2-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FrxVhwK/bNRjN48l"
+Content-Disposition: inline
+In-Reply-To: <1386811131-2720-2-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: You will be successful in love.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: act8865: add PMIC(Power Management IC)
+ driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Dec 2013 17:03:23 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Thu, Dec 12, 2013 at 09:42:27AM -0500, Steven Rostedt wrote:
-> > On Thu, 12 Dec 2013 12:44:47 +0100
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > > Are these two barriers matched or are they both unmatched and thus
-> > > probabyl wrong?
-> > 
-> > Nope, the two are unrelated. The the smp_wmb() is to synchronize with
-> > the swait_finish() code. When the task wakes up, it checks if w->task
-> > is NULL, and if it is it does not grab the head->lock and does not
-> > dequeue it, it simply exits, where the caller can then free the swaiter
-> > structure.
-> > 
-> > Without the smp_wmb(), the curr->task can be set to NULL before we
-> > dequeue it, and if the woken up process sees that NULL, it can jump
-> > right to freeing the swaiter structure and cause havoc with this
-> > __swait_dequeue().
-> 
-> And yet the swait_finish thing does not have a barrier. Unmatched
-> barriers are highly suspect.
+--FrxVhwK/bNRjN48l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well if it sees the task as NULL then it has nothing to do. The
-smp_wmb() on the other end guarantees that. If it sees it not NULL it
-then goes into the slow path and the spinlocks synchronize everything
-else. That is, we don't care if it sees it as not NULL when it was NULL,
-because then the slow path just does duplicate work (under a lock)
-(removes itself from the queue with list_del_init() which is fine to
-call twice).
+On Thu, Dec 12, 2013 at 09:18:49AM +0800, Wenyou Yang wrote:
 
-Add a comment there discussing this won't hurt.
+The main thing with this driver seems to be that it needs a bit of
+modernisation to use current kernel features and APIs - there's nothing
+terribly wrong from a quick glance through but it needs an update.
+Details below.
 
-> 
-> > The first smp_mb() is about the condition in:
-> > 
-> > +#define __swait_event(wq, condition)					\
-> > +do {									\
-> > +	DEFINE_SWAITER(__wait);						\
-> > +									\
-> > +	for (;;) {							\
-> > +		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-> > +		if (condition)						\
-> > +			break;						\
-> > +		schedule();						\
-> > +	}								\
-> > +	swait_finish(&wq, &__wait);					\
-> > +} while (0)
-> > 
-> > without the smp_mb(), it is possible that the condition can leak into
-> > the critical section of swait_prepare() and have the old condition seen
-> > before the task is added to the wait list. My submission of this patch
-> > described it in more details:
-> > 
-> > https://lkml.org/lkml/2013/8/19/275
-> 
-> still a fail, barriers should not be described in changelogs but in
-> comments.
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -577,5 +577,12 @@ config REGULATOR_WM8994
+>  	  This driver provides support for the voltage regulators on the
+>  	  WM8994 CODEC.
+> =20
+> +config REGULATOR_ACT8865
+> +	tristate "Active-semi act8865 voltage regulator"
+> +	depends on I2C
+> +	help
+> +	  This driver controls a active-semi act8865 voltage output
+> +	  regulator via I2C bus.
+> +
 
-I agree.
+Please keep this and the Makefile sorted.
 
-> 
-> Typically such a barrier comes from set_current_state(), the normal
-> pattern is something like:
-> 
->   set_current_state(TASK_UNINTERRUPTIBLE)
->   if (!cond)
->   	schedule();
->   __set_current_state(TASK_RUNNING);
-> 
-> vs
-> 
->   cond = true;
->   wake_up_process(&foo);
+> +static int act8865_read_reg(struct act8865_data *act8865, u8 reg)
+> +{
+> +	int ret =3D i2c_smbus_read_byte_data(act8865->client, reg);
+> +	if (ret > 0)
+> +		ret &=3D 0xff;
+> +
+> +	return ret;
+> +}
 
-Hmm, that __set_current_state() in swait_prepare() does indeed seem
-buggy. I'm surprised that I didn't catch that, as I'm usually a
-stickler with set_current_state() (and I'm very paranoid when it comes
-to using __set_current_state()).
+Use regmap for register I/O and use the helpers provided by the core.
 
-I'll have to dig deeper to see why I didn't change that.
+> +static int act8865_set_voltage_sel(struct regulator_dev *rdev, u32 selec=
+tor)
+> +{
+> +	struct act8865_data *act8865 =3D rdev_get_drvdata(rdev);
+> +	int id =3D rdev_get_id(rdev);
+> +	u32	reg =3D act8865_vset_reg_addr(act8865, id);
 
-Thanks,
+Throughout the file the indentation is a really strange mix of the first
+two lines (which are the normal kernel style) and the bottom line (which
+isn't).
 
--- Steve
+> +	pr_info("%s: suspend voltage %dmV\n", rdev->desc->name, uV / 1000);
 
+Remove noisy logging like this.
+
+> +		rdev[i] =3D regulator_register(&act8865_reg[id], &config);
+
+devm_regulator_register().
+
+> +static int __init act8865_pmu_init(void)
+> +{
+> +	return i2c_add_driver(&act8865_pmu_driver);
+> +}
+> +subsys_initcall(act8865_pmu_init);
+
+module_i2c_driver().
+
+--FrxVhwK/bNRjN48l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqemiAAoJELSic+t+oim9NNMP/1nxmWm8+oZLiMumjYT595+a
+/0Ej3iksxmU629Up0bMhjIqGKInS18CQRpbHOnBFKAgfdYjyGxlntMp9njkVzLR2
+WoWV0htGsdCQZ6U0L7+UP34IUPbbFt6oUpFGk5+9DwlHwTHo3+aEVnnnh5sziAVR
+sSciKmHTAHJloTwWhMYHo7xx48CxZYEuiAXSqH0CZWJA4WTZJBuVUJS7Hztu6UA6
+kG9G4NjIpa7h/K72aIIG7lkI8w2Utn1ZZy0TgBQwS0Rq3QnQY1Pgai8sM1JNZpts
+vdjEH9iVyQtFw5kDwuhRKyb2Fux0nK8kdrUXzXZmw8y+o1HwrBDRdzbvGX5oowYl
+BOT/Iqzzd0B+FU1xinIkPJFXpJpYNzIWyVH88T4MQf0JjqLcnJbOIPnPxC6HXQeY
+Qcg0wbiTsktmDuvx9mFiydBAMtNye2OIRf96scWT4k/RfYWgGR7A6ZG/U18Obmrv
+IYxxG3g3dWKR0YfstTDSidvYxVfoZXyy9vyYw245yqX6+GPg6odM/bKLohLiKGSx
+MtJhS4GV8cGd49ja4iZkP5zbceQ4MU0PxVJoI/oSDQy/q/G6CJ7zve+bLhOOhbJK
+BpnCwSGt2EDOt3zPpvMBFytOpZeNqK4/8h90qOInFIwqH1chmbegVaHnazq5dmDS
+SeHpQc5EAJYjv0xEy9RX
+=idYk
+-----END PGP SIGNATURE-----
+
+--FrxVhwK/bNRjN48l--
