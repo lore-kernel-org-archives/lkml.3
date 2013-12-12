@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395Ab3LLFrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 00:47:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43306 "EHLO mail.zytor.com"
+	id S1751558Ab3LLFrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 00:47:41 -0500
+Received: from mga11.intel.com ([192.55.52.93]:6909 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751162Ab3LLFrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 00:47:09 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1386826641.6056.31.camel@marge.simpson.net>
-References: <alpine.DEB.2.02.1312111206200.28330@ionos.tec.linutronix.de> <20131211113839.GF21683@pd.tnic> <20131211115239.GA21999@twins.programming.kicks-ass.net> <1386764955.12005.60.camel@marge.simpson.net> <20131211124352.GB21999@twins.programming.kicks-ass.net> <20131211134048.GH21683@pd.tnic> <20131211145655.GB4510@gmail.com> <20131211164318.GA2480@laptop.programming.kicks-ass.net> <20131211175036.GC12431@gmail.com> <52A8F073.9040500@zytor.com> <20131211231425.GD8863@pd.tnic> <52A908DB.60902@zytor.com> <1386822357.6056.12.camel@marge.simpson.net> <52A94065.1050103@zytor.com> <1386826641.6056.31.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: 50 Watt idle power regression bisected to Linux-3.10
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 11 Dec 2013 21:45:55 -0800
-To: Mike Galbraith <bitbucket@online.de>
-CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+	id S1751335Ab3LLFrL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 00:47:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.93,876,1378882800"; 
+   d="scan'208";a="448766657"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "gleb@redhat.com" <gleb@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Eder <jeder@redhat.com>, x86@kernel.org
-Message-ID: <6e4b858b-fcad-4231-8351-d2f473bf6ba6@email.android.com>
+        "Ren, Qiaowei" <qiaowei.ren@intel.com>
+Subject: RE: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Topic: [PATCH v2 0/4] X86/KVM: enable Intel MPX for KVM
+Thread-Index: AQHO9lbMf+S7r+6fxkeY+guSVvGgeppQC9bA
+Date: Thu, 12 Dec 2013 05:47:07 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233501421D73@SHSMSX101.ccr.corp.intel.com>
+References: <1386394315-48984-1-git-send-email-jinsong.liu@intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923350141B4A7@SHSMSX101.ccr.corp.intel.com>
+ <52A83606.40908@redhat.com>
+In-Reply-To: <52A83606.40908@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As in it hangs at that point?
+Paolo Bonzini wrote:
+> Il 11/12/2013 09:31, Liu, Jinsong ha scritto:
+>> Paolo, comments for version 2?
+> 
+> I think I commented that it's fine, I'm just waiting for a rebase on
+> top of the generic patches.
+> 
+> Paolo
+> 
 
-Mike Galbraith <bitbucket@online.de> wrote:
->On Wed, 2013-12-11 at 20:49 -0800, H. Peter Anvin wrote: 
->> On 12/11/2013 08:25 PM, Mike Galbraith wrote:
->> >  arch/x86/include/asm/mwait.h   |    4 ++--
->> >  arch/x86/kernel/cpu/common.c   |    7 ++++---
->> >  arch/x86/kernel/setup_percpu.c |    1 +
->> >  3 files changed, 7 insertions(+), 5 deletions(-)
->> > 
->> > Index: linux-2.6/arch/x86/kernel/cpu/common.c
->> > ===================================================================
->> > --- linux-2.6.orig/arch/x86/kernel/cpu/common.c
->> > +++ linux-2.6/arch/x86/kernel/cpu/common.c
->> > @@ -65,13 +65,14 @@ void __init setup_cpu_local_masks(void)
->> >  }
->> >  
->> >  /* allocate percpu area for mwait doorbell */
->> > -char __percpu *mwait_doorbell;
->> > +DEFINE_PER_CPU(char *, mwait_doorbell);
->> > +EXPORT_PER_CPU_SYMBOL(mwait_doorbell);
->> >  
+Thanks! common MPX definiation patches have been checked in tip tree (both Qiaowei and I use that definiations):
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=191f57c137bcce0e3e9313acb77b2f114d15afbb
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=e7d820a5e549b3eb6c3f9467507566565646a669
+
+Jinsong
+
 >> 
->> Sorry, this is wrong.  This is NOT a percpu variable, it is a pointer
->to
->> a percpu allocation, but the variable itself is not a percpu
->variable.
->> This explains your boom.
->
->With that fixed, it boots, but is not quite perfect.
->
->... 
->[  258.560079] fbcon: radeondrmfb (fb0) is primary device
->[  258.722483] Console: switching to colour frame buffer device 128x48
->[  258.847076] radeon 0000:01:03.0: fb0: radeondrmfb frame buffer
->device
->[  258.911991] radeon 0000:01:03.0: registered panic notifier
->[  258.968772] [drm] Initialized radeon 2.35.0 20080528 for
->0000:01:03.0 on minor 0
->...
->[  469.738604] netxen_nic 0000:04:00.3: using msi-x interrupts
->[  469.739078] netxen_nic 0000:04:00.3: eth5: GbE port initialized
->[  469.830512] ipmi_si 00:01: Found new BMC (man_id: 0x00000b, prod_id:
->0x2000, dev_id: 0x13)
->[  469.830524] ipmi_si 00:01: IPMI kcs interface initialized
->[  473.729862] iTCO_wdt: unable to reset NO_REBOOT flag, device
->disabled by hardware/BIOS
->...
->[  711.636741] fuse init (API version 7.22)
->
->...zzzz ok box, doctor appointment is in an hour away.
->
->-Mike 
+>> Liu, Jinsong wrote:
+>>> These patches are version 2 to enalbe Intel MPX for KVM.
+>>> 
+>>> Version 1:
+>>>   * Add some Intel MPX definiation
+>>>   * Fix a cpuid(0x0d, 0) exposing bug, dynamic per XCR0 features
+>>> enable/disable 
+>>>   * vmx and msr handle for MPX support at KVM
+>>>   * enalbe MPX feature for guest
+>>> 
+>>> Version 2:
+>>>   * remove generic MPX definiation, kernel side has add the
+>>> definiation 
+>>>   * add MSR_IA32_BNDCFGS to msrs_to_save
+>>> 
+>>> Thanks,
+>>> Jinsong
+>>> 
+>>> Liu Jinsong (4):
+>>>   KVM/X86: Fix xsave cpuid exposing bug
+>>>   KVM/X86: Intel MPX vmx and msr handle
+>>>   KVM/X86: add MSR_IA32_BNDCFGS to msrs_to_save
+>>>   KVM/X86: Enable Intel MPX for guest.
+>>> 
+>>>  arch/x86/include/asm/vmx.h            |    4 ++++
+>>>  arch/x86/include/asm/xsave.h          |    2 ++
+>>>  arch/x86/include/uapi/asm/msr-index.h |    1 +
+>>>  arch/x86/kvm/cpuid.c                  |    8 ++++----
+>>>  arch/x86/kvm/vmx.c                    |   18 ++++++++++++++++--
+>>>  arch/x86/kvm/x86.c                    |   12 +++++++++---
+>>>  arch/x86/kvm/x86.h                    |    3 ++-
+>>>  7 files changed, 38 insertions(+), 10 deletions(-)
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
