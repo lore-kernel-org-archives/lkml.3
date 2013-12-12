@@ -1,165 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab3LLOgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:36:22 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:5793 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab3LLOgV (ORCPT
+	id S1751755Ab3LLOhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:37:50 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:34596 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3LLOht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:36:21 -0500
-Date: Thu, 12 Dec 2013 15:36:19 +0100
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <iamjoonsoo.kim@lge.com>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: possible regression on 3.13 when calling flush_dcache_page
-Message-ID: <20131212143618.GJ12099@ldesroches-Latitude-E6320>
-Mail-Followup-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	iamjoonsoo.kim@lge.com
-References: <20131212143149.GI12099@ldesroches-Latitude-E6320>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20131212143149.GI12099@ldesroches-Latitude-E6320>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Dec 2013 09:37:49 -0500
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Cc: dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC] dma-buf: Implement test module
+Date: Thu, 12 Dec 2013 15:36:29 +0100
+Message-Id: <1386858989-1487-1-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix mmc mailing list address error
+This is a simple test module that can be used to allocate, export and
+delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
+systems that lack a real second driver.
 
-On Thu, Dec 12, 2013 at 03:31:50PM +0100, Ludovic Desroches wrote:
-> Hi,
-> 
-> With v3.13-rc3 I have an error when the atmel-mci driver calls
-> flush_dcache_page (log at the end of the message).
-> 
-> Since I didn't have it before, I did a git bisect and the commit introducing
-> the error is the following one:
-> 
-> 106a74e slab: replace free and inuse in struct slab with newly introduced active
-> 
-> I don't know if this commit has introduced a bug or if it has revealed a bug
-> in the atmel-mci driver.
-> 
-> I'll investigate on atmel-mci driver side but if someone has also this issue or
-> see what is wrong in the driver, please tell me all about it.
-> 
-> Thanks
-> 
-> Regards
-> 
-> Ludovic
-> 
-> 
-> # mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
-> mmc0: queuing unknown CIS tuple 0x01 (3 bytes)
-> mmc0: queuing unknown CIS tuple 0x1a (5 bytes)
-> mmc0: queuing unknown CIS tuple 0x1b (8 bytes)
-> mmc0: queuing unknown CIS tuple 0x14 (0 bytes)
-> mmc0: queuing unknown CIS tuple 0x80 (1 bytes)
-> mmc0: queuing unknown CIS tuple 0x81 (1 bytes)
-> mmc0: queuing unknown CIS tuple 0x82 (1 bytes)
-> mmc0: new SDIO card at address 0001
-> Unable to handle kernel paging request at virtual address 0a00000c
-> pgd = c0004000
-> [0a00000c] *pgd=00000000
-> Internal error: Oops: 5 [#1] ARM
-> Modules linked in:
-> CPU: 0 PID: 9 Comm: kworker/u2:1 Not tainted 3.11.0+ #68
-> Workqueue: kmmcd mmc_rescan
-> task: c384e800 ti: c385e000 task.ti: c385e000
-> PC is at vma_interval_tree_subtree_search+0x18/0x74
-> LR is at flush_dcache_page+0x90/0x12c
-> pc : [<c0064a50>]    lr : [<c000f00c>]    psr: 20000093
-> sp : c385fab8  ip : 00000000  fp : c10ca400
-> r10: c385fc64  r9 : c12f92fc  r8 : 00000000
-> r7 : c2ace640  r6 : c0cc5be0  r5 : c0cd0000  r4 : c1323a00
-> r3 : 0a000000  r2 : c0cc5be0  r1 : c0cc5be0  r0 : c034ae48
-> Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 0005317f  Table: 22b7c000  DAC: 00000017
-> Process kworker/u2:1 (pid: 9, stack limit = 0xc385e1b8)
-> Stack: (0xc385fab8 to 0xc3860000)
-> faa0:                                                       c1323a00 c000f00c
-> fac0: c0cd02d0 c2b0cb40 c385fc30 00000003 00000004 c0281380 44006d72 43495645
-> fae0: 0000c0ef 00000000 3a6d726f 00000000 30303038 c2b42ec0 c3868b80 0000001e
-> fb00: 00000000 00000000 c10f26ed 00000200 0008a000 c0049d3c c3868b80 c2b42ec0
-> fb20: c3868b80 00000000 ffffffff c385fb9c c0cd02d0 1408a004 00000200 c0049ed8
-> fb40: c3868b80 c004c384 0000001e c0049718 0000001e c0009cc8 c10f2a60 c001d7ec
-> fb60: 20000013 c000bf20 c10f3900 c2b0cbd8 0000184a a0000013 c2b0cbd8 ffff824a
-> fb80: c10f30e0 00000000 c0cd02d0 1408a004 00000200 0008a000 ffff814a c385fbb0
-> fba0: c001d560 c001d7ec 20000013 ffffffff c2b0cbd8 a0000013 f7cedc96 c2b07400
-> fbc0: c2b0cb40 c385fc40 00000001 c028207c c385fc40 c2b07400 00000004 c0270e28
-> fbe0: 00000200 000003e8 00000000 61666666 30303038 c2b07400 c385fc50 c385fc40
-> fc00: 00001000 c027100c c1323a02 00000004 c2b48000 00000001 00001000 c027a06c
-> fc20: 00000015 c38f2800 c2ace7c0 c002f804 c1323a02 000002d0 00000004 00000000
-> fc40: 00000000 c385fc94 c385fc64 00000000 00000000 c385fc54 c385fc54 c0270c3c
-> fc60: 00000000 3b9aca00 00000000 00000004 00000001 ffffff8d 00000200 00000000
-> fc80: 00000000 c385fc40 00000001 c385fc30 00000000 00000035 1408a004 00000000
-> fca0: 00000000 00000000 00000000 000001b5 00000000 ffffff8d 00000000 00000000
-> fcc0: c385fc64 c385fc40 00000007 00000004 c2bfb400 c0cd02d0 00000450 00000001
-> fce0: 00000000 00000004 000001ff c027af0c 00000001 c0cd02d0 00000000 00000004
-> fd00: 00000000 00000000 c10cf4f0 00000450 00000004 c2bfb400 c0cd02d0 00000251
-> fd20: 00000450 c0cd02d0 00000251 c027b010 c0cd02d0 00000004 00000450 c022d0e8
-> fd40: c0cd02d0 c3859000 00000004 00000251 00000000 c022d6ac 00000004 00000450
-> fd60: c0cd02c0 c10ce7e8 c0cd02d0 00000004 c385fdb4 c10ce7e8 ffff81c9 c022da4c
-> fd80: 00000251 c385fdb4 00000004 c385fddc 00000000 c0cd02c0 c03b5ccc 00000001
-> fda0: 00000000 c2b48008 c2bfb400 c021bb1c c0cd02c0 00000008 c385fd84 c0cd02c0
-> fdc0: 00000000 00000000 c03b5ccc c022c37c 00000000 c0476909 00000000 00000000
-> fde0: 00000000 c385fd7c c3859000 c0cd02c0 00000000 c022e010 c022de8c c2bfb400
-> fe00: 00000000 c10e18f0 c03b5ccc c027a32c c027a2d4 c2bfb408 00000000 c10e18f0
-> fe20: c01cafc8 c01cadf4 00000000 c385fe38 c2bfb408 c01c966c c38d7a1c c2ad6f34
-> fe40: c2bfb408 c2bfb408 c2bfb43c c2bfb408 00000000 c01cad10 c2bfb408 c10eb49c
-> fe60: c2bfb408 c01ca398 c2bfb408 00000000 c2bfb410 c01c898c c2bfb410 00000000
-> fe80: 00000000 c01818b0 00000001 c2bfb400 c2bfb408 c2bfb400 c2bfb408 00000000
-> fea0: c2b48000 00000001 00000000 c385fed3 c2bfb400 c027a4c4 c2b48000 c2b07400
-> fec0: 00000000 c0279b8c 00000000 c385fed3 00000000 10ffff00 00000000 c2b0757c
-> fee0: c2b07400 00000000 00061a80 c03b9d90 00000000 00000000 00000089 c0272fb8
-> ff00: c385df60 c2b0757c c3817200 c10f26b5 c3849c00 c00270e0 c385df60 c2b0757c
-> ff20: 00000081 c385df60 c3817200 c385e000 c10f26b5 c385df78 c3817200 c3817210
-> ff40: 00000089 c00276d0 c384e800 c384debc 00000000 c385df60 c00274c0 00000000
-> ff60: 00000000 00000000 00000000 c002c130 00000000 00000000 00000000 c385df60
-> ff80: 00000000 c385ff84 c385ff84 00000000 c385ff90 c385ff90 c385ffac c384debc
-> ffa0: c002c090 00000000 00000000 c00094b0 00000000 00000000 00000000 00000000
-> ffc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> ffe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
-> [<c0064a50>] (vma_interval_tree_subtree_search+0x18/0x74) from [<c000f00c>] (flush_dcache_page+0x90/0x12c)
-> [<c000f00c>] (flush_dcache_page+0x90/0x12c) from [<c0281380>] (atmci_interrupt+0x3cc/0x900)
-> [<c0281380>] (atmci_interrupt+0x3cc/0x900) from [<c0049d3c>] (handle_irq_event_percpu+0x2c/0x1a0)
-> [<c0049d3c>] (handle_irq_event_percpu+0x2c/0x1a0) from [<c0049ed8>] (handle_irq_event+0x28/0x38)
-> [<c0049ed8>] (handle_irq_event+0x28/0x38) from [<c004c384>] (handle_fasteoi_irq+0xa4/0xe4)
-> [<c004c384>] (handle_fasteoi_irq+0xa4/0xe4) from [<c0049718>] (generic_handle_irq+0x20/0x30)
-> [<c0049718>] (generic_handle_irq+0x20/0x30) from [<c0009cc8>] (handle_IRQ+0x60/0x84)
-> [<c0009cc8>] (handle_IRQ+0x60/0x84) from [<c000bf20>] (__irq_svc+0x40/0x4c)
-> [<c000bf20>] (__irq_svc+0x40/0x4c) from [<c001d7ec>] (mod_timer+0xf8/0x110)
-> [<c001d7ec>] (mod_timer+0xf8/0x110) from [<c028207c>] (atmci_request+0xd0/0x120)
-> [<c028207c>] (atmci_request+0xd0/0x120) from [<c0270e28>] (mmc_start_request+0x1e4/0x204)
-> [<c0270e28>] (mmc_start_request+0x1e4/0x204) from [<c027100c>] (mmc_wait_for_req+0x6c/0x16c)
-> [<c027100c>] (mmc_wait_for_req+0x6c/0x16c) from [<c027a06c>] (mmc_io_rw_extended+0x214/0x290)
-> [<c027a06c>] (mmc_io_rw_extended+0x214/0x290) from [<c027af0c>] (sdio_io_rw_ext_helper+0x160/0x1a0)
-> [<c027af0c>] (sdio_io_rw_ext_helper+0x160/0x1a0) from [<c027b010>] (sdio_memcpy_fromio+0x14/0x18)
-> [<c027b010>] (sdio_memcpy_fromio+0x14/0x18) from [<c022d0e8>] (ath6kl_sdio_io+0x88/0x9c)
-> [<c022d0e8>] (ath6kl_sdio_io+0x88/0x9c) from [<c022d6ac>] (ath6kl_sdio_read_write_sync+0xb0/0x100)
-> [<c022d6ac>] (ath6kl_sdio_read_write_sync+0xb0/0x100) from [<c022da4c>] (ath6kl_sdio_bmi_write+0x54/0xf8)
-> [<c022da4c>] (ath6kl_sdio_bmi_write+0x54/0xf8) from [<c021bb1c>] (ath6kl_bmi_get_target_info+0x44/0x190)
-> [<c021bb1c>] (ath6kl_bmi_get_target_info+0x44/0x190) from [<c022c37c>] (ath6kl_core_init+0xa4/0x404)
-> [<c022c37c>] (ath6kl_core_init+0xa4/0x404) from [<c022e010>] (ath6kl_sdio_probe+0x184/0x1ec)
-> [<c022e010>] (ath6kl_sdio_probe+0x184/0x1ec) from [<c027a32c>] (sdio_bus_probe+0x58/0x6c)
-> [<c027a32c>] (sdio_bus_probe+0x58/0x6c) from [<c01cadf4>] (driver_probe_device+0xac/0x1f4)
-> [<c01cadf4>] (driver_probe_device+0xac/0x1f4) from [<c01c966c>] (bus_for_each_drv+0x48/0x8c)
-> [<c01c966c>] (bus_for_each_drv+0x48/0x8c) from [<c01cad10>] (device_attach+0x68/0x80)
-> [<c01cad10>] (device_attach+0x68/0x80) from [<c01ca398>] (bus_probe_device+0x28/0x98)
-> [<c01ca398>] (bus_probe_device+0x28/0x98) from [<c01c898c>] (device_add+0x424/0x5fc)
-> [<c01c898c>] (device_add+0x424/0x5fc) from [<c027a4c4>] (sdio_add_func+0x34/0x4c)
-> [<c027a4c4>] (sdio_add_func+0x34/0x4c) from [<c0279b8c>] (mmc_attach_sdio+0x260/0x314)
-> [<c0279b8c>] (mmc_attach_sdio+0x260/0x314) from [<c0272fb8>] (mmc_rescan+0x22c/0x2b4)
-> [<c0272fb8>] (mmc_rescan+0x22c/0x2b4) from [<c00270e0>] (process_one_work+0x1f4/0x348)
-> [<c00270e0>] (process_one_work+0x1f4/0x348) from [<c00276d0>] (worker_thread+0x210/0x36c)
-> [<c00276d0>] (worker_thread+0x210/0x36c) from [<c002c130>] (kthread+0xa0/0xb0)
-> [<c002c130>] (kthread+0xa0/0xb0) from [<c00094b0>] (ret_from_fork+0x14/0x24)
-> Code: e243002c e5903034 e3530000 0a000002 (e593c00c) 
-> ---[ end trace 3f7f9bc3f451e9c9 ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> 
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/base/Kconfig        |   4 +
+ drivers/base/Makefile       |   1 +
+ drivers/base/dma-buf-test.c | 308 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 313 insertions(+)
+ create mode 100644 drivers/base/dma-buf-test.c
+
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index e373671652b0..bed2abb9491b 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -200,6 +200,10 @@ config DMA_SHARED_BUFFER
+ 	  APIs extension; the file's descriptor can then be passed on to other
+ 	  driver.
+ 
++config DMA_BUF_TEST
++	tristate "DMA-BUF test module"
++	depends on DMA_SHARED_BUFFER
++
+ config DMA_CMA
+ 	bool "DMA Contiguous Memory Allocator"
+ 	depends on HAVE_DMA_CONTIGUOUS && CMA
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 94e8a80e87f8..cad983b6626f 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -25,3 +25,4 @@ obj-$(CONFIG_PINCTRL) += pinctrl.o
+ 
+ ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ 
++obj-$(CONFIG_DMA_BUF_TEST) += dma-buf-test.o
+diff --git a/drivers/base/dma-buf-test.c b/drivers/base/dma-buf-test.c
+new file mode 100644
+index 000000000000..f5498b74a09b
+--- /dev/null
++++ b/drivers/base/dma-buf-test.c
+@@ -0,0 +1,308 @@
++#include <linux/dma-buf.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++
++struct dmabuf_create {
++	__u32 flags;
++	__u32 size;
++};
++
++#define DMABUF_IOCTL_BASE	'D'
++#define DMABUF_IOCTL_CREATE	_IOWR(DMABUF_IOCTL_BASE, 0, struct dmabuf_create)
++#define DMABUF_IOCTL_DELETE	_IOWR(DMABUF_IOCTL_BASE, 1, int)
++#define DMABUF_IOCTL_EXPORT	_IOWR(DMABUF_IOCTL_BASE, 2, int)
++
++struct dmabuf_file {
++	struct dma_buf *buf;
++	dma_addr_t phys;
++	size_t size;
++	void *virt;
++};
++
++static int dmabuf_attach(struct dma_buf *buf, struct device *dev,
++			 struct dma_buf_attachment *attach)
++{
++	return 0;
++}
++
++static void dmabuf_detach(struct dma_buf *buf,
++			  struct dma_buf_attachment *attach)
++{
++}
++
++static struct sg_table *dmabuf_map_dma_buf(struct dma_buf_attachment *attach,
++					   enum dma_data_direction dir)
++{
++	struct dmabuf_file *priv = attach->dmabuf->priv;
++	struct sg_table *sgt;
++
++	sgt = kmalloc(sizeof(*sgt), GFP_KERNEL);
++	if (!sgt)
++		return NULL;
++
++	if (sg_alloc_table(sgt, 1, GFP_KERNEL)) {
++		kfree(sgt);
++		return NULL;
++	}
++
++	sg_dma_address(sgt->sgl) = priv->phys;
++	sg_dma_len(sgt->sgl) = priv->size;
++
++	return sgt;
++}
++
++static void dmabuf_unmap_dma_buf(struct dma_buf_attachment *attach,
++				 struct sg_table *sgt,
++				 enum dma_data_direction dir)
++{
++	sg_free_table(sgt);
++	kfree(sgt);
++}
++
++static void dmabuf_release(struct dma_buf *buf)
++{
++}
++
++static int dmabuf_begin_cpu_access(struct dma_buf *buf, size_t size,
++				   size_t length,
++				   enum dma_data_direction direction)
++{
++	return 0;
++}
++
++static void dmabuf_end_cpu_access(struct dma_buf *buf, size_t size,
++				  size_t length,
++				  enum dma_data_direction direction)
++{
++}
++
++static void *dmabuf_kmap_atomic(struct dma_buf *buf, unsigned long page)
++{
++	return NULL;
++}
++
++static void dmabuf_kunmap_atomic(struct dma_buf *buf, unsigned long page,
++				 void *vaddr)
++{
++}
++
++static void *dmabuf_kmap(struct dma_buf *buf, unsigned long page)
++{
++	return NULL;
++}
++
++static void dmabuf_kunmap(struct dma_buf *buf, unsigned long page, void *vaddr)
++{
++}
++
++static void dmabuf_vm_open(struct vm_area_struct *vma)
++{
++}
++
++static void dmabuf_vm_close(struct vm_area_struct *vma)
++{
++}
++
++static int dmabuf_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	return 0;
++}
++
++static const struct vm_operations_struct dmabuf_vm_ops = {
++	.open = dmabuf_vm_open,
++	.close = dmabuf_vm_close,
++	.fault = dmabuf_vm_fault,
++};
++
++static int dmabuf_mmap(struct dma_buf *buf, struct vm_area_struct *vma)
++{
++	pgprot_t prot = vm_get_page_prot(vma->vm_flags);
++	struct dmabuf_file *priv = buf->priv;
++
++	vma->vm_flags |= VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP;
++	vma->vm_ops = &dmabuf_vm_ops;
++	vma->vm_private_data = priv;
++	vma->vm_page_prot = pgprot_writecombine(prot);
++
++	return remap_pfn_range(vma, vma->vm_start, priv->phys >> PAGE_SHIFT,
++			       vma->vm_end - vma->vm_start, vma->vm_page_prot);
++}
++
++static void *dmabuf_vmap(struct dma_buf *buf)
++{
++	return NULL;
++}
++
++static void dmabuf_vunmap(struct dma_buf *buf, void *vaddr)
++{
++}
++
++static const struct dma_buf_ops dmabuf_ops = {
++	.attach = dmabuf_attach,
++	.detach = dmabuf_detach,
++	.map_dma_buf = dmabuf_map_dma_buf,
++	.unmap_dma_buf = dmabuf_unmap_dma_buf,
++	.release = dmabuf_release,
++	.begin_cpu_access = dmabuf_begin_cpu_access,
++	.end_cpu_access = dmabuf_end_cpu_access,
++	.kmap_atomic = dmabuf_kmap_atomic,
++	.kunmap_atomic = dmabuf_kunmap_atomic,
++	.kmap = dmabuf_kmap,
++	.kunmap = dmabuf_kunmap,
++	.mmap = dmabuf_mmap,
++	.vmap = dmabuf_vmap,
++	.vunmap = dmabuf_vunmap,
++};
++
++static int dmabuf_file_open(struct inode *inode, struct file *file)
++{
++	struct dmabuf_file *priv;
++	int ret = 0;
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	file->private_data = priv;
++
++	return ret;
++}
++
++static int dmabuf_file_release(struct inode *inode, struct file *file)
++{
++	struct dmabuf_file *priv = file->private_data;
++	int ret = 0;
++
++	if (priv->virt)
++		dma_free_writecombine(NULL, priv->size, priv->virt, priv->phys);
++
++	if (priv->buf)
++		dma_buf_put(priv->buf);
++
++	kfree(priv);
++
++	return ret;
++}
++
++static int dmabuf_ioctl_create(struct dmabuf_file *priv, const void __user *data)
++{
++	struct dmabuf_create args;
++	int ret = 0;
++
++	if (priv->buf || priv->virt)
++		return -EBUSY;
++
++	if (copy_from_user(&args, data, sizeof(args)))
++		return -EFAULT;
++
++	priv->virt = dma_alloc_writecombine(NULL, args.size, &priv->phys,
++					    GFP_KERNEL | __GFP_NOWARN);
++	if (!priv->virt)
++		return -ENOMEM;
++
++	priv->buf = dma_buf_export(priv, &dmabuf_ops, args.size, args.flags);
++	if (!priv->buf) {
++		ret = -ENOMEM;
++		goto free;
++	}
++
++	if (IS_ERR(priv->buf)) {
++		ret = PTR_ERR(priv->buf);
++		goto free;
++	}
++
++	priv->size = args.size;
++
++	return 0;
++
++free:
++	dma_free_writecombine(NULL, priv->size, priv->virt, priv->phys);
++	priv->virt = NULL;
++	return ret;
++}
++
++static int dmabuf_ioctl_delete(struct dmabuf_file *priv, unsigned long flags)
++{
++	dma_free_writecombine(NULL, priv->size, priv->virt, priv->phys);
++	priv->virt = NULL;
++	priv->phys = 0;
++	priv->size = 0;
++
++	dma_buf_put(priv->buf);
++	priv->buf = NULL;
++
++	return 0;
++}
++
++static int dmabuf_ioctl_export(struct dmabuf_file *priv, unsigned long flags)
++{
++	int err;
++
++	get_dma_buf(priv->buf);
++
++	err = dma_buf_fd(priv->buf, flags);
++	if (err < 0)
++		dma_buf_put(priv->buf);
++
++	return err;
++}
++
++static long dmabuf_file_ioctl(struct file *file, unsigned int cmd,
++			      unsigned long arg)
++{
++	struct dmabuf_file *priv = file->private_data;
++	long ret = 0;
++
++	switch (cmd) {
++	case DMABUF_IOCTL_CREATE:
++		ret = dmabuf_ioctl_create(priv, (const void __user *)arg);
++		break;
++
++	case DMABUF_IOCTL_DELETE:
++		ret = dmabuf_ioctl_delete(priv, arg);
++		break;
++
++	case DMABUF_IOCTL_EXPORT:
++		ret = dmabuf_ioctl_export(priv, arg);
++		break;
++
++	default:
++		ret = -ENOTTY;
++		break;
++	}
++
++	return ret;
++}
++
++static const struct file_operations dmabuf_fops = {
++	.owner = THIS_MODULE,
++	.open = dmabuf_file_open,
++	.release = dmabuf_file_release,
++	.unlocked_ioctl = dmabuf_file_ioctl,
++};
++
++static struct miscdevice dmabuf_device = {
++	.minor = 128,
++	.name = "dmabuf",
++	.fops = &dmabuf_fops,
++};
++
++static int __init dmabuf_init(void)
++{
++	return misc_register(&dmabuf_device);
++}
++module_init(dmabuf_init);
++
++static void __exit dmabuf_exit(void)
++{
++	misc_deregister(&dmabuf_device);
++}
++module_exit(dmabuf_exit);
++
++MODULE_AUTHOR("Thierry Reding <treding@nvidia.com>");
++MODULE_DESCRIPTION("DMA-BUF test driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.4.2
+
