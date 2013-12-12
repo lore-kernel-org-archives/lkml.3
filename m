@@ -1,65 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab3LLOTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 09:19:38 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:48738 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267Ab3LLOTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 09:19:34 -0500
-Message-ID: <52A9C5D9.9000207@windriver.com>
-Date: Thu, 12 Dec 2013 09:19:05 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751617Ab3LLOT4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 09:19:56 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:3663 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751840Ab3LLOTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 09:19:52 -0500
+X-IronPort-AV: E=Sophos;i="4.93,878,1378857600"; 
+   d="scan'208";a="83660844"
+Message-ID: <1386857960.11201.57.camel@kazak.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v2] xen/block: Correctly define structures
+ in public headers on ARM32 and ARM64
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Julien Grall <julien.grall@linaro.org>
+CC: <xen-devel@lists.xenproject.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux-kernel@vger.kernel.org>,
+        "David Vrabel" <david.vrabel@citrix.com>, <patches@linaro.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Roger Pau Monne" <roger.pau@citrix.com>
+Date: Thu, 12 Dec 2013 14:19:20 +0000
+In-Reply-To: <1386085237-8334-1-git-send-email-julien.grall@linaro.org>
+References: <1386085237-8334-1-git-send-email-julien.grall@linaro.org>
+Organization: Citrix Systems, Inc.
+Content-Type: multipart/mixed; boundary="=-ZF/b3mwHPENAnDNEFU6b"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] wait-simple: Introduce the simple waitqueue implementation
-References: <1386810399-8973-1-git-send-email-paul.gortmaker@windriver.com> <1386810399-8973-2-git-send-email-paul.gortmaker@windriver.com> <20131212111809.GF21999@twins.programming.kicks-ass.net> <20131212112020.GO3694@twins.programming.kicks-ass.net>
-In-Reply-To: <20131212112020.GO3694@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-12-12 06:20 AM, Peter Zijlstra wrote:
-> On Thu, Dec 12, 2013 at 12:18:09PM +0100, Peter Zijlstra wrote:
->> On Wed, Dec 11, 2013 at 08:06:37PM -0500, Paul Gortmaker wrote:
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-[...]
-
->>> +
->>> +unsigned int
->>> +__swake_up(struct swait_queue_head *head, unsigned int state, unsigned int num)
->>> +{
->>> +	unsigned long flags;
->>> +	int woken;
->>> +
->>> +	if (!swaitqueue_active(head))
->>> +		return 0;
->>> +
->>> +	raw_spin_lock_irqsave(&head->lock, flags);
->>> +	woken = __swake_up_locked(head, state, num);
->>> +	raw_spin_unlock_irqrestore(&head->lock, flags);
->>> +	return woken;
->>> +}
->>> +EXPORT_SYMBOL(__swake_up);
->>
->> Urgh, fail. Do not put unbounded loops in raw_spin_lock.
->>
->> I think I posted a patch a while back to cure this.
+On Tue, 2013-12-03 at 15:40 +0000, Julien Grall wrote:
+> On ARM (32 bits and 64 bits), the double-word is 8-bytes aligned. This will
+> result on different structure from Xen and Linux repositories.
 > 
-> tada!
+> As Linux is using __packed__ attribute, it must have a 4-bytes padding before
+> each "id" field.
 > 
-> lkml.kernel.org/r/20131004145625.GN3081@twins.programming.kicks-ass.net
+> This change breaks guest block support with older kernel. IMHO, it's acceptable
+> because Xen on ARM is still on Tech Preview and the hypercall ABI is not yet
+> freezed.
+> 
+> Only one architecture (x86_32) doesn't have 64-bit ABI for the block interface.
+> Don't add padding if Linux is compiled for this architecture.
 
-Yep, I linked to that at the bottom of the 0/3 -- I was still
-hoping we could find a way to somehow do that w/o passing
-the flags around between functions...  perhaps it isn't possible...
+Konrad asked for confirmation that this didn't change x86.
+
+Using
+http://stackoverflow.com/questions/9788679/how-to-get-the-relative-adress-of-a-field-in-a-structure-dump-c
+
+I created offsets.py as described there then for i386, amd64, arm, arm64
+before and after I built with CONFIG_DEBUG_INFO but not
+CONFIG_DEBUG_INFO_REDUCED then:
+
+        $ cat script
+        python
+        sys.path.insert(0, '')
+        import offsets
+        end
+        
+        offsets-of "struct blkif_request"
+        offsets-of "struct blkif_request_rw"
+        offsets-of "struct blkif_request_discard"
+        offsets-of "struct blkif_request_other"
+        offsets-of "struct blkif_request_indirect"
+        $ gdb -x script --batch drivers/block/xen-blkfront.o
+        struct blkif_request {
+            operation => 0
+            u => 1
+        }
+        struct blkif_request_rw {
+            nr_segments => 0
+            handle => 1
+            _pad1 => 3
+            id => 7
+            sector_number => 15
+            seg => 23
+        }
+        struct blkif_request_discard {
+            flag => 0
+            _pad1 => 1
+            _pad2 => 3
+            id => 7
+            sector_number => 15
+            nr_sectors => 23
+            _pad3 => 31
+        }
+        struct blkif_request_other {
+            _pad1 => 0
+            _pad2 => 1
+            _pad3 => 3
+            id => 7
+        }
+        struct blkif_request_indirect {
+            indirect_op => 0
+            nr_segments => 1
+            _pad1 => 3
+            id => 7
+            sector_number => 15
+            handle => 23
+            _pad2 => 25
+            indirect_grefs => 27
+            _pad3 => 59
+        }
+
+There is no difference to either x86 arch:
+        $ diff -q x86_32.{before,after} && echo same
+        same
+        $ diff -q x86_64.{before,after} && echo same
+        same
+        $
+And crucially:
+        $ diff -q arm.after arm64.after && echo same
+        same
+        $ diff -q arm.after x86_64.after && echo same
+        same
+        $
+
+Full results attached.
+
+Ian.
+
+
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="arm.after"
+Content-Type: text/plain; name="arm.after"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    seg => 23
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    _pad2 => 3
+    id => 7
+    sector_number => 15
+    nr_sectors => 23
+    _pad3 => 31
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    _pad3 => 3
+    id => 7
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    handle => 23
+    _pad2 => 25
+    indirect_grefs => 27
+    _pad3 => 59
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="arm.before"
+Content-Type: text/plain; name="arm.before"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    id => 3
+    sector_number => 11
+    seg => 19
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    id => 3
+    sector_number => 11
+    nr_sectors => 19
+    _pad3 => 27
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    id => 3
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    id => 3
+    sector_number => 11
+    handle => 19
+    _pad2 => 21
+    indirect_grefs => 23
+    _pad3 => 55
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="arm64.after"
+Content-Type: text/plain; name="arm64.after"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    seg => 23
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    _pad2 => 3
+    id => 7
+    sector_number => 15
+    nr_sectors => 23
+    _pad3 => 31
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    _pad3 => 3
+    id => 7
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    handle => 23
+    _pad2 => 25
+    indirect_grefs => 27
+    _pad3 => 59
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="arm64.before"
+Content-Type: text/plain; name="arm64.before"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    id => 3
+    sector_number => 11
+    seg => 19
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    id => 3
+    sector_number => 11
+    nr_sectors => 19
+    _pad3 => 27
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    id => 3
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    id => 3
+    sector_number => 11
+    handle => 19
+    _pad2 => 21
+    indirect_grefs => 23
+    _pad3 => 55
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="x86_32.after"
+Content-Type: text/plain; name="x86_32.after"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    id => 3
+    sector_number => 11
+    seg => 19
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    id => 3
+    sector_number => 11
+    nr_sectors => 19
+    _pad3 => 27
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    id => 3
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    id => 3
+    sector_number => 11
+    handle => 19
+    _pad2 => 21
+    indirect_grefs => 23
+    _pad3 => 55
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="x86_32.before"
+Content-Type: text/plain; name="x86_32.before"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    id => 3
+    sector_number => 11
+    seg => 19
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    id => 3
+    sector_number => 11
+    nr_sectors => 19
+    _pad3 => 27
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    id => 3
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    id => 3
+    sector_number => 11
+    handle => 19
+    _pad2 => 21
+    indirect_grefs => 23
+    _pad3 => 55
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="x86_64.after"
+Content-Type: text/plain; name="x86_64.after"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    seg => 23
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    _pad2 => 3
+    id => 7
+    sector_number => 15
+    nr_sectors => 23
+    _pad3 => 31
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    _pad3 => 3
+    id => 7
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    handle => 23
+    _pad2 => 25
+    indirect_grefs => 27
+    _pad3 => 59
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b
+Content-Disposition: attachment; filename="x86_64.before"
+Content-Type: text/plain; name="x86_64.before"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+struct blkif_request {
+    operation => 0
+    u => 1
+}
+struct blkif_request_rw {
+    nr_segments => 0
+    handle => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    seg => 23
+}
+struct blkif_request_discard {
+    flag => 0
+    _pad1 => 1
+    _pad2 => 3
+    id => 7
+    sector_number => 15
+    nr_sectors => 23
+    _pad3 => 31
+}
+struct blkif_request_other {
+    _pad1 => 0
+    _pad2 => 1
+    _pad3 => 3
+    id => 7
+}
+struct blkif_request_indirect {
+    indirect_op => 0
+    nr_segments => 1
+    _pad1 => 3
+    id => 7
+    sector_number => 15
+    handle => 23
+    _pad2 => 25
+    indirect_grefs => 27
+    _pad3 => 59
+}
+
+--=-ZF/b3mwHPENAnDNEFU6b--
