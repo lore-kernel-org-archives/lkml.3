@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3LLLYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 06:24:24 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:62886 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3LLLYX (ORCPT
+	id S1751688Ab3LLLZo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 06:25:44 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:52092 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab3LLLZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 06:24:23 -0500
+	Thu, 12 Dec 2013 06:25:43 -0500
 From: Matt Porter <mporter@linaro.org>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -23,9 +23,9 @@ Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Devicetree List <devicetree@vger.kernel.org>,
         Linaro Patches <patches@linaro.org>
-Subject: [PATCH v4 5/9] usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
-Date: Thu, 12 Dec 2013 06:18:33 -0500
-Message-Id: <1386847117-21240-6-git-send-email-mporter@linaro.org>
+Subject: [PATCH v4 1/9] phy: add phy_get_bus_width()/phy_set_bus_width() calls
+Date: Thu, 12 Dec 2013 06:18:29 -0500
+Message-Id: <1386847117-21240-2-git-send-email-mporter@linaro.org>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386847117-21240-1-git-send-email-mporter@linaro.org>
 References: <1386847117-21240-1-git-send-email-mporter@linaro.org>
@@ -33,37 +33,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a generic phy is present, call phy_init()/phy_exit(). This supports
-generic phys that must be soft reset before power on.
+This adds a pair of APIs that allows the generic PHY subsystem to
+provide information on the PHY bus width. The PHY provider driver may
+use phy_set_bus_width() to set the bus width that the PHY supports.
+The controller driver may then use phy_get_bus_width() to fetch the
+PHY bus width in order to properly configure the controller.
 
 Signed-off-by: Matt Porter <mporter@linaro.org>
 ---
- drivers/usb/gadget/s3c-hsotg.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/phy/phy.h | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index 7c5d8bd..e9683c2 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -3621,6 +3621,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
- 		goto err_supplies;
- 	}
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 6d72269..a0dcf2d 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -38,6 +38,14 @@ struct phy_ops {
+ };
  
-+	if (hsotg->phy)
-+		phy_init(hsotg->phy);
+ /**
++ * struct phy_attrs - represents phy attributes
++ * @bus_width: Data path width implemented by PHY
++ */
++struct phy_attrs {
++	u32			bus_width;
++};
 +
- 	/* usb phy enable */
- 	s3c_hsotg_phy_enable(hsotg);
++/**
+  * struct phy - represents the phy device
+  * @dev: phy device
+  * @id: id of the phy device
+@@ -46,6 +54,7 @@ struct phy_ops {
+  * @mutex: mutex to protect phy_ops
+  * @init_count: used to protect when the PHY is used by multiple consumers
+  * @power_count: used to protect when the PHY is used by multiple consumers
++ * @phy_attrs: used to specify PHY specific attributes
+  */
+ struct phy {
+ 	struct device		dev;
+@@ -55,6 +64,7 @@ struct phy {
+ 	struct mutex		mutex;
+ 	int			init_count;
+ 	int			power_count;
++	struct phy_attrs	attrs;
+ };
  
-@@ -3714,6 +3717,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
- 	}
+ /**
+@@ -127,6 +137,14 @@ int phy_init(struct phy *phy);
+ int phy_exit(struct phy *phy);
+ int phy_power_on(struct phy *phy);
+ int phy_power_off(struct phy *phy);
++static inline u32 phy_get_bus_width(struct phy *phy)
++{
++	return phy->attrs.bus_width;
++}
++static inline void phy_set_bus_width(struct phy *phy, u32 bus_width)
++{
++	phy->attrs.bus_width = bus_width;
++}
+ struct phy *phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_get(struct device *dev, const char *string);
+ void phy_put(struct phy *phy);
+@@ -199,6 +217,16 @@ static inline int phy_power_off(struct phy *phy)
+ 	return -ENOSYS;
+ }
  
- 	s3c_hsotg_phy_disable(hsotg);
-+	if (hsotg->phy)
-+		phy_exit(hsotg->phy);
- 	clk_disable_unprepare(hsotg->clk);
- 
- 	return 0;
++static inline u32 phy_get_bus_width(struct phy *phy)
++{
++	return -ENOSYS;
++}
++
++static inline void phy_set_bus_width(struct phy *phy, u32 bus_width)
++{
++	return;
++}
++
+ static inline struct phy *phy_get(struct device *dev, const char *string)
+ {
+ 	return ERR_PTR(-ENOSYS);
 -- 
 1.8.4
 
