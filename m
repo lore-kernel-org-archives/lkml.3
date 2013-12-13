@@ -1,129 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab3LMHKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 02:10:46 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:59715 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750756Ab3LMHKo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 02:10:44 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "vpalatin@chromium.org" <vpalatin@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
-Subject: RE: [PATCH 1/3] regulator: act8865: add PMIC(Power Management IC)
- driver
-Thread-Topic: [PATCH 1/3] regulator: act8865: add PMIC(Power Management IC)
- driver
-Thread-Index: AQHO9tgvWvD6QZdK9UiBL8pe2L8yn5pQQRmAgAFs/8A=
-Date: Fri, 13 Dec 2013 07:10:36 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364172EDB624@penmbx01>
-References: <1386811131-2720-1-git-send-email-wenyou.yang@atmel.com>
- <1386811131-2720-2-git-send-email-wenyou.yang@atmel.com>
- <20131212165149.GO11044@sirena.org.uk>
-In-Reply-To: <20131212165149.GO11044@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751847Ab3LMHPb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 02:15:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618Ab3LMHPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 02:15:30 -0500
+Date: Fri, 13 Dec 2013 02:14:07 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: xfs@oss.sgi.com
+Subject: XFS / writeback invoking soft lockup.
+Message-ID: <20131213071407.GA6527@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+I can hit this pretty reliably on one of my slower test machines.
+(8gb ram, 1 slow sata disk)
 
-Thanks your for feedback.
+the machine is pretty responsive, and recovers after a while.
+anything we can do to shut it up ?
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org]
-> Sent: Friday, December 13, 2013 12:52 AM
-> To: Yang, Wenyou
-> Cc: lgirdwood@gmail.com; grant.likely@linaro.org;
-> rob.herring@calxeda.com; vpalatin@chromium.org;
-> devicetree@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> doc@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> plagnioj@jcrosoft.com; Ferre, Nicolas
-> Subject: Re: [PATCH 1/3] regulator: act8865: add PMIC(Power Management
-> IC) driver
-> 
-> On Thu, Dec 12, 2013 at 09:18:49AM +0800, Wenyou Yang wrote:
-> 
-> The main thing with this driver seems to be that it needs a bit of
-> modernisation to use current kernel features and APIs - there's nothing
-> terribly wrong from a quick glance through but it needs an update.
-> Details below.
-> 
-> > --- a/drivers/regulator/Kconfig
-> > +++ b/drivers/regulator/Kconfig
-> > @@ -577,5 +577,12 @@ config REGULATOR_WM8994
-> >  	  This driver provides support for the voltage regulators on the
-> >  	  WM8994 CODEC.
-> >
-> > +config REGULATOR_ACT8865
-> > +	tristate "Active-semi act8865 voltage regulator"
-> > +	depends on I2C
-> > +	help
-> > +	  This driver controls a active-semi act8865 voltage output
-> > +	  regulator via I2C bus.
-> > +
-> 
-> Please keep this and the Makefile sorted.
-Only this one confuses me,
-How can I sort it? By i2c interface, by regulator type: voltage or current?
-Where is act8865 should be?
+BUG: soft lockup - CPU#2 stuck for 22s! [kworker/u8:2:8479]
+Modules linked in: rfcomm l2tp_ppp l2tp_netlink l2tp_core scsi_transport_iscsi can_bcm nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth can_raw can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 cfg80211 rfkill nouveau video backlight mxm_wmi wmi i2c_algo_bit ttm drm_kms_helper tg3 drm kvm_intel kvm ptp i2c_core pps_core libphy lpc_ich mfd_core serio_raw pcspkr microcode parport_pc parport shpchp floppy rtc_cmos xfs libcrc32c raid0
+irq event stamp: 510442980
+hardirqs last  enabled at (510442979): [<c15c47d9>] _raw_spin_unlock_irq+0x27/0x46
+hardirqs last disabled at (510442980): [<c15c5667>] apic_timer_interrupt+0x2f/0x3c
+softirqs last  enabled at (510441282): [<c1045d01>] __do_softirq+0x14b/0x38d
+softirqs last disabled at (510441277): [<c100418b>] do_softirq_own_stack+0x2e/0x34
+CPU: 2 PID: 8479 Comm: kworker/u8:2 Not tainted 3.13.0-rc3+ #1 
+Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
+Workqueue: writeback bdi_writeback_workfn (flush-9:127)
+task: e9e458c0 ti: e4214000 task.ti: e4214000
+EIP: 0060:[<c112f797>] EFLAGS: 00000286 CPU: 2
+EIP is at lru_add_drain_cpu+0x19/0xc0
+EAX: c1a988c0 EBX: 00000002 ECX: 00000001 EDX: 2ff6c000
+ESI: 00000000 EDI: 00000001 EBP: e4215c54 ESP: e4215c48
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 00000000 CR3: 29ed5000 CR4: 000007f0
+Stack:
+ e4215cb8 00000000 00000001 e4215c5c c112f8f8 e4215c68 c112f934 00000001
+ e4215d04 c112baba 00000000 0000000e 00000000 00000000 00000001 00000000
+ c1a9c980 f1a08980 c112ad83 00000000 e4215da4 00000067 00000003 00000001
+Call Trace:
+ [<c112f8f8>] lru_add_drain+0x1c/0x39
+ [<c112f934>] __pagevec_release+0x10/0x26
+ [<c112baba>] write_cache_pages+0x2f9/0x486
+ [<c112ad83>] ? global_dirtyable_memory+0x73/0x73
+ [<c108c940>] ? get_lock_stats+0x1b/0x43
+ [<c108cf5c>] ? put_lock_stats.isra.30+0xd/0x22
+ [<c108d3a2>] ? lock_release_holdtime.part.31+0xa0/0xd5
+ [<c112bc7e>] generic_writepages+0x37/0x51
+ [<f8616158>] xfs_vm_writepages+0x3a/0x42 [xfs]
+ [<c112d1d9>] do_writepages+0x1d/0x2c
+ [<c11a86ff>] __writeback_single_inode+0x3f/0x4d7
+ [<c11a8f55>] ? writeback_sb_inodes+0x178/0x3d9
+ [<c11a8fb2>] writeback_sb_inodes+0x1d5/0x3d9
+ [<c11a9235>] __writeback_inodes_wb+0x7f/0xae
+ [<c11a94ad>] wb_writeback+0x249/0x4c5
+ [<c11a9bed>] bdi_writeback_workfn+0x321/0x594
+ [<c105c9e7>] process_one_work+0x1ad/0x5ff
+ [<c105c9af>] ? process_one_work+0x175/0x5ff
+ [<c105cf2f>] worker_thread+0xf6/0x31b
+ [<c105ce39>] ? process_one_work+0x5ff/0x5ff
+ [<c106398e>] kthread+0xb5/0xc8
+ [<c108f8aa>] ? trace_hardirqs_on+0xb/0xd
+ [<c15cbe37>] ret_from_kernel_thread+0x1b/0x28
+ [<c10638d9>] ? insert_kthread_work+0x63/0x63
+Code: e8 41 50 49 00 83 c4 04 5b 5e 5f 5d c3 e8 25 ad 48 00 55 89 e5 57 56 53 66 66 66 66 90 89 c3 b8 c0 88 a9 c1 8b 14 9d 80 33 8b c1 <01> d0 8b 08 85 c9 75 74 b8 80 88 a9 c1 8d 34 02 8b 3e 85 ff 75
 
-> 
-> > +static int act8865_read_reg(struct act8865_data *act8865, u8 reg) {
-> > +	int ret = i2c_smbus_read_byte_data(act8865->client, reg);
-> > +	if (ret > 0)
-> > +		ret &= 0xff;
-> > +
-> > +	return ret;
-> > +}
-> 
-> Use regmap for register I/O and use the helpers provided by the core.
-> 
-> > +static int act8865_set_voltage_sel(struct regulator_dev *rdev, u32
-> > +selector) {
-> > +	struct act8865_data *act8865 = rdev_get_drvdata(rdev);
-> > +	int id = rdev_get_id(rdev);
-> > +	u32	reg = act8865_vset_reg_addr(act8865, id);
-> 
-> Throughout the file the indentation is a really strange mix of the first
-> two lines (which are the normal kernel style) and the bottom line (which
-> isn't).
-> 
-> > +	pr_info("%s: suspend voltage %dmV\n", rdev->desc->name, uV / 1000);
-> 
-> Remove noisy logging like this.
-> 
-> > +		rdev[i] = regulator_register(&act8865_reg[id], &config);
-> 
-> devm_regulator_register().
-> 
-> > +static int __init act8865_pmu_init(void) {
-> > +	return i2c_add_driver(&act8865_pmu_driver);
-> > +}
-> > +subsys_initcall(act8865_pmu_init);
-> 
-> module_i2c_driver().
-
-Others is OK for me, I will modify, and send out new version.
-
-Thanks again.
-
-Best Regards,
-Wenyou Yang
