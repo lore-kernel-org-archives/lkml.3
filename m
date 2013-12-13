@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab3LMDai (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 22:30:38 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.180]:62006 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3LMDaV convert rfc822-to-8bit (ORCPT
+	id S1752098Ab3LMDbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 22:31:13 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56610 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3LMDbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 22:30:21 -0500
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTye7SIrkDrg==
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Gerd Hoffmann <kraxel@redhat.com>
-Subject: Re: [PATCH] drm/bochs: new driver
-Date: Fri, 13 Dec 2013 03:30:07 +0000
-User-Agent: KMail/1.13.7 (Linux/3.12-4.slh.1-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: David Airlie <airlied@linux.ie>, open list <linux-kernel@vger.kernel.org>,
-        "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>
-References: <1386858246-4470-1-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1386858246-4470-1-git-send-email-kraxel@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201312130330.14647.s.L-H@gmx.de>
+	Thu, 12 Dec 2013 22:31:12 -0500
+Message-ID: <1386905449.4871.11.camel@marge.simpson.net>
+Subject: Re: [PATCH 00/15] cleanups and optimizations
+From: Mike Galbraith <bitbucket@online.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        paulmck@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Date: Fri, 13 Dec 2013 04:30:49 +0100
+In-Reply-To: <20131212140835.729222186@infradead.org>
+References: <20131212140835.729222186@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:RLRsdwSzL3kJ7JPTOfuqWTp6huC3phdho4ZkqeUps2A
+ 1pj2y+KO6f0R9R4H/9A2cb6tIzlQvVEQgsij8IVW/roepgn2Kf
+ +mmh/8gcP7qMNtnaEv5luj7EPEAZ9uyG4Be7xyAEejNcomZPK7
+ SjHOfikkJXmTUb9NBST7SbIkUR7ctZF4+sBO4VOQmDK+TikDyy
+ eIIuVWnf5vdevO48ooQlpDGdinMN3dpRCej2XcCeeltd5cj5zi
+ 9/H3BaLvO2ql84zXuJrOrJ6WCPyf8GV/9pLMKlvIjl+gNw2gRN
+ V4ezIySGOG9XErfczUNFjI8DeFlt0QCzSdPXdxiFY7X0tA1oiG
+ TAYcWc/i9BY1QTAMxrpwcnpBnHPNwpicZWDaQUc4Lhg6HHfxdM
+ z8aovzJyEmPrg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, 2013-12-12 at 15:08 +0100, Peter Zijlstra wrote: 
+> This series contains the preempt_enable_no_resched() cleanups that include
+> spin_lock_bh() optimizations and local_clock() optimizations.
 
-On Thursday 12 December 2013, Gerd Hoffmann wrote:
-> DRM driver for (virtual) vga cards using the bochs dispi
-> interface, such as the qemu standard vga (qemu -vga std).
-> 
-> Don't bother supporting anything but 32bpp for now, even
-> though the virtual hardware is able to do that.
-> 
-> Known issue: mmap(/dev/fb0) doesn't work.
-> 
-> Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-> ---
-[…]
-> diff --git a/drivers/gpu/drm/bochs/bochs_mm.c b/drivers/gpu/drm/bochs/bochs_mm.c
-> new file mode 100644
-> index 0000000..afe104f
-> --- /dev/null
-> +++ b/drivers/gpu/drm/bochs/bochs_mm.c
-[…]
-> +int bochs_gem_create(struct drm_device *dev, u32 size, bool iskernel,
-> +		     struct drm_gem_object **obj)
-> +{
-> +	struct bochs_bo *bochsbo;
-> +	int ret;
-> +
-> +	*obj = NULL;
-> +
-> +	size = roundup(size, PAGE_SIZE);
-[…]
+Those clock optimizations look particularly yummy.
 
-Using roundup() this way will fail to build in 32 bit architectures/ 
-i386:
+-Mike
 
-ERROR: "__udivdi3" [drivers/gpu/drm/bochs/bochs-drm.ko] undefined!
-ERROR: "__umoddi3" [drivers/gpu/drm/bochs/bochs-drm.ko] undefined!
-
-[drm/bochs works pretty nicely for me on amd64]
-
-Regards
-	Stefan Lippers-Hollmann
