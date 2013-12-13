@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab3LMOA2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:00:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43316 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab3LMOA1 (ORCPT
+	id S1752757Ab3LMOCi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:02:38 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:40019 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab3LMOCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:00:27 -0500
-Date: Fri, 13 Dec 2013 15:00:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>, linux-kernel@vger.kernel.org,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Ingo Molnar'" <mingo@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] kernel/locking: mutex: simplify access to the first
- entry in the wait-list
-Message-ID: <20131213140011.GM21999@twins.programming.kicks-ass.net>
-References: <1386847772-8918-1-git-send-email-andrzej.p@samsung.com>
- <20131212113511.GG21999@twins.programming.kicks-ass.net>
- <23bd01cef731$fb052680$f10f7380$%park@samsung.com>
- <20131212125203.GI21999@twins.programming.kicks-ass.net>
- <52AAA806.30406@samsung.com>
+	Fri, 13 Dec 2013 09:02:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52AAA806.30406@samsung.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <alpine.LRH.2.02.1312131351140.31472@tundra.namei.org>
+References: <alpine.LRH.2.02.1312131351140.31472@tundra.namei.org>
+Date: Fri, 13 Dec 2013 09:02:36 -0500
+X-Google-Sender-Auth: 668fz8qtBIGkKJz30eZd3Fr8_fo
+Message-ID: <CA+5PVA4fcf526u=AF4TwQP3xdajV-qE5Jn6NKG2mme=YK8nvhw@mail.gmail.com>
+Subject: Re: [GIT] SELinux fixes
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: James Morris <jmorris@namei.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 07:24:06AM +0100, Andrzej Pietrasiewicz wrote:
-> Hello Ingo & Peter,
-> 
-> I added Greg on Cc.
+On Thu, Dec 12, 2013 at 9:52 PM, James Morris <jmorris@namei.org> wrote:
+> Please pull.
+>
+>
+> The following changes since commit 54fb723cc48db2fde964fb9bb0eaaccf2cf31a9f:
+>
+>   Merge tag 'for-linus' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2013-12-12 15:46:06 -0800)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+>
+> Geyslan G. Bem (1):
+>       selinux: fix possible memory leak
+>
+> James Morris (1):
+>       Merge branch 'master' of git://git.infradead.org/users/pcmoore/selinux_fixes into for-linus
+>
+> Paul Moore (5):
+>       Merge tag 'v3.12'
+>       selinux: handle TCP SYN-ACK packets correctly in selinux_ip_output()
+>       selinux: handle TCP SYN-ACK packets correctly in selinux_ip_postroute()
+>       selinux: look for IPsec labels on both inbound and outbound packets
+>       selinux: process labeled IPsec TCP SYN-ACK packets properly in selinux_ip_postroute()
 
-> For quite a long time I've been sending the same SOB lines to the
-> linux-usb list.
+Should probably figure out which path to take on this one soon:
 
-Then Greg is more forgiving. Doesn't make it right though.
+http://thread.gmane.org/gmane.linux.kernel/1611662
+
+A revert might be the easiest for now.
+
+josh
