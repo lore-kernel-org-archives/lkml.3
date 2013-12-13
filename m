@@ -1,103 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab3LMEcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 23:32:48 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:55437 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab3LMEcr (ORCPT
+	id S1751959Ab3LMEdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 23:33:12 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:46278 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab3LMEdJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 23:32:47 -0500
-Message-ID: <52AA8DE8.1060901@gmail.com>
-Date: Thu, 12 Dec 2013 21:32:40 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 12 Dec 2013 23:33:09 -0500
 MIME-Version: 1.0
-To: Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf kvm: introduce --list-cmds for use by scripts
-References: <52A9E9F3.4090801@gmail.com> <1386869211-1971-1-git-send-email-artagnon@gmail.com>
-In-Reply-To: <1386869211-1971-1-git-send-email-artagnon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20131213020620.GF13333@kroah.com>
+References: <20131127184652.GA1856@kroah.com> <CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
+ <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
+ <CAErSpo6_s6-Dc__-AzausBVDvOAY5beh7ivng2dWHUN1iRyj+g@mail.gmail.com> <20131213020620.GF13333@kroah.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 12 Dec 2013 21:32:48 -0700
+Message-ID: <CAErSpo6F_oLE2XLt9q5iQE3izuP1ZKW_rib60KKokaL9ewZogA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/13, 10:26 AM, Ramkumar Ramachandra wrote:
-> Introduce
+On Thu, Dec 12, 2013 at 7:06 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Dec 12, 2013 at 04:56:20PM -0700, Bjorn Helgaas wrote:
+>> On Thu, Dec 12, 2013 at 4:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > On Sat, Dec 7, 2013 at 12:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> >> On Wed, Nov 27, 2013 at 11:46 AM, Greg Kroah-Hartman
+>> >> <gregkh@linuxfoundation.org> wrote:
+>> >>> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >>>
+>> >>> The PCI MSI sysfs code is a mess with kobjects for things that don't
+>> >>> really need to be kobjects.  This patch creates attributes dynamically
+>> >>> for the MSI interrupts instead of using kobjects.
+>> >>>
+>> >>> Note, this removes a directory from the current MSI interrupt sysfs
+>> >>> code:
+>> >>>
+>> >>> old MSI kobjects:
+>> >>> pci_device
+>> >>>    └── msi_irqs
+>> >>>        └── 40
+>> >>>            └── mode
+>> >>>
+>> >>> new MSI attributes:
+>> >>> pci_device
+>> >>>    └── msi_irqs
+>> >>>        └── 40
+>> >>>
+>> >>> As there was only one file "mode" with the kobject model, the interrupt
+>> >>> number is now a file that returns the "mode" of the interrupt (msi vs.
+>> >>> msix).
+>> >>>
+>> >>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >>
+>> >> I added the acks from Neil and Veaceslav, folded in the
+>> >> Documentation/ABI update, and applied the whole thing to my pci/misc
+>> >> branch for v3.14.  Thanks!
+>> >
+>> > got:
+>> > [   71.429735] BUG: key ffff887fcf082a58 not in .data!
+>> > [   71.429737] ------------[ cut here ]------------
+>> > [   71.429742] WARNING: CPU: 0 PID: 4 at kernel/locking/lockdep.c:2987 lockdep_i
+>> > nit_map+0x127/0x5b0()
+>> > [   71.429743] DEBUG_LOCKS_WARN_ON(1)
+>> > [   71.429744] Modules linked in:
+>> > [   71.429747] CPU: 0 PID: 4 Comm: kworker/0:0 Tainted: G          I  3.13.0-rc3
+>> > -yh-01187-ge0e4e4e-dirty #45
+>> > [   71.429757] Workqueue: events work_for_cpu_fn
+>> > [   71.429792]  0000000000000009 ffff881fcf95da58 ffffffff82020475 ffff881fcf95d
+>> > aa0
+>> > [   71.429800]  ffff881fcf95da90 ffffffff81097c3d ffff887fcf082a58 ffff88dfcec1a
+>> > d28
+>> > [   71.429809]  0000000000000000 0000000000000000 ffff889fcf2eecd0 ffff881fcf95d
+>> > af0
+>> > [   71.429809] Call Trace:
+>> > [   71.429814]  [<ffffffff82020475>] dump_stack+0x45/0x56
+>> > [   71.429818]  [<ffffffff81097c3d>] warn_slowpath_common+0x7d/0xa0
+>> > [   71.429822]  [<ffffffff81097cac>] warn_slowpath_fmt+0x4c/0x50
+>> > [   71.429826]  [<ffffffff810e3d97>] lockdep_init_map+0x127/0x5b0
+>> > [   71.429835]  [<ffffffff81242fe8>] ? sysfs_new_dirent+0x98/0x140
+>> > [   71.429839]  [<ffffffff81242033>] sysfs_add_file_mode_ns+0x63/0xc0
+>> > [   71.429843]  [<ffffffff8124491d>] internal_create_group+0x18d/0x260
+>> > [   71.429853]  [<ffffffff81556345>] ? populate_msi_sysfs+0x185/0x1d0
+>> > [   71.429857]  [<ffffffff81244a52>] sysfs_create_groups+0x42/0xa0
+>> > [   71.429861]  [<ffffffff81556367>] populate_msi_sysfs+0x1a7/0x1d0
+>> > [   71.429865]  [<ffffffff81556b67>] pci_enable_msi_block+0x1f7/0x2a0
+>> > [   71.429870]  [<ffffffff81549795>] pcie_port_device_register+0x335/0x520
+>> > [   71.429874]  [<ffffffff81549f08>] pcie_portdrv_probe+0x68/0xa0
+>> > [   71.429883]  [<ffffffff8153cf75>] local_pci_probe+0x45/0xa0
+>> > [   71.429887]  [<ffffffff810b0af4>] work_for_cpu_fn+0x14/0x20
+>> > [   71.429891]  [<ffffffff810b431b>] process_one_work+0x28b/0x4a0
+>> > [   71.429895]  [<ffffffff810b4292>] ? process_one_work+0x202/0x4a0
+>> > [   71.429899]  [<ffffffff810b55db>] worker_thread+0x26b/0x3a0
+>> > [   71.429903]  [<ffffffff810e262d>] ? trace_hardirqs_on+0xd/0x10
+>> > [   71.429906]  [<ffffffff810b5370>] ? manage_workers.isra.17+0x340/0x340
+>> > [   71.429912]  [<ffffffff810bc031>] kthread+0x111/0x120
+>> > [   71.429919]  [<ffffffff810cddab>] ? local_clock+0x2b/0x40
+>> > [   71.429923]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
+>> > [   71.429927]  [<ffffffff8203842c>] ret_from_fork+0x7c/0xb0
+>> > [   71.429931]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
+>> > [   71.429933] ---[ end trace c511e3d74efea94e ]---
+>> >
+>> > looks like Greg forgot adding attr init.
+>> >
+>> > Can you fold attached patch into Greg's patch ?
+>>
+>> Sure.  I don't know how to reproduce it, so I couldn't verify the fix,
+>> but I added it to Greg's patch.  Thanks!
 >
->    $ perf kvm --list-cmds
->
-> to dump a raw list of commands for use by the completion script. While
-> at it, refactor kvm_usage so that there's only one copy of the command
-> listing.
->
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->   David Ahern wrote:
->   > That would work -- perhaps a #define or string near
->   >
->   >    const char * const kvm_usage[] = {
->   >         "perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
->   >         NULL
->   >     };
->   >
->   > Building kvm_usage from the string would better - only 1 place listing the
->   > commands.
->
->   Something like this, perhaps? It's not too pretty though: do you have
->   suggestions to prettify it?
->
->   tools/perf/builtin-kvm.c      | 25 +++++++++++++++++++++----
->   tools/perf/perf-completion.sh |  2 +-
->   2 files changed, 22 insertions(+), 5 deletions(-)
->
-> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-> index c6fa3cb..ce44a9b 100644
-> --- a/tools/perf/builtin-kvm.c
-> +++ b/tools/perf/builtin-kvm.c
-> @@ -1672,6 +1672,7 @@ __cmd_buildid_list(const char *file_name, int argc, const char **argv)
->   int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
->   {
->   	const char *file_name = NULL;
-> +	bool list_cmds = false;
->   	const struct option kvm_options[] = {
->   		OPT_STRING('i', "input", &file_name, "file",
->   			   "Input file name"),
-> @@ -1692,20 +1693,36 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
->   			   "file", "file saving guest os /proc/modules"),
->   		OPT_INCR('v', "verbose", &verbose,
->   			    "be more verbose (show counter open errors, etc)"),
-> +		OPT_BOOLEAN(0, "list-cmds", &list_cmds,
-> +			"list commands raw for use by scripts"),
->   		OPT_END()
->   	};
->
-> +	const char *const commands[] = { "top", "record", "report", "diff",
-> +					 "buildid-list", "stat", NULL };
+> I think lockdep has to be enabled for this to show up, I wasn't running
+> with that enabled when I tested the code, my fault, sorry.
 
-Building it is kind of ugly looking.
+No problem.  I have
 
-Arnaldo: what about this:
-#define KVM_CMDS  "top record report diff buildid-list stat"
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_LOCKDEP=y
+CONFIG_DEBUG_LOCKDEP=y
 
-> +	char kvm_usage_str[80];
-> +	const char *kvm_usage[] = { NULL, NULL };
->
-> -	const char * const kvm_usage[] = {
-> -		"perf kvm [<options>] {top|record|report|diff|buildid-list|stat}",
-> -		NULL
+and I still don't see the problem booting the qemu q35 model.
+Whatever, I folded it in anyway.
 
-	const char * const kvm_usage[] = {
-		"perf kvm [<options>] <command>, command = " KVM_CMDS,
-		NULL
-
-I would even be fine with not touching kvm_usage and having the KVM_CMDS 
-macro right above it -- changing one causes the other to show up in a diff.
-
-
-David
-
+Bjorn
