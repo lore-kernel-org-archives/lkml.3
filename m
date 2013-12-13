@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3LMXzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:55:03 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:33474 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab3LMXzA (ORCPT
+	id S1753226Ab3LMXzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:55:50 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:41703 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab3LMXzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:55:00 -0500
-Message-ID: <52AB9E51.2020807@linaro.org>
-Date: Fri, 13 Dec 2013 15:54:57 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 13 Dec 2013 18:55:47 -0500
+Date: Fri, 13 Dec 2013 15:55:44 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20131212103159.GB2630@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
+References: <20131203120454.GA12758@dhcp22.suse.cz> <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com> <20131204111318.GE8410@dhcp22.suse.cz> <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com> <20131209124840.GC3597@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com> <20131210103827.GB20242@dhcp22.suse.cz> <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
+ <20131212103159.GB2630@dhcp22.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        Rebecca Schultz Zavin <rebecca@android.com>
-Subject: Re: [PATCH 001/115] gpu: ion: Add ION Memory Manager
-References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org> <1386973529-4884-2-git-send-email-john.stultz@linaro.org> <20131213235028.GA4919@kroah.com>
-In-Reply-To: <20131213235028.GA4919@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 03:50 PM, Greg KH wrote:
-> On Fri, Dec 13, 2013 at 02:23:35PM -0800, John Stultz wrote:
->> From: Rebecca Schultz Zavin <rebecca@android.com>
->>
->> Signed-off-by: Rebecca Schultz Zavin <rebecca@android.com>
->> [jstultz: Squished in Colin Cross' move to staging change]
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->> ---
->>  drivers/staging/android/Kconfig                 |    2 +
->>  drivers/staging/android/Makefile                |    2 +
-> This patch breaks the build if this option is enabled.
->
-> I suggest only adding the driver to the build _after_ it can be built,
-> for obvious reasons :)
+On Thu, 12 Dec 2013, Michal Hocko wrote:
 
-Right. Until recently it really only builds on ARM. There's a patch
-which adds that dependency (and then later removes it once other fixes
-land), but its later in the patch series.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c72b03bf9679..5cb1deea6aac 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2256,15 +2256,16 @@ bool mem_cgroup_oom_synchronize(bool handle)
+>  
+>  	locked = mem_cgroup_oom_trylock(memcg);
+>  
+> -	if (locked)
+> -		mem_cgroup_oom_notify(memcg);
+> -
+>  	if (locked && !memcg->oom_kill_disable) {
+>  		mem_cgroup_unmark_under_oom(memcg);
+>  		finish_wait(&memcg_oom_waitq, &owait.wait);
+> +		/* calls mem_cgroup_oom_notify if there is a task to kill */
+>  		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask,
+>  					 current->memcg_oom.order);
+>  	} else {
+> +		if (locked && memcg->oom_kill_disable)
+> +			mem_cgroup_oom_notify(memcg);
+> +
+>  		schedule();
+>  		mem_cgroup_unmark_under_oom(memcg);
+>  		finish_wait(&memcg_oom_waitq, &owait.wait);
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 1e4a600a6163..2a7f15900922 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -470,6 +470,9 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>  		victim = p;
+>  	}
+>  
+> +	if (memcg)
+> +		mem_cgroup_oom_notify(memcg);
+> +
+>  	/* mm cannot safely be dereferenced after task_unlock(victim) */
+>  	mm = victim->mm;
+>  	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
 
-Apologies.
+Yes, I like this.
 
-> Other than this "minor" thing, I have no objection to these patches at
-> all.  Can you redo this patch to fix this up, and maybe send another
-> patch adding it to the build and let me know at what point in the series
-> it should be applied?
-I'll squish that config dependency down to the first patch and go
-through verifying it builds.
+> The semantic would be as simple as "notification is sent only when
+> an action is due". It will be still racy as nothing prevents a task
+> which is not under OOM to exit and release some memory but there is no
+> sensible way to address that. On the other hand such a semantic would be
+> sensible for oom_control listeners because they will know that an action
+> has to be or will be taken (the line was drawn).
+> 
 
-> Also, I only received 92 of these patches, not all 115, are they stuck
-> somewhere in a mail queue?
-Maybe? I hope! I've never played GregKH and sent such a large patchset
-before!
+I think this makes absolute sense and is in agreement with what is 
+described in Documentation/cgroups/memory.txt.
 
-thanks
--john
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c72b03bf9679..fee25c5934d2 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2692,7 +2693,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+>  	 * MEMDIE process.
+>  	 */
+>  	if (unlikely(test_thread_flag(TIF_MEMDIE)
+> -		     || fatal_signal_pending(current)))
+> +		     || fatal_signal_pending(current))
+> +		     || current->flags & PF_EXITING)
+>  		goto bypass;
+>  
+>  	if (unlikely(task_in_memcg_oom(current)))
+> 
+> rather than the later checks down the oom_synchronize paths. The comment
+> already mentions dying process...
+> 
 
-
-
+This is scary because it doesn't even try to reclaim memcg memory before 
+allowing the allocation to succeed.  I think we could even argue that we 
+should move the fatal_signal_pending(current) check to later and the only 
+condition we should really be bypassing here is TIF_MEMDIE since it will 
+only get set when reclaim has already failed.
