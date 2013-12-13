@@ -1,185 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab3LMSWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 13:22:43 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:60261 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab3LMSWm (ORCPT
+	id S1753204Ab3LMS1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 13:27:17 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:45123 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab3LMS1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 13:22:42 -0500
-X-IronPort-AV: E=Sophos;i="4.95,480,1384300800"; 
-   d="scan'208";a="82089855"
-Message-ID: <52AB506E.3040509@citrix.com>
-Date: Fri, 13 Dec 2013 18:22:38 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 13 Dec 2013 13:27:15 -0500
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map definitions
-References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com> <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com> <20131213153138.GL21900@zion.uk.xensource.com>
-In-Reply-To: <20131213153138.GL21900@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+In-Reply-To: <Pine.LNX.4.44L0.1312131312230.1185-100000@iolanthe.rowland.org>
+References: <CAPcyv4jvh_3ech7iCCcHyjwUjO=ki5oZo_bT-odt6_765oTi8Q@mail.gmail.com>
+	<Pine.LNX.4.44L0.1312131312230.1185-100000@iolanthe.rowland.org>
+Date: Fri, 13 Dec 2013 10:27:14 -0800
+Message-ID: <CAPcyv4jpi-KX2_TqG8noTnaj+EHCc1a_rkSgc02teLuqawOH0Q@mail.gmail.com>
+Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming SuperSpeed HUBs
+From: Dan Williams <dan.j.williams@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Vikas Sajjan <sajjan.linux@gmail.com>,
+        Vikas Sajjan <vikas.sajjan@linaro.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Ksenia Ragiadakou <burzalodowa@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Douglas Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
+        sunil joshi <joshi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 15:31, Wei Liu wrote:
-> On Thu, Dec 12, 2013 at 11:48:09PM +0000, Zoltan Kiss wrote:
->> This patch contains the new definitions necessary for grant mapping.
+On Fri, Dec 13, 2013 at 10:15 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Fri, 13 Dec 2013, Dan Williams wrote:
+>
+>> > I'm actually leaning towards enabling the check for warm reset broadly.
+>> > It seems like it wouldn't hurt to issue a warm reset on the USB 3.0
+>> > ports if they're in compliance, poll, or rx.detect.  So, let's enable
+>> > this broadly in xhci_resume, mark the patch for stable, but ask for the
+>> > backport to be delayed until 3.13.3 is out, to allow for more testing.
+>> > If anyone complains of xHCI behavior changes, we'll change the code to
+>> > add a quirk.
 >>
->> v2:
->> - move unmapping to separate thread. The NAPI instance has to be scheduled
->>    even from thread context, which can cause huge delays
->> - that causes unfortunately bigger struct xenvif
->> - store grant handle after checking validity
->>
+>> Is there a clean way to make this per-port rather than globally at
+>> xhci_resume()?  I am looking to hook into this for port power recovery
+>> as Tianyu's testing encountered "warm reset required" conditions at
+>> runtime_resume.  I'm still on the hunt for a solid reproducer, but it
+>> indicates this is a more general quirk with power session recovery.
 >
-> If the size of xenvif really becomes a problem, you can try to make
-> sratch space like struct gnttab_copy per-cpu. The downside is that
-> approach requires much coding and carefully guard against race
-> conditions. You would need to consider cost v.s. benefit.
+> There's no reason you can't do per-port testing inside xhci_resume
+> (assuming you know what to test for) as well as putting a warm reset in
+> the port-power handler of xhci_hub_control.
 
-I mentioned this because for the first series I had comments that I 
-should be more vigilant about this. At that time there was a problem 
-with struct xenvif allocation which was solved by now. My quick 
-calculation showed this patch will increase the size with ~15kb
+I'm just uneasy putting the recovery there as we lose the context of
+why the port was powered-on.  For example we don't want to
+pre-empt/duplicate a reset in xhci_hub_control() that is already
+specified in hub_events().
 
+> Of course, doing simultaneous warm resets on multiple ports will use
+> less time than resetting each port individually, in sequence.
 >
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->>
->> ---
-> [...]
->>   #define XENVIF_QUEUE_LENGTH 32
->>   #define XENVIF_NAPI_WEIGHT  64
->> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
->> index c1b7a42..3ddc474 100644
->> --- a/drivers/net/xen-netback/netback.c
->> +++ b/drivers/net/xen-netback/netback.c
->> @@ -772,6 +772,20 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
->>   	return page;
->>   }
->>
->> +static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
->> +	       struct xen_netif_tx_request *txp,
->> +	       struct gnttab_map_grant_ref *gop)
->> +{
->> +	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
->> +	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
->> +			  GNTMAP_host_map | GNTMAP_readonly,
->> +			  txp->gref, vif->domid);
->> +
->> +	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
->> +	       sizeof(*txp));
->> +
->> +}
->> +
->
-> This helper function is not used until next patch. Probably you can move
-> it to the second patch.
->
-> The same applies to other helper functions as well. Move them to the
-> patch they are used. It would be easier for people to review.
-I just moved them here because the second patch is already huge, and I 
-couldn't have an idea to splice it up while keeping it bisectable and 
-logically consistent. As I mentioned, I welcome ideas about that.
 
->
->>   static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
->>   					       struct sk_buff *skb,
->>   					       struct xen_netif_tx_request *txp,
->> @@ -1593,6 +1607,106 @@ static int xenvif_tx_submit(struct xenvif *vif)
->>   	return work_done;
->>   }
->>
->> +void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
->> +{
->
-> Do we care about zerocopy_success? I don't see it used in this function.
-It will be used in the 5th patch. Anyway, it's in the definition of the 
-zerocopy callback.
-
->
->> +	unsigned long flags;
->> +	pending_ring_idx_t index;
->> +	u16 pending_idx = ubuf->desc;
->> +	struct pending_tx_info *temp =
->> +		container_of(ubuf, struct pending_tx_info, callback_struct);
->> +	struct xenvif *vif =
->> +		container_of(temp - pending_idx, struct xenvif,
->> +			pending_tx_info[0]);
->> +
->
-> The third parameter to container_of should be the name of the member
-> within the struct.
-Here we have the pending_idx, so we get a pointer for the holding struct 
-pending_tx_info, then for the beginning of pending_tx_info (temp - 
-pending_idx), and then to the struct xenvif. It's a bit tricky and not 
-straightforward, I admit :)
-
->
->> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
->> +	do {
->> +		pending_idx = ubuf->desc;
->> +		ubuf = (struct ubuf_info *) ubuf->ctx;
->> +		index = pending_index(vif->dealloc_prod);
->> +		vif->dealloc_ring[index] = pending_idx;
->> +		/* Sync with xenvif_tx_action_dealloc:
->> +		 * insert idx then incr producer.
->> +		 */
->> +		smp_wmb();
->> +		vif->dealloc_prod++;
->> +	} while (ubuf);
->> +	wake_up(&vif->dealloc_wq);
->> +	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
->> +}
->> +
->> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
->> +{
->> +	struct gnttab_unmap_grant_ref *gop;
->> +	pending_ring_idx_t dc, dp;
->> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
->> +	unsigned int i = 0;
->> +
->> +	dc = vif->dealloc_cons;
->> +	gop = vif->tx_unmap_ops;
->> +
->> +	/* Free up any grants we have finished using */
->> +	do {
->> +		dp = vif->dealloc_prod;
->> +
->> +		/* Ensure we see all indices enqueued by netif_idx_release(). */
->
-> There is no netif_idx_release in netback code. :-)
-Oh yes, that's from the classic code, it should be 
-xenvif_zerocopy_callback. I will fix it.
-
->
->> +		smp_rmb();
->> +
->> +		while (dc != dp) {
->> +			pending_idx =
->> +				vif->dealloc_ring[pending_index(dc++)];
->> +
->> +			/* Already unmapped? */
->> +			if (vif->grant_tx_handle[pending_idx] ==
->> +				NETBACK_INVALID_HANDLE) {
->> +				netdev_err(vif->dev,
->> +					"Trying to unmap invalid handle! "
->> +					"pending_idx: %x\n", pending_idx);
->> +				continue;
->> +			}
->
-> Should this be BUG_ON? AIUI this kthread should be the only one doing
-> unmap, right?
-The NAPI instance can do it as well if it is a small packet fits into 
-PKT_PROT_LEN. But still this scenario shouldn't really happen, I was 
-just not sure we have to crash immediately. Maybe handle it as a fatal 
-error and destroy the vif?
-
-
+For the hub resume case, yes.  For pm_runtime_resume of an individual
+port I believe it needs to be synchronous.
