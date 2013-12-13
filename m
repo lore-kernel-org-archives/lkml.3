@@ -1,386 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab3LMX7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:59:22 -0500
+	id S1753665Ab3LNABP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 19:01:15 -0500
 Received: from mga02.intel.com ([134.134.136.20]:8611 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753403Ab3LMX7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:59:14 -0500
+	id S1752322Ab3LMX7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 18:59:13 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,482,1384329600"; 
-   d="scan'208";a="424485770"
-Subject: [RFC][PATCH 7/7] mm: slub: cleanups after code churn
+   d="scan'208";a="424485762"
+Subject: [RFC][PATCH 6/7] mm: slub: remove 'struct page' alignment restrictions
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, Pravin B Shelar <pshelar@nicira.com>,
         Christoph Lameter <cl@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Fri, 13 Dec 2013 15:59:13 -0800
+Date: Fri, 13 Dec 2013 15:59:11 -0800
 References: <20131213235903.8236C539@viggo.jf.intel.com>
 In-Reply-To: <20131213235903.8236C539@viggo.jf.intel.com>
-Message-Id: <20131213235913.470C6AC0@viggo.jf.intel.com>
+Message-Id: <20131213235911.79AA177D@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-I added a bunch of longer than 80 column lines and other various
-messes.  But, doing line-to-line code replacements makes the
-previous patch much easier to audit.  I stuck the cleanups in
-here instead.
+SLUB depends on a 16-byte cmpxchg for an optimization.  In order
+to get guaranteed 16-byte alignment (required by the hardware on
+x86), 'struct page' is padded out from 56 to 64 bytes.
 
-The slub code also delcares a bunch of 'struct page's on the
-stack.  Now that 'struct slub_data' is separate, we can declare
-those smaller structures instead.  This ends up saving us a
-couple hundred bytes in object size.
+Those 8-bytes matter.  We've gone to great lengths to keep
+'struct page' small in the past.  It's a shame that we bloat it
+now just for alignment reasons when we have *extra* space.  Also,
+increasing the size of 'struct page' by 14% makes it 14% more
+likely that we will miss a cacheline when fetching it.
 
-In the end, we take slub.o's code size from 26672->27168, so
-about 500 bytes.  But, on an 8GB system, we save about 256k
-in 'struct page' overhead.  That's a pretty good tradeoff.
+This patch takes an unused 8-byte area of slub's 'struct page'
+and reuses it to internally align to the 16-bytes that we need.
+
+Note that this also gets rid of the ugly slub #ifdef that we use
+to segregate ->counters and ->_count for cases where we need to
+manipulate ->counters without the benefit of a hardware cmpxchg.
+
+This patch takes me from 16909584K of reserved memory at boot
+down to 14814472K, so almost *exactly* 2GB of savings!  It also
+helps performance, presumably because of that 14% fewer
+cacheline effect.  A 30GB dd to a ramfs file:
+
+	dd if=/dev/zero of=bigfile bs=$((1<<30)) count=30
+
+is sped up by about 4.4% in my testing.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/mm/slub.c |  147 ++++++++++++++++++++++---------------------
- 1 file changed, 78 insertions(+), 69 deletions(-)
+ linux.git-davehans/include/linux/mm_types.h |   56 +++++++---------------------
+ linux.git-davehans/mm/slab_common.c         |   10 +++--
+ linux.git-davehans/mm/slub.c                |    5 ++
+ 3 files changed, 26 insertions(+), 45 deletions(-)
 
-diff -puN mm/slub.c~slub-cleanups mm/slub.c
---- linux.git/mm/slub.c~slub-cleanups	2013-12-13 15:51:48.843279491 -0800
-+++ linux.git-davehans/mm/slub.c	2013-12-13 15:51:48.846279622 -0800
-@@ -258,7 +258,8 @@ static inline int check_valid_pointer(st
- 		return 1;
+diff -puN include/linux/mm_types.h~remove-struct-page-alignment-restrictions include/linux/mm_types.h
+--- linux.git/include/linux/mm_types.h~remove-struct-page-alignment-restrictions	2013-12-13 15:51:48.591268396 -0800
++++ linux.git-davehans/include/linux/mm_types.h	2013-12-13 15:51:48.595268572 -0800
+@@ -24,39 +24,30 @@
+ struct address_space;
  
- 	base = page_address(page);
--	if (object < base || object >= base + slub_data(page)->objects * s->size ||
-+	if (object < base ||
-+	    object >= base + slub_data(page)->objects * s->size ||
- 		(object - base) % s->size) {
- 		return 0;
- 	}
-@@ -376,10 +377,11 @@ static inline bool __cmpxchg_double_slab
- #if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-     defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 	if (s->flags & __CMPXCHG_DOUBLE) {
--		if (cmpxchg_double(&slub_data(page)->freelist, &slub_data(page)->counters,
--			freelist_old, counters_old,
--			freelist_new, counters_new))
--		return 1;
-+		if (cmpxchg_double(&slub_data(page)->freelist,
-+				   &slub_data(page)->counters,
-+				   freelist_old, counters_old,
-+				   freelist_new, counters_new))
-+			return 1;
- 	} else
- #endif
- 	{
-@@ -414,9 +416,9 @@ static inline bool cmpxchg_double_slab(s
- 	if (s->flags & __CMPXCHG_DOUBLE) {
- 		if (cmpxchg_double(&slub_data(page)->freelist,
- 				   &slub_data(page)->counters,
--			freelist_old, counters_old,
--			freelist_new, counters_new))
--		return 1;
-+				   freelist_old, counters_old,
-+				   freelist_new, counters_new))
-+			return 1;
- 	} else
- #endif
- 	{
-@@ -863,7 +865,8 @@ static int check_slab(struct kmem_cache
- 	}
- 	if (slub_data(page)->inuse > slub_data(page)->objects) {
- 		slab_err(s, page, "inuse %u > max %u",
--			s->name, slub_data(page)->inuse, slub_data(page)->objects);
-+			s->name, slub_data(page)->inuse,
-+			slub_data(page)->objects);
- 		return 0;
- 	}
- 	/* Slab_pad_check fixes things up after itself */
-@@ -894,7 +897,8 @@ static int on_freelist(struct kmem_cache
- 			} else {
- 				slab_err(s, page, "Freepointer corrupt");
- 				slub_data(page)->freelist = NULL;
--				slub_data(page)->inuse = slub_data(page)->objects;
-+				slub_data(page)->inuse =
-+					slub_data(page)->objects;
- 				slab_fix(s, "Freelist cleared");
- 				return 0;
- 			}
-@@ -917,7 +921,8 @@ static int on_freelist(struct kmem_cache
- 	}
- 	if (slub_data(page)->inuse != slub_data(page)->objects - nr) {
- 		slab_err(s, page, "Wrong object count. Counter is %d but "
--			"counted were %d", slub_data(page)->inuse, slub_data(page)->objects - nr);
-+			"counted were %d", slub_data(page)->inuse,
-+			slub_data(page)->objects - nr);
- 		slub_data(page)->inuse = slub_data(page)->objects - nr;
- 		slab_fix(s, "Object count adjusted.");
- 	}
-@@ -1554,7 +1559,7 @@ static inline void *acquire_slab(struct
- {
+ struct slub_data {
+-	void *unused;
  	void *freelist;
- 	unsigned long counters;
--	struct page new;
-+	struct slub_data new;
+ 	union {
+ 		struct {
+ 			unsigned inuse:16;
+ 			unsigned objects:15;
+ 			unsigned frozen:1;
+-			atomic_t dontuse_slub_count;
+ 		};
+-		/*
+-		 * ->counters is used to make it easier to copy
+-		 * all of the above counters in one chunk.
+-		 * The actual counts are never accessed via this.
+-		 */
+-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+-		unsigned long counters;
+-#else
+-		/*
+-		 * Keep _count separate from slub cmpxchg_double data.
+-		 * As the rest of the double word is protected by
+-		 * slab_lock but _count is not.
+-		 */
+ 		struct {
+-			unsigned counters;
+-			/*
+-			 * This isn't used directly, but declare it here
+-			 * for clarity since it must line up with _count
+-			 * from 'struct page'
+-			 */
++			/* Note: counters is just a helper for the above bitfield */
++			unsigned long counters;
++			atomic_t padding;
+ 			atomic_t separate_count;
+ 		};
+-#endif
++		/*
++		 * the double-cmpxchg case:
++		 * counters and _count overlap:
++		 */
++		union {
++			unsigned long counters2;
++			struct {
++				atomic_t padding2;
++				atomic_t _count;
++			};
++		};
+ 	};
+ };
  
- 	/*
- 	 * Zap the freelist and set the frozen bit.
-@@ -1563,22 +1568,22 @@ static inline void *acquire_slab(struct
- 	 */
- 	freelist = slub_data(page)->freelist;
- 	counters = slub_data(page)->counters;
--	slub_data(&new)->counters = counters;
--	*objects = slub_data(&new)->objects - slub_data(&new)->inuse;
-+	new.counters = counters;
-+	*objects = new.objects - new.inuse;
- 	if (mode) {
--		slub_data(&new)->inuse = slub_data(page)->objects;
--		slub_data(&new)->freelist = NULL;
-+		new.inuse = slub_data(page)->objects;
-+		new.freelist = NULL;
- 	} else {
--		slub_data(&new)->freelist = freelist;
-+		new.freelist = freelist;
- 	}
- 
--	VM_BUG_ON(slub_data(&new)->frozen);
--	slub_data(&new)->frozen = 1;
-+	VM_BUG_ON(new.frozen);
-+	new.frozen = 1;
- 
- 	if (!__cmpxchg_double_slab(s, page,
- 			freelist, counters,
--			slub_data(&new)->freelist,
--			slub_data(&new)->counters,
-+			new.freelist,
-+			new.counters,
- 			"acquire_slab"))
- 		return NULL;
- 
-@@ -1800,8 +1805,8 @@ static void deactivate_slab(struct kmem_
- 	enum slab_modes l = M_NONE, m = M_NONE;
- 	void *nextfree;
- 	int tail = DEACTIVATE_TO_HEAD;
--	struct page new;
--	struct page old;
-+	struct slub_data new;
-+	struct slub_data old;
- 
- 	if (slub_data(page)->freelist) {
- 		stat(s, DEACTIVATE_REMOTE_FREES);
-@@ -1824,13 +1829,13 @@ static void deactivate_slab(struct kmem_
- 			prior = slub_data(page)->freelist;
- 			counters = slub_data(page)->counters;
- 			set_freepointer(s, freelist, prior);
--			slub_data(&new)->counters = counters;
--			slub_data(&new)->inuse--;
--			VM_BUG_ON(!slub_data(&new)->frozen);
-+			new.counters = counters;
-+			new.inuse--;
-+			VM_BUG_ON(!new.frozen);
- 
- 		} while (!__cmpxchg_double_slab(s, page,
- 			prior, counters,
--			freelist, slub_data(&new)->counters,
-+			freelist, new.counters,
- 			"drain percpu freelist"));
- 
- 		freelist = nextfree;
-@@ -1852,24 +1857,24 @@ static void deactivate_slab(struct kmem_
- 	 */
- redo:
- 
--	slub_data(&old)->freelist = slub_data(page)->freelist;
--	slub_data(&old)->counters = slub_data(page)->counters;
--	VM_BUG_ON(!slub_data(&old)->frozen);
-+	old.freelist = slub_data(page)->freelist;
-+	old.counters = slub_data(page)->counters;
-+	VM_BUG_ON(!old.frozen);
- 
- 	/* Determine target state of the slab */
--	slub_data(&new)->counters = slub_data(&old)->counters;
-+	new.counters = old.counters;
- 	if (freelist) {
--		slub_data(&new)->inuse--;
--		set_freepointer(s, freelist, slub_data(&old)->freelist);
--		slub_data(&new)->freelist = freelist;
-+		new.inuse--;
-+		set_freepointer(s, freelist, old.freelist);
-+		new.freelist = freelist;
- 	} else
--		slub_data(&new)->freelist = slub_data(&old)->freelist;
-+		new.freelist = old.freelist;
- 
--	slub_data(&new)->frozen = 0;
-+	new.frozen = 0;
- 
--	if (!slub_data(&new)->inuse && n->nr_partial > s->min_partial)
-+	if (!new.inuse && n->nr_partial > s->min_partial)
- 		m = M_FREE;
--	else if (slub_data(&new)->freelist) {
-+	else if (new.freelist) {
- 		m = M_PARTIAL;
- 		if (!lock) {
- 			lock = 1;
-@@ -1918,8 +1923,10 @@ redo:
- 
- 	l = m;
- 	if (!__cmpxchg_double_slab(s, page,
--				slub_data(&old)->freelist, slub_data(&old)->counters,
--				slub_data(&new)->freelist, slub_data(&new)->counters,
-+				old.freelist,
-+				old.counters,
-+				new.freelist,
-+				new.counters,
- 				"unfreezing slab"))
- 		goto redo;
- 
-@@ -1948,8 +1955,8 @@ static void unfreeze_partials(struct kme
- 	struct page *page, *discard_page = NULL;
- 
- 	while ((page = c->partial)) {
--		struct page new;
--		struct page old;
-+		struct slub_data new;
-+		struct slub_data old;
- 
- 		c->partial = page->next;
- 
-@@ -1964,23 +1971,24 @@ static void unfreeze_partials(struct kme
- 
- 		do {
- 
--			slub_data(&old)->freelist = slub_data(page)->freelist;
--			slub_data(&old)->counters = slub_data(page)->counters;
--			VM_BUG_ON(!slub_data(&old)->frozen);
-+			old.freelist = slub_data(page)->freelist;
-+			old.counters = slub_data(page)->counters;
-+			VM_BUG_ON(!old.frozen);
- 
--			slub_data(&new)->counters = slub_data(&old)->counters;
--			slub_data(&new)->freelist = slub_data(&old)->freelist;
-+			new.counters = old.counters;
-+			new.freelist = old.freelist;
- 
--			slub_data(&new)->frozen = 0;
-+			new.frozen = 0;
- 
- 		} while (!__cmpxchg_double_slab(s, page,
--				slub_data(&old)->freelist,
--				slub_data(&old)->counters,
--				slub_data(&new)->freelist,
--				slub_data(&new)->counters,
-+				old.freelist,
-+				old.counters,
-+				new.freelist,
-+				new.counters,
- 				"unfreezing slab"));
- 
--		if (unlikely(!slub_data(&new)->inuse && n->nr_partial > s->min_partial)) {
-+		if (unlikely(!new.inuse &&
-+			     n->nr_partial > s->min_partial)) {
- 			page->next = discard_page;
- 			discard_page = page;
- 		} else {
-@@ -2232,7 +2240,7 @@ static inline bool pfmemalloc_match(stru
+@@ -70,15 +61,8 @@ struct slub_data {
+  * moment. Note that we have no way to track which tasks are using
+  * a page, though if it is a pagecache page, rmap structures can tell us
+  * who is mapping it.
+- *
+- * The objects in struct page are organized in double word blocks in
+- * order to allows us to use atomic double word operations on portions
+- * of struct page. That is currently only used by slub but the arrangement
+- * allows the use of atomic double word operations on the flags/mapping
+- * and lru list pointers also.
   */
- static inline void *get_freelist(struct kmem_cache *s, struct page *page)
+ struct page {
+-	/* First double word block */
+ 	unsigned long flags;		/* Atomic flags, some possibly
+ 					 * updated asynchronously */
+ 	union {
+@@ -121,7 +105,6 @@ struct page {
+ 		};
+ 	};
+ 
+-	/* Third double word block */
+ 	union {
+ 		struct list_head lru;	/* Pageout list, eg. active_list
+ 					 * protected by zone->lru_lock !
+@@ -147,7 +130,6 @@ struct page {
+ #endif
+ 	};
+ 
+-	/* Remainder is not double word aligned */
+ 	union {
+ 		unsigned long private;		/* Mapping-private opaque data:
+ 					 	 * usually used for buffer_heads
+@@ -196,15 +178,7 @@ struct page {
+ #ifdef LAST_CPUPID_NOT_IN_PAGE_FLAGS
+ 	int _last_cpupid;
+ #endif
+-}
+-/*
+- * The struct page can be forced to be double word aligned so that atomic ops
+- * on double words work. The SLUB allocator can make use of such a feature.
+- */
+-#ifdef CONFIG_HAVE_ALIGNED_STRUCT_PAGE
+-	__aligned(2 * sizeof(unsigned long))
+-#endif
+-;
++};
+ 
+ struct page_frag {
+ 	struct page *page;
+diff -puN mm/slab_common.c~remove-struct-page-alignment-restrictions mm/slab_common.c
+--- linux.git/mm/slab_common.c~remove-struct-page-alignment-restrictions	2013-12-13 15:51:48.592268440 -0800
++++ linux.git-davehans/mm/slab_common.c	2013-12-13 15:51:48.596268616 -0800
+@@ -674,7 +674,6 @@ module_init(slab_proc_init);
+ void slab_build_checks(void)
  {
--	struct page new;
-+	struct slub_data new;
- 	unsigned long counters;
- 	void *freelist;
- 
-@@ -2240,15 +2248,15 @@ static inline void *get_freelist(struct
- 		freelist = slub_data(page)->freelist;
- 		counters = slub_data(page)->counters;
- 
--		slub_data(&new)->counters = counters;
--		VM_BUG_ON(!slub_data(&new)->frozen);
-+		new.counters = counters;
-+		VM_BUG_ON(!new.frozen);
- 
--		slub_data(&new)->inuse = slub_data(page)->objects;
--		slub_data(&new)->frozen = freelist != NULL;
-+		new.inuse = slub_data(page)->objects;
-+		new.frozen = freelist != NULL;
- 
- 	} while (!__cmpxchg_double_slab(s, page,
- 		freelist, counters,
--		NULL, slub_data(&new)->counters,
-+		NULL, new.counters,
- 		"get_freelist"));
- 
- 	return freelist;
-@@ -2533,7 +2541,7 @@ static void __slab_free(struct kmem_cach
- 	void *prior;
- 	void **object = (void *)x;
- 	int was_frozen;
--	struct page new;
-+	struct slub_data new;
- 	unsigned long counters;
- 	struct kmem_cache_node *n = NULL;
- 	unsigned long uninitialized_var(flags);
-@@ -2552,10 +2560,10 @@ static void __slab_free(struct kmem_cach
- 		prior = slub_data(page)->freelist;
- 		counters = slub_data(page)->counters;
- 		set_freepointer(s, object, prior);
--		slub_data(&new)->counters = counters;
--		was_frozen = slub_data(&new)->frozen;
--		slub_data(&new)->inuse--;
--		if ((!slub_data(&new)->inuse || !prior) && !was_frozen) {
-+		new.counters = counters;
-+		was_frozen = new.frozen;
-+		new.inuse--;
-+		if ((!new.inuse || !prior) && !was_frozen) {
- 
- 			if (kmem_cache_has_cpu_partial(s) && !prior)
- 
-@@ -2565,7 +2573,7 @@ static void __slab_free(struct kmem_cach
- 				 * We can defer the list move and instead
- 				 * freeze it.
- 				 */
--				slub_data(&new)->frozen = 1;
-+				new.frozen = 1;
- 
- 			else { /* Needs to be taken off a list */
- 
-@@ -2585,7 +2593,7 @@ static void __slab_free(struct kmem_cach
- 
- 	} while (!cmpxchg_double_slab(s, page,
- 		prior, counters,
--		object, slub_data(&new)->counters,
-+		object, new.counters,
- 		"__slab_free"));
- 
- 	if (likely(!n)) {
-@@ -2594,7 +2602,7 @@ static void __slab_free(struct kmem_cach
- 		 * If we just froze the page then put it onto the
- 		 * per cpu partial list.
- 		 */
--		if (slub_data(&new)->frozen && !was_frozen) {
-+		if (new.frozen && !was_frozen) {
- 			put_cpu_partial(s, page, 1);
- 			stat(s, CPU_PARTIAL_FREE);
- 		}
-@@ -2607,7 +2615,7 @@ static void __slab_free(struct kmem_cach
-                 return;
-         }
- 
--	if (unlikely(!slub_data(&new)->inuse && n->nr_partial > s->min_partial))
-+	if (unlikely(!new.inuse && n->nr_partial > s->min_partial))
- 		goto slab_empty;
+ 	SLAB_PAGE_CHECK(_count, dontuse_slab_count);
+-	SLAB_PAGE_CHECK(_count, slub_data.dontuse_slub_count);
+ 	SLAB_PAGE_CHECK(_count, dontuse_slob_count);
  
  	/*
-@@ -3431,7 +3439,8 @@ int kmem_cache_shrink(struct kmem_cache
- 		 * list_lock.  ->inuse here is the upper limit.
- 		 */
- 		list_for_each_entry_safe(page, t, &n->partial, lru) {
--			list_move(&page->lru, slabs_by_inuse + slub_data(page)->inuse);
-+			list_move(&page->lru, slabs_by_inuse +
-+						slub_data(page)->inuse);
- 			if (!slub_data(page)->inuse)
- 				n->nr_partial--;
- 		}
+@@ -688,9 +687,12 @@ void slab_build_checks(void)
+ 	 * carve out for _count in that case actually lines up
+ 	 * with the real _count.
+ 	 */
+-#if ! (defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-	    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE))
+ 	SLAB_PAGE_CHECK(_count, slub_data.separate_count);
+-#endif
++
++	/*
++	 * We need at least three double-words worth of space to
++	 * ensure that we can align to a double-wordk internally.
++	 */
++	BUILD_BUG_ON(sizeof(struct slub_data) != sizeof(unsigned long) * 3);
+ }
+ 
+diff -puN mm/slub.c~remove-struct-page-alignment-restrictions mm/slub.c
+--- linux.git/mm/slub.c~remove-struct-page-alignment-restrictions	2013-12-13 15:51:48.593268484 -0800
++++ linux.git-davehans/mm/slub.c	2013-12-13 15:51:48.596268616 -0800
+@@ -239,7 +239,12 @@ static inline struct kmem_cache_node *ge
+ 
+ static inline struct slub_data *slub_data(struct page *page)
+ {
++	int doubleword_bytes = BITS_PER_LONG * 2 / 8;
+ 	void *ptr = &page->slub_data;
++#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
++	    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
++	ptr = PTR_ALIGN(ptr, doubleword_bytes);
++#endif
+ 	return ptr;
+ }
+ 
 _
