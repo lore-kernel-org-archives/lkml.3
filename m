@@ -1,179 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab3LMQsn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:48:43 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:44617 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab3LMQsl (ORCPT
+	id S1752914Ab3LMQvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:51:37 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:54502 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab3LMQve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:48:41 -0500
-Message-ID: <52AB3A63.6050609@gmail.com>
-Date: Fri, 13 Dec 2013 11:48:35 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Denys Vlasenko <dvlasenk@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: davem@davemloft.net, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, jpirko@redhat.com
-Subject: Re: [patch net-next v3] ipv6: log autoconfiguration failures
-References: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Dec 2013 11:51:34 -0500
+From: Matt Porter <mporter@linaro.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Paul Zimmerman <paulz@synopsys.com>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>
+Subject: [PATCH v6 0/9] USB Device Controller support for BCM281xx
+Date: Fri, 13 Dec 2013 11:51:14 -0500
+Message-Id: <1386953483-21631-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 10:45 AM, Denys Vlasenko wrote:
-> If ipv6 auto-configuration does not work, currently it's hard
-> to track what's going on. This change adds log messages
-> (at debug level) on every code path where ipv6 autoconf fails.
-> 
-> v3: changed pr_debug's to pr_warn's.
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> ---
->  net/ipv6/addrconf.c | 45 ++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 36 insertions(+), 9 deletions(-)
-> 
-> diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-> index 3c3425e..0b354f0 100644
-> --- a/net/ipv6/addrconf.c
-> +++ b/net/ipv6/addrconf.c
-> @@ -1694,8 +1694,11 @@ static void addrconf_leave_anycast(struct inet6_ifaddr *ifp)
->  
->  static int addrconf_ifid_eui48(u8 *eui, struct net_device *dev)
->  {
-> -	if (dev->addr_len != ETH_ALEN)
-> +	if (dev->addr_len != ETH_ALEN) {
-> +		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-> +			dev->name, dev->addr_len, "ETH_ALEN");
->  		return -1;
-> +	}
->  	memcpy(eui, dev->dev_addr, 3);
->  	memcpy(eui + 5, dev->dev_addr + 3, 3);
->  
-> @@ -1725,8 +1728,11 @@ static int addrconf_ifid_eui48(u8 *eui, struct net_device *dev)
->  
->  static int addrconf_ifid_eui64(u8 *eui, struct net_device *dev)
->  {
-> -	if (dev->addr_len != IEEE802154_ADDR_LEN)
-> +	if (dev->addr_len != IEEE802154_ADDR_LEN) {
-> +		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-> +			dev->name, dev->addr_len, "IEEE802154_ADDR_LEN");
->  		return -1;
-> +	}
->  	memcpy(eui, dev->dev_addr, 8);
->  	eui[0] ^= 2;
->  	return 0;
-> @@ -1736,8 +1742,11 @@ static int addrconf_ifid_ieee1394(u8 *eui, struct net_device *dev)
->  {
->  	union fwnet_hwaddr *ha;
->  
-> -	if (dev->addr_len != FWNET_ALEN)
-> +	if (dev->addr_len != FWNET_ALEN) {
-> +		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-> +			dev->name, dev->addr_len, "FWNET_ALEN");
->  		return -1;
-> +	}
->  
->  	ha = (union fwnet_hwaddr *)dev->dev_addr;
->  
-> @@ -1749,8 +1758,11 @@ static int addrconf_ifid_ieee1394(u8 *eui, struct net_device *dev)
->  static int addrconf_ifid_arcnet(u8 *eui, struct net_device *dev)
->  {
->  	/* XXX: inherit EUI-64 from other interface -- yoshfuji */
-> -	if (dev->addr_len != ARCNET_ALEN)
-> +	if (dev->addr_len != ARCNET_ALEN) {
-> +		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-> +			dev->name, dev->addr_len, "ARCNET_ALEN");
->  		return -1;
-> +	}
->  	memset(eui, 0, 7);
->  	eui[7] = *(u8 *)dev->dev_addr;
->  	return 0;
-> @@ -1758,17 +1770,25 @@ static int addrconf_ifid_arcnet(u8 *eui, struct net_device *dev)
->  
->  static int addrconf_ifid_infiniband(u8 *eui, struct net_device *dev)
->  {
-> -	if (dev->addr_len != INFINIBAND_ALEN)
-> +	if (dev->addr_len != INFINIBAND_ALEN) {
-> +		pr_warn("IPv6 addrconf: %s: address length %d != %s\n",
-> +			dev->name, dev->addr_len, "INFINIBAND_ALEN");
->  		return -1;
-> +	}
->  	memcpy(eui, dev->dev_addr + 12, 8);
->  	eui[0] |= 2;
->  	return 0;
->  }
->  
-> -static int __ipv6_isatap_ifid(u8 *eui, __be32 addr)
-> +static int __ipv6_isatap_ifid(u8 *eui, struct net_device *dev)
->  {
-> -	if (addr == 0)
-> +	__be32 addr = *(__be32 *)dev->dev_addr;
-> +
-> +	if (addr == 0) {
-> +		pr_warn("IPv6 addrconf: %s: bad dev_addr %pM\n",
-> +			dev->name, dev->dev_addr);
->  		return -1;
-> +	}
->  	eui[0] = (ipv4_is_zeronet(addr) || ipv4_is_private_10(addr) ||
->  		  ipv4_is_loopback(addr) || ipv4_is_linklocal_169(addr) ||
->  		  ipv4_is_private_172(addr) || ipv4_is_test_192(addr) ||
-> @@ -1785,13 +1805,14 @@ static int __ipv6_isatap_ifid(u8 *eui, __be32 addr)
->  static int addrconf_ifid_sit(u8 *eui, struct net_device *dev)
->  {
->  	if (dev->priv_flags & IFF_ISATAP)
-> -		return __ipv6_isatap_ifid(eui, *(__be32 *)dev->dev_addr);
-> +		return __ipv6_isatap_ifid(eui, dev);
-> +	pr_warn("IPv6 addrconf: %s: IFF_ISATAP is unset\n", dev->name);
->  	return -1;
->  }
->  
->  static int addrconf_ifid_gre(u8 *eui, struct net_device *dev)
->  {
-> -	return __ipv6_isatap_ifid(eui, *(__be32 *)dev->dev_addr);
-> +	return __ipv6_isatap_ifid(eui, dev);
->  }
->  
->  static int addrconf_ifid_ip6tnl(u8 *eui, struct net_device *dev)
-> @@ -1825,6 +1846,8 @@ static int ipv6_generate_eui64(u8 *eui, struct net_device *dev)
->  	case ARPHRD_TUNNEL6:
->  		return addrconf_ifid_ip6tnl(eui, dev);
->  	}
-> +	pr_warn("IPv6 addrconf: %s: dev->type %d is not supported\n",
-> +		dev->name, dev->type);
->  	return -1;
->  }
+Changes since v5:
+	- tweak s3c-hsotg Kconfig help message to be more generic
 
-This one should probably be a pr_debug or counter.  This is not a
-critical issue and it makes no sense to spam the log if IPv6 is not
-supported on a particular interface.
+Changes since v4:
+	- phy_set/get_bus_width now use an int for bus_width
 
->  
-> @@ -1842,6 +1865,10 @@ static int ipv6_inherit_eui64(u8 *eui, struct inet6_dev *idev)
->  		}
->  	}
->  	read_unlock_bh(&idev->lock);
-> +	if (err)
-> +		pr_warn("IPv6 addrconf: "
-> +			"%s: no link-local address to inherit\n",
-> +			idev->dev->name);
->  	return err;
->  }
+Changes since v3:
+	- Rebased on 3.13-rc3
+	- Move struct phy bus_width attribute back into struct phy_attrs
+	- Fix build issue on !GENERIC_PHY
+	- Update dwc2 binding to reflect optional phy properties
+	- Rename bcm-kona-phy.txt binding to bcm-phy.txt
+	- Reorder bcm kona phy includes and use bitops
+	- phy-names changed to "usb2-phy" to match updated s3c-hsotg
+	  generic phy-ification series
 
-This shouldn't be a warning either.  This is called if
-ipv6_generate_eui64() fails and we'd know if it failed for a good
-reason.  If that failed, we very likely do not have any other link-local
-addresses and would know of any error conditions.
+Changes since v2:
+	- Rebased on 3.13-rc1
+	- Fix braces in phy_get_bus_width()/phy_set_bus_width()
+	- Drop generic phy conversion to use the same support from
+	  the Exynos generic phy conversion series
+	- Modify dts support to match the "device" phy name required
+	  in the v3 Exynos generic phy conversion
+	- Add s3c-hsotg phy_init/phy_exit support
+	- Fix typo on reg property in kona phy binding
+	- Replace phy driver reg struct with offset defines
+	- Move phy soft reset to phy driver init
+	- Fix dts node names to match ePAPR conventions
 
-If by some chance, there are unsolicited RAs on the link, you'd end up
-spamming the log.
+Changes since v1:
+	- Convert USB phy driver to generic phy subsystem
+	- Add phy bus width apis
+	- Drop dwc2 phy bus width DT property in favor of querying the
+	  phy provider for bus width
+	- Add generic phy/clock properties to dwc2 DT binding
+	- Add generic phy subsystem support to s3c-hsotg with the
+	  existing usb phy and pdata phy methods as a fallback
+	- Split bindings out to separate patches to match the latest
+	  DT binding review guidelines
 
--vlad
+This series adds USB Device Controller support for the Broadcom
+BCM281xx family of parts. BCM281xx contains a DWC2 OTG block and
+s3c-hsotg is used to support UDC operation.
 
+Part 1 adds phy bus width support to the generic phy subsystem
+
+Parts 2-6 allows s3c-hsotg to build on non-Samsung platforms, supports
+the dwc2 binding, adds phy_init/phy_exit support, and supports fetching
+phy bus width using the generic phy layer.
+
+Parts 7-8 add a generic phy binding and driver for the BCM Kona USB PHY.
+
+Part 9 adds the DT nodes to enable UDC support on both BCM281xx boards
+in the kernel.
+
+This series depends on:
+	- "Update Kona drivers to use clocks" v4 series
+	  https://lkml.org/lkml/2013/12/5/508
+	- "Add new Exynos USB 2.0 PHY driver" v4 series
+	  https://lkml.org/lkml/2013/12/5/166
+
+Matt Porter (9):
+  phy: add phy_get_bus_width()/phy_set_bus_width() calls
+  staging: dwc2: update DT binding to add generic clock/phy properties
+  usb: gadget: s3c-hsotg: enable build for other platforms
+  usb: gadget: s3c-hsotg: add snps,dwc2 compatible string
+  usb: gadget: s3c-hsotg: use generic phy_init()/phy_exit() support
+  usb: gadget: s3c-hsotg: get phy bus width from phy subsystem
+  phy: add Broadcom Kona USB2 PHY DT binding
+  phy: add Broadcom Kona USB2 PHY driver
+  ARM: dts: add usb udc support to bcm281xx
+
+ Documentation/devicetree/bindings/phy/bcm-phy.txt  |  15 ++
+ Documentation/devicetree/bindings/staging/dwc2.txt |  12 ++
+ arch/arm/boot/dts/bcm11351-brt.dts                 |   6 +
+ arch/arm/boot/dts/bcm11351.dtsi                    |  18 +++
+ arch/arm/boot/dts/bcm28155-ap.dts                  |   8 ++
+ drivers/phy/Kconfig                                |   6 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-bcm-kona-usb2.c                    | 158 +++++++++++++++++++++
+ drivers/usb/gadget/Kconfig                         |   7 +-
+ drivers/usb/gadget/s3c-hsotg.c                     |  22 ++-
+ drivers/usb/gadget/s3c-hsotg.h                     |   1 +
+ include/linux/phy/phy.h                            |  28 ++++
+ 12 files changed, 275 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/bcm-phy.txt
+ create mode 100644 drivers/phy/phy-bcm-kona-usb2.c
+
+-- 
+1.8.4
 
