@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab3LMW0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:26:31 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:57594 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525Ab3LMW03 (ORCPT
+	id S1754901Ab3LMWq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:46:58 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49464 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab3LMW0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:26:29 -0500
+	Fri, 13 Dec 2013 17:26:32 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 015/115] gpu: ion: Map only the vma size given
-Date: Fri, 13 Dec 2013 14:23:49 -0800
-Message-Id: <1386973529-4884-16-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 017/115] gpu: ion: Modify the system heap to try to allocate large/huge pages
+Date: Fri, 13 Dec 2013 14:23:51 -0800
+Message-Id: <1386973529-4884-18-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
 References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
@@ -25,32 +25,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laura Abbott <lauraa@codeaurora.org>
+From: Rebecca Schultz Zavin <rebecca@android.com>
 
-When mapping carveout buffers into userspace, only map
-the size of the vma given, not the full size of the buffer
-since clients may map less than the buffer size.
+On some systems there is a performance benefit to reducing tlb pressure
+by minimizing the number of chunks in an allocation.
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+Signed-off-by: Rebecca Schultz Zavin <rebecca@android.com>
 [jstultz: modified patch to apply to staging directory]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/ion_carveout_heap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/android/ion/ion_system_heap.c | 116 ++++++++++++++++++++------
+ 1 file changed, 90 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
-index e8c4e36..16f4fc7 100644
---- a/drivers/staging/android/ion/ion_carveout_heap.c
-+++ b/drivers/staging/android/ion/ion_carveout_heap.c
-@@ -116,7 +116,7 @@ int ion_carveout_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index dceed5b..98711ce 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -14,7 +14,10 @@
+  *
+  */
+ 
++#include <asm/page.h>
++#include <linux/dma-mapping.h>
+ #include <linux/err.h>
++#include <linux/highmem.h>
+ #include <linux/mm.h>
+ #include <linux/scatterlist.h>
+ #include <linux/slab.h>
+@@ -22,6 +25,35 @@
+ #include "ion.h"
+ #include "ion_priv.h"
+ 
++struct page_info {
++	struct page *page;
++	unsigned long order;
++	struct list_head list;
++};
++
++static struct page_info *alloc_largest_available(unsigned long size)
++{
++	static unsigned int orders[] = {8, 4, 0};
++	struct page *page;
++	struct page_info *info;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(orders); i++) {
++		if (size < (1 << orders[i]) * PAGE_SIZE)
++			continue;
++		page = alloc_pages(GFP_HIGHUSER | __GFP_ZERO | __GFP_COMP |
++				   __GFP_NOWARN | __GFP_NORETRY, orders[i]);
++		if (!page)
++			continue;
++		split_page(page, orders[i]);
++		info = kmap(page);
++		info->page = page;
++		info->order = orders[i];
++		return info;
++	}
++	return NULL;
++}
++
+ static int ion_system_heap_allocate(struct ion_heap *heap,
+ 				     struct ion_buffer *buffer,
+ 				     unsigned long size, unsigned long align,
+@@ -29,30 +61,54 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
  {
- 	return remap_pfn_range(vma, vma->vm_start,
- 			       __phys_to_pfn(buffer->priv_phys) + vma->vm_pgoff,
--			       buffer->size,
-+			       vma->vm_end - vma->vm_start,
- 			       pgprot_noncached(vma->vm_page_prot));
+ 	struct sg_table *table;
+ 	struct scatterlist *sg;
+-	int i, j;
+-	int npages = PAGE_ALIGN(size) / PAGE_SIZE;
++	int ret;
++	struct list_head pages;
++	struct page_info *info, *tmp_info;
++	int i;
++	long size_remaining = PAGE_ALIGN(size);
++
++	INIT_LIST_HEAD(&pages);
++	while (size_remaining > 0) {
++		info = alloc_largest_available(size_remaining);
++		if (!info)
++			goto err;
++		list_add_tail(&info->list, &pages);
++		size_remaining -= (1 << info->order) * PAGE_SIZE;
++	}
+ 
+ 	table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
+ 	if (!table)
+-		return -ENOMEM;
+-	i = sg_alloc_table(table, npages, GFP_KERNEL);
+-	if (i)
+-		goto err0;
+-	for_each_sg(table->sgl, sg, table->nents, i) {
+-		struct page *page;
+-		page = alloc_page(GFP_HIGHUSER | __GFP_ZERO);
+-		if (!page)
+-			goto err1;
+-		sg_set_page(sg, page, PAGE_SIZE, 0);
++		goto err;
++
++	ret = sg_alloc_table(table, PAGE_ALIGN(size) / PAGE_SIZE, GFP_KERNEL);
++	if (ret)
++		goto err1;
++
++	sg = table->sgl;
++	list_for_each_entry_safe(info, tmp_info, &pages, list) {
++		struct page *page = info->page;
++		for (i = 0; i < (1 << info->order); i++) {
++			sg_set_page(sg, page + i, PAGE_SIZE, 0);
++			sg = sg_next(sg);
++		}
++		list_del(&info->list);
++		memset(info, 0, sizeof(struct page_info));
++		kunmap(page);
+ 	}
++
++	dma_sync_sg_for_device(NULL, table->sgl, table->nents,
++			       DMA_BIDIRECTIONAL);
++
+ 	buffer->priv_virt = table;
+ 	return 0;
+ err1:
+-	for_each_sg(table->sgl, sg, i, j)
+-		__free_page(sg_page(sg));
+-	sg_free_table(table);
+-err0:
+ 	kfree(table);
++err:
++	list_for_each_entry(info, &pages, list) {
++		for (i = 0; i < (1 << info->order); i++)
++			__free_page(info->page + i);
++		kunmap(info->page);
++	}
+ 	return -ENOMEM;
  }
  
+@@ -63,7 +119,7 @@ void ion_system_heap_free(struct ion_buffer *buffer)
+ 	struct sg_table *table = buffer->priv_virt;
+ 
+ 	for_each_sg(table->sgl, sg, table->nents, i)
+-		__free_page(sg_page(sg));
++		__free_pages(sg_page(sg), get_order(sg_dma_len(sg)));
+ 	if (buffer->sg_table)
+ 		sg_free_table(buffer->sg_table);
+ 	kfree(buffer->sg_table);
+@@ -85,22 +141,29 @@ void *ion_system_heap_map_kernel(struct ion_heap *heap,
+ 				 struct ion_buffer *buffer)
+ {
+ 	struct scatterlist *sg;
+-	int i;
++	int i, j;
+ 	void *vaddr;
+ 	pgprot_t pgprot;
+ 	struct sg_table *table = buffer->priv_virt;
+-	struct page **pages = kmalloc(sizeof(struct page *) * table->nents,
+-				      GFP_KERNEL);
+-
+-	for_each_sg(table->sgl, sg, table->nents, i)
+-		pages[i] = sg_page(sg);
++	int npages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
++	struct page **pages = kzalloc(sizeof(struct page *) * npages,
++				     GFP_KERNEL);
++	struct page **tmp = pages;
+ 
+ 	if (buffer->flags & ION_FLAG_CACHED)
+ 		pgprot = PAGE_KERNEL;
+ 	else
+ 		pgprot = pgprot_writecombine(PAGE_KERNEL);
+ 
+-	vaddr = vmap(pages, table->nents, VM_MAP, pgprot);
++	for_each_sg(table->sgl, sg, table->nents, i) {
++		int npages_this_entry = PAGE_ALIGN(sg_dma_len(sg)) / PAGE_SIZE;
++		struct page *page = sg_page(sg);
++		BUG_ON(i >= npages);
++		for (j = 0; j < npages_this_entry; j++) {
++			*(tmp++) = page++;
++		}
++	}
++	vaddr = vmap(pages, npages, VM_MAP, pgprot);
+ 	kfree(pages);
+ 
+ 	return vaddr;
+@@ -126,8 +189,9 @@ int ion_system_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
+ 			offset--;
+ 			continue;
+ 		}
+-		vm_insert_page(vma, addr, sg_page(sg));
+-		addr += PAGE_SIZE;
++		remap_pfn_range(vma, addr, page_to_pfn(sg_page(sg)),
++				sg_dma_len(sg), vma->vm_page_prot);
++		addr += sg_dma_len(sg);
+ 	}
+ 	return 0;
+ }
 -- 
 1.8.3.2
 
