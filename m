@@ -1,136 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab3LMEdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 23:33:12 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:46278 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab3LMEdJ convert rfc822-to-8bit (ORCPT
+	id S1751919Ab3LMEnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 23:43:41 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51246 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751836Ab3LMEnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 23:33:09 -0500
+	Thu, 12 Dec 2013 23:43:39 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out of the core
+Date: Fri, 13 Dec 2013 05:56:47 +0100
+Message-ID: <4217831.DpCd0ng0jT@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.12.0-rc6+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <52AA7760.20603@jp.fujitsu.com>
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <81535269.SKoBMiGyoU@vostro.rjw.lan> <52AA7760.20603@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20131213020620.GF13333@kroah.com>
-References: <20131127184652.GA1856@kroah.com> <CAErSpo46LZP8t+aLnYOtJ1mXKKkCF7sOy97MFd0hWo+OOoz68Q@mail.gmail.com>
- <CAE9FiQUeyxN5OAaXqfhdQkzTwjV83BN-L3r6kH0sO0t1b1-63Q@mail.gmail.com>
- <CAErSpo6_s6-Dc__-AzausBVDvOAY5beh7ivng2dWHUN1iRyj+g@mail.gmail.com> <20131213020620.GF13333@kroah.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 12 Dec 2013 21:32:48 -0700
-Message-ID: <CAErSpo6F_oLE2XLt9q5iQE3izuP1ZKW_rib60KKokaL9ewZogA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: export MSI mode using attributes, not kobjects
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 7:06 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Dec 12, 2013 at 04:56:20PM -0700, Bjorn Helgaas wrote:
->> On Thu, Dec 12, 2013 at 4:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> > On Sat, Dec 7, 2013 at 12:41 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> >> On Wed, Nov 27, 2013 at 11:46 AM, Greg Kroah-Hartman
->> >> <gregkh@linuxfoundation.org> wrote:
->> >>> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >>>
->> >>> The PCI MSI sysfs code is a mess with kobjects for things that don't
->> >>> really need to be kobjects.  This patch creates attributes dynamically
->> >>> for the MSI interrupts instead of using kobjects.
->> >>>
->> >>> Note, this removes a directory from the current MSI interrupt sysfs
->> >>> code:
->> >>>
->> >>> old MSI kobjects:
->> >>> pci_device
->> >>>    └── msi_irqs
->> >>>        └── 40
->> >>>            └── mode
->> >>>
->> >>> new MSI attributes:
->> >>> pci_device
->> >>>    └── msi_irqs
->> >>>        └── 40
->> >>>
->> >>> As there was only one file "mode" with the kobject model, the interrupt
->> >>> number is now a file that returns the "mode" of the interrupt (msi vs.
->> >>> msix).
->> >>>
->> >>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >>
->> >> I added the acks from Neil and Veaceslav, folded in the
->> >> Documentation/ABI update, and applied the whole thing to my pci/misc
->> >> branch for v3.14.  Thanks!
->> >
->> > got:
->> > [   71.429735] BUG: key ffff887fcf082a58 not in .data!
->> > [   71.429737] ------------[ cut here ]------------
->> > [   71.429742] WARNING: CPU: 0 PID: 4 at kernel/locking/lockdep.c:2987 lockdep_i
->> > nit_map+0x127/0x5b0()
->> > [   71.429743] DEBUG_LOCKS_WARN_ON(1)
->> > [   71.429744] Modules linked in:
->> > [   71.429747] CPU: 0 PID: 4 Comm: kworker/0:0 Tainted: G          I  3.13.0-rc3
->> > -yh-01187-ge0e4e4e-dirty #45
->> > [   71.429757] Workqueue: events work_for_cpu_fn
->> > [   71.429792]  0000000000000009 ffff881fcf95da58 ffffffff82020475 ffff881fcf95d
->> > aa0
->> > [   71.429800]  ffff881fcf95da90 ffffffff81097c3d ffff887fcf082a58 ffff88dfcec1a
->> > d28
->> > [   71.429809]  0000000000000000 0000000000000000 ffff889fcf2eecd0 ffff881fcf95d
->> > af0
->> > [   71.429809] Call Trace:
->> > [   71.429814]  [<ffffffff82020475>] dump_stack+0x45/0x56
->> > [   71.429818]  [<ffffffff81097c3d>] warn_slowpath_common+0x7d/0xa0
->> > [   71.429822]  [<ffffffff81097cac>] warn_slowpath_fmt+0x4c/0x50
->> > [   71.429826]  [<ffffffff810e3d97>] lockdep_init_map+0x127/0x5b0
->> > [   71.429835]  [<ffffffff81242fe8>] ? sysfs_new_dirent+0x98/0x140
->> > [   71.429839]  [<ffffffff81242033>] sysfs_add_file_mode_ns+0x63/0xc0
->> > [   71.429843]  [<ffffffff8124491d>] internal_create_group+0x18d/0x260
->> > [   71.429853]  [<ffffffff81556345>] ? populate_msi_sysfs+0x185/0x1d0
->> > [   71.429857]  [<ffffffff81244a52>] sysfs_create_groups+0x42/0xa0
->> > [   71.429861]  [<ffffffff81556367>] populate_msi_sysfs+0x1a7/0x1d0
->> > [   71.429865]  [<ffffffff81556b67>] pci_enable_msi_block+0x1f7/0x2a0
->> > [   71.429870]  [<ffffffff81549795>] pcie_port_device_register+0x335/0x520
->> > [   71.429874]  [<ffffffff81549f08>] pcie_portdrv_probe+0x68/0xa0
->> > [   71.429883]  [<ffffffff8153cf75>] local_pci_probe+0x45/0xa0
->> > [   71.429887]  [<ffffffff810b0af4>] work_for_cpu_fn+0x14/0x20
->> > [   71.429891]  [<ffffffff810b431b>] process_one_work+0x28b/0x4a0
->> > [   71.429895]  [<ffffffff810b4292>] ? process_one_work+0x202/0x4a0
->> > [   71.429899]  [<ffffffff810b55db>] worker_thread+0x26b/0x3a0
->> > [   71.429903]  [<ffffffff810e262d>] ? trace_hardirqs_on+0xd/0x10
->> > [   71.429906]  [<ffffffff810b5370>] ? manage_workers.isra.17+0x340/0x340
->> > [   71.429912]  [<ffffffff810bc031>] kthread+0x111/0x120
->> > [   71.429919]  [<ffffffff810cddab>] ? local_clock+0x2b/0x40
->> > [   71.429923]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
->> > [   71.429927]  [<ffffffff8203842c>] ret_from_fork+0x7c/0xb0
->> > [   71.429931]  [<ffffffff810bbf20>] ? kthread_stop+0xf0/0xf0
->> > [   71.429933] ---[ end trace c511e3d74efea94e ]---
->> >
->> > looks like Greg forgot adding attr init.
->> >
->> > Can you fold attached patch into Greg's patch ?
->>
->> Sure.  I don't know how to reproduce it, so I couldn't verify the fix,
->> but I added it to Greg's patch.  Thanks!
->
-> I think lockdep has to be enabled for this to show up, I wasn't running
-> with that enabled when I tested the code, my fault, sorry.
+On Friday, December 13, 2013 11:56:32 AM Yasuaki Ishimatsu wrote:
+> Hi Rafael,
 
-No problem.  I have
+Hi,
 
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_LOCKDEP=y
-CONFIG_DEBUG_LOCKDEP=y
+> Please share your more detailed idea. I started to implement the following
+> idea. But the idea has one problem.
+> 
+> >>> The eject work flow can be:
+> >>>     (1) an eject event occurs,
+> >>>     (2) the container "physical" device fails offline in acpi_scan_hot_remove()
+> >>>         emmitting, say, KOBJ_CHANGE for the "physical" device,
+> >>>     (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
+> >>>     (4) user space changes the "physical" container device flag controlling
+> >>>         offline to 0,
+> >>>     (5) user space uses the sysfs "eject" attribute of the ACPI container object
+> >>>         to finally eject the container,
+> >>>     (6) the offline in acpi_scan_hot_remove() is now successful, because the
+> >>>         flag controlling it has been set to 0 in step (4),
+> >>>     (7) the "physical" container device goes away before executing _EJ0,
+> >>>     (8) the container is ejected.
+> 
+> I want to emit KOBJ_CHANGE before offlining devices on container device at (2).
+> But acpi_scan_hot_remove() offlines devices on container device at first.
+> So when offline container device, devices on container has been offlined.
+> 
+> Thus the idea cannot fulfill my necessary feature.
 
-and I still don't see the problem booting the qemu q35 model.
-Whatever, I folded it in anyway.
+Well, in that case we need to treat containers in a special way at the ACPI
+level.  Which is a bit unfortunate so to speak.
 
-Bjorn
+To that end I'd try to add a new flag to struct acpi_hotplug_profile, say
+.verify_offline, such that if set, it would cause acpi_scan_hot_remove() to
+check if all of the "physical" companions of the top-level device are offline
+to start with, and if not, it would just emit KOBJ_CHANGE for the companions
+that are not offline and bail out.
+
+So the above algorithm would become:
+
+(1) an eject event occurs,
+(2) acpi_scan_hot_remove() checks the verify_offline flag in the target device's
+    scan_handler structure,
+(3) if set (it would always be set for containers), acpi_scan_hot_remove()
+    checks the status of the target device's "physical" companions; if at least
+    one of them is offline, KOBJ_CHANGE is emitted for that "physical" device,
+    and acpi_scan_hot_remove() returns, [I guess we can just emit KOBJ_CHANGE
+    for the first companion that is not offline at this point.]
+(4) user space notices the KOBJ_CHANGE and does the cleanup as needed; in the
+    process it carries out the offline operation for the container's "physical"
+    companion (there's only one such companion for each container), [That
+    operation for the container itself is trivial, but to succeed it requires
+    all devices below the container to be taken offline in advance.]
+(5) user space uses the sysfs "eject" attribute of the ACPI container object
+    to finally eject the container,
+(6) acpi_scan_hot_remove() is now successful, because the container's "physical"
+    companion is now offline,
+(7) the "physical" container device goes away before executing _EJ0,
+(8) the container is ejected.
+
+I think that should work for you.
+
+Thanks,
+Rafael
+
