@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab3LMRUd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:20:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48680 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab3LMRUc (ORCPT
+	id S1753184Ab3LMRWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:22:50 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:34826 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab3LMRWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:20:32 -0500
-Message-ID: <52AB41DD.9040001@infradead.org>
-Date: Fri, 13 Dec 2013 09:20:29 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Upinder Malhi <umalhi@cisco.com>,
-        linux-rdma@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 13 (infiniband/hw/usnic)
-References: <20131213161039.623d3caf832560b4aa81f4b0@canb.auug.org.au>
-In-Reply-To: <20131213161039.623d3caf832560b4aa81f4b0@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Dec 2013 12:22:48 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Joe Perches <joe@perches.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH v4] checkpatch: add DT compatible string documentation checks
+Date: Fri, 13 Dec 2013 11:22:37 -0600
+Message-Id: <1386955357-24444-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/13 21:10, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20131212:
-> 
+From: Rob Herring <rob.herring@calxeda.com>
 
-for linux-next of 2013-Dec-11,12,13:
+This adds a simple check that any compatible strings in DeviceTree dts
+files are present in Documentation/devicetree/bindings. Vendor prefixes
+are also checked for existing in vendor-prefixes.txt These should be
+temporary checks until we have more sophisticated binding schema checking.
 
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Andy Whitcroft <apw@canonical.com>
+---
+v4:
+- Fix handling of no source tree or user-specified source tree
+- Check for presence of vendor-prefixes.txt
 
-drivers/infiniband/hw/usnic/usnic_uiom.c: In function 'usnic_uiom_put_pages':
-drivers/infiniband/hw/usnic/usnic_uiom.c:91:4: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 2 has type 'dma_addr_t' [-Wformat]
-drivers/infiniband/hw/usnic/usnic_uiom.c: In function 'usnic_uiom_get_pages':
-drivers/infiniband/hw/usnic/usnic_uiom.c:170:5: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 3 has type 'dma_addr_t' [-Wformat]
-drivers/infiniband/hw/usnic/usnic_uiom.c: In function 'usnic_uiom_map_sorted_intervals':
-drivers/infiniband/hw/usnic/usnic_uiom.c:279:5: warning: format '%lx' expects argument of type 'long unsigned int', but argument 4 has type 'size_t' [-Wformat]
-drivers/infiniband/hw/usnic/usnic_uiom.c:296:5: warning: format '%lx' expects argument of type 'long unsigned int', but argument 4 has type 'size_t' [-Wformat]
-drivers/infiniband/hw/usnic/usnic_uiom.c: In function 'usnic_uiom_attach_dev_to_pd':
-drivers/infiniband/hw/usnic/usnic_uiom.c:505:2: error: implicit declaration of function 'iommu_domain_has_cap' [-Werror=implicit-function-declaration]
+v3:
+- Use a single message type UNDOCUMENTED_DT_STRING
+- Ensure '+' is at beginning of the line
+- Move vendor-prefixes.txt to variable
 
+v2:
+- Add vendor string checking against vendor-prefixes.txt
+- Add '_', '.' and '+' as valid compatible string characters
+- Use 'grep -E' instead of egrep
 
+ scripts/checkpatch.pl | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 9c98100..e6635bb 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2034,6 +2034,33 @@ sub process {
+ 			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
+ 		}
+ 
++# check for DT compatible documentation
++		if (defined $root && $realfile =~ /\.dts/ &&
++		    $rawline =~ /^\+\s*compatible\s*=/) {
++			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
++
++			foreach my $compat (@compats) {
++				my $compat2 = $compat;
++				my $dt_path =  $root . "/Documentation/devicetree/bindings/";
++				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
++				`grep -Erq "$compat|$compat2" $dt_path`;
++				if ( $? >> 8 ) {
++					WARN("UNDOCUMENTED_DT_STRING",
++					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
++				}
++
++				my $vendor = $compat;
++				my $vendor_path = $dt_path . "vendor-prefixes.txt";
++				next if (! -f $vendor_path);
++				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
++				`grep -Eq "$vendor" $vendor_path`;
++				if ( $? >> 8 ) {
++					WARN("UNDOCUMENTED_DT_STRING",
++					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
++				}
++			}
++		}
++
+ # check we are in a valid source file if not then ignore this hunk
+ 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+ 
 -- 
-~Randy
+1.8.3.2
+
