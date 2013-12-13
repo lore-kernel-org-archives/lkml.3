@@ -1,124 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab3LMQjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:39:36 -0500
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.90]:25185 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753142Ab3LMQjc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:39:32 -0500
-X-Greylist: delayed 1042 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Dec 2013 11:39:32 EST
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Jason Wang <jasowang@redhat.com>, KY Srinivasan <kys@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH net] netvsc: don't flush peers notifying work during
- setting mtu
-Thread-Topic: [PATCH net] netvsc: don't flush peers notifying work during
- setting mtu
-Thread-Index: AQHO9/RqgkG2gz/9z0SYv41MXPWgMJpSSlBQ
-Date: Fri, 13 Dec 2013 16:05:37 +0000
-Message-ID: <4f802e3386e546029784e28cf89cd3eb@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1386926487-30822-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1386926487-30822-1-git-send-email-jasowang@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(189002)(199002)(51704005)(13464003)(377454003)(47446002)(74502001)(19580395003)(83322001)(74662001)(4396001)(19580405001)(85852003)(76786001)(76796001)(81542001)(46406003)(74366001)(23726002)(90146001)(31966008)(81342001)(69226001)(44976005)(33646001)(56816005)(83072002)(6806004)(49866001)(54316002)(2656002)(87936001)(80976001)(53806001)(54356001)(81686001)(79102001)(50466002)(1511001)(50986001)(47736001)(47976001)(59766001)(66066001)(47776003)(63696002)(85326001)(81816001)(77982001)(76482001)(20776003)(51856001)(56776001)(65816001)(74706001)(87266001)(74876001)(46102001)(80022001)(85306002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB591;H:hybrid.exchange.microsoft.com;CLIP:131.107.159.99;FPR:;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 00594E8DBA
-X-OriginatorOrg: microsoft.com
+	id S1753267Ab3LMQkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:40:18 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:39215 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3LMQjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 11:39:20 -0500
+X-AuditID: cbfee61a-b7f7e6d000005936-fe-52ab3837cee7
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH v11 6/7] cpufreq:exynos4x12: Change L0 driver data to
+ CPUFREQ_BOOST_FREQ
+Date: Fri, 13 Dec 2013 17:38:36 +0100
+Message-id: <1386952717-30947-7-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1386952717-30947-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1386952717-30947-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQV1zi9VBBtsvG1psnLGe1eJp0w92
+	i76fV5gt1uz/yWTRefYJs8WbR9wWbx5uZrS4vGsOm8Xn3iOMFjPO72OyuN24gs3izOlLrBZP
+	HvaxWWz86uHA57F4z0smjzvX9rB5rJv2ltljy9V2Fo++LasYPY7f2M7k8XmTXAB7FJdNSmpO
+	Zllqkb5dAlfG0obzbAXTOSsOPX3H0sB4kL2LkYNDQsBEYtYq1S5GTiBTTOLCvfVsXYxcHEIC
+	0xklrk06xwzhdDFJzDx/kBWkik1AT+Lz3adMIAkRgSWMEq+bFrCCOMwCG5klds58ywZSJSwQ
+	JTHr7m1GEJtFQFXizcoWsHW8Am4SP9f6QaxTlOh+NgGsnFPAXWLaplWMENuaGCWeX7nPOIGR
+	dwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4HB9JrWDcWWDxSFGAQ5GJR5ej95VQUKs
+	iWXFlbmHGCU4mJVEeENUVwcJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpa
+	kFoEk2Xi4JRqYIw5Znp34fVdQn/OR1awKO2IODn5yl8B8+2burml8w/fLXAXmsvS3fftSeN1
+	sfP3RE9n/eI0uG7S+eFYuruL+8xF9Uc0Txw7fOCnjLZLflH/b4soke4mYRYbjY3hVh++rmE8
+	Vx/3wybQ789Pny/rawvrLcXmFGydrHfgaqN94coPqY7CjrZvOpRYijMSDbWYi4oTAQS89u5T	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Special driver data flag (CPUFREQ_BOOST_FREQ) has been added to indicate
+frequency, which can be only enabled for BOOST mode.
+This frequency shall be used only for limited time, since it might cause
+target device to overheat.
 
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-> -----Original Message-----
-> From: Jason Wang [mailto:jasowang@redhat.com]
-> Sent: Friday, December 13, 2013 4:21 AM
-> To: KY Srinivasan; Haiyang Zhang; devel@linuxdriverproject.org;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Cc: Jason Wang
-> Subject: [PATCH net] netvsc: don't flush peers notifying work during setting
-> mtu
-> 
-> There's a possible deadlock if we flush the peers notifying work during
-> setting
-> mtu:
-> 
-> [   22.991149]
-> ======================================================
-> [   22.991173] [ INFO: possible circular locking dependency detected ]
-> [   22.991198] 3.10.0-54.0.1.el7.x86_64.debug #1 Not tainted
-> [   22.991219] -------------------------------------------------------
-> [   22.991243] ip/974 is trying to acquire lock:
-> [   22.991261]  ((&(&net_device_ctx->dwork)->work)){+.+.+.}, at:
-> [<ffffffff8108af95>] flush_work+0x5/0x2e0
-> [   22.991307]
-> but task is already holding lock:
-> [   22.991330]  (rtnl_mutex){+.+.+.}, at: [<ffffffff81539deb>]
-> rtnetlink_rcv+0x1b/0x40
-> [   22.991367]
-> which lock already depends on the new lock.
-> 
-> [   22.991398]
-> the existing dependency chain (in reverse order) is:
-> [   22.991426]
-> -> #1 (rtnl_mutex){+.+.+.}:
-> [   22.991449]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
-> [   22.991477]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
-> [   22.991501]        [<ffffffff81673659>] mutex_lock_nested+0x89/0x4f0
-> [   22.991529]        [<ffffffff815392b7>] rtnl_lock+0x17/0x20
-> [   22.991552]        [<ffffffff815230b2>] netdev_notify_peers+0x12/0x30
-> [   22.991579]        [<ffffffffa0340212>] netvsc_send_garp+0x22/0x30
-> [hv_netvsc]
-> [   22.991610]        [<ffffffff8108d251>] process_one_work+0x211/0x6e0
-> [   22.991637]        [<ffffffff8108d83b>] worker_thread+0x11b/0x3a0
-> [   22.991663]        [<ffffffff81095e5d>] kthread+0xed/0x100
-> [   22.991686]        [<ffffffff81681c6c>] ret_from_fork+0x7c/0xb0
-> [   22.991715]
-> -> #0 ((&(&net_device_ctx->dwork)->work)){+.+.+.}:
-> [   22.991715]        [<ffffffff810de817>] check_prevs_add+0x967/0x970
-> [   22.991715]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
-> [   22.991715]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
-> [   22.991715]        [<ffffffff8108afde>] flush_work+0x4e/0x2e0
-> [   22.991715]        [<ffffffff8108e1b5>] __cancel_work_timer+0x95/0x130
-> [   22.991715]        [<ffffffff8108e303>] cancel_delayed_work_sync+0x13/0x20
-> [   22.991715]        [<ffffffffa03404e4>] netvsc_change_mtu+0x84/0x200
-> [hv_netvsc]
-> [   22.991715]        [<ffffffff815233d4>] dev_set_mtu+0x34/0x80
-> [   22.991715]        [<ffffffff8153bc2a>] do_setlink+0x23a/0xa00
-> [   22.991715]        [<ffffffff8153d054>] rtnl_newlink+0x394/0x5e0
-> [   22.991715]        [<ffffffff81539eac>] rtnetlink_rcv_msg+0x9c/0x260
-> [   22.991715]        [<ffffffff8155cdd9>] netlink_rcv_skb+0xa9/0xc0
-> [   22.991715]        [<ffffffff81539dfa>] rtnetlink_rcv+0x2a/0x40
-> [   22.991715]        [<ffffffff8155c41d>] netlink_unicast+0xdd/0x190
-> [   22.991715]        [<ffffffff8155c807>] netlink_sendmsg+0x337/0x750
-> [   22.991715]        [<ffffffff8150d219>] sock_sendmsg+0x99/0xd0
-> [   22.991715]        [<ffffffff8150d63e>] ___sys_sendmsg+0x39e/0x3b0
-> [   22.991715]        [<ffffffff8150eba2>] __sys_sendmsg+0x42/0x80
-> [   22.991715]        [<ffffffff8150ebf2>] SyS_sendmsg+0x12/0x20
-> [   22.991715]        [<ffffffff81681d19>] system_call_fastpath+0x16/0x1b
-> 
-> This is because we hold the rtnl_lock() before ndo_change_mtu() and try to
-> flush the work in netvsc_change_mtu(), in the mean time,
-> netdev_notify_peers() may be called from worker and also trying to hold the
-> rtnl_lock. This will lead the flush won't succeed forever. Solve this by not
-> canceling and flushing the work, this is safe because the transmission done
-> by NETDEV_NOTIFY_PEERS was synchronized with the netif_tx_disable()
-> called by netvsc_change_mtu().
-> 
-> Reported-by: Yaju Cao <yacao@redhat.com>
-> Tested-by: Yaju Cao <yacao@redhat.com>
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+Changes for v11:
+- None
 
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Changes for v10:
+- None
+
+Changes for v9:
+- None
+
+Changes for v8:
+- None
+
+Changes for v7:
+- None
+
+Changes for v6:
+- New patch
+
+ drivers/cpufreq/exynos4x12-cpufreq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/exynos4x12-cpufreq.c b/drivers/cpufreq/exynos4x12-cpufreq.c
+index efad5e6..77ae129 100644
+--- a/drivers/cpufreq/exynos4x12-cpufreq.c
++++ b/drivers/cpufreq/exynos4x12-cpufreq.c
+@@ -32,7 +32,7 @@ static unsigned int exynos4x12_volt_table[] = {
+ };
+ 
+ static struct cpufreq_frequency_table exynos4x12_freq_table[] = {
+-	{L0, CPUFREQ_ENTRY_INVALID},
++	{CPUFREQ_BOOST_FREQ, 1500 * 1000},
+ 	{L1, 1400 * 1000},
+ 	{L2, 1300 * 1000},
+ 	{L3, 1200 * 1000},
+-- 
+1.7.10.4
+
