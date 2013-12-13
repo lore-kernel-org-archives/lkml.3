@@ -1,176 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab3LMPlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:41:45 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64477 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751897Ab3LMPln (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:41:43 -0500
-Date: Fri, 13 Dec 2013 15:41:04 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 6/7] arm64, jump label: optimize jump label
- implementation
-Message-ID: <20131213154104.GG19177@mudshark.cambridge.arm.com>
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
- <1386691433-6827-7-git-send-email-liuj97@gmail.com>
+	id S1752787Ab3LMPmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:42:09 -0500
+Received: from mga14.intel.com ([143.182.124.37]:41324 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab3LMPmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:42:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,479,1384329600"; 
+   d="scan'208";a="327733975"
+Date: Fri, 13 Dec 2013 07:46:56 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, sarah.a.sharp@linux.intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, santosh.shilimkar@ti.com
+Subject: Re: [RFC/PATCH 3/3] usb/xhci-plat: remove unnecessary #ifdef checks
+ for CONFIG_PM_SLEEP
+Message-ID: <20131213154656.GA6006@psi-dev26.jf.intel.com>
+References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1386911905-2366-4-git-send-email-david.a.cohen@linux.intel.com>
+ <CAPDyKFoXjRsLTZzFy3cTafqwFg4JX01=Gb=eL23eeb9ddZiofA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1386691433-6827-7-git-send-email-liuj97@gmail.com>
+In-Reply-To: <CAPDyKFoXjRsLTZzFy3cTafqwFg4JX01=Gb=eL23eeb9ddZiofA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiang Liu,
-
-Thanks for the updated patches! I still have some small comments, but I
-don't think they will cause you much work. See inline.
-
-On Tue, Dec 10, 2013 at 04:03:52PM +0000, Jiang Liu wrote:
-> Optimize jump label implementation for ARM64 by dynamically patching
-> kernel text.
+On Fri, Dec 13, 2013 at 09:19:34AM +0100, Ulf Hansson wrote:
+> On 13 December 2013 06:18, David Cohen <david.a.cohen@linux.intel.com> wrote:
+> > From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >
+> > Drivers using SET_*_PM_OPS() no longer need to #ifdef for CONFIG_PM_*
+> > So, let's remove the unnecessary #ifdef's.
+> >
+> > Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> > ---
+> >  drivers/usb/host/xhci-plat.c | 7 +------
+> >  1 file changed, 1 insertion(+), 6 deletions(-)
+> >
+> > diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> > index d9c169f470d3..b1d93c344e04 100644
+> > --- a/drivers/usb/host/xhci-plat.c
+> > +++ b/drivers/usb/host/xhci-plat.c
+> > @@ -197,7 +197,6 @@ static int xhci_plat_remove(struct platform_device *dev)
+> >         return 0;
+> >  }
+> >
+> > -#ifdef CONFIG_PM
 > 
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  arch/arm64/Kconfig                  |  1 +
->  arch/arm64/include/asm/jump_label.h | 51 ++++++++++++++++++++++++++++++++
->  arch/arm64/kernel/Makefile          |  1 +
->  arch/arm64/kernel/jump_label.c      | 59 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 112 insertions(+)
->  create mode 100644 arch/arm64/include/asm/jump_label.h
->  create mode 100644 arch/arm64/kernel/jump_label.c
+> I think you can solve this in another way.
 > 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 6d4dd22..5f962e8 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -19,6 +19,7 @@ config ARM64
->  	select GENERIC_SMP_IDLE_THREAD
->  	select GENERIC_TIME_VSYSCALL
->  	select HARDIRQS_SW_RESEND
-> +	select HAVE_ARCH_JUMP_LABEL
->  	select HAVE_ARCH_TRACEHOOK
->  	select HAVE_DEBUG_BUGVERBOSE
->  	select HAVE_DEBUG_KMEMLEAK
-> diff --git a/arch/arm64/include/asm/jump_label.h b/arch/arm64/include/asm/jump_label.h
-> new file mode 100644
-> index 0000000..ca95a3a
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/jump_label.h
-> @@ -0,0 +1,51 @@
-> +/*
-> + * Copyright (C) 2013 Huawei Ltd.
-> + * Author: Jiang Liu <liuj97@gmail.com>
-> + *
-> + * Based on arch/arm/include/asm/jump_label.h
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#ifndef _ASM_ARM64_JUMP_LABEL_H
-> +#define _ASM_ARM64_JUMP_LABEL_H
+> As a start, I would suggest to change above to CONFIG_PM_SLEEP
+> 
+> >  static int xhci_plat_suspend(struct device *dev)
+> >  {
+> >         struct usb_hcd  *hcd = dev_get_drvdata(dev);
+> > @@ -217,10 +216,6 @@ static int xhci_plat_resume(struct device *dev)
+> >  static const struct dev_pm_ops xhci_plat_pm_ops = {
+> >         SET_SYSTEM_SLEEP_PM_OPS(xhci_plat_suspend, xhci_plat_resume)
+> >  };
+> > -#define DEV_PM_OPS     (&xhci_plat_pm_ops)
+> > -#else
+> > -#define DEV_PM_OPS     NULL
+> > -#endif /* CONFIG_PM */
+> 
+> Remove the use of DEV_PM_OPS define. Instead use below macro and
+> outside #ifdef CONFIG_PM_SLEEP.
+> 
+> "static SIMPLE_DEV_PM_OPS(xhci_plat_pm_ops, xhci_plat_suspend,
+> xhci_plat_resume)"
+> 
+> That should do the trick I believe, without the need for changing the
+> existing SET_SYSTEM_SLEEP_PM_OPS macro in patch1.
 
-Just use __ASM_JUMP_LABEL_H to keep consistent with out other headers.
+Yes, it does. That matches my suggestion in this e-mail:
+http://marc.info/?l=linux-kernel&m=138690490016503&w=2
 
-> +#include <linux/types.h>
-> +
-> +#ifdef __KERNEL__
-> +
-> +#define JUMP_LABEL_NOP_SIZE 4
+But I personally don't like #ifdef's. In this case, SET_*_PM_OPS()
+macros handle #ifdef's when setting the callbacks. My intention is to
+extend it to callbacks' implementation too making the code cleaner
 
-This is the same as AARCH64_INSN_SIZE; just use the latter.
+Br, David Cohen
 
-> +
-> +static __always_inline bool arch_static_branch(struct static_key *key)
-> +{
-> +	asm goto("1: nop\n\t"
-> +		 ".pushsection __jump_table,  \"aw\"\n\t"
-> +		 ".align 3\n\t"
-> +		 ".quad 1b, %l[l_yes], %c0\n\t"
-> +		 ".popsection\n\t"
-> +		 :  :  "i"(key) :  : l_yes);
-> +
-> +	return false;
-> +l_yes:
-> +	return true;
-> +}
-> +
-> +#endif /* __KERNEL__ */
-> +
-> +typedef u64 jump_label_t;
-> +
-> +struct jump_entry {
-> +	jump_label_t code;
-> +	jump_label_t target;
-> +	jump_label_t key;
-> +};
-> +
-> +#endif	/* _ASM_ARM64_JUMP_LABEL_H */
-> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-> index cd95a25..e155d56 100644
-> --- a/arch/arm64/kernel/Makefile
-> +++ b/arch/arm64/kernel/Makefile
-> @@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
->  arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
->  arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
->  arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-> +arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
->  
->  obj-y					+= $(arm64-obj-y) vdso/
->  obj-m					+= $(arm64-obj-m)
-> diff --git a/arch/arm64/kernel/jump_label.c b/arch/arm64/kernel/jump_label.c
-> new file mode 100644
-> index 0000000..b13ef62
-> --- /dev/null
-> +++ b/arch/arm64/kernel/jump_label.c
-> @@ -0,0 +1,59 @@
-> +/*
-> + * Copyright (C) 2013 Huawei Ltd.
-> + * Author: Jiang Liu <liuj97@gmail.com>
-> + *
-> + * Based on arch/arm/kernel/jump_label.c
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/jump_label.h>
-> +#include <asm/jump_label.h>
-> +#include <asm/insn.h>
-> +
-> +#ifdef HAVE_JUMP_LABEL
-
-Slightly worrying... this should be CONFIG_HAVE_JUMP_LABEL, right? How did
-you manage to test this code?
-
-Will
+> 
+> Kind regards
+> Ulf Hansson
+> 
+> >
+> >  #ifdef CONFIG_OF
+> >  static const struct of_device_id usb_xhci_of_match[] = {
+> > @@ -235,7 +230,7 @@ static struct platform_driver usb_xhci_driver = {
+> >         .remove = xhci_plat_remove,
+> >         .driver = {
+> >                 .name = "xhci-hcd",
+> > -               .pm = DEV_PM_OPS,
+> > +               .pm = &xhci_plat_pm_ops,
+> >                 .of_match_table = of_match_ptr(usb_xhci_of_match),
+> >         },
+> >  };
+> > --
+> > 1.8.4.2
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
