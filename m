@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3LMUsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 15:48:05 -0500
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:61581 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab3LMUsD (ORCPT
+	id S1753020Ab3LMUtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 15:49:45 -0500
+Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:60402 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752122Ab3LMUtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 15:48:03 -0500
-Date: Fri, 13 Dec 2013 15:47:57 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH cgroup/for-3.14] cgroup: fix fail path in
- cgroup_load_subsys()
-Message-ID: <20131213204757.GF27070@htj.dyndns.org>
-References: <1386875828-5075-1-git-send-email-vdavydov@parallels.com>
+	Fri, 13 Dec 2013 15:49:43 -0500
+Date: Fri, 13 Dec 2013 15:52:25 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Andi Kleen <ak@linux.intel.com>
+cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Subject: [patch] perf properly document the new transaction sample type
+In-Reply-To: <20131213203806.GR22695@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1312131548450.10372@pianoman.cluster.toy>
+References: <1379688044-14173-2-git-send-email-andi@firstfloor.org> <tip-fdfbbd07e91f8fe387140776f3fd94605f0c89e5@git.kernel.org> <alpine.DEB.2.02.1312131526550.10244@pianoman.cluster.toy> <20131213203806.GR22695@tassilo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386875828-5075-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020201.52AB72E7.00DE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 11:17:08PM +0400, Vladimir Davydov wrote:
-> Calling cgroup_unload_subsys() from cgroup_load_subsys() after
-> online_css() failure will result in a NULL ptr dereference on attempt to
-> offline_css(), because online_css() only assigns css to cgroup on
-> success. Let's fix that by skipping calls to offline_css() and
-> css_free() in cgroup_unload_subsys() if there is no css, and freeing css
-> in cgroup_load_subsys() on online_css() failure.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
 
-Applied to cgroup/for-3.14.
+Commit fdfbbd07e91f8fe3871 "perf: Add generic transaction flags"
+added support for PERF_SAMPLE_TRANSACTION but forgot to add documentation
+for the sample type to include/uapi/linux/perf_event.h
 
-Thanks!
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
--- 
-tejun
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index e1802d6..959d454 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -679,6 +679,7 @@ enum perf_event_type {
+ 	 *
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
++	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
