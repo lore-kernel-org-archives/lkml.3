@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3LMVhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 16:37:40 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:45833 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab3LMVhi (ORCPT
+	id S1752527Ab3LMWDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:03:36 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60454 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab3LMWDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 16:37:38 -0500
-Date: Fri, 13 Dec 2013 16:37:35 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v3 08/23] mm/memblock: Add memblock memory allocation apis
-Message-ID: <20131213213735.GM27070@htj.dyndns.org>
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com>
- <1386625856-12942-9-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386625856-12942-9-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 Dec 2013 17:03:33 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-doc@vger.kernel.org
+Subject: [PATCH] devicetree: macb: Document clock properties
+Date: Fri, 13 Dec 2013 14:03:25 -0800
+Message-Id: <1386972205-32733-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 09, 2013 at 04:50:41PM -0500, Santosh Shilimkar wrote:
-> Introduce memblock memory allocation APIs which allow to support
-> PAE or LPAE extension on 32 bits archs where the physical memory
-> start address can be beyond 4GB. In such cases, existing bootmem
-> APIs which operate on 32 bit addresses won't work and needs
-> memblock layer which operates on 64 bit addresses.
+The macb driver uses the clock bindings. Document the required
+properties, especially the driver specific clock-names.
 
-The overall API looks good to me.  Thanks for doing this!
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ Documentation/devicetree/bindings/net/macb.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> +static void * __init memblock_virt_alloc_internal(
-> +				phys_addr_t size, phys_addr_t align,
-> +				phys_addr_t min_addr, phys_addr_t max_addr,
-> +				int nid)
-> +{
-> +	phys_addr_t alloc;
-> +	void *ptr;
-> +
-> +	if (nid == MAX_NUMNODES)
-> +		pr_warn("%s: usage of MAX_NUMNODES is depricated. Use NUMA_NO_NODE\n",
-> +			__func__);
-
-Why not use WARN_ONCE()?  Also, shouldn't nid be set to NUMA_NO_NODE
-here?
-
-...
-> +	if (nid != NUMA_NO_NODE) {
-
-Otherwise, the above test is broken.
-
-> +		alloc = memblock_find_in_range_node(size, align, min_addr,
-> +						    max_addr,  NUMA_NO_NODE);
-> +		if (alloc)
-> +			goto done;
-> +	}
-
-Thanks.
-
+diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+index 4ff65047bb9a..70af2ec12b09 100644
+--- a/Documentation/devicetree/bindings/net/macb.txt
++++ b/Documentation/devicetree/bindings/net/macb.txt
+@@ -10,6 +10,10 @@ Required properties:
+ - interrupts: Should contain macb interrupt
+ - phy-mode: String, operation mode of the PHY interface.
+   Supported values are: "mii", "rmii", "gmii", "rgmii".
++- clock-names: Tuple listing input clock names.
++	Required elements: 'pclk', 'hclk'
++	Optional elements: 'tx_clk'
++- clocks: Phandles to input clocks.
+ 
+ Optional properties:
+ - local-mac-address: 6 bytes, mac address
+@@ -22,4 +26,6 @@ Examples:
+ 		interrupts = <21>;
+ 		phy-mode = "rmii";
+ 		local-mac-address = [3a 0e 03 04 05 06];
++		clock-names = "pclk", "hclk", "tx_clk";
++		clocks = <&clkc 30>, <&clkc 30>, <&clkc 13>;
+ 	};
 -- 
-tejun
+1.8.5.1
+
