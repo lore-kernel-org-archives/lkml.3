@@ -1,148 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab3LMP0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:26:35 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34040 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab3LMP0c (ORCPT
+	id S1752938Ab3LMP1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:27:31 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:61425 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427Ab3LMP1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:26:32 -0500
-X-AuditID: cbfec7f5-b7f6f6d000005b3b-3c-52ab27255da5
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
-        matt.porter@linaro.org
-References: <1386943380-28596-1-git-send-email-k.debski@samsung.com>
- <52AB1D75.4030207@ti.com>
-In-reply-to: <52AB1D75.4030207@ti.com>
-Subject: RE: [PATCH RESEND v2 1/2] phy: core: Add an exported of_phy_get
- function
-Date: Fri, 13 Dec 2013 16:26:28 +0100
-Message-id: <008a01cef817$b24844e0$16d8cea0$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac74EfF9VTVZhBVgRLGdBBTm6A+mcQABPwWQ
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xy7qq6quDDO5OMLeYf+Qcq0XblYPs
-	Fhee9rBZXN41h81ixvl9TBaLlrUyW6w9cpfdYmLTNHaL9TNeszhwety5tofNo2/LKkaP4ze2
-	M3l83iQXwBLFZZOSmpNZllqkb5fAlfHhxR/2gjUyFR3TLrE2MP4U7WLk5JAQMJHovtzMCGGL
-	SVy4t56ti5GLQ0hgKaNEz/4N7BBOA5NE14O3QA4HB5uApsSqex4gcRGBFYwSBx4cZwZxmAXa
-	GSW+v1jPDDJKSCBB4t3NT2A2p4CaxI2X91hAbGGBYIlbuzuZQQaxCKhK/O1NAAnzCjhIHDr9
-	ggXCFpT4MRminFlAS2L9zuNMELa8xOY1b8FaJQTUJR791QUJiwgYSRzaOReqXETibsNz1gmM
-	QrOQTJqFZNIsJJNmIWlZwMiyilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkbr7uYFx6zOoQ
-	owAHoxIP703u1UFCrIllxZW5hxglOJiVRHi7ZIBCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGOc1
-	mF/6+mJqo5C/07Ejb2Z8+nl4TmP3buUZut8M7njfWbC/wU/wrevr0jDmH+2hThGbGcOks8Sl
-	RFmrxLfm/5/j8Drchyc7O8rFSuvdCXm+JJ3s+3mLQlxnuzzSuMy42ljZ/ufn/Enyf+x6vn/9
-	LcZ1pfFO3LrDi39Nm5aVbHI08DXrzULLJUosxRmJhlrMRcWJAF050X55AgAA
+	Fri, 13 Dec 2013 10:27:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAFftDdq-qS2nMC07bVReZk6ksg0-Nkp7GkNSQ47Z_TsDEbZcfw@mail.gmail.com>
+References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
+	<1386018639-18916-2-git-send-email-wroberts@tresys.com>
+	<52AB15C0.7090701@tycho.nsa.gov>
+	<CAFftDdquPe9dE_4x_mr0BT2jziUAEtdyjk4DqXvt2-nnBf73zg@mail.gmail.com>
+	<52AB21F1.6030003@tycho.nsa.gov>
+	<CAFftDdq-qS2nMC07bVReZk6ksg0-Nkp7GkNSQ47Z_TsDEbZcfw@mail.gmail.com>
+Date: Fri, 13 Dec 2013 10:27:28 -0500
+Message-ID: <CAFftDdr1fd-fdjb1A9=CNjhd+cf51u1EwonU-Jth84Cdnt+t8A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mm: Create utility functions for accessing a tasks
+ commandline value
+From: William Roberts <bill.c.roberts@gmail.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        William Roberts <wroberts@tresys.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+On Fri, Dec 13, 2013 at 10:26 AM, William Roberts
+<bill.c.roberts@gmail.com> wrote:
+> On Fri, Dec 13, 2013 at 10:04 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+>> On 12/13/2013 09:51 AM, William Roberts wrote:
+>>> On Fri, Dec 13, 2013 at 9:12 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+>>>> Also, why not just get_task_mm(task) within the function rather than
+>>>> pass it in by the caller?
+>>>>
+>>>
+>>> Yes I was debating whether or not to drop the pointer checks... np
+>>>
+>>> WRT the locking and moving it into the function. You need to take the lock
+>>> to determine the size of the cmdline area. The idea on the interface is you
+>>> would take the locks, acquire the size via the inline func, alloc memory and
+>>> then call the copy function. In some cases, like proc/pid/cmdline, they just
+>>> alloc a page and truncate on that boundary. However, one may with to truncate
+>>> on an arbitrary boundry, especially when cacheing the values, as you don't want
+>>> to allocate too much. So inbetween functions calls that get the length and copy,
+>>> one can make a decision based on their allocation scheme. Moving the locks
+>>> to the functions would require multiple locks and unlocks in the common case.
+>>
+>> I don't think it is a good idea to split it up, as what happens if the
+>> range changes between the time you compute the length and the time you
+>> copy?  And your current callers appear to always get_task_mm(), compute
+>> len, call the helper, and mmput.  So just take it all to the helper (at
+>> which point the helper essentially becomes proc_pid_cmdline).
+>>
+>
+> That's why I keep the semaphore over the whole operation. The issue arises with
+> the amount to allocate by the caller, which is a bit of a shot in the
+> dark. The caller
+> may not wish to over allocate a buffer. This same issue could arise in
+> the current
+> code, but they hold the sem.
+>
+>>>> Unsigned int buflen passed as int len argument without a range check?
+>>>> Note that in the proc_pid_cmdline() code, they first cap it at PAGE_SIZE
+>>>> before passing it.
+>>>>
+>>>
+>>> buflen is passed by the caller. So if you look in the following patch
+>>> introducing its
+>>> use in proc/fs/base.c, their is a check.
+>>>         /*The caller of this allocates a page */
+>>>         if (len > PAGE_SIZE)
+>>>                 len = PAGE_SIZE;
+>>>
+>>>         res = copy_cmdline(task, mm, buffer, len);
+>>
+>> I understand that, but you are making correct operation of the helper
+>> dependent on the caller already having applied such a cap to the length.
+>>  Which is unsafe practice and may not hold true for future callers.
+>>
+>
+> Again, what if the caller wished to cap it as 32, 64, 128, or 2 * PAGE_SIZE?
+> They can just pass the value on which to cap, which is their buffer that they
+> allocated. Thus they know the size. Again, all of this boils down to
+> the allocation
+> scheme which you comment on below. With that said, this becomes a whole lot
+> simpler.
+>
+>>>>> +     if (res <= 0)
+>>>>> +             return 0;
+>>>>> +
+>>>>> +     if (res > buflen)
+>>>>> +             res = buflen;
+>>>>
+>>>> Is this a possible condition?  Under what circumstances?
+>>>
+>>> for  (res <= 0), in that case, the underlying call
+>>> to __access_remote_vm() returns an int. Most of the mm functions look
+>>> like they are using
+>>> ints for probably some historical reason I am not aware of. I tried to
+>>> pick the strongest invariant,
+>>> however, I don't think < 0 is possible.
+>>>
+>>> For the res > buflen check, that might might be an artifact from the
+>>> PAGE_SIZE cap from the original
+>>> code. It would only be possible if a process was able to write to
+>>> their mm when the semaphores are held.
+>>> I am assuming the case of:
+>>> kernel gets size
+>>> kernel allocs buffer
+>>> kernel copys but size has differed. I guess if I broke the locking out
+>>> it could happen, you need size and copy
+>>> to be autonomous.
+>>
+>> Sorry, you misunderstood.  The <=0 case is clearly possible; I was only
+>> asking about the res > buflen check, which seems impossible as you
+>> provided buflen as the max for the access_process_vm() call.  That one
+>> does not make sense to me and has no equivalent in the original
+>> proc_pid_cmdline() code.
+>>
+>>>> I think you are better off just copying proc_pid_cmdline() exactly as is
+>>>> into a common helper function and then reusing it for audit.  Far less
+>>>> work, and far less potential for mistakes.
+>>>
+>>> I don't like caching a whole page in that audit context. So most of
+>>> the complexity relates to
+>>> determining the size of the cache. Steve Grub was in favor of limiting
+>>> the cmdline value to
+>>> PATH_MAX. So if that is an acceptable cache size, we can take the
+>>> existing code from
+>>> procfs/base.c and just add an argument indicating the size of the
+>>> buffer. procfs will be
+>>> PAGE_SIZE and audit will be PATH_MAX. Thoughts?
+>>
+>> Yes, that seems reasonable to me.
+>>
+>>
+>
+> SGTM, Ill go that route with these... much simpler and avoids
+> the caller having to know how to lock the memory region properly.
+>
 
-> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
-> Sent: Friday, December 13, 2013 3:45 PM
-> 
-> Hi,
-> 
-> On Friday 13 December 2013 07:32 PM, Kamil Debski wrote:
-> > Previously the of_phy_get function took a struct device * and was
-> > declared static. It was impossible to call it from another driver and
-> > thus it was impossible to get phy defined for a given node. The old
-> > function was renamed to _of_phy_get and was left for internal use.
-> > of_phy_get function was added and it was exported. The function
-> > enables to get a phy for a given device tree node.
-> >
-> > Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> > ---
-> > It seems that my git send-email is playing up and sent the previous
-> > emails without from. This is a resend. Sorry for any confusion.
-> > ---
-> >  drivers/phy/phy-core.c  |   41 ++++++++++++++++++++++++++++++++-----
-> ----
-> >  include/linux/phy/phy.h |    1 +
-> >  2 files changed, 33 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c index
-> > 03cf8fb..f0dbd42 100644
-> > --- a/drivers/phy/phy-core.c
-> > +++ b/drivers/phy/phy-core.c
-> > @@ -240,8 +240,8 @@ out:
-> >  EXPORT_SYMBOL_GPL(phy_power_off);
-> >
-> >  /**
-> > - * of_phy_get() - lookup and obtain a reference to a phy by phandle
-> > - * @dev: device that requests this phy
-> > + * _of_phy_get() - lookup and obtain a reference to a phy by phandle
-> > + * @np: device_node for which to get the phy
-> >   * @index: the index of the phy
-> >   *
-> >   * Returns the phy associated with the given phandle value, @@
-> > -250,20 +250,17 @@ EXPORT_SYMBOL_GPL(phy_power_off);
-> >   * not yet loaded. This function uses of_xlate call back function
-> provided
-> >   * while registering the phy_provider to find the phy instance.
-> >   */
-> > -static struct phy *of_phy_get(struct device *dev, int index)
-> > +static struct phy *_of_phy_get(struct device_node *np, int index)
-> >  {
-> >  	int ret;
-> >  	struct phy_provider *phy_provider;
-> >  	struct phy *phy = NULL;
-> >  	struct of_phandle_args args;
-> >
-> > -	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-
-> cells",
-> > +	ret = of_parse_phandle_with_args(np, "phys", "#phy-cells",
-> >  		index, &args);
-> > -	if (ret) {
-> > -		dev_dbg(dev, "failed to get phy in %s node\n",
-> > -			dev->of_node->full_name);
-> > +	if (ret)
-> >  		return ERR_PTR(-ENODEV);
-> > -	}
-> >
-> >  	mutex_lock(&phy_provider_mutex);
-> >  	phy_provider = of_phy_provider_lookup(args.np); @@ -283,6 +280,32
-> @@
-> > err0:
-> >  }
-> >
-> >  /**
-> > + * of_phy_get() - lookup and obtain a reference to a phy using a
-> device_node.
-> > + * @np: device_node for which to get the phy
-> > + * @index: the index of the phy
-> 
-> Would be better if the user can get the PHY by string instead of index.
+FYI, i am away from my dev machine. ill get these out in a couple of weeks.
 
-Ok, this sounds doable. I will add of_phy_get_by_name analogous to the clk
-framework.
-
-> > + *
-> > + * Returns the phy driver, after getting a refcount to it; or
-> > + * -ENODEV if there is no such phy.  The caller is responsible for
-> > + * calling phy_put() to release that count.
-> > + */
-> > +struct phy *of_phy_get(struct device_node *np, int index) {
-> > +	struct phy *phy = NULL;
-> > +
-> > +	phy = _of_phy_get(np, index);
-> > +	if (IS_ERR(phy))
-> dev_err here?
-
-dev_err requires a dev, so it is not possible with the arguments used.
-And we do not want to add any extra parameters to keep the function call
-analogous to other of_*_get (as for example of_clk_get).
-
-Best wishes,
 -- 
-Kamil Debski
-Samsung R&D Institute Poland
+Respectfully,
 
-
+William C Roberts
