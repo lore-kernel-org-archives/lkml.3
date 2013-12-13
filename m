@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab3LMPwZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:52:25 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:38441 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752018Ab3LMPwY (ORCPT
+	id S1752583Ab3LMPys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:54:48 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44872 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3LMPyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:52:24 -0500
-Date: Fri, 13 Dec 2013 10:52:23 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Will Deacon <will.deacon@arm.com>, Jiang Liu <liuj97@gmail.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 6/7] arm64, jump label: optimize jump label
- implementation
-Message-ID: <20131213105223.664f960b@gandalf.local.home>
-In-Reply-To: <20131213105023.67e45640@gandalf.local.home>
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
-	<1386691433-6827-7-git-send-email-liuj97@gmail.com>
-	<20131213154104.GG19177@mudshark.cambridge.arm.com>
-	<20131213105023.67e45640@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Fri, 13 Dec 2013 10:54:46 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: davem@davemloft.net
+Cc: edumazet@google.com, netdev@vger.kernel.org, xemul@parallels.com,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] net: unix: allow bind to fail on mutex lock
+Date: Fri, 13 Dec 2013 10:54:22 -0500
+Message-Id: <1386950062-19020-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013 10:50:23 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-> On Fri, 13 Dec 2013 15:41:04 +0000
-> Will Deacon <will.deacon@arm.com> wrote:
-> 
-> > > +#include <linux/kernel.h>
-> > > +#include <linux/jump_label.h>
-> > > +#include <asm/jump_label.h>
-> > > +#include <asm/insn.h>
-> > > +
-> > > +#ifdef HAVE_JUMP_LABEL
-> > 
-> > Slightly worrying... this should be CONFIG_HAVE_JUMP_LABEL, right? How did
-> > you manage to test this code?
-> 
-> In <linux/jump_label.h> we have:
-> 
-> #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
-> 
-> [...]
-> 
-> # include <asm/jump_label.h>
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
 
-This also makes the include of <asm/jump_label.h> in the C file
-redundant.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ net/unix/af_unix.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
--- Steve
-
-> # define HAVE_JUMP_LABEL
-> #endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
-> 
-> 
-> -- Steve
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 7edbcd9..800ca61 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -720,7 +720,9 @@ static int unix_autobind(struct socket *sock)
+ 	int err;
+ 	unsigned int retries = 0;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
+ 
+ 	err = 0;
+ 	if (u->addr)
+@@ -879,7 +881,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		goto out;
+ 	addr_len = err;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
+-- 
+1.7.10.4
 
