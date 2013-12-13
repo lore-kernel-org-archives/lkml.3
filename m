@@ -1,152 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3LMPsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:48:19 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:22766 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752719Ab3LMPsQ (ORCPT
+	id S1753337Ab3LMPsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:48:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18178 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab3LMPsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:48:16 -0500
-Date: Fri, 13 Dec 2013 10:48:06 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: David Howells <dhowells@redhat.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wolfram Sang <wolfram@the-dreams.de>
-Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
-Message-ID: <20131213104806.4fb56012@gandalf.local.home>
-In-Reply-To: <20131213163349.4bc686c0@endymion.delvare>
-References: <20131213142627.4014.42860.stgit@warthog.procyon.org.uk>
-	<20131213163349.4bc686c0@endymion.delvare>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 13 Dec 2013 10:48:38 -0500
+Date: Fri, 13 Dec 2013 10:47:22 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, george.dunlap@eu.citrix.com,
+        ian.jackson@eu.citrix.com, mukesh.rathor@oracle.com, tim@xen.org,
+        jbeulich@suse.com, boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        Wei Liu <wei.liu2@citrix.com>
+Subject: Re: [PATCH V10 05/14] xen/pvh: balloon and grant changes.
+Message-ID: <20131213154722.GA7214@phenom.dumpdata.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
+ <1386900621-27528-6-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1312131147230.8667@kaball.uk.xensource.com>
+ <20131213143620.GH2923@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1312131448340.8667@kaball.uk.xensource.com>
+ <20131213145937.GB4770@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1312131530030.8667@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1312131530030.8667@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013 16:33:49 +0100
-Jean Delvare <khali@linux-fr.org> wrote:
+> > > > > These changes to balloon.c are similar to my patch but:
+> > > > > 
+> > > > > - they don't prevent set_phys_to_machine from being called by
+> > > > > increase_reservation for auto_translated guests
+> > > > 
+> > > > <nods>
+> > > > > 
+> > > > > - they don't prevent wasteful balloon_scratch_page from being allocated
+> > > > > for auto_translated guests
+> > > > 
+> > > > <nods>
+> > > > > 
+> > > > > I think that it would be best to take my patch instead.
+> > > > 
+> > > > Lets focus the review on your patch then and have it part of this
+> > > > series. 
+> > > 
+> > > OK, but keep in mind that Xen on ARMv8 is currently broken without that
+> > > patch.
+> > 
+> > Hm. We could have another patch to just disable BALLOON on ARMv8 :-)
+> > 
+> > The question you have to ask - if your patch causes regression are you
+> > OK tracking/fixing it over the holidays :-) If yes, then yes - we can
+> > put that in v3.13-rc3 to make it work properly on ARMv8.
+> 
+> Damn, that was a good argument.
+> After thinking more about it, I think that I, or a member of my team,
+> can actually fix possible bugs during the holidays. Especially
+> considering that the patch doesn't alter the behavior of PV guests.
+> 
+> So in short, yes :)
 
-> Hi David,
-> 
-> Please note that I am no longer maintaining the i2c subsystem so you
-> should have sent this to Wolfram, not me.
-> 
-> On Fri, 13 Dec 2013 14:26:27 +0000, David Howells wrote:
-> > Add tracepoints into the I2C and SMBUS message transfer functions to retrieve
-> > the message sent or received.  The following config options must be turned on
-> > to make use of the facility:
-> > 
-> > 	CONFIG_FTRACE
-> > 	CONFIG_ENABLE_DEFAULT_TRACERS
-> > 
-> > The I2C tracepoint can be enabled thusly:
-> > 
-> > 	echo 1 >/sys/kernel/debug/tracing/events/i2c/i2c_transfer/enable
-> > 
-> > and will dump messages that can be viewed in /sys/kernel/debug/tracing/trace
-> > that look like:
-> > 
-> >         ... i2c_transfer: i2c-5 f=00 a=44 l=6 ret=1 [021433000000]
-> > 
-> > formatted as:
-> > 
-> > 	i2c-<adapter-nr>
-> > 	f=<flags>
-> > 	a=<addr>
-> > 	l=<datalen>
-> > 	ret=<result>
-> > 	[<data>]
-> > 
-> > (Bit 0 of the flags is set if this was a read and clear if it was a write).
-> 
-> Wouldn't the traces be more readable if the direction was written
-> explicitly as R or W?
+Great <evil laughther>! Could you repost it with the description changes?
+Or if you OK with the changes I had proposed - just tell me "yes" and I will
+alter it.
 
-We can easily do that by adding in the TP_printk()
-
-	".. (%s) ..", ..., __entry->flags & 1 ? "R" : "W", ...
-
-> 
-> > 
-> > 
-> > The SMBUS tracepoint can be enabled thusly:
-> > 
-> > 	echo 1 >/sys/kernel/debug/tracing/events/i2c/smbus_transfer/enable
-> > 
-> > and will dump messages that can be viewed in /sys/kernel/debug/tracing/trace
-> > that look like:
-> > 
-> > 	... smbus_transfer: i2c-0 f=00 a=51 r=1 c=0 p=2 res=0 [80ff0100000000000000800c693d0088ffffb83aee3b0088ffff0100000000000000]
-> > 
-> > formatted as:
-> > 
-> > 	i2c-<adapter-nr>
-> > 	f=<flags>
-> > 	a=<addr>
-> > 	r=<read_write>
-> 
-> Here too I would consider R and W as more readable than r=1 and r=0.
-
-Same thing can be done here.
-
-> 
-> > 	c=<command>
-> > 	p=<protocol>
-> 
-> Would it be possible to print this as a string rather than a number?
-> The protocol numbers are completely arbitrary, so the reader would have
-> to open i2c.h each time to figure out what is what.
-
-That can be done in the TP_printk() with:
-
-	".. %s ..", ..,
-	__print_symbolic(__entry->protocol,
-		{ I2C_SMBUS_QUICK	,	"QUICK"	},
-		{ I2C_SMBUS_BYTE	,	"BYTE"	},
-		{ I2C_SMBUS_BYTE_DATA	,	"BYTE_DATA" },
-		[...]
-		{ I2C_SMBUS_I2C_BLOCK_DATA,	"I2C_BLOCK_DATA"}), ...
-
-
-> 
-> > 	res=<result>
-> > 	[<data-block>]
-> > 
-> > 
-> > In both cases, the adapters to be traced can be selected by something like:
-> > 
-> > 	echo adapter_nr==1 >/sys/kernel/debug/tracing/events/i2c/{i2c,smbus}_transfer/filter
-> 
-> I have no objection to the feature, but it should be noted that
-> i2c-core already offers something similar (albeit less flexible) for
-> I2C level transfers:
-> 
-> #ifdef DEBUG
-> 		for (ret = 0; ret < num; ret++) {
-> 			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, "
-> 				"len=%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
-> 				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
-> 				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
-> 		}
-> #endif
-> 
-> If your code goes in, I suppose the code above should be removed to
-> avoid redundancy.
-> 
-> One significant difference between both implementations is that the old
-> one logs before the actual transfer, while yours logs afterward. While I
-> understand this allows you to log the result of the transfer, this also
-> means you'll miss the log if the actual transaction locks the system
-> (we've seen this before.) Something to think about...
-> 
-
-Note, as this is being added to the trace system, one can use function
-tracing to see if this is causing the crash. Yeah, you wont be able to
-see what the transfer packet was, but you can use kprobes to help there
-too.
-
--- Steve
