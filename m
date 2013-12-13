@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab3LMApW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 19:45:22 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:33367 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3LMApV (ORCPT
+	id S1751703Ab3LMA61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 19:58:27 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:45044 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab3LMA6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 19:45:21 -0500
+	Thu, 12 Dec 2013 19:58:25 -0500
+Message-ID: <52AA5B4E.2050601@huawei.com>
+Date: Fri, 13 Dec 2013 08:56:46 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20131213002523.GA20706@redhat.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
- <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
- <20131213002523.GA20706@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Dec 2013 16:45:00 -0800
-Message-ID: <CALCETrXSXsSe575NNPbw9ewH2J-A0enNufqOoD7G2dLRTLqa4Q@mail.gmail.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-To: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mgorman@suse.de>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, qiuxishi <qiuxishi@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <gong.chen@linux.intel.com>
+Subject: Re: [PATCH] mm/memory-failure.c: recheck PageHuge() after hugetlb
+ page migrate successfull
+References: <52A9B69D.50307@huawei.com> <1386869964-gyz86343-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1386869964-gyz86343-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 4:25 PM, Dave Jones <davej@redhat.com> wrote:
-> On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
->
->  > - who will keep adding these triggers going forward?
->
-> also..
->
-> - Who will test the existing triggers are doing the right thing when related code changes.
->
-> We could add something to tests/ maybe for each exploit() addition, to make sure some
-> new change isn't introducing an oopsable (or worse!) bug in the actual exploit test.
->
-> It does mean someone needs to be regularly running said tests though.
-> As history has shown, things like nx_test have been broken for months at a time without
-> anyone complaining.  Perhaps Fenguang Wu can add something to the daily test runs if
-> we add an over all "make test-secure" target or similar.
+Hi Naoya,
 
-This has the added benefit of making sure that the exploits don't
-(trivially) regress.
+On 2013/12/13 1:39, Naoya Horiguchi wrote:
 
---Andy
+> (Cced: Chen Gong)
+> 
+> I confirmed that this patch fixes the reported bug.
+> And I'll send a test patch for mce-test later privately.
+> 
+> Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> 
+> Jianguo, could you put "Cc: stable@vger.kernel.org"
+> in patch description?
+> And please fix a typo in subject line.
+> 
 
->
->         Dave
->
+OK, thanks for your tested!
+
+Thanks,
+Jianguo Wu
+
+> Thanks,
+> Naoya Horiguchi
+> 
+> On Thu, Dec 12, 2013 at 09:14:05PM +0800, Jianguo Wu wrote:
+>> After a successful hugetlb page migration by soft offline, the source page
+>> will either be freed into hugepage_freelists or buddy(over-commit page). If page is in
+>> buddy, page_hstate(page) will be NULL. It will hit a NULL pointer
+>> dereference in dequeue_hwpoisoned_huge_page().
+>>
+>> [  890.677918] BUG: unable to handle kernel NULL pointer dereference at
+>>  0000000000000058
+>> [  890.685741] IP: [<ffffffff81163761>]
+>> dequeue_hwpoisoned_huge_page+0x131/0x1d0
+>> [  890.692861] PGD c23762067 PUD c24be2067 PMD 0
+>> [  890.697314] Oops: 0000 [#1] SMP
+>>
+>> So check PageHuge(page) after call migrate_pages() successfull.
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+>> ---
+>>  mm/memory-failure.c | 19 ++++++++++++++-----
+>>  1 file changed, 14 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+>> index b7c1716..e5567f2 100644
+>> --- a/mm/memory-failure.c
+>> +++ b/mm/memory-failure.c
+>> @@ -1471,7 +1471,8 @@ static int get_any_page(struct page *page, unsigned long pfn, int flags)
+>>  
+>>  static int soft_offline_huge_page(struct page *page, int flags)
+>>  {
+>> -	int ret;
+>> +	int ret, i;
+>> +	unsigned long nr_pages;
+>>  	unsigned long pfn = page_to_pfn(page);
+>>  	struct page *hpage = compound_head(page);
+>>  	LIST_HEAD(pagelist);
+>> @@ -1489,6 +1490,8 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>>  	}
+>>  	unlock_page(hpage);
+>>  
+>> +	nr_pages = 1 << compound_order(hpage);
+>> +
+>>  	/* Keep page count to indicate a given hugepage is isolated. */
+>>  	list_move(&hpage->lru, &pagelist);
+>>  	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+>> @@ -1505,10 +1508,16 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>>  		if (ret > 0)
+>>  			ret = -EIO;
+>>  	} else {
+>> -		set_page_hwpoison_huge_page(hpage);
+>> -		dequeue_hwpoisoned_huge_page(hpage);
+>> -		atomic_long_add(1 << compound_order(hpage),
+>> -				&num_poisoned_pages);
+>> +		/* over-commit hugetlb page will be freed into buddy */
+>> +		if (PageHuge(page)) {
+>> +			set_page_hwpoison_huge_page(hpage);
+>> +			dequeue_hwpoisoned_huge_page(hpage);
+>> +		} else {
+>> +			for (i = 0; i < nr_pages; i++)
+>> +				SetPageHWPoison(hpage + i);
+>> +		}
+>> +
+>> +		atomic_long_add(nr_pages, &num_poisoned_pages);
+>>  	}
+>>  	return ret;
+>>  }
+>> -- 
+>> 1.8.2.2
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+> 
+> .
+> 
 
 
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
