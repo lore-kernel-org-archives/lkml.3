@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab3LMEGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 23:06:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:42601 "EHLO ozlabs.org"
+	id S1751969Ab3LMEQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 23:16:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39367 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715Ab3LMEGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 23:06:50 -0500
-Date: Fri, 13 Dec 2013 15:06:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: linux-next: build warning after merge of the pinctrl tree
-Message-Id: <20131213150643.51342b68314f2d6b201e54dd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1751859Ab3LMEQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 23:16:19 -0500
+Date: Thu, 12 Dec 2013 23:15:54 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, gong.chen@linux.intel.com,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1386908154-dn8w7si1-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <52AA80C4.3040109@huawei.com>
+References: <52AA80C4.3040109@huawei.com>
+Subject: Re: [PATCH] mm/memory-failure.c: recheck PageHuge() after hugetlb
+ page migrate successfully
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__13_Dec_2013_15_06_43_+1100_7mf8rNDm2xtmEFgD"
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <52AA80C4.3040109@huawei.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_Dec_2013_15_06_43_+1100_7mf8rNDm2xtmEFgD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Dec 13, 2013 at 11:36:36AM +0800, Jianguo Wu wrote:
+> Changelog:
+>  - Only set PageHWPoison on the error raw page if page is freed into buddy
+> 
+> After a successful hugetlb page migration by soft offline, the source page
+> will either be freed into hugepage_freelists or buddy(over-commit page).
+> If page is in buddy, page_hstate(page) will be NULL. It will hit a NULL
+> pointer dereference in dequeue_hwpoisoned_huge_page().
+> 
+> [  890.677918] BUG: unable to handle kernel NULL pointer dereference at
+>  0000000000000058
+> [  890.685741] IP: [<ffffffff81163761>]
+> dequeue_hwpoisoned_huge_page+0x131/0x1d0
+> [  890.692861] PGD c23762067 PUD c24be2067 PMD 0
+> [  890.697314] Oops: 0000 [#1] SMP
+> 
+> So check PageHuge(page) after call migrate_pages() successfully.
+> 
+> Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
 
-Hi Linus,
+Thanks!
 
-After merging the pinctrl tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-drivers/pinctrl/pinconf.c: In function 'pinconf_pins_show':
-drivers/pinctrl/pinconf.c:299:28: warning: unused variable 'ops' [-Wunused-=
-variable]
-  const struct pinconf_ops *ops =3D pctldev->desc->confops;
-                            ^
-drivers/pinctrl/pinconf.c: In function 'pinconf_groups_show':
-drivers/pinctrl/pinconf.c:346:28: warning: unused variable 'ops' [-Wunused-=
-variable]
-  const struct pinconf_ops *ops =3D pctldev->desc->confops;
-                            ^
-
-Introduced by commit c420619d5177 ("pinctrl: pinconf: remove checks on
-ops->pin_config_get").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__13_Dec_2013_15_06_43_+1100_7mf8rNDm2xtmEFgD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSqofXAAoJEMDTa8Ir7ZwVd4MP/iSe5h0+cigzf2eRRAUchx2a
-SRBFEPLn22181kvlSqVGrhPiCdr5pE8RkB28hnsvrjUZNU2P7vssTpZV8ikqlUYg
-1YuNT7CNrkrYJGJyg+jZVjJf7HCubzqMh3c4AQ60J0CbeNwBtA72noxRS657WnHE
-4//O1NKGqp+hti9FGaBNuujDvMK0EKlQaEdQeUPTMvLBQKCLUyhHZEL+xQYuiA6Y
-9eN0Zm30UY3Nco3y6CkkseAyNI14WZVXcMIyKP/6aq007TyIt53dJ8CrX4vN4lqE
-MUJTbOkOxe+A5gguflutQ4HNreNC4MNI2+aRQVrAI7bHl4CWlEl5RNN6sog4c3L5
-9fheNUDPdgfdAog4KGIEc+/3ZELwtfZUfH453W6qoyMybwIHjlsttdW+weGxi5x+
-gn9+b8Hi/Dt7F/5QDrwE0f2ABhukzxm2+JnRSkdra+GBCjDntJmwL40M/8tajeDq
-ibRj4hpE4fdABr4O+7SP7Ioc9ydL3gCmmrFE5kc1O1hxhYjdSlPIqqlnCa3hzU2I
-Cfzg9SFcWjNm3NHzeooiwfhHF0H52gmJm/zp1RcM/jh/GmhhH3OqqwZ0JJ6vHK4j
-bEtOuOCMaYKoXeUP/a5Gf/5Jl9JwkTuuMPjNbZUh78BVBORPhuXDhtLksMC9psue
-bfX4Jr7efXWtizsaWoDL
-=1+WF
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_Dec_2013_15_06_43_+1100_7mf8rNDm2xtmEFgD--
+> ---
+>  mm/memory-failure.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index b7c1716..db08af9 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1505,10 +1505,16 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>  		if (ret > 0)
+>  			ret = -EIO;
+>  	} else {
+> -		set_page_hwpoison_huge_page(hpage);
+> -		dequeue_hwpoisoned_huge_page(hpage);
+> -		atomic_long_add(1 << compound_order(hpage),
+> -				&num_poisoned_pages);
+> +		/* overcommit hugetlb page will be freed to buddy */
+> +		if (PageHuge(page)) {
+> +			set_page_hwpoison_huge_page(hpage);
+> +			dequeue_hwpoisoned_huge_page(hpage);
+> +			atomic_long_add(1 << compound_order(hpage),
+> +					&num_poisoned_pages);
+> +		} else {
+> +			SetPageHWPoison(page);
+> +			atomic_long_inc(&num_poisoned_pages);
+> +		}
+>  	}
+>  	return ret;
+>  }
+> -- 
+> 1.7.1
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
