@@ -1,121 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3LMPeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:34:04 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:46023 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab3LMPeC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:34:02 -0500
-Date: Fri, 13 Dec 2013 16:33:49 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-i2c@vger.kernel.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Wolfram Sang <wolfram@the-dreams.de>
-Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
-Message-ID: <20131213163349.4bc686c0@endymion.delvare>
-In-Reply-To: <20131213142627.4014.42860.stgit@warthog.procyon.org.uk>
-References: <20131213142627.4014.42860.stgit@warthog.procyon.org.uk>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753194Ab3LMPfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:35:04 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:18149 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752688Ab3LMPfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:35:01 -0500
+X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
+   d="scan'208";a="84319757"
+Date: Fri, 13 Dec 2013 15:34:32 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        Wei Liu <wei.liu2@citrix.com>
+Subject: Re: [PATCH V10 05/14] xen/pvh: balloon and grant changes.
+In-Reply-To: <20131213145937.GB4770@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1312131530030.8667@kaball.uk.xensource.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-6-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1312131147230.8667@kaball.uk.xensource.com> <20131213143620.GH2923@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1312131448340.8667@kaball.uk.xensource.com> <20131213145937.GB4770@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Fri, 13 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Dec 13, 2013 at 02:49:15PM +0000, Stefano Stabellini wrote:
+> > On Fri, 13 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > > On Fri, Dec 13, 2013 at 11:56:31AM +0000, Stefano Stabellini wrote:
+> > > > On Thu, 12 Dec 2013, Konrad Rzeszutek Wilk wrote:
+> > > > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > > > 
+> > > > > For balloon changes we skip setting of local P2M as it's updated
+> > > > > in Xen. For grant, the shared grant frame is the PFN and not MFN,
+> > > > > hence its mapped via the same code path as HVM.
+> > > > > 
+> > > > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > > > [v1: Rebase on v3.7-rc3]
+> > > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > > > CC: <stefano.stabellini@eu.citrix.com>
+> > > > > Conflicts:
+> > > > > 	drivers/xen/balloon.c
+> > > > > [v2: Rebase on v3.13-rc3 has lot of ARM changes.]
+> > > > > ---
+> > > > >  drivers/xen/balloon.c     |   37 ++++++++++++++++++++-----------------
+> > > > >  drivers/xen/gntdev.c      |    3 ++-
+> > > > >  drivers/xen/grant-table.c |   25 ++++++++++++++++++++++---
+> > > > >  3 files changed, 44 insertions(+), 21 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> > > > > index 55ea73f..0e9875a 100644
+> > > > > --- a/drivers/xen/balloon.c
+> > > > > +++ b/drivers/xen/balloon.c
+> > > > > @@ -354,7 +354,9 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+> > > > >  
+> > > > >  #ifdef CONFIG_XEN_HAVE_PVMMU
+> > > > >  		/* Link back into the page tables if not highmem. */
+> > > > > -		if (xen_pv_domain() && !PageHighMem(page)) {
+> > > > > +		if (xen_pv_domain() && !PageHighMem(page) &&
+> > > > > +		    !xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > > > +
+> > > > >  			int ret;
+> > > > >  			ret = HYPERVISOR_update_va_mapping(
+> > > > >  				(unsigned long)__va(pfn << PAGE_SHIFT),
+> > > > > @@ -411,28 +413,29 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+> > > > >  
+> > > > >  		scrub_page(page);
+> > > > >  
+> > > > > -		/*
+> > > > > -		 * Ballooned out frames are effectively replaced with
+> > > > > -		 * a scratch frame.  Ensure direct mappings and the
+> > > > > -		 * p2m are consistent.
+> > > > > -		 */
+> > > > > -		scratch_page = get_balloon_scratch_page();
+> > > > > +		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > > > +			unsigned long p;
+> > > > > +
+> > > > > +			/*
+> > > > > +			 * Ballooned out frames are effectively replaced with
+> > > > > +			 * a scratch frame.  Ensure direct mappings and the
+> > > > > +			 * p2m are consistent.
+> > > > > +			 */
+> > > > > +			scratch_page = get_balloon_scratch_page();
+> > > > >  #ifdef CONFIG_XEN_HAVE_PVMMU
+> > > > > -		if (xen_pv_domain() && !PageHighMem(page)) {
+> > > > > -			ret = HYPERVISOR_update_va_mapping(
+> > > > > -				(unsigned long)__va(pfn << PAGE_SHIFT),
+> > > > > -				pfn_pte(page_to_pfn(scratch_page),
+> > > > > +			if (xen_pv_domain() && !PageHighMem(page)) {
+> > > > > +				ret = HYPERVISOR_update_va_mapping(
+> > > > > +					(unsigned long)__va(pfn << PAGE_SHIFT),
+> > > > > +					pfn_pte(page_to_pfn(scratch_page),
+> > > > >  					PAGE_KERNEL_RO), 0);
+> > > > > -			BUG_ON(ret);
+> > > > > -		}
+> > > > > +				BUG_ON(ret);
+> > > > > +			}
+> > > > >  #endif
+> > > > > -		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> > > > > -			unsigned long p;
+> > > > >  			p = page_to_pfn(scratch_page);
+> > > > >  			__set_phys_to_machine(pfn, pfn_to_mfn(p));
+> > > > > -		}
+> > > > > -		put_balloon_scratch_page();
+> > > > >  
+> > > > > +			put_balloon_scratch_page();
+> > > > > +		}
+> > > > >  		balloon_append(pfn_to_page(pfn));
+> > > > >  	}
+> > > > 
+> > > > These changes to balloon.c are similar to my patch but:
+> > > > 
+> > > > - they don't prevent set_phys_to_machine from being called by
+> > > > increase_reservation for auto_translated guests
+> > > 
+> > > <nods>
+> > > > 
+> > > > - they don't prevent wasteful balloon_scratch_page from being allocated
+> > > > for auto_translated guests
+> > > 
+> > > <nods>
+> > > > 
+> > > > I think that it would be best to take my patch instead.
+> > > 
+> > > Lets focus the review on your patch then and have it part of this
+> > > series. 
+> > 
+> > OK, but keep in mind that Xen on ARMv8 is currently broken without that
+> > patch.
+> 
+> Hm. We could have another patch to just disable BALLOON on ARMv8 :-)
+> 
+> The question you have to ask - if your patch causes regression are you
+> OK tracking/fixing it over the holidays :-) If yes, then yes - we can
+> put that in v3.13-rc3 to make it work properly on ARMv8.
 
-Please note that I am no longer maintaining the i2c subsystem so you
-should have sent this to Wolfram, not me.
+Damn, that was a good argument.
+After thinking more about it, I think that I, or a member of my team,
+can actually fix possible bugs during the holidays. Especially
+considering that the patch doesn't alter the behavior of PV guests.
 
-On Fri, 13 Dec 2013 14:26:27 +0000, David Howells wrote:
-> Add tracepoints into the I2C and SMBUS message transfer functions to retrieve
-> the message sent or received.  The following config options must be turned on
-> to make use of the facility:
-> 
-> 	CONFIG_FTRACE
-> 	CONFIG_ENABLE_DEFAULT_TRACERS
-> 
-> The I2C tracepoint can be enabled thusly:
-> 
-> 	echo 1 >/sys/kernel/debug/tracing/events/i2c/i2c_transfer/enable
-> 
-> and will dump messages that can be viewed in /sys/kernel/debug/tracing/trace
-> that look like:
-> 
->         ... i2c_transfer: i2c-5 f=00 a=44 l=6 ret=1 [021433000000]
-> 
-> formatted as:
-> 
-> 	i2c-<adapter-nr>
-> 	f=<flags>
-> 	a=<addr>
-> 	l=<datalen>
-> 	ret=<result>
-> 	[<data>]
-> 
-> (Bit 0 of the flags is set if this was a read and clear if it was a write).
-
-Wouldn't the traces be more readable if the direction was written
-explicitly as R or W?
-
-> 
-> 
-> The SMBUS tracepoint can be enabled thusly:
-> 
-> 	echo 1 >/sys/kernel/debug/tracing/events/i2c/smbus_transfer/enable
-> 
-> and will dump messages that can be viewed in /sys/kernel/debug/tracing/trace
-> that look like:
-> 
-> 	... smbus_transfer: i2c-0 f=00 a=51 r=1 c=0 p=2 res=0 [80ff0100000000000000800c693d0088ffffb83aee3b0088ffff0100000000000000]
-> 
-> formatted as:
-> 
-> 	i2c-<adapter-nr>
-> 	f=<flags>
-> 	a=<addr>
-> 	r=<read_write>
-
-Here too I would consider R and W as more readable than r=1 and r=0.
-
-> 	c=<command>
-> 	p=<protocol>
-
-Would it be possible to print this as a string rather than a number?
-The protocol numbers are completely arbitrary, so the reader would have
-to open i2c.h each time to figure out what is what.
-
-> 	res=<result>
-> 	[<data-block>]
-> 
-> 
-> In both cases, the adapters to be traced can be selected by something like:
-> 
-> 	echo adapter_nr==1 >/sys/kernel/debug/tracing/events/i2c/{i2c,smbus}_transfer/filter
-
-I have no objection to the feature, but it should be noted that
-i2c-core already offers something similar (albeit less flexible) for
-I2C level transfers:
-
-#ifdef DEBUG
-		for (ret = 0; ret < num; ret++) {
-			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, "
-				"len=%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
-				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
-				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
-		}
-#endif
-
-If your code goes in, I suppose the code above should be removed to
-avoid redundancy.
-
-One significant difference between both implementations is that the old
-one logs before the actual transfer, while yours logs afterward. While I
-understand this allows you to log the result of the transfer, this also
-means you'll miss the log if the actual transaction locks the system
-(we've seen this before.) Something to think about...
-
--- 
-Jean Delvare
+So in short, yes :)
