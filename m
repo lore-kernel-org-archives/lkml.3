@@ -1,104 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab3LMNTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 08:19:33 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:45379 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789Ab3LMNTb (ORCPT
+	id S1752454Ab3LMNWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 08:22:23 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:42056 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab3LMNWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 08:19:31 -0500
-Date: Fri, 13 Dec 2013 14:19:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, James Morris <jmorris@namei.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
-        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/9] Known exploit detection
-Message-ID: <20131213131926.GA10981@gmail.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
- <20131212190659.GG13547@thunk.org>
- <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
- <20131213002523.GA20706@redhat.com>
- <20131213014220.GB11068@kroah.com>
- <alpine.LRH.2.02.1312131557340.32454@tundra.namei.org>
- <20131213054640.GI23888@thunk.org>
+	Fri, 13 Dec 2013 08:22:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131213054640.GI23888@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com>
+References: <529E5C0E.80903@gmail.com> <20131212224407.GL4699@google.com> <CAE9FiQX8XXkwbhhuNhCF-pHdc_3or_dMEH-VN5NBSEV_eXE-Pg@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 13 Dec 2013 06:21:59 -0700
+Message-ID: <CAErSpo5BsaLNrny3T1sYknz3wo4hN0SKJk0_u6eNyEd6qq5o=g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] pciehp: Use link change notifications for hot-plug
+ and removal
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Rajat Jain <rajatjain.linux@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Rajat Jain <rajatjain@juniper.net>, Rajat Jain <rajatxjain@gmail.com>,
+        Guenter Roeck <groeck@juniper.net>, Guenter Roeck <linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 12, 2013 at 11:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Dec 12, 2013 at 2:44 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-* Theodore Ts'o <tytso@mit.edu> wrote:
+>>> * Define and use interrupt events for linkup / linkdown.
+>>
+>> This seems like a reasonable idea.
+>>
+>> In the ExpressCard Standard (Rel 2.0, Feb 2009), Section 6.3.1 and Figure
+>> 6-2 talk about a "Link Detect" or "Link Train Detected" interrupt being
+>> used to trigger the ACPI hotplug flow for a non-PCIe-aware OS.  I'm not
+>> sure what interrupt this refers to.  The Slot Control Data Link Layer State
+>> Changed interrupt (which you're using) sounds similar, but my guess is that
+>> "Link Detect" is a generic term for chipset-specific functionality to
+>> generate an SMI for hotplug events.
+>>
+>> But then Section 6.3.1.1 suggests that a PCIe-aware OS would use "Presence
+>> Detect Changed" instead.  I don't know why a different mechanism would be
+>> suggested, although DLLSC was added after PCIe 1.0, so older hardware
+>> wouldn't have a PCIe-standard link detection mechanism.
+>>
+>> In any event, I think having the Link Status Data Link Layer Link Active
+>> bit set would certainly imply that a device is present, so it seems
+>> reasonable to use DLLLA in addition to Presence Detect State.
+>
+> Yes, if Attention attention is not there and Surprise removal is supported.
 
-> On Fri, Dec 13, 2013 at 04:09:06PM +1100, James Morris wrote:
-> > 
-> > I think we'd need to have someone commit to maintaining this long 
-> > term before seriously considering it as part of mainline.  Over 
-> > time it will become increasingly useless if new triggers aren't 
-> > added.
-> > 
-> > What happens when code is refactored, who refactors the triggers?
-> 
-> We would definitely need to have test cases which deliberately trips 
-> the triggers, which would be run regularly (which means they would 
-> need to be included in the kernel tree), or else it's very likely as 
-> the code gets refactor or even just modiied, the exploit() calls 
-> might end up getting moved to the wrong place, or otherwise 
-> deactivated/denatured.
+I'm not convinced that it's a good idea to make link state support
+conditional on the attention button and surprise removal bits.  That
+might cover Rajat's particular case, but I don't think there's a
+logical connection between link state and those bits, so making it
+conditional might just make the code more complicated and less general
+for no good reason.
 
-That looks useful for another reason as well: we had cases where the 
-same exploit re-appeared because our fix against it regressed.
+>>> @@ -620,13 +610,10 @@ int pciehp_power_off_slot(struct slot * slot)
+>>>       u16 cmd_mask;
+>>>       int retval;
+>>>
+>>> -     /* Disable the link at first */
+>>> -     pciehp_link_disable(ctrl);
+>>> -     /* wait the link is down */
+>>> -     if (ctrl->link_active_reporting)
+>>> -             pcie_wait_link_not_active(ctrl);
+>>> -     else
+>>> -             msleep(1000);
+>>
+>> 2debd9289997 ("PCI: pciehp: Disable/enable link during slot power off/on")
+>> added this code that disables the link to fix problems.  So we need to make
+>> sure we don't reintroduce those problems by leaving the link enabled.
+>>
+>> One problem was spurious "card present/not present" messages.  I suspect
+>> that topology has an attention button, and I'm not sure it makes sense to
+>> enable the presence detect interrupt in that case.  As far as I can tell,
+>> if there's an attention button, the OS should not do anything on card
+>> insertion or removal; it should only do something when the attention button
+>> is pressed.  So maybe we can deal with the message issue that way.
+>
+> Agreed.
+>
+>>
+>> The changelog also hints that disabling the link might be needed to allow a
+>> repeater to be reset, but I don't know the details.  I don't remember any
+>> spec language that requires the link to be disabled on hotplug; maybe this
+>> is a platform-specific quirk.
+>
+> yes, that is workaround to to reset repeater in between.
 
-> [...]
-> 
-> I'm still a little dubious about the size of benefit that trying to 
-> maintain these exploit() markers would provide, and whether it would 
-> ultimately be worth the cost.
+What does the "other OS" do about this repeater?  Did you verify that
+it disables the link when powering off the slot?  If we were smarter
+about presence detect, I wonder if that would be enough.
 
-These items are very easy to remove if any of them breaks or gets out 
-of sync. So the cost can be reduced to zero, if the experiment fails.
+> Also we can get rid of annoying aer during power off slot.
 
-I'd definitely be willing to accept the x86 and perf bits, if all 
-complaints are fixed and if Vegard (and Kees?) volunteers to maintain 
-this thing.
+I don't know the details of this issue.  It may be possible to avoid
+the AER in some way other than turning off the link.
 
-I see no real downside - other than giving the security circus a 
-foothold in the kernel.
+> Also at least other os will turn on link after turn on the power,
+> as hotplug is working if BIOS have link disabled when boot system
+> without card inserted.
 
-OTOH, such defensive measures _do_ have tangible benefits:
+If the link is disabled after turning on power, it certainly makes
+sense to me to enable the link.  I don't think Rajat changed the
+pciehp_power_on_slot() path, so this part should still work.
 
- - They warn kernel developers about dangerous patterns and past
-   incidents, in the code itself. There are 'hotspot' areas in the
-   kernel that tend to attract more bugs than others.
+> I suggest that link event handling will be enabled automatically when
+> attention button is not there and surprise removal is supported.
+> And when that enabled, should disable Present event handling.
 
- - They give actual real figures to people/organizations: do these
-   checks ever trigger? Have they triggered in the past 5 years? A
-   large enough organization might be able to quantify and guesstimate
-   its attack surface that way.
+I think it should be as simple as possible, i.e., if we have an
+attention button, ignore presence detect.  If we make it more
+complicated that necessary, we run the risk of enforcing assumptions
+that may not hold in the future.
 
- - We could actually insert such checks against known zero day
-   exploits out in the wild. Those exploits will eventually be changed
-   to be more careful, but there is going to be a delay with such
-   updates: catching some attack attempts. Software update delays
-   will finally work in favor of the good guys!
-
-so maybe these effects reduce the security circus aspect. Or not :-)
-
-Thanks,
-
-	Ingo
+Bjorn
