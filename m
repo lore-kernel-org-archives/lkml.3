@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab3LMOKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:10:19 -0500
+	id S1752984Ab3LMOLj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:11:39 -0500
 Received: from cantor2.suse.de ([195.135.220.15]:40426 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504Ab3LMOKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:10:16 -0500
+	id S1752772Ab3LMOKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 09:10:14 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 6/7] mm: page_alloc: Only account batch allocations requests that are eligible
-Date: Fri, 13 Dec 2013 14:10:06 +0000
-Message-Id: <1386943807-29601-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 4/7] mm: Annotate page cache allocations
+Date: Fri, 13 Dec 2013 14:10:04 +0000
+Message-Id: <1386943807-29601-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1386943807-29601-1-git-send-email-mgorman@suse.de>
 References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
@@ -22,74 +22,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not signed off. Johannes, was the intent really to decrement the batch
-counts regardless of whether the policy was being enforced or not?
+Annotations will be used for fair zone allocation policy. Patch is mostly
+taken from a link posted by Johannes on IRC. It's not perfect because all
+callers of these paths are not guaranteed to be allocating pages for page
+cache. However, it's probably close enough to cover all cases that matter
+with minimal distortion.
 
+Not-signed-off
 ---
- mm/page_alloc.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ include/linux/gfp.h     | 4 +++-
+ include/linux/pagemap.h | 2 +-
+ mm/filemap.c            | 2 ++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c2a2229..bf49918 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1547,7 +1547,6 @@ again:
- 					  get_pageblock_migratetype(page));
- 	}
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 9b4dd49..f69e4cb 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+ #define ___GFP_NO_KSWAPD	0x400000u
+ #define ___GFP_OTHER_NODE	0x800000u
+ #define ___GFP_WRITE		0x1000000u
++#define ___GFP_PAGECACHE	0x2000000u
+ /* If the above are modified, __GFP_BITS_SHIFT may need updating */
  
--	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
- 	local_irq_restore(flags);
-@@ -1923,7 +1922,8 @@ int sysctl_zone_distribute_mode_handler(ctl_table *table, int write,
-  * other zones.
+ /*
+@@ -92,6 +93,7 @@ struct vm_area_struct;
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ #define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
++#define __GFP_PAGECACHE ((__force gfp_t)___GFP_PAGECACHE)   /* Page cache allocation */
+ 
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+@@ -99,7 +101,7 @@ struct vm_area_struct;
   */
- static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
--				struct zone *zone, int alloc_flags)
-+				struct zone *zone, int alloc_flags,
-+				bool *distrib_eligible)
+ #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
+ 
+-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /* This equals 0, but use constants in case they ever change */
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index e3dea75..bda4845 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -221,7 +221,7 @@ extern struct page *__page_cache_alloc(gfp_t gfp);
+ #else
+ static inline struct page *__page_cache_alloc(gfp_t gfp)
  {
- 	bool zone_is_local;
- 	bool is_file, is_slab, is_anon;
-@@ -1977,6 +1977,8 @@ static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
- 	return true;
+-	return alloc_pages(gfp, 0);
++	return alloc_pages(gfp | __GFP_PAGECACHE, 0);
+ }
+ #endif
  
- check_batch:
-+	*distrib_eligible = true;
+diff --git a/mm/filemap.c b/mm/filemap.c
+index b7749a9..5bb9225 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -517,6 +517,8 @@ struct page *__page_cache_alloc(gfp_t gfp)
+ 	int n;
+ 	struct page *page;
+ 
++	gfp |= __GFP_PAGECACHE;
 +
- 	/* Distribute to the next zone if this zone has exhausted its batch */
- 	if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 		return true;
-@@ -2000,6 +2002,7 @@ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
- 	int zlc_active = 0;		/* set if using zonelist_cache */
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
-+	bool distrib_eligible = false;
- 
- 	classzone_idx = zone_idx(preferred_zone);
- zonelist_scan:
-@@ -2023,7 +2026,7 @@ zonelist_scan:
- 
- 		/* Distribute pages to ensure fair page aging */
- 		if (zone_distribute_age(gfp_mask, preferred_zone, zone,
--					alloc_flags))
-+				alloc_flags, &distrib_eligible))
- 			continue;
- 
- 		/*
-@@ -2119,8 +2122,11 @@ zonelist_scan:
- try_this_zone:
- 		page = buffered_rmqueue(preferred_zone, zone, order,
- 						gfp_mask, migratetype);
--		if (page)
-+		if (page) {
-+			if (distrib_eligible)
-+				__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
- 			break;
-+		}
- this_zone_full:
- 		if (IS_ENABLED(CONFIG_NUMA))
- 			zlc_mark_zone_full(zonelist, z);
+ 	if (cpuset_do_page_mem_spread()) {
+ 		unsigned int cpuset_mems_cookie;
+ 		do {
 -- 
 1.8.4
 
