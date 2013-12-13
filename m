@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab3LMQXL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:23:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab3LMQXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:23:09 -0500
-Date: Fri, 13 Dec 2013 11:22:28 -0500
-From: Dave Jones <davej@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: XFS / writeback invoking soft lockup.
-Message-ID: <20131213162228.GA29908@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Christoph Hellwig <hch@infradead.org>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-References: <20131213071407.GA6527@redhat.com>
- <20131213104853.GS10988@dastard>
- <20131213111639.GD23546@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131213111639.GD23546@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752980Ab3LMQZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:25:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38253 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3LMQZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 11:25:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        gordan@bobich.net
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [RFC PATCH 1/5] xen-pciback: Cleanup up pcistub_put_pci_dev
+Date: Fri, 13 Dec 2013 11:09:34 -0500
+Message-Id: <1386950978-8628-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+References: <1386950978-8628-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 03:16:39AM -0800, Christoph Hellwig wrote:
- > On Fri, Dec 13, 2013 at 09:48:53PM +1100, Dave Chinner wrote:
- > > All I can say is that there doesn't look to be any obvious signs
- > > that this is a XFS or writeback problem fom the stack trace, and
- > > without more information or a reproducable test case I'm not going
- > > to be able to understand the cause.
- > > 
- > > Is the problem reproducable, or is it just a one-off?
- > 
- > If it's reproducable it would be good to enable the xfs_writepage
- > tracepoint and get a trace-cmd log of it.
+We are using both psdev->dev and dev and both are the same.
+To keep it straight lets just use one - dev.
 
-I hit it pretty reliably last night.  I'll make a note to look into it 
-on monday with that enabled.
+This will also make it easier in the patch:
+"xen/pciback: When reconfiguring an PCIe device, FLR it"
+and "xen/pciback: PCI reset slot or bus" to use it.
 
-	Dave
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xen-pciback/pci_stub.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
+index 62fcd48..5300a21 100644
+--- a/drivers/xen/xen-pciback/pci_stub.c
++++ b/drivers/xen/xen-pciback/pci_stub.c
+@@ -272,16 +272,16 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+ 	 * and want to inhibit the user from fiddling with 'reset'
+ 	 */
+ 	pci_reset_function(dev);
+-	pci_restore_state(psdev->dev);
++	pci_restore_state(dev);
+ 
+ 	/* This disables the device. */
+-	xen_pcibk_reset_device(found_psdev->dev);
++	xen_pcibk_reset_device(dev);
+ 
+ 	/* And cleanup up our emulated fields. */
+-	xen_pcibk_config_free_dyn_fields(found_psdev->dev);
+-	xen_pcibk_config_reset_dev(found_psdev->dev);
++	xen_pcibk_config_free_dyn_fields(dev);
++	xen_pcibk_config_reset_dev(dev);
+ 
+-	xen_unregister_device_domain_owner(found_psdev->dev);
++	xen_unregister_device_domain_owner(dev);
+ 
+ 	spin_lock_irqsave(&found_psdev->lock, flags);
+ 	found_psdev->pdev = NULL;
+-- 
+1.8.3.1
 
