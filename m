@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3LMLh4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:37:56 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:41956 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab3LMLhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:37:55 -0500
-X-IronPort-AV: E=Sophos;i="4.95,478,1384300800"; 
-   d="scan'208";a="84237995"
-Message-ID: <52AAF176.3020102@citrix.com>
-Date: Fri, 13 Dec 2013 11:37:26 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1752636Ab3LMLjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:39:54 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55085 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab3LMLjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:39:52 -0500
+Date: Fri, 13 Dec 2013 11:39:03 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ulli.kroll@googlemail.com, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] ARM: reinsert ARCH_MULTI_V4 Kconfig option
+Message-ID: <20131213113903.GE4360@n2100.arm.linux.org.uk>
+References: <1386922149-4561-1-git-send-email-jonas.jensen@gmail.com> <20131213095655.GB4360@n2100.arm.linux.org.uk> <CACmBeS1d-EX5oPD8f7P-ufmF=MutdTO+LgG23Cb0=biR8yQPCg@mail.gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH v10] Repost of PVH patches for Linux.
-References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACmBeS1d-EX5oPD8f7P-ufmF=MutdTO+LgG23Cb0=biR8yQPCg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
-> Hey,
+On Fri, Dec 13, 2013 at 11:51:09AM +0100, Jonas Jensen wrote:
+> On 13 December 2013 10:56, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > So, having these symbols enabled (provided the right ones for FA526 are
+> > also enabled) makes no difference.  So I don't buy your explanation.
 > 
-> Mukesh had posted them quite a while ago - they got reviewed, acked, etc,
-> put in #linux-next, got patches to fix some things from folks.
+> The explanation is indeed false, CPU_FA526 and CPU_ARM920T get along just fine.
+> That's not where the problem is.
 > 
-> Then everybody focused on the Xen patches .. and now that is mostly
-> baked this is what is needed on the Linux side to make it work
-> with PVH. I had them based on v3.6, then merged on v3.11, then..
+> Panic goes away after removing CONFIG_ARM_THUMB=y.
 > 
-> Decided to rebase all of them on v3.13-rc3 to make it easier.
+> I assume this is what should happen on processors without thumb?
 
-In general the series is a bit of mess, early patches doing things one
-way (using hypercalls that no longer exist for example) and later
-patches fixing things up.  I think this should be sorted out as it makes
-it too difficult to review carefully (I've only given the series a
-quick, initial review).
+I see what's causing this: the kuser helpers are using "bx lr" to return
+which will be undefined on non-Thumb CPUs.  We generally cope fine with
+non-Thumb CPUs, conditionalising where necessary on HWCAP_THUMB or the
+T bit in the PSR being set.
 
-> Couple of things:
-> 
-> a) the patch:
->  [PATCH V10 14/14] xen/pvh: vcpu info placement, load CS selector,
-> 
-> could be split in three - and I think Mukesh did have a version like that.
-> I can do it myself and will - it should be obvious of how it will be done.
-> 
-> b). Regression testing  - I ran this with a Linux kernel dom0 (32 and 64)
->     on the latest Xen hypervisor without PVH enabled. It booted all the
->     guests I had:
->     RHEL5, SLES11, SLES12, F15, F16, F17, F18, F19, OEL5, OEL6, NetBSD PV,
->     FreeBSD HVM; and also 32 and 64 PV and PVHVM combination of the same
->     kernel (and save/restore on those). Nothing broke.
+However, it looks like the kuser helpers got missed.  As a check, please
+look at arch/arm/kernel/entry-armv.S, find the line with:
 
-That's good to know.
+	.macro	usr_ret, reg
 
-David
+and ensure that the mov pc, \reg case always gets used.  Please report
+back.
+
+Thanks.
