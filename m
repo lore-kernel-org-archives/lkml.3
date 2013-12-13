@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3LMLCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:02:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57839 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab3LMLCv (ORCPT
+	id S1752690Ab3LMLDC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:03:02 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:30162 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab3LMLC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:02:51 -0500
-Message-ID: <52AAE928.5040308@ti.com>
-Date: Fri, 13 Dec 2013 16:32:00 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 13 Dec 2013 06:02:59 -0500
+X-IronPort-AV: E=Sophos;i="4.95,478,1384300800"; 
+   d="scan'208";a="81938633"
+Message-ID: <52AAE94C.7040702@citrix.com>
+Date: Fri, 13 Dec 2013 11:02:36 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-To: Matt Porter <mporter@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-CC: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v5 6/9] usb: gadget: s3c-hsotg: get phy bus width from
- phy subsystem
-References: <1386854770-2173-1-git-send-email-mporter@linaro.org> <1386854770-2173-7-git-send-email-mporter@linaro.org>
-In-Reply-To: <1386854770-2173-7-git-send-email-mporter@linaro.org>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
+        <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH V10 05/14] xen/pvh: balloon and grant changes.
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-6-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1386900621-27528-6-git-send-email-konrad.wilk@oracle.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 December 2013 06:56 PM, Matt Porter wrote:
-> Adds support for querying the phy bus width from the generic phy
-> subsystem. Configure UTMI bus width in GUSBCFG based on this value.
+On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->  drivers/usb/gadget/s3c-hsotg.c | 14 +++++++++++++-
->  drivers/usb/gadget/s3c-hsotg.h |  1 +
->  2 files changed, 14 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-> index e9683c2..168aaa9 100644
-> --- a/drivers/usb/gadget/s3c-hsotg.c
-> +++ b/drivers/usb/gadget/s3c-hsotg.c
-> @@ -144,6 +144,7 @@ struct s3c_hsotg_ep {
->   * @regs: The memory area mapped for accessing registers.
->   * @irq: The IRQ number we are using
->   * @supplies: Definition of USB power supplies
-> + * @phyif: PHY interface width
->   * @dedicated_fifos: Set if the hardware has dedicated IN-EP fifos.
->   * @num_of_eps: Number of available EPs (excluding EP0)
->   * @debug_root: root directrory for debugfs.
-> @@ -171,6 +172,7 @@ struct s3c_hsotg {
->  
->  	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
->  
-> +	u32			phyif;
->  	unsigned int		dedicated_fifos:1;
->  	unsigned char           num_of_eps;
->  
-> @@ -2276,7 +2278,7 @@ static void s3c_hsotg_core_init(struct s3c_hsotg *hsotg)
->  	 */
->  
->  	/* set the PLL on, remove the HNP/SRP and set the PHY */
-> -	writel(GUSBCFG_PHYIf16 | GUSBCFG_TOutCal(7) |
-> +	writel(hsotg->phyif | GUSBCFG_TOutCal(7) |
->  	       (0x5 << 10), hsotg->regs + GUSBCFG);
->  
->  	s3c_hsotg_init_fifo(hsotg);
-> @@ -3621,6 +3623,16 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
->  		goto err_supplies;
->  	}
->  
-> +	/* Set default UTMI width */
-> +	hsotg->phyif = GUSBCFG_PHYIf16;
-> +
-> +	/*
-> +	 * If using the generic PHY framework, check if the PHY bus
-> +	 * width is 8-bit and set the phyif appropriately.
-> +	 */
-> +	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
-> +		hsotg->phyif = GUSBCFG_PHYIf8;
-> +
->  	if (hsotg->phy)
->  		phy_init(hsotg->phy);
->  
-> diff --git a/drivers/usb/gadget/s3c-hsotg.h b/drivers/usb/gadget/s3c-hsotg.h
-> index d650b12..85f549f 100644
-> --- a/drivers/usb/gadget/s3c-hsotg.h
-> +++ b/drivers/usb/gadget/s3c-hsotg.h
-> @@ -55,6 +55,7 @@
->  #define GUSBCFG_HNPCap				(1 << 9)
->  #define GUSBCFG_SRPCap				(1 << 8)
->  #define GUSBCFG_PHYIf16			(1 << 3)
-> +#define GUSBCFG_PHYIf8				(0 << 3)
->  #define GUSBCFG_TOutCal_MASK			(0x7 << 0)
->  #define GUSBCFG_TOutCal_SHIFT			(0)
->  #define GUSBCFG_TOutCal_LIMIT			(0x7)
-> 
+> For balloon changes we skip setting of local P2M as it's updated
+> in Xen. For grant, the shared grant frame is the PFN and not MFN,
+> hence its mapped via the same code path as HVM.
 
+It's difficult to see how these are related.  Please split.
+
+I also think Stefano recently submitted an equivalent fix for the
+balloon driver.
+
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -1056,14 +1056,20 @@ static void gnttab_unmap_frames_v2(void)
+>  static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>  {
+>  	struct gnttab_setup_table setup;
+> +	unsigned long start_gpfn;
+>  	xen_pfn_t *frames;
+>  	unsigned int nr_gframes = end_idx + 1;
+>  	int rc;
+>  
+> -	if (xen_hvm_domain()) {
+> +	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap)) {
+>  		struct xen_add_to_physmap xatp;
+>  		unsigned int i = end_idx;
+>  		rc = 0;
+> +
+> +		if (xen_hvm_domain())
+> +			start_gpfn = xen_hvm_resume_frames >> PAGE_SHIFT;
+> +		else
+> +			start_gpfn = virt_to_pfn(gnttab_shared.addr);
+
+Not really clear why PVH diverges from HVM here.
+
+> @@ -1135,7 +1141,7 @@ static void gnttab_request_version(void)
+>  	int rc;
+>  	struct gnttab_set_version gsv;
+>  
+> -	if (xen_hvm_domain())
+> +	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
+>  		gsv.version = 1;
+>  	else
+>  		gsv.version = 2;
+
+Why is PVH limited to version 1?
+
+David
