@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab3LMRWu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:22:50 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:34826 "EHLO
+	id S1753247Ab3LMRXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:23:46 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:50161 "EHLO
 	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab3LMRWs (ORCPT
+	with ESMTP id S1753012Ab3LMRXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:22:48 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Joe Perches <joe@perches.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH v4] checkpatch: add DT compatible string documentation checks
-Date: Fri, 13 Dec 2013 11:22:37 -0600
-Message-Id: <1386955357-24444-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 13 Dec 2013 12:23:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <201312131717.25435.arnd@arndb.de>
+References: <1386945188-8316-1-git-send-email-jonas.jensen@gmail.com>
+	<1386945188-8316-2-git-send-email-jonas.jensen@gmail.com>
+	<201312131717.25435.arnd@arndb.de>
+Date: Fri, 13 Dec 2013 18:23:44 +0100
+Message-ID: <CACmBeS0Uz+Z=MsqvXburO1swCdyGvEXHhfs8M7ZnMMKBNJjG1A@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: mach-moxart: add MOXA ART SoC platform files
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>,
+        "linux@roeck-us.net" <linux@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On 13 December 2013 17:17, Arnd Bergmann <arnd@arndb.de> wrote:
+> IIRC the separate defconfig is needed because we have never gotten a mixed fa526+arm9
+> kernel to boot, right? In theory it is supposed to work and there is most likely just
+> a small bug somewhere. Once that is working, we can think about adding a generic
+> multi_v4_v5_defconfig that handles all multipltform capable platforms along the lines
+> of multi_v7_defconfig.
 
-This adds a simple check that any compatible strings in DeviceTree dts
-files are present in Documentation/devicetree/bindings. Vendor prefixes
-are also checked for existing in vendor-prefixes.txt These should be
-temporary checks until we have more sophisticated binding schema checking.
+A mixed kernel can boot without panic (tested today).
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Joe Perches <joe@perches.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Andy Whitcroft <apw@canonical.com>
----
-v4:
-- Fix handling of no source tree or user-specified source tree
-- Check for presence of vendor-prefixes.txt
+The panic is avoided when CONFIG_ARM_THUMB=y is removed.
 
-v3:
-- Use a single message type UNDOCUMENTED_DT_STRING
-- Ensure '+' is at beginning of the line
-- Move vendor-prefixes.txt to variable
+See thread "[PATCH] ARM: reinsert ARCH_MULTI_V4 Kconfig option":
 
-v2:
-- Add vendor string checking against vendor-prefixes.txt
-- Add '_', '.' and '+' as valid compatible string characters
-- Use 'grep -E' instead of egrep
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-December/219004.html
 
- scripts/checkpatch.pl | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9c98100..e6635bb 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2034,6 +2034,33 @@ sub process {
- 			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
- 		}
- 
-+# check for DT compatible documentation
-+		if (defined $root && $realfile =~ /\.dts/ &&
-+		    $rawline =~ /^\+\s*compatible\s*=/) {
-+			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
-+
-+			foreach my $compat (@compats) {
-+				my $compat2 = $compat;
-+				my $dt_path =  $root . "/Documentation/devicetree/bindings/";
-+				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
-+				`grep -Erq "$compat|$compat2" $dt_path`;
-+				if ( $? >> 8 ) {
-+					WARN("UNDOCUMENTED_DT_STRING",
-+					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
-+				}
-+
-+				my $vendor = $compat;
-+				my $vendor_path = $dt_path . "vendor-prefixes.txt";
-+				next if (! -f $vendor_path);
-+				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-+				`grep -Eq "$vendor" $vendor_path`;
-+				if ( $? >> 8 ) {
-+					WARN("UNDOCUMENTED_DT_STRING",
-+					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
-+				}
-+			}
-+		}
-+
- # check we are in a valid source file if not then ignore this hunk
- 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
- 
--- 
-1.8.3.2
+> I've been out of the loop a bit here. I initially suggested having the restart
+> handler be part of the watchdog driver, and I thought you had done that in an
+> earlier version. What has changed your mind?
 
+I got the impression from Guenter Roeck's review, that it doesn't belong there,
+maybe I was too quick to remove it?
+
+See thread "[PATCH] watchdog: Add MOXA ART watchdog driver":
+
+http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/183065.html
+
+
+Thanks,
+Jonas
