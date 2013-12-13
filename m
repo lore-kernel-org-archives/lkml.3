@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3LMPMZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:12:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45247 "EHLO
+	id S1753310Ab3LMPNV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:13:21 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45297 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab3LMPMS (ORCPT
+	with ESMTP id S1753218Ab3LMPMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:12:18 -0500
+	Fri, 13 Dec 2013 10:12:24 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/20] tools lib traceevent: Get rid of malloc_or_die() in find_event()
-Date: Fri, 13 Dec 2013 12:11:59 -0300
-Message-Id: <1386947526-7118-14-git-send-email-acme@infradead.org>
+Subject: [PATCH 07/20] perf evlist: Add perf_evlist__to_front()
+Date: Fri, 13 Dec 2013 12:11:53 -0300
+Message-Id: <1386947526-7118-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386947526-7118-1-git-send-email-acme@infradead.org>
 References: <1386947526-7118-1-git-send-email-acme@infradead.org>
@@ -27,114 +30,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Make it return pevent_errno to distinguish malloc allocation failure.
-Since it'll be returned to user later, add more error code.
+Add a function to move a selected event to the
+front of the list.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+This is needed because it is not possible
+to use the PERF_EVENT_IOC_SET_OUTPUT IOCTL
+from an Instruction Tracing event to a
+non-Instruction Tracing event.  Thus the
+Instruction Tracing event must come first.
+
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386833777-3790-6-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386765443-26966-24-git-send-email-alexander.shishkin@linux.intel.com
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h  |  4 +++-
- tools/lib/traceevent/parse-filter.c | 27 +++++++++++++++++++--------
- 2 files changed, 22 insertions(+), 9 deletions(-)
+ tools/perf/util/evlist.c | 17 +++++++++++++++++
+ tools/perf/util/evlist.h |  3 +++
+ 2 files changed, 20 insertions(+)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 6e23f197175f..abdfd3c606ed 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -356,7 +356,9 @@ enum pevent_flag {
- 	_PE(READ_FORMAT_FAILED,	"failed to read event format"),		      \
- 	_PE(READ_PRINT_FAILED,	"failed to read event print fmt"), 	      \
- 	_PE(OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),\
--	_PE(INVALID_ARG_TYPE,	"invalid argument type")
-+	_PE(INVALID_ARG_TYPE,	"invalid argument type"),		      \
-+	_PE(INVALID_EVENT_NAME,	"invalid event name"),			      \
-+	_PE(EVENT_NOT_FOUND,	"No event found")
- 
- #undef _PE
- #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 246ee81e1f93..a0ab040e8f71 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -287,7 +287,7 @@ static int event_match(struct event_format *event,
- 		!regexec(ereg, event->name, 0, NULL, 0);
- }
- 
--static int
-+static enum pevent_errno
- find_event(struct pevent *pevent, struct event_list **events,
- 	   char *sys_name, char *event_name)
- {
-@@ -306,23 +306,31 @@ find_event(struct pevent *pevent, struct event_list **events,
- 		sys_name = NULL;
- 	}
- 
--	reg = malloc_or_die(strlen(event_name) + 3);
-+	reg = malloc(strlen(event_name) + 3);
-+	if (reg == NULL)
-+		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+
- 	sprintf(reg, "^%s$", event_name);
- 
- 	ret = regcomp(&ereg, reg, REG_ICASE|REG_NOSUB);
- 	free(reg);
- 
- 	if (ret)
--		return -1;
-+		return PEVENT_ERRNO__INVALID_EVENT_NAME;
- 
- 	if (sys_name) {
--		reg = malloc_or_die(strlen(sys_name) + 3);
-+		reg = malloc(strlen(sys_name) + 3);
-+		if (reg == NULL) {
-+			regfree(&ereg);
-+			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
-+		}
-+
- 		sprintf(reg, "^%s$", sys_name);
- 		ret = regcomp(&sreg, reg, REG_ICASE|REG_NOSUB);
- 		free(reg);
- 		if (ret) {
- 			regfree(&ereg);
--			return -1;
-+			return PEVENT_ERRNO__INVALID_EVENT_NAME;
- 		}
- 	}
- 
-@@ -342,9 +350,9 @@ find_event(struct pevent *pevent, struct event_list **events,
- 		regfree(&sreg);
- 
- 	if (!match)
--		return -1;
-+		return PEVENT_ERRNO__EVENT_NOT_FOUND;
- 	if (fail)
--		return -2;
-+		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 2eb7378e4c40..0b31cee34874 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1212,3 +1212,20 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
  
  	return 0;
  }
-@@ -1312,7 +1320,10 @@ int pevent_filter_add_filter_str(struct event_filter *filter,
- 		/* Find this event */
- 		ret = find_event(pevent, &events, strim(sys_name), strim(event_name));
- 		if (ret < 0) {
--			if (event_name)
-+			if (ret == PEVENT_ERRNO__MEM_ALLOC_FAILED)
-+				show_error(error_str,
-+					   "Memory allocation failure");
-+			else if (event_name)
- 				show_error(error_str,
- 					   "No event found under '%s.%s'",
- 					   sys_name, event_name);
++
++void perf_evlist__to_front(struct perf_evlist *evlist,
++			   struct perf_evsel *move_evsel)
++{
++	struct perf_evsel *evsel, *n;
++	LIST_HEAD(move);
++
++	if (move_evsel == perf_evlist__first(evlist))
++		return;
++
++	list_for_each_entry_safe(evsel, n, &evlist->entries, node) {
++		if (evsel->leader == move_evsel->leader)
++			list_move_tail(&evsel->node, &move);
++	}
++
++	list_splice(&move, &evlist->entries);
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 8a04aae95a18..9f64ede3ecbd 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -194,5 +194,8 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
+ }
+ 
+ bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str);
++void perf_evlist__to_front(struct perf_evlist *evlist,
++			   struct perf_evsel *move_evsel);
++
+ 
+ #endif /* __PERF_EVLIST_H */
 -- 
 1.8.1.4
 
