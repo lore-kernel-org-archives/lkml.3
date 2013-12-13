@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab3LMPu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:50:29 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:38043 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751209Ab3LMPu2 (ORCPT
+	id S1752764Ab3LMPvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:51:12 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:16487 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3LMPvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:50:28 -0500
-Date: Fri, 13 Dec 2013 10:50:23 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 6/7] arm64, jump label: optimize jump label
- implementation
-Message-ID: <20131213105023.67e45640@gandalf.local.home>
-In-Reply-To: <20131213154104.GG19177@mudshark.cambridge.arm.com>
-References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
-	<1386691433-6827-7-git-send-email-liuj97@gmail.com>
-	<20131213154104.GG19177@mudshark.cambridge.arm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Fri, 13 Dec 2013 10:51:10 -0500
+From: Betty Dall <betty.dall@hp.com>
+To: rjw@rjwysocki.net, bhelgaas@google.com
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Betty Dall <betty.dall@hp.com>
+Subject: [PATCH] PCI AER: handle pci_cleanup_aer_uncorrect_error_status() in firmware first mode
+Date: Fri, 13 Dec 2013 08:41:46 -0700
+Message-Id: <1386949306-30601-1-git-send-email-betty.dall@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013 15:41:04 +0000
-Will Deacon <will.deacon@arm.com> wrote:
+There are three functions exported from aerdrv_core.c that could be
+called when the system is in firmware first mode:
+pci_enable_pcie_error_reporting(), pci_disable_pcie_error_reporting, and
+pci_cleanup_aer_uncorrect_error_status(). The first two functions check if
+we are in firmware first mode and return immediately.
+pci_cleanup_aer_uncorrect_error_status() does not check firmware first
+mode. The problem is that all of these functions should not access the AER
+registers in firmware first mode because the firmware has not granted OS
+control of the AER registers through the _OSC. Many drivers call this
+function in their pci_error_handlers in firmware first mode.
 
-> > +#include <linux/kernel.h>
-> > +#include <linux/jump_label.h>
-> > +#include <asm/jump_label.h>
-> > +#include <asm/insn.h>
-> > +
-> > +#ifdef HAVE_JUMP_LABEL
-> 
-> Slightly worrying... this should be CONFIG_HAVE_JUMP_LABEL, right? How did
-> you manage to test this code?
+The fix is to change pci_cleanup_aer_uncorrect_error_status() to check
+firmware first mode before accessing the AER registers. If it is in firmware
+first mode, return 0. I considered returning -EIO, but decided the status
+has been cleaned up appropriately for firmware first. Returning 0 also avoids
+an error message. Not many places check the return of this function, and the
+ones that do, print an error message and continue such as:
+   err = pci_cleanup_aer_uncorrect_error_status(pdev);
+   if (err) {
+       dev_err(&pdev->dev,
+           "pci_cleanup_aer_uncorrect_error_status failed 0x%0x\n",
+            err); /* non-fatal, continue */
+   }
+That error message is how I found this problem, and it is not applicable
+for the firmware first recovery path.
 
-In <linux/jump_label.h> we have:
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+---
 
-#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
-
-[...]
-
-# include <asm/jump_label.h>
-# define HAVE_JUMP_LABEL
-#endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
+ drivers/pci/pcie/aer/aerdrv_core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
 
--- Steve
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index b2c8881..1f60408 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -62,6 +62,9 @@ int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
+ 	int pos;
+ 	u32 status;
+ 
++	if (pcie_aer_get_firmware_first(dev))
++		return 0;
++
+ 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
+ 	if (!pos)
+ 		return -EIO;
