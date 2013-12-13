@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab3LMJ4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 04:56:52 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56545 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab3LMJ4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 04:56:49 -0500
-Message-ID: <52AAD9A6.40907@ti.com>
-Date: Fri, 13 Dec 2013 15:25:50 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752459Ab3LMJ6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 04:58:11 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55070 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab3LMJ6I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 04:58:08 -0500
+Date: Fri, 13 Dec 2013 09:56:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, ulli.kroll@googlemail.com, arnd@arndb.de,
+        olof@lixom.net
+Subject: Re: [PATCH] ARM: reinsert ARCH_MULTI_V4 Kconfig option
+Message-ID: <20131213095655.GB4360@n2100.arm.linux.org.uk>
+References: <1386922149-4561-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>, Matt Porter <mporter@linaro.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: Re: [PATCH v5 1/9] phy: add phy_get_bus_width()/phy_set_bus_width()
- calls
-References: <1386854770-2173-1-git-send-email-mporter@linaro.org> <1386854770-2173-2-git-send-email-mporter@linaro.org> <20131212181818.GI1939@saruman.home>
-In-Reply-To: <20131212181818.GI1939@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386922149-4561-1-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 December 2013 11:48 PM, Felipe Balbi wrote:
-> Hi,
+On Fri, Dec 13, 2013 at 09:09:09AM +0100, Jonas Jensen wrote:
+> CPU_FA526 lacks thumb state support and doesn't get along with some
+> of the options enabled by ARCH_MULTI_V4T.
 > 
-> On Thu, Dec 12, 2013 at 08:26:02AM -0500, Matt Porter wrote:
->> This adds a pair of APIs that allows the generic PHY subsystem to
->> provide information on the PHY bus width. The PHY provider driver may
->> use phy_set_bus_width() to set the bus width that the PHY supports.
->> The controller driver may then use phy_get_bus_width() to fetch the
->> PHY bus width in order to properly configure the controller.
->>
->> Signed-off-by: Matt Porter <mporter@linaro.org>
+> More specifically it doesn't get along with CPU_ARM920T:
 > 
-> Kishon, I need your Acked-by here, if you're ok with the change.
+> CPU_ABRT_EV4T
+> CPU_CACHE_V4WT
+> CPU_COPY_V4WB
+> CPU_TLB_V4WBI
 
-here it goes..
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
-> 
+Having these selected doesn't change how the kernel is compiled or how
+the kernel uses the code which these provide.  These mainly control
+which files are built.
 
+They also control indirectly how the code is called - but the ultimate
+decision is made by the CPU which is detected and the block in
+__fa526_proc_info.
+
+So, having these symbols enabled (provided the right ones for FA526 are
+also enabled) makes no difference.  So I don't buy your explanation.
