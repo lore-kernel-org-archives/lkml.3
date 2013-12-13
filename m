@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab3LMPM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:12:26 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45250 "EHLO
+	id S1753280Ab3LMPMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:12:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45304 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab3LMPMS (ORCPT
+	with ESMTP id S1753155Ab3LMPM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:12:18 -0500
+	Fri, 13 Dec 2013 10:12:28 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/20] tools lib traceevent: Get rid of malloc_or_die() allocate_arg()
-Date: Fri, 13 Dec 2013 12:11:57 -0300
-Message-Id: <1386947526-7118-12-git-send-email-acme@infradead.org>
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/20] tools lib symbol: Start carving out symbol parsing routines from perf
+Date: Fri, 13 Dec 2013 12:11:47 -0300
+Message-Id: <1386947526-7118-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386947526-7118-1-git-send-email-acme@infradead.org>
 References: <1386947526-7118-1-git-send-email-acme@infradead.org>
@@ -27,171 +29,324 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Also check return value and handle it.
+Eventually this should be useful to other tools/ living utilities.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+For now don't try to build any .a, just trying the minimal approach of
+separating existing code into multiple .c files that can then be
+included wherever they are needed, using whatever build machinery
+already in place.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386833777-3790-4-git-send-email-namhyung@kernel.org
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-pfa8i5zpf4bf9rcccryi0lt3@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/parse-filter.c | 48 ++++++++++++++++++++++++++++++-------
- 1 file changed, 40 insertions(+), 8 deletions(-)
+ tools/lib/symbol/kallsyms.c  | 58 +++++++++++++++++++++++++++++++++++++
+ tools/lib/symbol/kallsyms.h  | 24 +++++++++++++++
+ tools/perf/MANIFEST          |  2 ++
+ tools/perf/Makefile.perf     |  5 ++++
+ tools/perf/util/event.c      |  1 +
+ tools/perf/util/machine.c    |  1 +
+ tools/perf/util/symbol-elf.c |  1 +
+ tools/perf/util/symbol.c     | 69 +-------------------------------------------
+ tools/perf/util/symbol.h     |  3 --
+ 9 files changed, 93 insertions(+), 71 deletions(-)
+ create mode 100644 tools/lib/symbol/kallsyms.c
+ create mode 100644 tools/lib/symbol/kallsyms.h
 
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 767de4f1e8ee..ab9cefe320b4 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -211,12 +211,7 @@ struct event_filter *pevent_filter_alloc(struct pevent *pevent)
+diff --git a/tools/lib/symbol/kallsyms.c b/tools/lib/symbol/kallsyms.c
+new file mode 100644
+index 000000000000..18bc271a4bbc
+--- /dev/null
++++ b/tools/lib/symbol/kallsyms.c
+@@ -0,0 +1,58 @@
++#include "symbol/kallsyms.h"
++#include <stdio.h>
++#include <stdlib.h>
++
++int kallsyms__parse(const char *filename, void *arg,
++		    int (*process_symbol)(void *arg, const char *name,
++					  char type, u64 start))
++{
++	char *line = NULL;
++	size_t n;
++	int err = -1;
++	FILE *file = fopen(filename, "r");
++
++	if (file == NULL)
++		goto out_failure;
++
++	err = 0;
++
++	while (!feof(file)) {
++		u64 start;
++		int line_len, len;
++		char symbol_type;
++		char *symbol_name;
++
++		line_len = getline(&line, &n, file);
++		if (line_len < 0 || !line)
++			break;
++
++		line[--line_len] = '\0'; /* \n */
++
++		len = hex2u64(line, &start);
++
++		len++;
++		if (len + 2 >= line_len)
++			continue;
++
++		symbol_type = line[len];
++		len += 2;
++		symbol_name = line + len;
++		len = line_len - len;
++
++		if (len >= KSYM_NAME_LEN) {
++			err = -1;
++			break;
++		}
++
++		err = process_symbol(arg, symbol_name, symbol_type, start);
++		if (err)
++			break;
++	}
++
++	free(line);
++	fclose(file);
++	return err;
++
++out_failure:
++	return -1;
++}
+diff --git a/tools/lib/symbol/kallsyms.h b/tools/lib/symbol/kallsyms.h
+new file mode 100644
+index 000000000000..6084f5e18b3c
+--- /dev/null
++++ b/tools/lib/symbol/kallsyms.h
+@@ -0,0 +1,24 @@
++#ifndef __TOOLS_KALLSYMS_H_
++#define __TOOLS_KALLSYMS_H_ 1
++
++#include <elf.h>
++#include <linux/ctype.h>
++#include <linux/types.h>
++
++#ifndef KSYM_NAME_LEN
++#define KSYM_NAME_LEN 256
++#endif
++
++static inline u8 kallsyms2elf_type(char type)
++{
++	if (type == 'W')
++		return STB_WEAK;
++
++	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
++}
++
++int kallsyms__parse(const char *filename, void *arg,
++		    int (*process_symbol)(void *arg, const char *name,
++					  char type, u64 start));
++
++#endif /* __TOOLS_KALLSYMS_H_ */
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index 025de796067c..3170a7ff5782 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -2,6 +2,8 @@ tools/perf
+ tools/scripts
+ tools/lib/traceevent
+ tools/lib/lk
++tools/lib/symbol/kallsyms.c
++tools/lib/symbol/kallsyms.h
+ include/linux/const.h
+ include/linux/perf_event.h
+ include/linux/rbtree.h
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 9a8cf376f874..fad61079e795 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -202,6 +202,7 @@ $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
  
- static struct filter_arg *allocate_arg(void)
- {
--	struct filter_arg *arg;
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
++LIB_H += ../lib/symbol/kallsyms.h
+ LIB_H += ../../include/uapi/linux/perf_event.h
+ LIB_H += ../../include/linux/rbtree.h
+ LIB_H += ../../include/linux/list.h
+@@ -312,6 +313,7 @@ LIB_OBJS += $(OUTPUT)util/evlist.o
+ LIB_OBJS += $(OUTPUT)util/evsel.o
+ LIB_OBJS += $(OUTPUT)util/exec_cmd.o
+ LIB_OBJS += $(OUTPUT)util/help.o
++LIB_OBJS += $(OUTPUT)util/kallsyms.o
+ LIB_OBJS += $(OUTPUT)util/levenshtein.o
+ LIB_OBJS += $(OUTPUT)util/parse-options.o
+ LIB_OBJS += $(OUTPUT)util/parse-events.o
+@@ -672,6 +674,9 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
++$(OUTPUT)util/kallsyms.o: ../lib/symbol/kallsyms.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
++
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index c77814bf01e1..694876877ae2 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -7,6 +7,7 @@
+ #include "strlist.h"
+ #include "thread.h"
+ #include "thread_map.h"
++#include "symbol/kallsyms.h"
+ 
+ static const char *perf_event__names[] = {
+ 	[0]					= "TOTAL",
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 751454bcde69..c78cc84f433e 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -9,6 +9,7 @@
+ #include "strlist.h"
+ #include "thread.h"
+ #include <stdbool.h>
++#include <symbol/kallsyms.h>
+ #include "unwind.h"
+ 
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index eed0b96302af..bf0ce29567b6 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -6,6 +6,7 @@
+ #include <inttypes.h>
+ 
+ #include "symbol.h"
++#include <symbol/kallsyms.h>
+ #include "debug.h"
+ 
+ #ifndef HAVE_ELF_GETPHDRNUM_SUPPORT
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e377c2e96191..61eb1cddf01a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -18,12 +18,9 @@
+ 
+ #include <elf.h>
+ #include <limits.h>
++#include <symbol/kallsyms.h>
+ #include <sys/utsname.h>
+ 
+-#ifndef KSYM_NAME_LEN
+-#define KSYM_NAME_LEN 256
+-#endif
 -
--	arg = malloc_or_die(sizeof(*arg));
--	memset(arg, 0, sizeof(*arg));
--
--	return arg;
-+	return calloc(1, sizeof(struct filter_arg));
+ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 				symbol_filter_t filter);
+ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
+@@ -446,62 +443,6 @@ size_t dso__fprintf_symbols_by_name(struct dso *dso,
+ 	return ret;
  }
  
- static void free_arg(struct filter_arg *arg)
-@@ -369,6 +364,10 @@ create_arg_item(struct event_format *event, const char *token,
- 	struct filter_arg *arg;
+-int kallsyms__parse(const char *filename, void *arg,
+-		    int (*process_symbol)(void *arg, const char *name,
+-					  char type, u64 start))
+-{
+-	char *line = NULL;
+-	size_t n;
+-	int err = -1;
+-	FILE *file = fopen(filename, "r");
+-
+-	if (file == NULL)
+-		goto out_failure;
+-
+-	err = 0;
+-
+-	while (!feof(file)) {
+-		u64 start;
+-		int line_len, len;
+-		char symbol_type;
+-		char *symbol_name;
+-
+-		line_len = getline(&line, &n, file);
+-		if (line_len < 0 || !line)
+-			break;
+-
+-		line[--line_len] = '\0'; /* \n */
+-
+-		len = hex2u64(line, &start);
+-
+-		len++;
+-		if (len + 2 >= line_len)
+-			continue;
+-
+-		symbol_type = line[len];
+-		len += 2;
+-		symbol_name = line + len;
+-		len = line_len - len;
+-
+-		if (len >= KSYM_NAME_LEN) {
+-			err = -1;
+-			break;
+-		}
+-
+-		err = process_symbol(arg, symbol_name,
+-				     symbol_type, start);
+-		if (err)
+-			break;
+-	}
+-
+-	free(line);
+-	fclose(file);
+-	return err;
+-
+-out_failure:
+-	return -1;
+-}
+-
+ int modules__parse(const char *filename, void *arg,
+ 		   int (*process_module)(void *arg, const char *name,
+ 					 u64 start))
+@@ -565,14 +506,6 @@ struct process_kallsyms_args {
+ 	struct dso *dso;
+ };
  
- 	arg = allocate_arg();
-+	if (arg == NULL) {
-+		show_error(error_str, "failed to allocate filter arg");
-+		return NULL;
-+	}
+-static u8 kallsyms2elf_type(char type)
+-{
+-	if (type == 'W')
+-		return STB_WEAK;
+-
+-	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
+-}
+-
+ bool symbol__is_idle(struct symbol *sym)
+ {
+ 	const char * const idle_symbols[] = {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 6de9c2b8a601..8a9d910c5345 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -221,9 +221,6 @@ struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
  
- 	switch (type) {
- 
-@@ -422,6 +421,9 @@ create_arg_op(enum filter_op_type btype)
- 	struct filter_arg *arg;
- 
- 	arg = allocate_arg();
-+	if (!arg)
-+		return NULL;
-+
- 	arg->type = FILTER_ARG_OP;
- 	arg->op.type = btype;
- 
-@@ -434,6 +436,9 @@ create_arg_exp(enum filter_exp_type etype)
- 	struct filter_arg *arg;
- 
- 	arg = allocate_arg();
-+	if (!arg)
-+		return NULL;
-+
- 	arg->type = FILTER_ARG_EXP;
- 	arg->op.type = etype;
- 
-@@ -446,6 +451,9 @@ create_arg_cmp(enum filter_exp_type etype)
- 	struct filter_arg *arg;
- 
- 	arg = allocate_arg();
-+	if (!arg)
-+		return NULL;
-+
- 	/* Use NUM and change if necessary */
- 	arg->type = FILTER_ARG_NUM;
- 	arg->op.type = etype;
-@@ -909,8 +917,10 @@ static struct filter_arg *collapse_tree(struct filter_arg *arg)
- 	case FILTER_VAL_FALSE:
- 		free_arg(arg);
- 		arg = allocate_arg();
--		arg->type = FILTER_ARG_BOOLEAN;
--		arg->boolean.value = ret == FILTER_VAL_TRUE;
-+		if (arg) {
-+			arg->type = FILTER_ARG_BOOLEAN;
-+			arg->boolean.value = ret == FILTER_VAL_TRUE;
-+		}
- 	}
- 
- 	return arg;
-@@ -1057,6 +1067,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 			switch (op_type) {
- 			case OP_BOOL:
- 				arg = create_arg_op(btype);
-+				if (arg == NULL)
-+					goto fail_alloc;
- 				if (current_op)
- 					ret = add_left(arg, current_op);
- 				else
-@@ -1067,6 +1079,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 
- 			case OP_NOT:
- 				arg = create_arg_op(btype);
-+				if (arg == NULL)
-+					goto fail_alloc;
- 				if (current_op)
- 					ret = add_right(current_op, arg, error_str);
- 				if (ret < 0)
-@@ -1086,6 +1100,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 					arg = create_arg_exp(etype);
- 				else
- 					arg = create_arg_cmp(ctype);
-+				if (arg == NULL)
-+					goto fail_alloc;
- 
- 				if (current_op)
- 					ret = add_right(current_op, arg, error_str);
-@@ -1119,11 +1135,16 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 		current_op = current_exp;
- 
- 	current_op = collapse_tree(current_op);
-+	if (current_op == NULL)
-+		goto fail_alloc;
- 
- 	*parg = current_op;
- 
- 	return 0;
- 
-+ fail_alloc:
-+	show_error(error_str, "failed to allocate filter arg");
-+	goto fail;
-  fail_print:
- 	show_error(error_str, "Syntax error");
-  fail:
-@@ -1154,6 +1175,10 @@ process_event(struct event_format *event, const char *filter_str,
- 	/* If parg is NULL, then make it into FALSE */
- 	if (!*parg) {
- 		*parg = allocate_arg();
-+		if (*parg == NULL) {
-+			show_error(error_str, "failed to allocate filter arg");
-+			return -1;
-+		}
- 		(*parg)->type = FILTER_ARG_BOOLEAN;
- 		(*parg)->boolean.value = FILTER_FALSE;
- 	}
-@@ -1177,6 +1202,10 @@ static int filter_event(struct event_filter *filter,
- 	} else {
- 		/* just add a TRUE arg */
- 		arg = allocate_arg();
-+		if (arg == NULL) {
-+			show_error(error_str, "failed to allocate filter arg");
-+			return -1;
-+		}
- 		arg->type = FILTER_ARG_BOOLEAN;
- 		arg->boolean.value = FILTER_TRUE;
- 	}
-@@ -1418,6 +1447,9 @@ static int copy_filter_type(struct event_filter *filter,
- 	if (strcmp(str, "TRUE") == 0 || strcmp(str, "FALSE") == 0) {
- 		/* Add trivial event */
- 		arg = allocate_arg();
-+		if (arg == NULL)
-+			return -1;
-+
- 		arg->type = FILTER_ARG_BOOLEAN;
- 		if (strcmp(str, "TRUE") == 0)
- 			arg->boolean.value = 1;
+ int filename__read_build_id(const char *filename, void *bf, size_t size);
+ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
+-int kallsyms__parse(const char *filename, void *arg,
+-		    int (*process_symbol)(void *arg, const char *name,
+-					  char type, u64 start));
+ int modules__parse(const char *filename, void *arg,
+ 		   int (*process_module)(void *arg, const char *name,
+ 					 u64 start));
 -- 
 1.8.1.4
 
