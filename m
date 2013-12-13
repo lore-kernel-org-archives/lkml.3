@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751180Ab3LMF1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:27:36 -0500
-Received: from imap.thunk.org ([74.207.234.97]:39608 "EHLO imap.thunk.org"
+	id S1751590Ab3LMFcH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 00:32:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:52354 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab3LMF1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:27:35 -0500
-Date: Fri, 13 Dec 2013 00:27:12 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kees Cook <keescook@chromium.org>
-Cc: vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-Message-ID: <20131213052712.GH23888@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kees Cook <keescook@chromium.org>, vegard.nossum@oracle.com,
-	LKML <linux-kernel@vger.kernel.org>,
-	Tommi Rantala <tt.rantala@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jason Wang <jasowang@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	James Morris <james.l.morris@oracle.com>
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
- <20131212190659.GG13547@thunk.org>
- <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+	id S1750756Ab3LMFcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 00:32:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,477,1384329600"; 
+   d="asc'?scan'208";a="423996715"
+Date: Fri, 13 Dec 2013 10:03:33 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, dma <dmaengine@vger.kernel.org>
+Subject: [GIT PULL] slave-dmaengine fixes
+Message-ID: <20131213043333.GQ29580@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
-> > Suppose we put put this into the mainstream kernel.  Wouldn't writers
-> > of root kit adapt by checking for the kernel version to avoid checking
-> > for exploits that are known not work?  So the question is whether the
-> > additional complexity in the kernel is going to be worth it, since
-> > once the attackers adapt, the benefits of trying to detect attacks for
-> > mitigated exploits will be minimal.
-> 
-> This is already somewhat the case, but I think this idea still has
-> value. The reality of the situation is that the kernels running on an
-> end-user's system is rarely a stock upstream kernel. As a result, they
-> usually have organization-specific versioning, which makes
-> version-only autodetection useless to an attacker.
 
-Most organizations can't afford to have an in-house kernel team
-providing specialized kernels for their server farms or their
-customized desktop distributions.  :-)
+--oLBj+sq0vYjzfsbl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some places have publically said that they do this; Google has
-publically talked about Goobuntu and their data center production
-kernels, and some financial firms on Wall Street have boasted about
-how they run with a customized kernel --- although other financial
-firms have said they don't want to do that because they don't want to
-void their support contract with Red Hat or SuSE.  I suspect that at
-most shopes, though, the latter is going to be far more common than
-the former.
+Hi Linus,
 
-Practically speaking, testing for various distribution kernel
-versions, as well as specific ChromeOS and Android kernel versions,
-wouldn't be that difficult for an attacker, and would probably allow
-them to avoid detection for 99% of the Linux systems found in the
-wild.  It would certainly be useful for detecting attempted attacks
-for private kernels where the configuration and security patches
-applied for some internal kernel are not public --- and if that caused
-the botnet author to be paranoid enough to avoid attacking machines
-which didn't have a known distribution kernel that definitely had that
-vulnerability, it would certainly be good for people running their own
-privately maintained kernel image.  So if this increases the market
-demand for kernel programmers, that's a good thing, right?   :-)
+Here is the common fixes PULL for dmaengine. Dan has been working on fixing=
+ the
+build issues in bunch of drivers. Here we have one fixing s3c24xx-dma, along
+with fix from Russell on pl08x. Also we have Kuninori rcar dma fixes. The
+s3c24xx-dma which was added in last merge window missed updates to usage of
+DMA_COMPLETE so converting the last driver
 
-I am at least partially sympathetic to the concerns which Greg has
-raised, though.  At the very least the exploit() tags should also have
-a date stamp, so it we can automatically scan for exploit tags whose
-time has come and gone.
+Thanks
+~Vinod
 
-I'm also worried about false positives getting triggered due to
-userspace bugs, corrupted file systems, or other random hardare
-failures.  This could be a support headache for distributions, and
-possibly for other kernel support organizations as well.  Given that
-attack authors will probably adapt their explots to only try them on
-known RHEL/SLES kernels that have the bug, it wouldn't surprise me if
-enterprise distro's such as Red Hat and SuSE will very likely simply
-not turn on the config option.
+--
 
-This could probably be mitigated by adding more sophisticated
-hueristics, but then we could potentially end up changing a one-line
-exploit() or exploit_on() call to something substantially more
-bloated, and at that point we will seriously be uglifying the code and
-making it harder to read and maintain.  So despite the risks of false
-positives, I suspect we will want to keep the inserted exploit() calls
-as simple and as lightweight as possible.
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+  Linus Torvalds (1):
+        Linux 3.13-rc1
 
-          	       	     	    	 - Ted
+are available in the git repository at:
+
+  git://git.infradead.org/users/vkoul/slave-dma.git fixes
+
+Dan Williams (1):
+      dma: fix build breakage in s3c24xx-dma
+
+Kuninori Morimoto (3):
+      rcar-hpbdma: add max transfer size
+      rcar-hpbdma: fixup channel busy check for double plane
+      rcar-hpbdma: initialise plane information when halted
+
+Russell King - ARM Linux (1):
+      Fix pl08x warnings
+
+Sachin Kamat (1):
+      dmaengine: s3c24xx-dma: use DMA_COMPLETE for dma completion status
+
+Wei Yongjun (1):
+      dma: mmp_pdma: add missing platform_set_drvdata() in mmp_pdma_probe()
+
+ drivers/dma/amba-pl08x.c     |    2 +-
+ drivers/dma/mmp_pdma.c       |    1 +
+ drivers/dma/s3c24xx-dma.c    |   33 ++-------------------------------
+ drivers/dma/sh/rcar-hpbdma.c |   11 ++++++++++-
+ 4 files changed, 14 insertions(+), 33 deletions(-)
+
+--=20
+
+--oLBj+sq0vYjzfsbl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSqo4dAAoJEHwUBw8lI4NHhzoP/ilnTRDtgSatGcd1uSGGyRX4
+PmD93hBr8Ch2SMwCh7CM82fcnIFZqMIc0cE3jOZuWZ1Sae0wZvNNDtR7KefUnwET
+kHhBb8vUHALnKHU84wIK/3GA1H89sCq7ywOUCzeLeJ0qWSdBvZ/+cipI1oyH2gU3
+w9kd/oJXBxa3+kstK0RxuaP1iAQKc44/ZD9asBmW+CBfxV9GGTFSNtodQilPdlM5
+2q9BL1YGkBmUjRdU2EiTfXsMR6zftvgTyXDKo900W8bZdtqB1kBvV3AQt0x8U7Yh
+7dcY4hv6PvfyU4BavEqPse+LWUzi4hCtecKUUfF95hvWGxzBVCBmm1S/0f+68xsb
+taQ4QmHfMhiTgoX0FPQeBNVpORtcoJ2vaN1ee1ipLHXKkHhnPeUnu1IFHN5etb52
+m52CdGR5g7uqyu8yLae2Badfm5Hq4SjrGcxaCBL845XonTOb+uDghk2TZL2IMqL8
+uT0ytmgVQwpnmdNhbe4c9TCXRngb0Ugf0FDbEOA4PkwCC38HdJkHM2VdN5ch85zN
+XSiQhF1u9kAhHyqEleXG0R7+409YM31ilyEkay18NC+GTNDo9eK90/NUQesDdhOb
+ykUm0DejFnqyByrEj7nF8tsko7m+b6vXMWXOIklmGKF4J6/57N1GQCg3g2yZX1ln
+8qr1T+TKo7/wSA3tpYAf
+=u4Yd
+-----END PGP SIGNATURE-----
+
+--oLBj+sq0vYjzfsbl--
