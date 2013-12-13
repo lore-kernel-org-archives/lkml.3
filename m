@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab3LNAQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 19:16:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12437 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656Ab3LNAQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 19:16:44 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20131213131353.17d49ac4@gandalf.local.home>
-References: <20131213131353.17d49ac4@gandalf.local.home> <20131213175350.0c4a95d5@endymion.delvare> <20131213163349.4bc686c0@endymion.delvare> <20131213142627.4014.42860.stgit@warthog.procyon.org.uk> <3708.1386950736@warthog.procyon.org.uk> <18214.1386955613@warthog.procyon.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: dhowells@redhat.com, Jean Delvare <khali@linux-fr.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <wolfram@the-dreams.de>
-Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
-Date: Sat, 14 Dec 2013 00:16:27 +0000
-Message-ID: <11338.1386980187@warthog.procyon.org.uk>
+	id S1753113Ab3LNATx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 19:19:53 -0500
+Received: from longford.logfs.org ([213.229.74.203]:53298 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab3LNATw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 19:19:52 -0500
+Date: Fri, 13 Dec 2013 17:58:02 -0500
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Rob Landley <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Copy on write hard links?
+Message-ID: <20131213225802.GA21911@logfs.org>
+References: <0EF3994A-6BC7-4FC7-AD2D-B4BE087EBFCA@m3y3r.de>
+ <1380117572.1974.81@driftwood>
+ <1380119333.7453.4.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1380119333.7453.4.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Wed, 25 September 2013 16:28:53 +0200, Thomas Meyer wrote:
+> 
+> I wonder how hard it would be to implement this on vfs layer?
 
-> Now that you have two tracepoints that are identical, you can use
-> DECLARE_EVENT_CLASS() and DEFINE_EVENT_FN(). That is:
+As an ugly hack: a few weeks maybe.  Did it back in 2005 or so.  If
+you have higher standards, you will need support from the underlying
+filesystem.  Especially in order to make copying a large file on slow
+storage anything but a nightmare.
 
-They're not identical.  i2c_write() has a data buffer that i2c_read() does
-not.
+Jörn
 
-David
+--
+When in doubt, use brute force.
+-- Ken Thompson
