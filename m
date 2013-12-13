@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab3LMJ3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 04:29:33 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:36460 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab3LMJ3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 04:29:30 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: kgene@kernel.org
-Subject: Re: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on S3C24XX.
-Date: Fri, 13 Dec 2013 10:29:19 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "=?iso-8859-1?q?=27Jos=E9_Miguel?= =?iso-8859-1?q?_Gon=E7alves=27?=" 
-	<jose.goncalves@inov.pt>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt> <52AA6909.8050200@inov.pt> <0bc301cef7e5$319ac0c0$94d04240$@kernel.org>
-In-Reply-To: <0bc301cef7e5$319ac0c0$94d04240$@kernel.org>
+	id S1752365Ab3LMJcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 04:32:24 -0500
+Received: from [207.46.163.212] ([207.46.163.212]:43214 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751802Ab3LMJcU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 04:32:20 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Shawn Guo <Shawn.Guo@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Huan Wang <Huan.Wang@freescale.com>,
+        "Jingchang Lu" <jingchang.lu@freescale.com>
+Subject: RE: [PATCHv6 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Topic: [PATCHv6 1/4] pwm: Add Freescale FTM PWM driver support
+Thread-Index: AQHO304NjulFCIkIhEyiDysSHbIEFZo7QgeAgBbF7cA=
+Date: Fri, 13 Dec 2013 09:30:09 +0000
+Message-ID: <e2fc53d0ff1d4a0a962500be6dc6e019@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1384220218-12716-1-git-send-email-Li.Xiubo@freescale.com>
+ <1384220218-12716-2-git-send-email-Li.Xiubo@freescale.com>
+ <20131128212510.GC14689@mithrandir>
+In-Reply-To: <20131128212510.GC14689@mithrandir>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 00594E8DBA
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(199002)(189002)(51704005)(4396001)(85852003)(83072002)(81686001)(56816005)(87266001)(2656002)(69226001)(90146001)(74316001)(63696002)(80022001)(33646001)(85306002)(49866001)(47446002)(47976001)(56776001)(74502001)(87936001)(81816001)(66066001)(74876001)(83322001)(76786001)(81542001)(31966008)(81342001)(53806001)(47736001)(51856001)(74366001)(46102001)(65816001)(76576001)(74662001)(80976001)(76796001)(74706001)(77982001)(50986001)(76482001)(54356001)(79102001)(54316002)(59766001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB347;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201312131029.20078.heiko@sntech.de>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 13. Dezember 2013, 10:24:59 schrieb kgene@kernel.org:
-> José Miguel Gonçalves wrote:
-> > On 27-09-2013 15:17, Linus Walleij wrote:
-> > > On Wed, Sep 11, 2013 at 10:46 AM, José Miguel Gonçalves
-> > > 
-> > > <jose.goncalves@inov.pt> wrote:
-> > >> Some GPIO line limits are incorrectly set which, for instance,
-> > >> does not allow nRTS1 (GPH11) configuration on a S3C2416 chip.
-> > >> 
-> > >> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
-> > >> ---
-> > >> 
-> > >>   arch/arm/mach-s3c24xx/include/mach/gpio.h |   10 +++++-----
-> > > 
-> > > OK but grrrr!
-> > > 
-> > > What needs to happen to the s3c24xx is to get rid of this file.
-> > > 
-> > > - Define ARCH_NR_GPIOS in arch/arm/Kconfig entry
-> > > 
-> > >    ARCH_NR_GPIO like everyone else
-> > > 
-> > > - Get rid of the config symbol NEED_MACH_GPIO_H
-> > > 
-> > > -  Move this file down into arch/arm/mach-s3c24xx/s3c24xx-gpio.h
-> > > 
-> > >    or whatever and make it local...
-> > > 
-> > > I will try to do this myself if noone else helps out, so I'd like to
-> > > carry this patch in the GPIO tree provided I can get an ACK from
-> > > the S3C24xx maintainer. Tomasz, is that you or Kukjin?
-> > > 
-> > > (BTW the above maybe goes for S3c64xx as well .. and S5P
-> > > oh well I will get to it.)
-> > 
-> > Was this patch forgotten?
-> 
-> Hi Jose,
-> 
-> Sorry about missing your patch. It's my fault :( and as you know, at this
-> moment the file will be removed by Linus' patch...
-> 
-> Anyway, let me look at the Samsung patches closely ;)
 
-The comment that is changed in the header is removed by Linus' patch, but the 
-change to the gpio driver is still relevant for the time being I'd think.
+> > +	struct fsl_pwm_chip *fpc;
+> > +
+> > +	fpc = to_fsl_chip(chip);
+> > +
+> > +	period_cycles = fsl_rate_to_cycles(fpc, period_ns);
+> > +	if (period_cycles > 0xFFFF) {
+> > +		dev_err(chip->dev, "required PWM period cycles(%lu) overflow "
+> > +				"16-bits counter!\n", period_cycles);
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	duty_cycles = fsl_rate_to_cycles(fpc, duty_ns);
+> > +	if (duty_cycles >= 0xFFFF) {
+> > +		dev_err(chip->dev, "required PWM duty cycles(%lu) overflow "
+> > +				"16-bits counter!\n", duty_cycles);
+> > +		return -EINVAL;
+> > +	}
+> 
+> I'm not sure the error messages are all that useful. A -EINVAL error code
+> should make it pretty clear what the problem is.
+> 
+
+Yes, it is.
+
+But for the pwm leds, there hasn't any check about the return values, if
+there is something wrong, we cannot get any information about this.
+
+So I think this error messages are useful for this case.
 
 
-Heiko
+--
+Xiubo
