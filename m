@@ -1,94 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab3LMC5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:57:21 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40559 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab3LMC5R (ORCPT
+	id S1752048Ab3LMC7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:59:14 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:39339 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab3LMC7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:57:17 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <52AA7760.20603@jp.fujitsu.com>
-Date: Fri, 13 Dec 2013 11:56:32 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 12 Dec 2013 21:59:12 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out
- of the core
-References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <1554480.uCR6qUxJk9@vostro.rjw.lan> <529D4600.6040601@jp.fujitsu.com> <81535269.SKoBMiGyoU@vostro.rjw.lan>
-In-Reply-To: <81535269.SKoBMiGyoU@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+In-Reply-To: <CAA_GA1ee1z6FKBj8TqEG64JoZNaPNTyVE918Kv8b1KY2k0CBEg@mail.gmail.com>
+References: <1384976973-32722-1-git-send-email-ddstreet@ieee.org>
+ <20131122172916.GB6477@cerebellum.variantweb.net> <20131125180030.GA23396@cerebellum.variantweb.net>
+ <CALZtONCW1Gxa-aT25Yf7PP6R=sW_6KBu5XPKoU75pJgvmAknbg@mail.gmail.com> <CAA_GA1ee1z6FKBj8TqEG64JoZNaPNTyVE918Kv8b1KY2k0CBEg@mail.gmail.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 12 Dec 2013 21:58:51 -0500
+X-Google-Sender-Auth: xjHlXV3V0VZro1dfMDgafyF3kY4
+Message-ID: <CALZtONCnpo=2+SDp0_NhsEdN3A+vHNOTrpRo55WhC8V1p+pOig@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zswap: change zswap to writethrough cache
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Seth Jennings <sjennings@variantweb.net>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Weijie Yang <weijie.yang@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
-
-Please share your more detailed idea. I started to implement the following
-idea. But the idea has one problem.
-
->>> The eject work flow can be:
->>>     (1) an eject event occurs,
->>>     (2) the container "physical" device fails offline in acpi_scan_hot_remove()
->>>         emmitting, say, KOBJ_CHANGE for the "physical" device,
->>>     (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
->>>     (4) user space changes the "physical" container device flag controlling
->>>         offline to 0,
->>>     (5) user space uses the sysfs "eject" attribute of the ACPI container object
->>>         to finally eject the container,
->>>     (6) the offline in acpi_scan_hot_remove() is now successful, because the
->>>         flag controlling it has been set to 0 in step (4),
->>>     (7) the "physical" container device goes away before executing _EJ0,
->>>     (8) the container is ejected.
-
-I want to emit KOBJ_CHANGE before offlining devices on container device at (2).
-But acpi_scan_hot_remove() offlines devices on container device at first.
-So when offline container device, devices on container has been offlined.
-
-Thus the idea cannot fulfill my necessary feature.
-
-Thanks,
-Yasauaki Ishimatsu
-
-Thanks,
-Yasauaki Ishimatsu
-
+On Wed, Dec 11, 2013 at 4:02 AM, Bob Liu <lliubbo@gmail.com> wrote:
+> Hi Dan & Seth,
+>
+> On Wed, Nov 27, 2013 at 9:28 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+>> On Mon, Nov 25, 2013 at 1:00 PM, Seth Jennings <sjennings@variantweb.net> wrote:
+>>> On Fri, Nov 22, 2013 at 11:29:16AM -0600, Seth Jennings wrote:
+>>>> On Wed, Nov 20, 2013 at 02:49:33PM -0500, Dan Streetman wrote:
+>>>> > Currently, zswap is writeback cache; stored pages are not sent
+>>>> > to swap disk, and when zswap wants to evict old pages it must
+>>>> > first write them back to swap cache/disk manually.  This avoids
+>>>> > swap out disk I/O up front, but only moves that disk I/O to
+>>>> > the writeback case (for pages that are evicted), and adds the
+>>>> > overhead of having to uncompress the evicted pages, and adds the
+>>>> > need for an additional free page (to store the uncompressed page)
+>>>> > at a time of likely high memory pressure.  Additionally, being
+>>>> > writeback adds complexity to zswap by having to perform the
+>>>> > writeback on page eviction.
+>>>> >
+>>>> > This changes zswap to writethrough cache by enabling
+>>>> > frontswap_writethrough() before registering, so that any
+>>>> > successful page store will also be written to swap disk.  All the
+>>>> > writeback code is removed since it is no longer needed, and the
+>>>> > only operation during a page eviction is now to remove the entry
+>>>> > from the tree and free it.
+>>>>
+>>>> I like it.  It gets rid of a lot of nasty writeback code in zswap.
+>>>>
+>>>> I'll have to test before I ack, hopefully by the end of the day.
+>>>>
+>>>> Yes, this will increase writes to the swap device over the delayed
+>>>> writeback approach.  I think it is a good thing though.  I think it
+>>>> makes the difference between zswap and zram, both in operation and in
+>>>> application, more apparent. Zram is the better choice for embedded where
+>>>> write wear is a concern, and zswap being better if you need more
+>>>> flexibility to dynamically manage the compressed pool.
 >>>
->>> Of course, if the flag controlling container offline is 0 to start with, step
->>> (6) will now occur directly after (1), so whoever wants containers to be
->>> hot-removed automatically may just clear that flag for all of them on boot.
->>>
->>> How does that sound?
+>>> One thing I realized while doing my testing was that making zswap
+>>> writethrough also impacts synchronous reclaim.  Zswap, as it is now,
+>>> makes the swapcache page clean during swap_writepage() which allows
+>>> shrink_page_list() to immediately reclaim it.  Making zswap writethrough
+>>> eliminates this advantage and swapcache pages must be scanned again
+>>> before they can be reclaimed, as is the case with normal swapping.
 >>
+>> Yep, I thought about that as well, and it is true, but only while
+>> zswap is not full.  With writeback, once zswap fills up, page stores
+>> will frequently have to reclaim pages by writing compressed pages to
+>> disk.  With writethrough, the zbud reclaim should be quick, as it only
+>> has to evict the pages, not write them to disk.  So I think basically
+>> writeback should speed up (compared to no-zswap case) swap_writepage()
+>> while zswap is not full, but (theoretically) slow it down (compared to
+>> no-zswap case) while zswap is full, while writethrough should slow
+>> down swap_writepage() slightly (the time it takes to compress/store
+>> the page) but consistently, almost the same amount before it's full vs
+>> when it's full.  Theoretically :-)  Definitely something to think
+>> about and test for.
 >>
->> The above ideas are almost O.K. I want kernel to notify user space of KOBJ_OFFLINE.
->> Even if user space catches "KOBJ_CHANGE", user doesn't know whether the notification
->> is offline or not.
 >
-> It is easy to figure out, though.  Since the KOBJ_CHANGE will be emitted for
-> container devices only in that situation, user space can see that (1) it is
-> from a container and (2) it is KOBJ_CHANGE, so it must mean "container offline
-> has been attempted".
->
-> My concern with using KOBJ_OFFLINE for that is that device_offline() emits it
-> too on success and it may be easily confused with the one emitted on failure
-> for containers.
->
-> Thanks,
-> Rafael
->
+> Have you gotten any further benchmark result?
 
+Yes, and sorry for the delay.
 
+The initial numbers I got on a relatively low-end (laptop) system seem
+to indicate that writethrough does reduce performance in the beginning
+when zswap isn't full, but also improves performance once zswap fills
+up.  I'm working on getting a higher-end server class system set up to
+test as well, and getting a larger sample size of test runs (but
+specjbb takes quite a long time each run).
+
+At this point, I'm thinking that based on those results and Weijie's
+suggestion to make it configurable, it probably is better to keep the
+writeback code and allow selection of writeback or writethrough.  That
+would allow *possibly* changing from writeback to writethrough based
+on how full zswap is; but also at the least it would allow users to
+select which to use.  I still think keeping both makes zswap more
+complex, but moving completely to writethrough may not be best for all
+situations.  I suspect that especially systems with relatively slow
+disc I/O and fast processors would benefit from writeback, while
+systems with relatively fast disc I/O (e.g. SSD swap) and slower
+processors would benefit from writethrough.
+
+So, any opinions on keeping both writeback and writethrough, with (for
+now) a module param to select?  I'll send an updated patch if that
+sounds agreeable to all...
+
+The specific specjbb numbers (on a dual core 2.4GHz with 4G ram) I got were:
+
+   writeback
+heap in mb      bops
+3000             38887
+3500             39260
+4000             38113
+4500             15686
+5000             10978
+5500              1445
+6000              1827
+
+   writethrough
+heap in mb      bops
+3000             39021
+3500             35998
+4000             36223
+4500              7222
+5000              7717
+5500              2304
+6000              2455
