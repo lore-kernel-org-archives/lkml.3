@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab3LMLdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:33:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35807 "EHLO mx1.redhat.com"
+	id S1752683Ab3LMLfA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:35:00 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:56302 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab3LMLdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:33:38 -0500
-Date: Fri, 13 Dec 2013 11:29:25 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
-        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 04/11] PCI/MSI/pSeries: Make quota traversing and
- requesting race-safe
-Message-ID: <20131213102924.GA14728@dhcp-26-207.brq.redhat.com>
-References: <cover.1385399393.git.agordeev@redhat.com>
- <97749db3e9562eb05fb3ee22a0be0ed7a93a0615.1385399393.git.agordeev@redhat.com>
- <20131210223020.GF4699@google.com>
+	id S1751496Ab3LMLe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:34:59 -0500
+X-IronPort-AV: E=Sophos;i="4.95,478,1384300800"; 
+   d="scan'208";a="84237550"
+Message-ID: <52AAF0DE.9030607@citrix.com>
+Date: Fri, 13 Dec 2013 11:34:54 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131210223020.GF4699@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
+        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
+        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
+        <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH V10 14/14] xen/pvh: vcpu info placement, load CS selector,
+ and remove debug printk.
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-15-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1386900621-27528-15-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 03:30:20PM -0700, Bjorn Helgaas wrote:
-> Can you outline the race and the scenario that leads to incorrect results
-> or a crash?  I looked through rtas_setup_msi_irqs() (briefly) and I didn't
-> see the way that concurrent calls for different devices could interfere
-> with each other.
+On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
 > 
-> I was looking for some place that modifies state, where concurrent calls
-> might trample on each other, but it looks like msi_quota_for_device() is
-> pretty safe: it traverses a tree, but everything it computes is on the
-> stack and it doesn't seem to save results anywhere.  Maybe I'm barking up
-> the wrong tree?
+> This patch addresses 3 things:
+>    - Resolve vcpu info placement fixme.
+>    - Load CS selector for PVH after switching to new gdt.
+>    - Remove printk in case of failure to map pnfs in p2m. This because qemu
+>      has lot of expected failures when mapping HVM pages.
+[...]
+> @@ -1423,7 +1425,20 @@ static void __init xen_setup_stackprotector(void)
+>  {
+>  	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
+>  	if (xen_feature(XENFEAT_auto_translated_physmap)) {
+> +		unsigned long dummy;
+> +
+>  		switch_to_new_gdt(0);
+> +#ifdef CONFIG_X86_64
+> +		asm volatile ("pushq %0\n"
+> +			      "leaq 1f(%%rip),%0\n"
+> +			      "pushq %0\n"
+> +			      "lretq\n"
+> +			      "1:\n"
+> +			      : "=&r" (dummy) : "0" (__KERNEL_CS));
 
-Hmm. I've assumed the number of MSIs for a device is cached, and therefore
-concurrent calls to msi_quota_for_device() and rtas_change_msi() could race.
-But it seems msi_quota_for_device() indeed computes a quota while reading
-only device's properties and gains constant result (well, assuming the device
-tree is not updated, but this is a different story). Which makes me confused
-about this note from a earlier thread:
+Why does CS need to be reloaded here?
 
-[quote]
-On Sat, 2013-10-05 at 16:20 +0200, Alexander Gordeev wrote:
-> So my point is - drivers should first obtain a number of MSIs they *can*
-> get, then *derive* a number of MSIs the device is fine with and only then
-> request that number. Not terribly different from memory or any other type
-> of resource allocation ;)
-
-What if the limit is for a group of devices ? Your interface is racy in
-that case, another driver could have eaten into the limit in between the
-calls.
-
-Ben.
-[/quote]
-
-Some comment from Ben would be nice, but I think the patch could be dropped
-for now.
-
-Thanks, Bjorn!
-
-> Bjorn
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+David
