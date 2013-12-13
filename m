@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab3LMPQT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:16:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45258 "EHLO
+	id S1753278Ab3LMPQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:16:18 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45275 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180Ab3LMPMT (ORCPT
+	with ESMTP id S1753183Ab3LMPMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:12:19 -0500
+	Fri, 13 Dec 2013 10:12:20 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 20/20] tools lib traceevent: Refactor pevent_filter_match() to get rid of die()
-Date: Fri, 13 Dec 2013 12:12:06 -0300
-Message-Id: <1386947526-7118-21-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/20] perf evlist: Add can_select_event() method
+Date: Fri, 13 Dec 2013 12:11:50 -0300
+Message-Id: <1386947526-7118-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386947526-7118-1-git-send-email-acme@infradead.org>
 References: <1386947526-7118-1-git-send-email-acme@infradead.org>
@@ -27,361 +30,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-The test_filter() function is for testing given filter is matched to a
-given record.  However it doesn't handle error cases properly so add a
-new argument err to save error info during the test and also pass it to
-internal test functions.
+Add a function to determine whether an event can be selected.
 
-The return value of pevent_filter_match() also converted to pevent_errno
-to indicate an exact error case.
+This function is needed to allow a tool to automatically select
+additional events, but only if they are available.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386833777-3790-13-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386765443-26966-18-git-send-email-alexander.shishkin@linux.intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h  |  21 ++++--
- tools/lib/traceevent/parse-filter.c | 135 +++++++++++++++++++++++-------------
- 2 files changed, 99 insertions(+), 57 deletions(-)
+ tools/perf/util/evlist.h |  2 ++
+ tools/perf/util/record.c | 37 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 089964e56ed4..3ad784f5f647 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -357,6 +357,8 @@ enum pevent_flag {
- 	_PE(READ_PRINT_FAILED,	"failed to read event print fmt"), 	      \
- 	_PE(OLD_FTRACE_ARG_FAILED,"failed to allocate field name for ftrace"),\
- 	_PE(INVALID_ARG_TYPE,	"invalid argument type"),		      \
-+	_PE(INVALID_EXP_TYPE,	"invalid expression type"),		      \
-+	_PE(INVALID_OP_TYPE,	"invalid operator type"),		      \
- 	_PE(INVALID_EVENT_NAME,	"invalid event name"),			      \
- 	_PE(EVENT_NOT_FOUND,	"no event found"),			      \
- 	_PE(SYNTAX_ERROR,	"syntax error"),			      \
-@@ -373,12 +375,16 @@ enum pevent_flag {
- 	_PE(INVALID_PAREN,	"open parenthesis cannot come here"), 	      \
- 	_PE(UNBALANCED_PAREN,	"unbalanced number of parenthesis"),	      \
- 	_PE(UNKNOWN_TOKEN,	"unknown token"),			      \
--	_PE(FILTER_NOT_FOUND,	"no filter found")
-+	_PE(FILTER_NOT_FOUND,	"no filter found"),			      \
-+	_PE(NOT_A_NUMBER,	"must have number field"),		      \
-+	_PE(NO_FILTER,		"no filters exists"),			      \
-+	_PE(FILTER_MISS,	"record does not match to filter")
- 
- #undef _PE
- #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
- enum pevent_errno {
- 	PEVENT_ERRNO__SUCCESS			= 0,
-+	PEVENT_ERRNO__FILTER_MATCH		= PEVENT_ERRNO__SUCCESS,
- 
- 	/*
- 	 * Choose an arbitrary negative big number not to clash with standard
-@@ -853,10 +859,11 @@ struct event_filter {
- 
- struct event_filter *pevent_filter_alloc(struct pevent *pevent);
- 
--#define FILTER_NONE		-2
--#define FILTER_NOEXIST		-1
--#define FILTER_MISS		0
--#define FILTER_MATCH		1
-+/* for backward compatibility */
-+#define FILTER_NONE		PEVENT_ERRNO__FILTER_NOT_FOUND
-+#define FILTER_NOEXIST		PEVENT_ERRNO__NO_FILTER
-+#define FILTER_MISS		PEVENT_ERRNO__FILTER_MISS
-+#define FILTER_MATCH		PEVENT_ERRNO__FILTER_MATCH
- 
- enum filter_trivial_type {
- 	FILTER_TRIVIAL_FALSE,
-@@ -868,8 +875,8 @@ enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
- 					       const char *filter_str);
- 
- 
--int pevent_filter_match(struct event_filter *filter,
--			struct pevent_record *record);
-+enum pevent_errno pevent_filter_match(struct event_filter *filter,
-+				      struct pevent_record *record);
- 
- int pevent_event_filtered(struct event_filter *filter,
- 			  int event_id);
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 78440d73e0ad..9303c55128db 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -1678,8 +1678,8 @@ int pevent_filter_event_has_trivial(struct event_filter *filter,
- 	}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 649d6ea98a84..8a04aae95a18 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -193,4 +193,6 @@ static inline void perf_mmap__write_tail(struct perf_mmap *md,
+ 	pc->data_tail = tail;
  }
  
--static int test_filter(struct event_format *event,
--		       struct filter_arg *arg, struct pevent_record *record);
-+static int test_filter(struct event_format *event, struct filter_arg *arg,
-+		       struct pevent_record *record, enum pevent_errno *err);
- 
- static const char *
- get_comm(struct event_format *event, struct pevent_record *record)
-@@ -1725,15 +1725,24 @@ get_value(struct event_format *event,
- }
- 
- static unsigned long long
--get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record);
-+get_arg_value(struct event_format *event, struct filter_arg *arg,
-+	      struct pevent_record *record, enum pevent_errno *err);
- 
- static unsigned long long
--get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
-+get_exp_value(struct event_format *event, struct filter_arg *arg,
-+	      struct pevent_record *record, enum pevent_errno *err)
- {
- 	unsigned long long lval, rval;
- 
--	lval = get_arg_value(event, arg->exp.left, record);
--	rval = get_arg_value(event, arg->exp.right, record);
-+	lval = get_arg_value(event, arg->exp.left, record, err);
-+	rval = get_arg_value(event, arg->exp.right, record, err);
++bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str);
 +
-+	if (*err) {
-+		/*
-+		 * There was an error, no need to process anymore.
-+		 */
-+		return 0;
-+	}
- 
- 	switch (arg->exp.type) {
- 	case FILTER_EXP_ADD:
-@@ -1768,39 +1777,51 @@ get_exp_value(struct event_format *event, struct filter_arg *arg, struct pevent_
- 
- 	case FILTER_EXP_NOT:
- 	default:
--		die("error in exp");
-+		if (!*err)
-+			*err = PEVENT_ERRNO__INVALID_EXP_TYPE;
- 	}
- 	return 0;
- }
- 
- static unsigned long long
--get_arg_value(struct event_format *event, struct filter_arg *arg, struct pevent_record *record)
-+get_arg_value(struct event_format *event, struct filter_arg *arg,
-+	      struct pevent_record *record, enum pevent_errno *err)
+ #endif /* __PERF_EVLIST_H */
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index c8845b107f60..e5104538c354 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -177,3 +177,40 @@ int perf_record_opts__config(struct perf_record_opts *opts)
  {
- 	switch (arg->type) {
- 	case FILTER_ARG_FIELD:
- 		return get_value(event, arg->field.field, record);
- 
- 	case FILTER_ARG_VALUE:
--		if (arg->value.type != FILTER_NUMBER)
--			die("must have number field!");
-+		if (arg->value.type != FILTER_NUMBER) {
-+			if (!*err)
-+				*err = PEVENT_ERRNO__NOT_A_NUMBER;
-+		}
- 		return arg->value.val;
- 
- 	case FILTER_ARG_EXP:
--		return get_exp_value(event, arg, record);
-+		return get_exp_value(event, arg, record, err);
- 
- 	default:
--		die("oops in filter");
-+		if (!*err)
-+			*err = PEVENT_ERRNO__INVALID_ARG_TYPE;
- 	}
- 	return 0;
+ 	return perf_record_opts__config_freq(opts);
  }
- 
--static int test_num(struct event_format *event,
--		    struct filter_arg *arg, struct pevent_record *record)
-+static int test_num(struct event_format *event, struct filter_arg *arg,
-+		    struct pevent_record *record, enum pevent_errno *err)
- {
- 	unsigned long long lval, rval;
- 
--	lval = get_arg_value(event, arg->num.left, record);
--	rval = get_arg_value(event, arg->num.right, record);
-+	lval = get_arg_value(event, arg->num.left, record, err);
-+	rval = get_arg_value(event, arg->num.right, record, err);
 +
-+	if (*err) {
-+		/*
-+		 * There was an error, no need to process anymore.
-+		 */
-+		return 0;
-+	}
- 
- 	switch (arg->num.type) {
- 	case FILTER_CMP_EQ:
-@@ -1822,7 +1843,8 @@ static int test_num(struct event_format *event,
- 		return lval <= rval;
- 
- 	default:
--		/* ?? */
-+		if (!*err)
-+			*err = PEVENT_ERRNO__ILLEGAL_INTEGER_CMP;
- 		return 0;
- 	}
- }
-@@ -1869,8 +1891,8 @@ static const char *get_field_str(struct filter_arg *arg, struct pevent_record *r
- 	return val;
- }
- 
--static int test_str(struct event_format *event,
--		    struct filter_arg *arg, struct pevent_record *record)
-+static int test_str(struct event_format *event, struct filter_arg *arg,
-+		    struct pevent_record *record, enum pevent_errno *err)
- {
- 	const char *val;
- 
-@@ -1894,48 +1916,57 @@ static int test_str(struct event_format *event,
- 		return regexec(&arg->str.reg, val, 0, NULL, 0);
- 
- 	default:
--		/* ?? */
-+		if (!*err)
-+			*err = PEVENT_ERRNO__ILLEGAL_STRING_CMP;
- 		return 0;
- 	}
- }
- 
--static int test_op(struct event_format *event,
--		   struct filter_arg *arg, struct pevent_record *record)
-+static int test_op(struct event_format *event, struct filter_arg *arg,
-+		   struct pevent_record *record, enum pevent_errno *err)
- {
- 	switch (arg->op.type) {
- 	case FILTER_OP_AND:
--		return test_filter(event, arg->op.left, record) &&
--			test_filter(event, arg->op.right, record);
-+		return test_filter(event, arg->op.left, record, err) &&
-+			test_filter(event, arg->op.right, record, err);
- 
- 	case FILTER_OP_OR:
--		return test_filter(event, arg->op.left, record) ||
--			test_filter(event, arg->op.right, record);
-+		return test_filter(event, arg->op.left, record, err) ||
-+			test_filter(event, arg->op.right, record, err);
- 
- 	case FILTER_OP_NOT:
--		return !test_filter(event, arg->op.right, record);
-+		return !test_filter(event, arg->op.right, record, err);
- 
- 	default:
--		/* ?? */
-+		if (!*err)
-+			*err = PEVENT_ERRNO__INVALID_OP_TYPE;
- 		return 0;
- 	}
- }
- 
--static int test_filter(struct event_format *event,
--		       struct filter_arg *arg, struct pevent_record *record)
-+static int test_filter(struct event_format *event, struct filter_arg *arg,
-+		       struct pevent_record *record, enum pevent_errno *err)
- {
-+	if (*err) {
-+		/*
-+		 * There was an error, no need to process anymore.
-+		 */
-+		return 0;
-+	}
++bool perf_evlist__can_select_event(struct perf_evlist *evlist, const char *str)
++{
++	struct perf_evlist *temp_evlist;
++	struct perf_evsel *evsel;
++	int err, fd, cpu;
++	bool ret = false;
 +
- 	switch (arg->type) {
- 	case FILTER_ARG_BOOLEAN:
- 		/* easy case */
- 		return arg->boolean.value;
- 
- 	case FILTER_ARG_OP:
--		return test_op(event, arg, record);
-+		return test_op(event, arg, record, err);
- 
- 	case FILTER_ARG_NUM:
--		return test_num(event, arg, record);
-+		return test_num(event, arg, record, err);
- 
- 	case FILTER_ARG_STR:
--		return test_str(event, arg, record);
-+		return test_str(event, arg, record, err);
- 
- 	case FILTER_ARG_EXP:
- 	case FILTER_ARG_VALUE:
-@@ -1944,11 +1975,11 @@ static int test_filter(struct event_format *event,
- 		 * Expressions, fields and values evaluate
- 		 * to true if they return non zero
- 		 */
--		return !!get_arg_value(event, arg, record);
-+		return !!get_arg_value(event, arg, record, err);
- 
- 	default:
--		die("oops!");
--		/* ?? */
-+		if (!*err)
-+			*err = PEVENT_ERRNO__INVALID_ARG_TYPE;
- 		return 0;
- 	}
- }
-@@ -1961,8 +1992,7 @@ static int test_filter(struct event_format *event,
-  * Returns 1 if filter found for @event_id
-  *   otherwise 0;
-  */
--int pevent_event_filtered(struct event_filter *filter,
--			  int event_id)
-+int pevent_event_filtered(struct event_filter *filter, int event_id)
- {
- 	struct filter_type *filter_type;
- 
-@@ -1979,31 +2009,36 @@ int pevent_event_filtered(struct event_filter *filter,
-  * @filter: filter struct with filter information
-  * @record: the record to test against the filter
-  *
-- * Returns:
-- *  1 - filter found for event and @record matches
-- *  0 - filter found for event and @record does not match
-- * -1 - no filter found for @record's event
-- * -2 - if no filters exist
-+ * Returns: match result or error code (prefixed with PEVENT_ERRNO__)
-+ * FILTER_MATCH - filter found for event and @record matches
-+ * FILTER_MISS  - filter found for event and @record does not match
-+ * FILTER_NOT_FOUND - no filter found for @record's event
-+ * NO_FILTER - if no filters exist
-+ * otherwise - error occurred during test
-  */
--int pevent_filter_match(struct event_filter *filter,
--			struct pevent_record *record)
-+enum pevent_errno pevent_filter_match(struct event_filter *filter,
-+				      struct pevent_record *record)
- {
- 	struct pevent *pevent = filter->pevent;
- 	struct filter_type *filter_type;
- 	int event_id;
-+	int ret;
-+	enum pevent_errno err = 0;
- 
- 	if (!filter->filters)
--		return FILTER_NONE;
-+		return PEVENT_ERRNO__NO_FILTER;
- 
- 	event_id = pevent_data_type(pevent, record);
- 
- 	filter_type = find_filter_type(filter, event_id);
--
- 	if (!filter_type)
--		return FILTER_NOEXIST;
-+		return PEVENT_ERRNO__FILTER_NOT_FOUND;
++	temp_evlist = perf_evlist__new();
++	if (!temp_evlist)
++		return false;
 +
-+	ret = test_filter(filter_type->event, filter_type->filter, record, &err);
++	err = parse_events(temp_evlist, str);
 +	if (err)
-+		return err;
- 
--	return test_filter(filter_type->event, filter_type->filter, record) ?
--		FILTER_MATCH : FILTER_MISS;
-+	return ret ? PEVENT_ERRNO__FILTER_MATCH : PEVENT_ERRNO__FILTER_MISS;
- }
- 
- static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
++		goto out_delete;
++
++	evsel = perf_evlist__last(temp_evlist);
++
++	if (!evlist || cpu_map__empty(evlist->cpus)) {
++		struct cpu_map *cpus = cpu_map__new(NULL);
++
++		cpu =  cpus ? cpus->map[0] : 0;
++		cpu_map__delete(cpus);
++	} else {
++		cpu = evlist->cpus->map[0];
++	}
++
++	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
++	if (fd >= 0) {
++		close(fd);
++		ret = true;
++	}
++
++out_delete:
++	perf_evlist__delete(temp_evlist);
++	return ret;
++}
 -- 
 1.8.1.4
 
