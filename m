@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3LMWF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:05:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11108 "EHLO mx1.redhat.com"
+	id S1752440Ab3LMWOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:14:30 -0500
+Received: from smtp2.macqel.be ([109.135.2.61]:62422 "EHLO smtp2.macqel.be"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3LMWF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:05:56 -0500
-Date: Fri, 13 Dec 2013 17:05:37 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Message-ID: <1386972337-x4axszvt-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1386917611-11319-3-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1386917611-11319-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1386917611-11319-3-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH v3 2/6] mm/migrate: correct failure handling if
- !hugepage_migration_support()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1751625Ab3LMWO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 17:14:29 -0500
+Date: Fri, 13 Dec 2013 23:14:25 +0100
+From: Philippe De Muyter <phdm@macq.eu>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-kernel@vger.kernel.org, b29396@freescale.com, cjb@laptop.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: ARM,sdhci_esdhc_imx: INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock
+	order detected
+Message-ID: <20131213221425.GA32189@frolo.macqel>
+References: <20131212144925.GA14995@frolo.macqel> <20131213133430.GW18380@S2101-09.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <1386917611-11319-3-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20131213133430.GW18380@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 03:53:27PM +0900, Joonsoo Kim wrote:
-> We should remove the page from the list if we fail with ENOSYS,
-> since migrate_pages() consider error cases except -ENOMEM and -EAGAIN
-> as permanent failure and it assumes that the page would be removed from
-> the list. Without this patch, we could overcount number of failure.
-> 
-> In addition, we should put back the new hugepage if
-> !hugepage_migration_support(). If not, we would leak hugepage memory.
-> 
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Hi Shawn,
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-
-Thanks,
-Naoya Horiguchi
-
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index c6ac87a..b1cfd01 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1011,7 +1011,7 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
->  {
->  	int rc = 0;
->  	int *result = NULL;
-> -	struct page *new_hpage = get_new_page(hpage, private, &result);
-> +	struct page *new_hpage;
->  	struct anon_vma *anon_vma = NULL;
->  
->  	/*
-> @@ -1021,9 +1021,12 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
->  	 * tables or check whether the hugepage is pmd-based or not before
->  	 * kicking migration.
->  	 */
-> -	if (!hugepage_migration_support(page_hstate(hpage)))
-> +	if (!hugepage_migration_support(page_hstate(hpage))) {
-> +		putback_active_hugepage(hpage);
->  		return -ENOSYS;
-> +	}
->  
-> +	new_hpage = get_new_page(hpage, private, &result);
->  	if (!new_hpage)
->  		return -ENOMEM;
->  
-> -- 
-> 1.7.9.5
+On Fri, Dec 13, 2013 at 09:34:32PM +0800, Shawn Guo wrote:
+> Hi Philippe,
 > 
+> On Thu, Dec 12, 2013 at 03:49:25PM +0100, Philippe De Muyter wrote:
+> > Hello,
+> > 
+> > I have just booted 3.13-rc3 on my i.MX6DL board, done nothing but watch
+> > it start, and I have got this!
+> 
+> There is a patch [1] from Fabio for this issue.
+> 
+> Shawn
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel.mmc/23786
+> 
+> > ======================================================
+> > [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+...
+
+Thanks.  That fixed the problem.  Will that go to 3.13 final ?
+
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
