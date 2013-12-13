@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab3LMQvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:51:42 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:32901 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab3LMQvi (ORCPT
+	id S1753427Ab3LMQyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:54:03 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:34262 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827Ab3LMQx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:51:38 -0500
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Paul Zimmerman <paulz@synopsys.com>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Subject: [PATCH v6 2/9] staging: dwc2: update DT binding to add generic clock/phy properties
-Date: Fri, 13 Dec 2013 11:51:16 -0500
-Message-Id: <1386953483-21631-3-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1386953483-21631-1-git-send-email-mporter@linaro.org>
-References: <1386953483-21631-1-git-send-email-mporter@linaro.org>
+	Fri, 13 Dec 2013 11:53:59 -0500
+Date: Fri, 13 Dec 2013 17:53:50 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-i2c@vger.kernel.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Wolfram Sang <wolfram@the-dreams.de>
+Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
+Message-ID: <20131213175350.0c4a95d5@endymion.delvare>
+In-Reply-To: <3708.1386950736@warthog.procyon.org.uk>
+References: <20131213163349.4bc686c0@endymion.delvare>
+	<20131213142627.4014.42860.stgit@warthog.procyon.org.uk>
+	<3708.1386950736@warthog.procyon.org.uk>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dwc2/s3c-hsotg require a single clock to be specified and optionally
-a generic phy. On the s3c-hsotg driver old style USB phy support is
-present as a fallback so the generic phy properties are optional.
+On Fri, 13 Dec 2013 16:05:36 +0000, David Howells wrote:
+> Jean Delvare <khali@linux-fr.org> wrote:
+> 
+> > One significant difference between both implementations is that the old
+> > one logs before the actual transfer, while yours logs afterward. While I
+> > understand this allows you to log the result of the transfer, this also
+> > means you'll miss the log if the actual transaction locks the system
+> > (we've seen this before.) Something to think about...
+> 
+> I could split each into three messages:
+> 
+> 	- Write request (has params & data buffer)
+> 	- Read request (has params but no data buffer)
+> 	- Read reply (has data buffer only)
+> 
+> It will make the transfer functions more complex, though, and will mean that,
+> for i2c, you won't get all the replies to the messages in a batch in with the
+> requests.  I can also label the messages with the index number.  Mostly I
+> suspect this won't be a problem.
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
-Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/staging/dwc2.txt | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Fine with me, we can leave it as is and revisit if it ever is a
+problem in practice.
 
-diff --git a/Documentation/devicetree/bindings/staging/dwc2.txt b/Documentation/devicetree/bindings/staging/dwc2.txt
-index 1a1b7cf..a1753ed 100644
---- a/Documentation/devicetree/bindings/staging/dwc2.txt
-+++ b/Documentation/devicetree/bindings/staging/dwc2.txt
-@@ -5,6 +5,14 @@ Required properties:
- - compatible : "snps,dwc2"
- - reg : Should contain 1 register range (address and length)
- - interrupts : Should contain 1 interrupt
-+- clocks: clock provider specifier
-+- clock-names: shall be "otg"
-+Refer to clk/clock-bindings.txt for generic clock consumer properties
-+
-+Optional properties:
-+- phys: phy provider specifier
-+- phy-names: shall be "device"
-+Refer to phy/phy-bindings.txt for generic phy consumer properties
- 
- Example:
- 
-@@ -12,4 +20,8 @@ Example:
-                 compatible = "ralink,rt3050-usb, snps,dwc2";
-                 reg = <0x101c0000 40000>;
-                 interrupts = <18>;
-+		clocks = <&usb_otg_ahb_clk>;
-+		clock-names = "otg";
-+		phys = <&usbphy>;
-+		phy-names = "usb2-phy";
-         };
 -- 
-1.8.4
-
+Jean Delvare
