@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab3LMPys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:54:48 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44872 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab3LMPyq (ORCPT
+	id S1752694Ab3LMPz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:55:28 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64867 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752018Ab3LMPz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:54:46 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: davem@davemloft.net
-Cc: edumazet@google.com, netdev@vger.kernel.org, xemul@parallels.com,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] net: unix: allow bind to fail on mutex lock
-Date: Fri, 13 Dec 2013 10:54:22 -0500
-Message-Id: <1386950062-19020-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 13 Dec 2013 10:55:27 -0500
+Date: Fri, 13 Dec 2013 15:54:31 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/7] arm64: introduce interfaces to hotpatch kernel
+ and module code
+Message-ID: <20131213155431.GH19177@mudshark.cambridge.arm.com>
+References: <1386691433-6827-1-git-send-email-liuj97@gmail.com>
+ <1386691433-6827-3-git-send-email-liuj97@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386691433-6827-3-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to the set_peek_off patch where calling bind while the
-socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
-spew after a while.
+On Tue, Dec 10, 2013 at 04:03:48PM +0000, Jiang Liu wrote:
+> Introduce three interfaces to patch kernel and module code:
+> aarch64_insn_patch_text_nosync():
+> 	patch code without synchronization, it's caller's responsibility
+> 	to synchronize all CPUs if needed.
+> aarch64_insn_patch_text_sync():
+> 	patch code and always synchronize with stop_machine()
+> aarch64_insn_patch_text():
+> 	patch code and synchronize with stop_machine() if needed
+> 
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/arm64/include/asm/insn.h |  10 +++-
+>  arch/arm64/kernel/insn.c      | 117 ++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 126 insertions(+), 1 deletion(-)
 
-This is also the last place that did a straightforward mutex_lock(), so
-there shouldn't be any more of these patches.
+Two comments on the patching callback...
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- net/unix/af_unix.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+> +static int __kprobes aarch64_insn_patch_text_cb(void *arg)
+> +{
+> +	int i, ret = 0;
+> +	struct aarch64_insn_patch *pp = arg;
+> +
+> +	/* The first CPU becomes master */
+> +	if (atomic_inc_return(&pp->cpu_count) == 1) {
+> +		for (i = 0; ret == 0 && i < pp->insn_cnt; i++)
+> +			ret = aarch64_insn_patch_text_nosync(pp->text_addrs[i],
+> +							     pp->new_insns[i]);
+> +		/* Make sure changes are visible to other CPUs and let them continue */
+> +		smp_wmb();
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 7edbcd9..800ca61 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -720,7 +720,9 @@ static int unix_autobind(struct socket *sock)
- 	int err;
- 	unsigned int retries = 0;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err)
-+		return err;
- 
- 	err = 0;
- 	if (u->addr)
-@@ -879,7 +881,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 		goto out;
- 	addr_len = err;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err)
-+		goto out;
- 
- 	err = -EINVAL;
- 	if (u->addr)
--- 
-1.7.10.4
+As I mentioned last time, you can rely on aarch64_insn_patch_text_nosync to
+enforce ordering (flush_icache_range ends with dsb; isb). Just add a comment
+saying that.
 
+> +		atomic_set(&pp->cpu_count, -1);
+> +	} else {
+> +		while (atomic_read(&pp->cpu_count) != -1)
+> +			cpu_relax();
+> +		smp_rmb();
+
+You don't need the smp_rmb here.
+
+Will
