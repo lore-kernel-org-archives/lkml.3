@@ -1,43 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3LMW5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:57:14 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:46892 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab3LMW5N (ORCPT
+	id S1753771Ab3LMXBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:01:49 -0500
+Received: from smtprelay0211.hostedemail.com ([216.40.44.211]:38900 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751561Ab3LMXBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:57:13 -0500
-Date: Fri, 13 Dec 2013 17:57:09 -0500 (EST)
-Message-Id: <20131213.175709.414078764436451428.davem@davemloft.net>
-To: dvlasenk@redhat.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        jpirko@redhat.com
-Subject: Re: [patch net-next v3] ipv6: log autoconfiguration failures
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
-References: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 13 Dec 2013 18:01:47 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:2:41:355:379:541:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:2194:2199:2393:2525:2560:2563:2682:2685:2828:2859:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3865:3866:3867:3870:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4425:5007:6119:6691:7652:7903:8985:9025:9388:10004:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:12679:13025:13161:13180:13229:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bone53_66b25b6230657
+X-Filterd-Recvd-Size: 5938
+Message-ID: <1386975703.2479.48.camel@joe-AO722>
+Subject: bnx2x_sriov.c: Missing switch/case breaks?
+From: Joe Perches <joe@perches.com>
+To: Ariel Elior <ariele@broadcom.com>
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 13 Dec 2013 15:01:43 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 13 Dec 2013 14:57:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Denys Vlasenko <dvlasenk@redhat.com>
-Date: Fri, 13 Dec 2013 16:45:47 +0100
+Hi Ariel.
 
-> If ipv6 auto-configuration does not work, currently it's hard
-> to track what's going on. This change adds log messages
-> (at debug level) on every code path where ipv6 autoconf fails.
-> 
-> v3: changed pr_debug's to pr_warn's.
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+I wrote a little checkpatch script to look for missing
+switch/case breaks.
 
-I already made it clear I want to see statistics added instead of log
-messages for this.
+http://www.kernelhub.org/?msg=379933&p=2
 
-I'm not applying this patch, sorry.
+There are _many_ instances of case blocks in sriov.c
+that could be missing breaks as they use fall-throughs.
+
+It would be good if these are actually intended to be
+fall-throughs to add a /* fall-through */ comment between
+each case block.
+
+For instance:
+
+static void bnx2x_vfop_qctor(struct bnx2x *bp, struct bnx2x_virtf *vf)
+{
+[...]
+	switch (state) {
+	case BNX2X_VFOP_QCTOR_INIT:
+
+		/* has this queue already been opened? */
+		if (bnx2x_get_q_logical_state(bp, q_params->q_obj) ==
+		    BNX2X_Q_LOGICAL_STATE_ACTIVE) {
+			DP(BNX2X_MSG_IOV,
+			   "Entered qctor but queue was already up. Aborting gracefully\n");
+			goto op_done;
+		}
+
+		/* next state */
+		vfop->state = BNX2X_VFOP_QCTOR_SETUP;
+
+		q_params->cmd = BNX2X_Q_CMD_INIT;
+		vfop->rc = bnx2x_queue_state_change(bp, q_params);
+
+		bnx2x_vfop_finalize(vf, vfop->rc, VFOP_CONT);
+
+	case BNX2X_VFOP_QCTOR_SETUP:
+		/* next state */
+		vfop->state = BNX2X_VFOP_QCTOR_INT_EN;
+
+		/* copy pre-prepared setup params to the queue-state params */
+		vfop->op_p->qctor.qstate.params.setup =
+			vfop->op_p->qctor.prep_qsetup;
+
+		q_params->cmd = BNX2X_Q_CMD_SETUP;
+		vfop->rc = bnx2x_queue_state_change(bp, q_params);
+
+		bnx2x_vfop_finalize(vf, vfop->rc, VFOP_CONT);
+
+---
+
+Here's the checkpatch output on that file
+
+$ ./scripts/checkpatch.pl -f --types=missing_break drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#326: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:326:
++	case BNX2X_VFOP_QCTOR_SETUP:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#339: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:339:
++	case BNX2X_VFOP_QCTOR_INT_EN:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#416: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:416:
++	case BNX2X_VFOP_QDTOR_TERMINATE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#425: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:425:
++	case BNX2X_VFOP_QDTOR_CFCDEL:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#437: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:437:
++	case BNX2X_VFOP_QDTOR_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#622: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:622:
++	case BNX2X_VFOP_VLAN_MAC_CONFIG_SINGLE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#633: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:633:
++	case BNX2X_VFOP_VLAN_MAC_CHK_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#637: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:637:
++	case BNX2X_VFOP_MAC_CONFIG_LIST:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#650: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:650:
++	case BNX2X_VFOP_VLAN_CONFIG_LIST:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#662: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:662:
++	default:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#971: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:971:
++	case BNX2X_VFOP_QSETUP_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#1068: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1068:
++	case BNX2X_VFOP_QFLR_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#1119: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1119:
++	case BNX2X_VFOP_MCAST_ADD:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#1136: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1136:
++	case BNX2X_VFOP_MCAST_CHK_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#1139: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1139:
++	default:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#1217: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1217:
++	case BNX2X_VFOP_RXMODE_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#1326: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:1326:
++	case BNX2X_VFOP_QTEARDOWN_DONE:
+
+WARNING: Possible switch case/default not preceeded by break or fallthrough comment
+#2985: FILE: drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c:2985:
++	case BNX2X_VFOP_RSS_DONE:
+
+total: 0 errors, 18 warnings, 3683 lines checked
+
+NOTE: Used message types: MISSING_BREAK
+
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+total: 0 errors, 0 warnings, 2006 lines checked
+
+NOTE: Used message types: MISSING_BREAK
+
+
