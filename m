@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab3LMCL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:11:26 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:35806 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab3LMCLM (ORCPT
+	id S1752232Ab3LMCLY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:11:24 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:59077 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab3LMCKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:11:12 -0500
-Message-ID: <52AA6CB9.60302@linaro.org>
-Date: Fri, 13 Dec 2013 10:11:05 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Mel Gorman <mgorman@suse.de>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 2/3] x86: mm: Change tlb_flushall_shift for IvyBridge
-References: <1386849309-22584-1-git-send-email-mgorman@suse.de> <1386849309-22584-3-git-send-email-mgorman@suse.de> <20131212131309.GD5806@gmail.com> <52A9BC3A.7010602@linaro.org> <20131212141147.GB17059@gmail.com> <52AA5C92.7030207@linaro.org>
-In-Reply-To: <52AA5C92.7030207@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Dec 2013 21:10:52 -0500
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        george.dunlap@eu.citrix.com, ian.jackson@eu.citrix.com,
+        mukesh.rathor@oracle.com, tim@xen.org, jbeulich@suse.com,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com
+Cc: Kees Cook <keescook@chromium.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH V10 13/14] x86/xen: remove depends on CONFIG_EXPERIMENTAL
+Date: Thu, 12 Dec 2013 21:10:20 -0500
+Message-Id: <1386900621-27528-14-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
+References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2013 09:02 AM, Alex Shi wrote:
->> > You have not replied to this concern of mine: if my concern is valid 
->> > then that invalidates much of the current tunings.
-> The benefit from pretend flush range is not unconditional, since invlpg
-> also cost time. And different CPU has different invlpg/flush_all
-> execution time. 
+From: Kees Cook <keescook@chromium.org>
 
-TLB refill time is also different on different kind of cpu.
+The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+while now and is almost always enabled by default. As agreed during the
+Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-BTW,
-A bewitching idea is till attracting me.
-https://lkml.org/lkml/2012/5/23/148
-Even it was sentenced to death by HPA.
-https://lkml.org/lkml/2012/5/24/143
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/Kconfig |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-That is that just flush one of thread TLB is enough for SMT/HT, seems
-TLB is still shared in core on Intel CPU. This benefit is unconditional,
-and if my memory right, Kbuild testing can improve about 1~2% in average
-level.
-
-So could you like to accept some ugly quirks to do this lazy TLB flush
-on known working CPU?
-Forgive me if it's stupid.
-
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 4d890c3..47316b9 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -52,12 +52,10 @@ config XEN_DEBUG_FS
+ 	  Enabling this option may incur a significant performance overhead.
+ 
+ config XEN_X86_PVH
+-	bool "Support for running as a PVH guest (EXPERIMENTAL)"
+-	depends on X86_64 && XEN && EXPERIMENTAL
++	bool "Support for running as a PVH guest"
++	depends on X86_64 && XEN
+ 	default n
+ 	help
+ 	   This option enables support for running as a PVH guest (PV guest
+ 	   using hardware extensions) under a suitably capable hypervisor.
+-	   This option is EXPERIMENTAL because the hypervisor interfaces
+-	   which it uses is not yet considered stable therefore backwards and
+-	   forwards compatibility is not yet guaranteed.  If unsure, say N.
++	   If unsure, say N.
 -- 
-Thanks
-    Alex
+1.7.7.6
+
