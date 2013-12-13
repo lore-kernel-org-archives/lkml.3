@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab3LMD6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 22:58:41 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:20218 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3LMD6k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 22:58:40 -0500
-Message-ID: <52AA80C4.3040109@huawei.com>
-Date: Fri, 13 Dec 2013 11:36:36 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>, <gong.chen@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm/memory-failure.c: recheck PageHuge() after hugetlb page
- migrate successfully
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+	id S1751928Ab3LMEBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 23:01:13 -0500
+Received: from ozlabs.org ([203.10.76.45]:42265 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab3LMEBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 23:01:11 -0500
+Date: Fri, 13 Dec 2013 15:01:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: linux-next: manual merge of the pinctrl tree with Linus' tree
+Message-Id: <20131213150102.47de4cd579163889dd364297@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta6 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__13_Dec_2013_15_01_02_+1100_J95uBBYrwdz1D+I8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- - Only set PageHWPoison on the error raw page if page is freed into buddy
+--Signature=_Fri__13_Dec_2013_15_01_02_+1100_J95uBBYrwdz1D+I8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-After a successful hugetlb page migration by soft offline, the source page
-will either be freed into hugepage_freelists or buddy(over-commit page).
-If page is in buddy, page_hstate(page) will be NULL. It will hit a NULL
-pointer dereference in dequeue_hwpoisoned_huge_page().
+Hi Linus,
 
-[  890.677918] BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000058
-[  890.685741] IP: [<ffffffff81163761>]
-dequeue_hwpoisoned_huge_page+0x131/0x1d0
-[  890.692861] PGD c23762067 PUD c24be2067 PMD 0
-[  890.697314] Oops: 0000 [#1] SMP
+Today's linux-next merge of the pinctrl tree got a conflict in
+drivers/pinctrl/sh-pfc/pfc-r8a7740.c between commit 5d27619498ab
+("sh-pfc: r8a7740: Fix pin bias setup") from Linus' tree and commit
+5b46ac3a7723 ("sh-pfc: Rename sh_pfc window field to windows") from the
+pinctrl tree.
 
-So check PageHuge(page) after call migrate_pages() successfully.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
----
- mm/memory-failure.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell <sfr@canb.auug.org.au>
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index b7c1716..db08af9 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1505,10 +1505,16 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 		if (ret > 0)
- 			ret = -EIO;
- 	} else {
--		set_page_hwpoison_huge_page(hpage);
--		dequeue_hwpoisoned_huge_page(hpage);
--		atomic_long_add(1 << compound_order(hpage),
--				&num_poisoned_pages);
-+		/* overcommit hugetlb page will be freed to buddy */
-+		if (PageHuge(page)) {
-+			set_page_hwpoison_huge_page(hpage);
-+			dequeue_hwpoisoned_huge_page(hpage);
-+			atomic_long_add(1 << compound_order(hpage),
-+					&num_poisoned_pages);
-+		} else {
-+			SetPageHWPoison(page);
-+			atomic_long_inc(&num_poisoned_pages);
-+		}
- 	}
- 	return ret;
- }
--- 
-1.7.1
+diff --cc drivers/pinctrl/sh-pfc/pfc-r8a7740.c
+index bc5eb453a45c,a189b962a1eb..000000000000
+--- a/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
++++ b/drivers/pinctrl/sh-pfc/pfc-r8a7740.c
+@@@ -3720,8 -3709,8 +3709,8 @@@ static void __iomem *r8a7740_pinmux_por
+  		const struct r8a7740_portcr_group *group =3D
+  			&r8a7740_portcr_offsets[i];
+ =20
+ -		if (i <=3D group->end_pin)
+ +		if (pin <=3D group->end_pin)
+- 			return pfc->window->virt + group->offset + pin;
++ 			return pfc->windows->virt + group->offset + pin;
+  	}
+ =20
+  	return NULL;
 
+--Signature=_Fri__13_Dec_2013_15_01_02_+1100_J95uBBYrwdz1D+I8
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSqoaCAAoJEMDTa8Ir7ZwVwmMP/Rvx7ebZ7uQuchjSYUxfIJJH
+8szWXN2mBKlFFNjM4B04wKfny8SI8DAZGY8UIeQO+vpQP7Sk4u6pM1vZS8u9nv5/
+H7hXBvEkMLEKNaYGQJmAFcaeSl7yF3rEkyuNrqgVVfvY7s4Lbrc1bBIcrLcOezEj
+XU/YBmjBvxvdpx+JMXJI1qFZZf3mSvzgYp7+FXGxOLftmTsjNXpJ9+gElj+EiLxk
+zuCKnBPWHE+fbJ1GEh66adxD0nz6VZO9YV/u8/uf1V9TXPDydjD1TXr+hDYATJVH
+vmFAN1KyaN74OH3ChT+JDwdPrOaEOXC6+zDtRd2wZ9tNxa7TznW/ZgMVvIKve+vh
+IhrNFoiEDRR25lE/R8Y+wVHe6JbNX4S4Q+BNc+3D3lurxRghwLgNP0in3DJEJIpv
+/3WRpSURi38TaaFYFN6BIQZjMQhRqhgtb8dhS9D4TAb1gcxHGMKdnsy74C8kzBZf
+gV9VeV+Mf4neObFz9K3xu1D9fiYy/bFBR6q8gzSVHASytUQPnWHlcRSEeQcT/+PI
+sCf3OwMKAc8Z+34RmLLzpaW6XZmTSFShQHczSLu0UGfc3qnNsauYkQH6AMHB1AFY
+Ek74QUXlFxKle1ow6t8VSNjCGlwzQi8YVQJXySanq3fpSOvNBI5ChlDWCb7C0sKB
+qqVoyGv1AJa5nK6ggOoy
+=autl
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__13_Dec_2013_15_01_02_+1100_J95uBBYrwdz1D+I8--
