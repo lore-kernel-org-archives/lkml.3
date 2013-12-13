@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab3LMCBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:01:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60496 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab3LMCBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:01:08 -0500
-Date: Thu, 12 Dec 2013 18:02:58 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] dma-buf: Implement test module
-Message-ID: <20131213020258.GC13333@kroah.com>
-References: <1386858989-1487-1-git-send-email-treding@nvidia.com>
- <20131212144210.GA1527@ulmo.nvidia.com>
+	id S1752030Ab3LMCBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:01:10 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60566 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab3LMCBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 21:01:07 -0500
+Message-ID: <52AA6A60.7050308@ti.com>
+Date: Thu, 12 Dec 2013 21:01:04 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131212144210.GA1527@ulmo.nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb: host: xhci: Move suspend ops under PM_SLEEP to avoid
+ warning
+References: <1386896784-23916-1-git-send-email-santosh.shilimkar@ti.com> <20131213015133.GA29964@psi-dev26.jf.intel.com>
+In-Reply-To: <20131213015133.GA29964@psi-dev26.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 03:42:12PM +0100, Thierry Reding wrote:
-> On Thu, Dec 12, 2013 at 03:36:29PM +0100, Thierry Reding wrote:
-> > This is a simple test module that can be used to allocate, export and
-> > delete DMA-BUF objects. It can be used to test DMA-BUF sharing in
-> > systems that lack a real second driver.
-> > 
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > ---
-> >  drivers/base/Kconfig        |   4 +
-> >  drivers/base/Makefile       |   1 +
-> >  drivers/base/dma-buf-test.c | 308 ++++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 313 insertions(+)
-> >  create mode 100644 drivers/base/dma-buf-test.c
+On Thursday 12 December 2013 08:51 PM, David Cohen wrote:
+> On Thu, Dec 12, 2013 at 08:06:24PM -0500, Santosh Shilimkar wrote:
+>> Otherwise you get below build warnings
+>>
+>> drivers/usb/host/xhci-plat.c:201:12: warning: ‘xhci_plat_suspend’ defined but not used [-Wunused-function]
+>> drivers/usb/host/xhci-plat.c:209:12: warning: ‘xhci_plat_resume’ defined but not used [-Wunused-function]
+>>
+>> Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>  drivers/usb/host/xhci-plat.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+>> index d9c169f..4875be5 100644
+>> --- a/drivers/usb/host/xhci-plat.c
+>> +++ b/drivers/usb/host/xhci-plat.c
+>> @@ -197,7 +197,7 @@ static int xhci_plat_remove(struct platform_device *dev)
+>>  	return 0;
+>>  }
+>>  
+>> -#ifdef CONFIG_PM
+>> +#ifdef CONFIG_PM_SLEEP
 > 
-> And attached is a small test program that I've been using to test this
-> new module. It can be built with:
+> Can't you just remove these #ifdefs altogether?
+> xhci_plat_pm_ops is set using SET_SYSTEM_SLEEP_PM_OPS() macro which
+> already handles '#ifdef CONFIG_PM_SLEEP' case.
 > 
-> 	$ gcc -O2 -g -Wall -Werror -I/usr/include/libdrm -o dma-buf-test dma-buf-test.c -ldrm
+It does handle the difference but the hooks implemented would
+show-up un-used warning if you remove the #ifdefs.
 
-Please put this in the patch as well (scripts/tests/ ?)
+drivers/usb/host/xhci-plat.c:200:12: warning: ‘xhci_plat_suspend’ defined but not used [-Wunused-function]
+drivers/usb/host/xhci-plat.c:208:12: warning: ‘xhci_plat_resume’ defined but not used [-Wunused-function]
 
-Also fix up the uapi stuff for the ioctls.
+So you need to wrap them under the PM_SLEEP check.
 
-thanks,
+Regards,
+Santosh
 
-greg k-h
