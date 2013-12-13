@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab3LMRFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:05:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122Ab3LMRFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:05:11 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20131213104806.4fb56012@gandalf.local.home>
-References: <20131213104806.4fb56012@gandalf.local.home> <20131213142627.4014.42860.stgit@warthog.procyon.org.uk> <20131213163349.4bc686c0@endymion.delvare>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: dhowells@redhat.com, Jean Delvare <khali@linux-fr.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <wolfram@the-dreams.de>
-Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
-Date: Fri, 13 Dec 2013 17:04:14 +0000
-Message-ID: <22364.1386954254@warthog.procyon.org.uk>
+	id S1752811Ab3LMRKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:10:18 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:40796 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab3LMRKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 12:10:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMxnaaVEzSuEXRyX5KKKvUJFKTGikP_hfQddT6Ke7Dx6boOuKQ@mail.gmail.com>
+References: <CAMxnaaWgUPRb3L2aKpUu62F73GR2iXOfd6LUnTkU0O=Gq-E_sQ@mail.gmail.com>
+ <CAE9FiQUtqtBLx3_pdhs=CjgqViGrDL9xdCjLKgs66jA-apHdQA@mail.gmail.com> <CAMxnaaVEzSuEXRyX5KKKvUJFKTGikP_hfQddT6Ke7Dx6boOuKQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 13 Dec 2013 10:09:54 -0700
+Message-ID: <CAErSpo6gy9ZMcv=2+aWbT1CeZ=1kkvu74eNgMrU1y4Nxs40eAw@mail.gmail.com>
+Subject: Re: How to reserve pci bus numbers for hotplug?
+To: Andreas Noever <andreas.noever@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Thu, Dec 12, 2013 at 12:56 PM, Andreas Noever
+<andreas.noever@gmail.com> wrote:
+> On Thu, Dec 12, 2013 at 1:21 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Wed, Dec 11, 2013 at 3:37 PM, Andreas Noever
+>> <andreas.noever@gmail.com> wrote:
+>>
+>>> If I could get Linux to assign enough resources (bus numbers for now)
+>>> then I could drop the acpi_osi parameter and make thunderbolt work
+>>> after suspend... So, is there an easy way to fix this? (Quirks,
+>>> reconfiguring bus number assignments from a platform driver, ...?)
+>>
+>> please check if busn_alloc at
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> for-pci-busn-alloc-3.14
+>>
+>> could help.
+>
+> It seems to help. The initial assignment looks good:
+>            +-01.1-[05-9b]----00.0-[06-27]--+-00.0-[07]----00.0  Intel
+> Corporation DSL3510 Thunderbolt Port [Cactus Ridge]
+>            |                               +-03.0-[08-0f]--
+>            |                               +-04.0-[10-17]--
+>            |                               +-05.0-[18-1f]--
+>            |                               \-06.0-[20-27]--
+> After hotplug it looks like this:
+>            +-01.1-[05-9b]----00.0-[06-29]--+-00.0-[07]----00.0  Intel
+> Corporation DSL3510 Thunderbolt Port [Cactus Ridge]
+>            |
+> +-03.0-[08-11]----00.0-[09-11]----00.0-[0a-11]----00.0  Broadcom
+> Corporation NetXtreme BCM57762 Gigabit Ethernet PCIe
+>            |                               +-04.0-[10-17]--
+>            |                               +-05.0-[18-1f]--
+>            |                               \-06.0-[20-27]--
+> (Note that the bridge numbers are not disjoint)
+>
+> dmesg is attached.
+>
+> What is the status of the patch? Will it be merged for 3.14?
 
-> > Would it be possible to print this as a string rather than a number?
-> > The protocol numbers are completely arbitrary, so the reader would have
-> > to open i2c.h each time to figure out what is what.
-> 
-> That can be done in the TP_printk() with:
-> 
-> 	".. %s ..", ..,
-> 	__print_symbolic(__entry->protocol,
-> 		{ I2C_SMBUS_QUICK	,	"QUICK"	},
-> 		{ I2C_SMBUS_BYTE	,	"BYTE"	},
-> 		{ I2C_SMBUS_BYTE_DATA	,	"BYTE_DATA" },
-> 		[...]
-> 		{ I2C_SMBUS_I2C_BLOCK_DATA,	"I2C_BLOCK_DATA"}), ...
+It's not on my radar yet, so likely won't make it for v3.14.
 
-What happens if the number isn't in the table?
+Can you open a report at http://bugzilla.kernel.org and attach
+complete dmesg logs without and with Yinghai's patches, and also the
+complete "lspci -vv" output?
 
-David
+Bjorn
