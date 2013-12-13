@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab3LMOM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:12:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40523 "EHLO mx2.suse.de"
+	id S1753102Ab3LMOMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:12:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40417 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753032Ab3LMOM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:12:26 -0500
-Date: Fri, 13 Dec 2013 15:12:23 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1312131510050.12702@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752599Ab3LMOKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 09:10:13 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 2/7] mm: page_alloc: Break out zone page aging distribution into its own helper
+Date: Fri, 13 Dec 2013 14:10:02 +0000
+Message-Id: <1386943807-29601-3-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1386943807-29601-1-git-send-email-mgorman@suse.de>
+References: <1386943807-29601-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This patch moves the decision on whether to round-robin allocations between
+zones and nodes into its own helper functions. It'll make some later patches
+easier to understand and it will be automatically inlined.
 
-please pull from
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c | 63 ++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 42 insertions(+), 21 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-
-to receive
-
-
-
-- Genius Gx Imperator Keyboard regression fix (missing break in case),
-  by Ben Hutchings
-- duplicate sysfs entry error fix for hid-sensor-hub driver, by Srinivas 
-  Pandruvada
-
-
-Thanks.
-
-Ben Hutchings (1):
-      HID: kye: Fix missing break in kye_report_fixup()
-
-Srinivas Pandruvada (1):
-      HID: hid-sensor-hub: fix duplicate sysfs entry error
-
- drivers/hid/hid-kye.c        |    1 +
- drivers/hid/hid-sensor-hub.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f861d02..64020eb 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1872,6 +1872,42 @@ static inline void init_zone_allows_reclaim(int nid)
+ #endif	/* CONFIG_NUMA */
+ 
+ /*
++ * Distribute pages in proportion to the individual zone size to ensure fair
++ * page aging.  The zone a page was allocated in should have no effect on the
++ * time the page has in memory before being reclaimed.
++ * 
++ * Returns true if this zone should be skipped to spread the page ages to
++ * other zones.
++ */
++static bool zone_distribute_age(gfp_t gfp_mask, struct zone *preferred_zone,
++				struct zone *zone, int alloc_flags)
++{
++	/* Only round robin in the allocator fast path */
++	if (!(alloc_flags & ALLOC_WMARK_LOW))
++		return false;
++
++	/* Only round robin pages likely to be LRU or reclaimable slab */
++	if (!(gfp_mask & GFP_MOVABLE_MASK))
++		return false;
++
++	/* Distribute to the next zone if this zone has exhausted its batch */
++	if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++		return true;
++
++	/*
++	 * When zone_reclaim_mode is enabled, try to stay in local zones in the
++	 * fastpath.  If that fails, the slowpath is entered, which will do
++	 * another pass starting with the local zones, but ultimately fall back
++	 * back to remote zones that do not partake in the fairness round-robin
++	 * cycle of this zonelist.
++	 */
++	if (zone_reclaim_mode && !zone_local(preferred_zone, zone))
++		return true;
++
++	return false;
++}
++
++/*
+  * get_page_from_freelist goes through the zonelist trying to allocate
+  * a page.
+  */
+@@ -1907,27 +1943,12 @@ zonelist_scan:
+ 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
+ 		if (unlikely(alloc_flags & ALLOC_NO_WATERMARKS))
+ 			goto try_this_zone;
+-		/*
+-		 * Distribute pages in proportion to the individual
+-		 * zone size to ensure fair page aging.  The zone a
+-		 * page was allocated in should have no effect on the
+-		 * time the page has in memory before being reclaimed.
+-		 *
+-		 * When zone_reclaim_mode is enabled, try to stay in
+-		 * local zones in the fastpath.  If that fails, the
+-		 * slowpath is entered, which will do another pass
+-		 * starting with the local zones, but ultimately fall
+-		 * back to remote zones that do not partake in the
+-		 * fairness round-robin cycle of this zonelist.
+-		 */
+-		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+-		    (gfp_mask & GFP_MOVABLE_MASK)) {
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+-				continue;
+-			if (zone_reclaim_mode &&
+-			    !zone_local(preferred_zone, zone))
+-				continue;
+-		}
++
++		/* Distribute pages to ensure fair page aging */
++		if (zone_distribute_age(gfp_mask, preferred_zone, zone,
++					alloc_flags))
++			continue;
++
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+ 		 * want to get it from a zone that is within its dirty
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.4
+
