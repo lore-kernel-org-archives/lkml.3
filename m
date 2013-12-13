@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab3LMBYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 20:24:45 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38693 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab3LMBYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 20:24:44 -0500
-Message-ID: <52AA61BF.9080204@ti.com>
-Date: Thu, 12 Dec 2013 20:24:15 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751797Ab3LMBiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 20:38:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60292 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab3LMBiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 20:38:19 -0500
+Date: Thu, 12 Dec 2013 17:40:07 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: vegard.nossum@oracle.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] hfsplus: Known exploit detection for CVE-2012-2319
+Message-ID: <20131213014007.GA11068@kroah.com>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+ <1386867152-24072-5-git-send-email-vegard.nossum@oracle.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v3 13/23] mm/lib/swiotlb: Use memblock apis for early
- memory allocations
-References: <1386625856-12942-1-git-send-email-santosh.shilimkar@ti.com> <1386625856-12942-14-git-send-email-santosh.shilimkar@ti.com> <20131212170857.e36d016a95992c932da824b0@linux-foundation.org>
-In-Reply-To: <20131212170857.e36d016a95992c932da824b0@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386867152-24072-5-git-send-email-vegard.nossum@oracle.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 December 2013 08:08 PM, Andrew Morton wrote:
-> On Mon, 9 Dec 2013 16:50:46 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+On Thu, Dec 12, 2013 at 05:52:28PM +0100, vegard.nossum@oracle.com wrote:
+> From: Vegard Nossum <vegard.nossum@oracle.com>
 > 
->> Switch to memblock interfaces for early memory allocator instead of
->> bootmem allocator. No functional change in beahvior than what it is
->> in current code from bootmem users points of view.
->>
->> Archs already converted to NO_BOOTMEM now directly use memblock
->> interfaces instead of bootmem wrappers build on top of memblock. And the
->> archs which still uses bootmem, these new apis just fallback to exiting
->> bootmem APIs.
-> 
-> This one makes my x86_64 test box fail to boot.  There's no obvious
-> indication why and I don't have netconsole on this machine, sorry.  It
-> simply fails to mount the root fs.
-> 
-> config:
-> 
-Thanks for config and reporting the issue.
-Unfortunately I don't have ability to test x86 machine but will
-try to analyze it and find out whats could be going wrong.
+> See 6f24f892871acc47b40dd594c63606a17c714f77.
 
-Failure around rootfs mount means it could be something to do
-with memory free related code from the patch.
+Please put the "name" of the git commit after it, to make it easier to
+determine what this is referring to.
 
-Regards,
-Santosh
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+> ---
+>  fs/hfsplus/catalog.c |    2 ++
+>  fs/hfsplus/dir.c     |    3 +++
+>  2 files changed, 5 insertions(+)
+> 
+> diff --git a/fs/hfsplus/catalog.c b/fs/hfsplus/catalog.c
+> index 968ce41..5f47a1a 100644
+> --- a/fs/hfsplus/catalog.c
+> +++ b/fs/hfsplus/catalog.c
+> @@ -8,6 +8,7 @@
+>   * Handling of catalog records
+>   */
+>  
+> +#include <linux/exploit.h>
+>  
+>  #include "hfsplus_fs.h"
+>  #include "hfsplus_raw.h"
+> @@ -374,6 +375,7 @@ int hfsplus_rename_cat(u32 cnid,
+>  	if (err)
+>  		goto out;
+>  	if (src_fd.entrylength > sizeof(entry) || src_fd.entrylength < 0) {
+> +		exploit("CVE-2012-2319");
+
+So, any invalid data here means this was an expoit attempt?  No, not
+true, corrupted filesystems could also cause this, right?
+
+Same for the other instances here.
+
+greg k-h
