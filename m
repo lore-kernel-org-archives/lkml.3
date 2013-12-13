@@ -1,76 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241Ab3LMIxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 03:53:48 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54371 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213Ab3LMIxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 03:53:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,477,1384329600"; 
-   d="scan'208";a="449437458"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/2] perf tools: Remove unused next_pow2() and rename next_pow2_l()
-Date: Fri, 13 Dec 2013 10:53:36 +0200
-Message-Id: <1386924816-24402-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1386924816-24402-1-git-send-email-adrian.hunter@intel.com>
-References: <1386924816-24402-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1752291Ab3LMIyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 03:54:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33679 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab3LMIyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 03:54:10 -0500
+Message-ID: <52AACA0B.6080602@oracle.com>
+Date: Fri, 13 Dec 2013 16:49:15 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>, Vlastimil Babka <vbabka@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, joern@logfs.org,
+        mgorman@suse.de, Michel Lespinasse <walken@google.com>,
+        riel@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: kernel BUG in munlock_vma_pages_range
+References: <52A3D0C3.1080504@oracle.com> <52A58E8A.3050401@suse.cz> <52A5F83F.4000207@oracle.com> <52A5F9EE.4010605@suse.cz> <52A6275F.4040007@oracle.com> <52A8EE38.2060004@suse.cz> <52A92A8D.20603@oracle.com> <52A943BC.2090001@oracle.com> <52A9AEF2.2030600@suse.cz> <52AA2510.8080908@oracle.com>
+In-Reply-To: <52AA2510.8080908@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fixed version of 'next_pow2_l()' does not call
-'next_pow2()' anymore, so it is unused, so remove
-it and rename 'next_pow2_l()' to 'next_pow2()'.
+On 12/13/2013 05:05 AM, Sasha Levin wrote:
+> On 12/12/2013 07:41 AM, Vlastimil Babka wrote:
+>> On 12/12/2013 06:03 AM, Bob Liu wrote:
+>>>
+>>> On 12/12/2013 11:16 AM, Sasha Levin wrote:
+>>>> On 12/11/2013 05:59 PM, Vlastimil Babka wrote:
+>>>>> On 12/09/2013 09:26 PM, Sasha Levin wrote:
+>>>>>> On 12/09/2013 12:12 PM, Vlastimil Babka wrote:
+>>>>>>> On 12/09/2013 06:05 PM, Sasha Levin wrote:
+>>>>>>>> On 12/09/2013 04:34 AM, Vlastimil Babka wrote:
+>>>>>>>>> Hello, I will look at it, thanks.
+>>>>>>>>> Do you have specific reproduction instructions?
+>>>>>>>>
+>>>>>>>> Not really, the fuzzer hit it once and I've been unable to trigger
+>>>>>>>> it again. Looking at
+>>>>>>>> the piece of code involved it might have had something to do with
+>>>>>>>> hugetlbfs, so I'll crank
+>>>>>>>> up testing on that part.
+>>>>>>>
+>>>>>>> Thanks. Do you have trinity log and the .config file? I'm currently
+>>>>>>> unable to even boot linux-next
+>>>>>>> with my config/setup due to a GPF.
+>>>>>>> Looking at code I wouldn't expect that it could encounter a tail
+>>>>>>> page, without first encountering a
+>>>>>>> head page and skipping the whole huge page. At least in THP case, as
+>>>>>>> TLB pages should be split when
+>>>>>>> a vma is split. As for hugetlbfs, it should be skipped for
+>>>>>>> mlock/munlock operations completely. One
+>>>>>>> of these assumptions is probably failing here...
+>>>>>>
+>>>>>> If it helps, I've added a dump_page() in case we hit a tail page
+>>>>>> there and got:
+>>>>>>
+>>>>>> [  980.172299] page:ffffea003e5e8040 count:0 mapcount:1
+>>>>>> mapping:          (null) index:0
+>>>>>> x0
+>>>>>> [  980.173412] page flags: 0x2fffff80008000(tail)
+>>>>>>
+>>>>>> I can also add anything else in there to get other debug output if
+>>>>>> you think of something else useful.
+>>>>>
+>>>>> Please try the following. Thanks in advance.
+>>>>
+>>>> [  428.499889] page:ffffea003e5c0040 count:0 mapcount:4
+>>>> mapping:          (null) index:0x0
+>>>> [  428.499889] page flags: 0x2fffff80008000(tail)
+>>>> [  428.499889] start=140117131923456 pfn=16347137
+>>>> orig_start=140117130543104 page_increm
+>>>> =1 vm_start=140117130543104 vm_end=140117134688256 vm_flags=135266419
+>>>> [  428.499889] first_page pfn=16347136
+>>>> [  428.499889] page:ffffea003e5c0000 count:204 mapcount:44
+>>>> mapping:ffff880fb5c466c1 inde
+>>>> x:0x7f6f8fe00
+>>>> [  428.499889] page flags:
+>>>> 0x2fffff80084068(uptodate|lru|active|head|swapbacked)
+>>>
+>>>   From this print, it looks like the page is still a huge page.
+>>> One situation I guess is a huge page which isn't PageMlocked and passed
+>>> to munlock_vma_page(). I'm not sure whether this will happen.
+>>
+>> Yes that's quite likely the case. It's not illegal to happen I would say.
+>>
+>>> Please take a try this patch.
+>>
+>> I've made a simpler version that does away with the ugly page_mask
+>> thing completely.
+>> Please try that as well. Thanks.
+>>
+>> Also when working on this I think I found another potential but much
+>> rare problem
+>> when munlock_vma_page races with a THP split. That would however
+>> manifest such that
+>> part of the former tail pages would stay PageMlocked. But that still
+>> needs more thought.
+>> The bug at hand should however be fixed by this patch.
+> 
+> Yup, this patch seems to fix the issue previously reported.
+> 
+> However, I'll piggyback another thing that popped up now that the vm
+> could run for a while which
+> also seems to be caused by the original patch. It looks like a pretty
+> straightforward deadlock, but
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/evlist.c | 2 +-
- tools/perf/util/util.h   | 9 +--------
- 2 files changed, 2 insertions(+), 9 deletions(-)
+Looks like put_page() in __munlock_pagevec() need to get the
+zone->lru_lock which is already held when entering __munlock_pagevec().
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 0b31cee..327a1a4 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -736,7 +736,7 @@ static long parse_pages_arg(const char *str, unsigned long min,
- 		/* leave number of pages at 0 */
- 	} else if (!is_power_of_2(pages)) {
- 		/* round pages up to next power of 2 */
--		pages = next_pow2_l(pages);
-+		pages = next_pow2(pages);
- 		if (!pages)
- 			return -EINVAL;
- 		pr_info("rounding mmap pages size to %lu bytes (%lu pages)\n",
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index ae609fe..3860d76 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -275,14 +275,7 @@ bool is_power_of_2(unsigned long n)
- 	return (n != 0 && ((n & (n - 1)) == 0));
- }
- 
--static inline unsigned next_pow2(unsigned x)
--{
--	if (!x)
--		return 1;
--	return 1ULL << (32 - __builtin_clz(x - 1));
--}
--
--static inline unsigned long next_pow2_l(unsigned long x)
-+static inline unsigned long next_pow2(unsigned long x)
- {
- 	int leading_zeros;
- 
--- 
-1.7.11.7
+How about fix like this?
 
+Thanks,
+-Bob
+
+diff --git a/mm/mlock.c b/mm/mlock.c
+index d480cd6..5880d63 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -291,7 +291,6 @@ static void __munlock_pagevec(struct pagevec *pvec,
+struct zone *zone)
+ 	int pgrescued = 0;
+
+ 	/* Phase 1: page isolation */
+-	spin_lock_irq(&zone->lru_lock);
+ 	for (i = 0; i < nr; i++) {
+ 		struct page *page = pvec->pages[i];
+
+@@ -300,6 +299,7 @@ static void __munlock_pagevec(struct pagevec *pvec,
+struct zone *zone)
+ 			int lru;
+
+ 			if (PageLRU(page)) {
++				spin_lock_irq(&zone->lru_lock);
+ 				lruvec = mem_cgroup_page_lruvec(page, zone);
+ 				lru = page_lru(page);
+ 				/*
+@@ -308,6 +308,7 @@ static void __munlock_pagevec(struct pagevec *pvec,
+struct zone *zone)
+ 				 */
+ 				ClearPageLRU(page);
+ 				del_page_from_lru_list(page, lruvec, lru);
++				spin_unlock_irq(&zone->lru_lock);
+ 			} else {
+ 				__munlock_isolation_failed(page);
+ 				goto skip_munlock;
+@@ -325,8 +326,7 @@ skip_munlock:
+ 			delta_munlocked++;
+ 		}
+ 	}
+-	__mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
+-	spin_unlock_irq(&zone->lru_lock);
++	mod_zone_page_state(zone, NR_MLOCK, delta_munlocked);
+
+ 	/* Phase 2: page munlock */
+ 	pagevec_init(&pvec_putback, 0);
