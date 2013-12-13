@@ -1,151 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3LMPfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:35:04 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:18149 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688Ab3LMPfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:35:01 -0500
+	id S1753218Ab3LMPgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:36:17 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:55509 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab3LMPgP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:36:15 -0500
 X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
-   d="scan'208";a="84319757"
-Date: Fri, 13 Dec 2013 15:34:32 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
-        Wei Liu <wei.liu2@citrix.com>
-Subject: Re: [PATCH V10 05/14] xen/pvh: balloon and grant changes.
-In-Reply-To: <20131213145937.GB4770@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1312131530030.8667@kaball.uk.xensource.com>
-References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-6-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.02.1312131147230.8667@kaball.uk.xensource.com> <20131213143620.GH2923@phenom.dumpdata.com>
- <alpine.DEB.2.02.1312131448340.8667@kaball.uk.xensource.com> <20131213145937.GB4770@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+   d="scan'208";a="82026513"
+Date: Fri, 13 Dec 2013 15:36:12 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 2/9] xen-netback: Change TX path from grant
+ copy to mapping
+Message-ID: <20131213153612.GM21900@zion.uk.xensource.com>
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+ <1386892097-15502-3-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1386892097-15502-3-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> On Fri, Dec 13, 2013 at 02:49:15PM +0000, Stefano Stabellini wrote:
-> > On Fri, 13 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > On Fri, Dec 13, 2013 at 11:56:31AM +0000, Stefano Stabellini wrote:
-> > > > On Thu, 12 Dec 2013, Konrad Rzeszutek Wilk wrote:
-> > > > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > > > 
-> > > > > For balloon changes we skip setting of local P2M as it's updated
-> > > > > in Xen. For grant, the shared grant frame is the PFN and not MFN,
-> > > > > hence its mapped via the same code path as HVM.
-> > > > > 
-> > > > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > > > [v1: Rebase on v3.7-rc3]
-> > > > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > > > CC: <stefano.stabellini@eu.citrix.com>
-> > > > > Conflicts:
-> > > > > 	drivers/xen/balloon.c
-> > > > > [v2: Rebase on v3.13-rc3 has lot of ARM changes.]
-> > > > > ---
-> > > > >  drivers/xen/balloon.c     |   37 ++++++++++++++++++++-----------------
-> > > > >  drivers/xen/gntdev.c      |    3 ++-
-> > > > >  drivers/xen/grant-table.c |   25 ++++++++++++++++++++++---
-> > > > >  3 files changed, 44 insertions(+), 21 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> > > > > index 55ea73f..0e9875a 100644
-> > > > > --- a/drivers/xen/balloon.c
-> > > > > +++ b/drivers/xen/balloon.c
-> > > > > @@ -354,7 +354,9 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
-> > > > >  
-> > > > >  #ifdef CONFIG_XEN_HAVE_PVMMU
-> > > > >  		/* Link back into the page tables if not highmem. */
-> > > > > -		if (xen_pv_domain() && !PageHighMem(page)) {
-> > > > > +		if (xen_pv_domain() && !PageHighMem(page) &&
-> > > > > +		    !xen_feature(XENFEAT_auto_translated_physmap)) {
-> > > > > +
-> > > > >  			int ret;
-> > > > >  			ret = HYPERVISOR_update_va_mapping(
-> > > > >  				(unsigned long)__va(pfn << PAGE_SHIFT),
-> > > > > @@ -411,28 +413,29 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
-> > > > >  
-> > > > >  		scrub_page(page);
-> > > > >  
-> > > > > -		/*
-> > > > > -		 * Ballooned out frames are effectively replaced with
-> > > > > -		 * a scratch frame.  Ensure direct mappings and the
-> > > > > -		 * p2m are consistent.
-> > > > > -		 */
-> > > > > -		scratch_page = get_balloon_scratch_page();
-> > > > > +		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> > > > > +			unsigned long p;
-> > > > > +
-> > > > > +			/*
-> > > > > +			 * Ballooned out frames are effectively replaced with
-> > > > > +			 * a scratch frame.  Ensure direct mappings and the
-> > > > > +			 * p2m are consistent.
-> > > > > +			 */
-> > > > > +			scratch_page = get_balloon_scratch_page();
-> > > > >  #ifdef CONFIG_XEN_HAVE_PVMMU
-> > > > > -		if (xen_pv_domain() && !PageHighMem(page)) {
-> > > > > -			ret = HYPERVISOR_update_va_mapping(
-> > > > > -				(unsigned long)__va(pfn << PAGE_SHIFT),
-> > > > > -				pfn_pte(page_to_pfn(scratch_page),
-> > > > > +			if (xen_pv_domain() && !PageHighMem(page)) {
-> > > > > +				ret = HYPERVISOR_update_va_mapping(
-> > > > > +					(unsigned long)__va(pfn << PAGE_SHIFT),
-> > > > > +					pfn_pte(page_to_pfn(scratch_page),
-> > > > >  					PAGE_KERNEL_RO), 0);
-> > > > > -			BUG_ON(ret);
-> > > > > -		}
-> > > > > +				BUG_ON(ret);
-> > > > > +			}
-> > > > >  #endif
-> > > > > -		if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> > > > > -			unsigned long p;
-> > > > >  			p = page_to_pfn(scratch_page);
-> > > > >  			__set_phys_to_machine(pfn, pfn_to_mfn(p));
-> > > > > -		}
-> > > > > -		put_balloon_scratch_page();
-> > > > >  
-> > > > > +			put_balloon_scratch_page();
-> > > > > +		}
-> > > > >  		balloon_append(pfn_to_page(pfn));
-> > > > >  	}
-> > > > 
-> > > > These changes to balloon.c are similar to my patch but:
-> > > > 
-> > > > - they don't prevent set_phys_to_machine from being called by
-> > > > increase_reservation for auto_translated guests
-> > > 
-> > > <nods>
-> > > > 
-> > > > - they don't prevent wasteful balloon_scratch_page from being allocated
-> > > > for auto_translated guests
-> > > 
-> > > <nods>
-> > > > 
-> > > > I think that it would be best to take my patch instead.
-> > > 
-> > > Lets focus the review on your patch then and have it part of this
-> > > series. 
-> > 
-> > OK, but keep in mind that Xen on ARMv8 is currently broken without that
-> > patch.
+On Thu, Dec 12, 2013 at 11:48:10PM +0000, Zoltan Kiss wrote:
+> This patch changes the grant copy on the TX patch to grant mapping
 > 
-> Hm. We could have another patch to just disable BALLOON on ARMv8 :-)
+> v2:
+> - delete branch for handling fragmented packets fit PKT_PROT_LINE sized first
+                                                      ^ PKT_PROT_LEN
+>   request
+> - mark the effect of using ballooned pages in a comment
+> - place setting of skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY right
+>   before netif_receive_skb, and mark the importance of it
+> - grab dealloc_lock before __napi_complete to avoid contention with the
+>   callback's napi_schedule
+> - handle fragmented packets where first request < PKT_PROT_LINE
+                                                    ^ PKT_PROT_LEN
+> - fix up error path when checksum_setup failed
+> - check before teardown for pending grants, and start complain if they are
+>   there after 10 second
 > 
-> The question you have to ask - if your patch causes regression are you
-> OK tracking/fixing it over the holidays :-) If yes, then yes - we can
-> put that in v3.13-rc3 to make it work properly on ARMv8.
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> ---
+[...]
+>  void xenvif_free(struct xenvif *vif)
+>  {
+> +	int i, unmap_timeout = 0;
+> +
+> +	for (i = 0; i < MAX_PENDING_REQS; ++i) {
+> +		if (vif->grant_tx_handle[i] != NETBACK_INVALID_HANDLE) {
+> +			i = 0;
+> +			unmap_timeout++;
+> +			msleep(1000);
+> +			if (unmap_timeout > 9 &&
+> +				net_ratelimit())
+> +				netdev_err(vif->dev,
+> +					"Page still granted! Index: %x\n", i);
+> +		}
+> +	}
+> +
+> +	free_xenballooned_pages(MAX_PENDING_REQS, vif->mmap_pages);
+> +
 
-Damn, that was a good argument.
-After thinking more about it, I think that I, or a member of my team,
-can actually fix possible bugs during the holidays. Especially
-considering that the patch doesn't alter the behavior of PV guests.
+If some pages are stuck and you just free them will it cause Dom0 to
+crash? I mean, if those pages are recycled by other balloon page users.
 
-So in short, yes :)
+Even if it will not cause Dom0 to crash, will it leak any resource in
+Dom0? At plain sight it looks like at least grant table entry is leaked,
+isn't it? We need to be careful about this because a malicious might be
+able to DoS Dom0 with resource leakage.
+
+>  	netif_napi_del(&vif->napi);
+>  
+>  	unregister_netdev(vif->dev);
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 3ddc474..20352be 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -645,9 +645,12 @@ static void xenvif_tx_err(struct xenvif *vif,
+>  			  struct xen_netif_tx_request *txp, RING_IDX end)
+>  {
+>  	RING_IDX cons = vif->tx.req_cons;
+> +	unsigned long flags;
+>  
+>  	do {
+> +		spin_lock_irqsave(&vif->response_lock, flags);
+>  		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
+> +		spin_unlock_irqrestore(&vif->response_lock, flags);
+
+You only hold the lock for one function call is this intentional?
+
+>  		if (cons == end)
+>  			break;
+>  		txp = RING_GET_REQUEST(&vif->tx, cons++);
+> @@ -786,10 +789,10 @@ static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
+>  
+>  }
+>  
+> -static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
+> +static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
+>  					       struct sk_buff *skb,
+>  					       struct xen_netif_tx_request *txp,
+> -					       struct gnttab_copy *gop)
+> +					       struct gnttab_map_grant_ref *gop)
+>  {
+>  	struct skb_shared_info *shinfo = skb_shinfo(skb);
+>  	skb_frag_t *frags = shinfo->frags;
+> @@ -810,83 +813,12 @@ static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
+>  	/* Skip first skb fragment if it is on same page as header fragment. */
+>  	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+>  
+[...]
+>  		if (checksum_setup(vif, skb)) {
+>  			netdev_dbg(vif->dev,
+>  				   "Can't setup checksum in net_tx_action\n");
+> +			if (skb_shinfo(skb)->destructor_arg)
+> +				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+>  			kfree_skb(skb);
+>  			continue;
+>  		}
+> @@ -1601,6 +1559,14 @@ static int xenvif_tx_submit(struct xenvif *vif)
+>  
+>  		work_done++;
+>  
+> +		/* Set this flag right before netif_receive_skb, otherwise
+> +		 * someone might think this packet already left netback, and
+> +		 * do a skb_copy_ubufs while we are still in control of the
+> +		 * skb. E.g. the __pskb_pull_tail earlier can do such thing.
+> +		 */
+> +		if (skb_shinfo(skb)->destructor_arg)
+> +			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+> +
+
+This is really tricky. :-P
+
+>  		netif_receive_skb(skb);
+>  	}
+>  
+> @@ -1711,7 +1677,7 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+>  int xenvif_tx_action(struct xenvif *vif, int budget)
+>  {
+>  	unsigned nr_gops;
+> -	int work_done;
+> +	int work_done, ret;
+>  
+>  	if (unlikely(!tx_work_todo(vif)))
+>  		return 0;
+> @@ -1721,7 +1687,13 @@ int xenvif_tx_action(struct xenvif *vif, int budget)
+>  	if (nr_gops == 0)
+>  		return 0;
+>  
+> -	gnttab_batch_copy(vif->tx_copy_ops, nr_gops);
+> +	if (nr_gops) {
+
+Surely you can remove this "if". At this point nr_gops cannot be zero --
+see two lines above.
+
+> +		ret = gnttab_map_refs(vif->tx_map_ops,
+> +			NULL,
+> +			vif->pages_to_map,
+> +			nr_gops);
+> +		BUG_ON(ret);
+> +	}
+>  
+>  	work_done = xenvif_tx_submit(vif);
+>  
+> @@ -1732,61 +1704,37 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
+>  			       u8 status)
+>  {
+[...]
+>  
+>  void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+>  {
+>  	int ret;
+> +	struct gnttab_unmap_grant_ref tx_unmap_op;
+> +
+>  	if (vif->grant_tx_handle[pending_idx] == NETBACK_INVALID_HANDLE) {
+>  		netdev_err(vif->dev,
+>  				"Trying to unmap invalid handle! pending_idx: %x\n",
+>  				pending_idx);
+>  		return;
+>  	}
+> -	gnttab_set_unmap_op(&vif->tx_unmap_ops[0],
+> +	gnttab_set_unmap_op(&tx_unmap_op,
+>  			idx_to_kaddr(vif, pending_idx),
+>  			GNTMAP_host_map,
+>  			vif->grant_tx_handle[pending_idx]);
+> -	ret = gnttab_unmap_refs(vif->tx_unmap_ops,
+> +	ret = gnttab_unmap_refs(&tx_unmap_op,
+>  			NULL,
+>  			&vif->mmap_pages[pending_idx],
+>  			1);
+
+This change should be squashed to patch 1. Or as I suggested the changes
+in patch 1 should be moved here.
+
+> @@ -1845,7 +1793,6 @@ static inline int rx_work_todo(struct xenvif *vif)
+>  
+>  static inline int tx_work_todo(struct xenvif *vif)
+>  {
+> -
+
+Stray blank line change.
+
+Wei.
+
+>  	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
+>  	    (nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
+>  	     < MAX_PENDING_REQS))
