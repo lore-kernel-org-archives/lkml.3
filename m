@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab3LMHAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 02:00:10 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:64159 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab3LMHAG (ORCPT
+	id S1752140Ab3LMHAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 02:00:49 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48487 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab3LMHAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 02:00:06 -0500
+	Fri, 13 Dec 2013 02:00:48 -0500
+X-AuditID: 9c930197-b7cefae000007949-08-52aab09e7557
+Date: Fri, 13 Dec 2013 16:03:51 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] slab: make more slab management structure off the
+ slab
+Message-ID: <20131213070351.GD8845@lge.com>
+References: <1385974183-31423-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1385974183-31423-6-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000142b3d18433-eacdc401-434f-42e1-8988-686bd15a3e20-000000@email.amazonses.com>
+ <20131203021308.GE31168@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPcyv4gAazGS_m6KNfF2_kY3CDzYkvpBQ=kcnPH-pBvcJ0HjAw@mail.gmail.com>
-References: <1385408365-8072-1-git-send-email-jason@lakedaemon.net>
-	<20131128055706.GM8834@intel.com>
-	<20131209235035.GA11632@n2100.arm.linux.org.uk>
-	<20131210101331.GG29580@intel.com>
-	<20131210111449.GY4360@n2100.arm.linux.org.uk>
-	<CAPcyv4gAazGS_m6KNfF2_kY3CDzYkvpBQ=kcnPH-pBvcJ0HjAw@mail.gmail.com>
-Date: Thu, 12 Dec 2013 23:00:05 -0800
-Message-ID: <CAPcyv4iNOqHSQXj_PTmG-iHajnmHoPhLeFvnnK-JtNykf2W3Ew@mail.gmail.com>
-Subject: Re: [PATCH] dma: mv_xor: remove mv_desc_get_dest_addr()
-From: Dan Williams <dan.j.williams@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Vinod Koul <vinod.koul@intel.com>, Jason Cooper <jason@lakedaemon.net>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131203021308.GE31168@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 1:10 AM, Dan Williams <dan.j.williams@intel.com> wrote:
-> On Tue, Dec 10, 2013 at 3:14 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Tue, Dec 10, 2013 at 03:43:31PM +0530, Vinod Koul wrote:
->>> On Mon, Dec 09, 2013 at 11:50:35PM +0000, Russell King - ARM Linux wrote:
->>> > On Thu, Nov 28, 2013 at 11:27:06AM +0530, Vinod Koul wrote:
->>> > > + Dan
->>> > >
->>> > > On Mon, Nov 25, 2013 at 07:39:25PM +0000, Jason Cooper wrote:
->>> > > > The following commit:
->>> > > >
->>> > > >   54f8d501e842 dmaengine: remove DMA unmap from drivers
->>> > > >
->>> > > > removed the last caller to mv_desc_get_dest_addr(), creating the
->>> > > > warning:
->>> > > >
->>> > > >   drivers/dma/mv_xor.c:57:12: warning: 'mv_desc_get_dest_addr' defined
->>> > > >   but not used [-Wunused-function]
->>> > > >
->>> > > > Remove it.
->>> > > >
->>> > > > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
->>> > > Acked-by: Vinod Koul <vinod.koul@intel.com>
->>> > >
->>> > > This should go thru Dan's tree
->>> >
->>> > So what's happening with this patch?  I don't see it in -rc yet.
->>> Dan has applied this to his next. So this should show us in next rc1
->>
->> Wrong answer.  This is a compile regression introduced in the last merge
->> window, it should be going into an -rc kernel.
->
-> Vinod, if your fixes branch is ready I'll take it along with the rest
-> of the regression fixes to Linus.
+On Tue, Dec 03, 2013 at 11:13:08AM +0900, Joonsoo Kim wrote:
+> On Mon, Dec 02, 2013 at 02:58:41PM +0000, Christoph Lameter wrote:
+> > On Mon, 2 Dec 2013, Joonsoo Kim wrote:
+> > 
+> > > Now, the size of the freelist for the slab management diminish,
+> > > so that the on-slab management structure can waste large space
+> > > if the object of the slab is large.
+> > 
+> > Hmmm.. That is confusing to me. "Since the size of the freelist has shrunk
+> > significantly we have to adjust the heuristic for making the on/off slab
+> > placement decision"?
+> > 
+> > Make this clearer.
+> 
+> Yes. your understanding is right.
+> I will replace above line with yours.
+> 
+> Thanks.
+> 
+> > 
+> > Acked-by: Christoph Lameter <cl@linux.com>
 
-Ok, I see you sent dma-slave/fixes up, I'll follow up with the rest:
+Hello, Pekka.
 
-Dan Williams (5):
-      dma: fix build warnings in ppc4xx
-      dma: fix fsldma build warnings
-      dmatest: fix build warning on mips
-      dma: fix build warnings in txx9
-      dmaengine: fix enable for high order unmap pools
+Below is updated patch for 5/5 in this series.
+Now I get acks from Christoph to all patches in this series.
+So, could you merge this patchset? :)
+If you want to resend wholeset with proper ack, I will do it
+with pleasure.
 
-Ezequiel Garcia (1):
-      dma: mv_xor: Use dmaengine_unmap_data for the self-tests
+Thanks.
 
-Jason Cooper (1):
-      dma: mv_xor: remove mv_desc_get_dest_addr()
+--------8<---------------
+>From f6790b69b53c421645a4eaaeb45bd98e0a461136 Mon Sep 17 00:00:00 2001
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date: Thu, 29 Aug 2013 11:35:45 +0900
+Subject: [PATCH] slab: make more slab management structure off the slab
 
-Olof Johansson (1):
-      dmaengine: at_hdmac: remove unused function
+Since the size of the freelist has shrunk significantly we have to
+adjust the heuristic for making the on/off slab placement decision.
 
-Russell King (1):
-      dmaengine: mv_xor: fix oops when channels fail to initialise
+Consider a 128 byte sized slab. If on-slab is used, 31 objects can be
+in the slab. The size of the freelist for this case would be 31 bytes
+so that 97 bytes, that is, more than 75% of object size, are wasted.
+
+In a 64 byte sized slab case, no space is wasted if we use on-slab.
+So set off-slab determining constraint to 128 bytes.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 7fab788..1a7f19d 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2264,7 +2264,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	 * it too early on. Always use on-slab management when
+ 	 * SLAB_NOLEAKTRACE to avoid recursive calls into kmemleak)
+ 	 */
+-	if ((size >= (PAGE_SIZE >> 3)) && !slab_early_init &&
++	if ((size >= (PAGE_SIZE >> 5)) && !slab_early_init &&
+ 	    !(flags & SLAB_NOLEAKTRACE))
+ 		/*
+ 		 * Size is large, assume best to place the slab management obj
+-- 
+1.7.9.5
+
