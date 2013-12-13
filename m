@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab3LMJWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 04:22:04 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:45469 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab3LMJUl (ORCPT
+	id S1752575Ab3LMJXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 04:23:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23826 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3LMJXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 04:20:41 -0500
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/5] net: phy: resume/suspend PHYs on attach/detach
-Date: Fri, 13 Dec 2013 10:20:28 +0100
-Message-Id: <1386926429-28818-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1386513631-11284-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1386513631-11284-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Fri, 13 Dec 2013 04:23:00 -0500
+Message-ID: <52AAD178.6020607@oracle.com>
+Date: Fri, 13 Dec 2013 10:20:56 +0100
+From: Vegard Nossum <vegard.nossum@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Ryan Mallon <rmallon@gmail.com>, Kees Cook <keescook@chromium.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>	<20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <52AA4BC8.1080207@gmail.com>
+In-Reply-To: <52AA4BC8.1080207@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This ensures PHYs are resumed on attach and suspended on detach.
+On 12/13/2013 12:50 AM, Ryan Mallon wrote:
+> On 13/12/13 08:13, Kees Cook wrote:
+>> On Thu, Dec 12, 2013 at 11:06 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+>>> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
+>>>> The idea is simple -- since different kernel versions are vulnerable to
+>>>> different root exploits, hackers most likely try multiple exploits before
+>>>> they actually succeed.
+>
+> The _exploit() notifications could also be used to spam the syslogs.
+> Although they are individually ratelimited, if there are enough
+> _exploit() markers in the kernel then an annoying person can cycle
+> through them all to generate large amounts of useless syslog.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
-Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
----
-Cc: David Miller <davem@davemloft.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/phy/phy_device.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+They are rate limited collectively, not individually, so this should not 
+be an issue.
 
-diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
-index 6f0e9e4..3903f44 100644
---- a/drivers/net/phy/phy_device.c
-+++ b/drivers/net/phy/phy_device.c
-@@ -570,6 +570,8 @@ static int phy_attach_direct(struct net_device *dev, struct phy_device *phydev,
- 	if (err)
- 		phy_detach(phydev);
- 
-+	phy_resume(phydev);
-+
- 	return err;
- }
- 
-@@ -615,6 +617,7 @@ void phy_detach(struct phy_device *phydev)
- {
- 	phydev->attached_dev->phydev = NULL;
- 	phydev->attached_dev = NULL;
-+	phy_suspend(phydev);
- 
- 	/* If the device had no specific driver before (i.e. - it
- 	 * was using the generic driver), we unbind the device
--- 
-1.7.2.5
 
+Vegard
