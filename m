@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab3LMFIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:08:04 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:44292 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3LMFIC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:08:02 -0500
-From: Caizhiyong <caizhiyong@hisilicon.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-CC: Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        Quyaxin <quyaxin@hisilicon.com>
-Subject: [PATCH] mtd: increase max page/OOB size to support 16K pagesize NAND
-Thread-Topic: [PATCH] mtd: increase max page/OOB size to support 16K
- pagesize NAND
-Thread-Index: Ac73wLSIfXMFy3+HQFSy5QaQsDobRA==
-Date: Fri, 13 Dec 2013 05:03:49 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F25E47455@SZXEMA512-MBX.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.53]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751800Ab3LMFIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 00:08:12 -0500
+Received: from tundra.namei.org ([65.99.196.166]:46150 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751608Ab3LMFII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 00:08:08 -0500
+Date: Fri, 13 Dec 2013 16:09:06 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+In-Reply-To: <20131213014220.GB11068@kroah.com>
+Message-ID: <alpine.LRH.2.02.1312131557340.32454@tundra.namei.org>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com> <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <20131213002523.GA20706@redhat.com> <20131213014220.GB11068@kroah.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cai Zhiyong <caizhiyong@huawei.com>
-Date: Fri, 13 Dec 2013 12:52:46 +0800
-Subject: [PATCH] mtd: increase max page/OOB size to support 16K pagesize NAND.
+On Thu, 12 Dec 2013, Greg Kroah-Hartman wrote:
 
-The Toshiba's TC58TEG5DCJTA pagesize is 16K, oob size is 1280 bytes.
-So increase the NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE.
+> On Thu, Dec 12, 2013 at 07:25:23PM -0500, Dave Jones wrote:
+> > On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
+> > 
+> >  > - who will keep adding these triggers going forward?
+> > 
 
-Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
----
- include/linux/mtd/nand.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I think we'd need to have someone commit to maintaining this long term 
+before seriously considering it as part of mainline.  Over time it will 
+become increasingly useless if new triggers aren't added.
 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index f3ea8da..2f0a7f2 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -56,8 +56,8 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
-  * is supported now. If you add a chip with bigger oobsize/page
-  * adjust this accordingly.
-  */
--#define NAND_MAX_OOBSIZE	744
--#define NAND_MAX_PAGESIZE	8192
-+#define NAND_MAX_OOBSIZE	1280
-+#define NAND_MAX_PAGESIZE	16384
- 
- /*
-  * Constants for hardware specific CLE/ALE/NCE function
+What happens when code is refactored, who refactors the triggers?
+
+
+> > also..
+> > 
+> > - Who will test the existing triggers are doing the right thing when related code changes.
+> 
+> And:
+>   - how do you determine an "expoit attempt" from "userspace program
+>     doing something stupid" / "corrupted filesytem mounted"?
+> 
+
+Right, and if there are enough false positives, it'll end up being quite 
+useless.
+
+I suspect this kind of thing is better done in userspace anti-malware 
+scanning.
+
+> I really don't like this, it means that our normal error handling for
+> userspace data will suddenly all have CVE entries on them over time.
+> How is that helpful to anyone?
+> 
+> Think ahead in 10-20 years, what is the code paths going to look like
+> then?  Horrible...
+
+Agree.
+
+This could make an interesting research project outside of the kernel. It 
+doesn't belong in mainline without at least first being proven in the 
+field and also properly maintained long term, if at all.
+
+
+-- 
+James Morris
+<jmorris@namei.org>
