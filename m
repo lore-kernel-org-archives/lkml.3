@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3LMLEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:04:34 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:42983 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab3LMLEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:04:33 -0500
-X-IronPort-AV: E=Sophos;i="4.95,478,1384300800"; 
-   d="scan'208";a="84231702"
-Message-ID: <52AAE9BD.9060305@citrix.com>
-Date: Fri, 13 Dec 2013 11:04:29 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH V10 08/14] x86/xen: Use __pa_symbol instead of __pa on
- C visible symbols
-References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-9-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1386900621-27528-9-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752716Ab3LMLFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:05:22 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39945 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752336Ab3LMLFV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:05:21 -0500
+Date: Fri, 13 Dec 2013 11:05:20 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] misc: Reserve minor for VFIO
+Message-ID: <20131213110520.6db1ad99@alan.etchedpixels.co.uk>
+In-Reply-To: <20131212184717.966.76895.stgit@bling.home>
+References: <20131212184402.966.34502.stgit@bling.home>
+	<20131212184717.966.76895.stgit@bling.home>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
-> From: Alexander Duyck <alexander.h.duyck@intel.com>
-> 
-> This change updates a few of the functions to use __pa_symbol when
-> translating C visible symbols instead of __pa.  By using __pa_symbol we are
-> able to drop a few extra lines of code as don't have to test to see if the
-> virtual pointer is a part of the kernel text or just standard virtual memory.
+> VFIO currently allocates it's own dynamic chardev range, reserving the
+> first minor for the control part of the interface (/dev/vfio/vfio) and
+> the remainder for VFIO groups (/dev/vfio/$GROUP).  This works, but it
+> doesn't support auto loading.  For instance when libvirt checks for
+> VFIO support it looks for /dev/vfio/vfio, which currently doesn't
+> exist unless the vfio module is loaded.  By converting the control
+> device to a misc driver and reserving a static minor, we can enable
+> auto loading.
 
-Why is this part of the PVH series?
+Looks sensible to me. I'm not sure if Lanana even really goes anywhere
+any more however. Linus kept complaining about static device numbering
+despite the fact it's still essential for a few odd cases like this.
 
-David
+Alan
