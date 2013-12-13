@@ -1,184 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3LMX7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:59:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12092 "EHLO mga11.intel.com"
+	id S1753430Ab3LMX7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:59:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:56752 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab3LMX7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:59:07 -0500
+	id S1751609Ab3LMX7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 18:59:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,482,1384329600"; 
-   d="scan'208";a="444049241"
-Subject: [RFC][PATCH 2/7] mm: page->pfmemalloc only used by slab/skb
+   d="scan'208";a="452112360"
+Subject: [RFC][PATCH 0/7] re-shrink 'struct page' when SLUB is on.
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, Pravin B Shelar <pshelar@nicira.com>,
         Christoph Lameter <cl@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Fri, 13 Dec 2013 15:59:06 -0800
-References: <20131213235903.8236C539@viggo.jf.intel.com>
-In-Reply-To: <20131213235903.8236C539@viggo.jf.intel.com>
-Message-Id: <20131213235906.0838EB32@viggo.jf.intel.com>
+Date: Fri, 13 Dec 2013 15:59:03 -0800
+Message-Id: <20131213235903.8236C539@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+SLUB depends on a 16-byte cmpxchg for an optimization.  For the
+purposes of this series, I'm assuming that it is a very important
+optimization that we desperately need to keep around.
 
-page->pfmemalloc does not deserve a spot in 'struct page'.  It is
-only used transiently _just_ after a page leaves the buddy
-allocator.
+In order to get guaranteed 16-byte alignment (required by the
+hardware on x86), 'struct page' is padded out from 56 to 64
+bytes.
 
-Instead of declaring a union, we move its functionality behind a
-few quick accessor functions.  This way we could also much more
-easily audit that it is being used correctly in debugging
-scenarios.  For instance, we could store a magic number in there
-which could never get reused as a page->index and check that the
-magic number exists in page_pfmemalloc().
+Those 8-bytes matter.  We've gone to great lengths to keep
+'struct page' small in the past.  It's a shame that we bloat it
+now just for alignment reasons when we have extra space.  Plus,
+bloating such a commonly-touched structure *HAS* to have cache
+footprint implications.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
+These patches attempt _internal_ alignment instead of external
+alignment for slub.
 
- linux.git-davehans/include/linux/mm.h       |   17 +++++++++++++++++
- linux.git-davehans/include/linux/mm_types.h |    9 ---------
- linux.git-davehans/include/linux/skbuff.h   |   10 +++++-----
- linux.git-davehans/mm/page_alloc.c          |    2 +-
- linux.git-davehans/mm/slab.c                |    4 ++--
- linux.git-davehans/mm/slub.c                |    2 +-
- 6 files changed, 26 insertions(+), 18 deletions(-)
+I also got a bug report from some folks running a large database
+benchmark.  Their old kernel uses slab and their new one uses
+slub.  They were swapping and couldn't figure out why.  It turned
+out to be the 2GB of RAM that the slub padding wastes on their
+system.
 
-diff -puN include/linux/mm.h~page_pfmemalloc-only-used-by-slab include/linux/mm.h
---- linux.git/include/linux/mm.h~page_pfmemalloc-only-used-by-slab	2013-12-13 15:51:47.467218911 -0800
-+++ linux.git-davehans/include/linux/mm.h	2013-12-13 15:51:47.475219263 -0800
-@@ -2013,5 +2013,22 @@ void __init setup_nr_node_ids(void);
- static inline void setup_nr_node_ids(void) {}
- #endif
- 
-+/*
-+ * If set by the page allocator, ALLOC_NO_WATERMARKS was set and the
-+ * low watermark was not met implying that the system is under some
-+ * pressure. The caller should try ensure this page is only used to
-+ * free other pages.  Currently only used by sl[au]b.  Note that
-+ * this is only valid for a short time after the page returns
-+ * from the allocator.
-+ */
-+static inline int page_pfmemalloc(struct page *page)
-+{
-+	return !!page->index;
-+}
-+static inline void set_page_pfmemalloc(struct page *page, int pfmemalloc)
-+{
-+	page->index = pfmemalloc;
-+}
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_MM_H */
-diff -puN include/linux/mm_types.h~page_pfmemalloc-only-used-by-slab include/linux/mm_types.h
---- linux.git/include/linux/mm_types.h~page_pfmemalloc-only-used-by-slab	2013-12-13 15:51:47.468218955 -0800
-+++ linux.git-davehans/include/linux/mm_types.h	2013-12-13 15:51:47.475219263 -0800
-@@ -60,15 +60,6 @@ struct page {
- 		union {
- 			pgoff_t index;		/* Our offset within mapping. */
- 			void *freelist;		/* sl[aou]b first free object */
--			bool pfmemalloc;	/* If set by the page allocator,
--						 * ALLOC_NO_WATERMARKS was set
--						 * and the low watermark was not
--						 * met implying that the system
--						 * is under some pressure. The
--						 * caller should try ensure
--						 * this page is only used to
--						 * free other pages.
--						 */
- 		};
- 
- 		union {
-diff -puN include/linux/skbuff.h~page_pfmemalloc-only-used-by-slab include/linux/skbuff.h
---- linux.git/include/linux/skbuff.h~page_pfmemalloc-only-used-by-slab	2013-12-13 15:51:47.469218999 -0800
-+++ linux.git-davehans/include/linux/skbuff.h	2013-12-13 15:51:47.475219263 -0800
-@@ -1322,11 +1322,11 @@ static inline void __skb_fill_page_desc(
- 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
- 
- 	/*
--	 * Propagate page->pfmemalloc to the skb if we can. The problem is
-+	 * Propagate page_pfmemalloc() to the skb if we can. The problem is
- 	 * that not all callers have unique ownership of the page. If
- 	 * pfmemalloc is set, we check the mapping as a mapping implies
- 	 * page->index is set (index and pfmemalloc share space).
--	 * If it's a valid mapping, we cannot use page->pfmemalloc but we
-+	 * If it's a valid mapping, we cannot use page_pfmemalloc() but we
- 	 * do not lose pfmemalloc information as the pages would not be
- 	 * allocated using __GFP_MEMALLOC.
- 	 */
-@@ -1335,7 +1335,7 @@ static inline void __skb_fill_page_desc(
- 	skb_frag_size_set(frag, size);
- 
- 	page = compound_head(page);
--	if (page->pfmemalloc && !page->mapping)
-+	if (page_pfmemalloc(page) && !page->mapping)
- 		skb->pfmemalloc	= true;
- }
- 
-@@ -1917,7 +1917,7 @@ static inline struct page *__skb_alloc_p
- 		gfp_mask |= __GFP_MEMALLOC;
- 
- 	page = alloc_pages_node(NUMA_NO_NODE, gfp_mask, order);
--	if (skb && page && page->pfmemalloc)
-+	if (skb && page && page_pfmemalloc(page))
- 		skb->pfmemalloc = true;
- 
- 	return page;
-@@ -1946,7 +1946,7 @@ static inline struct page *__skb_alloc_p
- static inline void skb_propagate_pfmemalloc(struct page *page,
- 					     struct sk_buff *skb)
- {
--	if (page && page->pfmemalloc)
-+	if (page && page_pfmemalloc(page))
- 		skb->pfmemalloc = true;
- }
- 
-diff -puN mm/page_alloc.c~page_pfmemalloc-only-used-by-slab mm/page_alloc.c
---- linux.git/mm/page_alloc.c~page_pfmemalloc-only-used-by-slab	2013-12-13 15:51:47.470219043 -0800
-+++ linux.git-davehans/mm/page_alloc.c	2013-12-13 15:51:47.477219351 -0800
-@@ -2066,7 +2066,7 @@ this_zone_full:
- 		 * memory. The caller should avoid the page being used
- 		 * for !PFMEMALLOC purposes.
- 		 */
--		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
-+		set_page_pfmemalloc(page, alloc_flags & ALLOC_NO_WATERMARKS);
- 
- 	return page;
- }
-diff -puN mm/slab.c~page_pfmemalloc-only-used-by-slab mm/slab.c
---- linux.git/mm/slab.c~page_pfmemalloc-only-used-by-slab	2013-12-13 15:51:47.471219087 -0800
-+++ linux.git-davehans/mm/slab.c	2013-12-13 15:51:47.478219395 -0800
-@@ -1672,7 +1672,7 @@ static struct page *kmem_getpages(struct
- 	}
- 
- 	/* Record if ALLOC_NO_WATERMARKS was set when allocating the slab */
--	if (unlikely(page->pfmemalloc))
-+	if (unlikely(page_pfmemalloc(page)))
- 		pfmemalloc_active = true;
- 
- 	nr_pages = (1 << cachep->gfporder);
-@@ -1683,7 +1683,7 @@ static struct page *kmem_getpages(struct
- 		add_zone_page_state(page_zone(page),
- 			NR_SLAB_UNRECLAIMABLE, nr_pages);
- 	__SetPageSlab(page);
--	if (page->pfmemalloc)
-+	if (page_pfmemalloc(page))
- 		SetPageSlabPfmemalloc(page);
- 	memcg_bind_pages(cachep, cachep->gfporder);
- 
-diff -puN mm/slub.c~page_pfmemalloc-only-used-by-slab mm/slub.c
---- linux.git/mm/slub.c~page_pfmemalloc-only-used-by-slab	2013-12-13 15:51:47.472219131 -0800
-+++ linux.git-davehans/mm/slub.c	2013-12-13 15:51:47.478219395 -0800
-@@ -1403,7 +1403,7 @@ static struct page *new_slab(struct kmem
- 	memcg_bind_pages(s, order);
- 	page->slab_cache = s;
- 	__SetPageSlab(page);
--	if (page->pfmemalloc)
-+	if (page_pfmemalloc(page))
- 		SetPageSlabPfmemalloc(page);
- 
- 	start = page_address(page);
-_
+On my box, that 2GB cost about $200 to populate back when we
+bought it.  I want my $200 back.
+
+This set takes me from 16909584K of reserved memory at boot
+down to 14814472K, so almost *exactly* 2GB of savings!  It also
+helps performance, presumably because it touches 14% fewer
+struct page cachelines.  A 30GB dd to a ramfs file:
+
+        dd if=/dev/zero of=bigfile bs=$((1<<30)) count=30
+
+is sped up by about 4.4% in my testing.
+
+This is compile tested and lightly runtime tested.  I'm curious
+what people think of it before we push it futher.  I believe this
+gets rid of the concerns Christoph had about adding additional
+branches in the fast path, although I still disagree that this
+has any benefit in practice.
+
+I also wrote up a document describing 'struct page's layout:
+
+	http://tinyurl.com/n6kmedz
+
