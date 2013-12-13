@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab3LMPOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:14:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45277 "EHLO
+	id S1753376Ab3LMPO3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:14:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45282 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192Ab3LMPMV (ORCPT
+	with ESMTP id S1753197Ab3LMPMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Dec 2013 10:12:21 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/20] tools lib traceevent: Refactor create_arg_item()
-Date: Fri, 13 Dec 2013 12:12:03 -0300
-Message-Id: <1386947526-7118-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/20] perf tools: Add perf_event_paranoid()
+Date: Fri, 13 Dec 2013 12:11:48 -0300
+Message-Id: <1386947526-7118-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1386947526-7118-1-git-send-email-acme@infradead.org>
 References: <1386947526-7118-1-git-send-email-acme@infradead.org>
@@ -27,98 +30,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-So that it can return a proper pevent_errno value.
+Add a function to return the value of
+/proc/sys/kernel/perf_event_paranoid.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+This will be used to determine default values for mmap size because perf
+is not subject to mmap limits when perf_event_paranoid is less than
+zero.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1386833777-3790-10-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1386765443-26966-12-git-send-email-alexander.shishkin@linux.intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h  |  3 ++-
- tools/lib/traceevent/parse-filter.c | 20 ++++++++++----------
- 2 files changed, 12 insertions(+), 11 deletions(-)
+ tools/perf/util/evlist.c |  3 +--
+ tools/perf/util/util.c   | 19 +++++++++++++++++++
+ tools/perf/util/util.h   |  1 +
+ 3 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 5e4392d8e2d4..57b66aed8122 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -367,7 +367,8 @@ enum pevent_flag {
- 	_PE(ILLEGAL_INTEGER_CMP,"illegal comparison for integer"), 	      \
- 	_PE(REPARENT_NOT_OP,	"cannot reparent other than OP"),	      \
- 	_PE(REPARENT_FAILED,	"failed to reparent filter OP"),	      \
--	_PE(BAD_FILTER_ARG,	"bad arg in filter tree")
-+	_PE(BAD_FILTER_ARG,	"bad arg in filter tree"),		      \
-+	_PE(UNEXPECTED_TYPE,	"unexpected type (not a value)")
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index af250556b33f..2eb7378e4c40 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1191,8 +1191,7 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+ 				    "Error:\t%s.\n"
+ 				    "Hint:\tCheck /proc/sys/kernel/perf_event_paranoid setting.", emsg);
  
- #undef _PE
- #define _PE(__code, __str) PEVENT_ERRNO__ ## __code
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 9b05892566e0..8d71208f0131 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -368,9 +368,9 @@ static void free_events(struct event_list *events)
- 	}
+-		if (filename__read_int("/proc/sys/kernel/perf_event_paranoid", &value))
+-			break;
++		value = perf_event_paranoid();
+ 
+ 		printed += scnprintf(buf + printed, size - printed, "\nHint:\t");
+ 
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 4a57609c0b43..8f63dba212d7 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,5 +1,6 @@
+ #include "../perf.h"
+ #include "util.h"
++#include "fs.h"
+ #include <sys/mman.h>
+ #ifdef HAVE_BACKTRACE_SUPPORT
+ #include <execinfo.h>
+@@ -8,6 +9,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <errno.h>
++#include <limits.h>
+ #include <linux/kernel.h>
+ 
+ /*
+@@ -496,3 +498,20 @@ const char *get_filename_for_perf_kvm(void)
+ 
+ 	return filename;
  }
++
++int perf_event_paranoid(void)
++{
++	char path[PATH_MAX];
++	const char *procfs = procfs__mountpoint();
++	int value;
++
++	if (!procfs)
++		return INT_MAX;
++
++	scnprintf(path, PATH_MAX, "%s/sys/kernel/perf_event_paranoid", procfs);
++
++	if (filename__read_int(path, &value))
++		return INT_MAX;
++
++	return value;
++}
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 0171213d1d4d..1e7d4136cc82 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -321,6 +321,7 @@ void free_srcline(char *srcline);
  
--static struct filter_arg *
-+static enum pevent_errno
- create_arg_item(struct event_format *event, const char *token,
--		enum event_type type, char **error_str)
-+		enum event_type type, struct filter_arg **parg, char **error_str)
- {
- 	struct format_field *field;
- 	struct filter_arg *arg;
-@@ -378,7 +378,7 @@ create_arg_item(struct event_format *event, const char *token,
- 	arg = allocate_arg();
- 	if (arg == NULL) {
- 		show_error(error_str, "failed to allocate filter arg");
--		return NULL;
-+		return PEVENT_ERRNO__MEM_ALLOC_FAILED;
- 	}
+ int filename__read_int(const char *filename, int *value);
+ int filename__read_str(const char *filename, char **buf, size_t *sizep);
++int perf_event_paranoid(void);
  
- 	switch (type) {
-@@ -392,7 +392,7 @@ create_arg_item(struct event_format *event, const char *token,
- 		if (!arg->value.str) {
- 			free_arg(arg);
- 			show_error(error_str, "failed to allocate string filter arg");
--			return NULL;
-+			return PEVENT_ERRNO__MEM_ALLOC_FAILED;
- 		}
- 		break;
- 	case EVENT_ITEM:
-@@ -420,11 +420,11 @@ create_arg_item(struct event_format *event, const char *token,
- 		break;
- 	default:
- 		free_arg(arg);
--		show_error(error_str, "expected a value but found %s",
--			   token);
--		return NULL;
-+		show_error(error_str, "expected a value but found %s", token);
-+		return PEVENT_ERRNO__UNEXPECTED_TYPE;
- 	}
--	return arg;
-+	*parg = arg;
-+	return 0;
- }
- 
- static struct filter_arg *
-@@ -993,8 +993,8 @@ process_filter(struct event_format *event, struct filter_arg **parg,
- 		case EVENT_SQUOTE:
- 		case EVENT_DQUOTE:
- 		case EVENT_ITEM:
--			arg = create_arg_item(event, token, type, error_str);
--			if (!arg)
-+			ret = create_arg_item(event, token, type, &arg, error_str);
-+			if (ret < 0)
- 				goto fail;
- 			if (!left_item)
- 				left_item = arg;
+ const char *get_filename_for_perf_kvm(void);
+ #endif /* GIT_COMPAT_UTIL_H */
 -- 
 1.8.1.4
 
