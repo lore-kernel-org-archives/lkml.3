@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3LMK42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 05:56:28 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:46566 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab3LMK41 (ORCPT
+	id S1752628Ab3LMK6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 05:58:16 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:5122 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752568Ab3LMK6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 05:56:27 -0500
-X-IronPort-AV: E=Sophos;i="4.95,477,1384300800"; 
-   d="scan'208";a="81937325"
-Message-ID: <52AAE7D8.2030602@citrix.com>
-Date: Fri, 13 Dec 2013 10:56:24 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Fri, 13 Dec 2013 05:58:15 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwRAAjnqlJ5LHyk/2dsb2JhbABZgwo4gwShJwOPOYVPgR8XdIIlAQEFOhwjEAgDDgoJJQ8FJQMhE4gDwwkXFo8AB4Q2BJgUikyHSYM+KA
+Date: Fri, 13 Dec 2013 21:58:11 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [HANG 3.13-rc3] blk-mq/virtio: mkfs.ext4 hangs in
+ blk_mq_wait_for_tags
+Message-ID: <20131213105811.GT10988@dastard>
+References: <20131209223905.GU31386@dastard>
+ <CACVXFVNLqEQpoKPS-r9Lj_hJek5FnCGMagkMt+LUUxt8c3XCbA@mail.gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <george.dunlap@eu.citrix.com>, <ian.jackson@eu.citrix.com>,
-        <mukesh.rathor@oracle.com>, <tim@xen.org>, <jbeulich@suse.com>,
-        <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH V10 02/14] xen/pvh: Extend vcpu_guest_context, p2m, event,
- and XenBus.
-References: <1386900621-27528-1-git-send-email-konrad.wilk@oracle.com> <1386900621-27528-3-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1386900621-27528-3-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNLqEQpoKPS-r9Lj_hJek5FnCGMagkMt+LUUxt8c3XCbA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/13 02:10, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On Fri, Dec 13, 2013 at 09:57:48AM +0800, Ming Lei wrote:
+> On Tue, Dec 10, 2013 at 6:39 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > Hi Jens,
+> >
+> > Another day, another blkmq/virtio problem. Running mkfs.ext4 on a
+> > sparse 100TB VM file image, it hangs hard while writing superblock
+> > information:
+> >
+> > $ tests/fsmark-50-test-ext4.sh
+> > mke2fs 1.43-WIP (20-Jun-2013)
+> > Filesystem label=
+> > OS type: Linux
+> > Block size=4096 (log=2)
+> > Fragment size=4096 (log=2)
+> > Stride=0 blocks, Stripe width=0 blocks
+> > 1677721600 inodes, 26843545600 blocks
+> > 1342177280 blocks (5.00%) reserved for the super user
+> > First data block=0
+> > 819200 block groups
+> > 32768 blocks per group, 32768 fragments per group
+> > 2048 inodes per group
+> > Superblock backups stored on blocks:
+> >         32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+> >         4096000, 7962624, 11239424, 20480000, 23887872, 71663616, 78675968,
+> >         102400000, 214990848, 512000000, 550731776, 644972544, 1934917632,
+> >         2560000000, 3855122432, 5804752896, 12800000000, 17414258688
+> >
+> > Allocating group tables: done
+> > Writing inode tables: done
+> > Creating journal (32768 blocks): done
+> > Writing superblocks and filesystem accounting information:
+> >
+> > It writes a few superblocks, then hangs. Immediately after it stops
+> > updating that last line, I see this:
+> >
+> > root@test4:~# echo w > /proc/sysrq-trigger
 > 
-> Make gdt_frames[]/gdt_ents into a union with {gdtaddr, gdtsz},
-> as PVH only needs to send down gdtaddr and gdtsz in the
-> vcpu_guest_context structure..
+> It might be helpful to do below and post the result before the sysrq-trigger:
 > 
-> For interrupts, PVH uses native_irq_ops so we can skip most of the
-> PV ones. In the future we can support the pirq_eoi_map..
-> Also VCPU hotplug is currently not available for PVH.
-> 
-> For events (and IRQs) we follow what PVHVM does - so use callback
-> vector.  Lastly, for XenBus we use the same logic that is used in
-> the PVHVM case.
-[...]
-> --- a/arch/x86/include/asm/xen/interface.h
-> +++ b/arch/x86/include/asm/xen/interface.h
-> @@ -145,7 +145,16 @@ struct vcpu_guest_context {
->      struct cpu_user_regs user_regs;         /* User-level CPU registers     */
->      struct trap_info trap_ctxt[256];        /* Virtual IDT                  */
->      unsigned long ldt_base, ldt_ents;       /* LDT (linear address, # ents) */
-> -    unsigned long gdt_frames[16], gdt_ents; /* GDT (machine frames, # ents) */
-> +    union {
-> +	struct {
-> +		/* PV: GDT (machine frames, # ents).*/
-> +		unsigned long gdt_frames[16], gdt_ents;
-> +	} pv;
-> +	struct {
-> +		/* PVH: GDTR addr and size */
-> +		unsigned long gdtaddr, gdtsz;
-> +	} pvh;
-> +    } u;
+>          cat    /sys/class/block/vda/mq/0/tags
 
-Doesn't match the hypervisor.
+I would, but for some reason I can't reproduce it now. I'm running a
+slightly more recent kernel than a few days ago, and it isn't
+hanging now....
 
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -800,8 +800,10 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  	unsigned topidx, mididx, idx;
->  
->  	/* don't track P2M changes in autotranslate guests */
-> -	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))
-> +	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap))) {
-> +		BUG_ON(pfn != mfn && mfn != INVALID_P2M_ENTRY);
->  		return true;
-> +	}
+Cheers,
 
-Isn't this undoing a recent change that removed this BUG_ON()?
-
-David
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
