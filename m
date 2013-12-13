@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab3LMIBZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 03:01:25 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:34285 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3LMIBX (ORCPT
+	id S1752183Ab3LMIC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 03:02:28 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:63533 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3LMIC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 03:01:23 -0500
-Date: Fri, 13 Dec 2013 00:01:18 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Caizhiyong <caizhiyong@hisilicon.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Quyaxin <quyaxin@hisilicon.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>
-Subject: Re: [PATCH] mtd: increase max page/OOB size to support 16K pagesize
- NAND
-Message-ID: <20131213080118.GC24650@norris-Latitude-E6410>
-References: <C3050A4DBA34F345975765E43127F10F25E47455@SZXEMA512-MBX.china.huawei.com>
+	Fri, 13 Dec 2013 03:02:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F25E47455@SZXEMA512-MBX.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1386271244-3927-4-git-send-email-tim.kryger@linaro.org>
+References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
+	<1386271244-3927-4-git-send-email-tim.kryger@linaro.org>
+Date: Fri, 13 Dec 2013 00:02:25 -0800
+Message-ID: <CAEPRUYr7DpMhEjp3xd1t21usjWGdod0dsqdsAeu2gyVY-pqQKw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/8] Documentation: dt: kona-sdhci: Add clocks property
+From: Christian Daudt <bcm@fixthebug.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        Axel Lin <axel.lin@ingics.com>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linaro Patches List <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 05:03:49AM +0000, Caizhiyong wrote:
-> From: Cai Zhiyong <caizhiyong@huawei.com>
-> Date: Fri, 13 Dec 2013 12:52:46 +0800
-> Subject: [PATCH] mtd: increase max page/OOB size to support 16K pagesize NAND.
-> 
-> The Toshiba's TC58TEG5DCJTA pagesize is 16K, oob size is 1280 bytes.
-> So increase the NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE.
-
-It would help if we had nand_base/nand_ids support for TC58TEG5DCJTA
-before we try to increase NAND_MAX_PAGESIZE and NAND_MAX_OOBSIZE yet
-again. AFAICT, nand_base will not detect new, large Toshiba flash
-properly anyway.
-
-> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+On Thu, Dec 5, 2013 at 11:20 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+> The Kona SDHCI block requires a clock that must be specified in the
+> device tree.  Update the documentation to reflect this requirement.
+>
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+> Reviewed-by: Matt Porter <matt.porter@linaro.org>
 > ---
->  include/linux/mtd/nand.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-> index f3ea8da..2f0a7f2 100644
-> --- a/include/linux/mtd/nand.h
-> +++ b/include/linux/mtd/nand.h
-> @@ -56,8 +56,8 @@ extern int nand_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len);
->   * is supported now. If you add a chip with bigger oobsize/page
->   * adjust this accordingly.
->   */
-> -#define NAND_MAX_OOBSIZE	744
-> -#define NAND_MAX_PAGESIZE	8192
-> +#define NAND_MAX_OOBSIZE	1280
-> +#define NAND_MAX_PAGESIZE	16384
-
-It might be time to draw a line in the sand: next person who needs to
-increase MAX_{PAGE,OOB}SIZE gets the job of killing the macro? We are
-long overdue for dynamic buffer allocation.
-
-There are two drivers that use the macros, plus nand_chip.buffers.*. The
-drivers can be weaned off by allocating a small, fixed-size temporary
-buffer for the few tasks that need it. With nand_base.c, I think we can
-get by with waiting to allocate nand_chip.buffers until after we detect
-the writesize/oobsize.
-
-So Cai, are you up for this?
-
->  
->  /*
->   * Constants for hardware specific CLE/ALE/NCE function
-> 
-
-Brian
+>  Documentation/devicetree/bindings/mmc/kona-sdhci.txt | 4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/Documentation/devicetree/bindings/mmc/kona-sdhci.txt b/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
+> index 789fb07..aaba248 100644
+> --- a/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
+> +++ b/Documentation/devicetree/bindings/mmc/kona-sdhci.txt
+> @@ -6,12 +6,16 @@ and the properties present in the bcm281xx SDHCI
+>  Required properties:
+>  - compatible : Should be "brcm,kona-sdhci"
+>  - DEPRECATED: compatible : Should be "bcm,kona-sdhci"
+> +- clocks: phandle + clock specifier pair of the external clock
+> +
+> +Refer to clocks/clock-bindings.txt for generic clock consumer properties.
+>
+>  Example:
+>
+>  sdio2: sdio@0x3f1a0000 {
+>         compatible = "brcm,kona-sdhci";
+>         reg = <0x3f1a0000 0x10000>;
+> +       clocks = <&sdio3_clk>;
+>         interrupts = <0x0 74 0x4>;
+>  };
+>
+> --
+> 1.8.0.1
+>
+Reviewed-by: Christian Daudt <bcm@fixthebug.org>
