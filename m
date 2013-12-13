@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab3LMLow (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:44:52 -0500
-Received: from r00tworld.com ([212.85.137.150]:54372 "EHLO r00tworld.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab3LMLov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:44:51 -0500
-X-Greylist: delayed 1967 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Dec 2013 06:44:51 EST
-From: "PaX Team" <pageexec@freemail.hu>
-To: Kees Cook <keescook@chromium.org>, Rik van Riel <riel@redhat.com>
-Date: Fri, 13 Dec 2013 12:10:17 +0100
+	id S1752687Ab3LMLrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:47:42 -0500
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:49538 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752336Ab3LMLrj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:47:39 -0500
+Date: Fri, 13 Dec 2013 06:47:34 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Tim Hockin <thockin@hockin.org>
+Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Cgroups <cgroups@vger.kernel.org>,
+        Victor Marmol <vmarmol@google.com>
+Subject: Re: [patch 7/8] mm, memcg: allow processes handling oom
+ notifications to access reserves
+Message-ID: <20131213114734.GA22074@htj.dyndns.org>
+References: <20131206190105.GE13373@htj.dyndns.org>
+ <alpine.DEB.2.02.1312061441390.8949@chino.kir.corp.google.com>
+ <20131210215037.GB9143@htj.dyndns.org>
+ <alpine.DEB.2.02.1312101522400.22701@chino.kir.corp.google.com>
+ <20131211124240.GA24557@htj.dyndns.org>
+ <CAAAKZwsmM-C=kLGV=RW=Y4Mq=BWpQzuPruW6zvEr9p0Xs4GD5g@mail.gmail.com>
+ <20131212142156.GB32683@htj.dyndns.org>
+ <CAAAKZwtuydFdiiSsKMuOUv3nr9trjuKvKoDO2aM0QsJKu1TMZA@mail.gmail.com>
+ <20131212192319.GL32683@htj.dyndns.org>
+ <CAAAKZwtQc212_-oqf56ToxjSG7f9bsNcBwwurSezpGKiPDT+nQ@mail.gmail.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH] mm: fix use-after-free in sys_remap_file_pages
-Reply-to: pageexec@freemail.hu
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, Dmitry Vyukov <dvyukov@google.com>
-Message-ID: <52AAEB19.27706.CCB8B7D@pageexec.freemail.hu>
-In-reply-to: <20131212224118.17a951c2@annuminas.surriel.com>
-References: <20131212220757.GA14928@www.outflux.net>, <20131212224118.17a951c2@annuminas.surriel.com>
-X-mailer: Pegasus Mail for Windows (4.63)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Fri, 13 Dec 2013 12:10:33 +0100 (CET)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwtQc212_-oqf56ToxjSG7f9bsNcBwwurSezpGKiPDT+nQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 Dec 2013 at 22:41, Rik van Riel wrote:
+Hello, Tim.
 
-> If the vma has been freed by the time the code jumps to the
-> out label (because it was freed by a function called from
-> mmap_region), surely it will also already have been freed
-> by the time this patch dereferences it?
+On Thu, Dec 12, 2013 at 04:23:18PM -0800, Tim Hockin wrote:
+> Just to be clear - I say this because it doesn't feel right to impose
+> my craziness on others, and it sucks when we try and are met with
+> "you're crazy, go away".  And you have to admit that happens to
+> Google. :)  Punching an escape valve that allows us to be crazy
+> without hurting anyone else sounds ideal, IF and ONLY IF that escape
+> valve is itself maintainable.
 
-oops, yes, i meant to save the flags away before mmap_region,
-no idea how i ended up with this ;).
+I don't think google being considered crazy is a good thing in
+general, highly likely not something to be proud of.  It sure is
+partly indicative of the specialization that you guys need but I
+suspect is a much stronger signal for room for better engineering.
 
-> Also, setting vma = NULL to avoid the if (vma) branch at
-> the out: label is unnecessarily obfuscated. Lets make things
-> clear by documenting what is going on, and having a label
-> after that dereference.
+I'm fairly certain the blame is abundant for everybody to share.  The
+point I'm trying to make is "let's please stop diverging".  It hurts
+everybody.
 
-on that note, how about this as well:
+> If the escape valve is userspace it's REALLY easy to iterate on our
+> craziness.  If it is kernel space, it's somewhat less easy, but not
+> impossible.
 
-> --- a/mm/fremap.c
-> +++ b/mm/fremap.c
-> @@ -203,6 +203,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
->  		if (mapping_cap_account_dirty(mapping)) {
->  			unsigned long addr;
->  			struct file *file = get_file(vma->vm_file);
-> +			vm_flags = vma->vm_flags;
->  
->  			addr = mmap_region(file, start, size,
->  					vma->vm_flags, pgoff);
-                                    ^^^^^^^^^^^^^
-pass in vm_flags instead of vma->vm_flags just to prevent someone
-from 'optimizing' away the read in the future?
+As I'm sure you've gathered from this thread, even punching the
+initial hole is a sizable burden and contortion to the general memory
+management and I'm sure as you guys develop further down the path
+you'll encounter cases where you need further support or holes from
+the kernel.  I can't anticipate the details but the fact that those
+will follow is as evident as the day to me, especially given the
+mindset leading to the current situation in the first place.
 
-> @@ -213,7 +214,8 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
->  				BUG_ON(addr != start);
->  				err = 0;
->  			}
-> -			goto out;
-> +			/* mmap_region may have freed vma */
-> +			goto out_freed;
+Please note that this part of discussion is more abstract than
+necessary for this particular patchset or hole.  I'm quite doubtful
+that system-level OOM handling with separate physical reserve is
+likely to survive even just on technical details.  The reason why I'm
+keeping at this abstract point is because this seems to be a
+continuing trend rather than a single occurrence and I really hope it
+changes.
 
-perhaps {copy,move} this comment above the previous hunk since that's
-where the relevant action is?
+> Well that's an awesome start.  We have or had patches to do a lot of
+> this.  I don't know how well scrubbed they are for pushing or whether
+> they apply at all to current head, though.
 
-cheers,
-  PaX Team
+Awesome, this looks like something everyone agrees on. :)
 
+> As an aside: mucking about with extra nesting levels to achieve a
+> stable OOM semantic sounds doable, but it certainly sucks in a unified
+> hierarchy.  We'll end up with 1, 2, or 3 (or more in esoteric cases?
+> not sure) extra nesting levels for every other resource dimension.
+> And lawd help us if we ever need to do something similar in a
+> different resource dimension - the cross product is mind-bending.
+> What we do with split-hierarchies is this but on a smaller scale.
+
+Yes, agreed but I believe there are substantial benefits to having
+certain level of structural constraints.  It encourages people to
+ponder the underlying issues and make active trade-offs.  Not that
+going off that extreme would be good either but we've gone too far
+towards the other end.
+
+This being a special issue with memcg, if this turns out to be a big
+enough problem, I don't think having a provision to be able to handle
+it without further nesting would be too crazy - e.g. the ability to
+mark a single cgroup at the root level as for OOM handler or whatever
+- as long as we stay within the boundaries of memcg and cgroup proper,
+but we seem to have ways to go before worrying about that one.
+
+Thanks.
+
+-- 
+tejun
