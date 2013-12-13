@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab3LMKrp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 05:47:45 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:50318 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab3LMKrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 05:47:43 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linus.walleij@linaro.org, balbi@ti.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/1] usb: musb: ux500_dma: fix potential NULL dereference error
-Date: Fri, 13 Dec 2013 10:47:28 +0000
-Message-Id: <1386931648-1540-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752639Ab3LMKtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 05:49:11 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30908 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752440Ab3LMKtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 05:49:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,477,1384329600"; 
+   d="scan'208";a="449498773"
+Message-ID: <52AAE61D.4060406@linux.intel.com>
+Date: Fri, 13 Dec 2013 12:49:01 +0200
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, lenb@kernel.org,
+        rjw@rjwysocki.net, rui.zhang@intel.com, jacob.jun.pan@linux.intel.com,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>,
+        hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/15] cleanups and optimizations
+References: <20131212140835.729222186@infradead.org>
+In-Reply-To: <20131212140835.729222186@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-static checker warning: "drivers/usb/musb/ux500_dma.c:335
-ux500_dma_controller_start()
-         error: potential NULL dereference 'param_array'."
+On 12/12/2013 16:08, Peter Zijlstra wrote:
+> This series contains the preempt_enable_no_resched() cleanups that include
+> spin_lock_bh() optimizations and local_clock() optimizations.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/usb/musb/ux500_dma.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I'm trying to test this on tip/master.
+Patch 3 fails to apply on kenrel/softirq.c
 
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index 3700e97..9aad00f 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -336,7 +336,9 @@ static int ux500_dma_controller_start(struct ux500_dma_controller *controller)
- 							    data ?
- 							    data->dma_filter :
- 							    NULL,
--							    param_array[ch_num]);
-+							    param_array ?
-+							    param_array[ch_num] :
-+							    NULL);
- 
- 			if (!ux500_channel->dma_chan) {
- 				ERR("Dma pipe allocation error dir=%d ch=%d\n",
--- 
-1.8.3.2
-
+Thanks,
+Eliezer
