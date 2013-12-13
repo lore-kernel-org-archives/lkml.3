@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab3LMWDg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:03:36 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:60454 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab3LMWDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:03:33 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-doc@vger.kernel.org
-Subject: [PATCH] devicetree: macb: Document clock properties
-Date: Fri, 13 Dec 2013 14:03:25 -0800
-Message-Id: <1386972205-32733-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.5.1
+	id S1752786Ab3LMWF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:05:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11108 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab3LMWF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 17:05:56 -0500
+Date: Fri, 13 Dec 2013 17:05:37 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Rafael Aquini <aquini@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Joonsoo Kim <js1304@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Message-ID: <1386972337-x4axszvt-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1386917611-11319-3-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1386917611-11319-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1386917611-11319-3-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH v3 2/6] mm/migrate: correct failure handling if
+ !hugepage_migration_support()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <1386917611-11319-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macb driver uses the clock bindings. Document the required
-properties, especially the driver specific clock-names.
+On Fri, Dec 13, 2013 at 03:53:27PM +0900, Joonsoo Kim wrote:
+> We should remove the page from the list if we fail with ENOSYS,
+> since migrate_pages() consider error cases except -ENOMEM and -EAGAIN
+> as permanent failure and it assumes that the page would be removed from
+> the list. Without this patch, we could overcount number of failure.
+> 
+> In addition, we should put back the new hugepage if
+> !hugepage_migration_support(). If not, we would leak hugepage memory.
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- Documentation/devicetree/bindings/net/macb.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
-index 4ff65047bb9a..70af2ec12b09 100644
---- a/Documentation/devicetree/bindings/net/macb.txt
-+++ b/Documentation/devicetree/bindings/net/macb.txt
-@@ -10,6 +10,10 @@ Required properties:
- - interrupts: Should contain macb interrupt
- - phy-mode: String, operation mode of the PHY interface.
-   Supported values are: "mii", "rmii", "gmii", "rgmii".
-+- clock-names: Tuple listing input clock names.
-+	Required elements: 'pclk', 'hclk'
-+	Optional elements: 'tx_clk'
-+- clocks: Phandles to input clocks.
- 
- Optional properties:
- - local-mac-address: 6 bytes, mac address
-@@ -22,4 +26,6 @@ Examples:
- 		interrupts = <21>;
- 		phy-mode = "rmii";
- 		local-mac-address = [3a 0e 03 04 05 06];
-+		clock-names = "pclk", "hclk", "tx_clk";
-+		clocks = <&clkc 30>, <&clkc 30>, <&clkc 13>;
- 	};
--- 
-1.8.5.1
+Thanks,
+Naoya Horiguchi
 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index c6ac87a..b1cfd01 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1011,7 +1011,7 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+>  {
+>  	int rc = 0;
+>  	int *result = NULL;
+> -	struct page *new_hpage = get_new_page(hpage, private, &result);
+> +	struct page *new_hpage;
+>  	struct anon_vma *anon_vma = NULL;
+>  
+>  	/*
+> @@ -1021,9 +1021,12 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+>  	 * tables or check whether the hugepage is pmd-based or not before
+>  	 * kicking migration.
+>  	 */
+> -	if (!hugepage_migration_support(page_hstate(hpage)))
+> +	if (!hugepage_migration_support(page_hstate(hpage))) {
+> +		putback_active_hugepage(hpage);
+>  		return -ENOSYS;
+> +	}
+>  
+> +	new_hpage = get_new_page(hpage, private, &result);
+>  	if (!new_hpage)
+>  		return -ENOMEM;
+>  
+> -- 
+> 1.7.9.5
+> 
