@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab3LMRjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:39:07 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:57288 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752318Ab3LMRjF (ORCPT
+	id S1753094Ab3LMRn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:43:26 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:49103 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3LMRnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:39:05 -0500
-Date: Fri, 13 Dec 2013 12:39:02 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wolfram Sang <wolfram@the-dreams.de>
-Subject: Re: [PATCH] i2c: Add message transfer tracepoints for I2C and SMBUS
-Message-ID: <20131213123902.06fe9c85@gandalf.local.home>
-In-Reply-To: <22364.1386954254@warthog.procyon.org.uk>
-References: <20131213104806.4fb56012@gandalf.local.home>
-	<20131213142627.4014.42860.stgit@warthog.procyon.org.uk>
-	<20131213163349.4bc686c0@endymion.delvare>
-	<22364.1386954254@warthog.procyon.org.uk>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 13 Dec 2013 12:43:25 -0500
+Message-ID: <52AB4739.4010006@linux.com>
+Date: Fri, 13 Dec 2013 18:43:21 +0100
+From: Levente Kurusa <levex@linux.com>
+Reply-To: Levente Kurusa <levex@linux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Yu Chen <chyyuu@gmail.com>
+CC: linux-kernel@vger.kernel.org, megaraidlinux@lsi.com,
+        xiaoqixue_1 <xiaoqixue_1@163.com>,
+        =?UTF-8?B?6IyD5paH6Imv?= <fanwlexca@gmail.com>
+Subject: Re: [PATCH] scsi: integer overflow in megadev_ioctl()
+References: <CAAdffVGw9Fz1AzAWs5y2943R3JsTvaCvQN1kipCdpeK+Guv_JQ@mail.gmail.com>	<52AB3D86.2040706@linux.com> <CAAdffVHtRc4Ew9f8DMdQf7jC3+saSg1V6OVoAChhMN2WpCo2OA@mail.gmail.com>
+In-Reply-To: <CAAdffVHtRc4Ew9f8DMdQf7jC3+saSg1V6OVoAChhMN2WpCo2OA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Dec 2013 17:04:14 +0000
-David Howells <dhowells@redhat.com> wrote:
-
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+On 12/13/2013 06:31 PM, Yu Chen wrote:
+> Thank you!  The new patch
+> -------------------------------------------------------------
+> [PATCH] scsi: integer overflow in megadev_ioctl()
 > 
-> > > Would it be possible to print this as a string rather than a number?
-> > > The protocol numbers are completely arbitrary, so the reader would have
-> > > to open i2c.h each time to figure out what is what.
-> > 
-> > That can be done in the TP_printk() with:
-> > 
-> > 	".. %s ..", ..,
-> > 	__print_symbolic(__entry->protocol,
-> > 		{ I2C_SMBUS_QUICK	,	"QUICK"	},
-> > 		{ I2C_SMBUS_BYTE	,	"BYTE"	},
-> > 		{ I2C_SMBUS_BYTE_DATA	,	"BYTE_DATA" },
-> > 		[...]
-> > 		{ I2C_SMBUS_I2C_BLOCK_DATA,	"I2C_BLOCK_DATA"}), ...
+> There is a potential integer overflow in megadev_ioctl() if
+> userspace passes in a large u32 variable uioc.adapno.
+> Theint variable adapno would < 0, leading to a error
+Typo here, 'theint' should be 'the int'
+also it should be 'an error' instead of 'a error'
+
+> array access for hdb_soft_state[adapno], or a error
+Here as well.
+
+> copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,..)
 > 
-> What happens if the number isn't in the table?
+> Reported-by: Wenliang Fan <fanwlexca@gmail.com>
+> Suggested-by: Qixue Xiao <xiaoqixue_1@163.com>
+> Signed-off-by: Yu Chen <chyyuu@gmail.com>
+Reviewed-by: Levente Kurusa <levex@linux.com>
 
-It simply prints the hex value. See trace_output.c:
+(Once you have fixed my suggestions :-) )
 
-const char *
-ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
-			 const struct trace_print_flags *symbol_array)
-{
-	int i;
-	const char *ret = p->buffer + p->len;
+> ---
+>  drivers/scsi/megaraid.c | 16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+> index 41bbc21..0b90c54 100644
+> --- a/drivers/scsi/megaraid.c
+> +++ b/drivers/scsi/megaraid.c
+> @@ -3099,7 +3099,10 @@ megadev_ioctl(struct file *filep, unsigned int
+> cmd, unsigned long arg)
+>   /*
+>   * Which adapter
+>   */
+> - if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
+> + adapno = GETADAP(uioc.adapno);
+> + if( adapno < 0 )
+> + return (-EINVAL);
+> + if( adapno >= hba_count )
+>   return (-ENODEV);
+> 
+>   if( copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,
 
-	for (i = 0;  symbol_array[i].name; i++) {
 
-		if (val != symbol_array[i].mask)
-			continue;
+Total whitespace damage. :-)
 
-		trace_seq_puts(p, symbol_array[i].name);
-		break;
-	}
+Try sending them with 'git send-email' or configure your email client
+properly.
 
-	if (ret == (const char *)(p->buffer + p->len))
-		trace_seq_printf(p, "0x%lx", val);
-		
-	trace_seq_putc(p, 0);
+Oh, and one last thing. Don't post the v3 as a reply to this, but
+instead as a whole new post.
 
-	return ret;
-}
-
--- Steve
-
+-- 
+Regards,
+Levente Kurusa
