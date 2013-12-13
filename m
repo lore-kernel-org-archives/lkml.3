@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab3LMIPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 03:15:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33362 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab3LMIO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 03:14:59 -0500
-Message-ID: <52AAC1FE.1010409@suse.cz>
-Date: Fri, 13 Dec 2013 09:14:54 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S1752131Ab3LMISs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 03:18:48 -0500
+Received: from collab.rosalab.ru ([195.19.76.181]:44002 "EHLO
+	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab3LMISq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 03:18:46 -0500
+Message-ID: <52AAC250.7080208@rosalab.ru>
+Date: Fri, 13 Dec 2013 12:16:16 +0400
+From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Organization: ROSA
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, akpm@linux-foundation.org
-CC: hughd@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: documentation: remove hopelessly out-of-date locking
- doc
-References: <1386703084-24118-1-git-send-email-dave.hansen@intel.com>
-In-Reply-To: <1386703084-24118-1-git-send-email-dave.hansen@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: uhci_hcd: Possible corruption of DMA pool uhci->td_pool
+References: <Pine.LNX.4.44L0.1312111125550.1531-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1312111125550.1531-100000@iolanthe.rowland.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2013 08:18 PM, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@intel.com>
+On 12/11/2013 08:41 PM, Alan Stern wrote:
+> On Wed, 11 Dec 2013, Eugene Shatokhin wrote:
 >
-> Documentation/vm/locking is a blast from the past.  In the entire
-> git history, it has had precisely Three modifications.  Two of
-> those look to be pure renames, and the third was from 2005.
+>> Hi,
+>>
+>> On ROSA Linux with kernel 3.10.21 with DMA debug options enabled, the
+>> kernel sometimes issues a warning about DMA pool corruption (see the log
+>> below).
+>>
+>> That happens sometimes, when the system boots or resumes from
+>> hibernation with Samson C01U USB microphone attached.
+>>
+>> The affected DMA pool is 'uhci->td_pool', uhci_alloc_td() from
+>> drivers/usb/host/uhci-hcd.c makes the relevant dma_pool_alloc() calls.
+>>
+>> Any ideas about how to find what causes this and how to fix it?
 >
-> The doc contains such gems as:
+> This is not an easy sort of thing to track down...
 >
->> The page_table_lock is grabbed while holding the
->> kernel_lock spinning monitor.
+>> Here is the relevant part of the system log:
+>> ----------------------------
+>> [   22.264332] usb 2-1: new full-speed USB device number 2 using uhci_hcd
+>> [   22.450609] usb 2-1: New USB device found, idVendor=17a0, idProduct=0001
+>> [   22.450626] usb 2-1: New USB device strings: Mfr=1, Product=2,
+>> SerialNumber=0
+>> [   22.450639] usb 2-1: Product: Samson C01U
+>> [   22.450649] usb 2-1: Manufacturer: Samson Technologies
+>> <...>
+>> [  280.703483] retire_capture_urb: 4494 callbacks suppressed
+>> [  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b060
+>> (corruped)
+>> [  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7
+>>    ................
+>> [  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
+>>    ................
+>> [  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
+>>    ................
+>> [  284.961087] retire_capture_urb: 4343 callbacks suppressed
+>> [  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b5d0
+>> (corruped)
+>> [  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7
+>>    ................
+>> [  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
+>>    ................
+>> [  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
+>>    ................
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> [  284.961087] cannot submit urb (err = -27)
+>> ----------------------------
+>>
+>> 0xa7 is POOL_POISON_FREED. The memory pages to be allocated from the
+>> pool should be filled with such bytes.
+>>
+>> Each time I observed this problem, the first 8 bytes of the listed
+>> memory area were overwritten, with different data each time.
 >
->> Page stealers hold kernel_lock to protect against a bunch of
->> races.
+> It kind of looks like a hardware bug.  Still, it's hard to say.
 >
-> Or this which talks about mmap_sem:
+> Can you test the current 3.13-rc kernel?  There have been a few recent
+> changes in this area that might have an effect.
 >
->> 4. The exception to this rule is expand_stack, which just
->>     takes the read lock and the page_table_lock, this is ok
->>     because it doesn't really modify fields anybody relies on.
->
-> expand_stack() doesn't take any locks any more directly, and the
-> mmap_sem acquisition was long ago moved up in to the page fault
-> code itself.
->
-> It could be argued that we need to rewrite this, but it is
-> dangerous to leave it as-is.  It will confuse more people than it
-> helps.
 
-Heh yeah, when I started few months ago and stumbled upon this doc, 
-people in the office suggested that I could send a patch that just 
-deletes it. I wasn't that brave, but I agree nevertheless.
+I tested 3.13-rc3 - the problem has not shown up so far.
 
-> Signed-off-by: Dave Hansen <dave.hansen@intel.com>
+Regards,
+Eugene
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-
+-- 
+Eugene Shatokhin, ROSA Laboratory.
+www.rosalab.com
