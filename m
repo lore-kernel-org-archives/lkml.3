@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab3LMAcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 19:32:53 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:35326 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab3LMAcu (ORCPT
+	id S1751941Ab3LMApW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 19:45:22 -0500
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:33367 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3LMApV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 19:32:50 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Tarek Dakhran <t.dakhran@samsung.com>
-Cc: Vyacheslav Tyrtov <v.tyrtov@samsung.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Heiko Stuebner <heiko@sntech.de>,
-        Naour Romain <romain.naour@openwide.fr>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Dave.Martin@arm.com,
-        nicolas.pitre@linaro.org, tomasz.figa@gmail.com
-Subject: Re: [PATCH v5 0/3] Exynos 5410 support
-In-Reply-To: <52A836C9.9020405@samsung.com> (Tarek Dakhran's message of "Wed,
-	11 Dec 2013 13:56:25 +0400")
-References: <1386685599-31536-1-git-send-email-v.tyrtov@samsung.com>
-	<87ppp48xrs.fsf@linaro.org> <52A836C9.9020405@samsung.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Thu, 12 Dec 2013 16:32:46 -0800
-Message-ID: <87haad615d.fsf@linaro.org>
+	Thu, 12 Dec 2013 19:45:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131213002523.GA20706@redhat.com>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+ <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+ <20131213002523.GA20706@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 12 Dec 2013 16:45:00 -0800
+Message-ID: <CALCETrXSXsSe575NNPbw9ewH2J-A0enNufqOoD7G2dLRTLqa4Q@mail.gmail.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+To: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, vegard.nossum@oracle.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarek Dakhran <t.dakhran@samsung.com> writes:
-
-> On 12/10/2013 08:40 PM, Kevin Hilman wrote:
->> Vyacheslav Tyrtov <v.tyrtov@samsung.com> writes:
->>
->>> The series of patches represent support of Exynos 5410 SoC
->>>
->>> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
->>>
->>> Patches add new platform description, support of clock controller and device
->>> tree for Exynos 5410.
->>>
->>> Dual cluster support for Exynos 5410 (EDCS) has been removed from this series
->>> This patches is activating only the big cluster (all A15 cores)
->> Testing this series on top of v3.13-rc3, plus a couple of other
->> necessary changes (which should've probably been noted in the changelog):
->>
->> 1) change CONFIG_NR_CPUS=8 in .config
->> 2) add the exynos combiner patch from Chander:
->>     [PATCH v2] irqchip: exynos-combiner: remove hard-coded irq_base value
->>
->> I'm still only seeing 2 out of 4 cores come up on my odroid-xu:
->>
->> [    0.045000] CPU: Testing write buffer coherency: ok
->> [    0.045000] CPU0: update cpu_power 1024
->> [    0.045000] CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
->> [    0.045000] Setting up static identity map for 0x403717d8 - 0x40371830
->> [    0.045000] CPU1: Booted secondary processor
->> [    0.065000] CPU1: update cpu_power 1024
->> [    0.065000] CPU1: thread -1, cpu 1, socket 0, mpidr 80000001
->> [    1.075000] CPU2: failed to boot: -38
->> [    2.075000] CPU3: failed to boot: -38
->> [    2.075000] Brought up 2 CPUs
->> [    2.075000] SMP: Total of 2 processors activated.
->> [    2.075000] CPU: All CPU(s) started in SVC mode.
->>
-> Hi Kevin,
+On Thu, Dec 12, 2013 at 4:25 PM, Dave Jones <davej@redhat.com> wrote:
+> On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
 >
-> EDCS(exynos dual cluster support) moved to separate patch now.
-> This patches introduce only base SoC support  (2xA15).
-
-Thanks for the clarification
-
-I thought there were 4 A15s, and the changelog mentioned this patch
-enabled "all A15s".
-
-Kevin
-
-> Patches tested on samsung smdk5410 board.
+>  > - who will keep adding these triggers going forward?
 >
-> Next version of EDCS patches will be available soon.
-> They allow power on and boot all 8 cores.
+> also..
+>
+> - Who will test the existing triggers are doing the right thing when related code changes.
+>
+> We could add something to tests/ maybe for each exploit() addition, to make sure some
+> new change isn't introducing an oopsable (or worse!) bug in the actual exploit test.
+>
+> It does mean someone needs to be regularly running said tests though.
+> As history has shown, things like nx_test have been broken for months at a time without
+> anyone complaining.  Perhaps Fenguang Wu can add something to the daily test runs if
+> we add an over all "make test-secure" target or similar.
 
+This has the added benefit of making sure that the exploits don't
+(trivially) regress.
+
+--Andy
+
+>
+>         Dave
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
