@@ -1,222 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab3LMOvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 09:51:10 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:57971 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815Ab3LMOvI (ORCPT
+	id S1753024Ab3LMOwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:52:12 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:39196 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab3LMOwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:51:08 -0500
+	Fri, 13 Dec 2013 09:52:11 -0500
+Date: Fri, 13 Dec 2013 11:52:04 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 13/14] tools lib traceevent: Get rid of die() in some
+ string conversion funcitons
+Message-ID: <20131213145204.GC29275@ghostprotocols.net>
+References: <1386833777-3790-1-git-send-email-namhyung@kernel.org>
+ <1386833777-3790-14-git-send-email-namhyung@kernel.org>
+ <20131212184147.GE8164@ghostprotocols.net>
+ <87y53phah9.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <52AB15C0.7090701@tycho.nsa.gov>
-References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
-	<1386018639-18916-2-git-send-email-wroberts@tresys.com>
-	<52AB15C0.7090701@tycho.nsa.gov>
-Date: Fri, 13 Dec 2013 09:51:07 -0500
-Message-ID: <CAFftDdquPe9dE_4x_mr0BT2jziUAEtdyjk4DqXvt2-nnBf73zg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm: Create utility functions for accessing a tasks
- commandline value
-From: William Roberts <bill.c.roberts@gmail.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        William Roberts <wroberts@tresys.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y53phah9.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 9:12 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> On 12/02/2013 04:10 PM, William Roberts wrote:
->> Add two new functions to mm.h:
->> * copy_cmdline()
->> * get_cmdline_length()
->>
->> Signed-off-by: William Roberts <wroberts@tresys.com>
->> ---
->>  include/linux/mm.h |    7 +++++++
->>  mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 55 insertions(+)
->>
->> index f7bc209..c8cad32 100644
->> --- a/mm/util.c
->> +++ b/mm/util.c
->> @@ -410,6 +411,53 @@ unsigned long vm_commit_limit(void)
->>               * sysctl_overcommit_ratio / 100) + total_swap_pages;
->>  }
->>
->> +/**
->> + * copy_cmdline - Copy's the tasks commandline value to a buffer
->
-> spelling: Copies, task's, command-line or command line
->
->> + * @task: The task whose command line to copy
->
-> is to be copied?
->
->> + * @mm: The mm struct refering to task with proper semaphores held
->
-> referring
->
->> + * @buf: The buffer to copy the value into
->
->> + * @buflen: The length og the buffer. It trucates the value to
->
-> of, truncates
->
->> + *           buflen.
->> + * @return: The number of chars copied.
->> + */
->> +int copy_cmdline(struct task_struct *task, struct mm_struct *mm,
->> +              char *buf, unsigned int buflen)
->> +{
->> +     int res = 0;
->> +     unsigned int len;
->> +
->> +     if (!task || !mm || !buf)
->> +             return -1;
->
-> Typically these kinds of tests are frowned upon in the kernel unless
-> there is a legal usage where NULL is valid.  Otherwise you may just be
-> covering up a bug.
->
-> Also, why not just get_task_mm(task) within the function rather than
-> pass it in by the caller?
->
+Em Fri, Dec 13, 2013 at 09:15:46AM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo,
+> 
+> On Thu, 12 Dec 2013 15:41:47 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Dec 12, 2013 at 04:36:16PM +0900, Namhyung Kim escreveu:
+> >> Those functions are for stringify filter arguments.  As caller of
+> >> those functions handles NULL string properly, it seems that it's
+> >> enough to return NULL rather than calling die().
+> >> 
+> >> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> >> ---
+> >>  tools/lib/traceevent/parse-filter.c | 58 +++++++++++++++++++++++--------------
+> >>  1 file changed, 36 insertions(+), 22 deletions(-)
+> >> 
+> >> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+> >> index 9303c55128db..32ab4396653c 100644
+> >> --- a/tools/lib/traceevent/parse-filter.c
+> >> +++ b/tools/lib/traceevent/parse-filter.c
+> >> @@ -1361,8 +1361,10 @@ enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
+> >>  		if (ret >= 0 && pevent->test_filters) {
+> >>  			char *test;
+> >>  			test = pevent_filter_make_string(filter, event->event->id);
+> >> -			printf(" '%s: %s'\n", event->event->name, test);
+> >> -			free(test);
+> >> +			if (test) {
+> >> +				printf(" '%s: %s'\n", event->event->name, test);
+> >> +				free(test);
+> >> +			}
+> >>  		}
+> >>  	}
+> >>  
+> >> @@ -2097,7 +2099,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
+> >>  				default:
+> >>  					break;
+> >>  				}
+> >> -				str = malloc_or_die(6);
+> >> +				str = malloc(6);
+> >> +				if (str == NULL)
+> >> +					break;
+> >>  				if (val)
+> >>  					strcpy(str, "TRUE");
+> >>  				else
+> >> @@ -2120,7 +2124,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
+> >>  		}
+> >>  
+> >>  		len = strlen(left) + strlen(right) + strlen(op) + 10;
+> >> -		str = malloc_or_die(len);
+> >> +		str = malloc(len);
+> >> +		if (str == NULL)
+> >> +			break;
+> >>  		snprintf(str, len, "(%s) %s (%s)",
+> >>  			 left, op, right);
+> >
+> > Why note:
+> >
+> > 		str = NULL;
+> > 		if (asprintf(&str, "(%s) %s (%s)", left, op, right);
+> > 			break;
+> >
+> > instead?
+> >
+> > Ditto for other places here, also there is a typo in the subject line.
+> >
+> > I've applied all the previous patches, thanks!
+> 
+> Thank you very much!
+> 
+> Here is the updated patch:
 
-Yes I was debating whether or not to drop the pointer checks... np
+Thanks! There are some more questions below:
+ 
+> 
+> From d775295fb53930b1e3d946e145e9a6172773d4f5 Mon Sep 17 00:00:00 2001
+> From: Namhyung Kim <namhyung@kernel.org>
+> Date: Sat, 7 Dec 2013 15:13:35 +0000
+> Subject: [PATCH v2.1 13/14] tools lib traceevent: Get rid of die() in some string
+>  conversion functions
+> 
+> Those functions are for stringify filter arguments.  As caller of
+> those functions handles NULL string properly, it seems that it's
+> enough to return NULL rather than calling die().
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/lib/traceevent/parse-filter.c | 59 +++++++++++++++----------------------
+>  1 file changed, 24 insertions(+), 35 deletions(-)
+> 
+> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+> index 9303c55128db..72fe16562546 100644
+> --- a/tools/lib/traceevent/parse-filter.c
+> +++ b/tools/lib/traceevent/parse-filter.c
+> @@ -1361,8 +1361,10 @@ enum pevent_errno pevent_filter_add_filter_str(struct event_filter *filter,
+>  		if (ret >= 0 && pevent->test_filters) {
+>  			char *test;
+>  			test = pevent_filter_make_string(filter, event->event->id);
+> -			printf(" '%s: %s'\n", event->event->name, test);
+> -			free(test);
+> +			if (test) {
+> +				printf(" '%s: %s'\n", event->event->name, test);
+> +				free(test);
+> +			}
+>  		}
+>  	}
+>  
+> @@ -2050,7 +2052,6 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
+>  	int left_val = -1;
+>  	int right_val = -1;
+>  	int val;
+> -	int len;
+>  
+>  	switch (arg->op.type) {
+>  	case FILTER_OP_AND:
+> @@ -2097,7 +2098,9 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
+>  				default:
+>  					break;
+>  				}
+> -				str = malloc_or_die(6);
+> +				str = malloc(6);
+> +				if (str == NULL)
+> +					break;
+>  				if (val)
+>  					strcpy(str, "TRUE");
+>  				else
 
-WRT the locking and moving it into the function. You need to take the lock
-to determine the size of the cmdline area. The idea on the interface is you
-would take the locks, acquire the size via the inline func, alloc memory and
-then call the copy function. In some cases, like proc/pid/cmdline, they just
-alloc a page and truncate on that boundary. However, one may with to truncate
-on an arbitrary boundry, especially when cacheing the values, as you don't want
-to allocate too much. So inbetween functions calls that get the length and copy,
-one can make a decision based on their allocation scheme. Moving the locks
-to the functions would require multiple locks and unlocks in the common case.
+The malloc here can be combined with the strcpy, and the else clause
+gets immediately after:
 
+				if (asprintf(&str, "%s", "TRUE") < 0)
 
->> +
->> +     res = access_process_vm(task, mm->arg_start, buf, buflen, 0);
->
-> Unsigned int buflen passed as int len argument without a range check?
-> Note that in the proc_pid_cmdline() code, they first cap it at PAGE_SIZE
-> before passing it.
->
+> @@ -2119,10 +2122,7 @@ static char *op_to_str(struct event_filter *filter, struct filter_arg *arg)
+>  			break;
+>  		}
+>  
+> -		len = strlen(left) + strlen(right) + strlen(op) + 10;
+> -		str = malloc_or_die(len);
+> -		snprintf(str, len, "(%s) %s (%s)",
+> -			 left, op, right);
+> +		asprintf(&str, "(%s) %s (%s)", left, op, right);
+>  		break;
 
-buflen is passed by the caller. So if you look in the following patch
-introducing its
-use in proc/fs/base.c, their is a check.
-        /*The caller of this allocates a page */
-        if (len > PAGE_SIZE)
-                len = PAGE_SIZE;
+I was unsure if str was NULL, it is already, at decl site, good :)
 
-        res = copy_cmdline(task, mm, buffer, len);
+All the rest is ok, so its just the malloc + strcpy that remains to be
+converted, do you want me to do it?
 
-> The closer you can keep your code to the original proc_pid_cmdline()
-> code, the better (less chance for new bugs to be introduced).
->
->> +     if (res <= 0)
->> +             return 0;
->> +
->> +     if (res > buflen)
->> +             res = buflen;
->
-> Is this a possible condition?  Under what circumstances?
-
-for  (res <= 0), in that case, the underlying call
-to __access_remote_vm() returns an int. Most of the mm functions look
-like they are using
-ints for probably some historical reason I am not aware of. I tried to
-pick the strongest invariant,
-however, I don't think < 0 is possible.
-
-For the res > buflen check, that might might be an artifact from the
-PAGE_SIZE cap from the original
-code. It would only be possible if a process was able to write to
-their mm when the semaphores are held.
-I am assuming the case of:
-kernel gets size
-kernel allocs buffer
-kernel copys but size has differed. I guess if I broke the locking out
-it could happen, you need size and copy
-to be autonomous.
-
-
->
->> +     /*
->> +      * If the nul at the end of args had been overwritten, then
->> +      * assume application is using setproctitle(3).
->> +      */
->> +     if (buf[res-1] != '\0') {
->
-> Lost the len < PAGE_SIZE check from proc_pid_cmdline() here, and that
-> isn't the same as the check above.
->
->> +             /* Nul between start and end of vm space?
->> +                If so then truncate */
->
-> Not sure where these comments are coming from.  Isn't the issue that
-> lack of NUL at the end of args indicates that the cmdline extends
-> further into the environ and thus they need to copy in the rest?
-
-Their is no guarantee that their is a NULL from what I understand. So you need
-to look for it, and copy from there. I have no qualms about dropping
-the comments
-their not very useful, as well as moving the block back to what the
-original procfs
-code had.
-
->
->> +             len = strnlen(buf, res);
->> +             if (len < res) {
->> +                     res = len;
->> +             } else {
->> +                     /* No nul, truncate buflen if to big */
->
-> It isn't truncating buflen but rather copying the remainder of the
-> cmdline from the environ, right?
->
->> +                     len = mm->env_end - mm->env_start;
->> +                     if (len > buflen - res)
->> +                             len = buflen - res;
->> +                     /* Copy any remaining data */
->> +                     res += access_process_vm(task, mm->env_start, buf+res,
->> +                                              len, 0);
->> +                     res = strnlen(buf, res);
->> +             }
->> +     }
->> +     return res;
->> +}
->
-> I think you are better off just copying proc_pid_cmdline() exactly as is
-> into a common helper function and then reusing it for audit.  Far less
-> work, and far less potential for mistakes.
-
-I don't like caching a whole page in that audit context. So most of
-the complexity relates to
-determining the size of the cache. Steve Grub was in favor of limiting
-the cmdline value to
-PATH_MAX. So if that is an acceptable cache size, we can take the
-existing code from
-procfs/base.c and just add an argument indicating the size of the
-buffer. procfs will be
-PAGE_SIZE and audit will be PATH_MAX. Thoughts?
-
->
->>
->>  /* Tracepoints definitions. */
->>  EXPORT_TRACEPOINT_SYMBOL(kmalloc);
->>
->
-
-
-
--- 
-Respectfully,
-
-William C Roberts
+- Arnaldo
