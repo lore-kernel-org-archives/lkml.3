@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab3LMW2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:28:19 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:53151 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab3LMW2N (ORCPT
+	id S1754475Ab3LMWab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:30:31 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39444 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab3LMW2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:28:13 -0500
+	Fri, 13 Dec 2013 17:28:20 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
-        Rom Lemarchand <romlem@google.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 081/115] ion: add compat_ioctl
-Date: Fri, 13 Dec 2013 14:24:55 -0800
-Message-Id: <1386973529-4884-82-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 085/115] ion: hold reference to handle after ion_uhandle_get
+Date: Fri, 13 Dec 2013 14:24:59 -0800
+Message-Id: <1386973529-4884-86-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
 References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
@@ -25,267 +24,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rom Lemarchand <romlem@google.com>
+From: Colin Cross <ccross@android.com>
 
-Add a compat_ioctl to the ion driver
+commit 1262ab1846cf76f7549c66ef709120dbfbe6d49f (ion: replace
+userspace handle cookies with idr) broke the locking in ion.
+The ION_IOC_FREE and ION_IOC_MAP ioctls were relying on
+ion_handle_validate to detect the case where a call raced
+with another ION_IOC_FREE which may have freed the struct
+ion_handle.
 
-Signed-off-by: Rom Lemarchand <romlem@google.com>
-[jstultz: modified patch to apply to staging directory]
+Rename ion_uhandle_get to ion_handle_get_by_id, and have it
+take the client lock and return with an extra reference to
+the handle.  Make each caller put its reference once it
+is done with the handle.
+
+Also modify users of ion_handle_validate to continue to hold
+the client lock after calling ion_handle_validate until
+they are done with the handle, and warn if ion_handle_validate
+is called without the client lock held.
+
+Signed-off-by: Colin Cross <ccross@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/Makefile     |   3 +
- drivers/staging/android/ion/compat_ion.c | 172 +++++++++++++++++++++++++++++++
- drivers/staging/android/ion/compat_ion.h |  30 ++++++
- drivers/staging/android/ion/ion.c        |   2 +
- 4 files changed, 207 insertions(+)
- create mode 100644 drivers/staging/android/ion/compat_ion.c
- create mode 100644 drivers/staging/android/ion/compat_ion.h
+ drivers/staging/android/ion/ion.c | 56 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 41 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/android/ion/Makefile b/drivers/staging/android/ion/Makefile
-index ce0f1ef..9c95665 100644
---- a/drivers/staging/android/ion/Makefile
-+++ b/drivers/staging/android/ion/Makefile
-@@ -1,3 +1,6 @@
- obj-$(CONFIG_ION) +=	ion.o ion_heap.o ion_page_pool.o ion_system_heap.o \
- 			ion_carveout_heap.o ion_chunk_heap.o ion_cma_heap.o
-+ifdef CONFIG_COMPAT
-+obj-$(CONFIG_ION) += compat_ion.o
-+endif
- obj-$(CONFIG_ION_TEGRA) += tegra/
-diff --git a/drivers/staging/android/ion/compat_ion.c b/drivers/staging/android/ion/compat_ion.c
-new file mode 100644
-index 0000000..83842a6
---- /dev/null
-+++ b/drivers/staging/android/ion/compat_ion.c
-@@ -0,0 +1,172 @@
-+/*
-+ * drivers/staging/android/ion/compat_ion.c
-+ *
-+ * Copyright (C) 2013 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/compat.h>
-+#include <linux/fs.h>
-+#include <linux/uaccess.h>
-+
-+#include "ion.h"
-+#include "compat_ion.h"
-+
-+/* See drivers/staging/android/ion/ion.h for the definition of these structs */
-+struct compat_ion_allocation_data {
-+	compat_size_t len;
-+	compat_size_t align;
-+	compat_uint_t heap_id_mask;
-+	compat_uint_t flags;
-+	compat_int_t handle;
-+};
-+
-+struct compat_ion_custom_data {
-+	compat_uint_t cmd;
-+	compat_ulong_t arg;
-+};
-+
-+static int compat_get_ion_allocation_data(
-+			struct compat_ion_allocation_data __user *data32,
-+			struct ion_allocation_data __user *data)
-+{
-+	compat_size_t s;
-+	compat_uint_t u;
-+	compat_int_t i;
-+	int err;
-+
-+	err = get_user(s, &data32->len);
-+	err |= put_user(s, &data->len);
-+	err |= get_user(s, &data32->align);
-+	err |= put_user(s, &data->align);
-+	err |= get_user(u, &data32->heap_id_mask);
-+	err |= put_user(u, &data->heap_id_mask);
-+	err |= get_user(u, &data32->flags);
-+	err |= put_user(u, &data->flags);
-+	err |= get_user(i, &data32->handle);
-+	err |= put_user(i, &data->handle);
-+
-+	return err;
-+}
-+
-+static int compat_put_ion_allocation_data(
-+			struct compat_ion_allocation_data __user *data32,
-+			struct ion_allocation_data __user *data)
-+{
-+	compat_size_t s;
-+	compat_uint_t u;
-+	compat_int_t i;
-+	int err;
-+
-+	err = get_user(s, &data->len);
-+	err |= put_user(s, &data32->len);
-+	err |= get_user(s, &data->align);
-+	err |= put_user(s, &data32->align);
-+	err |= get_user(u, &data->heap_id_mask);
-+	err |= put_user(u, &data32->heap_id_mask);
-+	err |= get_user(u, &data->flags);
-+	err |= put_user(u, &data32->flags);
-+	err |= get_user(i, &data->handle);
-+	err |= put_user(i, &data32->handle);
-+
-+	return err;
-+}
-+
-+static int compat_get_ion_custom_data(
-+			struct compat_ion_custom_data __user *data32,
-+			struct ion_custom_data __user *data)
-+{
-+        compat_uint_t cmd;
-+        compat_ulong_t arg;
-+	int err;
-+
-+	err = get_user(cmd, &data32->cmd);
-+	err |= put_user(cmd, &data->cmd);
-+	err |= get_user(arg, &data32->arg);
-+	err |= put_user(arg, &data->arg);
-+
-+	return err;
-+};
-+
-+long compat_ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	long ret;
-+
-+	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
-+		return -ENOTTY;
-+
-+	switch (cmd) {
-+	case ION_IOC_ALLOC:
-+	{
-+		struct compat_ion_allocation_data __user *data32;
-+		struct ion_allocation_data __user *data;
-+		int err;
-+
-+		data32 = compat_ptr(arg);
-+		data = compat_alloc_user_space(sizeof(*data));
-+		if (data == NULL)
-+			return -EFAULT;
-+
-+		err = compat_get_ion_allocation_data(data32, data);
-+		if (err)
-+			return err;
-+
-+		ret = filp->f_op->unlocked_ioctl(filp, cmd,
-+							(unsigned long)data);
-+		err = compat_put_ion_allocation_data(data32, data);
-+		return ret ? ret : err;
-+	}
-+	case ION_IOC_FREE:
-+	{
-+		struct compat_ion_allocation_data __user *data32;
-+		struct ion_allocation_data __user *data;
-+		int err;
-+
-+		data32 = compat_ptr(arg);
-+		data = compat_alloc_user_space(sizeof(*data));
-+		if (data == NULL)
-+			return -EFAULT;
-+
-+		err = compat_get_ion_allocation_data(data32, data);
-+		if (err)
-+			return err;
-+
-+		return filp->f_op->unlocked_ioctl(filp, cmd,
-+							(unsigned long)data);
-+	}
-+	case ION_IOC_CUSTOM: {
-+		struct compat_ion_custom_data __user *data32;
-+		struct ion_custom_data __user *data;
-+		int err;
-+
-+		data32 = compat_ptr(arg);
-+		data = compat_alloc_user_space(sizeof(*data));
-+		if (data == NULL)
-+			return -EFAULT;
-+
-+		err = compat_get_ion_custom_data(data32, data);
-+		if (err)
-+			return err;
-+
-+		return filp->f_op->unlocked_ioctl(filp, cmd,
-+							(unsigned long)data);
-+	}
-+	case ION_IOC_SHARE:
-+	case ION_IOC_MAP:
-+	case ION_IOC_IMPORT:
-+	case ION_IOC_SYNC:
-+		return filp->f_op->unlocked_ioctl(filp, cmd,
-+						(unsigned long)compat_ptr(arg));
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+}
-diff --git a/drivers/staging/android/ion/compat_ion.h b/drivers/staging/android/ion/compat_ion.h
-new file mode 100644
-index 0000000..c2ad589
---- /dev/null
-+++ b/drivers/staging/android/ion/compat_ion.h
-@@ -0,0 +1,30 @@
-+/*
-+
-+ * drivers/staging/android/ion/compat_ion.h
-+ *
-+ * Copyright (C) 2013 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _LINUX_COMPAT_ION_H
-+#define _LINUX_COMPAT_ION_H
-+
-+#if IS_ENABLED(CONFIG_COMPAT)
-+
-+long compat_ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
-+
-+#else
-+
-+#define compat_ion_ioctl  NULL
-+
-+#endif /* CONFIG_COMPAT */
-+#endif /* _LINUX_COMPAT_ION_H */
 diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 1c40b74..d97117f 100644
+index d97117f..cf9fc78 100644
 --- a/drivers/staging/android/ion/ion.c
 +++ b/drivers/staging/android/ion/ion.c
-@@ -38,6 +38,7 @@
+@@ -383,7 +383,14 @@ static void ion_handle_get(struct ion_handle *handle)
  
- #include "ion.h"
- #include "ion_priv.h"
-+#include "compat_ion.h"
+ static int ion_handle_put(struct ion_handle *handle)
+ {
+-	return kref_put(&handle->ref, ion_handle_destroy);
++	struct ion_client *client = handle->client;
++	int ret;
++
++	mutex_lock(&client->lock);
++	ret = kref_put(&handle->ref, ion_handle_destroy);
++	mutex_unlock(&client->lock);
++
++	return ret;
+ }
  
- /**
-  * struct ion_device - the metadata of the ion device node
-@@ -1256,6 +1257,7 @@ static const struct file_operations ion_fops = {
- 	.open           = ion_open,
- 	.release        = ion_release,
- 	.unlocked_ioctl = ion_ioctl,
-+	.compat_ioctl   = compat_ion_ioctl,
- };
+ static struct ion_handle *ion_handle_lookup(struct ion_client *client,
+@@ -403,14 +410,24 @@ static struct ion_handle *ion_handle_lookup(struct ion_client *client,
+ 	return ERR_PTR(-EINVAL);
+ }
  
- static size_t ion_debug_heap_total(struct ion_client *client,
+-static struct ion_handle *ion_uhandle_get(struct ion_client *client, int id)
++static struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
++						int id)
+ {
+-	return idr_find(&client->idr, id);
++	struct ion_handle *handle;
++
++	mutex_lock(&client->lock);
++	handle = idr_find(&client->idr, id);
++	if (handle)
++		ion_handle_get(handle);
++	mutex_unlock(&client->lock);
++
++	return handle ? handle : ERR_PTR(-EINVAL);
+ }
+ 
+ static bool ion_handle_validate(struct ion_client *client, struct ion_handle *handle)
+ {
+-	return (ion_uhandle_get(client, handle->id) == handle);
++	WARN_ON(!mutex_is_locked(&client->lock));
++	return (idr_find(&client->idr, handle->id) == handle);
+ }
+ 
+ static int ion_handle_add(struct ion_client *client, struct ion_handle *handle)
+@@ -503,11 +520,11 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
+ 
+ 	mutex_lock(&client->lock);
+ 	ret = ion_handle_add(client, handle);
++	mutex_unlock(&client->lock);
+ 	if (ret) {
+ 		ion_handle_put(handle);
+ 		handle = ERR_PTR(ret);
+ 	}
+-	mutex_unlock(&client->lock);
+ 
+ 	return handle;
+ }
+@@ -527,8 +544,8 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
+ 		mutex_unlock(&client->lock);
+ 		return;
+ 	}
+-	ion_handle_put(handle);
+ 	mutex_unlock(&client->lock);
++	ion_handle_put(handle);
+ }
+ EXPORT_SYMBOL(ion_free);
+ 
+@@ -1021,14 +1038,15 @@ struct dma_buf *ion_share_dma_buf(struct ion_client *client,
+ 
+ 	mutex_lock(&client->lock);
+ 	valid_handle = ion_handle_validate(client, handle);
+-	mutex_unlock(&client->lock);
+ 	if (!valid_handle) {
+ 		WARN(1, "%s: invalid handle passed to share.\n", __func__);
++		mutex_unlock(&client->lock);
+ 		return ERR_PTR(-EINVAL);
+ 	}
+-
+ 	buffer = handle->buffer;
+ 	ion_buffer_get(buffer);
++	mutex_unlock(&client->lock);
++
+ 	dmabuf = dma_buf_export(buffer, &dma_buf_ops, buffer->size, O_RDWR);
+ 	if (IS_ERR(dmabuf)) {
+ 		ion_buffer_put(buffer);
+@@ -1081,18 +1099,24 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd)
+ 	handle = ion_handle_lookup(client, buffer);
+ 	if (!IS_ERR(handle)) {
+ 		ion_handle_get(handle);
++		mutex_unlock(&client->lock);
+ 		goto end;
+ 	}
++	mutex_unlock(&client->lock);
++
+ 	handle = ion_handle_create(client, buffer);
+ 	if (IS_ERR(handle))
+ 		goto end;
++
++	mutex_lock(&client->lock);
+ 	ret = ion_handle_add(client, handle);
++	mutex_unlock(&client->lock);
+ 	if (ret) {
+ 		ion_handle_put(handle);
+ 		handle = ERR_PTR(ret);
+ 	}
++
+ end:
+-	mutex_unlock(&client->lock);
+ 	dma_buf_put(dmabuf);
+ 	return handle;
+ }
+@@ -1156,12 +1180,11 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		if (copy_from_user(&data, (void __user *)arg,
+ 				   sizeof(struct ion_handle_data)))
+ 			return -EFAULT;
+-		mutex_lock(&client->lock);
+-		handle = ion_uhandle_get(client, data.handle);
+-		mutex_unlock(&client->lock);
+-		if (!handle)
+-			return -EINVAL;
++		handle = ion_handle_get_by_id(client, data.handle);
++		if (IS_ERR(handle))
++			return PTR_ERR(handle);
+ 		ion_free(client, handle);
++		ion_handle_put(handle);
+ 		break;
+ 	}
+ 	case ION_IOC_SHARE:
+@@ -1172,8 +1195,11 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 
+ 		if (copy_from_user(&data, (void __user *)arg, sizeof(data)))
+ 			return -EFAULT;
+-		handle = ion_uhandle_get(client, data.handle);
++		handle = ion_handle_get_by_id(client, data.handle);
++		if (IS_ERR(handle))
++			return PTR_ERR(handle);
+ 		data.fd = ion_share_dma_buf_fd(client, handle);
++		ion_handle_put(handle);
+ 		if (copy_to_user((void __user *)arg, &data, sizeof(data)))
+ 			return -EFAULT;
+ 		if (data.fd < 0)
 -- 
 1.8.3.2
 
