@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3LMW4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:56:24 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:59213 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753795Ab3LMW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:56:23 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "David S. Miller" <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [RXRPC]: do not unlock unheld spinlock in rxrpc_connect_exclusive()
-Date: Sat, 14 Dec 2013 02:56:09 +0400
-Message-Id: <1386975369-30837-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754032Ab3LMW5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:57:14 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46892 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab3LMW5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 17:57:13 -0500
+Date: Fri, 13 Dec 2013 17:57:09 -0500 (EST)
+Message-Id: <20131213.175709.414078764436451428.davem@davemloft.net>
+To: dvlasenk@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        jpirko@redhat.com
+Subject: Re: [patch net-next v3] ipv6: log autoconfiguration failures
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
+References: <1386949547-23457-1-git-send-email-dvlasenk@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 13 Dec 2013 14:57:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If rx->conn is not NULL, rxrpc_connect_exclusive() does not
-acquire the transport's client lock, but it still releases it.
+From: Denys Vlasenko <dvlasenk@redhat.com>
+Date: Fri, 13 Dec 2013 16:45:47 +0100
 
-The patch adds locking of the spinlock to this path.
+> If ipv6 auto-configuration does not work, currently it's hard
+> to track what's going on. This change adds log messages
+> (at debug level) on every code path where ipv6 autoconf fails.
+> 
+> v3: changed pr_debug's to pr_warn's.
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 
-Found by Linux Driver Verification project (linuxtesting.org).
+I already made it clear I want to see statistics added instead of log
+messages for this.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- net/rxrpc/ar-connection.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/net/rxrpc/ar-connection.c b/net/rxrpc/ar-connection.c
-index 4106ca95ec86..4790140a1722 100644
---- a/net/rxrpc/ar-connection.c
-+++ b/net/rxrpc/ar-connection.c
-@@ -381,6 +381,11 @@ static int rxrpc_connect_exclusive(struct rxrpc_sock *rx,
- 
- 		rxrpc_assign_connection_id(conn);
- 		rx->conn = conn;
-+	} else {
-+		spin_lock(&trans->client_lock);
-+
-+		_net("CONNECT EXCL old %d on TRANS %d",
-+		     conn->debug_id, conn->trans->debug_id);
- 	}
- 
- 	/* we've got a connection with a free channel and we can now attach the
--- 
-1.8.3.2
-
+I'm not applying this patch, sorry.
