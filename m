@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3LMKXa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 05:23:30 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56438 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471Ab3LMKX1 (ORCPT
+	id S1752626Ab3LMKXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 05:23:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35408 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab3LMKXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 05:23:27 -0500
-Date: Fri, 13 Dec 2013 10:22:52 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sherman Yin <syin@broadcom.com>, Rob Herring <rob.herring@calxeda.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20131213102252.GS11044@sirena.org.uk>
-References: <1381174108-25168-1-git-send-email-syin@broadcom.com>
- <1386787041-6035-1-git-send-email-syin@broadcom.com>
- <1386787041-6035-6-git-send-email-syin@broadcom.com>
- <CACRpkdaeZCodKv6R+4ZS3o-5u=QQuV3JidEp7uaLsN9aYG7bqA@mail.gmail.com>
+	Fri, 13 Dec 2013 05:23:49 -0500
+Message-ID: <52AADF96.4090602@oracle.com>
+Date: Fri, 13 Dec 2013 11:21:10 +0100
+From: Vegard Nossum <vegard.nossum@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lCKkSrrNUaKEhaIQ"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaeZCodKv6R+4ZS3o-5u=QQuV3JidEp7uaLsN9aYG7bqA@mail.gmail.com>
-X-Cookie: You will be successful in love.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 5/6] ARM: pinctrl: Add Broadcom Capri pinctrl driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: James Morris <jmorris@namei.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com> <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <20131213002523.GA20706@redhat.com> <20131213014220.GB11068@kroah.com> <alpine.LRH.2.02.1312131557340.32454@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1312131557340.32454@tundra.namei.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/13/2013 06:09 AM, James Morris wrote:
+> On Thu, 12 Dec 2013, Greg Kroah-Hartman wrote:
+>
+>> On Thu, Dec 12, 2013 at 07:25:23PM -0500, Dave Jones wrote:
+>>> On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
+>>>
+>>>   > - who will keep adding these triggers going forward?
+>>>
+>
+> I think we'd need to have someone commit to maintaining this long term
+> before seriously considering it as part of mainline.  Over time it will
+> become increasingly useless if new triggers aren't added.
 
---lCKkSrrNUaKEhaIQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Based on your input, we (the Ksplice team) will probably set up a public 
+git repository where we maintain these patches on top of the latest 
+released kernel.
 
-On Thu, Dec 12, 2013 at 09:54:50PM +0100, Linus Walleij wrote:
+> What happens when code is refactored, who refactors the triggers?
+>
+>>> also..
+>>>
+>>> - Who will test the existing triggers are doing the right thing when related code changes.
+>>
 
-> This is a reimplementation of regmap for MMIO.
-> See drivers/base/regmap/regmap-mmio.c
-> Notice how regmap_update_bits() is used throughout the
-> kernel.
+I don't think refactoring or maintenance is a huge issue. The triggers 
+are mostly one-liners in the error path of a specific input validation 
+check.
 
-> If you want to do this, use regmap.
+I haven't maintained these patches for a very long time, but at least 
+nothing came up in the six months of development that I've had these 
+patches sitting for.
 
-Or if this is very performance sensitive (which I'd not expect for
-pinctrl) there's a helper in review at the minute which just uses a
-spinlock.
+I'd say the person doing the refactoring should also take care to 
+maintain the trigger, but if it just doesn't make sense anymore, it can 
+also just be taken out.
 
---lCKkSrrNUaKEhaIQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In any case, maintaining a public git repository alongside mainline will 
+give us some experience with overcoming refactoring/code changes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>> And:
+>>    - how do you determine an "expoit attempt" from "userspace program
+>>      doing something stupid" / "corrupted filesytem mounted"?
+>>
+>
+> Right, and if there are enough false positives, it'll end up being quite
+> useless.
+>
+> I suspect this kind of thing is better done in userspace anti-malware
+> scanning.
+>
+>> I really don't like this, it means that our normal error handling for
+>> userspace data will suddenly all have CVE entries on them over time.
+>> How is that helpful to anyone?
+>>
+>> Think ahead in 10-20 years, what is the code paths going to look like
+>> then?  Horrible...
+>
+> Agree.
+>
+> This could make an interesting research project outside of the kernel. It
+> doesn't belong in mainline without at least first being proven in the
+> field and also properly maintained long term, if at all.
+>
 
-iQIcBAEBAgAGBQJSqt/5AAoJELSic+t+oim9IgcP/R43kRMBOxBnYDq8Ij0BX7Be
-V9/gx+yft4kW5mdXfkaaYf0bqS12axkR/dGFFoo24jEdkDJG66nHw8wEEptdK016
-uPihWqrbxwxJk8FvqodRgjYmVarUvpE5wZUplSsJwTHw4FEdepznCx138I5+Q4+6
-Bh0ax2xQGKXdttp8dwxK/WjMndzJSedsmSVpX0fdXtLShSOXYFnRQEOCSpbkTVhZ
-/19Xu9htjUjjl4W0cv0g5mvyz8ne9SydcDXu/u642sNDJ0k3rHMJGMcvVtyq22RH
-lXMUYnj+6mwBlB4o74lMR92tMaTR4mcDKOyov/AfKS97jtJ6IHThavfyeQOzxkhH
-kDckQ/xrMvjiS05GUCq2/fy+XRZsfgj+yX7fZpC3UKG4LkN6zuFejo4RlOyV/0k9
-fp82jIYAyphMuBZjjAuYN9pSHRJoMdn3Wso6qlQxsLl2lzmMfe27T4SPw+GCck4x
-CJ525BgskU+JXqKUd+/0lILgQ+GvZ6vc0R5TwWAeddoaZDYcqLH908Z3+FImI3fz
-MWqeHZ8O5M0ht7mptpC4KgSTCqgwf8O0NjI0DSDte+3wS2ra41dtZ4mBdx1dVqmC
-5jv5Bi1xyYSmqQ2s5YcEGNCSGiXDUgOf/AWQu8R2T9GQi/hejUAVBFNgebUyvClN
-m0CUNDo0i5pHQOngsM7A
-=vlSZ
------END PGP SIGNATURE-----
+I already suggested a 5-year expiry date for any triggers we add. It's 
+easy to retire them based on the CVE (or other) identifier that includes 
+the year (possibly combined with git blame and friends).
 
---lCKkSrrNUaKEhaIQ--
+I also think the set of triggers should be limited to serious bugs that 
+could lead to privilege escalation. There are not THAT many of them. 
+There are probably fewer than 20 every year, which would cap the total 
+number of triggers at 100 in the whole kernel at any given time.
+
+The point is NOT to add triggers in every error path in the kernel, of 
+course not. Triggers should only be added where there's a real 
+possibility of the bug actually being exploited. I thought about 
+requiring a proof-of-concept exploit code to be provided with each 
+trigger as well, but that could be too hard to be useful in practice, 
+since actually exploiting any given potential privilege escalation bug 
+could require a lot of ingenuity.
+
+Thanks,
+
+
+Vegard
