@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3LML2t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 06:28:49 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50253 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab3LML2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 06:28:47 -0500
-From: panchaxari <panchaxari.prasannamurthy@linaro.org>
-To: heiko@sntech.de
-Cc: panchaxari.prasannamurthy@linaro.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH CFT] ARM:S3C24XX: Enable ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR by default
-Date: Fri, 13 Dec 2013 16:58:25 +0530
-Message-Id: <1386934105-23392-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752592Ab3LMLdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 06:33:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751846Ab3LMLdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 06:33:38 -0500
+Date: Fri, 13 Dec 2013 11:29:25 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        David Laight <David.Laight@ACULAB.COM>, Mark Lord <kernel@start.ca>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 04/11] PCI/MSI/pSeries: Make quota traversing and
+ requesting race-safe
+Message-ID: <20131213102924.GA14728@dhcp-26-207.brq.redhat.com>
+References: <cover.1385399393.git.agordeev@redhat.com>
+ <97749db3e9562eb05fb3ee22a0be0ed7a93a0615.1385399393.git.agordeev@redhat.com>
+ <20131210223020.GF4699@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131210223020.GF4699@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Configs ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR are enabled as default
-to platform S3C24XX.
+On Tue, Dec 10, 2013 at 03:30:20PM -0700, Bjorn Helgaas wrote:
+> Can you outline the race and the scenario that leads to incorrect results
+> or a crash?  I looked through rtas_setup_msi_irqs() (briefly) and I didn't
+> see the way that concurrent calls for different devices could interfere
+> with each other.
+> 
+> I was looking for some place that modifies state, where concurrent calls
+> might trample on each other, but it looks like msi_quota_for_device() is
+> pretty safe: it traverses a tree, but everything it computes is on the
+> stack and it doesn't seem to save results anywhere.  Maybe I'm barking up
+> the wrong tree?
 
-Introduction of PHYS_VIRT config as default would enable phy-to-virt and
-virt-to-phy translation function at boot and module loading time
-and enforce dynamic reallocation of memory. AUTO_ZRELADDR config would
-enable calculation of kernel load address at run time.
+Hmm. I've assumed the number of MSIs for a device is cached, and therefore
+concurrent calls to msi_quota_for_device() and rtas_change_msi() could race.
+But it seems msi_quota_for_device() indeed computes a quota while reading
+only device's properties and gains constant result (well, assuming the device
+tree is not updated, but this is a different story). Which makes me confused
+about this note from a earlier thread:
 
-PHYS_VIRT config is mutually exclusive to XIP_KERNEL, XIP_KERNEL is used in
-systems with NOR flash devices, and ZRELADDR config is mutually exclusive
-to ZBOOT_ROM.
+[quote]
+On Sat, 2013-10-05 at 16:20 +0200, Alexander Gordeev wrote:
+> So my point is - drivers should first obtain a number of MSIs they *can*
+> get, then *derive* a number of MSIs the device is fine with and only then
+> request that number. Not terribly different from memory or any other type
+> of resource allocation ;)
 
-CFT::Call For Testing
+What if the limit is for a group of devices ? Your interface is racy in
+that case, another driver could have eaten into the limit in between the
+calls.
 
-Requesting maintainers of S3C24XX  platforms to evaluate the changes on the
-board and comment, as I dont have the board for testing and also requesting
-an ACK the changes.
+Ben.
+[/quote]
 
-Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
-Cc: Heiko Stuebner <heiko@sntech.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Some comment from Ben would be nice, but I think the patch could be dropped
+for now.
 
----
-S3C24XX is basically a Samsung SOC with ARM920T instruction set, and has
-an operating frquency of 203MHz, it also has enhanced MMU architecture
-to support WinCE, EPOC 32 and Linux.
+Thanks, Bjorn!
 
-This SOC is an Integrated system for hand-held devices and general
-embedded systems.
+> Bjorn
 
-Supports various types of ROM for booting (NOR/NAND Flash, EEPROM, and others).
-Supports 8 memory banks, 128M for each bank, with a total of 1GB.
----
- arch/arm/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 32acacb..ec1faea 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -708,6 +708,8 @@ config ARCH_S3C24XX
- 	bool "Samsung S3C24XX SoCs"
- 	select ARCH_HAS_CPUFREQ
- 	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_PATCH_PHYS_VIRT
-+	select AUTO_ZRELADDR
- 	select CLKDEV_LOOKUP
- 	select CLKSRC_SAMSUNG_PWM
- 	select GENERIC_CLOCKEVENTS
 -- 
-1.7.10.4
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
