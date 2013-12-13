@@ -1,121 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab3LMXEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 18:04:34 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:44342 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab3LMXEc (ORCPT
+	id S1753619Ab3LMXHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 18:07:05 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:61545 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab3LMXHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 18:04:32 -0500
-Message-ID: <52AB9317.7080602@gmail.com>
-Date: Sat, 14 Dec 2013 10:07:03 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Fri, 13 Dec 2013 18:07:02 -0500
+Date: Fri, 13 Dec 2013 16:06:57 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Betty Dall <betty.dall@hp.com>
+Cc: lenb@kernel.org, rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI AER: Handle non-AER HEST error sources in
+ aer_hest_parse()
+Message-ID: <20131213230657.GD6746@google.com>
+References: <1386948196-9409-1-git-send-email-betty.dall@hp.com>
+ <20131213221616.GC6746@google.com>
+ <1386974853.10497.64.camel@ejdallLaptop>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Kees Cook <keescook@chromium.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH 1/9] Known exploit detection
-References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com> <20131212190659.GG13547@thunk.org> <CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com> <52AA4BC8.1080207@gmail.com> <20131213130648.GA10870@gmail.com>
-In-Reply-To: <20131213130648.GA10870@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386974853.10497.64.camel@ejdallLaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/12/13 00:06, Ingo Molnar wrote:
+On Fri, Dec 13, 2013 at 03:47:33PM -0700, Betty Dall wrote:
+> Yes, that is more readable code. Thanks for revising it. I tested it on
+> my system that has non-AER error sources and it works fine. One nit is
+> that "Ignore" is misspelled in the subject line. 
 
-> 
-> * Ryan Mallon <rmallon@gmail.com> wrote:
-> 
->> On 13/12/13 08:13, Kees Cook wrote:
->>> On Thu, Dec 12, 2013 at 11:06 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->>>> On Thu, Dec 12, 2013 at 05:52:24PM +0100, vegard.nossum@oracle.com wrote:
->>>>> From: Vegard Nossum <vegard.nossum@oracle.com>
->>>>>
->>>>> The idea is simple -- since different kernel versions are vulnerable to
->>>>> different root exploits, hackers most likely try multiple exploits before
->>>>> they actually succeed.
->>>
->>> I like this idea. It serves a few purposes, not the least of which is
->>> very clearly marking in code where we've had problems, regardless of
->>> the fact that it reports badness to the system owner. And I think
->>> getting any additional notifications about bad behavior is a nice idea
->>> too.
->>
->> Though, if an attacker is running through a series of exploits, and 
->> one eventually succeeds then the first thing to do would be to clean 
->> traces of the _exploit() notifications from the syslog. [...]
-> 
-> There are several solutions to that:
-> 
-> 1)
-> 
-> Critical sites use remote logging over a fast LAN, so a successful 
-> exploit would have to zap the remote logging daemon pretty quickly 
-> before the log message goes out over the network.
-> 
-> 2)
-> 
-> Some sites also log to append-only media [such as a printer] or other 
-> append-only storage interfaces - which cannot be manipulated from the 
-> attacked system alone after a successful break-in.
-> 
-> 3)
-> 
-> In future the exploit() code could trigger actual active defensive 
-> measures, such as immediately freezing all tasks of that UID and 
-> blocking further fork()s/exec()s of that UID.
-> 
-> Depending on how critical the security of the system is, such active 
-> measures might still be a preferable outcome even if there's a chance 
-> of false positives. (Such active measures that freeze the UID will 
-> also help with forensics, if the attack is indeed real.)
-> 
->> [...] Since running through a series of exploits is pretty quick, 
->> this can probably all be done before the sysadmin ever notices.
-> 
-> It's not necessarily the sysadmin the attacker is racing against, but 
-> against append-only logging and other defensive measures - which too 
-> are programs.
-> 
->> The _exploit() notifications could also be used to spam the syslogs. 
->> Although they are individually ratelimited, if there are enough 
->> _exploit() markers in the kernel then an annoying person can cycle 
->> through them all to generate large amounts of useless syslog.
-> 
-> AFAICS they are globally rate-limited, just like many other 
-> attacker-triggerable printk()s the kernel may generate.
+Thanks, fixed.
 
+I should have thought longer before hitting send.  I think it's worthwhile
+to use the same helper in aer_hest_parse_aff(), and once I did that, it
+became more obvious that aer_hest_parse() and aer_hest_parse_aff() are
+essentially similar, so I wonder if it's worth consolidating them, as
+below.  It doesn't reduce the number of lines of code, but maybe it's
+simpler for the reader?
 
-Actually, that opens another possibility for an attacker. Since they
-know the logging is rate-limited, they can first attempt a low risk
-CVE (or one that is known to have false positives, see comments from
-others about dumb user-space/corrupted file-systems, etc). So that
-attempt gets logged, and possibly ignored, but then more attempts
-can be quickly made that will not be logged.
+Bjorn
 
-Of course, if you have some policy that kicks the user or some such 
-then that would limit this approach, but just rate-limited logging
-by itself might not be enough. The problem with policy based 
-solutions, though, is that if the attacker knows what the policy
-is then they can game it. E.g. don't bother trying the known exploits
-which will immediately get you kicked; add sufficient delay between
-attempts, etc.
+commit 8e7f8d0b30d4e3e30007b10eb2916d970b5f8c93
+Author: Betty Dall <betty.dall@hp.com>
+Date:   Fri Dec 13 08:23:16 2013 -0700
 
-~Ryan
+    PCI/AER: Ignore non-PCIe AER error sources in aer_hest_parse()
+    
+    aer_set_firmware_first() searches the HEST for an error source descriptor
+    matching the specified PCI device.  It uses the apei_hest_parse() iterator
+    to call aer_hest_parse() for every descriptor in the HEST.
+    
+    Previously, aer_hest_parse() incorrectly assumed every descriptor was for a
+    PCIe error source.  This patch adds a check to avoid that error.
+    
+    [bhelgaas: factor check into helper, use in aer_hest_parse_aff(), changelog]
+    Signed-off-by: Betty Dall <betty.dall@hp.com>
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+
+diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+index cf611ab2193a..a23995749f1d 100644
+--- a/drivers/pci/pcie/aer/aerdrv_acpi.c
++++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+@@ -50,12 +50,24 @@ struct aer_hest_parse_info {
+ 	int firmware_first;
+ };
  
++static int hest_source_is_pcie_aer(struct acpi_hest_header *hest_hdr)
++{
++	if (hest_hdr->type == ACPI_HEST_TYPE_AER_ROOT_PORT ||
++	    hest_hdr->type == ACPI_HEST_TYPE_AER_ENDPOINT ||
++	    hest_hdr->type == ACPI_HEST_TYPE_AER_BRIDGE)
++		return 1;
++	return 0;
++}
++
+ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+ {
+ 	struct aer_hest_parse_info *info = data;
+ 	struct acpi_hest_aer_common *p;
+ 	int ff;
+ 
++	if (!hest_source_is_pcie_aer(hest_hdr))
++		return 0;
++
+ 	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+ 	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+ 	if (p->flags & ACPI_HEST_GLOBAL) {
+@@ -104,15 +116,12 @@ static int aer_hest_parse_aff(struct acpi_hest_header *hest_hdr, void *data)
+ 	if (aer_firmware_first)
+ 		return 0;
+ 
+-	switch (hest_hdr->type) {
+-	case ACPI_HEST_TYPE_AER_ROOT_PORT:
+-	case ACPI_HEST_TYPE_AER_ENDPOINT:
+-	case ACPI_HEST_TYPE_AER_BRIDGE:
+-		p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+-		aer_firmware_first = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+-	default:
++	if (!hest_source_is_pcie_aer(hest_hdr))
+ 		return 0;
+-	}
++
++	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
++	aer_firmware_first = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
++	return 0;
+ }
+ 
+ /**
+commit 01600a1b034f93dab6f855c81626b8030b85aec0
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Fri Dec 13 15:42:53 2013 -0700
 
+    PCI/AER: Consolidate HEST error source parsers
+    
+    aer_hest_parse() and aer_hest_parse_aff() are almost identical.
+    We use aer_hest_parse() to check the ACPI_HEST_FIRMWARE_FIRST flag for a
+    specific device, and we use aer_hest_parse_aff() to check to see if any
+    device sets the flag.
+    
+    This drops aer_hest_parse_aff() and enhances aer_hest_parse() so it
+    collects the union of the ACPI_HEST_FIRMWARE_FIRST flag setting when no
+    specific device is supplied.
+    
+    No functional change.
+    
+    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
-
+diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
+index a23995749f1d..4d6991794fa2 100644
+--- a/drivers/pci/pcie/aer/aerdrv_acpi.c
++++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
+@@ -70,6 +70,17 @@ static int aer_hest_parse(struct acpi_hest_header *hest_hdr, void *data)
+ 
+ 	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+ 	ff = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
++
++	/*
++	 * If no specific device is supplied, determine whether
++	 * FIRMWARE_FIRST is set for *any* PCIe device.
++	 */
++	if (!info->pci_dev) {
++		info->firmware_first |= ff;
++		return 0;
++	}
++
++	/* Otherwise, check the specific device */
+ 	if (p->flags & ACPI_HEST_GLOBAL) {
+ 		if (hest_match_type(hest_hdr, info->pci_dev))
+ 			info->firmware_first = ff;
+@@ -109,30 +120,20 @@ int pcie_aer_get_firmware_first(struct pci_dev *dev)
+ 
+ static bool aer_firmware_first;
+ 
+-static int aer_hest_parse_aff(struct acpi_hest_header *hest_hdr, void *data)
+-{
+-	struct acpi_hest_aer_common *p;
+-
+-	if (aer_firmware_first)
+-		return 0;
+-
+-	if (!hest_source_is_pcie_aer(hest_hdr))
+-		return 0;
+-
+-	p = (struct acpi_hest_aer_common *)(hest_hdr + 1);
+-	aer_firmware_first = !!(p->flags & ACPI_HEST_FIRMWARE_FIRST);
+-	return 0;
+-}
+-
+ /**
+  * aer_acpi_firmware_first - Check if APEI should control AER.
+  */
+ bool aer_acpi_firmware_first(void)
+ {
+ 	static bool parsed = false;
++	struct aer_hest_parse_info info = {
++		.pci_dev	= NULL,	/* Check all PCIe devices */
++		.firmware_first	= 0,
++	};
+ 
+ 	if (!parsed) {
+-		apei_hest_parse(aer_hest_parse_aff, NULL);
++		apei_hest_parse(aer_hest_parse, &info);
++		aer_firmware_first = info.firmware_first;
+ 		parsed = true;
+ 	}
+ 	return aer_firmware_first;
