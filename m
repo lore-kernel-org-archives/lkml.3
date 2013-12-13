@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3LMRcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:32:11 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:45297 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab3LMRcJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:32:09 -0500
+	id S1753330Ab3LMRem (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:34:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753112Ab3LMRek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 12:34:40 -0500
+Date: Fri, 13 Dec 2013 18:34:06 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: PATCH? introduce get_compound_page (Was: process 'stuck' at exit)
+Message-ID: <20131213173406.GG5408@redhat.com>
+References: <20131210214143.GG27373@redhat.com>
+ <CA+55aFwr2e5x13fA+QWjt=iJFmCcugFErdqaeeUtH4XPBExC6Q@mail.gmail.com>
+ <CA+55aFxLbFWhgzg=Rn0rhUpoOjbTE3QqUSxHTsCyk8GjDUFxJg@mail.gmail.com>
+ <CA+55aFw_emAUOr5BYx0TfTCGEOrW6-ZRATWbm00DvCXsGD7=DQ@mail.gmail.com>
+ <20131211170844.GA21700@redhat.com>
+ <alpine.DEB.2.02.1312111814010.28330@ionos.tec.linutronix.de>
+ <20131211175615.GA24546@redhat.com>
+ <20131211191855.GA32485@redhat.com>
+ <20131213151035.GE5408@redhat.com>
+ <20131213162240.GA11762@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20131213163916.GG20803@infradead.org>
-References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
-	<1386944873-16796-5-git-send-email-zwu.kernel@gmail.com>
-	<20131213163916.GG20803@infradead.org>
-Date: Sat, 14 Dec 2013 01:32:08 +0800
-Message-ID: <CAEH94LiFgi8kjFAtBe=2OsVr=4NEXijJN5w-d1H8+ifzcfoTOw@mail.gmail.com>
-Subject: Re: [PATCH 4/5] xfs: add a new method xfs_vn_tmpfile()
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: xfstests <xfs@oss.sgi.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131213162240.GA11762@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 14, 2013 at 12:39 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Fri, Dec 13, 2013 at 10:27:52PM +0800, Zhi Yong Wu wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->> Add a new O_TMPFILE method to VFS inteface.
->> For more info, please refer to:
->>   http://oss.sgi.com/archives/xfs/2013-08/msg00336.html
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  fs/xfs/xfs_iops.c |   22 ++++++++++++++++++++++
->>  1 files changed, 22 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
->> index eb55be5..b57cd89 100644
->> --- a/fs/xfs/xfs_iops.c
->> +++ b/fs/xfs/xfs_iops.c
->> @@ -39,6 +39,7 @@
->>  #include "xfs_da_btree.h"
->>  #include "xfs_dir2_priv.h"
->>  #include "xfs_dinode.h"
->> +#include "xfs_trans_space.h"
->>
->>  #include <linux/capability.h>
->>  #include <linux/xattr.h>
->> @@ -1051,6 +1052,25 @@ xfs_vn_fiemap(
->>       return 0;
->>  }
->>
->> +STATIC int
->> +xfs_vn_tmpfile(
->> +     struct inode    *dir,
->> +     struct dentry   *dentry,
->> +     umode_t         mode)
->> +{
->> +     struct xfs_inode *ip = NULL;
->> +     int             error;
->> +
->> +     error = xfs_create_tmpfile(XFS_I(dir), XFS_I(dir)->i_mount,
->
-> No need to pass in the mount point here, the client can get it easily.
->
->> +                             mode, 0, &ip);
->
-> Also no need for an always-zero argument.
-Fixed, thanks.
->
->> +     if (error)
->> +             return -error;
->> +
->> +     d_instantiate(dentry, VFS_I(ip));
->
-> Shouldn't this be a call to d_tmpfile() instead?
-Yes, then it need to be called in xfs_create_tmpfile() just before
-xfs_iunlink() is called.
->
-> Also I'd suggest mergin this into the previous patch, so that we have
-> one that actually adds O_TMPFILE support, and once place to write a nice
-Merged them, thanks.
-> good changelog.
+On Fri, Dec 13, 2013 at 05:22:40PM +0100, Oleg Nesterov wrote:
+> Andrea. Thanks a lot for the detailed reply.
+> 
+> On 12/13, Andrea Arcangeli wrote:
+> >
+> > On Wed, Dec 11, 2013 at 08:18:55PM +0100, Oleg Nesterov wrote:
+> >
+> > get_huge_page_tail checks different invariants in the VM_BUG_ON and is
+> > only used by gup.c not sure why to call that here.
+> 
+> Compared to __get_page_tail_foll(get_page_head => F) get_huge_page_tail()
+> lacks  the ->first_page->_count, but it is called right after
+> get_page_unless_zero(page_head) so to me get_huge_page_tail() looks a bit
+> better.
+> 
+> Personally, I think that even this change
+> 
+> 	--- x/kernel/events/../../mm/internal.h
+> 	+++ x/kernel/events/../../mm/internal.h
+> 	@@ -47,11 +47,9 @@ static inline void __get_page_tail_foll(
+> 		 * page_cache_get_speculative()) on tail pages.
+> 		 */
+> 		VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
+> 	-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+> 	-	VM_BUG_ON(page_mapcount(page) < 0);
+> 		if (get_page_head)
+> 			atomic_inc(&page->first_page->_count);
+> 	-	atomic_inc(&page->_mapcount);
+> 	+	get_huge_page_tail(page);
+> 	 }
+> 	 
+> 	 /*
+> 
+> makes sense. But this is minor and subjective, I am not going to argue.
 
+The above diff looks a straightforward cleanup you could submit it as
+a separate patch in a v2 series. This more clearly shows the
+difference between the two functions, so there is less overlap
+too.
 
+Feel free to change it further if you want, but the current model was
+to have get_huge_page_tail only for arch/*/mm/gup.c (in mm.h) and
+__get_page_tail_foll in internal.h for mm/*.c and with the ability to
+obtain the head page too (needed in some of the mm/*.c cases, and
+never needed for arch/*/mm/gup.c).
 
--- 
-Regards,
+> I'll try to make v2 based on -mm and your suggestions.
 
-Zhi Yong Wu
+Ok great!
+
+Thanks,
+Andrea
