@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3LMCrs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:47:48 -0500
-Received: from ozlabs.org ([203.10.76.45]:35193 "EHLO ozlabs.org"
+	id S1752004Ab3LMCuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:50:14 -0500
+Received: from tundra.namei.org ([65.99.196.166]:34725 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab3LMCrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:47:47 -0500
-Message-ID: <1386902862.3853.0.camel@concordia>
-Subject: Re: [PATCH V4 08/10] powerpc, perf: Enable SW filtering in branch
- stack sampling framework
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: mikey@neuling.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        eranian@google.com, linuxppc-dev@ozlabs.org, acme@ghostprotocols.net,
-        sukadev@linux.vnet.ibm.com, mingo@kernel.org
-Date: Fri, 13 Dec 2013 13:47:42 +1100
-In-Reply-To: <52A9779B.1030003@linux.vnet.ibm.com>
-References: <20131209062146.EABBE2C00C1@ozlabs.org>
-	 <52A6AD61.4050408@linux.vnet.ibm.com> <52A9779B.1030003@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751643Ab3LMCuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Dec 2013 21:50:12 -0500
+Date: Fri, 13 Dec 2013 13:52:09 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] SELinux fixes
+Message-ID: <alpine.LRH.2.02.1312131351140.31472@tundra.namei.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 14:15 +0530, Anshuman Khandual wrote:
-> On 12/10/2013 11:27 AM, Anshuman Khandual wrote:
-> > On 12/09/2013 11:51 AM, Michael Ellerman wrote:
-> >> This code was already in need of some unindentation, and now it's just
-> >> ridiculous.
-> >>
-> >> To start with at the beginning of this routine we have:
-> >>
-> >> while (..) {
-> >> 	if (!val)
-> >> 		break;
-> >> 	else {
-> >> 		// Bulk of the logic
-> >> 		...
-> >> 	}
-> >> }
-> >>
-> >> That should almost always become:
-> >>
-> >> while (..) {
-> >> 	if (!val)
-> >> 		break;
-> >>
-> >> 	// Bulk of the logic
-> >> 	...
-> >> }
-> >>
-> >>
-> >> But in this case that's not enough. Please send a precursor patch which moves
-> >> this logic out into a helper function.
-> > 
-> > Hey Michael,
-> > 
-> > I believe this patch should be able to take care of this.
-
-...
- 
-> Does the patch looks okay ? In which case will send it out separately. Do let
-> me know. Thank you.
-
-It's OK.
-
-Don't send it out separately, make it the first patch in your series.
-
-cheers
+Please pull.
 
 
+The following changes since commit 54fb723cc48db2fde964fb9bb0eaaccf2cf31a9f:
+
+  Merge tag 'for-linus' of git://git.kernel.org/pub/scm/virt/kvm/kvm (2013-12-12 15:46:06 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+Geyslan G. Bem (1):
+      selinux: fix possible memory leak
+
+James Morris (1):
+      Merge branch 'master' of git://git.infradead.org/users/pcmoore/selinux_fixes into for-linus
+
+Paul Moore (5):
+      Merge tag 'v3.12'
+      selinux: handle TCP SYN-ACK packets correctly in selinux_ip_output()
+      selinux: handle TCP SYN-ACK packets correctly in selinux_ip_postroute()
+      selinux: look for IPsec labels on both inbound and outbound packets
+      selinux: process labeled IPsec TCP SYN-ACK packets properly in selinux_ip_postroute()
+
+ security/selinux/hooks.c        |  137 ++++++++++++++++++++++++++++++++-------
+ security/selinux/include/xfrm.h |    8 ++-
+ security/selinux/xfrm.c         |   62 ++++++++++++++----
+ 3 files changed, 165 insertions(+), 42 deletions(-)
