@@ -1,129 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab3LMFPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:15:19 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:49240 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab3LMFOz convert rfc822-to-8bit (ORCPT
+	id S1751709Ab3LMFSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 00:18:24 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48857 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3LMFSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:14:55 -0500
+	Fri, 13 Dec 2013 00:18:21 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52AA986C.7050305@jp.fujitsu.com>
+Date: Fri, 13 Dec 2013 14:17:32 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAE1zot+Vptdqt5jmfOd5TYehXJFhG3Cj7Xcq_dU8vY6H3TJ2VQ@mail.gmail.com>
-References: <1386180581-6710-1-git-send-email-serban.constantinescu@arm.com>
-	<1386180581-6710-10-git-send-email-serban.constantinescu@arm.com>
-	<20131204183554.GA16693@kroah.com>
-	<CAMbhsRRP=ccdMb5PNwyYab+JoMdh+rmo2qF1naEDGBFCdMz9=A@mail.gmail.com>
-	<20131204214325.GA19565@kroah.com>
-	<CAMbhsRSkYuNBOt57PothjUO_6=vyJQAYsLmasq4Y-QVCT7fqZA@mail.gmail.com>
-	<20131204220247.GA22031@kroah.com>
-	<CAMP5Xgd-n4dgPsGN9KnD1c6WQ-CTAU1-3Z3mWgg=vqZQeru+UA@mail.gmail.com>
-	<CAMoF9u1W4-xUFjtMw+SuwR=wgnpfq4uMucKciqrqp81WK1aNmw@mail.gmail.com>
-	<CAMP5XgeGRjK5rPeMFv-LT3u+Bvc8WumtDgMdgnYDXO0t_C__Cw@mail.gmail.com>
-	<CAMoF9u2GN0GuD9azO3irU80tY+bnRhBFxUw3fhajEkFYH9ugmg@mail.gmail.com>
-	<CAMP5Xgf=R_VuP=EvMFVuwx=XtTNwQ0Gx-+Fa63DoLH_073WiAQ@mail.gmail.com>
-	<CAE1zot+Vptdqt5jmfOd5TYehXJFhG3Cj7Xcq_dU8vY6H3TJ2VQ@mail.gmail.com>
-Date: Thu, 12 Dec 2013 21:14:55 -0800
-Message-ID: <CAMP5XgfRNUHcv54oA9fE8PHBcGwHBwzRqnYjDsBwE+6kams1Pw@mail.gmail.com>
-Subject: Re: [PATCH v1 9/9] staging: android: binder: Add binder compat layer
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Colin Cross <ccross@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ian Rogers <irogers@google.com>,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        David Butcher <Dave.Butcher@arm.com>,
-        Rom Lemarchand <romlem@android.com>,
-        Dianne Hackborn <hackbod@android.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Yinghai Lu <yinghai@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [PATCH 7/10] ACPI / hotplug: Move container-specific code out
+ of the core
+References: <1421028.Rsfpmhnym3@vostro.rjw.lan> <81535269.SKoBMiGyoU@vostro.rjw.lan> <52AA7760.20603@jp.fujitsu.com> <4217831.DpCd0ng0jT@vostro.rjw.lan>
+In-Reply-To: <4217831.DpCd0ng0jT@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 12:45 AM, Octavian Purdila
-<octavian.purdila@intel.com> wrote:
-> On Thu, Dec 12, 2013 at 1:00 AM, Arve Hjønnevåg <arve@android.com> wrote:
->> On Wed, Dec 11, 2013 at 10:10 AM, Octavian Purdila
->> <octavian.purdila@intel.com> wrote:
->>> On Wed, Dec 11, 2013 at 5:21 AM, Arve Hjønnevåg <arve@android.com> wrote:
->>>>
->>>> Assuming you are talking about a kernel compat layer that translates
->>>> the flat_binder_object structs as they pass between 32 bit and 64 bit
->>>> processes, that will not always work. The data portion of the message
->>>> sometimes contain size values that are invisible to the kernel, but
->>>> these values will be wrong if the kernel move data to make room for a
->>>> different size flat_binder_object.
->>>>
->>>
->>> Hi Arve,
->>>
->>> Yes, I was talking about translating flat_binder_objects.
->>>
->>> I understand the potential issue for the user data payload, however,
->>> since most applications will use libbinder, the only problematic case
->>> is readIntPtr/writeIntPtr, which we can deprecate and convert
->>> applications that use it to readInt64. AFAICS there is only one user
->>> in the AOSP for this API (libmedia).
->>>
->>> If you are referring to data blobs that application parses I don't
->>> think there is anything we can do, even at libbinder level.
->>>
->>> Can you give me an example of the sort of problems you see?
->>>
->>> Thanks,
->>> Tavi
+(2013/12/13 13:56), Rafael J. Wysocki wrote:
+> On Friday, December 13, 2013 11:56:32 AM Yasuaki Ishimatsu wrote:
+>> Hi Rafael,
+>
+> Hi,
+>
+>> Please share your more detailed idea. I started to implement the following
+>> idea. But the idea has one problem.
 >>
->> The specific problem I was told about can be found in
->> frameworks/base/core/java/android/os/Bundle.java, but there could be
->> other. The size of the bundle is stored in the parcel so the end of
->> the bundle will be wrong if the bundle contains a flat_binder_object
->> that the driver changes the size of. However, since the sending
->> process gets the parcel size from libbinder, changing libbinder to
->> always use the 64 bit version of flat_binder_object should work with
->> this code.
+>>>>> The eject work flow can be:
+>>>>>      (1) an eject event occurs,
+>>>>>      (2) the container "physical" device fails offline in acpi_scan_hot_remove()
+>>>>>          emmitting, say, KOBJ_CHANGE for the "physical" device,
+>>>>>      (3) user space notices the KOBJ_CHANGE and does the cleanup as needed,
+>>>>>      (4) user space changes the "physical" container device flag controlling
+>>>>>          offline to 0,
+>>>>>      (5) user space uses the sysfs "eject" attribute of the ACPI container object
+>>>>>          to finally eject the container,
+>>>>>      (6) the offline in acpi_scan_hot_remove() is now successful, because the
+>>>>>          flag controlling it has been set to 0 in step (4),
+>>>>>      (7) the "physical" container device goes away before executing _EJ0,
+>>>>>      (8) the container is ejected.
 >>
+>> I want to emit KOBJ_CHANGE before offlining devices on container device at (2).
+>> But acpi_scan_hot_remove() offlines devices on container device at first.
+>> So when offline container device, devices on container has been offlined.
+>>
+>> Thus the idea cannot fulfill my necessary feature.
 >
-> AFAICS the bundle size is stored as an int32 so there is no bit width
-> issues between the sending and receiving process.
+> Well, in that case we need to treat containers in a special way at the ACPI
+> level.  Which is a bit unfortunate so to speak.
 >
-> When I mentioned that flat_binder_objects will be translated, I meant
-> the whole transaction will be translated to preserve its user payload
-> intact. Something like this:
+> To that end I'd try to add a new flag to struct acpi_hotplug_profile, say
+> .verify_offline, such that if set, it would cause acpi_scan_hot_remove() to
+> check if all of the "physical" companions of the top-level device are offline
+> to start with, and if not, it would just emit KOBJ_CHANGE for the companions
+> that are not offline and bail out.
 >
->         32bit                        64bit
->   +----------------+    +--------------------+
->   | o o oo  o    xx| -> | oo oooo  oo    yyyy|
->   +----------------+    +--------------------+
+> So the above algorithm would become:
 >
-> where o are binder objects, spaces are user data and x,y are offsets
-> pointers to binder objects (they are size_t so they need translation
-> as well).
+> (1) an eject event occurs,
+> (2) acpi_scan_hot_remove() checks the verify_offline flag in the target device's
+>      scan_handler structure,
+> (3) if set (it would always be set for containers), acpi_scan_hot_remove()
+>      checks the status of the target device's "physical" companions; if at least
+>      one of them is offline, KOBJ_CHANGE is emitted for that "physical" device,
+>      and acpi_scan_hot_remove() returns, [I guess we can just emit KOBJ_CHANGE
+>      for the first companion that is not offline at this point.]
+> (4) user space notices the KOBJ_CHANGE and does the cleanup as needed; in the
+>      process it carries out the offline operation for the container's "physical"
+>      companion (there's only one such companion for each container), [That
+>      operation for the container itself is trivial, but to succeed it requires
+>      all devices below the container to be taken offline in advance.]
+> (5) user space uses the sysfs "eject" attribute of the ACPI container object
+>      to finally eject the container,
+> (6) acpi_scan_hot_remove() is now successful, because the container's "physical"
+>      companion is now offline,
+> (7) the "physical" container device goes away before executing _EJ0,
+> (8) the container is ejected.
 >
-> As long as the application does not use absolute offsets in the
-> payload and as long as the data types stored in the payload are fixed
-> bit width across the 32bit/64bit ABI (e.g. int32, int64 instead of
-> intptr) doing the translation in kernel should be fine. I checked
-> libbinder and both assumptions seems to be true (except in a few cases
-> for the later which I already mentioned)
->
-> So, what am I missing?
+> I think that should work for you.
 
-The bundle size is wrong in the receiving process if the driver change
-the size of a flat_binder_object stored in the bundle.
+This idea seems to same as your previous work.
+http://lkml.org/lkml/2013/2/23/97
 
-A simplified example where a flat_binder_object is a single pointer,
-and a bundle only adds a size to the data stored:
-If you send a bundle with an object and an int <inta> followed by an
-int <intb> from a 32 bit process to a 64 bit process you would get
-this transformation of the data (offsets not shown):
-bundle(obj, inta), int(intb) => parcel_32(8,obj,inta,intb) =>
-parcel_64(8,objl,objh,inta,intb) => bundle(obj), int(inta), int(intb)
+How about add autoremove flag into acpi_hotplug_profile and check it as follow:
 
-The first bundle argument is missing an item in the receiving process,
-and the second argument is <inta> instead of <intb>.
+---
+  drivers/acpi/scan.c | 5 +++++
+  1 file changed, 5 insertions(+)
 
--- 
-Arve Hjønnevåg
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 5383c81..c43d110 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -409,6 +409,11 @@ static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *data)
+  			ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+  			goto err_out;
+  		}
++		if (!handler->hotplug.autoremove) {
++			kobject_uevent(&device->dev.kobj, KOBJ_CHANGE);
++			ost_code = ACPI_OST_SC_EJECT_NON_SPECIFIC_FAILURE;
++			goto err_out;
++		}
+  		acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+  					  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+  		break;
+
+Adding the check into "acpi_hotplug_notify_cb()", user need not change the
+flag for removing container device by "sysfs eject".
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Thanks,
+> Rafael
+>
+
+
