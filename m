@@ -1,68 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab3LMO2O (ORCPT <rfc822;w@1wt.eu>);
+	id S1753056Ab3LMO2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 09:28:17 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38221 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab3LMO2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Dec 2013 09:28:14 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:60525 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753003Ab3LMO2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 09:28:11 -0500
 From: Zhi Yong Wu <zwu.kernel@gmail.com>
 To: xfs@oss.sgi.com
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH 1/5] xfs: factor prid related codes into xfs_get_initial_prid()
-Date: Fri, 13 Dec 2013 22:27:49 +0800
-Message-Id: <1386944873-16796-2-git-send-email-zwu.kernel@gmail.com>
+Subject: [PATCH 2/5] xfs: adjust the interface of xfs_qm_vop_dqalloc()
+Date: Fri, 13 Dec 2013 22:27:50 +0800
+Message-Id: <1386944873-16796-3-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
 References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121314-5806-0000-0000-000023AA5223
+x-cbid: 13121314-9332-0000-0000-0000027C15D0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-It will be reused by the O_TMPFILE creation function.
+There may be not a parent inode or a name for O_TMPFILE support, but will pass
+a struct xfs_mount to xfs_qm_vop_dqalloc(). So its interface need to be
+adjusted in order that O_TMPFILE creation function can also use it.
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/xfs/xfs_inode.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+ fs/xfs/xfs_inode.c   |    2 +-
+ fs/xfs/xfs_ioctl.c   |    2 +-
+ fs/xfs/xfs_iops.c    |    3 ++-
+ fs/xfs/xfs_qm.c      |   50 +++++++++++++++++++++++++++++++-------------------
+ fs/xfs/xfs_quota.h   |    6 ++++--
+ fs/xfs/xfs_symlink.c |    2 +-
+ 6 files changed, 40 insertions(+), 25 deletions(-)
 
 diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-index 001aa89..e8b9a68 100644
+index e8b9a68..71a8186 100644
 --- a/fs/xfs/xfs_inode.c
 +++ b/fs/xfs/xfs_inode.c
-@@ -1139,6 +1139,14 @@ xfs_bumplink(
- 	return 0;
- }
- 
-+static inline prid_t xfs_get_initial_prid(struct xfs_inode *dp)
-+{
-+	if (dp->i_d.di_flags & XFS_DIFLAG_PROJINHERIT)
-+		return xfs_get_projid(dp);
-+	else
-+		return XFS_PROJID_DEFAULT;
-+}
-+
- int
- xfs_create(
- 	xfs_inode_t		*dp,
-@@ -1169,10 +1177,7 @@ xfs_create(
- 	if (XFS_FORCED_SHUTDOWN(mp))
- 		return XFS_ERROR(EIO);
- 
--	if (dp->i_d.di_flags & XFS_DIFLAG_PROJINHERIT)
--		prid = xfs_get_projid(dp);
--	else
--		prid = XFS_PROJID_DEFAULT;
-+	prid = xfs_get_initial_prid(dp);
- 
+@@ -1182,7 +1182,7 @@ xfs_create(
  	/*
  	 * Make sure that we have allocated dquot(s) on disk.
+ 	 */
+-	error = xfs_qm_vop_dqalloc(dp, xfs_kuid_to_uid(current_fsuid()),
++	error = xfs_qm_vop_dqalloc(dp, mp, xfs_kuid_to_uid(current_fsuid()),
+ 					xfs_kgid_to_gid(current_fsgid()), prid,
+ 					XFS_QMOPT_QUOTALL | XFS_QMOPT_INHERIT,
+ 					&udqp, &gdqp, &pdqp);
+diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+index 33ad9a7..eac84bd 100644
+--- a/fs/xfs/xfs_ioctl.c
++++ b/fs/xfs/xfs_ioctl.c
+@@ -1090,7 +1090,7 @@ xfs_ioctl_setattr(
+ 	 * because the i_*dquot fields will get updated anyway.
+ 	 */
+ 	if (XFS_IS_QUOTA_ON(mp) && (mask & FSX_PROJID)) {
+-		code = xfs_qm_vop_dqalloc(ip, ip->i_d.di_uid,
++		code = xfs_qm_vop_dqalloc(ip, ip->i_mount, ip->i_d.di_uid,
+ 					 ip->i_d.di_gid, fa->fsx_projid,
+ 					 XFS_QMOPT_PQUOTA, &udqp, NULL, &pdqp);
+ 		if (code)
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index 27e0e54..eb55be5 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -540,7 +540,8 @@ xfs_setattr_nonsize(
+ 		 */
+ 		ASSERT(udqp == NULL);
+ 		ASSERT(gdqp == NULL);
+-		error = xfs_qm_vop_dqalloc(ip, xfs_kuid_to_uid(uid),
++		error = xfs_qm_vop_dqalloc(ip, ip->i_mount,
++					   xfs_kuid_to_uid(uid),
+ 					   xfs_kgid_to_gid(gid),
+ 					   xfs_get_projid(ip),
+ 					   qflags, &udqp, &gdqp, NULL);
+diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+index 14a4996..1f13e82 100644
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -1765,6 +1765,7 @@ xfs_qm_write_sb_changes(
+ int
+ xfs_qm_vop_dqalloc(
+ 	struct xfs_inode	*ip,
++	struct xfs_mount	*mp,
+ 	xfs_dqid_t		uid,
+ 	xfs_dqid_t		gid,
+ 	prid_t			prid,
+@@ -1773,7 +1774,6 @@ xfs_qm_vop_dqalloc(
+ 	struct xfs_dquot	**O_gdqpp,
+ 	struct xfs_dquot	**O_pdqpp)
+ {
+-	struct xfs_mount	*mp = ip->i_mount;
+ 	struct xfs_dquot	*uq = NULL;
+ 	struct xfs_dquot	*gq = NULL;
+ 	struct xfs_dquot	*pq = NULL;
+@@ -1783,17 +1783,19 @@ xfs_qm_vop_dqalloc(
+ 	if (!XFS_IS_QUOTA_RUNNING(mp) || !XFS_IS_QUOTA_ON(mp))
+ 		return 0;
+ 
+-	lockflags = XFS_ILOCK_EXCL;
+-	xfs_ilock(ip, lockflags);
++	if (ip) {
++		lockflags = XFS_ILOCK_EXCL;
++		xfs_ilock(ip, lockflags);
+ 
+-	if ((flags & XFS_QMOPT_INHERIT) && XFS_INHERIT_GID(ip))
+-		gid = ip->i_d.di_gid;
++		if ((flags & XFS_QMOPT_INHERIT) && XFS_INHERIT_GID(ip))
++			gid = ip->i_d.di_gid;
++	}
+ 
+ 	/*
+ 	 * Attach the dquot(s) to this inode, doing a dquot allocation
+ 	 * if necessary. The dquot(s) will not be locked.
+ 	 */
+-	if (XFS_NOT_DQATTACHED(mp, ip)) {
++	if (ip && XFS_NOT_DQATTACHED(mp, ip)) {
+ 		error = xfs_qm_dqattach_locked(ip, XFS_QMOPT_DQALLOC);
+ 		if (error) {
+ 			xfs_iunlock(ip, lockflags);
+@@ -1802,7 +1804,7 @@ xfs_qm_vop_dqalloc(
+ 	}
+ 
+ 	if ((flags & XFS_QMOPT_UQUOTA) && XFS_IS_UQUOTA_ON(mp)) {
+-		if (ip->i_d.di_uid != uid) {
++		if (ip || (ip->i_d.di_uid != uid)) {
+ 			/*
+ 			 * What we need is the dquot that has this uid, and
+ 			 * if we send the inode to dqget, the uid of the inode
+@@ -1812,7 +1814,8 @@ xfs_qm_vop_dqalloc(
+ 			 * we'll deadlock by doing trans_reserve while
+ 			 * holding ilock.
+ 			 */
+-			xfs_iunlock(ip, lockflags);
++			if (ip)
++				xfs_iunlock(ip, lockflags);
+ 			error = xfs_qm_dqget(mp, NULL, uid,
+ 						 XFS_DQ_USER,
+ 						 XFS_QMOPT_DQALLOC |
+@@ -1826,8 +1829,10 @@ xfs_qm_vop_dqalloc(
+ 			 * Get the ilock in the right order.
+ 			 */
+ 			xfs_dqunlock(uq);
+-			lockflags = XFS_ILOCK_SHARED;
+-			xfs_ilock(ip, lockflags);
++			if (ip) {
++				lockflags = XFS_ILOCK_SHARED;
++				xfs_ilock(ip, lockflags);
++			}
+ 		} else {
+ 			/*
+ 			 * Take an extra reference, because we'll return
+@@ -1838,8 +1843,9 @@ xfs_qm_vop_dqalloc(
+ 		}
+ 	}
+ 	if ((flags & XFS_QMOPT_GQUOTA) && XFS_IS_GQUOTA_ON(mp)) {
+-		if (ip->i_d.di_gid != gid) {
+-			xfs_iunlock(ip, lockflags);
++		if (ip && (ip->i_d.di_gid != gid)) {
++			if (ip)
++				xfs_iunlock(ip, lockflags);
+ 			error = xfs_qm_dqget(mp, NULL, gid,
+ 						 XFS_DQ_GROUP,
+ 						 XFS_QMOPT_DQALLOC |
+@@ -1850,16 +1856,19 @@ xfs_qm_vop_dqalloc(
+ 				goto error_rele;
+ 			}
+ 			xfs_dqunlock(gq);
+-			lockflags = XFS_ILOCK_SHARED;
+-			xfs_ilock(ip, lockflags);
++			if (ip) {
++				lockflags = XFS_ILOCK_SHARED;
++				xfs_ilock(ip, lockflags);
++			}
+ 		} else {
+ 			ASSERT(ip->i_gdquot);
+ 			gq = xfs_qm_dqhold(ip->i_gdquot);
+ 		}
+ 	}
+ 	if ((flags & XFS_QMOPT_PQUOTA) && XFS_IS_PQUOTA_ON(mp)) {
+-		if (xfs_get_projid(ip) != prid) {
+-			xfs_iunlock(ip, lockflags);
++		if (ip || (xfs_get_projid(ip) != prid)) {
++			if (ip)
++				xfs_iunlock(ip, lockflags);
+ 			error = xfs_qm_dqget(mp, NULL, (xfs_dqid_t)prid,
+ 						 XFS_DQ_PROJ,
+ 						 XFS_QMOPT_DQALLOC |
+@@ -1870,8 +1879,10 @@ xfs_qm_vop_dqalloc(
+ 				goto error_rele;
+ 			}
+ 			xfs_dqunlock(pq);
+-			lockflags = XFS_ILOCK_SHARED;
+-			xfs_ilock(ip, lockflags);
++			if (ip) {
++				lockflags = XFS_ILOCK_SHARED;
++				xfs_ilock(ip, lockflags);
++			}
+ 		} else {
+ 			ASSERT(ip->i_pdquot);
+ 			pq = xfs_qm_dqhold(ip->i_pdquot);
+@@ -1880,7 +1891,8 @@ xfs_qm_vop_dqalloc(
+ 	if (uq)
+ 		trace_xfs_dquot_dqalloc(ip);
+ 
+-	xfs_iunlock(ip, lockflags);
++	if (ip)
++		xfs_iunlock(ip, lockflags);
+ 	if (O_udqpp)
+ 		*O_udqpp = uq;
+ 	else if (uq)
+diff --git a/fs/xfs/xfs_quota.h b/fs/xfs/xfs_quota.h
+index 5376dd4..c898ad2 100644
+--- a/fs/xfs/xfs_quota.h
++++ b/fs/xfs/xfs_quota.h
+@@ -80,7 +80,8 @@ extern int xfs_trans_reserve_quota_bydquots(struct xfs_trans *,
+ 		struct xfs_mount *, struct xfs_dquot *,
+ 		struct xfs_dquot *, struct xfs_dquot *, long, long, uint);
+ 
+-extern int xfs_qm_vop_dqalloc(struct xfs_inode *, xfs_dqid_t, xfs_dqid_t,
++extern int xfs_qm_vop_dqalloc(struct xfs_inode *, struct xfs_mount *,
++		xfs_dqid_t, xfs_dqid_t,
+ 		prid_t, uint, struct xfs_dquot **, struct xfs_dquot **,
+ 		struct xfs_dquot **);
+ extern void xfs_qm_vop_create_dqattach(struct xfs_trans *, struct xfs_inode *,
+@@ -103,7 +104,8 @@ extern void xfs_qm_unmount_quotas(struct xfs_mount *);
+ 
+ #else
+ static inline int
+-xfs_qm_vop_dqalloc(struct xfs_inode *ip, xfs_dqid_t uid, xfs_dqid_t gid,
++xfs_qm_vop_dqalloc(struct xfs_inode *ip, struct xfs_mount *mp,
++		xfs_dqid_t uid, xfs_dqid_t gid,
+ 		prid_t prid, uint flags, struct xfs_dquot **udqp,
+ 		struct xfs_dquot **gdqp, struct xfs_dquot **pdqp)
+ {
+diff --git a/fs/xfs/xfs_symlink.c b/fs/xfs/xfs_symlink.c
+index 14e58f2..dcb26692 100644
+--- a/fs/xfs/xfs_symlink.c
++++ b/fs/xfs/xfs_symlink.c
+@@ -216,7 +216,7 @@ xfs_symlink(
+ 	/*
+ 	 * Make sure that we have allocated dquot(s) on disk.
+ 	 */
+-	error = xfs_qm_vop_dqalloc(dp,
++	error = xfs_qm_vop_dqalloc(dp, mp,
+ 			xfs_kuid_to_uid(current_fsuid()),
+ 			xfs_kgid_to_gid(current_fsgid()), prid,
+ 			XFS_QMOPT_QUOTALL | XFS_QMOPT_INHERIT,
 -- 
 1.7.6.5
 
