@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab3LMW0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 17:26:11 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:34328 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab3LMW0H (ORCPT
+	id S1754214Ab3LMWuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 17:50:09 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:59673 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab3LMW0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 17:26:07 -0500
+	Fri, 13 Dec 2013 17:26:11 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         Sumit Semwal <sumit.semwal@linaro.org>,
         Jesse Barker <jesse.barker@arm.com>, Colin Cross <ccross@android.com>,
+        KyongHo Cho <pullip.cho@samsung.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 002/115] gpu: ion: ion_carveout_heap: fix for 3.4
-Date: Fri, 13 Dec 2013 14:23:36 -0800
-Message-Id: <1386973529-4884-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 005/115] gpu: ion: several bugfixes and enhancements of ION
+Date: Fri, 13 Dec 2013 14:23:39 -0800
+Message-Id: <1386973529-4884-6-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
 References: <1386973529-4884-1-git-send-email-john.stultz@linaro.org>
@@ -24,38 +25,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+From: KyongHo Cho <pullip.cho@samsung.com>
 
-__arch_ioremap is no longer available, use __arm_ioremap instead.
+1. Verifying if the size of memory allocation in ion_alloc() is aligned
+by PAGE_SIZE at least. If it is not, this change makes the size to be
+aligned by PAGE_SIZE.
 
-Signed-off-by: Colin Cross <ccross@android.com>
+2. Unmaps all mappings to the kernel and DMA address spaces when
+destroying ion_buffer in ion_buffer_destroy(). This prevents leaks in
+those virtual address spaces.
+
+3. Makes the return value of ion_alloc() to be explicit Linux error code
+when it fails to allocate a buffer.
+
+4. Makes ion_alloc() implementation simpler. Removes 'goto' statement and
+relavant call to ion_buffer_put().
+
+5. Checks if the task is valid before calling put_task_struct() due
+to failure on creating a ion client in ion_client_create().
+
+6. Returns error when buffer allocation requested by userspace is failed.
+
+Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
 [jstultz: modified patch to apply to staging directory]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ion/ion_carveout_heap.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/android/ion/ion.c | 52 +++++++++++++++++++++++++++++----------
+ 1 file changed, 39 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
-index 6d02cd3..e8c4e36 100644
---- a/drivers/staging/android/ion/ion_carveout_heap.c
-+++ b/drivers/staging/android/ion/ion_carveout_heap.c
-@@ -99,14 +99,14 @@ void ion_carveout_heap_unmap_dma(struct ion_heap *heap,
- void *ion_carveout_heap_map_kernel(struct ion_heap *heap,
- 				   struct ion_buffer *buffer)
- {
--	return __arch_ioremap(buffer->priv_phys, buffer->size,
-+	return __arm_ioremap(buffer->priv_phys, buffer->size,
- 			      MT_MEMORY_NONCACHED);
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 004c0d4..3c9ca31 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -166,6 +166,12 @@ static void ion_buffer_destroy(struct kref *kref)
+ 	struct ion_buffer *buffer = container_of(kref, struct ion_buffer, ref);
+ 	struct ion_device *dev = buffer->dev;
+ 
++	if (WARN_ON(buffer->kmap_cnt > 0))
++		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
++
++	if (WARN_ON(buffer->dmap_cnt > 0))
++		buffer->heap->ops->unmap_dma(buffer->heap, buffer);
++
+ 	buffer->heap->ops->free(buffer);
+ 	mutex_lock(&dev->lock);
+ 	rb_erase(&buffer->node, &dev->buffers);
+@@ -296,6 +302,11 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
+ 	 * request of the caller allocate from it.  Repeat until allocate has
+ 	 * succeeded or all heaps have been tried
+ 	 */
++	if (WARN_ON(!len))
++		return ERR_PTR(-EINVAL);
++
++	len = PAGE_ALIGN(len);
++
+ 	mutex_lock(&dev->lock);
+ 	for (n = rb_first(&dev->heaps); n != NULL; n = rb_next(n)) {
+ 		struct ion_heap *heap = rb_entry(n, struct ion_heap, node);
+@@ -311,27 +322,26 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
+ 	}
+ 	mutex_unlock(&dev->lock);
+ 
+-	if (IS_ERR_OR_NULL(buffer))
++	if (buffer == NULL)
++		return ERR_PTR(-ENODEV);
++
++	if (IS_ERR(buffer))
+ 		return ERR_PTR(PTR_ERR(buffer));
+ 
+ 	handle = ion_handle_create(client, buffer);
+ 
+-	if (IS_ERR_OR_NULL(handle))
+-		goto end;
+-
+ 	/*
+ 	 * ion_buffer_create will create a buffer with a ref_cnt of 1,
+ 	 * and ion_handle_create will take a second reference, drop one here
+ 	 */
+ 	ion_buffer_put(buffer);
+ 
+-	mutex_lock(&client->lock);
+-	ion_handle_add(client, handle);
+-	mutex_unlock(&client->lock);
+-	return handle;
++	if (!IS_ERR(handle)) {
++		mutex_lock(&client->lock);
++		ion_handle_add(client, handle);
++		mutex_unlock(&client->lock);
++	}
+ 
+-end:
+-	ion_buffer_put(buffer);
+ 	return handle;
  }
  
- void ion_carveout_heap_unmap_kernel(struct ion_heap *heap,
- 				    struct ion_buffer *buffer)
- {
--	__arch_iounmap(buffer->vaddr);
-+	__arm_iounmap(buffer->vaddr);
- 	buffer->vaddr = NULL;
- 	return;
- }
+@@ -680,7 +690,8 @@ struct ion_client *ion_client_create(struct ion_device *dev,
+ 
+ 	client = kzalloc(sizeof(struct ion_client), GFP_KERNEL);
+ 	if (!client) {
+-		put_task_struct(current->group_leader);
++		if (task)
++			put_task_struct(current->group_leader);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
+ 
+@@ -798,6 +809,15 @@ static void ion_vma_open(struct vm_area_struct *vma)
+ 		vma->vm_private_data = NULL;
+ 		return;
+ 	}
++
++	if (!ion_handle_validate(client, handle)) {
++		ion_client_put(client);
++		vma->vm_private_data = NULL;
++		return;
++	}
++
++	ion_handle_get(handle);
++
+ 	pr_debug("%s: %d client_cnt %d handle_cnt %d alloc_cnt %d\n",
+ 		 __func__, __LINE__,
+ 		 atomic_read(&client->ref.refcount),
+@@ -919,7 +939,7 @@ static int ion_ioctl_share(struct file *parent, struct ion_client *client,
+ 	struct file *file;
+ 
+ 	if (fd < 0)
+-		return -ENFILE;
++		return fd;
+ 
+ 	file = anon_inode_getfile("ion_share_fd", &ion_share_fops,
+ 				  handle->buffer, O_RDWR);
+@@ -948,8 +968,14 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			return -EFAULT;
+ 		data.handle = ion_alloc(client, data.len, data.align,
+ 					     data.flags);
+-		if (copy_to_user((void __user *)arg, &data, sizeof(data)))
++
++		if (IS_ERR(data.handle))
++			return PTR_ERR(data.handle);
++
++		if (copy_to_user((void __user *)arg, &data, sizeof(data))) {
++			ion_free(client, data.handle);
+ 			return -EFAULT;
++		}
+ 		break;
+ 	}
+ 	case ION_IOC_FREE:
 -- 
 1.8.3.2
 
