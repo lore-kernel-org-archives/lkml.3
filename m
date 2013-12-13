@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab3LMFjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 00:39:09 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:6899
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750720Ab3LMFjF (ORCPT
+	id S1751631Ab3LMFpT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 00:45:19 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:64698 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab3LMFpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 00:39:05 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(z579ehz98dI9371I1432I1447Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 13 Dec 2013 13:39:24 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Valentine Barshak <valentine.barshak@cogentembedded.com>,
-        Wei Yongjun <weiyj.lk@gmail.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Richard Zhu <r65037@freescale.com>
-Subject: Re: [PATCH] MAINTAINERS: Add DesignWare, i.MX6, Armada, R-Car PCI
- host maintainers
-Message-ID: <20131213053922.GP18380@S2101-09.ap.freescale.net>
-References: <20131211183237.GI4699@google.com>
- <20131212070045.GO18380@S2101-09.ap.freescale.net>
- <CAErSpo5O1nSkKmWfHGGZiuVdvRxFjNNDS-8BWKFhnCgwVSdr8A@mail.gmail.com>
+	Fri, 13 Dec 2013 00:45:17 -0500
+Date: Fri, 13 Dec 2013 11:15:08 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: josh@joshtriplett.org
+Subject: [PATCH 1/2] drivers: mtd: Mark functions as static and remove unused
+ function in lpddr_cmds.c
+Message-ID: <d0512c2bc35b27af33ad79d74d93ecc0f2b4e92c.1386912859.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAErSpo5O1nSkKmWfHGGZiuVdvRxFjNNDS-8BWKFhnCgwVSdr8A@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 12, 2013 at 01:29:00PM -0700, Bjorn Helgaas wrote:
-> On Thu, Dec 12, 2013 at 12:00 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> > Hi Bjorn,
-> >
-> > On Wed, Dec 11, 2013 at 11:32:37AM -0700, Bjorn Helgaas wrote:
-> >> +PCI DRIVER FOR IMX6
-> >> +M:   Shawn Guo <shawn.guo@linaro.org>
-> >
-> > Thanks for the nomination.  But I think a better person for this
-> > position would be Richard Zhu <r65037@freescale.com> (copied).  He knows
-> > the driver and controller much better than myself, and most importantly
-> > he is the driver owner for Freescale kernel and he has the contact to
-> > Freescale PCIe hardware people.
-> 
-> Richard, are you OK with being listed here?
+This patch marks the functions do_write_buffer() and do_erase_oneblock()
+as static because because they are not used outside this file. It also
+removes the unused function word_program() in lpddr/lpddr_cmds.c.
 
-Richard is on leave these two days.  Hope he will be back to online
-soon.
+Thus, it also removes the following warnings in lpddr/lpddr_cmds.c:
+drivers/mtd/lpddr/lpddr_cmds.c:391:5: warning: no previous prototype for ‘do_write_buffer’ [-Wmissing-prototypes]
+drivers/mtd/lpddr/lpddr_cmds.c:472:5: warning: no previous prototype for ‘do_erase_oneblock’ [-Wmissing-prototypes]
+drivers/mtd/lpddr/lpddr_cmds.c:751:5: warning: no previous prototype for ‘word_program’ [-Wmissing-prototypes]
 
-> Shawn, do you want to be
-> listed here in addition, if only to make sure you're copied on changes
-> to pci-imx6.c?
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/mtd/lpddr/lpddr_cmds.c |   32 ++------------------------------
+ 1 file changed, 2 insertions(+), 30 deletions(-)
 
-Okay, thanks, Bjorn.
-
-Shawn
+diff --git a/drivers/mtd/lpddr/lpddr_cmds.c b/drivers/mtd/lpddr/lpddr_cmds.c
+index 2ef19aa..d38b646 100644
+--- a/drivers/mtd/lpddr/lpddr_cmds.c
++++ b/drivers/mtd/lpddr/lpddr_cmds.c
+@@ -388,7 +388,7 @@ static void put_chip(struct map_info *map, struct flchip *chip)
+ 	wake_up(&chip->wq);
+ }
+ 
+-int do_write_buffer(struct map_info *map, struct flchip *chip,
++static int do_write_buffer(struct map_info *map, struct flchip *chip,
+ 			unsigned long adr, const struct kvec **pvec,
+ 			unsigned long *pvec_seek, int len)
+ {
+@@ -469,7 +469,7 @@ int do_write_buffer(struct map_info *map, struct flchip *chip,
+ 	return ret;
+ }
+ 
+-int do_erase_oneblock(struct mtd_info *mtd, loff_t adr)
++static int do_erase_oneblock(struct mtd_info *mtd, loff_t adr)
+ {
+ 	struct map_info *map = mtd->priv;
+ 	struct lpddr_private *lpddr = map->fldrv_priv;
+@@ -748,34 +748,6 @@ static int lpddr_unlock(struct mtd_info *mtd, loff_t ofs, uint64_t len)
+ 	return do_xxlock(mtd, ofs, len, DO_XXLOCK_UNLOCK);
+ }
+ 
+-int word_program(struct map_info *map, loff_t adr, uint32_t curval)
+-{
+-    int ret;
+-	struct lpddr_private *lpddr = map->fldrv_priv;
+-	int chipnum = adr >> lpddr->chipshift;
+-	struct flchip *chip = &lpddr->chips[chipnum];
+-
+-	mutex_lock(&chip->mutex);
+-	ret = get_chip(map, chip, FL_WRITING);
+-	if (ret) {
+-		mutex_unlock(&chip->mutex);
+-		return ret;
+-	}
+-
+-	send_pfow_command(map, LPDDR_WORD_PROGRAM, adr, 0x00, (map_word *)&curval);
+-
+-	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->SingleWordProgTime));
+-	if (ret)	{
+-		printk(KERN_WARNING"%s word_program error at: %llx; val: %x\n",
+-			map->name, adr, curval);
+-		goto out;
+-	}
+-
+-out:	put_chip(map, chip);
+-	mutex_unlock(&chip->mutex);
+-	return ret;
+-}
+-
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Alexey Korolev <akorolev@infradead.org>");
+ MODULE_DESCRIPTION("MTD driver for LPDDR flash chips");
+-- 
+1.7.9.5
 
