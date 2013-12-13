@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab3LMHsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 02:48:51 -0500
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:34631 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab3LMHst (ORCPT
+	id S1752129Ab3LMHtO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 02:49:14 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:50821 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab3LMHtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 02:48:49 -0500
+	Fri, 13 Dec 2013 02:49:12 -0500
+Date: Thu, 12 Dec 2013 23:49:08 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Caizhiyong <caizhiyong@hisilicon.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Quyaxin <quyaxin@hisilicon.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>
+Subject: Re: [PATCH] mtd: increase max page/OOB size to support 16K pagesize
+ NAND
+Message-ID: <20131213074908.GB24650@norris-Latitude-E6410>
+References: <C3050A4DBA34F345975765E43127F10F25E47448@SZXEMA512-MBX.china.huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAYSxhp3MsnaX80tF7iCzUfjfjyQnOoZbTrtBKs_nAk4SUYReQ@mail.gmail.com>
-References: <1386271244-3927-1-git-send-email-tim.kryger@linaro.org>
-	<1386271244-3927-2-git-send-email-tim.kryger@linaro.org>
-	<CAEPRUYrw_owwBYEmmXO3=OG9pXrKPrJTwF+jPVm4+-Vvf0Xorw@mail.gmail.com>
-	<CAAYSxhp3MsnaX80tF7iCzUfjfjyQnOoZbTrtBKs_nAk4SUYReQ@mail.gmail.com>
-Date: Thu, 12 Dec 2013 23:48:47 -0800
-Message-ID: <CAEPRUYoJJ054rGhZmMMBy93ZtLrFJPRkM6LHmjygcyaDqzbDEw@mail.gmail.com>
-Subject: Re: [PATCH v4 1/8] ARM: dts: Declare clocks as fixed on bcm11351
-From: Christian Daudt <bcm@fixthebug.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        Axel Lin <axel.lin@ingics.com>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linaro Patches List <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F25E47448@SZXEMA512-MBX.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 12:26 PM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> On Mon, Dec 9, 2013 at 11:18 PM, Christian Daudt <bcm@fixthebug.org> wrote:
->> Applied to armsoc/for-3.14/dt
->
-> Could you wait till other maintainers provide their acks and then take
-> the entire series into a branch that feeds into the arm-soc
-> drivers-for-linus branch?
->
-> Thanks,
-> Tim Kryger
+On Fri, Dec 13, 2013 at 05:01:56AM +0000, Caizhiyong wrote:
+> The Toshiba's TC58TEG5DCJTA pagesize is 16K, oob size is 1280 bytes.
+> So increase the NAND_MAX_OOBSIZE and NAND_MAX_PAGESIZE.
+> 
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 
-I'll try to sync with other maintainers to pull it in together. I'll
-leave this commit in as-is for now as it is harmless on its own. I'll
-back it off before 3.14 merge if it poses a problem.
+Huh? I hope you're not intentionally forging Signed-off-by lines...
+Presumably the follow-up (re)send is because this one was an accident?
+
+> Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
+
+Brian
