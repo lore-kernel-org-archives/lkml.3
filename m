@@ -1,155 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab3LMP1b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 10:27:31 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:61425 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab3LMP1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 10:27:30 -0500
+	id S1752857Ab3LMPbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 10:31:42 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:37922 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751872Ab3LMPbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Dec 2013 10:31:40 -0500
+X-IronPort-AV: E=Sophos;i="4.95,479,1384300800"; 
+   d="scan'208";a="84318469"
+Date: Fri, 13 Dec 2013 15:31:39 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v2 1/9] xen-netback: Introduce TX grant map
+ definitions
+Message-ID: <20131213153138.GL21900@zion.uk.xensource.com>
+References: <1386892097-15502-1-git-send-email-zoltan.kiss@citrix.com>
+ <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFftDdq-qS2nMC07bVReZk6ksg0-Nkp7GkNSQ47Z_TsDEbZcfw@mail.gmail.com>
-References: <1386018639-18916-1-git-send-email-wroberts@tresys.com>
-	<1386018639-18916-2-git-send-email-wroberts@tresys.com>
-	<52AB15C0.7090701@tycho.nsa.gov>
-	<CAFftDdquPe9dE_4x_mr0BT2jziUAEtdyjk4DqXvt2-nnBf73zg@mail.gmail.com>
-	<52AB21F1.6030003@tycho.nsa.gov>
-	<CAFftDdq-qS2nMC07bVReZk6ksg0-Nkp7GkNSQ47Z_TsDEbZcfw@mail.gmail.com>
-Date: Fri, 13 Dec 2013 10:27:28 -0500
-Message-ID: <CAFftDdr1fd-fdjb1A9=CNjhd+cf51u1EwonU-Jth84Cdnt+t8A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mm: Create utility functions for accessing a tasks
- commandline value
-From: William Roberts <bill.c.roberts@gmail.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        William Roberts <wroberts@tresys.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1386892097-15502-2-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 10:26 AM, William Roberts
-<bill.c.roberts@gmail.com> wrote:
-> On Fri, Dec 13, 2013 at 10:04 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
->> On 12/13/2013 09:51 AM, William Roberts wrote:
->>> On Fri, Dec 13, 2013 at 9:12 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
->>>> Also, why not just get_task_mm(task) within the function rather than
->>>> pass it in by the caller?
->>>>
->>>
->>> Yes I was debating whether or not to drop the pointer checks... np
->>>
->>> WRT the locking and moving it into the function. You need to take the lock
->>> to determine the size of the cmdline area. The idea on the interface is you
->>> would take the locks, acquire the size via the inline func, alloc memory and
->>> then call the copy function. In some cases, like proc/pid/cmdline, they just
->>> alloc a page and truncate on that boundary. However, one may with to truncate
->>> on an arbitrary boundry, especially when cacheing the values, as you don't want
->>> to allocate too much. So inbetween functions calls that get the length and copy,
->>> one can make a decision based on their allocation scheme. Moving the locks
->>> to the functions would require multiple locks and unlocks in the common case.
->>
->> I don't think it is a good idea to split it up, as what happens if the
->> range changes between the time you compute the length and the time you
->> copy?  And your current callers appear to always get_task_mm(), compute
->> len, call the helper, and mmput.  So just take it all to the helper (at
->> which point the helper essentially becomes proc_pid_cmdline).
->>
->
-> That's why I keep the semaphore over the whole operation. The issue arises with
-> the amount to allocate by the caller, which is a bit of a shot in the
-> dark. The caller
-> may not wish to over allocate a buffer. This same issue could arise in
-> the current
-> code, but they hold the sem.
->
->>>> Unsigned int buflen passed as int len argument without a range check?
->>>> Note that in the proc_pid_cmdline() code, they first cap it at PAGE_SIZE
->>>> before passing it.
->>>>
->>>
->>> buflen is passed by the caller. So if you look in the following patch
->>> introducing its
->>> use in proc/fs/base.c, their is a check.
->>>         /*The caller of this allocates a page */
->>>         if (len > PAGE_SIZE)
->>>                 len = PAGE_SIZE;
->>>
->>>         res = copy_cmdline(task, mm, buffer, len);
->>
->> I understand that, but you are making correct operation of the helper
->> dependent on the caller already having applied such a cap to the length.
->>  Which is unsafe practice and may not hold true for future callers.
->>
->
-> Again, what if the caller wished to cap it as 32, 64, 128, or 2 * PAGE_SIZE?
-> They can just pass the value on which to cap, which is their buffer that they
-> allocated. Thus they know the size. Again, all of this boils down to
-> the allocation
-> scheme which you comment on below. With that said, this becomes a whole lot
-> simpler.
->
->>>>> +     if (res <= 0)
->>>>> +             return 0;
->>>>> +
->>>>> +     if (res > buflen)
->>>>> +             res = buflen;
->>>>
->>>> Is this a possible condition?  Under what circumstances?
->>>
->>> for  (res <= 0), in that case, the underlying call
->>> to __access_remote_vm() returns an int. Most of the mm functions look
->>> like they are using
->>> ints for probably some historical reason I am not aware of. I tried to
->>> pick the strongest invariant,
->>> however, I don't think < 0 is possible.
->>>
->>> For the res > buflen check, that might might be an artifact from the
->>> PAGE_SIZE cap from the original
->>> code. It would only be possible if a process was able to write to
->>> their mm when the semaphores are held.
->>> I am assuming the case of:
->>> kernel gets size
->>> kernel allocs buffer
->>> kernel copys but size has differed. I guess if I broke the locking out
->>> it could happen, you need size and copy
->>> to be autonomous.
->>
->> Sorry, you misunderstood.  The <=0 case is clearly possible; I was only
->> asking about the res > buflen check, which seems impossible as you
->> provided buflen as the max for the access_process_vm() call.  That one
->> does not make sense to me and has no equivalent in the original
->> proc_pid_cmdline() code.
->>
->>>> I think you are better off just copying proc_pid_cmdline() exactly as is
->>>> into a common helper function and then reusing it for audit.  Far less
->>>> work, and far less potential for mistakes.
->>>
->>> I don't like caching a whole page in that audit context. So most of
->>> the complexity relates to
->>> determining the size of the cache. Steve Grub was in favor of limiting
->>> the cmdline value to
->>> PATH_MAX. So if that is an acceptable cache size, we can take the
->>> existing code from
->>> procfs/base.c and just add an argument indicating the size of the
->>> buffer. procfs will be
->>> PAGE_SIZE and audit will be PATH_MAX. Thoughts?
->>
->> Yes, that seems reasonable to me.
->>
->>
->
-> SGTM, Ill go that route with these... much simpler and avoids
-> the caller having to know how to lock the memory region properly.
->
+On Thu, Dec 12, 2013 at 11:48:09PM +0000, Zoltan Kiss wrote:
+> This patch contains the new definitions necessary for grant mapping.
+> 
+> v2:
+> - move unmapping to separate thread. The NAPI instance has to be scheduled
+>   even from thread context, which can cause huge delays
+> - that causes unfortunately bigger struct xenvif
+> - store grant handle after checking validity
+> 
 
-FYI, i am away from my dev machine. ill get these out in a couple of weeks.
+If the size of xenvif really becomes a problem, you can try to make
+sratch space like struct gnttab_copy per-cpu. The downside is that
+approach requires much coding and carefully guard against race
+conditions. You would need to consider cost v.s. benefit.
 
--- 
-Respectfully,
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> 
+> ---
+[...]
+>  #define XENVIF_QUEUE_LENGTH 32
+>  #define XENVIF_NAPI_WEIGHT  64
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index c1b7a42..3ddc474 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -772,6 +772,20 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
+>  	return page;
+>  }
+>  
+> +static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
+> +	       struct xen_netif_tx_request *txp,
+> +	       struct gnttab_map_grant_ref *gop)
+> +{
+> +	vif->pages_to_map[gop-vif->tx_map_ops] = vif->mmap_pages[pending_idx];
+> +	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
+> +			  GNTMAP_host_map | GNTMAP_readonly,
+> +			  txp->gref, vif->domid);
+> +
+> +	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
+> +	       sizeof(*txp));
+> +
+> +}
+> +
 
-William C Roberts
+This helper function is not used until next patch. Probably you can move
+it to the second patch.
+
+The same applies to other helper functions as well. Move them to the
+patch they are used. It would be easier for people to review.
+
+>  static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
+>  					       struct sk_buff *skb,
+>  					       struct xen_netif_tx_request *txp,
+> @@ -1593,6 +1607,106 @@ static int xenvif_tx_submit(struct xenvif *vif)
+>  	return work_done;
+>  }
+>  
+> +void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+> +{
+
+Do we care about zerocopy_success? I don't see it used in this function.
+
+> +	unsigned long flags;
+> +	pending_ring_idx_t index;
+> +	u16 pending_idx = ubuf->desc;
+> +	struct pending_tx_info *temp =
+> +		container_of(ubuf, struct pending_tx_info, callback_struct);
+> +	struct xenvif *vif =
+> +		container_of(temp - pending_idx, struct xenvif,
+> +			pending_tx_info[0]);
+> +
+
+The third parameter to container_of should be the name of the member
+within the struct.
+
+> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
+> +	do {
+> +		pending_idx = ubuf->desc;
+> +		ubuf = (struct ubuf_info *) ubuf->ctx;
+> +		index = pending_index(vif->dealloc_prod);
+> +		vif->dealloc_ring[index] = pending_idx;
+> +		/* Sync with xenvif_tx_action_dealloc:
+> +		 * insert idx then incr producer.
+> +		 */
+> +		smp_wmb();
+> +		vif->dealloc_prod++;
+> +	} while (ubuf);
+> +	wake_up(&vif->dealloc_wq);
+> +	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
+> +}
+> +
+> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+> +{
+> +	struct gnttab_unmap_grant_ref *gop;
+> +	pending_ring_idx_t dc, dp;
+> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
+> +	unsigned int i = 0;
+> +
+> +	dc = vif->dealloc_cons;
+> +	gop = vif->tx_unmap_ops;
+> +
+> +	/* Free up any grants we have finished using */
+> +	do {
+> +		dp = vif->dealloc_prod;
+> +
+> +		/* Ensure we see all indices enqueued by netif_idx_release(). */
+
+There is no netif_idx_release in netback code. :-)
+
+> +		smp_rmb();
+> +
+> +		while (dc != dp) {
+> +			pending_idx =
+> +				vif->dealloc_ring[pending_index(dc++)];
+> +
+> +			/* Already unmapped? */
+> +			if (vif->grant_tx_handle[pending_idx] ==
+> +				NETBACK_INVALID_HANDLE) {
+> +				netdev_err(vif->dev,
+> +					"Trying to unmap invalid handle! "
+> +					"pending_idx: %x\n", pending_idx);
+> +				continue;
+> +			}
+
+Should this be BUG_ON? AIUI this kthread should be the only one doing
+unmap, right?
+
+> +
+> +			pending_idx_release[gop-vif->tx_unmap_ops] =
+> +				pending_idx;
+> +			vif->pages_to_unmap[gop-vif->tx_unmap_ops] =
+> +				vif->mmap_pages[pending_idx];
+> +			gnttab_set_unmap_op(gop,
+> +					idx_to_kaddr(vif, pending_idx),
+> +					GNTMAP_host_map,
+> +					vif->grant_tx_handle[pending_idx]);
+> +			vif->grant_tx_handle[pending_idx] =
+> +				NETBACK_INVALID_HANDLE;
+> +			++gop;
+> +		}
+> +
+[...]
+> +}
+>  
+>  static void make_tx_response(struct xenvif *vif,
+>  			     struct xen_netif_tx_request *txp,
+> @@ -1720,6 +1854,14 @@ static inline int tx_work_todo(struct xenvif *vif)
+>  	return 0;
+>  }
+>  
+> +static inline int tx_dealloc_work_todo(struct xenvif *vif)
+
+static inline bool
+
+Wei.
