@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab3LMS7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 13:59:49 -0500
-Received: from unicorn.mansr.com ([81.2.72.234]:33603 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab3LMS7s convert rfc822-to-8bit (ORCPT
+	id S1753326Ab3LMTEG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 14:04:06 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:55950 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab3LMTEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 13:59:48 -0500
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: "Chen.Yu" <chyyuu@gmail.com>
-Cc: linux-kernel@vger.kernel.org, levex@linux.com, xiaoqixue_1@163.com,
-        fanwlexca@gmail.com
-Subject: Re: [PATCH] scsi: integer overflow in megadev_ioctl()
-References: <1386960092-32475-1-git-send-email-chyyuu@gmail.com>
-Date: Fri, 13 Dec 2013 18:59:44 +0000
-In-Reply-To: <1386960092-32475-1-git-send-email-chyyuu@gmail.com> (Chen Yu's
-	message of "Sat, 14 Dec 2013 02:41:32 +0800")
-Message-ID: <yw1xbo0kinkv.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 13 Dec 2013 14:04:04 -0500
+Date: Fri, 13 Dec 2013 12:04:00 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Levente Kurusa <levex@linux.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] eisa: call put_device if device_register fails
+Message-ID: <20131213190400.GB6746@google.com>
+References: <1386959996-7958-1-git-send-email-levex@linux.com>
+ <1386959996-7958-3-git-send-email-levex@linux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386959996-7958-3-git-send-email-levex@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Chen.Yu" <chyyuu@gmail.com> writes:
+On Fri, Dec 13, 2013 at 07:39:54PM +0100, Levente Kurusa wrote:
+> We need to give up the last reference to edev->dev, so
+> we need to call put_device().
+> 
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Signed-off-by: Levente Kurusa <levex@linux.com>
 
-> From: "Chen.Yu" <chyyuu@gmail.com>
->
-> There is a potential integer overflow in megadev_ioctl() if
-> userspace passes in a large u32 variable uioc.adapno.
-> The int variable adapno would < 0, leading to an error
-> array access for hdb_soft_state[adapno], or an error
-> copy_to_user(uioc.uioc_uaddr, mcontroller+adapno,..)
->
-> Reported-by: Wenliang Fan <fanwlexca@gmail.com>
-> Suggested-by: Qixue Xiao <xiaoqixue_1@163.com>
-> Signed-off-by: Yu Chen <chyyuu@gmail.com>
-> Reviewed-by: Levente Kurusa <levex@linux.com>
+I applied this and will push it through my PCI tree, since I don't think
+anybody really takes care of EISA these days.
+
+I looked at other callers of device_register(), and most of them look like
+they have the same problem.  Can you fix the others, too?  This patch says
+"2/4", so maybe you already are, but I can't find the other patches in the
+series.
+
+Bjorn
+
 > ---
->  drivers/scsi/megaraid.c | 15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
-> index 816db12..0b90c54 100644
-> --- a/drivers/scsi/megaraid.c
-> +++ b/drivers/scsi/megaraid.c
-> @@ -3099,7 +3099,10 @@ megadev_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
->  		/*
->  		 * Which adapter
->  		 */
-> -		if( (adapno = GETADAP(uioc.adapno)) >= hba_count )
-> +		adapno = GETADAP(uioc.adapno);
-> +		if( adapno < 0 )
-> +			return (-EINVAL);
-> +		if( adapno >= hba_count )
->  			return (-ENODEV);
-
-This relies on implementation-defined behaviour when converting an
-unsigned integer to signed integer.  A simpler and more robust fix is to
-make the local variable 'adapno' unsigned.
-
--- 
-Måns Rullgård
-mans@mansr.com
+>  drivers/eisa/eisa-bus.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
+> index 272a3ec..8842cde 100644
+> --- a/drivers/eisa/eisa-bus.c
+> +++ b/drivers/eisa/eisa-bus.c
+> @@ -232,8 +232,10 @@ static int __init eisa_init_device(struct eisa_root_device *root,
+>  static int __init eisa_register_device(struct eisa_device *edev)
+>  {
+>  	int rc = device_register(&edev->dev);
+> -	if (rc)
+> +	if (rc) {
+> +		put_device(&edev->dev);
+>  		return rc;
+> +	}
+>  
+>  	rc = device_create_file(&edev->dev, &dev_attr_signature);
+>  	if (rc)
+> -- 
+> 1.8.3.1
+> 
