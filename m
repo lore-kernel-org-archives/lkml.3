@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab3LMHBE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 02:01:04 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:42725 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab3LMHBB (ORCPT
+	id S1751884Ab3LMHKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 02:10:46 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:59715 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750756Ab3LMHKo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 02:01:01 -0500
-Message-ID: <52AAB090.40500@linux.vnet.ibm.com>
-Date: Fri, 13 Dec 2013 15:00:32 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 13 Dec 2013 02:10:44 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "vpalatin@chromium.org" <vpalatin@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+Subject: RE: [PATCH 1/3] regulator: act8865: add PMIC(Power Management IC)
+ driver
+Thread-Topic: [PATCH 1/3] regulator: act8865: add PMIC(Power Management IC)
+ driver
+Thread-Index: AQHO9tgvWvD6QZdK9UiBL8pe2L8yn5pQQRmAgAFs/8A=
+Date: Fri, 13 Dec 2013 07:10:36 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364172EDB624@penmbx01>
+References: <1386811131-2720-1-git-send-email-wenyou.yang@atmel.com>
+ <1386811131-2720-2-git-send-email-wenyou.yang@atmel.com>
+ <20131212165149.GO11044@sirena.org.uk>
+In-Reply-To: <20131212165149.GO11044@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Howells <dhowells@redhat.com>, serge.hallyn@canonical.com,
-        sasha.levin@oracle.com, ebiederm@xmission.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] KEYS: fix uninitialized persistent_keyring_register_sem
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13121307-5816-0000-0000-00000B523953
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We run into this bug:
-[ 2736.063245] Unable to handle kernel paging request for data at address 0x00000000
-[ 2736.063293] Faulting instruction address: 0xc00000000037efb0
-[ 2736.063300] Oops: Kernel access of bad area, sig: 11 [#1]
-[ 2736.063303] SMP NR_CPUS=2048 NUMA pSeries
-[ 2736.063310] Modules linked in: sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6table_security ip6table_raw ip6t_REJECT iptable_nat nf_nat_ipv4 iptable_mangle iptable_security iptable_raw ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack ebtable_filter ebtables ip6table_filter iptable_filter ip_tables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 nf_nat nf_conntrack ip6_tables ibmveth pseries_rng nx_crypto nfsd auth_rpcgss nfs_acl lockd sunrpc binfmt_misc xfs libcrc32c dm_service_time sd_mod crc_t10dif crct10dif_common ibmvfc scsi_transport_fc scsi_tgt dm_mirror dm_region_hash dm_log dm_multipath dm_mod
-[ 2736.063383] CPU: 1 PID: 7128 Comm: ssh Not tainted 3.10.0-48.el7.ppc64 #1
-[ 2736.063389] task: c000000131930120 ti: c0000001319a0000 task.ti: c0000001319a0000
-[ 2736.063394] NIP: c00000000037efb0 LR: c0000000006c40f8 CTR: 0000000000000000
-[ 2736.063399] REGS: c0000001319a3870 TRAP: 0300   Not tainted  (3.10.0-48.el7.ppc64)
-[ 2736.063403] MSR: 8000000000009032 <SF,EE,ME,IR,DR,RI>  CR: 28824242  XER: 20000000
-[ 2736.063415] SOFTE: 0
-[ 2736.063418] CFAR: c00000000000908c
-[ 2736.063421] DAR: 0000000000000000, DSISR: 40000000
-[ 2736.063425]
-GPR00: c0000000006c40f8 c0000001319a3af0 c000000001074788 c0000001319a3bf0
-GPR04: 0000000000000000 0000000000000000 0000000000000020 000000000000000a
-GPR08: fffffffe00000002 00000000ffff0000 0000000080000001 c000000000924888
-GPR12: 0000000028824248 c000000007e00400 00001fffffa0f998 0000000000000000
-GPR16: 0000000000000022 00001fffffa0f998 0000010022e92470 0000000000000000
-GPR20: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-GPR24: 0000000000000000 c000000000f4a828 00003ffffe527108 0000000000000000
-GPR28: c000000000f4a730 c000000000f4a828 0000000000000000 c0000001319a3bf0
-[ 2736.063498] NIP [c00000000037efb0] .__list_add+0x30/0x110
-[ 2736.063504] LR [c0000000006c40f8] .rwsem_down_write_failed+0x78/0x264
-[ 2736.063508] PACATMSCRATCH [800000000280f032]
-[ 2736.063511] Call Trace:
-[ 2736.063516] [c0000001319a3af0] [c0000001319a3b80] 0xc0000001319a3b80 (unreliable)
-[ 2736.063523] [c0000001319a3b80] [c0000000006c40f8] .rwsem_down_write_failed+0x78/0x264
-[ 2736.063530] [c0000001319a3c50] [c0000000006c1bb0] .down_write+0x70/0x78
-[ 2736.063536] [c0000001319a3cd0] [c0000000002e5ffc] .keyctl_get_persistent+0x20c/0x320
-[ 2736.063542] [c0000001319a3dc0] [c0000000002e2388] .SyS_keyctl+0x238/0x260
-[ 2736.063548] [c0000001319a3e30] [c000000000009e7c] syscall_exit+0x0/0x7c
-[ 2736.063553] Instruction dump:
-[ 2736.063556] 7c0802a6 fba1ffe8 fbc1fff0 fbe1fff8 7cbd2b78 7c9e2378 7c7f1b78 f8010010
-[ 2736.063566] f821ff71 e8a50008 7fa52040 40de00c0 <e8be0000> 7fbd2840 40de0094 7fbff040
-[ 2736.063579] ---[ end trace 2708241785538296 ]---
+Hi Mark,
 
-It's caused by uninitialized persistent_keyring_register_sem.
+Thanks your for feedback.
 
-The bug was introduced by commit f36f8c75, two typos are in that commit:
-CONFIG_KEYS_KERBEROS_CACHE should be CONFIG_PERSISTENT_KEYRINGS and
-krb_cache_register_sem should be persistent_keyring_register_sem.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Friday, December 13, 2013 12:52 AM
+> To: Yang, Wenyou
+> Cc: lgirdwood@gmail.com; grant.likely@linaro.org;
+> rob.herring@calxeda.com; vpalatin@chromium.org;
+> devicetree@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
+> doc@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> plagnioj@jcrosoft.com; Ferre, Nicolas
+> Subject: Re: [PATCH 1/3] regulator: act8865: add PMIC(Power Management
+> IC) driver
+> 
+> On Thu, Dec 12, 2013 at 09:18:49AM +0800, Wenyou Yang wrote:
+> 
+> The main thing with this driver seems to be that it needs a bit of
+> modernisation to use current kernel features and APIs - there's nothing
+> terribly wrong from a quick glance through but it needs an update.
+> Details below.
+> 
+> > --- a/drivers/regulator/Kconfig
+> > +++ b/drivers/regulator/Kconfig
+> > @@ -577,5 +577,12 @@ config REGULATOR_WM8994
+> >  	  This driver provides support for the voltage regulators on the
+> >  	  WM8994 CODEC.
+> >
+> > +config REGULATOR_ACT8865
+> > +	tristate "Active-semi act8865 voltage regulator"
+> > +	depends on I2C
+> > +	help
+> > +	  This driver controls a active-semi act8865 voltage output
+> > +	  regulator via I2C bus.
+> > +
+> 
+> Please keep this and the Makefile sorted.
+Only this one confuses me,
+How can I sort it? By i2c interface, by regulator type: voltage or current?
+Where is act8865 should be?
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- kernel/user.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> > +static int act8865_read_reg(struct act8865_data *act8865, u8 reg) {
+> > +	int ret = i2c_smbus_read_byte_data(act8865->client, reg);
+> > +	if (ret > 0)
+> > +		ret &= 0xff;
+> > +
+> > +	return ret;
+> > +}
+> 
+> Use regmap for register I/O and use the helpers provided by the core.
+> 
+> > +static int act8865_set_voltage_sel(struct regulator_dev *rdev, u32
+> > +selector) {
+> > +	struct act8865_data *act8865 = rdev_get_drvdata(rdev);
+> > +	int id = rdev_get_id(rdev);
+> > +	u32	reg = act8865_vset_reg_addr(act8865, id);
+> 
+> Throughout the file the indentation is a really strange mix of the first
+> two lines (which are the normal kernel style) and the bottom line (which
+> isn't).
+> 
+> > +	pr_info("%s: suspend voltage %dmV\n", rdev->desc->name, uV / 1000);
+> 
+> Remove noisy logging like this.
+> 
+> > +		rdev[i] = regulator_register(&act8865_reg[id], &config);
+> 
+> devm_regulator_register().
+> 
+> > +static int __init act8865_pmu_init(void) {
+> > +	return i2c_add_driver(&act8865_pmu_driver);
+> > +}
+> > +subsys_initcall(act8865_pmu_init);
+> 
+> module_i2c_driver().
 
-diff --git a/kernel/user.c b/kernel/user.c
-index a3a0dbf..c006131 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -51,9 +51,9 @@ struct user_namespace init_user_ns = {
- 	.owner = GLOBAL_ROOT_UID,
- 	.group = GLOBAL_ROOT_GID,
- 	.proc_inum = PROC_USER_INIT_INO,
--#ifdef CONFIG_KEYS_KERBEROS_CACHE
--	.krb_cache_register_sem =
--	__RWSEM_INITIALIZER(init_user_ns.krb_cache_register_sem),
-+#ifdef CONFIG_PERSISTENT_KEYRINGS
-+	.persistent_keyring_register_sem =
-+	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
- #endif
- };
- EXPORT_SYMBOL_GPL(init_user_ns);
--- 
-1.8.1.4
+Others is OK for me, I will modify, and send out new version.
 
+Thanks again.
+
+Best Regards,
+Wenyou Yang
