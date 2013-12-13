@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3LMC3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:29:34 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:45294 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752043Ab3LMC33 (ORCPT
+	id S1752250Ab3LMC3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:29:47 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:62655 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab3LMC3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:29:29 -0500
+	Thu, 12 Dec 2013 21:29:41 -0500
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <rob.herring@calxeda.com>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
         Grant Likely <grant.likely@linaro.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Kees Cook <keescook@chromium.org>,
+        Philip Avinash <avinashphilip@ti.com>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        rtc-linux@googlegroups.com
-Subject: [PATCH v2 07/16] rtc: support DS1302 RTC on ICP DAS LP-8x4x
-Date: Fri, 13 Dec 2013 06:27:16 +0400
-Message-Id: <1386901645-28895-8-git-send-email-ynvich@gmail.com>
+        linux-mtd@lists.infradead.org (open list:MEMORY TECHNOLOGY...)
+Subject: [PATCH v2 08/16] mtd: support BB SRAM on ICP DAS LP-8x4x
+Date: Fri, 13 Dec 2013 06:27:17 +0400
+Message-Id: <1386901645-28895-9-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.8.4.3
 In-Reply-To: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
 References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
@@ -30,224 +34,327 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This provides an MTD device driver for 512kB of battery backed up SRAM
+on ICPDAS LP-8X4X programmable automation controllers.
+
+SRAM chip is connected via FPGA and is not accessible without a driver,
+unlike flash memory which is wired to CPU MMU.
+
+This SRAM becomes an excellent persisent storage of volatile process
+data like counter values and sensor statuses. Storing those data in
+flash or mmc card is not a viable solution.
+
 Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
 ---
    v0..v2
    * use device tree
    * use devm helpers where possible
 
- .../devicetree/bindings/rtc/rtc-ds1302.txt         |  14 +++
- arch/arm/boot/dts/pxa27x-lp8x4x.dts                |   6 ++
- arch/arm/configs/lp8x4x_defconfig                  |   1 +
- drivers/rtc/Kconfig                                |   2 +-
- drivers/rtc/rtc-ds1302.c                           | 111 ++++++++++++++++++++-
- 5 files changed, 131 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-ds1302.txt
+ arch/arm/boot/dts/pxa27x-lp8x4x.dts |   6 +
+ arch/arm/configs/lp8x4x_defconfig   |   1 +
+ drivers/mtd/devices/Kconfig         |  14 +++
+ drivers/mtd/devices/Makefile        |   1 +
+ drivers/mtd/devices/sram_lp8x4x.c   | 227 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 249 insertions(+)
+ create mode 100644 drivers/mtd/devices/sram_lp8x4x.c
 
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-ds1302.txt b/Documentation/devicetree/bindings/rtc/rtc-ds1302.txt
-new file mode 100644
-index 0000000..876297c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/rtc-ds1302.txt
-@@ -0,0 +1,14 @@
-+* Dallas Semiconductor DS-1302 RTC
-+
-+Simple device which could be used to store date/time between reboots.
-+
-+Required properties:
-+- compatible : Should be "ds,rtc-ds1302"
-+- reg : Should be address and size of IO memory region
-+
-+Examples:
-+
-+rtc@40900000 {
-+	compatible = "ds,rtc-ds1302";
-+	reg = <0x1700901c 0x1>;
-+};
 diff --git a/arch/arm/boot/dts/pxa27x-lp8x4x.dts b/arch/arm/boot/dts/pxa27x-lp8x4x.dts
-index a2a9183..574e853 100644
+index 574e853..b7f8cfc 100644
 --- a/arch/arm/boot/dts/pxa27x-lp8x4x.dts
 +++ b/arch/arm/boot/dts/pxa27x-lp8x4x.dts
-@@ -107,5 +107,11 @@
- 			interrupts = <82 IRQ_TYPE_EDGE_RISING>;
- 			status = "okay";
- 		};
-+
-+		rtc@1700901c {
-+			compatible = "ds,rtc-ds1302";
-+			reg = <0x1700901c 0x1>;
-+			status = "okay";
-+		};
+@@ -59,6 +59,12 @@
+ 		device-width = <1>;
  	};
- };
+ 
++	sram@1700a000 {
++		compatible = "icpdas,sram-lp8x4x";
++		reg = <0x1700a000 0x1000
++		       0x1700901e 0x1>;
++	};
++
+ 	pxabus {
+ 		pxairq: interrupt-controller@40d00000 {
+ 			marvell,intc-priority;
 diff --git a/arch/arm/configs/lp8x4x_defconfig b/arch/arm/configs/lp8x4x_defconfig
-index 4421c03..57f2830 100644
+index 57f2830..8fa871e 100644
 --- a/arch/arm/configs/lp8x4x_defconfig
 +++ b/arch/arm/configs/lp8x4x_defconfig
-@@ -133,6 +133,7 @@ CONFIG_USB_SERIAL=m
- CONFIG_MMC=y
- CONFIG_MMC_PXA=y
- CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_DS1302=y
- CONFIG_RTC_DRV_PXA=m
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_EXT2_FS=m
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 0077302..501055f 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -676,7 +676,7 @@ config RTC_DRV_DS1286
+@@ -57,6 +57,7 @@ CONFIG_MTD_CFI_ADV_OPTIONS=y
+ CONFIG_MTD_CFI_GEOMETRY=y
+ CONFIG_MTD_CFI_INTELEXT=y
+ CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_MTD_SRAM_LP8X4X=y
+ CONFIG_PROC_DEVICETREE=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_LOOP_MIN_COUNT=2
+diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+index 0128138..95f2075 100644
+--- a/drivers/mtd/devices/Kconfig
++++ b/drivers/mtd/devices/Kconfig
+@@ -217,4 +217,18 @@ config BCH_CONST_T
+ 	default 4
+ endif
  
- config RTC_DRV_DS1302
- 	tristate "Dallas DS1302"
--	depends on SH_SECUREEDGE5410
-+	depends on SH_SECUREEDGE5410 || (ARCH_PXA && HIGH_RES_TIMERS)
- 	help
- 	  If you say yes here you get support for the Dallas DS1302 RTC chips.
++config MTD_SRAM_LP8X4X
++	tristate "SRAM on ICPDAS LP-8X4X"
++	depends on OF && ARCH_PXA
++       ---help---
++	 This provides an MTD device driver for 512kiB of battery backed up SRAM
++	 on ICPDAS LP-8X4X programmable automation controllers.
++
++	 SRAM chip is connected via FPGA and is not accessible without a driver,
++	 unlike flash memory which is wired to CPU MMU.
++
++	 Say N, unless you plan to run this kernel on LP-8X4X.
++
++	 If you say M, the module will be called sram_lp8x4x.
++
+ endmenu
+diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
+index d83bd73..56a74c9 100644
+--- a/drivers/mtd/devices/Makefile
++++ b/drivers/mtd/devices/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
+ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
+ obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
+ obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
++obj-$(CONFIG_MTD_SRAM_LP8X4X)	+= sram_lp8x4x.o
  
-diff --git a/drivers/rtc/rtc-ds1302.c b/drivers/rtc/rtc-ds1302.c
-index 07e8d79..d88749c 100644
---- a/drivers/rtc/rtc-ds1302.c
-+++ b/drivers/rtc/rtc-ds1302.c
-@@ -50,7 +50,7 @@
- #define ds1302_set_tx()
- #define ds1302_set_rx()
  
--static inline int ds1302_hw_init(void)
-+static inline int ds1302_hw_init(struct platform_device *pdev)
- {
- 	return 0;
- }
-@@ -86,6 +86,112 @@ static inline int ds1302_rxbit(void)
- 	return !!(get_dp() & RTC_IODATA);
- }
- 
-+#elif defined(CONFIG_ARCH_PXA) && defined(CONFIG_HIGH_RES_TIMERS)
+ CFLAGS_docg3.o			+= -I$(src)
+diff --git a/drivers/mtd/devices/sram_lp8x4x.c b/drivers/mtd/devices/sram_lp8x4x.c
+new file mode 100644
+index 0000000..9dc7149
+--- /dev/null
++++ b/drivers/mtd/devices/sram_lp8x4x.c
+@@ -0,0 +1,227 @@
++/*
++ *  linux/drivers/mtd/devices/lp8x4x_sram.c
++ *
++ *  MTD Driver for SRAM on ICPDAS LP-8x4x
++ *  Copyright (C) 2013 Sergei Ianovich <ynvich@gmail.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation or any later version.
++ */
 +
-+#include <linux/hrtimer.h>
-+#include <linux/of.h>
-+#include <linux/sched.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mtd/map.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/partitions.h>
++#include <linux/platform_device.h>
++#include <linux/of_device.h>
++#include <linux/slab.h>
++#include <linux/string_helpers.h>
++#include <linux/types.h>
 +
-+#define	RTC_CE		0x01
-+#define	RTC_CLK		0x02
-+#define	RTC_nWE		0x04
-+#define	RTC_IODATA	0x08
++#include <asm/mach/flash.h>
 +
-+static unsigned long ds1302_state;
++struct lp8x4x_sram_info {
++	void __iomem	*bank;
++	void __iomem	*virt;
++	struct mutex	lock;
++	unsigned	active_bank;
++	struct mtd_info	mtd;
++};
 +
-+static void *mem;
-+
-+void nsleep(unsigned long nanosec)
++static int
++lp8x4x_sram_erase(struct mtd_info *mtd, struct erase_info *instr)
 +{
-+	ktime_t t = ns_to_ktime(nanosec);
-+	long state = current->state;
++	struct lp8x4x_sram_info *info = mtd->priv;
++	unsigned bank = instr->addr >> 11;
++	unsigned offset = (instr->addr & 0x7ff) << 1;
++	loff_t i;
 +
-+	__set_current_state(TASK_UNINTERRUPTIBLE);
-+	schedule_hrtimeout(&t, HRTIMER_MODE_REL);
-+	__set_current_state(state);
-+}
-+
-+static inline int ds1302_hw_init(struct platform_device *pdev)
-+{
-+	struct resource *r;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r)
-+		return -ENODEV;
-+
-+	mem = devm_ioremap_resource(&pdev->dev, r);
-+	if (!mem)
-+		return -EFAULT;
++	mutex_lock(&info->lock);
++	if (unlikely(bank != info->active_bank)) {
++		info->active_bank = bank;
++		iowrite8(bank, info->bank);
++	}
++	for (i = 0; i < instr->len; i++) {
++		iowrite8(0xff, info->virt + offset);
++		offset += 2;
++		if (unlikely(offset == 0)) {
++			info->active_bank++;
++			iowrite8(info->active_bank, info->bank);
++		}
++	}
++	mutex_unlock(&info->lock);
++	instr->state = MTD_ERASE_DONE;
++	mtd_erase_callback(instr);
 +
 +	return 0;
 +}
 +
-+static inline void ds1302_reset(void)
++static int
++lp8x4x_sram_write(struct mtd_info *mtd, loff_t to, size_t len,
++		size_t *retlen, const u_char *b)
 +{
-+	ds1302_state = 0;
-+	iowrite8(ds1302_state, mem);
-+	nsleep(4000);
++	struct lp8x4x_sram_info *info = mtd->priv;
++	unsigned bank = to >> 11;
++	unsigned offset = (to & 0x7ff) << 1;
++	loff_t i;
++
++	mutex_lock(&info->lock);
++	if (unlikely(bank != info->active_bank)) {
++		info->active_bank = bank;
++		iowrite8(bank, info->bank);
++	}
++	for (i = 0; i < len; i++) {
++		iowrite8(b[i], info->virt + offset);
++		offset += 2;
++		if (unlikely(offset == 0)) {
++			info->active_bank++;
++			iowrite8(info->active_bank, info->bank);
++		}
++	}
++	mutex_unlock(&info->lock);
++	*retlen = len;
++	return 0;
 +}
 +
-+static inline void ds1302_clock(void)
++static int
++lp8x4x_sram_read(struct mtd_info *mtd, loff_t from, size_t len,
++		size_t *retlen, u_char *b)
 +{
-+	nsleep(1000);
-+	ds1302_state |= RTC_CLK;
-+	iowrite8(ds1302_state, mem);
-+	nsleep(1000);
-+	ds1302_state &= ~RTC_CLK;
-+	iowrite8(ds1302_state, mem);
++	struct lp8x4x_sram_info *info = mtd->priv;
++	unsigned bank = from >> 11;
++	unsigned offset = (from & 0x7ff) << 1;
++	loff_t i;
++
++	mutex_lock(&info->lock);
++	if (unlikely(bank != info->active_bank)) {
++		info->active_bank = bank;
++		iowrite8(bank, info->bank);
++	}
++	for (i = 0; i < len; i++) {
++		b[i] = ioread8(info->virt + offset);
++		offset += 2;
++		if (unlikely(offset == 0)) {
++			info->active_bank++;
++			iowrite8(info->active_bank, info->bank);
++		}
++	}
++	mutex_unlock(&info->lock);
++	*retlen = len;
++	return 0;
 +}
 +
-+static inline void ds1302_start(void)
++static void
++lp8x4x_sram_sync(struct mtd_info *mtd)
 +{
-+	ds1302_state &= ~RTC_CLK;
-+	ds1302_state |= RTC_CE;
-+	iowrite8(ds1302_state, mem);
-+	nsleep(3000);
 +}
 +
-+static inline void ds1302_stop(void)
++static struct of_device_id of_flash_match[] = {
++	{
++		.compatible	= "icpdas,sram-lp8x4x",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_flash_match);
++
++static const char * const probe_types[] = {
++	"cmdlinepart", "RedBoot", "ofpart", "ofoldpart", NULL };
++
++static int
++lp8x4x_sram_probe(struct platform_device *pdev)
 +{
-+	ds1302_state &= ~RTC_CE;
-+	iowrite8(ds1302_state, mem);
++	const struct of_device_id *match;
++	struct lp8x4x_sram_info *info;
++	struct resource *r1, *r2;
++	char sz_str[16];
++	struct mtd_part_parser_data ppdata;
++	int err = 0;
++
++	match = of_match_device(of_flash_match, &pdev->dev);
++	if (!match)
++		return -EINVAL;
++
++	r1 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	r2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if (!r1 || !r2)
++		return -ENODEV;
++
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	info->virt =  devm_ioremap_resource(&pdev->dev, r1);
++	if (!info->virt) {
++		dev_err(&pdev->dev, "Failed to ioremap %p\n",
++		       info->virt);
++		return -EFAULT;
++	}
++
++	info->bank = devm_ioremap_resource(&pdev->dev, r2);
++	if (!info->bank) {
++		dev_err(&pdev->dev, "Failed to ioremap %p\n",
++		       info->bank);
++		return -EFAULT;
++	}
++
++	info->mtd.priv = info;
++	info->mtd.name = "SRAM";
++	info->mtd.type = MTD_RAM;
++	info->mtd.flags = MTD_CAP_RAM;
++	info->mtd.size = resource_size(r1) << 7;
++	info->mtd.erasesize = 512;
++	info->mtd.writesize = 4;
++	info->mtd._erase = lp8x4x_sram_erase;
++	info->mtd._write = lp8x4x_sram_write;
++	info->mtd._read = lp8x4x_sram_read;
++	info->mtd._sync = lp8x4x_sram_sync;
++	info->mtd.owner = THIS_MODULE;
++
++	mutex_init(&info->lock);
++	iowrite8(info->active_bank, info->bank);
++	platform_set_drvdata(pdev, info);
++
++	ppdata.of_node = pdev->dev.of_node;
++	err = mtd_device_parse_register(&info->mtd, probe_types, &ppdata,
++			NULL, 0);
++
++	if (err < 0) {
++		dev_err(&pdev->dev, "Failed to register platform device\n");
++		return err;
++	}
++
++	string_get_size(info->mtd.size, STRING_UNITS_2, sz_str,
++			sizeof(sz_str));
++	dev_info(&pdev->dev, "using %s SRAM on LP-8X4X as %s\n", sz_str,
++			dev_name(&info->mtd.dev));
++	return 0;
 +}
 +
-+static inline void ds1302_set_tx(void)
++static int
++lp8x4x_sram_remove(struct platform_device *dev)
 +{
-+	ds1302_state &= ~RTC_nWE;
-+	iowrite8(ds1302_state, mem);
++	struct lp8x4x_sram_info *info = platform_get_drvdata(dev);
++
++	mtd_device_unregister(&info->mtd);
++	platform_set_drvdata(dev, NULL);
++	return 0;
 +}
 +
-+static inline void ds1302_set_rx(void)
-+{
-+	ds1302_state |= RTC_nWE;
-+	iowrite8(ds1302_state, mem);
-+}
-+
-+static inline void ds1302_txbit(int bit)
-+{
-+	if (bit)
-+		ds1302_state |= RTC_IODATA;
-+	else
-+		ds1302_state &= ~RTC_IODATA;
-+	iowrite8(ds1302_state, mem);
-+}
-+
-+static inline int ds1302_rxbit(void)
-+{
-+	return ioread8(mem) & 0x1;
-+}
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id ds1302_dt_ids[] = {
-+	{ .compatible = "ds,rtc-ds1302" },
-+	{ }
++static struct platform_driver lp8x4x_sram_driver = {
++	.driver = {
++		.name		= "sram-lp8x4x",
++		.owner		= THIS_MODULE,
++		.of_match_table = of_flash_match,
++	},
++	.probe		= lp8x4x_sram_probe,
++	.remove		= lp8x4x_sram_remove,
 +};
 +
-+MODULE_DEVICE_TABLE(of, ds1302_dt_ids);
-+#endif
++module_platform_driver(lp8x4x_sram_driver);
 +
- #else
- #error "Add support for your platform"
- #endif
-@@ -216,7 +322,7 @@ static int __init ds1302_rtc_probe(struct platform_device *pdev)
- {
- 	struct rtc_device *rtc;
- 
--	if (ds1302_hw_init()) {
-+	if (ds1302_hw_init(pdev)) {
- 		dev_err(&pdev->dev, "Failed to init communication channel");
- 		return -EINVAL;
- 	}
-@@ -245,6 +351,7 @@ static struct platform_driver ds1302_platform_driver = {
- 	.driver		= {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(ds1302_dt_ids),
- 	},
- };
- 
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Sergei Ianovich <ynvich@gmail.com>");
++MODULE_DESCRIPTION("MTD driver for SRAM on ICPDAS LP-8x4x");
 -- 
 1.8.4.3
 
