@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3LMISs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 03:18:48 -0500
-Received: from collab.rosalab.ru ([195.19.76.181]:44002 "EHLO
-	collab.rosalab.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab3LMISq (ORCPT
+	id S1752193Ab3LMITh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 03:19:37 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:55899 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab3LMITf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 03:18:46 -0500
-Message-ID: <52AAC250.7080208@rosalab.ru>
-Date: Fri, 13 Dec 2013 12:16:16 +0400
-From: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Organization: ROSA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 13 Dec 2013 03:19:35 -0500
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: uhci_hcd: Possible corruption of DMA pool uhci->td_pool
-References: <Pine.LNX.4.44L0.1312111125550.1531-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1312111125550.1531-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1386911905-2366-4-git-send-email-david.a.cohen@linux.intel.com>
+References: <1386911905-2366-1-git-send-email-david.a.cohen@linux.intel.com>
+	<1386911905-2366-4-git-send-email-david.a.cohen@linux.intel.com>
+Date: Fri, 13 Dec 2013 09:19:34 +0100
+Message-ID: <CAPDyKFoXjRsLTZzFy3cTafqwFg4JX01=Gb=eL23eeb9ddZiofA@mail.gmail.com>
+Subject: Re: [RFC/PATCH 3/3] usb/xhci-plat: remove unnecessary #ifdef checks
+ for CONFIG_PM_SLEEP
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, sarah.a.sharp@linux.intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, santosh.shilimkar@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 08:41 PM, Alan Stern wrote:
-> On Wed, 11 Dec 2013, Eugene Shatokhin wrote:
+On 13 December 2013 06:18, David Cohen <david.a.cohen@linux.intel.com> wrote:
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 >
->> Hi,
->>
->> On ROSA Linux with kernel 3.10.21 with DMA debug options enabled, the
->> kernel sometimes issues a warning about DMA pool corruption (see the log
->> below).
->>
->> That happens sometimes, when the system boots or resumes from
->> hibernation with Samson C01U USB microphone attached.
->>
->> The affected DMA pool is 'uhci->td_pool', uhci_alloc_td() from
->> drivers/usb/host/uhci-hcd.c makes the relevant dma_pool_alloc() calls.
->>
->> Any ideas about how to find what causes this and how to fix it?
+> Drivers using SET_*_PM_OPS() no longer need to #ifdef for CONFIG_PM_*
+> So, let's remove the unnecessary #ifdef's.
 >
-> This is not an easy sort of thing to track down...
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>  drivers/usb/host/xhci-plat.c | 7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
 >
->> Here is the relevant part of the system log:
->> ----------------------------
->> [   22.264332] usb 2-1: new full-speed USB device number 2 using uhci_hcd
->> [   22.450609] usb 2-1: New USB device found, idVendor=17a0, idProduct=0001
->> [   22.450626] usb 2-1: New USB device strings: Mfr=1, Product=2,
->> SerialNumber=0
->> [   22.450639] usb 2-1: Product: Samson C01U
->> [   22.450649] usb 2-1: Manufacturer: Samson Technologies
->> <...>
->> [  280.703483] retire_capture_urb: 4494 callbacks suppressed
->> [  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b060
->> (corruped)
->> [  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7
->>    ................
->> [  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
->>    ................
->> [  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
->>    ................
->> [  284.961087] retire_capture_urb: 4343 callbacks suppressed
->> [  284.961087] uhci_hcd 0000:00:1d.1: dma_pool_alloc uhci_td, efb7b5d0
->> (corruped)
->> [  284.961087] 00000000: 00 06 00 00 af 00 00 03 a7 a7 a7 a7 a7 a7 a7 a7
->>    ................
->> [  284.961087] 00000010: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
->>    ................
->> [  284.961087] 00000020: a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7 a7
->>    ................
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> [  284.961087] cannot submit urb (err = -27)
->> ----------------------------
->>
->> 0xa7 is POOL_POISON_FREED. The memory pages to be allocated from the
->> pool should be filled with such bytes.
->>
->> Each time I observed this problem, the first 8 bytes of the listed
->> memory area were overwritten, with different data each time.
+> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> index d9c169f470d3..b1d93c344e04 100644
+> --- a/drivers/usb/host/xhci-plat.c
+> +++ b/drivers/usb/host/xhci-plat.c
+> @@ -197,7 +197,6 @@ static int xhci_plat_remove(struct platform_device *dev)
+>         return 0;
+>  }
 >
-> It kind of looks like a hardware bug.  Still, it's hard to say.
->
-> Can you test the current 3.13-rc kernel?  There have been a few recent
-> changes in this area that might have an effect.
->
+> -#ifdef CONFIG_PM
 
-I tested 3.13-rc3 - the problem has not shown up so far.
+I think you can solve this in another way.
 
-Regards,
-Eugene
+As a start, I would suggest to change above to CONFIG_PM_SLEEP
 
--- 
-Eugene Shatokhin, ROSA Laboratory.
-www.rosalab.com
+>  static int xhci_plat_suspend(struct device *dev)
+>  {
+>         struct usb_hcd  *hcd = dev_get_drvdata(dev);
+> @@ -217,10 +216,6 @@ static int xhci_plat_resume(struct device *dev)
+>  static const struct dev_pm_ops xhci_plat_pm_ops = {
+>         SET_SYSTEM_SLEEP_PM_OPS(xhci_plat_suspend, xhci_plat_resume)
+>  };
+> -#define DEV_PM_OPS     (&xhci_plat_pm_ops)
+> -#else
+> -#define DEV_PM_OPS     NULL
+> -#endif /* CONFIG_PM */
+
+Remove the use of DEV_PM_OPS define. Instead use below macro and
+outside #ifdef CONFIG_PM_SLEEP.
+
+"static SIMPLE_DEV_PM_OPS(xhci_plat_pm_ops, xhci_plat_suspend,
+xhci_plat_resume)"
+
+That should do the trick I believe, without the need for changing the
+existing SET_SYSTEM_SLEEP_PM_OPS macro in patch1.
+
+Kind regards
+Ulf Hansson
+
+>
+>  #ifdef CONFIG_OF
+>  static const struct of_device_id usb_xhci_of_match[] = {
+> @@ -235,7 +230,7 @@ static struct platform_driver usb_xhci_driver = {
+>         .remove = xhci_plat_remove,
+>         .driver = {
+>                 .name = "xhci-hcd",
+> -               .pm = DEV_PM_OPS,
+> +               .pm = &xhci_plat_pm_ops,
+>                 .of_match_table = of_match_ptr(usb_xhci_of_match),
+>         },
+>  };
+> --
+> 1.8.4.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
