@@ -1,118 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3LMR6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 12:58:04 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:42070 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab3LMR6B (ORCPT
+	id S1753316Ab3LMR6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 12:58:50 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:42943 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab3LMR6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 12:58:01 -0500
+	Fri, 13 Dec 2013 12:58:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <20131213174815.GA10727@xanatos>
-References: <CAODwPW8GqOcUadYD_jXdyFxJ0cdeLLRi6hs9jFODkQ1KuUr5FQ@mail.gmail.com>
-	<Pine.LNX.4.44L0.1312121103580.929-100000@iolanthe.rowland.org>
-	<20131213174815.GA10727@xanatos>
-Date: Fri, 13 Dec 2013 09:57:59 -0800
-Message-ID: <CAPcyv4jvh_3ech7iCCcHyjwUjO=ki5oZo_bT-odt6_765oTi8Q@mail.gmail.com>
-Subject: Re: [PATCH] USB: core: Add warm reset while reset-resuming SuperSpeed HUBs
-From: Dan Williams <dan.j.williams@intel.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Vikas Sajjan <sajjan.linux@gmail.com>,
-        Vikas Sajjan <vikas.sajjan@linaro.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Ksenia Ragiadakou <burzalodowa@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Douglas Anderson <dianders@chromium.org>, Felipe Balbi <balbi@ti.com>,
-        sunil joshi <joshi@samsung.com>
+In-Reply-To: <20131213014220.GB11068@kroah.com>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+	<20131212190659.GG13547@thunk.org>
+	<CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+	<20131213002523.GA20706@redhat.com>
+	<20131213014220.GB11068@kroah.com>
+Date: Fri, 13 Dec 2013 09:58:48 -0800
+X-Google-Sender-Auth: KfrFrBvc7tbIa75EerbCYfwyVyw
+Message-ID: <CAGXu5jKOvngwCStCabR7wK0wwcu2H4eTz7=29FbbBWdGpoC78g@mail.gmail.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 9:48 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Thu, Dec 12, 2013 at 11:05:04AM -0500, Alan Stern wrote:
->> On Wed, 11 Dec 2013, Julius Werner wrote:
+On Thu, Dec 12, 2013 at 5:42 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Dec 12, 2013 at 07:25:23PM -0500, Dave Jones wrote:
+>> On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
 >>
->> > >> ...although, the spec says that it does not wait for the port resets
->> > >> to complete.  As far as I can see re-issuing a warm reset and waiting
->> > >> is the only way to guarantee the core times the recovery.  Presumably
->> > >> the portstatus debounce in hub_activate() mitigates this, but that
->> > >> 100ms is less than a full reset timeout.
->> >
->> > It's definitely not just a timing issue for us. I can't reproduce all
->> > the same cases as Vikas, but when I attach a USB analyzer to the ones
->> > I do see the host controller doesn't even start sending a reset.
->> >
->> > >>> The xHCI spec requires that when the xHCI host is reset, a USB reset is
->> > >>> driven down the USB 3.0 ports.  If hot reset fails, the port may migrate
->> > >>> to warm reset.  See table 32 in the xHCI spec, in the definition of
->> > >>> HCRST.  It sounds like this host doesn't drive a USB reset down USB 3.0
->> > >>> ports at all on host controller reset?
->> >
->> > Oh, interesting, I hadn't seen that yet. So I guess the spec itself is
->> > fine if it were followed to the letter.
->> >
->> > I did some more tests about this on my Exynos machine: when I put a
->> > device to autosuspend (U3) and manually poke the xHC reset bit, I do
->> > see an automatic warm reset on the analyzer and the ports manage to
->> > retrain to U0. But after a system suspend/resume which calls
->> > xhci_reset() in the process, there is no reset on the wire. I also
->> > noticed that it doesn't drive a reset (even after manual poking) when
->> > there is no device connected on the other end of the analyzer.
->> >
->> > So this might be our problem: maybe these host controllers (Synopsys
->> > DesignWare) issue the spec-mandated warm reset only on ports where
->> > they think there is a device attached. But after a system
->> > suspend/resume (where the whole IP block on the SoC was powered down),
->> > the host controller cannot know that there is still a device with an
->> > active power session attached, and therefore doesn't drive the reset
->> > on its own.
->
-> Ok, that makes some sense.  I could see why host controllers wouldn't
-> want to drive reset on an unconnected port.
->
->> > Even though this is a host controller bug, we still have to deal with
->> > it somehow. I guess we could move the code into xhci_plat_resume() and
->> > hide it behind a quirk to lessen the impact. But since reset_resume is
->> > not a common case for most host controllers, it's hard to say if this
->> > is DesignWare specific or a more widespread implementation mistake.
+>>  > - who will keep adding these triggers going forward?
 >>
->> I was going to suggest something along these lines too.  This seems to
->> be a bug in xHCI.  Therefore the fix belongs in xhci-hcd, not in the
->> hub driver.
+>> also..
+>>
+>> - Who will test the existing triggers are doing the right thing when related code changes.
 >
-> I agree.  Is there a chance that the Synopsys DesignWare will be a PCI
-> device instead of a platform device?  If so, it would be better to put
-> the code into xhci_resume instead of xhci_plat_resume.  That also allows
-> you to only issue the warm reset when the register restore state command
-> fails, after the xhci_reset call.
+> And:
+>   - how do you determine an "expoit attempt" from "userspace program
+>     doing something stupid" / "corrupted filesytem mounted"?
 >
-> Also, I assume that other systems with the Synopsys DesignWare IP will
-> experience this issue?  I know of at least two other chipsets that will
-> include that IP, and it would be good to find a way to trigger on the
-> Synopsys IP, rather than off xHCI PCI vendor and device ID.  Otherwise
-> we'll be adding PCI IDs to the xHCI driver quirks for many many kernels
-> to come.
->
-> I'm actually leaning towards enabling the check for warm reset broadly.
-> It seems like it wouldn't hurt to issue a warm reset on the USB 3.0
-> ports if they're in compliance, poll, or rx.detect.  So, let's enable
-> this broadly in xhci_resume, mark the patch for stable, but ask for the
-> backport to be delayed until 3.13.3 is out, to allow for more testing.
-> If anyone complains of xHCI behavior changes, we'll change the code to
-> add a quirk.
+> I really don't like this, it means that our normal error handling for
+> userspace data will suddenly all have CVE entries on them over time.
+> How is that helpful to anyone?
 
-Is there a clean way to make this per-port rather than globally at
-xhci_resume()?  I am looking to hook into this for port power recovery
-as Tianyu's testing encountered "warm reset required" conditions at
-runtime_resume.  I'm still on the hunt for a solid reproducer, but it
-indicates this is a more general quirk with power session recovery.
+These locations tend to be very hard to reach accidentally, or
+userspace never exercised the path (which is why the flaws go
+unnoticed usually). Having userspace trip over them is unlikely, so
+we'd want to know about that anyway. If something actually turns
+noisy, we drop it. But in at least the i915 case, it took seriously
+careful work to hit the flawed code path.
+
+> Think ahead in 10-20 years, what is the code paths going to look like
+> then?  Horrible...
+
+If we have that many CVE in the moving 5 year window, then we should
+certainly feel worse about that reality than just having a few extra
+lines in the code. :)
+
+Keeping this up at the memory-corruption or permissions bypass level
+means we won't annotate the vast majority of CVEs that are usually low
+priority issues.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
