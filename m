@@ -1,196 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3LMCao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Dec 2013 21:30:44 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:35122 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3LMCai (ORCPT
+	id S1752560Ab3LMCax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Dec 2013 21:30:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60682 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3LMCat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Dec 2013 21:30:38 -0500
-From: Sergei Ianovich <ynvich@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Landley <rob@landley.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH v2 15/16] misc: support for I-8042 in LP-8x4x
-Date: Fri, 13 Dec 2013 06:27:24 +0400
-Message-Id: <1386901645-28895-16-git-send-email-ynvich@gmail.com>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
-References: <1386543229-1542-1-git-send-email-ynvich@gmail.com>
- <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+	Thu, 12 Dec 2013 21:30:49 -0500
+Date: Thu, 12 Dec 2013 18:32:39 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shawn Landden <shawn@churchofgit.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: only print sysrq help for handlers that are enabled
+Message-ID: <20131213023239.GA15130@kroah.com>
+References: <1386086125-1865-1-git-send-email-shawn@churchofgit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1386086125-1865-1-git-send-email-shawn@churchofgit.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Status of I-8042 16 digital output channels can be managed via
-sysfs.
+On Tue, Dec 03, 2013 at 07:55:25AM -0800, Shawn Landden wrote:
+> Also print out a notice when sysrq is in selective mode.
+> 
+> Signed-off-by: Shawn Landden <shawn@churchofgit.com>
+> ---
+>  drivers/tty/sysrq.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> index ce396ec..4eee0e4 100644
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -548,9 +548,14 @@ void __handle_sysrq(int key, bool check_mask)
+>  					;
+>  				if (j != i)
+>  					continue;
+> -				printk("%s ", sysrq_key_table[i]->help_msg);
+> +				/* only print if handler is enabled */
+> +				if (sysrq_enabled & 1 ||
+> +				    sysrq_enabled & sysrq_key_table[i]->enable_mask)
+> +					printk("%s ", sysrq_key_table[i]->help_msg);
+>  			}
+>  		}
+> +		if (!(sysrq_enabled & 1))
+> +			printk("(some options are disabled)");
+>  		printk("\n");
+>  		console_loglevel = orig_log_level;
+>  	}
 
-Status of I-8042 16 digital input channels can be read via sysfs.
+What exactly is this fixing?  What is broken here that this change
+resolves?  Where is it applicable?  I need a lot more context here
+please.
 
-http://www.icpdas.com/products/Remote_IO/i-8ke/i-8042w.htm
+thanks,
 
-Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
----
-   v0..v2
-   * no changes
-
- Documentation/misc-devices/lp8x4x_bus.txt |  4 ++
- drivers/misc/lp8x4x_bus.c                 | 76 ++++++++++++++++++++++++++++++-
- 2 files changed, 78 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/misc-devices/lp8x4x_bus.txt b/Documentation/misc-devices/lp8x4x_bus.txt
-index 74df10b..e3a8bcf 100644
---- a/Documentation/misc-devices/lp8x4x_bus.txt
-+++ b/Documentation/misc-devices/lp8x4x_bus.txt
-@@ -50,6 +50,10 @@ active_slot
- model
- 	RO - shows expansion module model number
- 
-+input_status
-+	RO - get status of digital input channels on the module in
-+	     the expansion slot.
-+
- output_status
- 	RW - set status of digital output channels on the module in
- 	     the expansion slot. Value can be read back.
-diff --git a/drivers/misc/lp8x4x_bus.c b/drivers/misc/lp8x4x_bus.c
-index 1ef1726..684e640 100644
---- a/drivers/misc/lp8x4x_bus.c
-+++ b/drivers/misc/lp8x4x_bus.c
-@@ -27,6 +27,8 @@ struct lp8x4x_slot {
- 	struct mutex		lock;
- 	unsigned int		DO_len;
- 	u32			DO;
-+	unsigned int		DI_len;
-+	u32			DI;
- 	struct device		dev;
- };
- 
-@@ -89,6 +91,21 @@ static void lp8x4x_slot_release(struct device *dev)
- {
- }
- 
-+static void lp8x4x_slot_get_DI(struct lp8x4x_slot *s)
-+{
-+	int i;
-+	u32 b;
-+
-+	mutex_lock(&s->lock);
-+	s->DI = 0;
-+	for (i = 0; i < s->DI_len; i++) {
-+		b = ioread8(s->data_addr + 2 * (i + 1));
-+		b ^= 0xff;
-+		s->DI += b << (i * 8);
-+	}
-+	mutex_unlock(&s->lock);
-+}
-+
- static void lp8x4x_slot_set_DO(struct lp8x4x_slot *s)
- {
- 	int i;
-@@ -98,29 +115,70 @@ static void lp8x4x_slot_set_DO(struct lp8x4x_slot *s)
- 	mutex_unlock(&s->lock);
- }
- 
-+static ssize_t input_status_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct lp8x4x_slot *s = container_of(dev, struct lp8x4x_slot, dev);
-+
-+	lp8x4x_slot_get_DI(s);
-+	switch (s->DI_len) {
-+	case 4:
-+		return sprintf(buf, "0x%08x\n", s->DI);
-+	case 2:
-+		return sprintf(buf, "0x%04x\n", s->DI);
-+	case 1:
-+		return sprintf(buf, "0x%02x\n", s->DI);
-+	default:
-+		break;
-+	}
-+	return sprintf(buf, "0x%x\n", s->DI);
-+}
-+
-+static DEVICE_ATTR_RO(input_status);
-+
- static ssize_t output_status_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct lp8x4x_slot *s = container_of(dev, struct lp8x4x_slot, dev);
- 
--	return sprintf(buf, "0x%08x\n", s->DO);
-+	switch (s->DO_len) {
-+	case 4:
-+		return sprintf(buf, "0x%08x\n", s->DO);
-+	case 2:
-+		return sprintf(buf, "0x%04x\n", s->DO);
-+	case 1:
-+		return sprintf(buf, "0x%02x\n", s->DO);
-+	default:
-+		break;
-+	}
-+	return sprintf(buf, "0x%x\n", s->DO);
- }
- 
- static ssize_t output_status_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
- 	struct lp8x4x_slot *s = container_of(dev, struct lp8x4x_slot, dev);
-+	u32 DO;
-+	u8 *b = (void *) &DO;
-+	int i;
- 
- 	if (!buf)
- 		return count;
- 	if (0 == count)
- 		return count;
- 
--	if (kstrtouint(buf, 16, &s->DO) != 0) {
-+	if (kstrtouint(buf, 16, &DO) != 0) {
- 		dev_err(dev, "bad input\n");
- 		return count;
- 	}
- 
-+	for (i = 4; i > s->DO_len; i--)
-+		if (b[i - 1] != 0) {
-+			dev_err(dev, "bad input\n");
-+			return count;
-+		}
-+
-+	s->DO = DO;
- 	lp8x4x_slot_set_DO(s);
- 
- 	return count;
-@@ -151,6 +209,14 @@ static struct attribute *do_slot_dev_attrs[] = {
- };
- ATTRIBUTE_GROUPS(do_slot_dev);
- 
-+static struct attribute *dio_slot_dev_attrs[] = {
-+	&dev_attr_model.attr,
-+	&dev_attr_output_status.attr,
-+	&dev_attr_input_status.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(dio_slot_dev);
-+
- static void lp8x4x_master_release(struct device *dev)
- {
- 	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
-@@ -255,6 +321,12 @@ static void __init lp8x4x_bus_probe_slot(struct lp8x4x_master *m, int i,
- 		lp8x4x_slot_set_DO(s);
- 		s->dev.groups = do_slot_dev_groups;
- 		break;
-+	case 42:
-+		s->DI_len = 2;
-+		s->DO_len = 2;
-+		lp8x4x_slot_set_DO(s);
-+		s->dev.groups = dio_slot_dev_groups;
-+		break;
- 	default:
- 		s->dev.groups = slot_dev_groups;
- 		break;
--- 
-1.8.4.3
-
+greg k-h
