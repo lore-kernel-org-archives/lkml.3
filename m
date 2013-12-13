@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab3LMI4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 03:56:17 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:57380 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab3LMI4Q convert rfc822-to-8bit (ORCPT
+	id S1752401Ab3LMI5A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 03:57:00 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:38735 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab3LMI47 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 03:56:16 -0500
+	Fri, 13 Dec 2013 03:56:59 -0500
 X-Originating-IP: 50.43.14.201
-Date: Fri, 13 Dec 2013 00:56:07 -0800
+Date: Fri, 13 Dec 2013 00:56:51 -0800
 From: Josh Triplett <josh@joshtriplett.org>
 To: Rashika Kheria <rashika.kheria@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dimitri Sivanich <sivanich@sgi.com>
-Subject: Re: [PATCH 1/5] drivers: misc: Mark functions as static in
- grukservices.c
-Message-ID: <20131213085607.GA4386@leaf>
+Cc: linux-kernel@vger.kernel.org, Robin Holt <robinmholt@gmail.com>,
+        Cliff Whickman <cpw@sgi.com>
+Subject: Re: [PATCH 2/5] drivers: misc: Mark functions as static in xp_main.c
+Message-ID: <20131213085651.GB4386@leaf>
 References: <40521f78bafae3cc4e796c540d3c497d79eeb63e.1386915618.git.rashika.kheria@gmail.com>
+ <49ece621a2dbbdfad71e81c3185d7e8a32c52823.1386915618.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <40521f78bafae3cc4e796c540d3c497d79eeb63e.1386915618.git.rashika.kheria@gmail.com>
+In-Reply-To: <49ece621a2dbbdfad71e81c3185d7e8a32c52823.1386915618.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 12:12:34PM +0530, Rashika Kheria wrote:
-> This patch marks the function gru_get_cb_exception_detail_str() and
-> gru_abort() as static in sgi-gru/grukservices.c because they are not
-> used outside this file.
+On Fri, Dec 13, 2013 at 12:21:20PM +0530, Rashika Kheria wrote:
+> This patch marks the function xp_init() and xp_exit() as static in
+> sgi-xp/xp_main.c because they are not used outside this file.
 > 
-> Thus, it also eliminates the following warnings in
-> sgi-gru/grukservices.c:
-> drivers/misc/sgi-gru/grukservices.c:432:7: warning: no previous prototype for ‘gru_get_cb_exception_detail_str’ [-Wmissing-prototypes]
-> drivers/misc/sgi-gru/grukservices.c:508:6: warning: no previous prototype for ‘gru_abort’ [-Wmissing-prototypes]
+> Thus, it also eliminates the following warnings in sgi-xp/xp_main.c:
+> drivers/misc/sgi-xp/xp_main.c:249:1: warning: no previous prototype for ‘xp_init’ [-Wmissing-prototypes]
+> drivers/misc/sgi-xp/xp_main.c:274:1: warning: no previous prototype for ‘xp_exit’ [-Wmissing-prototypes]
 > 
 > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->  drivers/misc/sgi-gru/grukservices.c |    4 ++--
+>  drivers/misc/sgi-xp/xp_main.c |    4 ++--
 >  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/misc/sgi-gru/grukservices.c b/drivers/misc/sgi-gru/grukservices.c
-> index 913de07..29d1582 100644
-> --- a/drivers/misc/sgi-gru/grukservices.c
-> +++ b/drivers/misc/sgi-gru/grukservices.c
-> @@ -429,7 +429,7 @@ int gru_get_cb_exception_detail(void *cb,
->  	return 0;
+> diff --git a/drivers/misc/sgi-xp/xp_main.c b/drivers/misc/sgi-xp/xp_main.c
+> index 01be66d..df14c70 100644
+> --- a/drivers/misc/sgi-xp/xp_main.c
+> +++ b/drivers/misc/sgi-xp/xp_main.c
+> @@ -245,7 +245,7 @@ xpc_disconnect(int ch_number)
 >  }
+>  EXPORT_SYMBOL_GPL(xpc_disconnect);
 >  
-> -char *gru_get_cb_exception_detail_str(int ret, void *cb,
-> +static char *gru_get_cb_exception_detail_str(int ret, void *cb,
->  				      char *buf, int size)
+> -int __init
+> +static int __init
+>  xp_init(void)
 >  {
->  	struct gru_control_block_status *gen = (void *)cb;
-> @@ -505,7 +505,7 @@ int gru_wait_proc(void *cb)
->  	return ret;
->  }
+>  	enum xp_retval ret;
+> @@ -270,7 +270,7 @@ xp_init(void)
 >  
-> -void gru_abort(int ret, void *cb, char *str)
-> +static void gru_abort(int ret, void *cb, char *str)
+>  module_init(xp_init);
+>  
+> -void __exit
+> +static void __exit
+>  xp_exit(void)
 >  {
->  	char buf[GRU_EXC_STR_SIZE];
->  
+>  	if (is_shub())
 > -- 
 > 1.7.9.5
 > 
