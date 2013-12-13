@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab3LMSHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 13:07:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49742 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab3LMSG7 (ORCPT
+	id S1753263Ab3LMSHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 13:07:37 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:38821 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3LMSHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 13:06:59 -0500
-Date: Fri, 13 Dec 2013 19:06:38 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v0 01/71] perf: Disable all pmus on unthrottling and
- rescheduling
-Message-ID: <20131213180638.GR21999@twins.programming.kicks-ass.net>
-References: <1386765443-26966-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com>
+	Fri, 13 Dec 2013 13:07:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386765443-26966-2-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20131213052712.GH23888@thunk.org>
+References: <1386867152-24072-1-git-send-email-vegard.nossum@oracle.com>
+	<20131212190659.GG13547@thunk.org>
+	<CAGXu5jKmrtgH8tAGuYd9-gh5-EXqAsPy+XoRMc9DNLDngNH2ug@mail.gmail.com>
+	<20131213052712.GH23888@thunk.org>
+Date: Fri, 13 Dec 2013 10:07:35 -0800
+X-Google-Sender-Auth: zYrY8-GV-D4BZ5ujSRbknovoZms
+Message-ID: <CAGXu5jLghzKvLE0=ERQ10EZ_1GZ0642X6zr35EaSafq7WJ09Qw@mail.gmail.com>
+Subject: Re: [PATCH 1/9] Known exploit detection
+From: Kees Cook <keescook@chromium.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Kees Cook <keescook@chromium.org>,
+        vegard.nossum@oracle.com, LKML <linux-kernel@vger.kernel.org>,
+        Tommi Rantala <tt.rantala@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Morris <james.l.morris@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 11, 2013 at 02:36:13PM +0200, Alexander Shishkin wrote:
-> Currently, only one pmu in a context gets disabled during unthrottling
-> and event_sched_{out,in}, however, events in one context may belong to
-> different pmus, which results in pmus being reprogrammed while they are
-> still enabled. This patch temporarily disables pmus that correspond to
-> each event in the context while these events are being modified.
-> 
-> Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-> ---
->  kernel/events/core.c | 27 ++++++++++++++++++++++++---
->  1 file changed, 24 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 403b781..d656cd6 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -1396,6 +1396,9 @@ event_sched_out(struct perf_event *event,
->  	if (event->state != PERF_EVENT_STATE_ACTIVE)
->  		return;
->  
-> +	if (event->pmu != ctx->pmu)
-> +		perf_pmu_disable(event->pmu);
-> +
->  	event->state = PERF_EVENT_STATE_INACTIVE;
->  	if (event->pending_disable) {
->  		event->pending_disable = 0;
-> @@ -1412,6 +1415,9 @@ event_sched_out(struct perf_event *event,
->  		ctx->nr_freq--;
->  	if (event->attr.exclusive || !cpuctx->active_oncpu)
->  		cpuctx->exclusive = 0;
-> +
-> +	if (event->pmu != ctx->pmu)
-> +		perf_pmu_enable(event->pmu);
->  }
->  
->  static void
+On Thu, Dec 12, 2013 at 9:27 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Dec 12, 2013 at 01:13:41PM -0800, Kees Cook wrote:
+>> > Suppose we put put this into the mainstream kernel.  Wouldn't writers
+>> > of root kit adapt by checking for the kernel version to avoid checking
+>> > for exploits that are known not work?  So the question is whether the
+>> > additional complexity in the kernel is going to be worth it, since
+>> > once the attackers adapt, the benefits of trying to detect attacks for
+>> > mitigated exploits will be minimal.
+>>
+>> This is already somewhat the case, but I think this idea still has
+>> value. The reality of the situation is that the kernels running on an
+>> end-user's system is rarely a stock upstream kernel. As a result, they
+>> usually have organization-specific versioning, which makes
+>> version-only autodetection useless to an attacker.
+>
+> Most organizations can't afford to have an in-house kernel team
+> providing specialized kernels for their server farms or their
+> customized desktop distributions.  :-)
+>
+> Some places have publically said that they do this; Google has
+> publically talked about Goobuntu and their data center production
+> kernels, and some financial firms on Wall Street have boasted about
+> how they run with a customized kernel --- although other financial
+> firms have said they don't want to do that because they don't want to
+> void their support contract with Red Hat or SuSE.  I suspect that at
+> most shopes, though, the latter is going to be far more common than
+> the former.
 
-Hmm, indeed. Does it make sense to drop the conditional?
-perf_pmu_{en,dis}able() is recursive and the thinking is that if its the
-same PMU the cacheline is hot because we touched it already recently
-anyway, so the unconditional inc/dec might actually be faster.. dunno.
+We can never really know, but given the evidence I've seen, there are
+a lot of custom kernels out in the world. That combined with the fact
+that sloppy attackers will still probe distro kernels, I think the
+argument that "attackers will fall back to other detection mechanisms"
+isn't strong enough to convince me that this series lacks value.
 
+> Practically speaking, testing for various distribution kernel
+> versions, as well as specific ChromeOS and Android kernel versions,
+> wouldn't be that difficult for an attacker, and would probably allow
+> them to avoid detection for 99% of the Linux systems found in the
+> wild.  It would certainly be useful for detecting attempted attacks
+> for private kernels where the configuration and security patches
+> applied for some internal kernel are not public --- and if that caused
+> the botnet author to be paranoid enough to avoid attacking machines
+> which didn't have a known distribution kernel that definitely had that
+> vulnerability, it would certainly be good for people running their own
+> privately maintained kernel image.  So if this increases the market
+> demand for kernel programmers, that's a good thing, right?   :-)
+
+The careful attackers can successfully probe a system without needing
+uname at all. These patches won't help against them.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
