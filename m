@@ -1,84 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3LMQjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Dec 2013 11:39:22 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55857 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab3LMQjS (ORCPT
+	id S1753216Ab3LMQjb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Dec 2013 11:39:31 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:39227 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab3LMQjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Dec 2013 11:39:18 -0500
-Date: Fri, 13 Dec 2013 08:39:16 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] xfs: add a new method xfs_vn_tmpfile()
-Message-ID: <20131213163916.GG20803@infradead.org>
-References: <1386944873-16796-1-git-send-email-zwu.kernel@gmail.com>
- <1386944873-16796-5-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386944873-16796-5-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 13 Dec 2013 11:39:25 -0500
+X-AuditID: cbfee61b-b7fbf6d0000051a3-4d-52ab383c8ed4
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH v11 7/7] thermal:exynos:boost: Automatic enable/disable of
+ BOOST feature (at Exynos4412)
+Date: Fri, 13 Dec 2013 17:38:37 +0100
+Message-id: <1386952717-30947-8-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1386952717-30947-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1386952717-30947-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t9jQV0bi9VBBue2m1lsnLGe1eJp0w92
+	i76fV5gt1uz/yWTRefYJs8WbR9wWbx5uZrS4vGsOm8Xn3iOMFjPO72OyuN24gs3izOlLrBZP
+	HvaxWWz86uHA57F4z0smjzvX9rB5rJv2ltljy9V2Fo++LasYPY7f2M7k8XmTXAB7FJdNSmpO
+	Zllqkb5dAlfGsU9fmAr2SlQ82/2BvYFxkXAXIyeHhICJxK33b5kgbDGJC/fWs3UxcnEICUxn
+	lHj99z8zSEJIoItJ4t9fRxCbTUBP4vPdp0wgRSICS4CKmhawgjjMAhuZJXbOfMsGUiUskCWx
+	sesaWDeLgKrE7jOnGUFsXgE3icn989kh1ilKdD+bAFbPKeAuMW3TKkaI1U2MEs+v3GecwMi7
+	gJFhFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwwD6T3sG4qsHiEKMAB6MSD69n76ogIdbE
+	suLK3EOMEhzMSiK8Iaqrg4R4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1I
+	LYLJMnFwSjUwKuxO3u80fcr907YTXk7YGaTiVil4WPJs/cNNAsvjXzu9PtK1myc9qOBIl7fx
+	Y2Mtu2a98PayGC3jZ+JdD+J7qy1Mn1hVXctY92Wy2dpw14MXJi8KemHv67PwiUjNw2puhoyt
+	TZ7rzi1d0aRSl+L6hGXmkz2VK0suhEi5fPNatmb5hPXv5RPZlFiKMxINtZiLihMBokCuw1QC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 13, 2013 at 10:27:52PM +0800, Zhi Yong Wu wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
-> Add a new O_TMPFILE method to VFS inteface.
-> For more info, please refer to:
->   http://oss.sgi.com/archives/xfs/2013-08/msg00336.html
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  fs/xfs/xfs_iops.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-> index eb55be5..b57cd89 100644
-> --- a/fs/xfs/xfs_iops.c
-> +++ b/fs/xfs/xfs_iops.c
-> @@ -39,6 +39,7 @@
->  #include "xfs_da_btree.h"
->  #include "xfs_dir2_priv.h"
->  #include "xfs_dinode.h"
-> +#include "xfs_trans_space.h"
->  
->  #include <linux/capability.h>
->  #include <linux/xattr.h>
-> @@ -1051,6 +1052,25 @@ xfs_vn_fiemap(
->  	return 0;
->  }
->  
-> +STATIC int
-> +xfs_vn_tmpfile(
-> +	struct inode	*dir,
-> +	struct dentry	*dentry,
-> +	umode_t		mode)
-> +{
-> +	struct xfs_inode *ip = NULL;
-> +	int		error;
-> +
-> +	error = xfs_create_tmpfile(XFS_I(dir), XFS_I(dir)->i_mount,
+This patch provides auto disable/enable operation for boost. It uses already
+present thermal infrastructure to provide boost hysteresis.
+The TMU data has been modified to work properly with or without boost.
 
-No need to pass in the mount point here, the client can get it easily.
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 
-> +				mode, 0, &ip);
+---
+Changes for v11:
+    - Use only one thermal data set
+    - Adjust Exynos4412 thermal data to work with or without BOOST
 
-Also no need for an always-zero argument.
+Changes for v10:
+    - Remove boost related code from thermal_core.c
+    - Use already present thermal infrastructure to provide thermal hysteresis
+    - Introduce special set of TMU data for BOOST
 
-> +	if (error)
-> +		return -error;
-> +
-> +	d_instantiate(dentry, VFS_I(ip));
+Changes for v9:
+    - None
 
-Shouldn't this be a call to d_tmpfile() instead?
+Changes for v8:
+    - Move cpufreq_boost_* stub functions definition (needed when cpufreq
+      is not compiled in) to cpufreq.h at cpufreq core support commit
 
-Also I'd suggest mergin this into the previous patch, so that we have
-one that actually adds O_TMPFILE support, and once place to write a nice
-good changelog.
+Changes for v7:
+    - None
+
+Changes for v6:
+    - Disable boost only when supported and enabled
+    - Protect boost related thermal_zone_device struct fields with mutex
+    - Evaluate temperature trend during boost enable decision
+    - Create separate methods to handle boost enable/disable
+      (thermal_boost_{enable|disable}) operations
+    - Boost is disabled at any trip point passage (not only the non critical one)
+    - Add stub definitions for cpufreq boost functions used when
+      CONFIG_CPU_FREQ is NOT defined.
+
+Changes for v5:
+    - Move boost disable code from cpu_cooling.c to thermal_core.c
+      (to handle_non_critical_trips)
+    - Extent struct thermal_zone_device by adding overheated bool flag
+    - Implement auto enable of boost after device cools down
+    - Introduce boost_polling flag, which indicates if thermal uses it's predefined
+      pool delay or has woken up thermal workqueue only to wait until device
+      cools down.
+
+Changes for v4:
+    - New patch
+
+ drivers/thermal/samsung/exynos_tmu_data.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+index 073c292..476b768 100644
+--- a/drivers/thermal/samsung/exynos_tmu_data.c
++++ b/drivers/thermal/samsung/exynos_tmu_data.c
+@@ -131,8 +131,8 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 
+ #define EXYNOS4412_TMU_DATA \
+ 	.threshold_falling = 10, \
+-	.trigger_levels[0] = 85, \
+-	.trigger_levels[1] = 103, \
++	.trigger_levels[0] = 70, \
++	.trigger_levels[1] = 95, \
+ 	.trigger_levels[2] = 110, \
+ 	.trigger_levels[3] = 120, \
+ 	.trigger_enable[0] = true, \
+@@ -155,12 +155,12 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.second_point_trim = 85, \
+ 	.default_temp_offset = 50, \
+ 	.freq_tab[0] = { \
+-		.freq_clip_max = 800 * 1000, \
+-		.temp_level = 85, \
++		.freq_clip_max = 1400 * 1000, \
++		.temp_level = 70, \
+ 	}, \
+ 	.freq_tab[1] = { \
+-		.freq_clip_max = 200 * 1000, \
+-		.temp_level = 103, \
++		.freq_clip_max = 400 * 1000, \
++		.temp_level = 95, \
+ 	}, \
+ 	.freq_tab_count = 2, \
+ 	.registers = &exynos4412_tmu_registers, \
+-- 
+1.7.10.4
+
